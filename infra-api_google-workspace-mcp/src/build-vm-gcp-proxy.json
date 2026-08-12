@@ -4,15 +4,6 @@
   "vm_id": "gcp-E2-f_0",
   "services": [
     {
-      "name": "c3-analytics-api",
-      "dir": "infra-api_c3-analytics-api",
-      "compose_path": "/opt/containers/c3-analytics-api",
-      "images": [
-        "ghcr.io/diegonmarcos/c3-analytics-api:latest"
-      ],
-      "has_docker_build": true
-    },
-    {
       "name": "http-to-smtp-proxy-api",
       "dir": "infra-api_tools-http-to-smtp-proxy-api",
       "compose_path": "/opt/containers/http-to-smtp-proxy-api",
@@ -86,7 +77,7 @@
   "ssh_containers": [],
   "_meta": {
     "generated_at": "",
-    "generated_by": "9_others/src/engine/cloud-data-config-derive.ts",
+    "generated_by": "1_cloud-configs/src/derive/cloud-data-config-derive.ts",
     "pipeline": {
       "description": "Two-stage build: consolidator merges all build.json + config.json sources into the master file; derive emits per-container + archived split files from the master.",
       "source_inputs": [
@@ -96,13 +87,13 @@
         "vault/secrets.yaml (sops-encrypted secrets per service, key names extracted)"
       ],
       "engines": {
-        "consolidator": "9_others/src/engine/cloud-data-config-consolidated.ts",
-        "derive": "9_others/src/engine/cloud-data-config-derive.ts (THIS engine)"
+        "consolidator": "1_cloud-configs/src/derive/cloud-data-config-consolidated.ts",
+        "derive": "1_cloud-configs/src/derive/cloud-data-config-derive.ts (THIS engine)"
       },
       "outputs": {
         "master": "1_cloud-configs/dist/_cloud-data-consolidated.json (consolidator output)",
         "per_container": "1_cloud-configs/dist/build-{container_or_service_name}.json (one per container, plus one per container-less service — derive output)",
-        "archived": "1_cicd/dist/z_archive/cloud-data-{slice}.json (deprecated split files — kept for soft-transition fallbacks; consumers should read consolidated instead)"
+        "archived": "1_cloud-configs/dist/z_archive/cloud-data-{slice}.json (deprecated split files — kept for soft-transition fallbacks; consumers should read consolidated instead)"
       },
       "rebuild_command": "bash 9_others/build.sh all"
     }

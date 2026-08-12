@@ -1,7 +1,7 @@
 {
   "_warning": "DO NOT EDIT — AUTO-GENERATED FILE. Source of truth lives in a_solutions/*/build.json + config.json + b_infra/*/build.json. Edits here are overwritten on every `bash 9_others/build.sh all`.",
   "_generated": "",
-  "_source": "_cloud-data-consolidated.json + 9_others/src/inputs/reports-*.json via cloud-data-config-derive.ts/build-reports",
+  "_source": "_cloud-data-consolidated.json + 1_cloud-configs/src/inputs/reports-*.json via cloud-data-config-derive.ts/build-reports",
   "_replaces": [
     "cloud-data-monitoring-targets.json",
     "cloud-data-topology.json",
@@ -14,8 +14,8 @@
   ],
   "endpoint_checks": [
     {
-      "service": "c3-analytics-api",
-      "url": "https://api.diegonmarcos.com/c3a/c3a/healthz"
+      "service": "matrix-continuwuity",
+      "url": "https://matrix.diegonmarcos.com/_matrix/client/versions"
     },
     {
       "service": "c3-infra-api",
@@ -66,10 +66,6 @@
       "url": "https://chat.diegonmarcos.com/api/v4/system/ping"
     },
     {
-      "service": "matrix-continuwuity",
-      "url": "https://matrix.diegonmarcos.com/_matrix/client/versions"
-    },
-    {
       "service": "matrix-element",
       "url": "https://messenger.diegonmarcos.com/"
     },
@@ -82,8 +78,8 @@
       "url": "https://jmap.diegonmarcos.com/"
     },
     {
-      "service": "crawlee-cloud",
-      "url": "https://api.diegonmarcos.com/"
+      "service": "scrappers-api",
+      "url": "https://api.diegonmarcos.com/health"
     },
     {
       "service": "fin-api",
@@ -92,6 +88,10 @@
     {
       "service": "photoprism",
       "url": "https://photos.diegonmarcos.com/api/v1/status"
+    },
+    {
+      "service": "playlist-syncer",
+      "url": "https://playlist.diegonmarcos.com/api/health"
     },
     {
       "service": "calendar-radicale",
@@ -126,14 +126,22 @@
       "url": "https://paca.diegonmarcos.com/api/healthz"
     },
     {
+      "service": "send",
+      "url": "https://send.diegonmarcos.com/__lbheartbeat__"
+    },
+    {
       "service": "vaultwarden",
       "url": "https://vault.diegonmarcos.com/alive"
     }
   ],
   "dns_checks": [
     {
-      "service": "c3-analytics-api",
-      "domain": "api.diegonmarcos.com/c3a"
+      "service": "matrix-continuwuity",
+      "domain": "matrix.diegonmarcos.com"
+    },
+    {
+      "service": "languagetool",
+      "domain": "languagetool.diegonmarcos.com"
     },
     {
       "service": "c3-infra-api",
@@ -192,10 +200,6 @@
       "domain": "chat.diegonmarcos.com"
     },
     {
-      "service": "matrix-continuwuity",
-      "domain": "matrix.diegonmarcos.com"
-    },
-    {
       "service": "matrix-element",
       "domain": "messenger.diegonmarcos.com"
     },
@@ -208,7 +212,7 @@
       "domain": "jmap.diegonmarcos.com"
     },
     {
-      "service": "crawlee-cloud",
+      "service": "scrappers-api",
       "domain": "api.diegonmarcos.com"
     },
     {
@@ -218,6 +222,10 @@
     {
       "service": "photoprism",
       "domain": "photos.diegonmarcos.com"
+    },
+    {
+      "service": "playlist-syncer",
+      "domain": "playlist.diegonmarcos.com"
     },
     {
       "service": "calendar-radicale",
@@ -252,14 +260,22 @@
       "domain": "paca.diegonmarcos.com"
     },
     {
+      "service": "send",
+      "domain": "send.diegonmarcos.com"
+    },
+    {
       "service": "vaultwarden",
       "domain": "vault.diegonmarcos.com"
     }
   ],
   "tls_checks": [
     {
-      "service": "c3-analytics-api",
-      "domain": "api.diegonmarcos.com/c3a"
+      "service": "matrix-continuwuity",
+      "domain": "matrix.diegonmarcos.com"
+    },
+    {
+      "service": "languagetool",
+      "domain": "languagetool.diegonmarcos.com"
     },
     {
       "service": "c3-infra-api",
@@ -322,10 +338,6 @@
       "domain": "chat.diegonmarcos.com"
     },
     {
-      "service": "matrix-continuwuity",
-      "domain": "matrix.diegonmarcos.com"
-    },
-    {
       "service": "matrix-element",
       "domain": "messenger.diegonmarcos.com"
     },
@@ -338,7 +350,7 @@
       "domain": "jmap.diegonmarcos.com"
     },
     {
-      "service": "crawlee-cloud",
+      "service": "scrappers-api",
       "domain": "api.diegonmarcos.com"
     },
     {
@@ -348,6 +360,10 @@
     {
       "service": "photoprism",
       "domain": "photos.diegonmarcos.com"
+    },
+    {
+      "service": "playlist-syncer",
+      "domain": "playlist.diegonmarcos.com"
     },
     {
       "service": "calendar-radicale",
@@ -382,6 +398,10 @@
       "domain": "paca.diegonmarcos.com"
     },
     {
+      "service": "send",
+      "domain": "send.diegonmarcos.com"
+    },
+    {
       "service": "vaultwarden",
       "domain": "vault.diegonmarcos.com"
     }
@@ -409,17 +429,39 @@
     }
   ],
   "services": {
-    "c3-analytics-api": {
-      "name": "c3-analytics-api",
-      "vm": "gcp-E2-f_0",
-      "domain": "api.diegonmarcos.com/c3a",
+    "matrix-continuwuity": {
+      "name": "matrix-continuwuity",
+      "vm": "oci-A1-f_0",
+      "domain": "matrix.diegonmarcos.com",
       "enabled": true,
-      "category": "obs",
+      "category": "app",
       "ports": {
-        "app": 8085
+        "app": 8008
       },
       "health": {
-        "path": "/c3a/healthz"
+        "path": "/_matrix/client/versions"
+      }
+    },
+    "alerts-api": {
+      "name": "alerts-api",
+      "vm": "oci-E2-f_1",
+      "domain": null,
+      "enabled": true,
+      "category": "tools",
+      "ports": null,
+      "health": null
+    },
+    "languagetool": {
+      "name": "languagetool",
+      "vm": "oci-A1-f_0",
+      "domain": "languagetool.diegonmarcos.com",
+      "enabled": true,
+      "category": "tools",
+      "ports": {
+        "app": 8010
+      },
+      "health": {
+        "path": "/v2/check"
       }
     },
     "c3-diego-personal-data-mcp": {
@@ -557,7 +599,7 @@
     },
     "cloud-builder-x": {
       "name": "cloud-builder-x",
-      "vm": "oci-A1-f_0",
+      "vm": "local",
       "domain": null,
       "enabled": true,
       "category": "tools",
@@ -666,6 +708,17 @@
       },
       "health": null
     },
+    "unbound-dns64": {
+      "name": "unbound-dns64",
+      "vm": "oci-E2-f_1",
+      "domain": "dns64.internal",
+      "enabled": true,
+      "category": "infra-net",
+      "ports": {
+        "dns": 53
+      },
+      "health": null
+    },
     "wireguard-mesh": {
       "name": "wireguard-mesh",
       "vm": "oci-A1-f_0",
@@ -756,7 +809,8 @@
       "enabled": true,
       "category": "tools",
       "ports": {
-        "app": 8090
+        "app": 8090,
+        "rss_gateway": 8091
       },
       "health": {
         "path": "/"
@@ -893,6 +947,18 @@
       "ports": null,
       "health": null
     },
+    "hermes-agent": {
+      "name": "hermes-agent",
+      "vm": "oci-A1-f_0",
+      "domain": null,
+      "enabled": true,
+      "category": "agi",
+      "ports": {
+        "api": 8642,
+        "dashboard": 9119
+      },
+      "health": null
+    },
     "kg-store": {
       "name": "kg-store",
       "vm": "oci-A1-f_0",
@@ -904,60 +970,22 @@
       },
       "health": null
     },
-    "ollama": {
-      "name": "ollama",
-      "vm": "gcp-t4",
-      "domain": null,
-      "enabled": true,
-      "category": "agi",
-      "ports": {
-        "app": 11434
-      },
-      "health": null
-    },
-    "ollama-arm": {
-      "name": "ollama-arm",
-      "vm": "oci-apps-2",
-      "domain": null,
-      "enabled": true,
-      "category": "agi",
-      "ports": {
-        "app": 11434
-      },
-      "health": null
-    },
-    "ollama-hai": {
-      "name": "ollama-hai",
-      "vm": "oci-A1-f_0",
-      "domain": null,
-      "enabled": false,
-      "category": "agi",
-      "ports": {
-        "app": 11435
-      },
-      "health": null
-    },
-    "rig-agentic-hai-1.5bq4": {
-      "name": "rig-agentic-hai-1.5bq4",
-      "vm": "oci-A1-f_0",
-      "domain": null,
-      "enabled": false,
-      "category": "agi",
-      "ports": {
-        "app": 8091
-      },
-      "health": null
-    },
-    "rig-agentic-sonn-14bq8": {
-      "name": "rig-agentic-sonn-14bq8",
+    "my-ai-api": {
+      "name": "my-ai-api",
       "vm": "oci-A1-f_0",
       "domain": null,
       "enabled": true,
       "category": "agi",
       "ports": {
-        "app": 8091
+        "app": 3217,
+        "ollama": 12436,
+        "headroom": 8890,
+        "goosed": 3227,
+        "_goosed_doc": "goosed = goose agent ACP/REST+SSE server (goose serve, X-Secret-Key auth, WireGuard-only)"
       },
-      "health": null
+      "health": {
+        "path": "/health"
+      }
     },
     "session-memory": {
       "name": "session-memory",
@@ -986,19 +1014,6 @@
         "path": "/api/v4/system/ping"
       }
     },
-    "cypht": {
-      "name": "cypht",
-      "vm": "oci-E2-f_0",
-      "domain": "webmail.diegonmarcos.com",
-      "enabled": true,
-      "category": "app",
-      "ports": {
-        "app": 8889
-      },
-      "health": {
-        "path": "/"
-      }
-    },
     "mail-puller": {
       "name": "mail-puller",
       "vm": "oci-E2-f_0",
@@ -1010,19 +1025,6 @@
       },
       "health": {
         "path": null
-      }
-    },
-    "matrix-continuwuity": {
-      "name": "matrix-continuwuity",
-      "vm": "oci-A1-f_0",
-      "domain": "matrix.diegonmarcos.com",
-      "enabled": true,
-      "category": "app",
-      "ports": {
-        "app": 8008
-      },
-      "health": {
-        "path": "/_matrix/client/versions"
       }
     },
     "matrix-element": {
@@ -1088,22 +1090,17 @@
         "path": "/"
       }
     },
-    "crawlee-cloud": {
-      "name": "crawlee-cloud",
+    "scrappers-api": {
+      "name": "scrappers-api",
       "vm": "oci-A1-f_0",
       "domain": "api.diegonmarcos.com",
       "enabled": true,
-      "category": "fin",
+      "category": "data",
       "ports": {
-        "app": 3000,
-        "dashboard": 3001,
-        "db": 5434,
-        "redis": 6381,
-        "minio": 9000,
-        "minio_console": 9001
+        "app": 3020
       },
       "health": {
-        "path": "/"
+        "path": "/health"
       }
     },
     "fin-api": {
@@ -1130,6 +1127,19 @@
       },
       "health": {
         "path": "/api/v1/status"
+      }
+    },
+    "playlist-syncer": {
+      "name": "playlist-syncer",
+      "vm": "oci-A1-f_0",
+      "domain": "playlist.diegonmarcos.com",
+      "enabled": true,
+      "category": "app",
+      "ports": {
+        "app": 8090
+      },
+      "health": {
+        "path": "/api/health"
       }
     },
     "news-gdelt": {
@@ -1265,6 +1275,19 @@
       },
       "health": null
     },
+    "send": {
+      "name": "send",
+      "vm": "oci-A1-f_0",
+      "domain": "send.diegonmarcos.com",
+      "enabled": true,
+      "category": "app",
+      "ports": {
+        "app": 3016
+      },
+      "health": {
+        "path": "/__lbheartbeat__"
+      }
+    },
     "vaultwarden": {
       "name": "vaultwarden",
       "vm": "oci-A1-f_0",
@@ -1290,13 +1313,31 @@
   },
   "dns_services": [
     {
-      "service": "c3-analytics-api",
-      "dns": "c3-analytics-api.app"
+      "service": "matrix-continuwuity",
+      "dns": "matrix-continuwuity.app"
     },
     {
-      "service": "c3-analytics-api",
+      "service": "matrix-continuwuity",
       "container": "app",
-      "dns": "c3-analytics-api.app"
+      "dns": "matrix-continuwuity.app"
+    },
+    {
+      "service": "alerts-api",
+      "dns": "alerts-api.app"
+    },
+    {
+      "service": "alerts-api",
+      "container": "app",
+      "dns": "alerts-api.app"
+    },
+    {
+      "service": "languagetool",
+      "dns": "languagetool.app"
+    },
+    {
+      "service": "languagetool",
+      "container": "app",
+      "dns": "languagetool.app"
     },
     {
       "service": "c3-infra-api",
@@ -1422,6 +1463,15 @@
       "service": "hickory-dns",
       "container": "app",
       "dns": "hickory-dns.app"
+    },
+    {
+      "service": "unbound-dns64",
+      "dns": "unbound-dns64.app"
+    },
+    {
+      "service": "unbound-dns64",
+      "container": "app",
+      "dns": "unbound-dns64.app"
     },
     {
       "service": "wireguard-mesh",
@@ -1573,38 +1623,26 @@
       "dns": "cloud-cgc-mcp.app"
     },
     {
+      "service": "hermes-agent",
+      "dns": "hermes-agent.app"
+    },
+    {
+      "service": "hermes-agent",
+      "container": "app",
+      "dns": "hermes-agent.app"
+    },
+    {
       "service": "kg-store",
       "dns": "kg-store.app"
     },
     {
-      "service": "ollama",
-      "dns": "ollama.app"
+      "service": "my-ai-api",
+      "dns": "my-ai-api.app"
     },
     {
-      "service": "ollama",
+      "service": "my-ai-api",
       "container": "app",
-      "dns": "ollama.app"
-    },
-    {
-      "service": "ollama-arm",
-      "dns": "ollama-arm.app"
-    },
-    {
-      "service": "ollama-hai",
-      "dns": "ollama-hai.app"
-    },
-    {
-      "service": "ollama-hai",
-      "container": "app",
-      "dns": "ollama-hai.app"
-    },
-    {
-      "service": "rig-agentic-hai-1.5bq4",
-      "dns": "rig-agentic-hai-1.5bq4.app"
-    },
-    {
-      "service": "rig-agentic-sonn-14bq8",
-      "dns": "rig-agentic-sonn-14bq8.app"
+      "dns": "my-ai-api.app"
     },
     {
       "service": "session-memory",
@@ -1635,28 +1673,10 @@
       "dns": "mattermost-bots.app"
     },
     {
-      "service": "cypht",
-      "dns": "cypht.app"
-    },
-    {
-      "service": "cypht",
-      "container": "app",
-      "dns": "cypht.app"
-    },
-    {
       "service": "mail-puller",
       "dns": "mail-puller.app"
     },
     {
-      "service": "matrix-continuwuity",
-      "dns": "matrix-continuwuity.app"
-    },
-    {
-      "service": "matrix-continuwuity",
-      "container": "app",
-      "dns": "matrix-continuwuity.app"
-    },
-    {
       "service": "matrix-element",
       "dns": "matrix-element.app"
     },
@@ -1702,43 +1722,13 @@
       "dns": "stalwart.app"
     },
     {
-      "service": "crawlee-cloud",
-      "dns": "crawlee.app"
+      "service": "scrappers-api",
+      "dns": "scrappers-api.app"
     },
     {
-      "service": "crawlee-cloud",
+      "service": "scrappers-api",
       "container": "app",
-      "dns": "crawlee.app"
-    },
-    {
-      "service": "crawlee-cloud",
-      "container": "runner",
-      "dns": "crawlee-runner.app"
-    },
-    {
-      "service": "crawlee-cloud",
-      "container": "dashboard",
-      "dns": "crawlee-dashboard.app"
-    },
-    {
-      "service": "crawlee-cloud",
-      "container": "scheduler",
-      "dns": "crawlee-scheduler.app"
-    },
-    {
-      "service": "crawlee-cloud",
-      "container": "db",
-      "dns": "crawlee-db.app"
-    },
-    {
-      "service": "crawlee-cloud",
-      "container": "redis",
-      "dns": "crawlee-redis.app"
-    },
-    {
-      "service": "crawlee-cloud",
-      "container": "minio",
-      "dns": "crawlee-minio.app"
+      "dns": "scrappers-api.app"
     },
     {
       "service": "fin-api",
@@ -1757,6 +1747,15 @@
       "service": "photoprism",
       "container": "app",
       "dns": "photoprism.app"
+    },
+    {
+      "service": "playlist-syncer",
+      "dns": "playlist-syncer.app"
+    },
+    {
+      "service": "playlist-syncer",
+      "container": "app",
+      "dns": "playlist-syncer.app"
     },
     {
       "service": "news-gdelt",
@@ -1879,6 +1878,15 @@
       "dns": "revealmd.app"
     },
     {
+      "service": "send",
+      "dns": "send.app"
+    },
+    {
+      "service": "send",
+      "container": "app",
+      "dns": "send.app"
+    },
+    {
       "service": "vaultwarden",
       "dns": "vaultwarden.app"
     },
@@ -1930,30 +1938,6 @@
       "db_user": "mattermost"
     },
     {
-      "service": "crawlee-cloud",
-      "container": "db",
-      "engine": "postgres",
-      "port": 5434,
-      "db_name": "crawlee",
-      "db_user": "crawlee"
-    },
-    {
-      "service": "crawlee-cloud",
-      "container": "redis",
-      "engine": "redis",
-      "port": 6381,
-      "db_name": null,
-      "db_user": null
-    },
-    {
-      "service": "crawlee-cloud",
-      "container": "minio",
-      "engine": "minio",
-      "port": 9000,
-      "db_name": null,
-      "db_user": null
-    },
-    {
       "service": "photoprism",
       "container": "db",
       "engine": "mariadb",
@@ -1995,7 +1979,6 @@
         "user": "ubuntu",
         "provider": null,
         "services": [
-          "cypht",
           "mail-puller",
           "snappymail",
           "maddy",
@@ -2009,7 +1992,9 @@
         "user": "ubuntu",
         "provider": null,
         "services": [
+          "alerts-api",
           "c3-public-api",
+          "unbound-dns64",
           "caddy-public"
         ]
       },
@@ -2020,6 +2005,8 @@
         "user": "ubuntu",
         "provider": null,
         "services": [
+          "matrix-continuwuity",
+          "languagetool",
           "c3-infra-api",
           "c3-infra-mcp",
           "c3-services-api",
@@ -2028,7 +2015,6 @@
           "google-workspace-mcp",
           "mail-mcp",
           "mattermost-mcp",
-          "cloud-builder-x",
           "gha-runner",
           "backup-borg",
           "backup-bup",
@@ -2044,18 +2030,17 @@
           "crowdsec",
           "claude-superset-api",
           "cloud-cgc-mcp",
+          "hermes-agent",
           "kg-store",
-          "ollama-hai",
-          "rig-agentic-hai-1.5bq4",
-          "rig-agentic-sonn-14bq8",
+          "my-ai-api",
           "session-memory",
           "chat-mattermost",
-          "matrix-continuwuity",
           "matrix-element",
           "matrix-mautrix-whatsapp",
-          "crawlee-cloud",
+          "scrappers-api",
           "fin-api",
           "photoprism",
+          "playlist-syncer",
           "news-gdelt",
           "calendar-radicale",
           "code-server",
@@ -2066,6 +2051,7 @@
           "hedgedoc",
           "paca",
           "revealmd",
+          "send",
           "vaultwarden"
         ]
       },
@@ -2076,7 +2062,6 @@
         "user": "diego",
         "provider": null,
         "services": [
-          "c3-analytics-api",
           "http-to-smtp-proxy-api",
           "postlite",
           "redis",
@@ -2097,17 +2082,39 @@
       }
     },
     "services": {
-      "c3-analytics-api": {
-        "name": "c3-analytics-api",
-        "vm": "gcp-E2-f_0",
-        "domain": "api.diegonmarcos.com/c3a",
+      "matrix-continuwuity": {
+        "name": "matrix-continuwuity",
+        "vm": "oci-A1-f_0",
+        "domain": "matrix.diegonmarcos.com",
         "enabled": true,
-        "category": "obs",
+        "category": "app",
         "ports": {
-          "app": 8085
+          "app": 8008
         },
         "health": {
-          "path": "/c3a/healthz"
+          "path": "/_matrix/client/versions"
+        }
+      },
+      "alerts-api": {
+        "name": "alerts-api",
+        "vm": "oci-E2-f_1",
+        "domain": null,
+        "enabled": true,
+        "category": "tools",
+        "ports": null,
+        "health": null
+      },
+      "languagetool": {
+        "name": "languagetool",
+        "vm": "oci-A1-f_0",
+        "domain": "languagetool.diegonmarcos.com",
+        "enabled": true,
+        "category": "tools",
+        "ports": {
+          "app": 8010
+        },
+        "health": {
+          "path": "/v2/check"
         }
       },
       "c3-diego-personal-data-mcp": {
@@ -2245,7 +2252,7 @@
       },
       "cloud-builder-x": {
         "name": "cloud-builder-x",
-        "vm": "oci-A1-f_0",
+        "vm": "local",
         "domain": null,
         "enabled": true,
         "category": "tools",
@@ -2354,6 +2361,17 @@
         },
         "health": null
       },
+      "unbound-dns64": {
+        "name": "unbound-dns64",
+        "vm": "oci-E2-f_1",
+        "domain": "dns64.internal",
+        "enabled": true,
+        "category": "infra-net",
+        "ports": {
+          "dns": 53
+        },
+        "health": null
+      },
       "wireguard-mesh": {
         "name": "wireguard-mesh",
         "vm": "oci-A1-f_0",
@@ -2444,7 +2462,8 @@
         "enabled": true,
         "category": "tools",
         "ports": {
-          "app": 8090
+          "app": 8090,
+          "rss_gateway": 8091
         },
         "health": {
           "path": "/"
@@ -2581,6 +2600,18 @@
         "ports": null,
         "health": null
       },
+      "hermes-agent": {
+        "name": "hermes-agent",
+        "vm": "oci-A1-f_0",
+        "domain": null,
+        "enabled": true,
+        "category": "agi",
+        "ports": {
+          "api": 8642,
+          "dashboard": 9119
+        },
+        "health": null
+      },
       "kg-store": {
         "name": "kg-store",
         "vm": "oci-A1-f_0",
@@ -2592,60 +2623,22 @@
         },
         "health": null
       },
-      "ollama": {
-        "name": "ollama",
-        "vm": "gcp-t4",
-        "domain": null,
-        "enabled": true,
-        "category": "agi",
-        "ports": {
-          "app": 11434
-        },
-        "health": null
-      },
-      "ollama-arm": {
-        "name": "ollama-arm",
-        "vm": "oci-apps-2",
-        "domain": null,
-        "enabled": true,
-        "category": "agi",
-        "ports": {
-          "app": 11434
-        },
-        "health": null
-      },
-      "ollama-hai": {
-        "name": "ollama-hai",
-        "vm": "oci-A1-f_0",
-        "domain": null,
-        "enabled": false,
-        "category": "agi",
-        "ports": {
-          "app": 11435
-        },
-        "health": null
-      },
-      "rig-agentic-hai-1.5bq4": {
-        "name": "rig-agentic-hai-1.5bq4",
-        "vm": "oci-A1-f_0",
-        "domain": null,
-        "enabled": false,
-        "category": "agi",
-        "ports": {
-          "app": 8091
-        },
-        "health": null
-      },
-      "rig-agentic-sonn-14bq8": {
-        "name": "rig-agentic-sonn-14bq8",
+      "my-ai-api": {
+        "name": "my-ai-api",
         "vm": "oci-A1-f_0",
         "domain": null,
         "enabled": true,
         "category": "agi",
         "ports": {
-          "app": 8091
+          "app": 3217,
+          "ollama": 12436,
+          "headroom": 8890,
+          "goosed": 3227,
+          "_goosed_doc": "goosed = goose agent ACP/REST+SSE server (goose serve, X-Secret-Key auth, WireGuard-only)"
         },
-        "health": null
+        "health": {
+          "path": "/health"
+        }
       },
       "session-memory": {
         "name": "session-memory",
@@ -2674,19 +2667,6 @@
           "path": "/api/v4/system/ping"
         }
       },
-      "cypht": {
-        "name": "cypht",
-        "vm": "oci-E2-f_0",
-        "domain": "webmail.diegonmarcos.com",
-        "enabled": true,
-        "category": "app",
-        "ports": {
-          "app": 8889
-        },
-        "health": {
-          "path": "/"
-        }
-      },
       "mail-puller": {
         "name": "mail-puller",
         "vm": "oci-E2-f_0",
@@ -2698,19 +2678,6 @@
         },
         "health": {
           "path": null
-        }
-      },
-      "matrix-continuwuity": {
-        "name": "matrix-continuwuity",
-        "vm": "oci-A1-f_0",
-        "domain": "matrix.diegonmarcos.com",
-        "enabled": true,
-        "category": "app",
-        "ports": {
-          "app": 8008
-        },
-        "health": {
-          "path": "/_matrix/client/versions"
         }
       },
       "matrix-element": {
@@ -2776,22 +2743,17 @@
           "path": "/"
         }
       },
-      "crawlee-cloud": {
-        "name": "crawlee-cloud",
+      "scrappers-api": {
+        "name": "scrappers-api",
         "vm": "oci-A1-f_0",
         "domain": "api.diegonmarcos.com",
         "enabled": true,
-        "category": "fin",
+        "category": "data",
         "ports": {
-          "app": 3000,
-          "dashboard": 3001,
-          "db": 5434,
-          "redis": 6381,
-          "minio": 9000,
-          "minio_console": 9001
+          "app": 3020
         },
         "health": {
-          "path": "/"
+          "path": "/health"
         }
       },
       "fin-api": {
@@ -2818,6 +2780,19 @@
         },
         "health": {
           "path": "/api/v1/status"
+        }
+      },
+      "playlist-syncer": {
+        "name": "playlist-syncer",
+        "vm": "oci-A1-f_0",
+        "domain": "playlist.diegonmarcos.com",
+        "enabled": true,
+        "category": "app",
+        "ports": {
+          "app": 8090
+        },
+        "health": {
+          "path": "/api/health"
         }
       },
       "news-gdelt": {
@@ -2953,6 +2928,19 @@
         },
         "health": null
       },
+      "send": {
+        "name": "send",
+        "vm": "oci-A1-f_0",
+        "domain": "send.diegonmarcos.com",
+        "enabled": true,
+        "category": "app",
+        "ports": {
+          "app": 3016
+        },
+        "health": {
+          "path": "/__lbheartbeat__"
+        }
+      },
       "vaultwarden": {
         "name": "vaultwarden",
         "vm": "oci-A1-f_0",
@@ -3028,12 +3016,12 @@
     "email": {
       "smtp": {
         "host": "10.0.0.3",
-        "port": 465,
+        "port": 2465,
         "username": "no-reply@diegonmarcos.com"
       },
       "imap": {
         "host": "10.0.0.3",
-        "port": 993,
+        "port": 2993,
         "username": "me@diegonmarcos.com"
       },
       "timeout_secs": 180,
@@ -3162,7 +3150,7 @@
       "(^|/)vault/",
       "(^|/)I_cloud-data/",
       "(^|/)II_tools/",
-      "(^|/)III_unix/",
+      "(^|/)II_Unix/",
       "(^|/)dist/\\.secrets(\\.d)?(/|$)",
       "(^|/)\\.gitmodules$",
       "(^|/)target/",
@@ -3720,9 +3708,90 @@
       "connections.txt"
     ]
   },
+  "runtime_allowlist": {
+    "_comment": "Data-driven allowlist for sec-data's runtime container-capability checks (runtime.rs). Every entry is a narrowly-scoped exception -- (vm, container, category) -- for a capability that is genuinely required and already minimized (e.g. cap_add:[SYS_ADMIN] instead of privileged:true). Anything NOT listed here still reports at its normal severity. Downgrades to Info, never silently dropped, so a future accidental widening (e.g. someone adding privileged:true) is still caught.",
+    "entries": [
+      {
+        "vm": "oci-apps",
+        "container": "photoprism_rclone",
+        "category": "cap_sys_admin",
+        "reason": "rclone mount --allow-other needs cap_add:SYS_ADMIN for the FUSE mount() syscall (fusermount3 is a setuid-root helper); privileged:true was removed 2026-07-03 in favor of this narrower grant -- see a_solutions/user-media_photoprism/src/compose.nix."
+      }
+    ]
+  },
+  "resolvers": {
+    "_comment": "R2: DNS resolvers used by the reports engine, data-driven so they are never hardcoded in checks.rs. `hickory` is the WireGuard-internal DNS hub (gcp-proxy). `public`/`google` are internet anycast constants used to cross-check public resolution — kept here so an operator can repoint them (e.g. to Quad9) without a Rust rebuild. Ports default to 53. reports-common/checks.rs reads this via build-reports.json:.resolvers.",
+    "hickory": {
+      "_comment": "Internal WG DNS (Hickory) hub. `vm` names the consolidated VM whose wg_ip is the resolver address — resolved at runtime so an IP change in topology propagates automatically. `ip` is a static fallback used only if the consolidated lookup fails.",
+      "vm": "gcp-E2-f_0",
+      "ip": "10.0.0.1",
+      "port": 53
+    },
+    "public": {
+      "_comment": "Cloudflare public anycast — internet constant, repointable here.",
+      "ip": "1.1.1.1",
+      "port": 53
+    },
+    "google": {
+      "_comment": "Google public anycast — internet constant, repointable here.",
+      "ip": "8.8.8.8",
+      "port": 53
+    }
+  },
+  "tiers": {
+    "_comment": "Phase 1: tiered scan cadence + check-list, data-driven. reports-common Tier enum + --tier CLI flag read this via build-reports.json:.tiers. `interval_secs` is the target cadence; `max_age_secs` is the staleness budget the renderer uses to mark a report STALE (R1) — usually a small multiple of the interval to tolerate one missed run. `checks[]` names the check groups a tier runs; the crate maps names to collectors. Cheaper tiers run more often; deeper tiers run rarely and only off the 1GB VMs.",
+    "t0": {
+      "_comment": "Heartbeat — island liveness only. Cheapest: 1 TCP + 1 UDP per host. On-VM (health-agent), pushed to health_mesh.",
+      "interval_secs": 30,
+      "max_age_secs": 120,
+      "checks": [
+        "mesh",
+        "dropbear",
+        "ssh"
+      ]
+    },
+    "t1": {
+      "_comment": "Probe — public surface. No SSH. Runs on edge / GHA.",
+      "interval_secs": 120,
+      "max_age_secs": 600,
+      "checks": [
+        "urls",
+        "ports",
+        "tls",
+        "dns"
+      ]
+    },
+    "t2": {
+      "_comment": "Deep — SSH into VMs for host/container metrics. GHA over WG.",
+      "interval_secs": 900,
+      "max_age_secs": 2700,
+      "checks": [
+        "ssh",
+        "containers",
+        "psi",
+        "disk",
+        "fd",
+        "cert_san"
+      ]
+    },
+    "t3": {
+      "_comment": "Forensic — heavy log-mining + audits + scanners. Daily. GHA / oci-apps builder only, NEVER on 1GB VMs.",
+      "interval_secs": 86400,
+      "max_age_secs": 172800,
+      "checks": [
+        "logmine",
+        "caddy_audit",
+        "mesh_audit",
+        "cve",
+        "yara",
+        "secrets",
+        "backup_age"
+      ]
+    }
+  },
   "_meta": {
     "generated_at": "",
-    "generated_by": "9_others/src/engine/cloud-data-config-derive.ts",
+    "generated_by": "1_cloud-configs/src/derive/cloud-data-config-derive.ts",
     "pipeline": {
       "description": "Two-stage build: consolidator merges all build.json + config.json sources into the master file; derive emits per-container + archived split files from the master.",
       "source_inputs": [
@@ -3732,13 +3801,13 @@
         "vault/secrets.yaml (sops-encrypted secrets per service, key names extracted)"
       ],
       "engines": {
-        "consolidator": "9_others/src/engine/cloud-data-config-consolidated.ts",
-        "derive": "9_others/src/engine/cloud-data-config-derive.ts (THIS engine)"
+        "consolidator": "1_cloud-configs/src/derive/cloud-data-config-consolidated.ts",
+        "derive": "1_cloud-configs/src/derive/cloud-data-config-derive.ts (THIS engine)"
       },
       "outputs": {
         "master": "1_cloud-configs/dist/_cloud-data-consolidated.json (consolidator output)",
         "per_container": "1_cloud-configs/dist/build-{container_or_service_name}.json (one per container, plus one per container-less service — derive output)",
-        "archived": "1_cicd/dist/z_archive/cloud-data-{slice}.json (deprecated split files — kept for soft-transition fallbacks; consumers should read consolidated instead)"
+        "archived": "1_cloud-configs/dist/z_archive/cloud-data-{slice}.json (deprecated split files — kept for soft-transition fallbacks; consumers should read consolidated instead)"
       },
       "rebuild_command": "bash 9_others/build.sh all"
     }

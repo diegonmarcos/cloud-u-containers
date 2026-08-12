@@ -204,7 +204,7 @@
       {
         "name": "oci-mail",
         "wg_ip": "10.0.0.3",
-        "wg_public_key": null,
+        "wg_public_key": "8Fqo4ct/jR2D3ZJ4AT8AVxiemuRSFk9LriBJhK7ukQs=",
         "endpoint": "130.110.251.193:51820",
         "role": "spoke",
         "wg_ipv6": "fd0c:1d00::3"
@@ -212,7 +212,7 @@
       {
         "name": "oci-analytics",
         "wg_ip": "10.0.0.4",
-        "wg_public_key": null,
+        "wg_public_key": "ugc3YpOgw9DokiM8yqT0uADF8UUkSTGad9WSODX1kC0=",
         "endpoint": "129.151.228.66:51820",
         "role": "spoke",
         "wg_ipv6": "fd0c:1d00::4"
@@ -220,7 +220,7 @@
       {
         "name": "oci-apps",
         "wg_ip": "10.0.0.6",
-        "wg_public_key": null,
+        "wg_public_key": "+LHoOzNYA92eJalYEQDzbEDDEi0FfT2jYhBUpz7RxHQ=",
         "endpoint": "82.70.229.129:51820",
         "role": "spoke",
         "wg_ipv6": "fd0c:1d00::6"
@@ -228,7 +228,7 @@
       {
         "name": "gcp-proxy",
         "wg_ip": "10.0.0.1",
-        "wg_public_key": null,
+        "wg_public_key": "vV/phXUwnCjxACQ5Df11Uw47BzJaK4r85jPYMu2HmDc=",
         "endpoint": "35.226.147.64:51820",
         "role": "hub",
         "wg_ipv6": "fd0c:1d00::1"
@@ -274,7 +274,7 @@
         "wg_ipv6": "fd0c:1d01::1",
         "role": "hub",
         "endpoint": "129.151.228.66:51821",
-        "wg_public_key": null
+        "wg_public_key": "Bnyf83VpvGY4BjcjQEXgutNEzx9OXMltHIcKNh7cKkc="
       },
       {
         "name": "gcp-proxy",
@@ -282,7 +282,7 @@
         "wg_ipv6": "fd0c:1d01::2",
         "role": "spoke",
         "endpoint": "35.226.147.64:51821",
-        "wg_public_key": null
+        "wg_public_key": "jkGSUNImyWXEx4PB9hfTvIsG8ui4PnvWakBhAB7WSj4="
       },
       {
         "name": "oci-mail",
@@ -290,7 +290,7 @@
         "wg_ipv6": "fd0c:1d01::3",
         "role": "spoke",
         "endpoint": "130.110.251.193:51821",
-        "wg_public_key": null
+        "wg_public_key": "kt9Hy6EZtwiR3mx1GiQiARfHUjsszkAI75AYvjMQaiY="
       },
       {
         "name": "oci-apps",
@@ -298,7 +298,7 @@
         "wg_ipv6": "fd0c:1d01::4",
         "role": "spoke",
         "endpoint": "82.70.229.129:51821",
-        "wg_public_key": null
+        "wg_public_key": "Z54BMXtL7Wb9HiSePnK8hFTecX2q3Sui1OpWmn+IxAY="
       }
     ],
     "clients": {
@@ -348,7 +348,7 @@
       "description": "Oracle Free - E2 Micro 0 - Mail Server",
       "wg_ip": "10.0.0.3",
       "wg_ipv6": "fd0c:1d00::3",
-      "wg_public_key": null,
+      "wg_public_key": "8Fqo4ct/jR2D3ZJ4AT8AVxiemuRSFk9LriBJhK7ukQs=",
       "wg_port": 51820,
       "wg_role": "spoke",
       "user": "ubuntu",
@@ -386,7 +386,7 @@
       "description": "Oracle Free - E2 Micro 1 - Analytics + Workflows",
       "wg_ip": "10.0.0.4",
       "wg_ipv6": "fd0c:1d00::4",
-      "wg_public_key": null,
+      "wg_public_key": "ugc3YpOgw9DokiM8yqT0uADF8UUkSTGad9WSODX1kC0=",
       "wg_port": 51820,
       "wg_role": "spoke",
       "user": "ubuntu",
@@ -440,7 +440,7 @@
       "description": "Oracle Free - A1 Flex 0 (4 OCPUs / 24GB / 100GB) — Consolidated",
       "wg_ip": "10.0.0.6",
       "wg_ipv6": "fd0c:1d00::6",
-      "wg_public_key": null,
+      "wg_public_key": "+LHoOzNYA92eJalYEQDzbEDDEi0FfT2jYhBUpz7RxHQ=",
       "wg_port": 51820,
       "wg_role": "spoke",
       "user": "ubuntu",
@@ -519,7 +519,7 @@
       "description": "GCloud Free - E2 Micro 0 - Central Proxy + Control",
       "wg_ip": "10.0.0.1",
       "wg_ipv6": "fd0c:1d00::1",
-      "wg_public_key": null,
+      "wg_public_key": "vV/phXUwnCjxACQ5Df11Uw47BzJaK4r85jPYMu2HmDc=",
       "wg_port": 51820,
       "wg_role": "hub",
       "user": "diego",
@@ -1071,7 +1071,8 @@
           "type": "path",
           "parent_domain": "mcp.diegonmarcos.com",
           "base_path": "/c3-infra-mcp",
-          "wg_only": true
+          "wg_only": true,
+          "bearer_auth": true
         }
       },
       "declared_ports": {
@@ -1138,7 +1139,8 @@
         "OCI_API_KEY_PEM_B64",
         "AWS_ACCESS_KEY_ID",
         "AWS_SECRET_ACCESS_KEY",
-        "AWS_DEFAULT_REGION"
+        "AWS_DEFAULT_REGION",
+        "C3_TELEGRAM_BOT_TOKEN"
       ]
     },
     "c3-public-api": {
@@ -2404,42 +2406,14 @@
           "cloud": {
             "upstream": "https://github.com/diegonmarcos/cloud.git"
           },
-          "unix": {
-            "upstream": "https://github.com/diegonmarcos/unix.git"
-          },
-          "cloud-master": {
-            "upstream": "https://github.com/diegonmarcos/cloud-master.git"
-          },
-          "diegonmarcos": {
-            "upstream": "https://github.com/diegonmarcos/diegonmarcos.git"
-          },
-          "cloud-data": {
-            "upstream": "https://github.com/diegonmarcos/cloud-data.git",
-            "private": true
-          },
           "diegonmarcos.github.io": {
             "upstream": "https://github.com/diegonmarcos/diegonmarcos.github.io.git"
           },
-          "notes": {
-            "upstream": "https://github.com/diegonmarcos/notes.git",
-            "private": true
+          "cloud-android": {
+            "upstream": "https://github.com/diegonmarcos/cloud-android.git"
           },
-          "cloud-data-lfs": {
-            "upstream": "https://github.com/diegonmarcos/cloud-data-lfs.git",
-            "private": true
-          },
-          "front-data": {
-            "upstream": "https://github.com/diegonmarcos/front-data.git"
-          },
-          "front-assets-cdn": {
-            "upstream": "https://github.com/diegonmarcos/front-assets-cdn.git"
-          },
-          "vault": {
-            "upstream": "https://github.com/diegonmarcos/vault.git",
-            "private": true
-          },
-          "tools": {
-            "upstream": "https://github.com/diegonmarcos/tools.git"
+          "cloud-master": {
+            "upstream": "https://github.com/diegonmarcos/cloud-master.git"
           },
           "front-galaxy-gaia": {
             "upstream": "https://github.com/diegonmarcos/front-galaxy-gaia.git",
@@ -2449,8 +2423,36 @@
             "upstream": "https://github.com/diegonmarcos/front-asset-cdn.git",
             "private": true
           },
-          "cloud-android": {
-            "upstream": "https://github.com/diegonmarcos/cloud-android.git"
+          "front-assets-cdn": {
+            "upstream": "https://github.com/diegonmarcos/front-assets-cdn.git"
+          },
+          "front-data": {
+            "upstream": "https://github.com/diegonmarcos/front-data.git"
+          },
+          "cloud-data-lfs": {
+            "upstream": "https://github.com/diegonmarcos/cloud-data-lfs.git",
+            "private": true
+          },
+          "cloud-data": {
+            "upstream": "https://github.com/diegonmarcos/cloud-data.git",
+            "private": true
+          },
+          "vault": {
+            "upstream": "https://github.com/diegonmarcos/vault.git",
+            "private": true
+          },
+          "tools": {
+            "upstream": "https://github.com/diegonmarcos/tools.git"
+          },
+          "unix": {
+            "upstream": "https://github.com/diegonmarcos/unix.git"
+          },
+          "diegonmarcos": {
+            "upstream": "https://github.com/diegonmarcos/diegonmarcos.git"
+          },
+          "notes": {
+            "upstream": "https://github.com/diegonmarcos/notes.git",
+            "private": true
           },
           "back-System": {
             "upstream": "https://github.com/diegonmarcos/back-System.git"
@@ -5090,6 +5092,8 @@
       "health": {
         "path": "/health"
       },
+      "_upstream_image_doc": "Top-level upstream_image marks this as a Type-B vendored-Dockerfile build: the ship engine builds src/code/Dockerfile (staged to dist/code/arm64/) natively on the arm64 cloud-builder. It is NOT injected as a FROM-override build-arg — it only selects BUILD_CONTEXT=dist/code/arch. The real multi-stage Dockerfile (builder compiles the Headroom sidecar, runtime installs node) is preserved. The old docker.native_build:image-wrapper was WRONG: image-wrapper with no cmd made the native block skip AND blocked Type-B auto-detect, so CI silently built nothing and only recreated the stale image.",
+      "upstream_image": "python:3.13-slim",
       "runtime": {
         "model": "claude-sonnet-4-6",
         "_model_aliases_comment": "requested-id → real `claude --model` id. Callers pick a cheaper tier per request (cgc octocode indexing asks for claude-haiku); unknown/absent ids fall back to `model`.",
@@ -5254,7 +5258,7 @@
             "text_embedding_model": "fastembed:nomic-ai/nomic-embed-text-v1.5"
           },
           "llm": {
-            "_comment": "octocode GraphRAG LLM -> my-ai-api (OpenRouter-backed, port 3217). openai:* reads OPENAI_API_URL -> my-ai-api /v1 (3217); ollama:* reads OLLAMA_API_URL -> my-ai-api Ollama mimic (12436). Both faces route to OpenRouter; api_key is passed through and must match OPENROUTER_API_KEY in the container (my-ai-api src/secrets.yaml). Model: deepseek/deepseek-v4-pro — 80.6% SWE-bench, 1M ctx, $0.44/$0.87.",
+            "_comment": "octocode GraphRAG LLM -> my-ai-api (OpenRouter-backed, port 3217). openai:* reads OPENAI_API_URL -> my-ai-api /v1 (3217); ollama:* reads OLLAMA_API_URL -> my-ai-api Ollama mimic (12436). Both faces route to OpenRouter; api_key is passed through and must match OPENROUTER_API_KEY in the container (my-ai-api src/secrets.yaml). my-ai-api's default model is deepseek/deepseek-v4-flash-0731, but that default does not apply here: llm_model below names the slug this service sends, and my-ai-api falls back to its default only when the caller sends none.",
             "openai_api_url": "http://10.0.0.6:3217/v1/chat/completions",
             "ollama_api_url": "http://10.0.0.6:12436",
             "api_key": "sk-dummy",
@@ -5414,7 +5418,7 @@
         "dashboard": 9119
       },
       "runtime": {
-        "model": "deepseek/deepseek-v4-pro",
+        "model": "deepseek/deepseek-v4-flash-0731",
         "backend_url": "https://openrouter.ai/api/v1",
         "api_mode": "chat_completions"
       },
@@ -5668,7 +5672,7 @@
       "_upstream_image_doc": "Top-level upstream_image marks this as a Type-B vendored-Dockerfile build: the ship engine builds src/code/Dockerfile (staged to dist/code/arm64/) natively on the arm64 cloud-builder. It is NOT injected as a FROM-override build-arg — it only selects BUILD_CONTEXT=dist/code/arch. The real multi-stage Dockerfile (builder compiles Headroom, runtime installs node) is preserved. The old docker.native_build:image-wrapper was WRONG: image-wrapper with no cmd made the native block skip AND blocked Type-B auto-detect, so CI silently built nothing and only recreated the stale image.",
       "upstream_image": "python:3.13-slim",
       "runtime": {
-        "model": "deepseek/deepseek-v4-pro",
+        "model": "deepseek/deepseek-v4-flash-0731",
         "_model_aliases_comment": "requested-id → OpenRouter slug. Callers pick a model per request; unknown/absent ids fall back to `model` (passthrough also works — OpenRouter accepts arbitrary slugs, so goose can send any OpenRouter model id directly). No Claude aliases here: this stack does not route Claude.",
         "model_aliases": {
           "glm": "z-ai/glm-5",

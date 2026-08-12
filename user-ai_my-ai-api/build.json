@@ -37,7 +37,7 @@
     "app_hub": false
   },
   "runtime": {
-    "model": "deepseek/deepseek-v4-pro",
+    "model": "deepseek/deepseek-v4-flash-0731",
     "_model_aliases_comment": "requested-id → OpenRouter slug. Callers pick a model per request; unknown/absent ids fall back to `model` (passthrough also works — OpenRouter accepts arbitrary slugs, so goose can send any OpenRouter model id directly). No Claude aliases here: this stack does not route Claude.",
     "model_aliases": {
       "glm": "z-ai/glm-5",

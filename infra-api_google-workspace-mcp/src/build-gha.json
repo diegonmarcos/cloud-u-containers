@@ -4,7 +4,7 @@
     "description": "GHA ship-system config (vms + services dispatch matrix)",
     "format_version": 1,
     "generated_at": "",
-    "generated_by": "9_others/src/engine/cloud-data-config-derive.ts",
+    "generated_by": "1_cloud-configs/src/derive/cloud-data-config-derive.ts",
     "pipeline": {
       "description": "Two-stage build: consolidator merges all build.json + config.json sources into the master file; derive emits per-container + archived split files from the master.",
       "source_inputs": [
@@ -14,13 +14,13 @@
         "vault/secrets.yaml (sops-encrypted secrets per service, key names extracted)"
       ],
       "engines": {
-        "consolidator": "9_others/src/engine/cloud-data-config-consolidated.ts",
-        "derive": "9_others/src/engine/cloud-data-config-derive.ts (THIS engine)"
+        "consolidator": "1_cloud-configs/src/derive/cloud-data-config-consolidated.ts",
+        "derive": "1_cloud-configs/src/derive/cloud-data-config-derive.ts (THIS engine)"
       },
       "outputs": {
         "master": "1_cloud-configs/dist/_cloud-data-consolidated.json (consolidator output)",
         "per_container": "1_cloud-configs/dist/build-{container_or_service_name}.json (one per container, plus one per container-less service — derive output)",
-        "archived": "1_cicd/dist/z_archive/cloud-data-{slice}.json (deprecated split files — kept for soft-transition fallbacks; consumers should read consolidated instead)"
+        "archived": "1_cloud-configs/dist/z_archive/cloud-data-{slice}.json (deprecated split files — kept for soft-transition fallbacks; consumers should read consolidated instead)"
       },
       "rebuild_command": "bash 9_others/build.sh all"
     }
@@ -55,10 +55,20 @@
     }
   },
   "services": {
-    "c3-analytics-api": {
-      "dir": "infra-api_c3-analytics-api",
-      "vm": "gcp-proxy",
+    "matrix-continuwuity": {
+      "dir": "user-comm_matrix-continuwuity",
+      "vm": "oci-apps",
       "has_docker": true
+    },
+    "alerts-api": {
+      "dir": "bc-obs_alerts-api",
+      "vm": "oci-analytics",
+      "has_docker": true
+    },
+    "languagetool": {
+      "dir": "infra-ai_languagetool",
+      "vm": "oci-apps",
+      "has_docker": false
     },
     "c3-infra-api": {
       "dir": "infra-api_c3-infra-api",
@@ -110,11 +120,6 @@
       "vm": "gcp-proxy",
       "has_docker": true
     },
-    "cloud-builder-x": {
-      "dir": "infra-bld_cloud-builder-x",
-      "vm": "oci-apps",
-      "has_docker": true
-    },
     "gha-runner": {
       "dir": "infra-bld_gha-runner",
       "vm": "oci-apps",
@@ -148,6 +153,11 @@
     "hickory-dns": {
       "dir": "infra-net_hickory-dns",
       "vm": "gcp-proxy",
+      "has_docker": true
+    },
+    "unbound-dns64": {
+      "dir": "infra-net_unbound-dns64",
+      "vm": "oci-analytics",
       "has_docker": true
     },
     "wireguard-mesh": {
@@ -230,28 +240,18 @@
       "vm": "oci-apps",
       "has_docker": true
     },
+    "hermes-agent": {
+      "dir": "user-ai_hermes-agent",
+      "vm": "oci-apps",
+      "has_docker": true
+    },
     "kg-store": {
       "dir": "user-ai_kg-store",
       "vm": "oci-apps",
       "has_docker": true
     },
-    "ollama": {
-      "dir": "user-ai_ollama",
-      "vm": "gcp-t4",
-      "has_docker": true
-    },
-    "ollama-hai": {
-      "dir": "user-ai_ollama-hai",
-      "vm": "oci-apps",
-      "has_docker": true
-    },
-    "rig-agentic-hai-1.5bq4": {
-      "dir": "user-ai_rig-agentic-hai-1.5bq4",
-      "vm": "oci-apps",
-      "has_docker": true
-    },
-    "rig-agentic-sonn-14bq8": {
-      "dir": "user-ai_rig-agentic-sonn-14bq8",
+    "my-ai-api": {
+      "dir": "user-ai_my-ai-api",
       "vm": "oci-apps",
       "has_docker": true
     },
@@ -265,19 +265,9 @@
       "vm": "oci-apps",
       "has_docker": true
     },
-    "cypht": {
-      "dir": "user-comm_cypht",
-      "vm": "oci-mail",
-      "has_docker": true
-    },
     "mail-puller": {
       "dir": "user-comm_mail-puller",
       "vm": "oci-mail",
-      "has_docker": true
-    },
-    "matrix-continuwuity": {
-      "dir": "user-comm_matrix-continuwuity",
-      "vm": "oci-apps",
       "has_docker": true
     },
     "matrix-element": {
@@ -305,8 +295,8 @@
       "vm": "oci-mail",
       "has_docker": true
     },
-    "crawlee-cloud": {
-      "dir": "user-fin_crawlee-cloud",
+    "scrappers-api": {
+      "dir": "user-data_scrappers-api",
       "vm": "oci-apps",
       "has_docker": true
     },
@@ -317,6 +307,11 @@
     },
     "photoprism": {
       "dir": "user-media_photoprism",
+      "vm": "oci-apps",
+      "has_docker": true
+    },
+    "playlist-syncer": {
+      "dir": "user-media_playlist-syncer",
       "vm": "oci-apps",
       "has_docker": true
     },
@@ -367,6 +362,11 @@
     },
     "revealmd": {
       "dir": "user-prod_revealmd",
+      "vm": "oci-apps",
+      "has_docker": true
+    },
+    "send": {
+      "dir": "user-prod_send",
       "vm": "oci-apps",
       "has_docker": true
     },

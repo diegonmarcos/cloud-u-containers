@@ -526,7 +526,8 @@
         {
           "base_path": "/c3-infra-mcp",
           "upstream": "10.0.0.6:3100",
-          "wg_only": true
+          "wg_only": true,
+          "bearer_auth": true
         },
         {
           "base_path": "/c3-services-mcp",

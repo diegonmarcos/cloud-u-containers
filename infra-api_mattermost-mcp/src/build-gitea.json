@@ -1631,42 +1631,14 @@
       "cloud": {
         "upstream": "https://github.com/diegonmarcos/cloud.git"
       },
-      "unix": {
-        "upstream": "https://github.com/diegonmarcos/unix.git"
-      },
-      "cloud-master": {
-        "upstream": "https://github.com/diegonmarcos/cloud-master.git"
-      },
-      "diegonmarcos": {
-        "upstream": "https://github.com/diegonmarcos/diegonmarcos.git"
-      },
-      "cloud-data": {
-        "upstream": "https://github.com/diegonmarcos/cloud-data.git",
-        "private": true
-      },
       "diegonmarcos.github.io": {
         "upstream": "https://github.com/diegonmarcos/diegonmarcos.github.io.git"
       },
-      "notes": {
-        "upstream": "https://github.com/diegonmarcos/notes.git",
-        "private": true
+      "cloud-android": {
+        "upstream": "https://github.com/diegonmarcos/cloud-android.git"
       },
-      "cloud-data-lfs": {
-        "upstream": "https://github.com/diegonmarcos/cloud-data-lfs.git",
-        "private": true
-      },
-      "front-data": {
-        "upstream": "https://github.com/diegonmarcos/front-data.git"
-      },
-      "front-assets-cdn": {
-        "upstream": "https://github.com/diegonmarcos/front-assets-cdn.git"
-      },
-      "vault": {
-        "upstream": "https://github.com/diegonmarcos/vault.git",
-        "private": true
-      },
-      "tools": {
-        "upstream": "https://github.com/diegonmarcos/tools.git"
+      "cloud-master": {
+        "upstream": "https://github.com/diegonmarcos/cloud-master.git"
       },
       "front-galaxy-gaia": {
         "upstream": "https://github.com/diegonmarcos/front-galaxy-gaia.git",
@@ -1676,8 +1648,36 @@
         "upstream": "https://github.com/diegonmarcos/front-asset-cdn.git",
         "private": true
       },
-      "cloud-android": {
-        "upstream": "https://github.com/diegonmarcos/cloud-android.git"
+      "front-assets-cdn": {
+        "upstream": "https://github.com/diegonmarcos/front-assets-cdn.git"
+      },
+      "front-data": {
+        "upstream": "https://github.com/diegonmarcos/front-data.git"
+      },
+      "cloud-data-lfs": {
+        "upstream": "https://github.com/diegonmarcos/cloud-data-lfs.git",
+        "private": true
+      },
+      "cloud-data": {
+        "upstream": "https://github.com/diegonmarcos/cloud-data.git",
+        "private": true
+      },
+      "vault": {
+        "upstream": "https://github.com/diegonmarcos/vault.git",
+        "private": true
+      },
+      "tools": {
+        "upstream": "https://github.com/diegonmarcos/tools.git"
+      },
+      "unix": {
+        "upstream": "https://github.com/diegonmarcos/unix.git"
+      },
+      "diegonmarcos": {
+        "upstream": "https://github.com/diegonmarcos/diegonmarcos.git"
+      },
+      "notes": {
+        "upstream": "https://github.com/diegonmarcos/notes.git",
+        "private": true
       },
       "back-System": {
         "upstream": "https://github.com/diegonmarcos/back-System.git"
