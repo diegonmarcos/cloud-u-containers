@@ -309,4 +309,92 @@ export function registerDeliveryTools(server: McpServer) {
       };
     }
   );
+
+  // ── GitHub Actions secrets (3 tools) ──
+  // These are the *GHA* secrets a workflow reads via ${{ secrets.NAME }} — a
+  // different store from the sops-encrypted service secrets that
+  // devops.build.secrets_status reports on. Both are called "secrets"; they
+  // never mix.
+
+  server.tool(
+    "devops.secrets.list",
+    "List GitHub Actions secret NAMES for a repo (values are never retrievable — GitHub stores them write-only).",
+    {
+      repo: z.string().describe("owner/repo, e.g. diegonmarcos/unix"),
+    },
+    async ({ repo }) => {
+      for (const part of repo.split("/")) validatePath(part);
+
+      const result = exec("gh", ["secret", "list", "--repo", repo], { timeout: 30_000 });
+
+      return {
+        content: [{
+          type: "text" as const,
+          text: result.ok
+            ? `GHA secrets in ${repo}:\n${result.stdout.trim() || "(none)"}`
+            : `Failed to list secrets in ${repo} (exit ${result.exitCode})\n${result.stderr.slice(-2000)}`,
+        }],
+        isError: !result.ok,
+      };
+    }
+  );
+
+  server.tool(
+    "devops.secrets.set",
+    "Create or update a GitHub Actions secret. Overwrites silently if the name already exists. The value is passed via stdin, never argv, so it cannot leak through the process table.",
+    {
+      repo: z.string().describe("owner/repo, e.g. diegonmarcos/unix"),
+      name: z.string().describe("Secret name, e.g. BITWARDEN_PACKAGES_TOKEN"),
+      value: z.string().describe("Secret value — written to stdin, not logged"),
+    },
+    async ({ repo, name, value }) => {
+      for (const part of repo.split("/")) validatePath(part);
+      validatePath(name);
+
+      // --body - reads the value from stdin. Passing it as an argv element would
+      // expose it to any process that can read /proc/<pid>/cmdline.
+      const result = exec("gh", ["secret", "set", name, "--repo", repo, "--body", "-"], {
+        timeout: 30_000,
+        input: value,
+      });
+      // Never audit the value itself — name + repo only.
+      audit("devops.secrets.set", `${repo}:${name}`, result.ok ? "OK" : `FAILED (exit ${result.exitCode})`);
+
+      return {
+        content: [{
+          type: "text" as const,
+          text: result.ok
+            ? `Set secret ${name} in ${repo}: SUCCESS`
+            : `Set secret ${name} in ${repo}: FAILED (exit ${result.exitCode})\n${result.stderr.slice(-2000)}`,
+        }],
+        isError: !result.ok,
+      };
+    }
+  );
+
+  server.tool(
+    "devops.secrets.delete",
+    "Delete a GitHub Actions secret. Irreversible — any workflow reading it starts resolving it to the empty string on the next run.",
+    {
+      repo: z.string().describe("owner/repo, e.g. diegonmarcos/unix"),
+      name: z.string().describe("Secret name to delete"),
+    },
+    async ({ repo, name }) => {
+      for (const part of repo.split("/")) validatePath(part);
+      validatePath(name);
+
+      const result = exec("gh", ["secret", "delete", name, "--repo", repo], { timeout: 30_000 });
+      audit("devops.secrets.delete", `${repo}:${name}`, result.ok ? "OK" : `FAILED (exit ${result.exitCode})`);
+
+      return {
+        content: [{
+          type: "text" as const,
+          text: result.ok
+            ? `Deleted secret ${name} from ${repo}`
+            : `Delete secret ${name} from ${repo}: FAILED (exit ${result.exitCode})\n${result.stderr.slice(-2000)}`,
+        }],
+        isError: !result.ok,
+      };
+    }
+  );
 }

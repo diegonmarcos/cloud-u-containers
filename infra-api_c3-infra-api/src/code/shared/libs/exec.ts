@@ -23,12 +23,15 @@ function resolveExecEnv(command: string): NodeJS.ProcessEnv {
 export function exec(
   command: string,
   args: string[],
-  options?: { timeout?: number; cwd?: string }
+  // `input` feeds the child's stdin. Use it for anything secret — an argv
+  // element is readable by any process that can stat /proc/<pid>/cmdline.
+  options?: { timeout?: number; cwd?: string; input?: string }
 ): ExecResult {
   const timeout = options?.timeout ?? 30_000;
   const result = spawnSync(command, args, {
     timeout,
     cwd: options?.cwd,
+    input: options?.input,
     encoding: "utf-8",
     env: resolveExecEnv(command),
     maxBuffer: 10 * 1024 * 1024,

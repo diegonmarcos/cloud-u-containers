@@ -114,8 +114,8 @@ async function ghaRuns24h(filter?: string): Promise<{ runs: GhaRun[]; error?: st
   }
 }
 
-async function ghaWorkflows(): Promise<{ id: number; name: string; state: string }[]> {
-  const r = await gh(["workflow", "list", "--repo", GH_REPO, "--json", "id,name,state", "--all"], 10_000);
+async function ghaWorkflows(repo: string = GH_REPO): Promise<{ id: number; name: string; state: string }[]> {
+  const r = await gh(["workflow", "list", "--repo", repo, "--json", "id,name,state", "--all"], 10_000);
   if (!r.ok) return [];
   try { return JSON.parse(r.stdout); } catch { return []; }
 }
@@ -297,17 +297,30 @@ async function workflowsGhaErrors(): Promise<string> {
 // TOOL: workflows_gha_trigger
 // ──────────────────────────────────────────────────────────────────────────────
 
-async function workflowsGhaTrigger(workflowName?: string): Promise<string> {
+async function workflowsGhaTrigger(
+  workflowName?: string,
+  inputs?: Record<string, string>,
+  repo: string = GH_REPO,
+  ref: string = "main",
+): Promise<string> {
   const sections: string[] = [];
 
+  // workflow_dispatch inputs are passed as repeated `-f key=value`. Without
+  // these a dispatch-only job guarded by `if: inputs.foo` can never fire — it
+  // silently resolves false and the job is skipped, so the run still reports
+  // green while doing nothing.
+  const inputArgs = Object.entries(inputs ?? {}).flatMap(([k, v]) => ["-f", `${k}=${v}`]);
+
   if (!workflowName || workflowName === "all") {
-    // Trigger all dispatchable workflows
-    const wfs = await ghaWorkflows();
+    // Trigger all dispatchable workflows. Inputs are deliberately NOT forwarded
+    // here — they are per-workflow and would be rejected by any workflow that
+    // does not declare them.
+    const wfs = await ghaWorkflows(repo);
     const active = wfs.filter((w) => w.state === "active");
-    sections.push(`Triggering ${active.length} active workflows...`);
+    sections.push(`Triggering ${active.length} active workflows in ${repo}...`);
     const results = await Promise.allSettled(
       active.map(async (wf) => {
-        const r = await gh(["workflow", "run", String(wf.id), "--repo", GH_REPO, "--ref", "main"], 10_000);
+        const r = await gh(["workflow", "run", String(wf.id), "--repo", repo, "--ref", ref], 10_000);
         return { name: wf.name, ok: r.ok, error: r.stderr.trim() };
       }),
     );
@@ -318,13 +331,14 @@ async function workflowsGhaTrigger(workflowName?: string): Promise<string> {
     }
   } else {
     // Trigger specific workflow
-    const wfs = await ghaWorkflows();
+    const wfs = await ghaWorkflows(repo);
     const match = wfs.find((w) => w.name === workflowName || w.name.includes(workflowName) || String(w.id) === workflowName);
     if (!match) {
-      return `Workflow not found: "${workflowName}"\nAvailable: ${wfs.map((w) => w.name).join(", ")}`;
+      return `Workflow not found in ${repo}: "${workflowName}"\nAvailable: ${wfs.map((w) => w.name).join(", ")}`;
     }
-    const r = await gh(["workflow", "run", String(match.id), "--repo", GH_REPO, "--ref", "main"], 10_000);
-    sections.push(r.ok ? `✓ Triggered: ${match.name}` : `✗ Failed: ${match.name} — ${r.stderr.trim()}`);
+    const r = await gh(["workflow", "run", String(match.id), "--repo", repo, "--ref", ref, ...inputArgs], 10_000);
+    const withInputs = inputArgs.length ? ` (${Object.entries(inputs ?? {}).map(([k, v]) => `${k}=${v}`).join(", ")})` : "";
+    sections.push(r.ok ? `✓ Triggered: ${match.name}${withInputs}` : `✗ Failed: ${match.name} — ${r.stderr.trim()}`);
   }
 
   return sections.join("\n");
@@ -486,16 +500,19 @@ export function registerWorkflowTools(server: McpServer): void {
 
   server.tool(
     "devops.workflows.gha_trigger",
-    "Trigger GHA workflow(s) on the GHA x86 runner (ubuntu-latest, ship.yml). This is the canonical build+deploy runner for cloud services. Specify workflow name or 'all' for all active workflows.",
+    "Trigger GHA workflow(s) on the GHA x86 runner (ubuntu-latest, ship.yml). This is the canonical build+deploy runner for cloud services. Specify workflow name or 'all' for all active workflows. Pass `inputs` to supply workflow_dispatch inputs, and `repo` to target a repo other than the default cloud one.",
     {
       workflow: z.string().optional().describe("Workflow name (partial match) or 'all'. Omit to list available."),
+      inputs: z.record(z.string()).optional().describe("workflow_dispatch inputs, e.g. {\"build_fork\":\"true\"}. Booleans must be the strings 'true'/'false'. Ignored when workflow is 'all'."),
+      repo: z.string().optional().describe("owner/repo to dispatch in (default: the cloud repo)"),
+      ref: z.string().optional().describe("Git ref to run on (default: main)"),
     },
-    ({ workflow }) => safeRun(async () => {
+    ({ workflow, inputs, repo, ref }) => safeRun(async () => {
       if (!workflow) {
-        const wfs = await ghaWorkflows();
-        return `Available workflows:\n${wfs.map((w) => `  ${w.state === "active" ? "✓" : "✗"} ${w.name} (id: ${w.id})`).join("\n")}`;
+        const wfs = await ghaWorkflows(repo);
+        return `Available workflows${repo ? ` in ${repo}` : ""}:\n${wfs.map((w) => `  ${w.state === "active" ? "✓" : "✗"} ${w.name} (id: ${w.id})`).join("\n")}`;
       }
-      return workflowsGhaTrigger(workflow);
+      return workflowsGhaTrigger(workflow, inputs, repo, ref);
     }),
   );
 
