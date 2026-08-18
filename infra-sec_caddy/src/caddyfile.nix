@@ -31,6 +31,15 @@ let
   wgBindIp = caddyRoutes.global.wg_bind_ip or "10.0.0.1";
   publicBindLine = "  bind 0.0.0.0 ${wgBindIp}";
 
+  # ── Mesh source CIDRs for every WG gate (@wg / @not_wg) ──
+  # Space-separated CIDR list; mirrors config.json wireguard.subnet +
+  # subnet_v6. MUST stay dual-stack: wg0 became dual-stack 2026-07-26 and
+  # Hickory answers both A and AAAA for *.diegonmarcos.com, so a client that
+  # prefers IPv6 (curl, Node, Claude Code's MCP client) arrives from
+  # fd0c:1d00::/64. While this gate was IPv4-only those clients matched
+  # neither @wg nor @bearer and got a bare 403 on every mesh-only route.
+  wgCidrs = caddyRoutes.global.wg_cidrs or "10.0.0.0/24 fd0c:1d00::/64";
+
   # ── Security snippets (data-driven from caddyRoutes.security_snippets) ──
   ss = caddyRoutes.security_snippets or {};
 
@@ -154,7 +163,7 @@ let
   #    handle`, same as mkSubdomainRoute's wgBlock). Used by mkNtfyBlock /
   #    mkProxyDashboardBlock.
   wgGateBody = isWg: body:
-    if isWg then ''@wg remote_ip 10.0.0.0/24
+    if isWg then ''@wg remote_ip ${wgCidrs}
         handle @wg {
           ${body}
         }
@@ -163,7 +172,7 @@ let
         }''
     else body;
   wgSiteLine = isWg:
-    if isWg then ''@not_wg not remote_ip 10.0.0.0/24
+    if isWg then ''@not_wg not remote_ip ${wgCidrs}
       respond @not_wg "Forbidden" 403''
     else "";
 
@@ -376,7 +385,7 @@ ${plainOut}${sniMuxBlock}
       else "";
 
       wgBlock = if isWgOnly then ''
-      @not_wg not remote_ip 10.0.0.0/24
+      @not_wg not remote_ip ${wgCidrs}
       respond @not_wg "Forbidden" 403'' else "";
 
       # Static JSON at GET / — used when the upstream's runtime response
@@ -610,7 +619,7 @@ ${plainOut}${sniMuxBlock}
           #
           # Each shape is a `handle` chain, never a bare matcher: handles are
           # source-order first-match-wins, so the deny cannot be reordered around.
-          bearerGate = ''@wg remote_ip 10.0.0.0/24
+          bearerGate = ''@wg remote_ip ${wgCidrs}
         handle @wg {
           ${proxyBody}
         }
@@ -622,7 +631,7 @@ ${bearer}
         handle {
           respond "Forbidden" 403
         }'';
-          wgGate = ''@wg remote_ip 10.0.0.0/24
+          wgGate = ''@wg remote_ip ${wgCidrs}
         handle @wg {
           ${proxyBody}
         }

@@ -28,7 +28,9 @@
       "order": "respond before handle",
       "auto_https": "disable_redirects",
       "_doc_wg_bind_ip": "Caddy's wg0 IP on gcp-proxy (10.0.0.1) — every public *.diegonmarcos.com site block dual-binds to (0.0.0.0, wg_bind_ip). Caddy lives on gcp-proxy (the public-facing VM); reverse-proxy upstreams to internal services traverse the wg0 mesh (10.0.0.x). Engine resolveVmIpForCaddy() still prefers wg-public IPs (10.1.0.x) when both endpoints are peers — gcp-proxy is a wg-public peer (10.1.0.2) so mail-side upstreams keep using wg-public transit.",
-      "wg_bind_ip": "10.0.0.1"
+      "wg_bind_ip": "10.0.0.1",
+      "_doc_wg_cidrs": "Source CIDRs that count as \"on the mesh\" for every wg_only / bearer gate caddyfile.nix emits (@wg, @not_wg). Mirrors config.json wireguard.subnet + wireguard.subnet_v6. The wg0 mesh went dual-stack on 2026-07-26 but this gate stayed IPv4-only, so any client resolving the AAAA record (fd0c:1d00::1 — Hickory serves both, and clients prefer IPv6) arrived from fd0c:1d00::/64, missed the matcher and got 403. Keep both families listed or mesh-only routes break for IPv6-capable peers. Space-separated: Caddy remote_ip takes a CIDR list.",
+      "wg_cidrs": "10.0.0.0/24 fd0c:1d00::/64"
     },
     "on_demand_tls": {
       "ask_bind": "127.0.0.1:2020",
