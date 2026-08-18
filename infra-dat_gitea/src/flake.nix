@@ -17,7 +17,7 @@
     giteaConfig   = buildJson.gitea;
     mirrorInterval = giteaConfig.mirror_interval;
     org           = giteaConfig.org;
-    mirrors       = giteaConfig.mirrors;
+    mirrors       = container.gitea.mirrors;
     mirrorNames   = builtins.attrNames mirrors;
     mirrorEntries = map (name: {
       inherit name;
