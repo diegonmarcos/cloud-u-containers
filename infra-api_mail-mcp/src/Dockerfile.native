@@ -20,5 +20,5 @@ RUN id -u appuser >/dev/null 2>&1 || useradd -r -m -u 10001 appuser
 USER appuser
 ENV HOME=/home/appuser
 
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
 CMD ["node","/app/node_modules/tsx/dist/cli.mjs","mcp/index.ts","--http"]

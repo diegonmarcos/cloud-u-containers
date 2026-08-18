@@ -2,8 +2,8 @@
 # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
 # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
 # ╠══════════════════════════════════════════════════════════════════╣
-# ║ Source: ~/git/cloud/a_solutions/ca-dat_postlite/src/flake.nix   ║
-# ║ Rebuild: ~/git/cloud/a_solutions/ca-dat_postlite/build.sh ship  ║
+# ║ Source: ~/git/cloud-infra/a_solutions/ca-dat_postlite/src/flake.nix   ║
+# ║ Rebuild: ~/git/cloud-infra/a_solutions/ca-dat_postlite/build.sh ship  ║
 # ╚══════════════════════════════════════════════════════════════════╝
 # SQLite REST API servers (ws4sqlite + postlite)
 # Deployed on: gcp-E2-f_0 (35.226.147.64)

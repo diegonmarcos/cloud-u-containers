@@ -27,7 +27,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
     CMD curl -f http://localhost:8087/health || exit 1
 
 COPY Dockerfile /opt/cloud-builder/Dockerfile
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
 LABEL org.opencontainers.image.dockerfile-path="a_solutions/bc-obs_c3-public-api/src/Dockerfile"
 
 ENTRYPOINT ["./entrypoint.sh"]

@@ -30,5 +30,5 @@ Before EVERY modification:
 | `docker compose up` on VM | `build.sh compose` |
 | `which cmd` | `command -v cmd` |
 | Edit `dist/` files | Edit `src/` + `build.sh build` |
-| Edit `~/.claude/CLAUDE.md` | Edit source in `~/git/unix/` flakes |
+| Edit `~/.claude/CLAUDE.md` | Edit source in `~/git/cloud-unix/` flakes |
 CHECKLIST

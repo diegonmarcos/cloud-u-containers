@@ -2,8 +2,8 @@
 # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
 # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
 # ╠══════════════════════════════════════════════════════════════════╣
-# ║ Source: ~/git/cloud/a_solutions/bc-obs_fluent-bit/src/flake.nix ║
-# ║ Rebuild: ~/git/cloud/a_solutions/bc-obs_fluent-bit/build.sh ship ║
+# ║ Source: ~/git/cloud-infra/a_solutions/bc-obs_fluent-bit/src/flake.nix ║
+# ║ Rebuild: ~/git/cloud-infra/a_solutions/bc-obs_fluent-bit/build.sh ship ║
 # ╚══════════════════════════════════════════════════════════════════╝
 services:
   fluent-bit:
@@ -13,7 +13,7 @@ services:
       dockerfile_inline: |
         FROM fluent/fluent-bit:latest
         COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
-        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
         LABEL org.opencontainers.image.description="fluent-bit"
         LABEL org.opencontainers.image.title="fluent-bit"
         LABEL cloud.diegonmarcos.from-image="fluent/fluent-bit:latest"

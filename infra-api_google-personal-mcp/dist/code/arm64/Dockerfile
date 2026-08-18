@@ -10,5 +10,5 @@
 FROM node:22-slim
 RUN apt-get update && apt-get install -y --no-install-recommends dnsutils ca-certificates && rm -rf /var/lib/apt/lists/*
 COPY index.ts --http /usr/local/bin/index.ts --http
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
 CMD ["index.ts --http"]

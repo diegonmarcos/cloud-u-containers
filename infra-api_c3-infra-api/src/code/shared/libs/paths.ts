@@ -216,5 +216,5 @@ export function syncRepos(force = false): void {
 /** Git remote URLs for auto-cloning in server mode */
 const REPO_URLS: Record<string, string> = {
   "cloud-data": CLOUD_DATA_REPO,
-  cloud: "git@github.com:diegonmarcos/cloud.git",
+  cloud: "git@github.com:diegonmarcos/cloud-infra.git",
 };

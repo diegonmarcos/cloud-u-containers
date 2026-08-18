@@ -120,7 +120,7 @@ No local CPU/RAM Ollama fallback. If vast.ai is down, AI-dependent workflows gra
 
 ### 1. bc-obs_rig (Rig Orchestrator)
 
-**Path**: `~/git/cloud/a_solutions/bc-obs_rig/`
+**Path**: `~/git/cloud-infra/a_solutions/bc-obs_rig/`
 
 **Purpose**: Central nervous system for infrastructure intelligence. Also contains all embedding logic (simple HTTP client to vast.ai Ollama's `/v1/embeddings` endpoint). No separate embedding service.
 
@@ -211,7 +211,7 @@ tracing = "0.1"                    # Structured logging
 
 ### 2. ca-dat_kg-graph (SurrealDB Hybrid KG)
 
-**Path**: `~/git/cloud/a_solutions/ca-dat_kg-graph/`
+**Path**: `~/git/cloud-infra/a_solutions/ca-dat_kg-graph/`
 
 **Purpose**: Store infrastructure topology, relationships, temporal state, AND vector embeddings. The vector layer lives inside SurrealDB (MTREE index on `embedding` fields). There is no separate vector service.
 
@@ -932,7 +932,7 @@ impl SelfHealingOp {
 - Human approval requests via ntfy include one-time approval token
 
 **SSH Key Management**:
-- Rig uses dedicated SSH key: `~/git/vault/A0_keys/ssh/rig_id_ed25519`
+- Rig uses dedicated SSH key: `~/git/cloud-vault/A0_keys/ssh/rig_id_ed25519`
 - Only has access to specific commands via `authorized_keys` restrictions:
   ```
   command="/opt/bin/rig-executor.sh",no-pty,no-port-forwarding ssh-ed25519 AAAA...
@@ -1097,7 +1097,7 @@ exit 1
 - [ ] Rust 1.75+ installed on oci-apps (via home-manager)
 - [ ] SurrealDB 2.0+ container image pulled (aarch64)
 - [ ] vast.ai account configured with API key for `VastAiProviderOp`
-- [ ] SSH keys generated for Rig (`~/git/vault/A0_keys/ssh/rig_id_ed25519`)
+- [ ] SSH keys generated for Rig (`~/git/cloud-vault/A0_keys/ssh/rig_id_ed25519`)
 - [ ] ntfy topic created: `https://rss.diegonmarcos.com/rig-alerts`
 - [ ] Authelia bearer token for Rig API generated
 - [ ] Caddy config on gcp-proxy updated: `handle /rig/*` -> `10.0.0.6:8090`
@@ -1107,7 +1107,7 @@ exit 1
 
 ```bash
 # 1. Deploy SurrealDB
-cd ~/git/cloud/a_solutions/ca-dat_kg-graph
+cd ~/git/cloud-infra/a_solutions/ca-dat_kg-graph
 ./build.sh ship
 
 # 2. Seed initial graph (auto-infers dependencies from configs)
@@ -1116,7 +1116,7 @@ cd /opt/containers/ca-dat_kg-graph
 ./scripts/seed_from_config.sh
 
 # 3. Build and deploy Rig
-cd ~/git/cloud/a_solutions/bc-obs_rig
+cd ~/git/cloud-infra/a_solutions/bc-obs_rig
 cargo test --release  # Run tests first
 ./build.sh ship       # Build on oci-apps (aarch64)
 
@@ -1143,7 +1143,7 @@ Note: No cron setup needed. All scheduling is handled internally by `tokio::time
 - [ ] Verify audit dual-write: check both SurrealDB entries and `/opt/data/rig/audit.jsonl`
 - [ ] Verify KG daily updates: Check SurrealDB for new log entries each day
 - [ ] First weekly review: Wait for Sunday 2 AM, check email for Opus report
-- [ ] Update MCP server: `cd ~/git/cloud/a_solutions/bb-sec_mcp-server-skills && ./build.sh deploy`
+- [ ] Update MCP server: `cd ~/git/cloud-infra/a_solutions/bb-sec_mcp-server-skills && ./build.sh deploy`
 - [ ] Test MCP tools in Claude Code: Try `kg_hybrid_search("authentication")`
 
 ---
@@ -1159,7 +1159,7 @@ Note: No cron setup needed. All scheduling is handled internally by `tokio::time
 
 ### User-Facing Documentation
 
-**To be added to `~/git/cloud/README.md`**:
+**To be added to `~/git/cloud-infra/README.md`**:
 
 ```markdown
 ## Rig Intelligence Framework
@@ -1188,7 +1188,7 @@ kg_hybrid_search("disk space errors last week")
 kg_blast_radius("service", "matomo")
 ```
 
-For full API docs: See `~/git/cloud/a_solutions/bc-obs_rig/docs/API.md`
+For full API docs: See `~/git/cloud-infra/a_solutions/bc-obs_rig/docs/API.md`
 ```
 
 ---
@@ -1234,10 +1234,10 @@ For full API docs: See `~/git/cloud/a_solutions/bc-obs_rig/docs/API.md`
 
 | Component | Primary Maintainer | Repo | Contact |
 |-----------|-------------------|------|---------|
-| **Rig Orchestrator** | Diego | `~/git/cloud/a_solutions/bc-obs_rig/` | GitHub Issues |
-| **SurrealDB KG** | Diego | `~/git/cloud/a_solutions/ca-dat_kg-graph/` | GitHub Issues |
-| **MCP Integration** | Diego | `~/git/cloud/a_solutions/bb-sec_mcp-server-skills/` | GitHub Issues |
-| **vast.ai Ollama** | Diego | `~/git/cloud/b_infra/vm_vast-RTX-p_0/` | vast.ai support |
+| **Rig Orchestrator** | Diego | `~/git/cloud-infra/a_solutions/bc-obs_rig/` | GitHub Issues |
+| **SurrealDB KG** | Diego | `~/git/cloud-infra/a_solutions/ca-dat_kg-graph/` | GitHub Issues |
+| **MCP Integration** | Diego | `~/git/cloud-infra/a_solutions/bb-sec_mcp-server-skills/` | GitHub Issues |
+| **vast.ai Ollama** | Diego | `~/git/cloud-infra/b_infra/vm_vast-RTX-p_0/` | vast.ai support |
 
 ### Runbook: Common Issues
 

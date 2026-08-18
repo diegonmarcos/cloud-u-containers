@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
-  "$id": "https://github.com/diegonmarcos/cloud/blob/main/a_solutions/build.schema.json",
+  "$id": "https://github.com/diegonmarcos/cloud-infra/blob/main/a_solutions/build.schema.json",
   "title": "Cloud Service build.json",
   "description": "Configuration schema for cloud service build.json files used by the build.sh engine in ~/git/cloud-infra/",
   "type": "object",

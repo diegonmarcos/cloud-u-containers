@@ -10,5 +10,5 @@
 FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
 COPY cf-worker-http-to-wg-public-bridge /usr/local/bin/cf-worker-http-to-wg-public-bridge
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
 CMD ["cf-worker-http-to-wg-public-bridge"]

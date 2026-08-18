@@ -31,12 +31,12 @@ Ollama 14B (vast.ai) + nomic-embed-text
 - Rust 1.75+ (installed via home-manager on oci-apps)
 - SurrealDB running on :8001
 - vast.ai Ollama instance (or local fallback)
-- SSH key: `~/git/vault/A0_keys/ssh/rig_id_ed25519`
+- SSH key: `~/git/cloud-vault/A0_keys/ssh/rig_id_ed25519`
 
 ### Build & Deploy
 
 ```bash
-cd ~/git/cloud/a_solutions/bc-obs_rig
+cd ~/git/cloud-infra/a_solutions/bc-obs_rig
 cargo test --release
 ./build.sh ship  # Build on oci-apps (aarch64)
 ```
@@ -152,4 +152,4 @@ Private - Diego Nepomuceno Marcos
 
 ## Contact
 
-GitHub Issues: https://github.com/diegonmarcos/cloud
+GitHub Issues: https://github.com/diegonmarcos/cloud-infra

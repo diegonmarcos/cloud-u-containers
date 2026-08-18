@@ -29,7 +29,7 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
     CMD sh -c 'curl -f http://localhost:${PORT:-8000}/health || exit 1'
 
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
 LABEL org.opencontainers.image.dockerfile-path="a_solutions/aa-sui_google-workspace-mcp/src/code/Dockerfile"
 
 CMD ["uv", "run", "main.py", "--transport", "streamable-http", "--tool-tier", "complete"]

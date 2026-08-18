@@ -3044,11 +3044,11 @@
     "github": {
       "enabled": true,
       "repos": [
-        "diegonmarcos/cloud",
+        "diegonmarcos/cloud-infra",
         "diegonmarcos/cloud-data",
-        "diegonmarcos/unix",
+        "diegonmarcos/cloud-unix",
         "diegonmarcos/front",
-        "diegonmarcos/tools"
+        "diegonmarcos/cloud-mykonsole-dtk"
       ],
       "max_runs_per_repo": 50,
       "token_sources": [

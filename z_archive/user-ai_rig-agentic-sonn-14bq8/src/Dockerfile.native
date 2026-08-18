@@ -17,5 +17,5 @@ RUN cargo build --release
 FROM debian:trixie-slim
 RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates docker.io && rm -rf /var/lib/apt/lists/*
 COPY --from=native-build /build/target/release/rig-agentic /usr/local/bin/rig-agentic
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
 CMD ["rig-agentic"]

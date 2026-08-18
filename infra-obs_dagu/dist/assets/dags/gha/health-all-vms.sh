@@ -12,7 +12,7 @@ VMS="gcp-proxy gcp-t4 oci-apps oci-analytics oci-mail"
 
 if [ -n "${GITHUB_ACTIONS:-}" ]; then
   # In GHA: trigger individual workflows
-  REPO="${GITHUB_REPOSITORY:-diegonmarcos/cloud}"
+  REPO="${GITHUB_REPOSITORY:-diegonmarcos/cloud-infra}"
   for vm in $VMS; do
     echo "Triggering health-${vm}.yml"
     gh workflow run "health-${vm}.yml" --repo "$REPO" --ref main || echo "WARN: failed to trigger $vm"

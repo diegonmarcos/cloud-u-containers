@@ -10,5 +10,5 @@
 FROM node:22-bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates python3 build-essential && rm -rf /var/lib/apt/lists/*
 COPY node --experimental-strip-types server.ts /usr/local/bin/node --experimental-strip-types server.ts
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
 CMD ["node --experimental-strip-types server.ts"]

@@ -18,5 +18,5 @@ RUN npm ci --omit=dev
 RUN useradd -r -u 1000 appuser
 USER appuser
 
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
 CMD ["node","--experimental-strip-types","server.ts"]

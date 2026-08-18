@@ -11,5 +11,5 @@ FROM caddy:2
 COPY --from=builder /usr/bin/caddy /usr/bin/caddy
 
 COPY Dockerfile /opt/cloud-builder/Dockerfile
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
 LABEL org.opencontainers.image.dockerfile-path="a_solutions/bb-sec_caddy-l4-image/src/code/Dockerfile"

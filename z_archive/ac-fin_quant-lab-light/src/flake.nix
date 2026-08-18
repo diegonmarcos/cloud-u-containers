@@ -42,8 +42,8 @@
       # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
       # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
       # ╠══════════════════════════════════════════════════════════════════╣
-      # ║ Source: ~/git/cloud/a_solutions/ac-fin_quant-lab-light/src/flake.nix ║
-      # ║ Rebuild: ~/git/cloud/a_solutions/ac-fin_quant-lab-light/build.sh ship ║
+      # ║ Source: ~/git/cloud-infra/a_solutions/ac-fin_quant-lab-light/src/flake.nix ║
+      # ║ Rebuild: ~/git/cloud-infra/a_solutions/ac-fin_quant-lab-light/build.sh ship ║
       # ╚══════════════════════════════════════════════════════════════════╝
       services:
         research:
@@ -52,7 +52,7 @@
             context: .
             dockerfile_inline: |
               FROM ${config.research_image}
-              LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+              LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
           container_name: quant_light_research
           restart: "no"  # container-init handles startup
           network_mode: host
@@ -78,7 +78,7 @@
             context: .
             dockerfile_inline: |
               FROM ${config.engine_image}
-              LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+              LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
           container_name: quant_light_engine
           restart: "no"  # container-init handles startup
           network_mode: host
@@ -98,7 +98,7 @@
             context: .
             dockerfile_inline: |
               FROM ${config.db_image}
-              LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+              LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
           container_name: quant_light_db
           restart: "no"  # container-init handles startup
           network_mode: host

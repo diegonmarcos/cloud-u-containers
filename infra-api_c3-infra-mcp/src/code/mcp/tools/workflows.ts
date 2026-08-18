@@ -14,7 +14,7 @@ function resolveGhRepo(): string {
     const config = getConfig();
     return `${config.owner?.github ?? "diegonmarcos"}/cloud`;
   } catch {}
-  return "diegonmarcos/cloud";
+  return "diegonmarcos/cloud-infra";
 }
 const GH_REPO = resolveGhRepo();
 

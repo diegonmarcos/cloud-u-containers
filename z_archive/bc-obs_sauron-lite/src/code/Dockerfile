@@ -24,6 +24,6 @@ RUN chmod +x /entrypoint.sh
 # Bake YARA rules into image (no bind mount needed)
 COPY yara-rules /etc/sauron/yara-rules
 
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
 
 ENTRYPOINT ["/entrypoint.sh"]

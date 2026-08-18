@@ -109,7 +109,7 @@ palantir-monitor   - ✅ Created (executes on demand)
 
 ### Manual Test Scan
 ```bash
-cd /home/diego/mnt_git/cloud/a_solutions/back-security/palantir-monitor
+cd /home/diego/mnt_git/cloud-infra/a_solutions/back-security/palantir-monitor
 docker start palantir-monitor
 docker logs palantir-monitor -f
 ```
@@ -143,7 +143,7 @@ The Tera templating framework is ready but not yet active. To enable:
 
 ### 1. Build Rust Renderer
 ```bash
-cd /home/diego/mnt_git/cloud/a_solutions/back-security/palantir-monitor
+cd /home/diego/mnt_git/cloud-infra/a_solutions/back-security/palantir-monitor
 cargo build --release
 ```
 

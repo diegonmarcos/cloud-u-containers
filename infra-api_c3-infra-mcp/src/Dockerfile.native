@@ -19,5 +19,5 @@ RUN pip install --break-system-packages --no-cache-dir oci-cli awscli && npm ci 
 
 
 
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
 CMD ["./entrypoint.sh"]

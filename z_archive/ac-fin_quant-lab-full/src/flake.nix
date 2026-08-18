@@ -61,8 +61,8 @@
       # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
       # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
       # ╠══════════════════════════════════════════════════════════════════╣
-      # ║ Source: ~/git/cloud/a_solutions/ac-fin_quant-lab-full/src/flake.nix ║
-      # ║ Rebuild: ~/git/cloud/a_solutions/ac-fin_quant-lab-full/build.sh ship ║
+      # ║ Source: ~/git/cloud-infra/a_solutions/ac-fin_quant-lab-full/src/flake.nix ║
+      # ║ Rebuild: ~/git/cloud-infra/a_solutions/ac-fin_quant-lab-full/build.sh ship ║
       # ╚══════════════════════════════════════════════════════════════════╝
       services:
         research:
@@ -71,7 +71,7 @@
             context: .
             dockerfile_inline: |
               FROM ${config.research_image}
-              LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+              LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
           container_name: quant_full_research
           restart: "no"  # container-init handles startup
           network_mode: host
@@ -96,7 +96,7 @@
             context: .
             dockerfile_inline: |
               FROM ${config.analytics_image}
-              LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+              LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
           container_name: quant_full_analytics
           restart: "no"  # container-init handles startup
           network_mode: host
@@ -114,7 +114,7 @@
             context: .
             dockerfile_inline: |
               FROM ${config.ml_image}
-              LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+              LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
           container_name: quant_full_ml
           restart: "no"  # container-init handles startup
           network_mode: host
@@ -140,7 +140,7 @@
             context: .
             dockerfile_inline: |
               FROM ${config.risk_image}
-              LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+              LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
           container_name: quant_full_risk
           restart: "no"  # container-init handles startup
           network_mode: host
@@ -158,7 +158,7 @@
             context: .
             dockerfile_inline: |
               FROM ${config.engine_image}
-              LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+              LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
           container_name: quant_full_engine
           restart: "no"  # container-init handles startup
           network_mode: host
@@ -176,7 +176,7 @@
             context: .
             dockerfile_inline: |
               FROM ${config.db_image}
-              LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+              LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
           container_name: quant_full_db
           restart: "no"  # container-init handles startup
           network_mode: host

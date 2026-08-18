@@ -29,8 +29,8 @@
       # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
       # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
       # ╠══════════════════════════════════════════════════════════════════╣
-      # ║ Source: ~/git/cloud/a_solutions/bc-obs_syslog-forwarder/src/flake.nix ║
-      # ║ Rebuild: ~/git/cloud/a_solutions/bc-obs_syslog-forwarder/build.sh ship ║
+      # ║ Source: ~/git/cloud-infra/a_solutions/bc-obs_syslog-forwarder/src/flake.nix ║
+      # ║ Rebuild: ~/git/cloud-infra/a_solutions/bc-obs_syslog-forwarder/build.sh ship ║
       # ╚══════════════════════════════════════════════════════════════════╝
       services:
         syslog-forwarder:

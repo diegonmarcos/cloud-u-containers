@@ -32,7 +32,7 @@ EXPOSE ${BIND_PORT}
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
     CMD python3 -c "import os,urllib.request; urllib.request.urlopen(f\"http://{os.environ['BIND_HOST']}:{os.environ['BIND_PORT']}/health\")" || exit 1
 
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
 LABEL org.opencontainers.image.dockerfile-path="a_solutions/bb-sec_introspect-proxy/src/code/Dockerfile"
 
 # Run with gunicorn for production — bind matches HEALTHCHECK (data-driven).

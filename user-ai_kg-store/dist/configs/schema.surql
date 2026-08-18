@@ -80,7 +80,7 @@ DEFINE INDEX log_level ON log FIELDS level;
 
 -- Documentation (READMEs, configs, runbooks)
 DEFINE TABLE documentation SCHEMAFULL;
-DEFINE FIELD path ON documentation TYPE string;   -- ~/git/cloud/README.md
+DEFINE FIELD path ON documentation TYPE string;   -- ~/git/cloud-infra/README.md
 DEFINE FIELD title ON documentation TYPE option<string>;
 DEFINE FIELD content_hash ON documentation TYPE string;  -- detect changes for re-embedding
 DEFINE FIELD embedding ON documentation TYPE option<array<float>>;

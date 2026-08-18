@@ -475,7 +475,7 @@ Each phase is "done" when:
 ### 12.1 Start Phase 1
 
 ```bash
-cd /home/diego/git/cloud/a_solutions/front-apps/cloud_connect
+cd /home/diego/git/cloud-infra/a_solutions/front-apps/cloud_connect
 
 # Create structure
 mkdir -p modules/{00-base,01-tools,02-desktop,03-vault,04-vpn,05-ssh,06-mount,07-config,08-status,09-export}

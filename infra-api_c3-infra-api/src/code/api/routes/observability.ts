@@ -307,7 +307,7 @@ export const registerObservabilityRoutes: FastifyPluginAsync = async (app) => {
   app.get("/workflows", { schema: { tags: ["Observability"] } }, async () => {
     try {
       const resp = await fetch(
-        "https://api.github.com/repos/diegonmarcos/cloud/actions/runs?per_page=15",
+        "https://api.github.com/repos/diegonmarcos/cloud-infra/actions/runs?per_page=15",
         { headers: { Accept: "application/vnd.github+json" }, signal: AbortSignal.timeout(10000) },
       );
       if (!resp.ok) return { runs: [], error: `GitHub API ${resp.status}` };

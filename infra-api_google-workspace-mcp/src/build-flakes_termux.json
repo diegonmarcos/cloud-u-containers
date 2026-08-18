@@ -2118,11 +2118,11 @@
         "runner_workdir": "/tmp/runner/work",
         "registrations": [
           {
-            "repo_url": "https://github.com/diegonmarcos/cloud",
+            "repo_url": "https://github.com/diegonmarcos/cloud-infra",
             "runner_name": "oci-apps-arm64"
           },
           {
-            "repo_url": "https://github.com/diegonmarcos/unix",
+            "repo_url": "https://github.com/diegonmarcos/cloud-unix",
             "runner_name": "oci-apps-arm64-unix"
           }
         ],
@@ -2404,7 +2404,7 @@
         "mirror_interval": "1h",
         "mirrors": {
           "cloud": {
-            "upstream": "https://github.com/diegonmarcos/cloud.git"
+            "upstream": "https://github.com/diegonmarcos/cloud-infra.git"
           },
           "diegonmarcos.github.io": {
             "upstream": "https://github.com/diegonmarcos/diegonmarcos.github.io.git"
@@ -2413,7 +2413,7 @@
             "upstream": "https://github.com/diegonmarcos/cloud-android.git"
           },
           "cloud-master": {
-            "upstream": "https://github.com/diegonmarcos/cloud-master.git"
+            "upstream": "https://github.com/diegonmarcos/cloud-infra.git"
           },
           "front-galaxy-gaia": {
             "upstream": "https://github.com/diegonmarcos/front-galaxy-gaia.git",
@@ -2438,20 +2438,20 @@
             "private": true
           },
           "vault": {
-            "upstream": "https://github.com/diegonmarcos/vault.git",
+            "upstream": "https://github.com/diegonmarcos/cloud-vault.git",
             "private": true
           },
           "tools": {
-            "upstream": "https://github.com/diegonmarcos/tools.git"
+            "upstream": "https://github.com/diegonmarcos/cloud-mykonsole-dtk.git"
           },
           "unix": {
-            "upstream": "https://github.com/diegonmarcos/unix.git"
+            "upstream": "https://github.com/diegonmarcos/cloud-unix.git"
           },
           "diegonmarcos": {
             "upstream": "https://github.com/diegonmarcos/diegonmarcos.git"
           },
           "notes": {
-            "upstream": "https://github.com/diegonmarcos/notes.git",
+            "upstream": "https://github.com/diegonmarcos/cloud-notes.git",
             "private": true
           },
           "back-System": {

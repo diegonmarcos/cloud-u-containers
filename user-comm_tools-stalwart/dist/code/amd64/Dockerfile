@@ -8,7 +8,7 @@
 # ╚══════════════════════════════════════════════════════════════════╝
 # Type B — wrap upstream, arch=amd64
 FROM stalwartlabs/stalwart:v0.14.1
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
 LABEL cloud.diegonmarcos.from-image="stalwartlabs/stalwart:v0.14.1"
 
 
