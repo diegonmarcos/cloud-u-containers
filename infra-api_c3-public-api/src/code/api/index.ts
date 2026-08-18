@@ -22,7 +22,6 @@ async function main() {
         basePath: cfg.basePath,
         backends: Object.keys(cfg.backends),
         mail_primary: `${cfg.mail.primary.host}:${cfg.mail.primary.port}`,
-        mail_shadow: cfg.mail.shadow ? `${cfg.mail.shadow.host}:${cfg.mail.shadow.port}` : "disabled",
       },
       "c3-public-api ready",
     );

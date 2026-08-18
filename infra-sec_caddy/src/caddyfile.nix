@@ -384,7 +384,19 @@ ${plainOut}${sniMuxBlock}
       }'') route.bypass_paths
       else "";
 
-      wgBlock = if isWgOnly then ''
+      # Well-known grafts are "public per spec" (mkWellKnownBlock) but the WG
+      # gate's `respond` is ordered before every `handle`, so on a wg_only route
+      # the grafted handlers were dead code — e.g. RFC 8620 JMAP discovery on
+      # jmap.diegonmarcos.com answered 403 off-mesh. Exempt exactly the grafted
+      # paths from @not_wg; every other path on the vhost stays gated.
+      wkExemptPaths = lib.concatMapStringsSep " " (wk: wk.path) matchingWellKnown;
+      wgBlock = if isWgOnly && matchingWellKnown != [] then ''
+      @not_wg {
+        not remote_ip ${wgCidrs}
+        not path ${wkExemptPaths}
+      }
+      respond @not_wg "Forbidden" 403''
+      else if isWgOnly then ''
       @not_wg not remote_ip ${wgCidrs}
       respond @not_wg "Forbidden" 403'' else "";
 

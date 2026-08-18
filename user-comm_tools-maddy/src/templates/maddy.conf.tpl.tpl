@@ -63,7 +63,7 @@ msgpipeline local_routing {
     }
 }
 
-# ── Inbound SMTP (port 25) — from http-to-smtp-proxy-api / CF Worker ──────────
+# ── Inbound SMTP (port 25) — from CF Worker via c3-public-api bridge ──────────
 # Phase 4 dual-bind: `@LISTEN_25@` expands to one `tcp://<ip>:25` per bind in
 # build.json extra_ports[port=25].bind (wg0 10.0.0.3 + wg-public 10.1.0.3).
 smtp @LISTEN_25@ {
@@ -73,24 +73,21 @@ smtp @LISTEN_25@ {
     }
 
     # ── Security: two-tier architecture ────────────────────────────────
-    # Tier 1 (IP-based) — handled by http-to-smtp-proxy-api (has real sender IP via CF-Connecting-IP):
-    #   require_matching_rdns   — PTR record must exist for sender IP
-    #   dnsbl {                 — reject IPs listed in spam blocklists
-    #       zen.spamhaus.org
-    #       bl.spamcop.net
-    #   }
-    #   spf (IP check)          — verify sender IP is authorized by domain's SPF record
+    # Tier 1 (IP-based) — handled by Cloudflare Email Routing (the MX): it
+    # sees the true sender IP and enforces SPF/DKIM/DMARC before the CF
+    # Worker -> c3-public-api bridge delivers here over WG. Maddy never
+    # sees the real sender IP (no XCLIENT / Proxy Protocol) — inbound
+    # connections arrive from the WG hop (c3-public-api, 10.0.0.4), so
+    # IP-tier checks (rDNS, DNSBL, SPF-on-IP) cannot run here.
     #
-    # These checks CANNOT run in Maddy because http-to-smtp-proxy-api connects from
-    # gcp-proxy via WG (10.0.0.1). Maddy doesn't support XCLIENT or Proxy Protocol
-    # to receive the real sender IP. http-to-smtp-proxy-api does all IP checks
-    # before forwarding.
-    #
-    # Tier 2 (signature-based) — handled by Maddy (no IP needed):
+    # Tier 2 (signature-based) — handled by Maddy on message content:
     check {
         dkim
         spf
     }
+    # spf evaluates the WG hop IP, not the real sender — expect fail/softfail.
+    # Defaults: softfail ignored; fail deferred to DMARC (enforce_early no),
+    # which decides on aligned DKIM.
     # DMARC is enabled by default — aligns DKIM/SPF with From header (p=reject)
 
     default_source {

@@ -5,7 +5,7 @@
 // Two delivery layers:
 //   1. Analytics passthrough — BACKENDS_JSON (matomo/umami/openobserve).
 //      Same shape as c3-analytics-api. Public, rate-limited.
-//   2. Mail bridge — SMTP_HOST/SMTP_PORT + SMTP_SHADOW_HOST/SMTP_SHADOW_PORT.
+//   2. Mail bridge — SMTP_HOST/SMTP_PORT.
 //      Bearer-gated upstream by Caddy (introspect-proxy validates the JWT).
 
 export interface BackendCfg {
@@ -25,7 +25,6 @@ export interface Limits {
 
 export interface MailCfg {
   primary: { host: string; port: number };
-  shadow: { host: string; port: number } | null;
   heloDomain: string;
   defaultUser: string;
 }
@@ -79,15 +78,12 @@ export function loadConfig(): AppConfig {
 
   const smtpHost = process.env.SMTP_HOST;
   const smtpPort = readInt("SMTP_PORT", 25);
-  const shadowHost = process.env.SMTP_SHADOW_HOST;
-  const shadowPort = readInt("SMTP_SHADOW_PORT", 2025);
 
   const mail: MailCfg = {
     primary: {
       host: smtpHost ?? "",
       port: smtpPort,
     },
-    shadow: shadowHost ? { host: shadowHost, port: shadowPort } : null,
     heloDomain: process.env.SMTP_HELO_DOMAIN ?? "c3-public-api.local",
     defaultUser: process.env.SMTP_USER ?? "cloudflare@localhost",
   };

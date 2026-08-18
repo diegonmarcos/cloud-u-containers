@@ -2,7 +2,7 @@
 # Runs on oci-analytics, host-network, public via Caddy at /c3-public-api/*.
 # Reverse-proxies /analytics/* to matomo/umami/openobserve (resolved at build time
 # from cloud-data, cross-VM via wg0). Bridges /mail/http-to-smtp (Bearer) to maddy
-# on oci-mail (and shadow-delivers to stalwart) — same JSON-in/SMTP-out contract
+# on oci-mail (maddy's dual-write relays to stalwart) — same JSON-in/SMTP-out contract
 # as the legacy aa-sui_tools-http-to-smtp-proxy-api Rust binary, so the CF Worker
 # is unchanged.
 { buildJson, container }:
@@ -33,15 +33,12 @@ let
   backendsJson = builtins.toJSON backends;
   limitsJson = builtins.toJSON buildJson.limits;
 
-  # Mail targets — primary (maddy) + shadow (stalwart). Resolved from
-  # build.json#mail.primary/shadow which name a service + a port slug.
+  # Mail target — primary (maddy). Resolved from build.json#mail.primary
+  # which names a service + a port slug.
   mailPrimaryService = buildJson.mail.primary.service;
   mailPrimaryVia = buildJson.mail.primary.via;
-  mailShadowService = buildJson.mail.shadow.service;
-  mailShadowVia = buildJson.mail.shadow.via;
 
   primarySvc = svc.${mailPrimaryService};
-  shadowSvc = svc.${mailShadowService};
 
   # Resolve port slug -> port number against extra_ports (services own this
   # map keyed by port number with a `service` slug field).
@@ -52,7 +49,6 @@ let
     in if matches == [] then null else builtins.elemAt matches 0;
 
   primaryPort = portForVia primarySvc mailPrimaryVia;
-  shadowPort = portForVia shadowSvc mailShadowVia;
 in
 {
   services = {
@@ -72,8 +68,6 @@ in
         # Mail bridge config (replicates http-to-smtp-proxy-api contract).
         SMTP_HOST = primarySvc.ip;
         SMTP_PORT = primaryPort;
-        SMTP_SHADOW_HOST = shadowSvc.ip;
-        SMTP_SHADOW_PORT = shadowPort;
         SMTP_HELO_DOMAIN = buildJson.mail.helo_domain;
       };
       healthcheck = {
