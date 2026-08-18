@@ -10,7 +10,7 @@
 # Companion script: c-pretool-guard-warning.sh (same matcher, advisory tier).
 # Order in settings.json: blockers FIRST, warnings SECOND.
 #
-# Source: ~/git/unix/{ba_flakes_desktop,bb_flakes_termux}/src/modules/dotfiles/claude/
+# Source: ~/git/cloud-unix/{ba_flakes_desktop,bb_flakes_termux}/src/modules/dotfiles/claude/
 # Deployed: ~/.claude/hooks/c-pretool-guard-blockers.sh (via home-manager)
 #
 # Input:  JSON on stdin { "tool_name": "Bash", "tool_input": { "command": "..." } }
@@ -114,10 +114,10 @@ fi
 #     are SHA records written by the build engine, safe to commit)
 #   - secrets.yaml / secrets.yml (gated on sops marker — see carve-out b)
 # Carve-outs:
-#   (a) inside ~/git/vault/  (private repo, sops-encrypted at rest)
+#   (a) inside ~/git/cloud-vault/  (private repo, sops-encrypted at rest)
 #   (b) secrets.yaml that contains the sops marker (^sops: or ENC[AES256_GCM)
 if echo "$CMD" | grep -qE '(^|[;&|])\s*git\s+(-[Cc]\s+\S+\s+)?add\b[^;|&]*(\.(env|key|pem|age|p12|pfx)([[:space:];|&]|$)|(^|/)\.secrets([[:space:];|&]|$)|secrets\.ya?ml([[:space:];|&]|$))'; then
-    case "$PWD" in "$HOME"/git/vault*) exit 0 ;; esac
+    case "$PWD" in "$HOME"/git/cloud-vault*) exit 0 ;; esac
     # Iterate ALL secret-shape tokens in the command. Per-token rules:
     #   - deletion (file not on disk) → safe (git tracks removal of prior content)
     #   - secrets.yaml + sops marker → safe
@@ -142,7 +142,7 @@ if echo "$CMD" | grep -qE '(^|[;&|])\s*git\s+(-[Cc]\s+\S+\s+)?add\b[^;|&]*(\.(en
         exit 0
     fi
     deny "git add of secret-shaped path '$unsafe' — public-repo exposure risk" \
-         "sops-encrypt secrets.yaml first; raw key material lives only in ~/git/vault"
+         "sops-encrypt secrets.yaml first; raw key material lives only in ~/git/cloud-vault"
 fi
 
 # Note: SSH write-redirect (ssh <host> '... echo/sed/tee/cat ... >') was

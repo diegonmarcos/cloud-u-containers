@@ -12,7 +12,7 @@ Extracted from [Compliance-Plan.md](Compliance-Plan.md).
 
 ## Layer 1: Hooks — Hard Enforcement (Tier 1)
 
-- [ ] Create `claude-guard.sh` source (Termux flake: `~/git/unix/bb_flakes_termux/src/modules/dotfiles/claude/claude-guard.sh`)
+- [ ] Create `claude-guard.sh` source (Termux flake: `~/git/cloud-unix/bb_flakes_termux/src/modules/dotfiles/claude/claude-guard.sh`)
 - [ ] Implement all 30 existing rules from claude-guard.md spec
 - [ ] Add 3 new gap rules (#30 SSH+secrets BLOCK, #31 SSH+sed WARN, #32 scp+deploy WARN)
 - [ ] Create `settings.json` source for Termux with `hooks.PreToolUse` config

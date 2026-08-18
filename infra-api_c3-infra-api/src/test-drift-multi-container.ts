@@ -63,7 +63,7 @@ for (const c of cases) {
 // Also confirm the data flow from build.json → declared_names using a real
 // fixture from disk. discoverServicesFromDisk should surface "containers" now.
 import { readFileSync } from "node:fs";
-const photoprism = JSON.parse(readFileSync("/home/diego/git/cloud/a_solutions/aa-sui_photoprism/build.json", "utf-8"));
+const photoprism = JSON.parse(readFileSync("/home/diego/git/cloud-infra/a_solutions/aa-sui_photoprism/build.json", "utf-8"));
 const ppContainers = Object.values((photoprism.containers ?? {}) as Record<string, { container_name?: string }>)
     .map((c) => c.container_name)
     .filter((n): n is string => typeof n === "string" && n.length > 0);

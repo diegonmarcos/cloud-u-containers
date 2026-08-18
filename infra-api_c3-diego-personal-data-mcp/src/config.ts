@@ -6,17 +6,17 @@ import { join } from "path";
 
 export function getVaultPath(): string {
   const p = process.env.VAULT_PATH;
-  if (!p) throw new Error("VAULT_PATH env var not set — point it at ~/git/vault");
+  if (!p) throw new Error("VAULT_PATH env var not set — point it at ~/git/cloud-vault");
   return p;
 }
 
 export function getConfigPath(): string {
   const p = process.env.CONFIG_PATH;
-  if (!p) throw new Error("CONFIG_PATH env var not set — point it at ~/git/cloud/config.json");
+  if (!p) throw new Error("CONFIG_PATH env var not set — point it at ~/git/cloud-infra/config.json");
   return p;
 }
 
 export function getGitRoot(): string {
-  // Derive from vault path: vault is at ~/git/vault, so git root is ~/git/
+  // Derive from vault path: vault is at ~/git/cloud-vault, so git root is ~/git/
   return join(getVaultPath(), "..");
 }

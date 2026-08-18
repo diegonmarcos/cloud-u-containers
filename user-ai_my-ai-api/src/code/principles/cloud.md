@@ -10,7 +10,7 @@ Core operating rules for this infrastructure. Follow these when suggesting or pe
 **NEVER** run `docker exec` on VMs — not even for debugging. Use `docker logs` for read-only inspection only.
 **NEVER** edit files directly on VMs — no sed, echo >, cat >, or any file modification via SSH.
 **SSH is READ-ONLY** — only allowed: `docker ps`, `docker logs`, `cat`, `ls`, `grep` for inspection.
-**ALWAYS fix issues in source** (nix flakes in `~/git/cloud/a_solutions/*/src/flake.nix`).
+**ALWAYS fix issues in source** (nix flakes in `~/git/cloud-infra/a_solutions/*/src/flake.nix`).
 **ALWAYS deploy via `build.sh ship`** or push to main for GHA auto-deploy.
 
 Quick fixes made directly on VMs get overwritten on next deploy and create phantom regressions.

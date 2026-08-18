@@ -1,9 +1,9 @@
 {
   "_warning": "DO NOT EDIT — AUTO-GENERATED FILE. Source of truth lives in a_solutions/*/build.json + config.json + b_infra/*/build.json. Edits here are overwritten on every `bash 9_others/build.sh all`.",
   "_meta": {
-    "description": "flakes_desktop external consumer build (Home-manager desktop flake (~/git/unix/ba_flakes_desktop). Activates on dev laptops, Surface, and any non-VM workstation.)",
+    "description": "flakes_desktop external consumer build (Home-manager desktop flake (~/git/cloud-unix/ba_flakes_desktop). Activates on dev laptops, Surface, and any non-VM workstation.)",
     "format_version": 1,
-    "consumer_path": "~/git/unix/ba_flakes_desktop",
+    "consumer_path": "~/git/cloud-unix/ba_flakes_desktop",
     "replaces": [
       "cloud-data-deps.json (npm dependencies merged into ~/.node_modules)",
       "cloud-data-wireguard-peers.json (WG mesh peers + DNS routing)",

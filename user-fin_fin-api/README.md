@@ -27,7 +27,7 @@ GET  /fin-api/api/v1/ws              # WebSocket — {op:subscribe|publish|ping}
 ## Deploy
 
 ```bash
-cd ~/git/cloud/a_solutions/ac-fin_fin-api
+cd ~/git/cloud-infra/a_solutions/ac-fin_fin-api
 ./build.sh all      # nix + secrets  (safe)
 ./build.sh ship     # nix + secrets + rsync + compose  (TOUCHES VM — ask first)
 ```

@@ -1,5 +1,5 @@
 ## Maddy Mail Server — declarative config (nix-generated)
-## Source: ~/git/cloud/a_solutions/aa-sui_tools-maddy/src/
+## Source: ~/git/cloud-infra/a_solutions/aa-sui_tools-maddy/src/
 ## Secrets substituted at deploy time by init.sh from .secrets
 
 # ── Base variables ────────────────────────────────────────────────

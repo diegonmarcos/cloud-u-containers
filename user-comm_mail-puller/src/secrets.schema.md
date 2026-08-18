@@ -44,7 +44,7 @@ Each emits a `refresh_token` string. Drop it into sops and re-ship.
 ## Editing
 
 ```bash
-cd ~/git/cloud/a_solutions/aa-sui_mail-puller/src
+cd ~/git/cloud-infra/a_solutions/aa-sui_mail-puller/src
 sops secrets.yaml
 # …add keys…
 cd ..

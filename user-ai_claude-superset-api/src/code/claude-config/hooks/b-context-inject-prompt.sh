@@ -6,7 +6,7 @@
 # + forbidden patterns to stdout — Claude Code captures as additionalContext.
 # Deliberate per-prompt repetition pressure to prevent mid-session drift.
 #
-# Source: ~/git/unix/{ba_flakes_desktop,bb_flakes_termux}/src/modules/dotfiles/claude/
+# Source: ~/git/cloud-unix/{ba_flakes_desktop,bb_flakes_termux}/src/modules/dotfiles/claude/
 # Deployed: ~/.claude/hooks/b-context-inject-prompt.sh (via home-manager)
 # Wired in: settings.json → hooks.UserPromptSubmit[0].hooks[0].command
 # ============================================================================
@@ -21,7 +21,7 @@ cat <<'GUARD'
 5. **FOUND A BUG IN AN ENGINE → FIX IT.** NO HACKS ALLOWED. No workarounds, no temporary bypasses, no "for now" patches.
 6. **FOUND A NON-DATA-DRIVEN INLINED HARDCODED SOLUTION → FIX IT.** Move the data to JSON; refactor the script to read it. Never extend a hardcoded list — replace it.
 7A. **USE SOPS.** Secrets live in `src/secrets.yaml` (sops+age). Decrypt only into `dist/.secrets` (gitignored). Path: `build.sh secrets`. Never inline credentials in source/scripts/env.
-7B. **PREVENT EXPOSURE.** Never `git add` `.env` / `.key` / `.pem` / `.age` / `*secret*` / `dist/.secrets`. `secrets.yaml` may be committed only when it carries the sops marker (`^sops:` block / `ENC[AES256_GCM` values) — content-checked, not filename-trusted. Never `git add -f`. Vault carve-out: raw key material that *is* the credential (age keys, `~/git/vault/A0_keys/...`).
+7B. **PREVENT EXPOSURE.** Never `git add` `.env` / `.key` / `.pem` / `.age` / `*secret*` / `dist/.secrets`. `secrets.yaml` may be committed only when it carries the sops marker (`^sops:` block / `ENC[AES256_GCM` values) — content-checked, not filename-trusted. Never `git add -f`. Vault carve-out: raw key material that *is* the credential (age keys, `~/git/cloud-vault/A0_keys/...`).
 8. **ASK, DON'T ASSUME.** If intent, architecture, or requirements are unclear, ASK before writing a line. No silent guesses about scope, placement, or wiring — clarify first, code second. Silent guesses become silent commits become silent regressions.
 
 ## FIRE RULES (non-negotiable)
@@ -57,7 +57,7 @@ Before EVERY modification:
 | `docker compose up` on VM | `build.sh compose` |
 | `which cmd` | `command -v cmd` |
 | Edit `dist/` files | Edit `src/` + `build.sh build` |
-| Edit `~/.claude/CLAUDE.md` | Edit source in `~/git/unix/` flakes |
+| Edit `~/.claude/CLAUDE.md` | Edit source in `~/git/cloud-unix/` flakes |
 | `cd dir && git mv dir/...` | `git -C /abs/path mv ...` (absolute paths) |
 | `git add -f` / `git add --force` | plain `git add` — NEVER bypass gitignore. `-f` force-stages secrets, decrypted keys, sensitive/ — gitignore exists for a reason. |
 

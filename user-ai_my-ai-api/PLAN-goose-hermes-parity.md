@@ -64,7 +64,7 @@ Hermes works because its mode routes to `callOpenRouter({ messages, model: HERME
 The deployed image is stale (that's why the live error persists even though the gateway
 commit landed). After editing source:
 ```
-cd /home/diego/git/cloud/a_solutions/user-ai_my-ai-api
+cd /home/diego/git/cloud-infra/a_solutions/user-ai_my-ai-api
 ./build.sh build      # regenerate dist/ from src/
 ```
 Then ship with an actual image rebuild (arm64, oci-apps) — do NOT just `compose up`

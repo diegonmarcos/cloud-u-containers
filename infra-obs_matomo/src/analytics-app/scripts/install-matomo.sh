@@ -5,7 +5,7 @@
 # exported BEFORE running. Populate them from the service's sops secrets:
 #
 #   eval "$(sops -d --output-type dotenv \
-#     ~/git/cloud/a_solutions/bc-obs_matomo/src/secrets.yaml \
+#     ~/git/cloud-infra/a_solutions/bc-obs_matomo/src/secrets.yaml \
 #     | grep -v '^_' | sed 's/^/export /')"
 #   sh install-matomo.sh
 #

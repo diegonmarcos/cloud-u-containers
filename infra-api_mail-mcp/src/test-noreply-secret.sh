@@ -11,7 +11,7 @@
 
 set -euo pipefail
 
-ROOT="/home/diego/git/cloud/a_solutions"
+ROOT="/home/diego/git/cloud-infra/a_solutions"
 MADDY_SECRETS="$ROOT/aa-sui_tools-maddy/src/secrets.yaml"
 MAIL_MCP_SECRETS="$ROOT/aa-sui_mail-mcp/src/secrets.yaml"
 C3_MCP_SECRETS="$ROOT/bc-obs_c3-infra-mcp/src/secrets.yaml"

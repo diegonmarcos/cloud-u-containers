@@ -1,6 +1,6 @@
 # Per-Project Rules: cloud/
 
-> `~/git/cloud/` — Cloud infrastructure, containerized services, home-manager
+> `~/git/cloud-infra/` — Cloud infrastructure, containerized services, home-manager
 
 ## Project-Specific BLOCKs
 

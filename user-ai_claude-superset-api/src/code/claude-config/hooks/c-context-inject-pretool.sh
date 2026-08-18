@@ -20,7 +20,7 @@
 # (per Claude Code hooks spec). Plain stdout text on this event is shown to
 # the user but doesn't modify the model's prompt.
 #
-# Source: ~/git/unix/{ba_flakes_desktop,bb_flakes_termux}/src/modules/dotfiles/claude/
+# Source: ~/git/cloud-unix/{ba_flakes_desktop,bb_flakes_termux}/src/modules/dotfiles/claude/
 # Deployed: ~/.claude/hooks/c-context-inject-pretool.sh (via home-manager)
 # ============================================================================
 

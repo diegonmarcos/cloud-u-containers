@@ -93,12 +93,12 @@ grep -q '^WSTUNNEL_PATH_PREFIX:' "$PROJ_DIR/src/secrets.yaml" \
 # ── Phase 5 · cross-references ───────────────────────────────────────────
 echo "▶ Phase 5 · sibling cross-references"
 PANEL_DATA_SOURCES=$(jq -r '.data_sources | to_entries[] | "\(.key)=\(.value)"' \
-  /home/diego/git/cloud/a_solutions/bb-net_wireguard-mesh/build.json 2>/dev/null || true)
+  /home/diego/git/cloud-infra/a_solutions/bb-net_wireguard-mesh/build.json 2>/dev/null || true)
 echo "$PANEL_DATA_SOURCES" | grep -q "a_solutions/bb-net_wireguard-mesh-ws-tunnel/build.json" \
   && ok "panel data_sources point at this folder" \
   || nope "panel data_sources do NOT reference bb-net_wireguard-mesh-ws-tunnel — needs update"
 
-DERIVER=/home/diego/git/cloud/9_others/src/engine/derive-mesh-snapshot.ts
+DERIVER=/home/diego/git/cloud-infra/9_others/src/engine/derive-mesh-snapshot.ts
 [ -f "$DERIVER" ] && ok "derive-mesh-snapshot.ts deriver exists" || nope "deriver missing"
 grep -q 'bb-net_wireguard-mesh-ws-tunnel/build.json' "$DERIVER" \
   && ok "deriver reads bb-net_wireguard-mesh-ws-tunnel/build.json" \

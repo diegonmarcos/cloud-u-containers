@@ -3110,7 +3110,7 @@
     }
   },
   "repo_scan": {
-    "_comment": "cloud-sec-data-report::repo_scan config. Zero VM CPU — laptop-local. `~/git/vault/` NEVER scanned: intentional secrets store.",
+    "_comment": "cloud-sec-data-report::repo_scan config. Zero VM CPU — laptop-local. `~/git/cloud-vault/` NEVER scanned: intentional secrets store.",
     "enabled": true,
     "repos": [
       {
@@ -3120,19 +3120,19 @@
         "scan_tree": true
       },
       {
-        "path": "~/git/cloud",
+        "path": "~/git/cloud-infra",
         "visibility": "public",
         "scan_history": true,
         "scan_tree": true
       },
       {
-        "path": "~/git/tools",
+        "path": "~/git/cloud-mykonsole-dtk",
         "visibility": "public",
         "scan_history": true,
         "scan_tree": true
       },
       {
-        "path": "~/git/unix",
+        "path": "~/git/cloud-unix",
         "visibility": "public",
         "scan_history": true,
         "scan_tree": true

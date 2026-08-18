@@ -1,6 +1,6 @@
 # Per-Project Rules: vault/
 
-> `~/git/vault/` — SSH keys, API tokens, credentials, passwords, 2FA seeds
+> `~/git/cloud-vault/` — SSH keys, API tokens, credentials, passwords, 2FA seeds
 
 ## Project-Specific BLOCKs
 

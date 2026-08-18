@@ -1,7 +1,7 @@
 #!/bin/sh
 # test-dist-terraform.sh — validate a c_vps/<provider>/dist/ tree
 #
-# Run: ./test-dist-terraform.sh /home/diego/git/cloud/c_vps/<provider>/dist
+# Run: ./test-dist-terraform.sh /home/diego/git/cloud-infra/c_vps/<provider>/dist
 #
 # Exits 0 if all PASS, 1 on any FAIL.
 

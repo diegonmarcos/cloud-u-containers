@@ -16,8 +16,8 @@ Relaxed enforcement. Critical BLOCKs remain. Standard BLOCKs downgrade to WARN. 
 |---|---------|---------|
 | 29 | `which` | Use `command -v` |
 | 30 | `ssh.*echo.*>.*\.secrets` | Create `src/secrets.yaml` + sops |
-| 10a | Edit `~/.claude/CLAUDE.md` | Edit source in `~/git/unix/` flakes |
-| 10b | Edit `~/.mcp.json` | Edit source in `~/git/unix/` flakes |
+| 10a | Edit `~/.claude/CLAUDE.md` | Edit source in `~/git/cloud-unix/` flakes |
+| 10b | Edit `~/.mcp.json` | Edit source in `~/git/cloud-unix/` flakes |
 | 11 | Edit `*/dist/*` | Edit source in `src/` |
 | 12 | Edit `/nix/store/*` | Nix store is immutable |
 | 16 | `style=""` in .html/.svelte/.vue | No inline CSS |

@@ -102,7 +102,7 @@ bad_peers=$(jq -r '
 echo "▶ Phase 7 · render simulation"
 cat > /tmp/wg-mesh-sim.cjs <<'EOF'
 const fs = require('node:fs');
-const path = '/home/diego/git/cloud/a_solutions/bb-net_wireguard-mesh';
+const path = '/home/diego/git/cloud-infra/a_solutions/bb-net_wireguard-mesh';
 
 // Minimal DOM shim
 const elemMap = new Map();
