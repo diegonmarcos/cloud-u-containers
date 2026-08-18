@@ -2579,37 +2579,30 @@
         },
         "mirror_interval": "1h",
         "mirrors": {
-          "diegonmarcos": {
-            "upstream": "https://github.com/diegonmarcos/diegonmarcos.git"
-          },
-          "cloud": {
-            "upstream": "https://github.com/diegonmarcos/cloud.git"
-          },
-          "unix": {
-            "upstream": "https://github.com/diegonmarcos/unix.git"
+          "cloud-unix": {
+            "upstream": "https://github.com/diegonmarcos/cloud-unix.git"
           },
           "diegonmarcos.github.io": {
             "upstream": "https://github.com/diegonmarcos/diegonmarcos.github.io.git"
           },
-          "cloud-data": {
-            "upstream": "https://github.com/diegonmarcos/cloud-data.git",
+          "cloud-mykonsole-dtk": {
+            "upstream": "https://github.com/diegonmarcos/cloud-mykonsole-dtk.git"
+          },
+          "front-assets-cdn": {
+            "upstream": "https://github.com/diegonmarcos/front-assets-cdn.git"
+          },
+          "cloud-vault": {
+            "upstream": "https://github.com/diegonmarcos/cloud-vault.git",
             "private": true
           },
-          "front-data": {
-            "upstream": "https://github.com/diegonmarcos/front-data.git"
+          "diegonmarcos": {
+            "upstream": "https://github.com/diegonmarcos/diegonmarcos.git"
           },
-          "vault": {
-            "upstream": "https://github.com/diegonmarcos/vault.git",
-            "private": true
+          "cloud-infra": {
+            "upstream": "https://github.com/diegonmarcos/cloud-infra.git"
           },
-          "cloud-master": {
-            "upstream": "https://github.com/diegonmarcos/cloud-master.git"
-          },
-          "repo_master": {
-            "upstream": "https://github.com/diegonmarcos/repo_master.git"
-          },
-          "cloud-android": {
-            "upstream": "https://github.com/diegonmarcos/cloud-android.git"
+          "git-repos-master": {
+            "upstream": "https://github.com/diegonmarcos/git-repos-master.git"
           },
           "front-galaxy-gaia": {
             "upstream": "https://github.com/diegonmarcos/front-galaxy-gaia.git",
@@ -2619,18 +2612,25 @@
             "upstream": "https://github.com/diegonmarcos/front-asset-cdn.git",
             "private": true
           },
-          "front-assets-cdn": {
-            "upstream": "https://github.com/diegonmarcos/front-assets-cdn.git"
+          "front-data": {
+            "upstream": "https://github.com/diegonmarcos/front-data.git"
+          },
+          "cloud-android": {
+            "upstream": "https://github.com/diegonmarcos/cloud-android.git"
+          },
+          "cloud": {
+            "upstream": "https://github.com/diegonmarcos/cloud.git"
           },
           "cloud-data-lfs": {
             "upstream": "https://github.com/diegonmarcos/cloud-data-lfs.git",
             "private": true
           },
-          "tools": {
-            "upstream": "https://github.com/diegonmarcos/tools.git"
+          "cloud-data": {
+            "upstream": "https://github.com/diegonmarcos/cloud-data.git",
+            "private": true
           },
-          "notes": {
-            "upstream": "https://github.com/diegonmarcos/notes.git",
+          "cloud-notes": {
+            "upstream": "https://github.com/diegonmarcos/cloud-notes.git",
             "private": true
           },
           "back-System": {
@@ -8841,25 +8841,36 @@
   "databases": {
     "_doc": "Canonical registry of every datastore. `kind` is what it is; `persistence.type` is where it survives. Fleet groups project one axis — never hand-maintain a parallel list. Git existence comes from the fetched GitHub inventory (src/inputs/github-repos.json); mirrored/indexed are declaration-driven flags on top.",
     "_counts": {
-      "total": 82,
+      "total": 80,
       "by_kind": {
         "embedded": 14,
         "container": 9,
         "object-store": 5,
-        "git-remote": 54
+        "git-remote": 52
       },
       "by_persistence": {
         "docker-volume": 21,
         "docker-bind": 1,
         "unknown": 1,
         "s3": 5,
-        "git": 54
+        "git": 52
       },
-      "github_repos": 28,
-      "github_indexed": 6,
+      "github_repos": 26,
+      "github_indexed": 4,
       "github_mirrored": 26
     },
-    "_dangling_declarations": [],
+    "_dangling_declarations": [
+      {
+        "kind": "octocode-index",
+        "repo": "unix",
+        "declared_by": "cloud-cgc-mcp"
+      },
+      {
+        "kind": "octocode-index",
+        "repo": "tools",
+        "declared_by": "cloud-cgc-mcp"
+      }
+    ],
     "entries": [
       {
         "id": "gitea/app#sqlite",
@@ -9400,22 +9411,22 @@
         }
       },
       {
-        "id": "git#gh/diegonmarcos",
+        "id": "git#gh/cloud-unix",
         "service": "gitea",
         "container": null,
         "engine": "git",
         "kind": "git-remote",
         "host": "github",
-        "repo": "diegonmarcos/diegonmarcos",
+        "repo": "diegonmarcos/cloud-unix",
         "visibility": "public",
         "fork": false,
-        "pushed_at": "2026-08-16T07:05:46Z",
+        "pushed_at": "2026-08-18T12:31:17Z",
         "indexed": false,
         "local_dir": null,
         "mirrored": true,
         "persistence": {
           "type": "git",
-          "ref": "https://github.com/diegonmarcos/diegonmarcos.git",
+          "ref": "https://github.com/diegonmarcos/cloud-unix.git",
           "mount": null
         },
         "vm": null,
@@ -9425,107 +9436,17 @@
         }
       },
       {
-        "id": "git#gitea/diegonmarcos",
+        "id": "git#gitea/cloud-unix",
         "service": "gitea",
         "container": null,
         "engine": "git",
         "kind": "git-remote",
         "host": "gitea",
-        "repo": "diegonmarcos",
-        "upstream": "https://github.com/diegonmarcos/diegonmarcos.git",
+        "repo": "cloud-unix",
+        "upstream": "https://github.com/diegonmarcos/cloud-unix.git",
         "persistence": {
           "type": "git",
-          "ref": "https://github.com/diegonmarcos/diegonmarcos.git",
-          "mount": null
-        },
-        "vm": "oci-A1-f_0",
-        "backup": {
-          "enabled": true,
-          "strategy": null
-        }
-      },
-      {
-        "id": "git#gh/cloud",
-        "service": "cloud-cgc-mcp",
-        "container": null,
-        "engine": "git",
-        "kind": "git-remote",
-        "host": "github",
-        "repo": "diegonmarcos/cloud",
-        "visibility": "public",
-        "fork": false,
-        "pushed_at": "2026-08-12T21:32:42Z",
-        "indexed": true,
-        "local_dir": "cloud",
-        "mirrored": true,
-        "persistence": {
-          "type": "git",
-          "ref": "https://github.com/diegonmarcos/cloud.git",
-          "mount": null
-        },
-        "vm": null,
-        "backup": {
-          "enabled": false,
-          "strategy": null
-        }
-      },
-      {
-        "id": "git#gitea/cloud",
-        "service": "gitea",
-        "container": null,
-        "engine": "git",
-        "kind": "git-remote",
-        "host": "gitea",
-        "repo": "cloud",
-        "upstream": "https://github.com/diegonmarcos/cloud.git",
-        "persistence": {
-          "type": "git",
-          "ref": "https://github.com/diegonmarcos/cloud.git",
-          "mount": null
-        },
-        "vm": "oci-A1-f_0",
-        "backup": {
-          "enabled": true,
-          "strategy": null
-        }
-      },
-      {
-        "id": "git#gh/unix",
-        "service": "cloud-cgc-mcp",
-        "container": null,
-        "engine": "git",
-        "kind": "git-remote",
-        "host": "github",
-        "repo": "diegonmarcos/unix",
-        "visibility": "public",
-        "fork": false,
-        "pushed_at": "2026-08-12T19:32:28Z",
-        "indexed": true,
-        "local_dir": "unix",
-        "mirrored": true,
-        "persistence": {
-          "type": "git",
-          "ref": "https://github.com/diegonmarcos/unix.git",
-          "mount": null
-        },
-        "vm": null,
-        "backup": {
-          "enabled": false,
-          "strategy": null
-        }
-      },
-      {
-        "id": "git#gitea/unix",
-        "service": "gitea",
-        "container": null,
-        "engine": "git",
-        "kind": "git-remote",
-        "host": "gitea",
-        "repo": "unix",
-        "upstream": "https://github.com/diegonmarcos/unix.git",
-        "persistence": {
-          "type": "git",
-          "ref": "https://github.com/diegonmarcos/unix.git",
+          "ref": "https://github.com/diegonmarcos/cloud-unix.git",
           "mount": null
         },
         "vm": "oci-A1-f_0",
@@ -9544,7 +9465,7 @@
         "repo": "diegonmarcos/diegonmarcos.github.io",
         "visibility": "public",
         "fork": false,
-        "pushed_at": "2026-08-12T19:29:15Z",
+        "pushed_at": "2026-08-18T12:29:48Z",
         "indexed": true,
         "local_dir": "front",
         "mirrored": true,
@@ -9580,112 +9501,112 @@
         }
       },
       {
-        "id": "git#gh/cloud-data",
-        "service": "cloud-cgc-mcp",
+        "id": "git#gh/cloud-mykonsole-dtk",
+        "service": "gitea",
         "container": null,
         "engine": "git",
         "kind": "git-remote",
         "host": "github",
-        "repo": "diegonmarcos/cloud-data",
+        "repo": "diegonmarcos/cloud-mykonsole-dtk",
+        "visibility": "public",
+        "fork": false,
+        "pushed_at": "2026-08-18T12:24:59Z",
+        "indexed": false,
+        "local_dir": null,
+        "mirrored": true,
+        "persistence": {
+          "type": "git",
+          "ref": "https://github.com/diegonmarcos/cloud-mykonsole-dtk.git",
+          "mount": null
+        },
+        "vm": null,
+        "backup": {
+          "enabled": false,
+          "strategy": null
+        }
+      },
+      {
+        "id": "git#gitea/cloud-mykonsole-dtk",
+        "service": "gitea",
+        "container": null,
+        "engine": "git",
+        "kind": "git-remote",
+        "host": "gitea",
+        "repo": "cloud-mykonsole-dtk",
+        "upstream": "https://github.com/diegonmarcos/cloud-mykonsole-dtk.git",
+        "persistence": {
+          "type": "git",
+          "ref": "https://github.com/diegonmarcos/cloud-mykonsole-dtk.git",
+          "mount": null
+        },
+        "vm": "oci-A1-f_0",
+        "backup": {
+          "enabled": true,
+          "strategy": null
+        }
+      },
+      {
+        "id": "git#gh/front-assets-cdn",
+        "service": "gitea",
+        "container": null,
+        "engine": "git",
+        "kind": "git-remote",
+        "host": "github",
+        "repo": "diegonmarcos/front-assets-cdn",
+        "visibility": "public",
+        "fork": false,
+        "pushed_at": "2026-08-18T12:24:58Z",
+        "indexed": false,
+        "local_dir": null,
+        "mirrored": true,
+        "persistence": {
+          "type": "git",
+          "ref": "https://github.com/diegonmarcos/front-assets-cdn.git",
+          "mount": null
+        },
+        "vm": null,
+        "backup": {
+          "enabled": false,
+          "strategy": null
+        }
+      },
+      {
+        "id": "git#gitea/front-assets-cdn",
+        "service": "gitea",
+        "container": null,
+        "engine": "git",
+        "kind": "git-remote",
+        "host": "gitea",
+        "repo": "front-assets-cdn",
+        "upstream": "https://github.com/diegonmarcos/front-assets-cdn.git",
+        "persistence": {
+          "type": "git",
+          "ref": "https://github.com/diegonmarcos/front-assets-cdn.git",
+          "mount": null
+        },
+        "vm": "oci-A1-f_0",
+        "backup": {
+          "enabled": true,
+          "strategy": null
+        }
+      },
+      {
+        "id": "git#gh/cloud-vault",
+        "service": "gitea",
+        "container": null,
+        "engine": "git",
+        "kind": "git-remote",
+        "host": "github",
+        "repo": "diegonmarcos/cloud-vault",
         "visibility": "private",
         "fork": false,
-        "pushed_at": "2026-08-12T18:51:18Z",
-        "indexed": true,
-        "local_dir": "cloud-data",
-        "mirrored": true,
-        "persistence": {
-          "type": "git",
-          "ref": "https://github.com/diegonmarcos/cloud-data.git",
-          "mount": null
-        },
-        "vm": null,
-        "backup": {
-          "enabled": false,
-          "strategy": null
-        }
-      },
-      {
-        "id": "git#gitea/cloud-data",
-        "service": "gitea",
-        "container": null,
-        "engine": "git",
-        "kind": "git-remote",
-        "host": "gitea",
-        "repo": "cloud-data",
-        "upstream": "https://github.com/diegonmarcos/cloud-data.git",
-        "persistence": {
-          "type": "git",
-          "ref": "https://github.com/diegonmarcos/cloud-data.git",
-          "mount": null
-        },
-        "vm": "oci-A1-f_0",
-        "backup": {
-          "enabled": true,
-          "strategy": null
-        }
-      },
-      {
-        "id": "git#gh/front-data",
-        "service": "cloud-cgc-mcp",
-        "container": null,
-        "engine": "git",
-        "kind": "git-remote",
-        "host": "github",
-        "repo": "diegonmarcos/front-data",
-        "visibility": "public",
-        "fork": false,
-        "pushed_at": "2026-08-12T14:05:03Z",
-        "indexed": true,
-        "local_dir": "front-data",
-        "mirrored": true,
-        "persistence": {
-          "type": "git",
-          "ref": "https://github.com/diegonmarcos/front-data.git",
-          "mount": null
-        },
-        "vm": null,
-        "backup": {
-          "enabled": false,
-          "strategy": null
-        }
-      },
-      {
-        "id": "git#gitea/front-data",
-        "service": "gitea",
-        "container": null,
-        "engine": "git",
-        "kind": "git-remote",
-        "host": "gitea",
-        "repo": "front-data",
-        "upstream": "https://github.com/diegonmarcos/front-data.git",
-        "persistence": {
-          "type": "git",
-          "ref": "https://github.com/diegonmarcos/front-data.git",
-          "mount": null
-        },
-        "vm": "oci-A1-f_0",
-        "backup": {
-          "enabled": true,
-          "strategy": null
-        }
-      },
-      {
-        "id": "git#gh/vault",
-        "service": "gitea",
-        "container": null,
-        "engine": "git",
-        "kind": "git-remote",
-        "host": "github",
-        "repo": "diegonmarcos/vault",
-        "visibility": "private",
-        "fork": false,
-        "pushed_at": "2026-08-12T13:24:44Z",
+        "pushed_at": "2026-08-18T12:16:15Z",
         "indexed": false,
         "local_dir": null,
         "mirrored": true,
         "persistence": {
           "type": "git",
-          "ref": "https://github.com/diegonmarcos/vault.git",
+          "ref": "https://github.com/diegonmarcos/cloud-vault.git",
           "mount": null
         },
         "vm": null,
@@ -9695,17 +9616,17 @@
         }
       },
       {
-        "id": "git#gitea/vault",
+        "id": "git#gitea/cloud-vault",
         "service": "gitea",
         "container": null,
         "engine": "git",
         "kind": "git-remote",
         "host": "gitea",
-        "repo": "vault",
-        "upstream": "https://github.com/diegonmarcos/vault.git",
+        "repo": "cloud-vault",
+        "upstream": "https://github.com/diegonmarcos/cloud-vault.git",
         "persistence": {
           "type": "git",
-          "ref": "https://github.com/diegonmarcos/vault.git",
+          "ref": "https://github.com/diegonmarcos/cloud-vault.git",
           "mount": null
         },
         "vm": "oci-A1-f_0",
@@ -9715,22 +9636,22 @@
         }
       },
       {
-        "id": "git#gh/cloud-master",
+        "id": "git#gh/diegonmarcos",
         "service": "gitea",
         "container": null,
         "engine": "git",
         "kind": "git-remote",
         "host": "github",
-        "repo": "diegonmarcos/cloud-master",
+        "repo": "diegonmarcos/diegonmarcos",
         "visibility": "public",
         "fork": false,
-        "pushed_at": "2026-08-12T10:39:58Z",
+        "pushed_at": "2026-08-18T12:07:56Z",
         "indexed": false,
         "local_dir": null,
         "mirrored": true,
         "persistence": {
           "type": "git",
-          "ref": "https://github.com/diegonmarcos/cloud-master.git",
+          "ref": "https://github.com/diegonmarcos/diegonmarcos.git",
           "mount": null
         },
         "vm": null,
@@ -9740,17 +9661,17 @@
         }
       },
       {
-        "id": "git#gitea/cloud-master",
+        "id": "git#gitea/diegonmarcos",
         "service": "gitea",
         "container": null,
         "engine": "git",
         "kind": "git-remote",
         "host": "gitea",
-        "repo": "cloud-master",
-        "upstream": "https://github.com/diegonmarcos/cloud-master.git",
+        "repo": "diegonmarcos",
+        "upstream": "https://github.com/diegonmarcos/diegonmarcos.git",
         "persistence": {
           "type": "git",
-          "ref": "https://github.com/diegonmarcos/cloud-master.git",
+          "ref": "https://github.com/diegonmarcos/diegonmarcos.git",
           "mount": null
         },
         "vm": "oci-A1-f_0",
@@ -9760,22 +9681,22 @@
         }
       },
       {
-        "id": "git#gh/repo_master",
+        "id": "git#gh/cloud-infra",
         "service": "gitea",
         "container": null,
         "engine": "git",
         "kind": "git-remote",
         "host": "github",
-        "repo": "diegonmarcos/repo_master",
+        "repo": "diegonmarcos/cloud-infra",
         "visibility": "public",
         "fork": false,
-        "pushed_at": "2026-08-12T10:38:11Z",
+        "pushed_at": "2026-08-18T12:06:53Z",
         "indexed": false,
         "local_dir": null,
         "mirrored": true,
         "persistence": {
           "type": "git",
-          "ref": "https://github.com/diegonmarcos/repo_master.git",
+          "ref": "https://github.com/diegonmarcos/cloud-infra.git",
           "mount": null
         },
         "vm": null,
@@ -9785,17 +9706,17 @@
         }
       },
       {
-        "id": "git#gitea/repo_master",
+        "id": "git#gitea/cloud-infra",
         "service": "gitea",
         "container": null,
         "engine": "git",
         "kind": "git-remote",
         "host": "gitea",
-        "repo": "repo_master",
-        "upstream": "https://github.com/diegonmarcos/repo_master.git",
+        "repo": "cloud-infra",
+        "upstream": "https://github.com/diegonmarcos/cloud-infra.git",
         "persistence": {
           "type": "git",
-          "ref": "https://github.com/diegonmarcos/repo_master.git",
+          "ref": "https://github.com/diegonmarcos/cloud-infra.git",
           "mount": null
         },
         "vm": "oci-A1-f_0",
@@ -9805,22 +9726,22 @@
         }
       },
       {
-        "id": "git#gh/cloud-android",
+        "id": "git#gh/git-repos-master",
         "service": "gitea",
         "container": null,
         "engine": "git",
         "kind": "git-remote",
         "host": "github",
-        "repo": "diegonmarcos/cloud-android",
+        "repo": "diegonmarcos/git-repos-master",
         "visibility": "public",
         "fork": false,
-        "pushed_at": "2026-08-12T10:18:11Z",
+        "pushed_at": "2026-08-18T12:03:59Z",
         "indexed": false,
         "local_dir": null,
         "mirrored": true,
         "persistence": {
           "type": "git",
-          "ref": "https://github.com/diegonmarcos/cloud-android.git",
+          "ref": "https://github.com/diegonmarcos/git-repos-master.git",
           "mount": null
         },
         "vm": null,
@@ -9830,17 +9751,17 @@
         }
       },
       {
-        "id": "git#gitea/cloud-android",
+        "id": "git#gitea/git-repos-master",
         "service": "gitea",
         "container": null,
         "engine": "git",
         "kind": "git-remote",
         "host": "gitea",
-        "repo": "cloud-android",
-        "upstream": "https://github.com/diegonmarcos/cloud-android.git",
+        "repo": "git-repos-master",
+        "upstream": "https://github.com/diegonmarcos/git-repos-master.git",
         "persistence": {
           "type": "git",
-          "ref": "https://github.com/diegonmarcos/cloud-android.git",
+          "ref": "https://github.com/diegonmarcos/git-repos-master.git",
           "mount": null
         },
         "vm": "oci-A1-f_0",
@@ -9859,7 +9780,7 @@
         "repo": "diegonmarcos/front-galaxy-gaia",
         "visibility": "private",
         "fork": false,
-        "pushed_at": "2026-08-12T10:17:11Z",
+        "pushed_at": "2026-08-18T12:03:51Z",
         "indexed": false,
         "local_dir": null,
         "mirrored": true,
@@ -9904,7 +9825,7 @@
         "repo": "diegonmarcos/front-asset-cdn",
         "visibility": "private",
         "fork": false,
-        "pushed_at": "2026-08-12T10:17:09Z",
+        "pushed_at": "2026-08-18T12:03:50Z",
         "indexed": false,
         "local_dir": null,
         "mirrored": true,
@@ -9940,22 +9861,22 @@
         }
       },
       {
-        "id": "git#gh/front-assets-cdn",
-        "service": "gitea",
+        "id": "git#gh/front-data",
+        "service": "cloud-cgc-mcp",
         "container": null,
         "engine": "git",
         "kind": "git-remote",
         "host": "github",
-        "repo": "diegonmarcos/front-assets-cdn",
+        "repo": "diegonmarcos/front-data",
         "visibility": "public",
         "fork": false,
-        "pushed_at": "2026-08-12T10:17:07Z",
-        "indexed": false,
-        "local_dir": null,
+        "pushed_at": "2026-08-18T12:03:48Z",
+        "indexed": true,
+        "local_dir": "front-data",
         "mirrored": true,
         "persistence": {
           "type": "git",
-          "ref": "https://github.com/diegonmarcos/front-assets-cdn.git",
+          "ref": "https://github.com/diegonmarcos/front-data.git",
           "mount": null
         },
         "vm": null,
@@ -9965,17 +9886,107 @@
         }
       },
       {
-        "id": "git#gitea/front-assets-cdn",
+        "id": "git#gitea/front-data",
         "service": "gitea",
         "container": null,
         "engine": "git",
         "kind": "git-remote",
         "host": "gitea",
-        "repo": "front-assets-cdn",
-        "upstream": "https://github.com/diegonmarcos/front-assets-cdn.git",
+        "repo": "front-data",
+        "upstream": "https://github.com/diegonmarcos/front-data.git",
         "persistence": {
           "type": "git",
-          "ref": "https://github.com/diegonmarcos/front-assets-cdn.git",
+          "ref": "https://github.com/diegonmarcos/front-data.git",
+          "mount": null
+        },
+        "vm": "oci-A1-f_0",
+        "backup": {
+          "enabled": true,
+          "strategy": null
+        }
+      },
+      {
+        "id": "git#gh/cloud-android",
+        "service": "gitea",
+        "container": null,
+        "engine": "git",
+        "kind": "git-remote",
+        "host": "github",
+        "repo": "diegonmarcos/cloud-android",
+        "visibility": "public",
+        "fork": false,
+        "pushed_at": "2026-08-18T12:03:45Z",
+        "indexed": false,
+        "local_dir": null,
+        "mirrored": true,
+        "persistence": {
+          "type": "git",
+          "ref": "https://github.com/diegonmarcos/cloud-android.git",
+          "mount": null
+        },
+        "vm": null,
+        "backup": {
+          "enabled": false,
+          "strategy": null
+        }
+      },
+      {
+        "id": "git#gitea/cloud-android",
+        "service": "gitea",
+        "container": null,
+        "engine": "git",
+        "kind": "git-remote",
+        "host": "gitea",
+        "repo": "cloud-android",
+        "upstream": "https://github.com/diegonmarcos/cloud-android.git",
+        "persistence": {
+          "type": "git",
+          "ref": "https://github.com/diegonmarcos/cloud-android.git",
+          "mount": null
+        },
+        "vm": "oci-A1-f_0",
+        "backup": {
+          "enabled": true,
+          "strategy": null
+        }
+      },
+      {
+        "id": "git#gh/cloud",
+        "service": "cloud-cgc-mcp",
+        "container": null,
+        "engine": "git",
+        "kind": "git-remote",
+        "host": "github",
+        "repo": "diegonmarcos/cloud",
+        "visibility": "public",
+        "fork": false,
+        "pushed_at": "2026-08-18T12:03:43Z",
+        "indexed": true,
+        "local_dir": "cloud",
+        "mirrored": true,
+        "persistence": {
+          "type": "git",
+          "ref": "https://github.com/diegonmarcos/cloud.git",
+          "mount": null
+        },
+        "vm": null,
+        "backup": {
+          "enabled": false,
+          "strategy": null
+        }
+      },
+      {
+        "id": "git#gitea/cloud",
+        "service": "gitea",
+        "container": null,
+        "engine": "git",
+        "kind": "git-remote",
+        "host": "gitea",
+        "repo": "cloud",
+        "upstream": "https://github.com/diegonmarcos/cloud.git",
+        "persistence": {
+          "type": "git",
+          "ref": "https://github.com/diegonmarcos/cloud.git",
           "mount": null
         },
         "vm": "oci-A1-f_0",
@@ -9994,7 +10005,7 @@
         "repo": "diegonmarcos/cloud-data-lfs",
         "visibility": "private",
         "fork": false,
-        "pushed_at": "2026-08-12T09:57:00Z",
+        "pushed_at": "2026-08-18T12:03:41Z",
         "indexed": false,
         "local_dir": null,
         "mirrored": true,
@@ -10030,67 +10041,22 @@
         }
       },
       {
-        "id": "git#gh/tools",
+        "id": "git#gh/cloud-data",
         "service": "cloud-cgc-mcp",
         "container": null,
         "engine": "git",
         "kind": "git-remote",
         "host": "github",
-        "repo": "diegonmarcos/tools",
-        "visibility": "public",
-        "fork": false,
-        "pushed_at": "2026-08-12T09:55:59Z",
-        "indexed": true,
-        "local_dir": "tools",
-        "mirrored": true,
-        "persistence": {
-          "type": "git",
-          "ref": "https://github.com/diegonmarcos/tools.git",
-          "mount": null
-        },
-        "vm": null,
-        "backup": {
-          "enabled": false,
-          "strategy": null
-        }
-      },
-      {
-        "id": "git#gitea/tools",
-        "service": "gitea",
-        "container": null,
-        "engine": "git",
-        "kind": "git-remote",
-        "host": "gitea",
-        "repo": "tools",
-        "upstream": "https://github.com/diegonmarcos/tools.git",
-        "persistence": {
-          "type": "git",
-          "ref": "https://github.com/diegonmarcos/tools.git",
-          "mount": null
-        },
-        "vm": "oci-A1-f_0",
-        "backup": {
-          "enabled": true,
-          "strategy": null
-        }
-      },
-      {
-        "id": "git#gh/notes",
-        "service": "gitea",
-        "container": null,
-        "engine": "git",
-        "kind": "git-remote",
-        "host": "github",
-        "repo": "diegonmarcos/notes",
+        "repo": "diegonmarcos/cloud-data",
         "visibility": "private",
         "fork": false,
-        "pushed_at": "2026-08-08T18:26:37Z",
-        "indexed": false,
-        "local_dir": null,
+        "pushed_at": "2026-08-18T12:03:40Z",
+        "indexed": true,
+        "local_dir": "cloud-data",
         "mirrored": true,
         "persistence": {
           "type": "git",
-          "ref": "https://github.com/diegonmarcos/notes.git",
+          "ref": "https://github.com/diegonmarcos/cloud-data.git",
           "mount": null
         },
         "vm": null,
@@ -10100,17 +10066,17 @@
         }
       },
       {
-        "id": "git#gitea/notes",
+        "id": "git#gitea/cloud-data",
         "service": "gitea",
         "container": null,
         "engine": "git",
         "kind": "git-remote",
         "host": "gitea",
-        "repo": "notes",
-        "upstream": "https://github.com/diegonmarcos/notes.git",
+        "repo": "cloud-data",
+        "upstream": "https://github.com/diegonmarcos/cloud-data.git",
         "persistence": {
           "type": "git",
-          "ref": "https://github.com/diegonmarcos/notes.git",
+          "ref": "https://github.com/diegonmarcos/cloud-data.git",
           "mount": null
         },
         "vm": "oci-A1-f_0",
@@ -10120,22 +10086,22 @@
         }
       },
       {
-        "id": "git#gh/FairEmail",
-        "service": null,
+        "id": "git#gh/cloud-notes",
+        "service": "gitea",
         "container": null,
         "engine": "git",
         "kind": "git-remote",
         "host": "github",
-        "repo": "diegonmarcos/FairEmail",
-        "visibility": "public",
-        "fork": true,
-        "pushed_at": "2026-07-04T07:55:41Z",
+        "repo": "diegonmarcos/cloud-notes",
+        "visibility": "private",
+        "fork": false,
+        "pushed_at": "2026-08-18T11:45:46Z",
         "indexed": false,
         "local_dir": null,
-        "mirrored": false,
+        "mirrored": true,
         "persistence": {
           "type": "git",
-          "ref": "https://github.com/diegonmarcos/FairEmail.git",
+          "ref": "https://github.com/diegonmarcos/cloud-notes.git",
           "mount": null
         },
         "vm": null,
@@ -10145,27 +10111,22 @@
         }
       },
       {
-        "id": "git#gh/octocode",
-        "service": null,
+        "id": "git#gitea/cloud-notes",
+        "service": "gitea",
         "container": null,
         "engine": "git",
         "kind": "git-remote",
-        "host": "github",
-        "repo": "diegonmarcos/octocode",
-        "visibility": "public",
-        "fork": true,
-        "pushed_at": "2026-05-08T13:32:26Z",
-        "indexed": false,
-        "local_dir": null,
-        "mirrored": false,
+        "host": "gitea",
+        "repo": "cloud-notes",
+        "upstream": "https://github.com/diegonmarcos/cloud-notes.git",
         "persistence": {
           "type": "git",
-          "ref": "https://github.com/diegonmarcos/octocode.git",
+          "ref": "https://github.com/diegonmarcos/cloud-notes.git",
           "mount": null
         },
-        "vm": null,
+        "vm": "oci-A1-f_0",
         "backup": {
-          "enabled": false,
+          "enabled": true,
           "strategy": null
         }
       },
