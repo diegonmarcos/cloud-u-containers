@@ -30,7 +30,7 @@ The path is derived from the working directory hash. Since all sessions start fr
 | **Content** | Stack definitions, rules, standards | Learned patterns, gotchas, debugging insights |
 | **Persistence** | Survives rebuild (nix store) | Survives sessions (filesystem) |
 | **Loaded as** | System context (full file) | System context (first 200 lines) |
-| **Edit location** | `~/git/unix/.../dotfiles/claude/CLAUDE.md` | Direct at `~/.claude/projects/.../memory/MEMORY.md` |
+| **Edit location** | `~/git/cloud-unix/.../dotfiles/claude/CLAUDE.md` | Direct at `~/.claude/projects/.../memory/MEMORY.md` |
 
 **Key difference**: CLAUDE.md is **prescriptive** (rules to follow), MEMORY.md is **descriptive** (things learned).
 

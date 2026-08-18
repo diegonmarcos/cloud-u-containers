@@ -1,14 +1,14 @@
 # Per-Project Rules: unix/
 
-> `~/git/unix/` — NixOS host config, home-manager (desktop + termux), system flakes
+> `~/git/cloud-unix/` — NixOS host config, home-manager (desktop + termux), system flakes
 
 ## Project-Specific BLOCKs
 
 | Pattern | Message |
 |---------|---------|
-| `nixos-rebuild switch` directly | Use `~/git/unix/aa_nixos-surface_host/build.sh switch` |
+| `nixos-rebuild switch` directly | Use `~/git/cloud-unix/aa_nixos-surface_host/build.sh switch` |
 | `home-manager switch` directly | Use `build.sh switch` from the flake directory |
-| `nix-on-droid switch` directly | Use `~/git/unix/bb_flakes_termux/build.sh switch` |
+| `nix-on-droid switch` directly | Use `~/git/cloud-unix/bb_flakes_termux/build.sh switch` |
 | Edit `~/.claude/CLAUDE.md` | Nix store symlink — edit `src/modules/dotfiles/claude/CLAUDE.md` |
 | Edit `~/.mcp.json` | Nix store symlink — edit `src/modules/dotfiles/claude/mcp.json` |
 | Edit `~/.claude/settings.json` | Nix store symlink — edit source in dotfiles/claude/ |
@@ -33,9 +33,9 @@
 
 | Flake | Command |
 |-------|---------|
-| NixOS host | `~/git/unix/aa_nixos-surface_host/build.sh` (options: r/b/t) |
-| Desktop home-manager | `~/git/unix/ba_flakes_desktop/build.sh switch` |
-| Termux home-manager | `~/git/unix/bb_flakes_termux/build.sh switch` |
+| NixOS host | `~/git/cloud-unix/aa_nixos-surface_host/build.sh` (options: r/b/t) |
+| Desktop home-manager | `~/git/cloud-unix/ba_flakes_desktop/build.sh switch` |
+| Termux home-manager | `~/git/cloud-unix/bb_flakes_termux/build.sh switch` |
 
 ## Key Constraint
 

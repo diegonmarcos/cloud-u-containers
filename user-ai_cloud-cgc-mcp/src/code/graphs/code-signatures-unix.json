@@ -4729,7 +4729,7 @@
       "exports": [],
       "imports": [
         "build.sh",
-        "~/git/unix/ba_flakes_desktop/build.sh"
+        "~/git/cloud-unix/ba_flakes_desktop/build.sh"
       ],
       "symbols": []
     },

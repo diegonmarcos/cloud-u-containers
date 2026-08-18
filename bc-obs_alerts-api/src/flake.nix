@@ -17,7 +17,7 @@
     docker = import ../../_shared/docker.nix;
 
     mkDockerCompose = pkgs: docker.mkCompose pkgs {
-      banner = docker.banner "~/git/cloud/a_solutions/bc-obs_alerts-api/src/flake.nix";
+      banner = docker.banner "~/git/cloud-infra/a_solutions/bc-obs_alerts-api/src/flake.nix";
       services = {
         alerts-api = docker.mkService {
           name = "alerts-api";

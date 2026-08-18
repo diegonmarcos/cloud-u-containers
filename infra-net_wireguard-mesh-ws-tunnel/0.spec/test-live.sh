@@ -6,7 +6,7 @@
 # Exercises the LIVE running system across all 3 components:
 #   • cloud:   bb-net_wireguard-mesh-ws-tunnel container on gcp-proxy
 #   • cloud:   Caddy reverse-proxy at vpn.diegonmarcos.com
-#   • laptop:  ~/git/unix/.../wireguard-wstunnel.nix activation outputs
+#   • laptop:  ~/git/cloud-unix/.../wireguard-wstunnel.nix activation outputs
 #
 # Sibling: 0.spec/test.sh (declarative integrity, build-time)
 #          This one assumes test.sh passed and validates DEPLOY state.
@@ -23,7 +23,7 @@ set -u
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SECRETS="$ROOT/src/secrets.yaml"
-HM_MOD="$HOME/git/unix/ba_flakes_desktop/src/modules/wireguard-wstunnel.nix"
+HM_MOD="$HOME/git/cloud-unix/ba_flakes_desktop/src/modules/wireguard-wstunnel.nix"
 DOMAIN="$(jq -r '.domain' "$ROOT/build.json")"
 WG_HUB="10.0.0.1"
 WG_PORT="8080"
@@ -197,7 +197,7 @@ else
   printf '  \033[33m–\033[0m .wstunnel-secret absent (expected: hm activation does not auto-decrypt; run sops -d > %s/.config/wireguard/.wstunnel-secret before wg-tcp up)\n' "$HOME"
 fi
 # Module file is the source of truth — sanity that flake.nix imports it
-flake_imports=$( grep -c 'wireguard-wstunnel.nix' "$HOME/git/unix/ba_flakes_desktop/src/flake.nix" 2>/dev/null )
+flake_imports=$( grep -c 'wireguard-wstunnel.nix' "$HOME/git/cloud-unix/ba_flakes_desktop/src/flake.nix" 2>/dev/null )
 [ "$flake_imports" -ge 1 ] && ok "flake.nix imports wireguard-wstunnel.nix" \
                            || nope "module not imported in flake.nix"
 
@@ -205,9 +205,9 @@ flake_imports=$( grep -c 'wireguard-wstunnel.nix' "$HOME/git/unix/ba_flakes_desk
 echo "▶ Phase 10 · regression: declarative testers still green"
 for t in \
   "$ROOT/0.spec/test.sh" \
-  "$HOME/git/cloud/a_solutions/bb-net_wireguard-mesh/0.spec/test.sh" \
+  "$HOME/git/cloud-infra/a_solutions/bb-net_wireguard-mesh/0.spec/test.sh" \
   "${HM_MOD%.nix}.test.sh" \
-  "$HOME/git/cloud/9_others/src/engine/test-derivers-json.sh"
+  "$HOME/git/cloud-infra/9_others/src/engine/test-derivers-json.sh"
 do
   # Use the bare filename so the label is meaningful regardless of nesting
   name=$(basename "$t")

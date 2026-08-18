@@ -21,8 +21,8 @@ CLAUDE.md exists in **two separate sources** (desktop and termux), deployed via 
 
 | Environment | Source file (EDIT THIS) | Deployed to (READ-ONLY) |
 |-------------|------------------------|------------------------|
-| **Desktop** | `~/git/unix/ba_flakes_desktop/src/modules/dotfiles/claude/CLAUDE.md` | `~/.claude/CLAUDE.md` |
-| **Termux** | `~/git/unix/bb_flakes_termux/src/modules/dotfiles/claude/CLAUDE.md` | `~/.claude/CLAUDE.md` |
+| **Desktop** | `~/git/cloud-unix/ba_flakes_desktop/src/modules/dotfiles/claude/CLAUDE.md` | `~/.claude/CLAUDE.md` |
+| **Termux** | `~/git/cloud-unix/bb_flakes_termux/src/modules/dotfiles/claude/CLAUDE.md` | `~/.claude/CLAUDE.md` |
 
 ### Other deployed files
 
@@ -53,7 +53,7 @@ home.file.".claude/statusline-command.sh" = {
 
 ### Update workflow
 
-1. Edit the source file in `~/git/unix/b{a,b}_flakes_{desktop,termux}/src/modules/dotfiles/claude/`
+1. Edit the source file in `~/git/cloud-unix/b{a,b}_flakes_{desktop,termux}/src/modules/dotfiles/claude/`
 2. Run `./build.sh switch` from the flake directory
 3. Home-manager updates the nix store symlink
 4. Next Claude Code session loads the updated content

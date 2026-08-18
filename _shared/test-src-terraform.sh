@@ -1,7 +1,7 @@
 #!/bin/sh
 # test-src-terraform.sh — validate a c_vps/<provider>/src/ tree
 #
-# Run: ./test-src-terraform.sh /home/diego/git/cloud/c_vps/<provider>/src
+# Run: ./test-src-terraform.sh /home/diego/git/cloud-infra/c_vps/<provider>/src
 #
 # Exits 0 if all PASS, 1 on any FAIL.
 

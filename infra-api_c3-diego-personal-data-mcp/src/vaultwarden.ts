@@ -7,7 +7,7 @@
  * other secret values are never decrypted or returned.
  *
  * Crypto mirrors the reference client at
- *   ~/git/vault/A0_keys/providers/vaultwarden/setup.ts
+ *   ~/git/cloud-vault/A0_keys/providers/vaultwarden/setup.ts
  * (PBKDF2 master key → HKDF-Expand stretch → AES-256-CBC + HMAC-SHA256).
  *
  * NO secrets live in this file. Connection details + master password are

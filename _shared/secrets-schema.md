@@ -52,6 +52,6 @@ _credentials:
 ## Verification
 
 ```sh
-~/git/cloud/9_others/src/deploy/scripts/audit-credentials-coverage.sh
-~/git/cloud/9_others/tests/test-secrets-roundtrip.sh
+~/git/cloud-infra/9_others/src/deploy/scripts/audit-credentials-coverage.sh
+~/git/cloud-infra/9_others/tests/test-secrets-roundtrip.sh
 ```

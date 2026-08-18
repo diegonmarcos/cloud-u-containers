@@ -11,7 +11,7 @@
 # Companion script: c-pretool-guard-blockers.sh (same matcher; deny tier).
 # Order in settings.json: blockers FIRST (may exit 2), warnings SECOND.
 #
-# Source: ~/git/unix/{ba_flakes_desktop,bb_flakes_termux}/src/modules/dotfiles/claude/
+# Source: ~/git/cloud-unix/{ba_flakes_desktop,bb_flakes_termux}/src/modules/dotfiles/claude/
 # Deployed: ~/.claude/hooks/c-pretool-guard-warning.sh (via home-manager)
 #
 # Input:  JSON on stdin { "tool_name": "Bash", "tool_input": { "command": "..." } }

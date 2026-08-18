@@ -19,14 +19,14 @@ The actual values live encrypted in `secrets.yaml` (sops/age).
 ## Editing
 
 ```bash
-cd ~/git/cloud/a_solutions/aa-sui_snappymail/src
+cd ~/git/cloud-infra/a_solutions/aa-sui_snappymail/src
 sops secrets.yaml
 ```
 
 After adding / changing keys, re-ship:
 
 ```bash
-cd ~/git/cloud/a_solutions/aa-sui_snappymail
+cd ~/git/cloud-infra/a_solutions/aa-sui_snappymail
 ./build.sh ship
 ```
 

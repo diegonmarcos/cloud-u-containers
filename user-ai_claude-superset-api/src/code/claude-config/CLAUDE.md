@@ -57,7 +57,7 @@
 # SECTION A: UNIX (NixOS & System Configuration)
 # ══════════════════════════════════════════════════════════════════════════════
 
-> **Full documentation**: See `~/git/unix/README.md`
+> **Full documentation**: See `~/git/cloud-unix/README.md`
 
 ## A.1 System Overview
 
@@ -73,18 +73,18 @@
 
 | Resource | Path |
 |----------|------|
-| **Unix Repo** | `/home/diego/git/unix` |
+| **Unix Repo** | `/home/diego/git/cloud-unix` |
 | **Surface Host Flake** | `unix/aa_nixos-surface_host/` |
 | **Home-Manager Desktop** | `unix/ba_flakes_desktop/` |
 | **Home-Manager Termux** | `unix/bb_flakes_termux/` |
 
 ```bash
 # Rebuild NixOS system
-~/git/unix/aa_nixos-surface_host/build.sh    # Cmds: s|switch  b|boot  t|test  c|check  u|update  d|diff  i|install  build {raw|iso|qcow|vm}  burn  (no arg = TUI)
+~/git/cloud-unix/aa_nixos-surface_host/build.sh    # Cmds: s|switch  b|boot  t|test  c|check  u|update  d|diff  i|install  build {raw|iso|qcow|vm}  burn  (no arg = TUI)
 
 # Rebuild home-manager
-~/git/unix/ba_flakes_desktop/build.sh        # Desktop
-~/git/unix/bb_flakes_termux/build.sh         # Termux
+~/git/cloud-unix/ba_flakes_desktop/build.sh        # Desktop
+~/git/cloud-unix/bb_flakes_termux/build.sh         # Termux
 ```
 
 **Host Configs**: `surface-plasma` (all 8 profiles + Plasma 6), `surface-gnome`, `server`, `cli`, `minimal`.
@@ -109,15 +109,15 @@
 # SECTION B: CLOUD INFRASTRUCTURE
 # ══════════════════════════════════════════════════════════════════════════════
 
-> **Full documentation**: See `~/git/cloud/README.md`
+> **Full documentation**: See `~/git/cloud-infra/README.md`
 
 ## B.1 Repository & Resources
 
 | Resource | Path | Type |
 |----------|------|------|
-| **Cloud Repo** | `/home/diego/git/cloud` | Git Repository |
-| **Container Configs** | `/home/diego/git/cloud/a_solutions/` | Nix Flakes |
-| **Home Manager** | `/home/diego/git/cloud/b_infra/nixhm-sudo-<vm>/` | Per-VM Configs |
+| **Cloud Repo** | `/home/diego/git/cloud-infra` | Git Repository |
+| **Container Configs** | `/home/diego/git/cloud-infra/a_solutions/` | Nix Flakes |
+| **Home Manager** | `/home/diego/git/cloud-infra/b_infra/nixhm-sudo-<vm>/` | Per-VM Configs |
 
 ## B.2 Virtual Machines
 
@@ -178,14 +178,14 @@ SSH aliases: `ssh oci-mail`, `ssh oci-analytics`, `ssh oci-apps`, `ssh gcp-t4`, 
 
 ```bash
 # Get token (interactive, opens browser for 2FA)
-python ~/git/vault/A0_keys/providers/authelia/oauth/get_token.py
+python ~/git/cloud-vault/A0_keys/providers/authelia/oauth/get_token.py
 
 # Use token
-TOKEN=$(jq -r .access_token ~/git/vault/A0_keys/providers/authelia/oauth/authelia_tokens.json)
+TOKEN=$(jq -r .access_token ~/git/cloud-vault/A0_keys/providers/authelia/oauth/authelia_tokens.json)
 curl -H "Authorization: Bearer $TOKEN" https://<service>.diegonmarcos.com/...
 ```
 
-> Matomo hybrid toggle, IP change management, security stack details: See `~/git/cloud/README.md`
+> Matomo hybrid toggle, IP change management, security stack details: See `~/git/cloud-infra/README.md`
 
 ---
 
@@ -197,14 +197,14 @@ curl -H "Authorization: Bearer $TOKEN" https://<service>.diegonmarcos.com/...
 
 | Resource | Path |
 |----------|------|
-| **Vault Repo** | `/home/diego/git/vault` |
+| **Vault Repo** | `/home/diego/git/cloud-vault` |
 
 **WARNING**: Contains sensitive credentials. NEVER expose or commit to public repos.
 
 ## C.2 Vault Structure
 
 ```
-/home/diego/git/vault/
+/home/diego/git/cloud-vault/
 ├── A0_keys/
 │   ├── ssh/                  # SSH keys (symlinked to ~/.ssh/)
 │   ├── providers/
@@ -250,7 +250,7 @@ oci session authenticate
 gcloud auth login
 
 # Authelia bearer token (for Caddy-protected services)
-python ~/git/vault/A0_keys/providers/authelia/oauth/get_token.py
+python ~/git/cloud-vault/A0_keys/providers/authelia/oauth/get_token.py
 ```
 
 ---
@@ -358,8 +358,8 @@ _mtm.push({'mtm.startTime': (new Date().getTime()), 'event': 'mtm.Start'});
 ║   NEVER edit deployed/output files directly (e.g. ~/.claude/,    ║
 ║   dist/, ~/). ALWAYS find and edit the SOURCE in the git repo    ║
 ║   flake. This file (CLAUDE.md) is deployed output — its source:  ║
-║     ~/git/unix/ba_flakes_desktop/src/modules/dotfiles/claude/    ║
-║     ~/git/unix/bb_flakes_termux/src/modules/dotfiles/claude/     ║
+║     ~/git/cloud-unix/ba_flakes_desktop/src/modules/dotfiles/claude/    ║
+║     ~/git/cloud-unix/bb_flakes_termux/src/modules/dotfiles/claude/     ║
 ║                                                                  ║
 ╚══════════════════════════════════════════════════════════════════╝
 ```
@@ -396,7 +396,7 @@ All workflows support `workflow_dispatch` for manual triggering with optional se
 ### ⚠️ Cloud Service Structure (MANDATORY)
 
 ```
-⚠️ BEFORE modifying ANY cloud/ service: READ ~/git/cloud/README.md
+⚠️ BEFORE modifying ANY cloud/ service: READ ~/git/cloud-infra/README.md
    THIS IS NOT OPTIONAL — it is the full spec for the cloud build system.
 ```
 
@@ -455,7 +455,7 @@ This ensures consistent context loading and access to CLAUDE.md instructions.
 | `docker compose up` on VM | `build.sh compose` |
 | `which cmd` | `command -v cmd` |
 | Edit `dist/` files | Edit `src/` + `build.sh build` |
-| Edit `~/.claude/CLAUDE.md` | Edit source in `~/git/unix/` flakes |
+| Edit `~/.claude/CLAUDE.md` | Edit source in `~/git/cloud-unix/` flakes |
 | `cd dir && git mv dir/...` | `git -C /abs/path mv ...` (absolute paths) |
 | **`git add -f` / `git add --force`** | **plain `git add` — NEVER bypass gitignore. `-f` force-stages secrets, decrypted keys, sensitive/ — gitignore exists for a reason.** |
 
@@ -493,9 +493,9 @@ rpm -qR <package>           # RPM-based
 |------|------|
 | Git Root | `/home/diego/git` |
 | Front-end | `/home/diego/git/front` |
-| Cloud Backend | `/home/diego/git/cloud` |
-| Unix/NixOS | `/home/diego/git/unix` |
-| Security Vault | `/home/diego/git/vault` |
+| Cloud Backend | `/home/diego/git/cloud-infra` |
+| Unix/NixOS | `/home/diego/git/cloud-unix` |
+| Security Vault | `/home/diego/git/cloud-vault` |
 
 ## F.2 Domains
 
@@ -520,7 +520,7 @@ rpm -qR <package>           # RPM-based
 
 ## MCP: code-graph-context (stdio, knowledge graph + infra)
 
-**Source**: `~/git/cloud/a_solutions/bc-obs_code-graph-context-kg-infra-mcp/src/` · **23 tools, 2 resources**
+**Source**: `~/git/cloud-infra/a_solutions/bc-obs_code-graph-context-kg-infra-mcp/src/` · **23 tools, 2 resources**
 
 ### Section A: Raw JSON Infra Knowledge (17 tools)
 
@@ -575,7 +575,7 @@ rpm -qR <package>           # RPM-based
 
 ## MCP: diego-personal-data (stdio, local vault/personal data)
 
-**Source**: `~/git/cloud/a_solutions/ca-dat_c3-diego-personal-data-mcp/src/` · **16 tools, READ-ONLY**
+**Source**: `~/git/cloud-infra/a_solutions/ca-dat_c3-diego-personal-data-mcp/src/` · **16 tools, READ-ONLY**
 
 | Category | Tools |
 |----------|-------|
@@ -588,7 +588,7 @@ rpm -qR <package>           # RPM-based
 
 ## MCP: cloud-infra
 
-**Repo**: `~/git/cloud/a_solutions/bc-obs_c3-infra-mcp-api/` | **SDK**: `@modelcontextprotocol/sdk ^1.12.0`
+**Repo**: `~/git/cloud-infra/a_solutions/bc-obs_c3-infra-mcp-api/` | **SDK**: `@modelcontextprotocol/sdk ^1.12.0`
 
 ### Architecture — Hybrid "Chef + Waiter" Model
 
