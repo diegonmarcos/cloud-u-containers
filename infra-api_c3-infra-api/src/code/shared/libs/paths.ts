@@ -60,7 +60,7 @@ function resolveCloudDataPath(filename: string): string {
   if (isTopology && process.env.CONFIG_PATH) return process.env.CONFIG_PATH;
   const candidates = [
     `/app/${filename}`,                                            // bundled in-image (preferred)
-    join(SOLUTIONS_DIR, "..", "9_others", "dist", filename),      // dev: cloud repo dist/
+    join(SOLUTIONS_DIR, "..", "1_cloud-configs", "dist", filename),      // dev: cloud repo dist/
     join(CLOUD_DATA_DIR, filename),                                // legacy: c3_git_repos clone
     join(SOLUTIONS_DIR, "..", filename),                           // legacy: cloud repo root
   ];
@@ -78,11 +78,11 @@ function resolveConfigPath(): string {
   if (process.env.CONFIG_PATH) return process.env.CONFIG_PATH;
   const candidates = [
     `/app/_cloud-data-consolidated.json`,
-    join(SOLUTIONS_DIR, "..", "9_others", "dist", "_cloud-data-consolidated.json"),
+    join(SOLUTIONS_DIR, "..", "1_cloud-configs", "dist", "_cloud-data-consolidated.json"),
     join(CLOUD_DATA_DIR, "_cloud-data-consolidated.json"),
     join(SOLUTIONS_DIR, "..", "_cloud-data-consolidated.json"),
     `/app/cloud-data-topology.json`,                                                          // 2026-04-27 migrated: legacy fallback
-    join(SOLUTIONS_DIR, "..", "9_others", "dist", "cloud-data-topology.json"),               // 2026-04-27 migrated: legacy fallback
+    join(SOLUTIONS_DIR, "..", "1_cloud-configs", "dist", "cloud-data-topology.json"),               // 2026-04-27 migrated: legacy fallback
     join(CLOUD_DATA_DIR, "cloud-data-topology.json"),                                          // 2026-04-27 migrated: legacy fallback
     join(SOLUTIONS_DIR, "..", "cloud-data-topology.json"),                                     // 2026-04-27 migrated: legacy fallback
     join(SOLUTIONS_DIR, "..", "config.json"),
@@ -90,7 +90,7 @@ function resolveConfigPath(): string {
   for (const p of candidates) {
     if (existsSync(p)) return p;
   }
-  return join(SOLUTIONS_DIR, "..", "9_others", "dist", "_cloud-data-consolidated.json");
+  return join(SOLUTIONS_DIR, "..", "1_cloud-configs", "dist", "_cloud-data-consolidated.json");
 }
 
 export { resolveConfigPath as getConfigPath, resolveCloudDataPath };
@@ -196,7 +196,7 @@ export function syncRepos(force = false): void {
         const repoUrl = REPO_URLS[name];
         if (!repoUrl) continue;
         // Sparse checkout for large repos — only get build.json + config files
-        execSync(`${GIT_SSH} git clone --depth 1 --filter=blob:none --sparse ${repoUrl} ${dir} && cd ${dir} && git sparse-checkout set a_solutions/*/build.json a_solutions/*/src/flake.nix config.json`, {
+        execSync(`${GIT_SSH} git clone --depth 1 --filter=blob:none --sparse ${repoUrl} ${dir} && cd ${dir} && git sparse-checkout set a_solutions/*/build.json a_solutions/*/src/flake.nix config.json 1_cloud-configs/dist`, {
           timeout: 60000,
           stdio: "ignore",
         });
