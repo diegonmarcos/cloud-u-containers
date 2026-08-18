@@ -10,8 +10,9 @@ in
     mail-puller = {
       image = "ghcr.io/diegonmarcos/${buildJson.name}-binaries:latest";
       container_name = app.container_name;
-      # host network: needs to reach co-located maddy :587 and stalwart :2587
-      # (both on lo). Also simplifies outbound HTTPS to Gmail/Outlook.
+      # host network: needs to reach co-located maddy :465 (implicit TLS;
+      # Maddy dual-writes to Stalwart). Also simplifies outbound HTTPS to
+      # Gmail/Outlook.
       network_mode = "host";
       # env_file marked optional: sops-encrypted secrets.yaml isn't populated
       # yet (OAuth client_id/secret/refresh_token). Container boots with empty

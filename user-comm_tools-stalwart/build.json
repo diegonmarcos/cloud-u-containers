@@ -32,7 +32,7 @@
       "auth": "none",
       "tls_skip_verify": true,
       "_doc_root_response_json_removed": "Initially tried serving a STATIC session JSON at jmap.diegonmarcos.com/ to bypass Stalwart's :2443 port leak in apiUrl/downloadUrl/etc. BROKE LTT.rs because the static JSON has empty accounts: {} — JMAP clients NEED the authenticated per-user response which only Stalwart can generate (it includes the user's account ID, capabilities per account, etc.). The :2443 leak is a real Stalwart limitation but reverting to runtime session is the lesser evil. Static-JSON approach is preserved in caddyfile.nix root_response_json schema for non-stateful endpoints (where applicable).",
-      "_doc_l4_ports": "Stalwart is JMAP-only from the client side — clients reach it via jmap.diegonmarcos.com (HTTPS reverse_proxy to :2443). Classical IMAPS (:2993) and SMTPS (:2465) listeners still exist inside the container for legacy-tooling (mail-puller, sorter) but are NOT exposed publicly — those Caddy SNI subhostnames were removed. If you later retire maddy and want Stalwart to take over imap.* / smtps.*, flip the upstream in those maddy-side declarations instead of re-adding -stalwart suffix hostnames.",
+      "_doc_l4_ports": "Stalwart serves JMAP via jmap.diegonmarcos.com (HTTPS reverse_proxy to :2443). The imap.*/smtps.* SNI flip to Stalwart is DONE: maddy's build.json l4_ports route imap.diegonmarcos.com and smtps.diegonmarcos.com (SNI on :443) to oci-mail:2993/:2465, so classical IMAPS/SMTPS clients hit Stalwart's :2993/:2465 listeners; Maddy's :993/:465 are legacy (Maddy retired). l4_ports stays empty here because the SNI declarations live maddy-side.",
       "l4_ports": []
     },
     "app_hub": false,
@@ -84,7 +84,7 @@
   "containers": {
     "app": {
       "container_name": "stalwart",
-      "image": "stalwartlabs/stalwart:v0.14.1",
+      "image": "stalwartlabs/stalwart:v0.16.5",
       "port": 2443,
       "_doc_dual_bind": "Phase 4 of public-surface collapse: each port dual-binds on wg0 (10.0.0.3) AND wg-public (10.1.0.3). Caddy on oci-analytics reaches mail ports via wg-public mesh; legacy clients on wg0 keep working unchanged. compose.nix expands `bind` arrays into one host-port mapping per IP.",
       "_doc_container_port": "v0.16 binds protocols on STANDARD ports inside the container (SMTP:25, IMAPS:993, SMTPS:465, HTTPS:443, Sieve:4190) — listeners are not configurable in v0.16 schema. We map host_offset → container_standard so external clients keep using offset ports (maddy owns the standard ones on the host network until decommissioned).",
@@ -190,7 +190,7 @@
       }
     }
   },
-  "upstream_image": "stalwartlabs/stalwart:v0.14.1",
+  "upstream_image": "stalwartlabs/stalwart:v0.16.5",
   "timezone": "Europe/Madrid",
   "users": {
     "admin": {

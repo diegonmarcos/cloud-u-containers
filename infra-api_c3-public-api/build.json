@@ -89,14 +89,10 @@
     }
   },
   "mail": {
-    "_doc": "JSON-in -> SMTP-out: replicates the aa-sui_tools-http-to-smtp-proxy-api Rust binary contract so the CF Worker does not need any change. Primary delivery to Maddy:25 (MX-style, plain SMTP over WG); shadow delivery to Stalwart:2025 (STARTTLS-capable, fire-and-forget so JMAP clients see the same mail).",
+    "_doc": "JSON-in -> SMTP-out: replicates the aa-sui_tools-http-to-smtp-proxy-api Rust binary contract so the CF Worker does not need any change. Delivery to Maddy:25 (MX-style, plain SMTP over WG); Maddy's dual-write relays every local delivery to Stalwart:2025, so no shadow leg here (2026-08-18: shadow removed — it duplicated every message).",
     "primary": {
       "service": "maddy",
       "via": "smtp_mx"
-    },
-    "shadow": {
-      "service": "stalwart",
-      "via": "smtp_shadow"
     },
     "helo_domain": "c3-public-api.diegonmarcos.com",
     "default_user_env": "SMTP_USER"
@@ -123,7 +119,7 @@
     }
   },
   "limits": {
-    "_doc_request_timeout_ms": "Caps nodemailer connectionTimeout + greetingTimeout + socketTimeout for BOTH primary (Maddy:25) and shadow (Stalwart:2025). Measured baseline 2026-05-21: full SMTP transaction (HELO→DATA→QUIT) to Stalwart warm = 2.3s. Cold-start + STARTTLS-aware Stalwart can spike — first CF Worker probe after deploy had shadow.delivery_failed err=Timeout at 5000ms. 15000ms gives 6× warm-baseline headroom; primary still completes <3s so user-visible latency unchanged. Fire-and-forget shadow detached promise — does not impact response time.",
+    "_doc_request_timeout_ms": "Caps nodemailer connectionTimeout + greetingTimeout + socketTimeout for the Maddy:25 delivery (warm completes <3s). 15000ms headroom retained from the removed Stalwart shadow leg (2026-08-18: shadow removed — Maddy's dual-write already relays every delivery to Stalwart:2025).",
     "max_body_bytes": 1048576,
     "max_ingest_lines": 5000,
     "rate_per_ip_per_min": 60,
@@ -135,7 +131,7 @@
     "base_path": "/pub",
     "endpoint_count": 5,
     "display_name": "C3 Public API",
-    "description": "Single public-edge API on oci-analytics. /mail/http-to-smtp (Bearer) bridges CF Worker -> Maddy + Stalwart over WG. /analytics/{matomo|umami|openobserve}/* (public) passes through to first-party analytics backends.",
+    "description": "Single public-edge API on oci-analytics. /mail/http-to-smtp (Bearer) bridges CF Worker -> Maddy over WG (Maddy dual-writes to Stalwart). /analytics/{matomo|umami|openobserve}/* (public) passes through to first-party analytics backends.",
     "auth": "mixed"
   }
 }

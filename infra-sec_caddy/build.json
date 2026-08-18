@@ -187,6 +187,23 @@
   },
   "proxy": {
     "type": "special",
+    "well_known": [
+      {
+        "_doc": "RFC 8620 JMAP discovery on the jmap vhost. These grafts do double duty: caddyfile.nix mkWellKnownBlock emits the public handlers AND mkSubdomainRoute exempts exactly these paths from the vhost's @not_wg mesh gate, so discovery works off-mesh (Stalwart itself enforces Basic auth) while the rest of the vhost (Stalwart web-admin) stays mesh-only. Mirrors the apex's public JMAP surface declared in user-comm_tools-stalwart proxy.well_known. Declared caddy-side because the gate exemption is a Caddy concern; upstream is explicit (auto-resolve would yield caddy's own VM, not Stalwart's 10.0.0.3:2443).",
+        "path": "/.well-known/jmap",
+        "target_domain": "jmap.diegonmarcos.com",
+        "upstream": "10.0.0.3:2443",
+        "tls_skip_verify": true,
+        "comment": "JMAP discovery on jmap vhost (public per RFC 8620)"
+      },
+      {
+        "path": "/jmap/*",
+        "target_domain": "jmap.diegonmarcos.com",
+        "upstream": "10.0.0.3:2443",
+        "tls_skip_verify": true,
+        "comment": "JMAP session/api/download/upload/eventsource follow-through on jmap vhost"
+      }
+    ],
     "proxy_dashboard": {
       "domain": "proxy.diegonmarcos.com",
       "comment": "Infrastructure dashboard (static HTML)"

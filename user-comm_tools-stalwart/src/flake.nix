@@ -1,5 +1,5 @@
 {
-  description = "Stalwart Mail Server v0.13 — SHADOW MODE (JMAP/Sieve testing, offset ports) — dist layout v2";
+  description = "Stalwart Mail Server v0.16.5 — SHADOW MODE (JMAP/Sieve testing, offset ports) — dist layout v2";
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
 

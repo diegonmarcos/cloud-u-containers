@@ -19,10 +19,10 @@
 //               4xx/5xx.
 //
 // Delivery:
-//   - Primary : SMTP plain (port 25) to maddy on wg0 — MX-style relay.
-//   - Shadow  : Fire-and-forget SMTP (port 2025, STARTTLS-capable) to
-//               stalwart so JMAP clients see the same mail. Errors logged
-//               but do not affect the response.
+//   - SMTP plain (port 25) to maddy on wg0 — MX-style relay. Maddy's own
+//     dual-write relays every local delivery to stalwart:2025, so JMAP
+//     clients see the same mail — do NOT add a second stalwart leg here
+//     (it would duplicate every message; no dedup exists in Stalwart).
 //
 // We do NOT replicate the Rust DNSBL / SPF / rDNS checks here — those were
 // always WARN-only on the proxy hop (the connecting IP is Cloudflare, not
@@ -125,7 +125,7 @@ export async function registerMail(app: FastifyInstance, cfg: AppConfig) {
 
       req.log.info({ req: reqId, from: mailFrom, to: mailTo, msg_id: msgId, client_ip: clientIp }, "request.parsed");
 
-      // ── Primary delivery (maddy:25, plain SMTP over wg0) ──
+      // ── Delivery (maddy:25, plain SMTP over wg0) ──
       const primary = nodemailer.createTransport({
         host: cfg.mail.primary.host,
         port: cfg.mail.primary.port,
@@ -149,38 +149,6 @@ export async function registerMail(app: FastifyInstance, cfg: AppConfig) {
         return reply.code(500).send({ status: "error", error: (err as Error).message });
       } finally {
         primary.close();
-      }
-
-      // ── Shadow delivery (stalwart:2025, fire-and-forget) ──
-      if (cfg.mail.shadow) {
-        const shadowCfg = cfg.mail.shadow;
-        const helo = cfg.mail.heloDomain;
-        // Detached promise: do not await — return primary's OK to the caller
-        // immediately. Shadow failures are logged but never affect status.
-        void (async () => {
-          const shadow = nodemailer.createTransport({
-            host: shadowCfg.host,
-            port: shadowCfg.port,
-            secure: false,
-            ignoreTLS: true,
-            requireTLS: false,
-            name: helo,
-            connectionTimeout: cfg.limits.request_timeout_ms,
-            greetingTimeout: cfg.limits.request_timeout_ms,
-            socketTimeout: cfg.limits.request_timeout_ms,
-          });
-          try {
-            await shadow.sendMail({
-              envelope: { from: mailFrom, to: [mailTo] },
-              raw,
-            });
-            req.log.info({ req: reqId, shadow: shadowCfg.host, port: shadowCfg.port }, "shadow.delivered");
-          } catch (e) {
-            req.log.warn({ req: reqId, err: (e as Error).message, shadow: shadowCfg.host }, "shadow.delivery_failed");
-          } finally {
-            shadow.close();
-          }
-        })();
       }
 
       return reply.code(200).send({ status: "delivered", from: mailFrom, to: mailTo });

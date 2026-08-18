@@ -14,14 +14,7 @@
   "delivery_targets": {
     "maddy": {
       "host": "10.0.0.3",
-      "port": 587,
-      "starttls": true,
-      "user_env": "LOCAL_DELIVERY_USER",
-      "pass_env": "LOCAL_DELIVERY_PASSWORD"
-    },
-    "stalwart": {
-      "host": "10.0.0.3",
-      "port": 2465,
+      "port": 465,
       "starttls": false,
       "implicit_tls": true,
       "user_env": "LOCAL_DELIVERY_USER",
@@ -45,8 +38,7 @@
       "deliver_envelope_from": "diegonmarcos1@gmail.com",
       "deliver_envelope_to": "me@diegonmarcos.com",
       "targets": [
-        "maddy",
-        "stalwart"
+        "maddy"
       ]
     },
     {
@@ -68,8 +60,7 @@
       "deliver_envelope_from": "diegonmarcos@live.com",
       "deliver_envelope_to": "me@diegonmarcos.com",
       "targets": [
-        "maddy",
-        "stalwart"
+        "maddy"
       ]
     }
   ]

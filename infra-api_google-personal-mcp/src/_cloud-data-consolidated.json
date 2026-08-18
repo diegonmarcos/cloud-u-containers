@@ -1405,14 +1405,10 @@
       },
       "_domain_doc": "PUB ROUTING (operator decision 2026-05-27): public-facing routes live under api.diegonmarcos.com/pub/* (high precedence, public ingress via oci-analytics). All other api.* paths remain wg-cloud-only (gcp-proxy edge over wg0). Renamed from /c3-public-api → /pub for clean separation of concerns.",
       "mail": {
-        "_doc": "JSON-in -> SMTP-out: replicates the aa-sui_tools-http-to-smtp-proxy-api Rust binary contract so the CF Worker does not need any change. Primary delivery to Maddy:25 (MX-style, plain SMTP over WG); shadow delivery to Stalwart:2025 (STARTTLS-capable, fire-and-forget so JMAP clients see the same mail).",
+        "_doc": "JSON-in -> SMTP-out: replicates the aa-sui_tools-http-to-smtp-proxy-api Rust binary contract so the CF Worker does not need any change. Delivery to Maddy:25 (MX-style, plain SMTP over WG); Maddy's dual-write relays every local delivery to Stalwart:2025, so no shadow leg here (2026-08-18: shadow removed — it duplicated every message).",
         "primary": {
           "service": "maddy",
           "via": "smtp_mx"
-        },
-        "shadow": {
-          "service": "stalwart",
-          "via": "smtp_shadow"
         },
         "helo_domain": "c3-public-api.diegonmarcos.com",
         "default_user_env": "SMTP_USER"
@@ -1446,7 +1442,7 @@
         }
       },
       "limits": {
-        "_doc_request_timeout_ms": "Caps nodemailer connectionTimeout + greetingTimeout + socketTimeout for BOTH primary (Maddy:25) and shadow (Stalwart:2025). Measured baseline 2026-05-21: full SMTP transaction (HELO→DATA→QUIT) to Stalwart warm = 2.3s. Cold-start + STARTTLS-aware Stalwart can spike — first CF Worker probe after deploy had shadow.delivery_failed err=Timeout at 5000ms. 15000ms gives 6× warm-baseline headroom; primary still completes <3s so user-visible latency unchanged. Fire-and-forget shadow detached promise — does not impact response time.",
+        "_doc_request_timeout_ms": "Caps nodemailer connectionTimeout + greetingTimeout + socketTimeout for the Maddy:25 delivery (warm completes <3s). 15000ms headroom retained from the removed Stalwart shadow leg (2026-08-18: shadow removed — Maddy's dual-write already relays every delivery to Stalwart:2025).",
         "max_body_bytes": 1048576,
         "max_ingest_lines": 5000,
         "rate_per_ip_per_min": 60,
@@ -1465,7 +1461,7 @@
         "base_path": "/pub",
         "endpoint_count": 5,
         "display_name": "C3 Public API",
-        "description": "Single public-edge API on oci-analytics. /mail/http-to-smtp (Bearer) bridges CF Worker -> Maddy + Stalwart over WG. /analytics/{matomo|umami|openobserve}/* (public) passes through to first-party analytics backends.",
+        "description": "Single public-edge API on oci-analytics. /mail/http-to-smtp (Bearer) bridges CF Worker -> Maddy over WG (Maddy dual-writes to Stalwart). /analytics/{matomo|umami|openobserve}/* (public) passes through to first-party analytics backends.",
         "auth": "mixed"
       },
       "secret_env_vars": [
@@ -4598,6 +4594,23 @@
       },
       "proxy": {
         "type": "special",
+        "well_known": [
+          {
+            "_doc": "RFC 8620 JMAP discovery on the jmap vhost. These grafts do double duty: caddyfile.nix mkWellKnownBlock emits the public handlers AND mkSubdomainRoute exempts exactly these paths from the vhost's @not_wg mesh gate, so discovery works off-mesh (Stalwart itself enforces Basic auth) while the rest of the vhost (Stalwart web-admin) stays mesh-only. Mirrors the apex's public JMAP surface declared in user-comm_tools-stalwart proxy.well_known. Declared caddy-side because the gate exemption is a Caddy concern; upstream is explicit (auto-resolve would yield caddy's own VM, not Stalwart's 10.0.0.3:2443).",
+            "path": "/.well-known/jmap",
+            "target_domain": "jmap.diegonmarcos.com",
+            "upstream": "10.0.0.3:2443",
+            "tls_skip_verify": true,
+            "comment": "JMAP discovery on jmap vhost (public per RFC 8620)"
+          },
+          {
+            "path": "/jmap/*",
+            "target_domain": "jmap.diegonmarcos.com",
+            "upstream": "10.0.0.3:2443",
+            "tls_skip_verify": true,
+            "comment": "JMAP session/api/download/upload/eventsource follow-through on jmap vhost"
+          }
+        ],
         "proxy_dashboard": {
           "domain": "proxy.diegonmarcos.com",
           "comment": "Infrastructure dashboard (static HTML)"
@@ -5456,10 +5469,10 @@
           ],
           "_repo_map_comment": "local index dir → GitHub repo to clone (producer GHA / arm DAG). Only 'front' differs (GitHub Pages repo). Data-driven — never hardcode in the workflow/DAG.",
           "repo_map": {
-            "cloud": "cloud",
-            "unix": "unix",
+            "cloud": "cloud-infra",
+            "unix": "cloud-unix",
             "front": "diegonmarcos.github.io",
-            "tools": "tools",
+            "tools": "cloud-mykonsole-dtk",
             "cloud-data": "cloud-data",
             "front-data": "front-data"
           },
@@ -6140,7 +6153,7 @@
       "category": "app",
       "vm": "oci-E2-f_0",
       "folder": "user-comm_mail-puller",
-      "description": "Rust sidecar — IMAP-IDLE pulls from external providers (Gmail, Outlook/Live, …) and dual-delivers into Maddy + Stalwart via SMTP submission. Declarative source list in src/sources.json; OAuth2 creds via sops.",
+      "description": "Rust sidecar — IMAP-IDLE pulls from external providers (Gmail, Outlook/Live, …) and delivers into Maddy via SMTP submission (:465 implicit TLS; Maddy dual-writes to Stalwart). Declarative source list in src/sources.json; OAuth2 creds via sops.",
       "enabled": true,
       "domain": "mail-puller.diegonmarcos.com",
       "flake": "user-comm_mail-puller",
@@ -6680,7 +6693,7 @@
       "containers": {
         "app": {
           "container_name": "stalwart",
-          "image": "stalwartlabs/stalwart:v0.14.1",
+          "image": "stalwartlabs/stalwart:v0.16.5",
           "port": 2443,
           "_doc_dual_bind": "Phase 4 of public-surface collapse: each port dual-binds on wg0 (10.0.0.3) AND wg-public (10.1.0.3). Caddy on oci-analytics reaches mail ports via wg-public mesh; legacy clients on wg0 keep working unchanged. compose.nix expands `bind` arrays into one host-port mapping per IP.",
           "_doc_container_port": "v0.16 binds protocols on STANDARD ports inside the container (SMTP:25, IMAPS:993, SMTPS:465, HTTPS:443, Sieve:4190) — listeners are not configurable in v0.16 schema. We map host_offset → container_standard so external clients keep using offset ports (maddy owns the standard ones on the host network until decommissioned).",
@@ -6838,7 +6851,7 @@
           "auth": "none",
           "tls_skip_verify": true,
           "_doc_root_response_json_removed": "Initially tried serving a STATIC session JSON at jmap.diegonmarcos.com/ to bypass Stalwart's :2443 port leak in apiUrl/downloadUrl/etc. BROKE LTT.rs because the static JSON has empty accounts: {} — JMAP clients NEED the authenticated per-user response which only Stalwart can generate (it includes the user's account ID, capabilities per account, etc.). The :2443 leak is a real Stalwart limitation but reverting to runtime session is the lesser evil. Static-JSON approach is preserved in caddyfile.nix root_response_json schema for non-stateful endpoints (where applicable).",
-          "_doc_l4_ports": "Stalwart is JMAP-only from the client side — clients reach it via jmap.diegonmarcos.com (HTTPS reverse_proxy to :2443). Classical IMAPS (:2993) and SMTPS (:2465) listeners still exist inside the container for legacy-tooling (mail-puller, sorter) but are NOT exposed publicly — those Caddy SNI subhostnames were removed. If you later retire maddy and want Stalwart to take over imap.* / smtps.*, flip the upstream in those maddy-side declarations instead of re-adding -stalwart suffix hostnames.",
+          "_doc_l4_ports": "Stalwart serves JMAP via jmap.diegonmarcos.com (HTTPS reverse_proxy to :2443). The imap.*/smtps.* SNI flip to Stalwart is DONE: maddy's build.json l4_ports route imap.diegonmarcos.com and smtps.diegonmarcos.com (SNI on :443) to oci-mail:2993/:2465, so classical IMAPS/SMTPS clients hit Stalwart's :2993/:2465 listeners; Maddy's :993/:465 are legacy (Maddy retired). l4_ports stays empty here because the SNI declarations live maddy-side.",
           "l4_ports": []
         }
       },
@@ -6858,7 +6871,7 @@
       },
       "_doc_recovery_mode": "First-boot v0.16 bootstrap toggle. Set true to inject STALWART_RECOVERY_MODE=1 + STALWART_RECOVERY_ADMIN=admin:${ADMIN_PASSWORD} into the container's env so v0.16 wipes settings + accepts admin login. After running `stalwart-cli apply --file export.json` + recreating listeners, flip back to false and redeploy. The container reads JMAP-object state from RocksDB on production boot.",
       "recovery_mode": false,
-      "upstream_image": "stalwartlabs/stalwart:v0.14.1",
+      "upstream_image": "stalwartlabs/stalwart:v0.16.5",
       "timezone": "Europe/Madrid",
       "users": {
         "admin": {
@@ -8858,21 +8871,10 @@
         "git": 52
       },
       "github_repos": 26,
-      "github_indexed": 4,
+      "github_indexed": 6,
       "github_mirrored": 26
     },
-    "_dangling_declarations": [
-      {
-        "kind": "octocode-index",
-        "repo": "unix",
-        "declared_by": "cloud-cgc-mcp"
-      },
-      {
-        "kind": "octocode-index",
-        "repo": "tools",
-        "declared_by": "cloud-cgc-mcp"
-      }
-    ],
+    "_dangling_declarations": [],
     "entries": [
       {
         "id": "gitea/app#sqlite",
@@ -9414,7 +9416,7 @@
       },
       {
         "id": "git#gh/cloud-unix",
-        "service": "gitea",
+        "service": "cloud-cgc-mcp",
         "container": null,
         "engine": "git",
         "kind": "git-remote",
@@ -9423,8 +9425,8 @@
         "visibility": "public",
         "fork": false,
         "pushed_at": "2026-08-18T13:07:34Z",
-        "indexed": false,
-        "local_dir": null,
+        "indexed": true,
+        "local_dir": "unix",
         "mirrored": true,
         "persistence": {
           "type": "git",
@@ -9549,7 +9551,7 @@
       },
       {
         "id": "git#gh/cloud-infra",
-        "service": "gitea",
+        "service": "cloud-cgc-mcp",
         "container": null,
         "engine": "git",
         "kind": "git-remote",
@@ -9558,8 +9560,8 @@
         "visibility": "public",
         "fork": false,
         "pushed_at": "2026-08-18T13:01:08Z",
-        "indexed": false,
-        "local_dir": null,
+        "indexed": true,
+        "local_dir": "cloud",
         "mirrored": true,
         "persistence": {
           "type": "git",
@@ -9594,7 +9596,7 @@
       },
       {
         "id": "git#gh/cloud-mykonsole-dtk",
-        "service": "gitea",
+        "service": "cloud-cgc-mcp",
         "container": null,
         "engine": "git",
         "kind": "git-remote",
@@ -9603,8 +9605,8 @@
         "visibility": "public",
         "fork": false,
         "pushed_at": "2026-08-18T12:34:06Z",
-        "indexed": false,
-        "local_dir": null,
+        "indexed": true,
+        "local_dir": "tools",
         "mirrored": true,
         "persistence": {
           "type": "git",
@@ -9999,7 +10001,7 @@
       },
       {
         "id": "git#gh/cloud",
-        "service": "cloud-cgc-mcp",
+        "service": "gitea",
         "container": null,
         "engine": "git",
         "kind": "git-remote",
@@ -10008,8 +10010,8 @@
         "visibility": "public",
         "fork": false,
         "pushed_at": "2026-08-18T12:03:43Z",
-        "indexed": true,
-        "local_dir": "cloud",
+        "indexed": false,
+        "local_dir": null,
         "mirrored": true,
         "persistence": {
           "type": "git",
@@ -11430,6 +11432,7 @@
           "tier1_services": [
             "maddy",
             "stalwart",
+            "stalwart-sorter",
             "mail-puller"
           ],
           "mem_psi_warn": 30,

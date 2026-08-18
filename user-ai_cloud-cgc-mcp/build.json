@@ -121,10 +121,10 @@
       ],
       "_repo_map_comment": "local index dir → GitHub repo to clone (producer GHA / arm DAG). Only 'front' differs (GitHub Pages repo). Data-driven — never hardcode in the workflow/DAG.",
       "repo_map": {
-        "cloud": "cloud",
-        "unix": "unix",
+        "cloud": "cloud-infra",
+        "unix": "cloud-unix",
         "front": "diegonmarcos.github.io",
-        "tools": "tools",
+        "tools": "cloud-mykonsole-dtk",
         "cloud-data": "cloud-data",
         "front-data": "front-data"
       },
