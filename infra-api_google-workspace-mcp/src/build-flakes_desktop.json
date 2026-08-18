@@ -2425,8 +2425,8 @@
             "upstream": "https://github.com/diegonmarcos/front-galaxy-gaia.git",
             "private": true
           },
-          "front-asset-cdn": {
-            "upstream": "https://github.com/diegonmarcos/front-asset-cdn.git",
+          "front-unity": {
+            "upstream": "https://github.com/diegonmarcos/front-unity.git",
             "private": true
           },
           "front-assets-cdn": {
