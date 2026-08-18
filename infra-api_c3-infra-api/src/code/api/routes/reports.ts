@@ -15,7 +15,7 @@
 import { FastifyPluginAsync } from "fastify";
 
 const GH_API = "https://api.github.com";
-const OWNER_REPO = "diegonmarcos/cloud";
+const OWNER_REPO = "diegonmarcos/cloud-infra";
 const RAW_BASE =
   "https://raw.githubusercontent.com/diegonmarcos/cloud-data/main/reports/dist";
 

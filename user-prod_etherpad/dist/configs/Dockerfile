@@ -9,5 +9,5 @@
 # configs image — FROM scratch
 FROM scratch
 COPY . /configs
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
 LABEL cloud.diegonmarcos.image-type="configs"

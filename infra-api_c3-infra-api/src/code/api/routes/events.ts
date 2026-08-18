@@ -25,7 +25,7 @@ const VALID_TYPES = new Set<EventType>(["deploy", "alert", "ops", "ci"]);
 async function fetchCiEvents(): Promise<TimelineEvent[]> {
   try {
     const resp = await fetch(
-      "https://api.github.com/repos/diegonmarcos/cloud/actions/runs?per_page=15",
+      "https://api.github.com/repos/diegonmarcos/cloud-infra/actions/runs?per_page=15",
       { headers: { Accept: "application/vnd.github+json" }, signal: AbortSignal.timeout(10000) },
     );
     if (!resp.ok) return [];

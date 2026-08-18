@@ -19,7 +19,7 @@ the `cypht.env` runtime substitution. Encrypted values live in `secrets.yaml`
 ## Editing
 
 ```bash
-cd ~/git/cloud/a_solutions/aa-sui_cypht/src
+cd ~/git/cloud-infra/a_solutions/aa-sui_cypht/src
 sops secrets.yaml
 ```
 
@@ -33,7 +33,7 @@ mail accounts. Keep these values in sync with snappymail's `secrets.yaml`.
 ## After editing
 
 ```bash
-cd ~/git/cloud/a_solutions/aa-sui_cypht
+cd ~/git/cloud-infra/a_solutions/aa-sui_cypht
 ./build.sh ship
 ```
 
@@ -59,7 +59,7 @@ What you DO once after first ship:
 `secrets.yaml` does not yet exist. To create it:
 
 ```bash
-cd ~/git/cloud/a_solutions/aa-sui_cypht/src
+cd ~/git/cloud-infra/a_solutions/aa-sui_cypht/src
 # 1. Generate strong random values
 openssl rand -base64 24    # → CYPHT_DB_PASSWORD
 openssl rand -base64 24    # → CYPHT_2FA_SECRET (32+ chars)

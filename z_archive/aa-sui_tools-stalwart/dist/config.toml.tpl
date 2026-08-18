@@ -1,7 +1,7 @@
 # ╔══════════════════════════════════════════════════════════════════╗
 # ║ Stalwart Mail Server — declarative config (nix-generated)      ║
 # ║ Secrets substituted at deploy time by init.sh from .secrets    ║
-# ║ Source: ~/git/cloud/a_solutions/aa-sui_tools-stalwart/src/     ║
+# ║ Source: ~/git/cloud-infra/a_solutions/aa-sui_tools-stalwart/src/     ║
 # ╚══════════════════════════════════════════════════════════════════╝
 
 # ── Server ──────────────────────────────────────────────────────

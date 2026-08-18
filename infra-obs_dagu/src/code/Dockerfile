@@ -50,4 +50,4 @@ RUN mkdir -p /home/dagu/.ssh && chown -R dagu:dagu /home/dagu/.ssh
 EXPOSE 8080
 ENTRYPOINT ["dagu"]
 
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"

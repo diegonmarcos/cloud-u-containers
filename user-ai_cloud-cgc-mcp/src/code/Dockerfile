@@ -29,7 +29,7 @@ COPY index.ts config.ts context.ts ./
 COPY tools/ ./tools/
 COPY shared/ ./shared/
 
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
 
 ENV MCP_TRANSPORT=http
 ENV MCP_HTTP_PORT=3105

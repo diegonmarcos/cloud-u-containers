@@ -10,5 +10,5 @@
 FROM node:22-slim
 
 COPY npx tsx index.ts --http /usr/local/bin/npx tsx index.ts --http
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
 CMD ["npx tsx index.ts --http"]

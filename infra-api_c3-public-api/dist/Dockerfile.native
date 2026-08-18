@@ -20,6 +20,6 @@ RUN id -u appuser >/dev/null 2>&1 || useradd -r -m -u 10001 appuser; chown -R ap
 USER appuser
 ENV HOME=/home/appuser
 
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
 ENTRYPOINT []
 CMD ["./entrypoint.sh"]

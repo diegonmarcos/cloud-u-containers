@@ -4,5 +4,5 @@ RUN apt-get update && apt-get install -y --no-install-recommends dnsutils openss
 WORKDIR /app
 COPY . /app
 ENTRYPOINT []
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
 CMD ["npx","tsx","mcp/index.ts","--http"]

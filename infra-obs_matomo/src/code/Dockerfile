@@ -102,7 +102,7 @@ EXPOSE 8080
 
 VOLUME ["/var/www/html", "/var/lib/mysql", "/inbox"]
 
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
 
 ENTRYPOINT ["/scripts/entrypoint.sh"]
 CMD ["supervisord", "-c", "/etc/supervisor/supervisord.conf"]

@@ -10,5 +10,5 @@
 FROM python:3.11-slim
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 COPY uv run main.py --transport streamable-http --tool-tier complete /usr/local/bin/uv run main.py --transport streamable-http --tool-tier complete
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
 CMD ["uv run main.py --transport streamable-http --tool-tier complete"]

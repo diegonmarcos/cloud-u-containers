@@ -56,9 +56,9 @@ fi
 
 # Step 4: Ensure each mirror repo exists
 if ! api "$API/repos/diego/cloud" >/dev/null 2>&1; then
-  echo "Creating mirror: diego/cloud <- https://github.com/diegonmarcos/cloud.git"
+  echo "Creating mirror: diego/cloud <- https://github.com/diegonmarcos/cloud-infra.git"
   api -X POST "$API/repos/migrate" -d '{
-    "clone_addr": "https://github.com/diegonmarcos/cloud.git",
+    "clone_addr": "https://github.com/diegonmarcos/cloud-infra.git",
     "repo_name": "cloud",
     "repo_owner": "diego",
     "mirror": true,
@@ -116,9 +116,9 @@ else
 fi
 
 if ! api "$API/repos/diego/tools" >/dev/null 2>&1; then
-  echo "Creating mirror: diego/tools <- https://github.com/diegonmarcos/tools.git"
+  echo "Creating mirror: diego/tools <- https://github.com/diegonmarcos/cloud-mykonsole-dtk.git"
   api -X POST "$API/repos/migrate" -d '{
-    "clone_addr": "https://github.com/diegonmarcos/tools.git",
+    "clone_addr": "https://github.com/diegonmarcos/cloud-mykonsole-dtk.git",
     "repo_name": "tools",
     "repo_owner": "diego",
     "mirror": true,
@@ -131,9 +131,9 @@ else
 fi
 
 if ! api "$API/repos/diego/unix" >/dev/null 2>&1; then
-  echo "Creating mirror: diego/unix <- https://github.com/diegonmarcos/unix.git"
+  echo "Creating mirror: diego/unix <- https://github.com/diegonmarcos/cloud-unix.git"
   api -X POST "$API/repos/migrate" -d '{
-    "clone_addr": "https://github.com/diegonmarcos/unix.git",
+    "clone_addr": "https://github.com/diegonmarcos/cloud-unix.git",
     "repo_name": "unix",
     "repo_owner": "diego",
     "mirror": true,
@@ -146,9 +146,9 @@ else
 fi
 
 if ! api "$API/repos/diego/vault" >/dev/null 2>&1; then
-  echo "Creating mirror: diego/vault <- https://github.com/diegonmarcos/vault.git"
+  echo "Creating mirror: diego/vault <- https://github.com/diegonmarcos/cloud-vault.git"
   api -X POST "$API/repos/migrate" -d '{
-    "clone_addr": "https://github.com/diegonmarcos/vault.git",
+    "clone_addr": "https://github.com/diegonmarcos/cloud-vault.git",
     "repo_name": "vault",
     "repo_owner": "diego",
     "mirror": true,

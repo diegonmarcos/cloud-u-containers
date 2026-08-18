@@ -12,6 +12,6 @@ RUN mkdir -p /app/cache
 EXPOSE 3019
 CMD ["node", "dist/server.js"]
 
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
 LABEL org.opencontainers.image.description="GDELT News Aggregator — Fastify API with SQLite cache"
 LABEL org.opencontainers.image.title="news-gdelt"

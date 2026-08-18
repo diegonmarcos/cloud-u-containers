@@ -31,4 +31,4 @@ RUN chmod +x /usr/local/bin/ntfy-bridge.sh
 # Ensure dagu user can access SSH keys mounted from host
 RUN mkdir -p /home/dagu/.ssh && chown -R dagu:dagu /home/dagu/.ssh
 
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"

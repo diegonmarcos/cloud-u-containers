@@ -52,8 +52,8 @@ clone_repo() {
 # Cloud infrastructure and backend
 clone_repo "cloud" \
     "$REPOS_DIR/cloud" \
-    "git@github.com:diegonmarcos/cloud.git" \
-    "https://github.com/diegonmarcos/cloud.git"
+    "git@github.com:diegonmarcos/cloud-infra.git" \
+    "https://github.com/diegonmarcos/cloud-infra.git"
 
 # Frontend / GitHub Pages projects
 clone_repo "front-Github_io" \

@@ -158,7 +158,7 @@ function resolveGhRepo(): string {
     const config = getConfig();
     return `${(config as any).owner?.github ?? "diegonmarcos"}/cloud`;
   } catch {}
-  return "diegonmarcos/cloud";
+  return "diegonmarcos/cloud-infra";
 }
 const GH_REPO = resolveGhRepo();
 
@@ -297,12 +297,12 @@ const PRESETS: Record<string, Record<string, string[]>> = {
   },
   gh: {
     "repos": ["repo","list","diegonmarcos","--json","name,visibility,updatedAt","--jq",'.[] | "\\(.name) (\\(.visibility)) \\(.updatedAt[:10])"'],
-    "issues": ["issue","list","--repo","diegonmarcos/cloud","--state","open","--json","number,title,updatedAt"],
-    "prs": ["pr","list","--repo","diegonmarcos/cloud","--state","open","--json","number,title,headRefName"],
-    "runs": ["run","list","--repo","diegonmarcos/cloud","--limit","10","--json","name,status,conclusion,updatedAt"],
-    "workflows": ["workflow","list","--repo","diegonmarcos/cloud","--json","name,id,state"],
-    "releases": ["release","list","--repo","diegonmarcos/cloud","--limit","5"],
-    "secrets": ["secret","list","--repo","diegonmarcos/cloud"],
+    "issues": ["issue","list","--repo","diegonmarcos/cloud-infra","--state","open","--json","number,title,updatedAt"],
+    "prs": ["pr","list","--repo","diegonmarcos/cloud-infra","--state","open","--json","number,title,headRefName"],
+    "runs": ["run","list","--repo","diegonmarcos/cloud-infra","--limit","10","--json","name,status,conclusion,updatedAt"],
+    "workflows": ["workflow","list","--repo","diegonmarcos/cloud-infra","--json","name,id,state"],
+    "releases": ["release","list","--repo","diegonmarcos/cloud-infra","--limit","5"],
+    "secrets": ["secret","list","--repo","diegonmarcos/cloud-infra"],
     "auth": ["auth","status"],
   },
   wrangler: {

@@ -47,7 +47,7 @@
 
     # ── Docker Compose ─────────────────────────────────────────────────
     mkDockerCompose = pkgs: docker.mkCompose pkgs {
-      banner = docker.banner "~/git/cloud/a_solutions/aa-sui_tools-stalwart/src/flake.nix";
+      banner = docker.banner "~/git/cloud-infra/a_solutions/aa-sui_tools-stalwart/src/flake.nix";
       volumes = {
         stalwart_data = {};
       };
@@ -93,7 +93,7 @@
       # ╔══════════════════════════════════════════════════════════════════╗
       # ║ Stalwart Mail Server — declarative config (nix-generated)      ║
       # ║ Secrets substituted at deploy time by init.sh from .secrets    ║
-      # ║ Source: ~/git/cloud/a_solutions/aa-sui_tools-stalwart/src/     ║
+      # ║ Source: ~/git/cloud-infra/a_solutions/aa-sui_tools-stalwart/src/     ║
       # ╚══════════════════════════════════════════════════════════════════╝
 
       # ── Server ──────────────────────────────────────────────────────

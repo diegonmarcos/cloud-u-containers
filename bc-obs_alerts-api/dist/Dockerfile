@@ -17,6 +17,6 @@ ENV NTFY_URL=https://rss.diegonmarcos.com
 
 EXPOSE 5000
 
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
 
 CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "2", "app.main:app"]

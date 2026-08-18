@@ -118,7 +118,7 @@ in {
         # Self-documenting: bake docker-compose.yml into image for inspection
         + "\nCOPY docker-compose.yml /opt/cloud-docs/docker-compose.yml"
         # OCI standard labels
-        + "\nLABEL org.opencontainers.image.source=\"https://github.com/diegonmarcos/cloud\""
+        + "\nLABEL org.opencontainers.image.source=\"https://github.com/diegonmarcos/cloud-infra\""
         + "\nLABEL org.opencontainers.image.description=\"${description}\""
         + "\nLABEL org.opencontainers.image.title=\"${name}\""
         + "\nLABEL cloud.diegonmarcos.from-image=\"${fromImage}\""

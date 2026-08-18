@@ -12,11 +12,11 @@
     "runner_workdir": "/tmp/runner/work",
     "registrations": [
       {
-        "repo_url": "https://github.com/diegonmarcos/cloud",
+        "repo_url": "https://github.com/diegonmarcos/cloud-infra",
         "runner_name": "oci-apps-arm64"
       },
       {
-        "repo_url": "https://github.com/diegonmarcos/unix",
+        "repo_url": "https://github.com/diegonmarcos/cloud-unix",
         "runner_name": "oci-apps-arm64-unix"
       }
     ],
