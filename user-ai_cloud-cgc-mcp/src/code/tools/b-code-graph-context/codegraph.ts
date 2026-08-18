@@ -35,7 +35,7 @@ const useBundle = (): string | null => {
   return null;
 };
 const BUNDLE = useBundle();
-const DIST = BUNDLE ?? join(CLOUD, "9_others", "dist");          // ① infra + ② code-signatures
+const DIST = BUNDLE ?? join(CLOUD, "1_cloud-configs", "dist");          // ① infra + ② code-signatures
 const TTL_MS = 5 * 60 * 1000;
 
 interface GNode { table: string; id: string; key: string; properties: Record<string, unknown>; layer: string }

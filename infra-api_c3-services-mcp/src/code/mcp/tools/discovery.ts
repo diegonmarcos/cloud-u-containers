@@ -73,9 +73,9 @@ function loadTopology(): TopoData | null {
   const gitBase = process.env.GIT_BASE ?? join(homedir(), "git");
   const candidates = [
     "/app/build-c3-services-mcp.json",                                                            // in-image
-    join(gitBase, "cloud", "9_others", "dist", "build-c3-services-mcp.json"),                    // dev / co-located clone
+    join(gitBase, "cloud", "1_cloud-configs", "dist", "build-c3-services-mcp.json"),                    // dev / co-located clone
     "/app/_cloud-data-consolidated.json",                                                         // in-image fallback
-    join(gitBase, "cloud", "9_others", "dist", "_cloud-data-consolidated.json"),                 // dev fallback
+    join(gitBase, "cloud", "1_cloud-configs", "dist", "_cloud-data-consolidated.json"),                 // dev fallback
   ];
   for (const p of candidates) {
     if (!existsSync(p)) continue;

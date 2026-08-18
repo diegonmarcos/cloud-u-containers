@@ -68,7 +68,7 @@ export function getCloudDataPath(filename: string): string {
   const repoRoot = (() => { try { return getRepoRoot(); } catch { return ""; } })();
   const candidates = [
     `/app/${filename}`,
-    repoRoot ? join(repoRoot, "9_others", "dist", filename) : "",
+    repoRoot ? join(repoRoot, "1_cloud-configs", "dist", filename) : "",
     repoRoot ? join(repoRoot, "cloud-data", filename) : "",
     repoRoot ? join(repoRoot, filename) : "",
   ].filter(Boolean) as string[];
