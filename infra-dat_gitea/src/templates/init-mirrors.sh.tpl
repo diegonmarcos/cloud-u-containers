@@ -36,8 +36,7 @@ else
   fi
 fi
 
-AUTH="-H \"Authorization: token $TOKEN\""
-api() { eval curl -sf "$AUTH" -H "'Content-Type: application/json'" "$@"; }
+api() { curl -sf -H "Authorization: token $TOKEN" -H "Content-Type: application/json" "$@"; }
 
 # Step 3: Ensure org exists
 echo "-- Converging Gitea mirrors --"
