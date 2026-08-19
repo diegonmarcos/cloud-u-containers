@@ -3,6 +3,16 @@
 # Source: build.json .gitea.mirrors + secrets.yaml
 # Run: after container is healthy (container-init calls this)
 # Idempotent: safe to run multiple times
+#
+# PRIVATE mirrors need auth_token in the migrate payload (anonymous clone of
+# a private repo yields a bare/empty mirror). Read at runtime from the
+# GITHUB_MIRROR_TOKEN env var — populate it by adding a GITHUB_MIRROR_TOKEN
+# key (fine-grained GitHub PAT, repo:read, scoped to the private repos) to
+# a_solutions/infra-dat_gitea/src/secrets.yaml via:
+#   sops a_solutions/infra-dat_gitea/src/secrets.yaml
+# then re-run `build.sh build && build.sh ship` (never edit dist/ directly).
+# Absent that key, each private mirror WARNs and falls back to the previous
+# anonymous-clone behaviour — nothing regresses, the gap just stays visible.
 set -uo pipefail
 API="http://localhost:@PORT_HTTP@/api/v1"
 CONTAINER="@CONTAINER_NAME@"

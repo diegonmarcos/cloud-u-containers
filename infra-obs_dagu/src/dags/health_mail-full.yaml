@@ -16,7 +16,7 @@ steps:
       # health_mail.ts, retired 2026-04-23). Writes cloud_mail_full.{md,json}
       # into the dagu_dagu_data volume (Docker Compose prefixes named
       # volumes with the project name → bare `dagu_data` resolves to a
-      # different, empty auto-created volume so cloud-data/reports/
+      # different, empty auto-created volume so cloud-data/y_old/reports/
       # build.sh isn't visible inside the spawned container).
       # The container-startup OIDC token (AUTHELIA_BEARER_TOKEN, minted once by
       # fetch-token.sh at boot) expires ~1h later, so scheduled reports run with
@@ -35,10 +35,10 @@ steps:
         -v /opt/ssh-keys/dagu:/root/.ssh \
         -e BEARER_TOKEN="$BEARER" \
         -e CLOUD_DATA_DIR=/var/lib/dagu/data/cloud-source/1_cicd/dist \
-        -w /var/lib/dagu/data/cloud-data/reports \
+        -w /var/lib/dagu/data/cloud-data/y_old/reports \
         "$REPORT_IMAGE" mail
 
-      RESULT_JSON=/var/lib/dagu/data/cloud-data/reports/dist/cloud_mail_full.json
+      RESULT_JSON=/var/lib/dagu/data/cloud-data/y_old/reports/dist/cloud_mail_full.json
       if [ ! -f "$RESULT_JSON" ]; then
         curl -s -X POST "$NTFY_URL/infra_mail-health" \
           -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
