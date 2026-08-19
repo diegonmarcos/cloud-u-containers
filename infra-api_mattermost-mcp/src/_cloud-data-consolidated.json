@@ -4190,6 +4190,38 @@
         "ZO_INGEST_TOKEN"
       ]
     },
+    "reports": {
+      "category": "tools",
+      "vm": "local",
+      "folder": "infra-obs_reports",
+      "description": "Health/security/mail report runner — Rust workspace (5 binaries: cloud-health-full-daily master + 4 derives) packaged into a multi-arch GHCR image. Invoked ad hoc (GHA workflow_dispatch/schedule, Dagu DAGs) — not a standing service, no VM deploy target. Report OUTPUT (dist/ JSON+MD) publishes to the cloud-data repo, not here — see src/entrypoint.sh REPORTS_DIR / reports-common::find_cloud_data_file.",
+      "enabled": true,
+      "flake": "infra-obs_reports",
+      "containers": {
+        "app": {
+          "container_name": "reports",
+          "image": "",
+          "public": false
+        }
+      },
+      "container_names": [
+        "reports"
+      ],
+      "all_ports": [],
+      "all_dns": [],
+      "compose": {
+        "containers": [],
+        "ports": [],
+        "networks": []
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
+      }
+    },
     "umami": {
       "category": "tools",
       "vm": "oci-A1-f_0",
