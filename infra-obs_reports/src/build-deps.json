@@ -1,0 +1,11 @@
+{
+  "_comment": "Build-time deps compiled from source. Pinned for reproducibility — source of truth for reports/Dockerfile.",
+  "pikchr": {
+    "source": "fossil-tarball",
+    "version": "a7f1c35bc0448daf15e2bafa36e510c1517534e620c452ecb314ed57d974f081",
+    "url": "https://pikchr.org/home/tarball/a7f1c35bc0448daf15e2bafa36e510c1517534e620c452ecb314ed57d974f081/pikchr-a7f1c35bc0448daf15e2bafa36e510c1517534e620c452ecb314ed57d974f081.tar.gz",
+    "sha256": "a47ffd985e238c7c3a7113ca89ba2a31fa3cd39c00ba838e94a451173eb9f24e",
+    "build_cmd": "make pikchr",
+    "install_path": "/usr/local/bin/pikchr"
+  }
+}

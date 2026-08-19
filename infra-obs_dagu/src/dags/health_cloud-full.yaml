@@ -29,13 +29,29 @@ steps:
       # CLOUD_DATA_DIR points reports-common's find_cloud_data_file at the
       # cloud-source 1_cicd/dist tree (the report cwd is under cloud-data/,
       # which is NOT an ancestor of cloud-source/ — the walk-up can't reach it).
+      # REPORTS_DIR: app SOURCE moved to cloud-infra (2026-08-19) —
+      # cloud-source/a_solutions/infra-obs_reports/src is where
+      # sync_secrets.yaml's hourly cloud-infra mirror puts it.
       docker run --pull always --rm --network host \
         -v dagu_dagu_data:/var/lib/dagu/data \
         -v /opt/ssh-keys/dagu:/root/.ssh \
         -e BEARER_TOKEN="$BEARER" \
         -e CLOUD_DATA_DIR=/var/lib/dagu/data/cloud-source/1_cloud-configs/dist \
-        -w /var/lib/dagu/data/cloud-data/y_old/reports \
+        -e REPORTS_DIR=/var/lib/dagu/data/cloud-source/a_solutions/infra-obs_reports/src \
         "$REPORT_IMAGE" daily
+      # cloud-source/ is hard-reset hourly (sync_secrets.yaml) — dist/ output
+      # written there is never persisted. Copy it into the cloud-data
+      # checkout in the same volume (git-pull-rebase'd, not hard-reset),
+      # matching the GHA workflows' "Publish to cloud-data" step — this is
+      # what keeps RESULT_JSON below working.
+      docker run --rm --entrypoint sh \
+        -v dagu_dagu_data:/var/lib/dagu/data \
+        "$REPORT_IMAGE" -c '
+          set -e
+          mkdir -p /var/lib/dagu/data/cloud-data/y_old/reports/dist
+          cp -a /var/lib/dagu/data/cloud-source/a_solutions/infra-obs_reports/src/dist/. \
+                /var/lib/dagu/data/cloud-data/y_old/reports/dist/
+        '
 
       RESULT_JSON=/var/lib/dagu/data/cloud-data/y_old/reports/dist/cloud_health_daily.json
       if [ ! -f "$RESULT_JSON" ]; then

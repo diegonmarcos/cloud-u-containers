@@ -7,7 +7,7 @@
 # ║ Rebuild: a_solutions/infra-obs_dagu/build.sh ship
 # ╚══════════════════════════════════════════════════════════════════╝
 # Type A — service-shipped Dockerfile, arch=arm64
-# Source: /nix/store/sbp5xjzphpy43gzk47nii9bxa6yci2az-source/a_solutions/infra-obs_dagu/src/code/Dockerfile
+# Source: /nix/store/p666k6dr5j3dvijkc0fpqn108d7gawcf-source/a_solutions/infra-obs_dagu/src/code/Dockerfile
 FROM alpine:3.19
 USER root
 

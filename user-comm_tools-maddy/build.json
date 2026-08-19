@@ -63,22 +63,9 @@
           "upstream": "oci-mail:25",
           "comment": "SMTP MX plain TCP — design-complete listener; GCP firewall currently blocks public, CF Worker is the active inbound bridge",
           "protocol": "tcp"
-        },
-        {
-          "port": 443,
-          "sni": "imap.diegonmarcos.com",
-          "upstream": "oci-mail:2993",
-          "comment": "IMAPS via SNI on :443 — upstream flipped from Maddy:993 to Stalwart:2993 per aa-sui_tools-stalwart/build.json _doc_l4_ports (Maddy retired)",
-          "protocol": "tls"
-        },
-        {
-          "port": 443,
-          "sni": "smtps.diegonmarcos.com",
-          "upstream": "oci-mail:2465",
-          "comment": "SMTPS via SNI on :443 — upstream flipped from Maddy:465 to Stalwart:2465 per aa-sui_tools-stalwart/build.json _doc_l4_ports (Maddy retired)",
-          "protocol": "tls"
         }
-      ]
+      ],
+      "_doc_l4_ports": "Only :25 lives here — Maddy still answers plain SMTP. The imap./smtps. SNI routes on :443 moved to user-comm_tools-stalwart/build.json, which is what actually terminates them (:2993/:2465). A route is declared by the service that answers the bytes."
     },
     "app_hub": false,
     "mail_hub": {
