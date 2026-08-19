@@ -16,7 +16,7 @@ env:
   - REPOS_VOLUME: octocode_repos
   # local_dir:github_repo pairs — local dir is what consumers mount, github_repo is the clone source.
   # Matches cloud-cgc-mcp build.json .runtime.octocode.repo_map (only 'front' differs: GitHub Pages repo).
-  - REPO_MAP: cloud:cloud cloud-data:cloud-data front:diegonmarcos.github.io unix:unix tools:tools
+  - REPO_MAP: cloud:cloud-infra unix:cloud-unix front:diegonmarcos.github.io tools:cloud-mykonsole-dtk cloud-data:cloud-data front-data:front-data
 mail_on:
   failure: true
   success: false
