@@ -30,7 +30,7 @@
     "postlite-npm": { "container_name": "postlite-npm" },
     "postlite-vaultwarden": { "container_name": "postlite-vaultwarden" },
     "postlite-ntfy": { "container_name": "postlite-ntfy" },
-    "postlite-authelia": { "container_name": "postlite-authelia" },
+    "_doc_postlite-authelia": "Declared by infra-sec_authelia/build.json, which carries the real spec (image, volumes, depends_on) and deploys it as authelia's sidecar. A bare stub here made two build.json files claim the same container_name — the owner declares, the catalogue only points.",
     "sqlite-npm": { "container_name": "sqlite-npm" },
     "sqlite-vaultwarden": { "container_name": "sqlite-vaultwarden" },
     "sqlite-ntfy": { "container_name": "sqlite-ntfy" },
