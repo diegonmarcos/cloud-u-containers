@@ -1,0 +1,14 @@
+{
+  "name": "reports",
+  "description": "Health/security/mail report runner — Rust workspace (5 binaries: cloud-health-full-daily master + 4 derives) packaged into a multi-arch GHCR image. Invoked ad hoc (GHA workflow_dispatch/schedule, Dagu DAGs) — not a standing service, no VM deploy target. Report OUTPUT (dist/ JSON+MD) publishes to the cloud-data repo, not here — see src/entrypoint.sh REPORTS_DIR / reports-common::find_cloud_data_file.",
+  "category": "tools",
+  "build": {
+    "include_cloud_data": "true"
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "cloud-data-reports",
+    "dockerfile": "Dockerfile",
+    "arch": "amd64,arm64"
+  }
+}

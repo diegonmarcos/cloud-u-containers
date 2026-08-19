@@ -37,7 +37,9 @@ steps:
             if [ ! -d /repos/$DIR/.git ]; then
               git clone git@github.com:diegonmarcos/$REMOTE.git /repos/$DIR
             else
-              cd /repos/$DIR && rm -f .git/index.lock 2>/dev/null; git fetch origin main && git reset --hard origin/main
+              cd /repos/$DIR && rm -f .git/index.lock 2>/dev/null
+              git remote set-url origin git@github.com:diegonmarcos/$REMOTE.git
+              git fetch origin main && git reset --hard origin/main
             fi
           '" || echo "WARN: Failed to sync $DIR"
       done
