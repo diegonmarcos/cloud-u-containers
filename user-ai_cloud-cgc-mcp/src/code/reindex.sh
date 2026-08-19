@@ -16,7 +16,11 @@ set -eu
 export HOME="${OCTOCODE_HOME:-/home/appuser}"
 CFG="$HOME/.local/share/octocode/config.toml"
 MODELS="${OCTOCODE_LLM_MODELS:-ollama:claude-haiku openai:gpt-4o-mini}"
-REPOS="${OCTOCODE_REPOS:-cloud unix front tools cloud-data front-data cloud-android}"
+# No hardcoded repo-list fallback. compose.nix injects OCTOCODE_REPOS from
+# build.json .runtime.octocode.index_repos; a baked-in default is just another
+# copy to go stale (this one still said "cloud unix front tools" long after the
+# cloud-* rename). Fail loudly instead of silently indexing the wrong set.
+REPOS="${OCTOCODE_REPOS:?OCTOCODE_REPOS unset — compose.nix must inject it from build.json .runtime.octocode.index_repos}"
 REPOS_ROOT="${OCTOCODE_REPOS_ROOT:-/repos}"
 HEALTH="${BRIDGE_HEALTH_URL:-http://10.0.0.6:3117/health}"
 PULL="${OCTOCODE_PULL:-0}"
