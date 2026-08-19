@@ -32,6 +32,7 @@
       "container_name": "news-gdelt",
       "image": "ghcr.io/diegonmarcos/news-gdelt:latest",
       "port": 3019,
+      "protocol": "http",
       "port_env": "PORT"
     }
   },

@@ -149,6 +149,7 @@
       "container_name": "rss-gateway",
       "image": "python:3.11-slim",
       "port": 8091,
+      "protocol": "http",
       "port_env": null,
       "dns": null,
       "public": false,

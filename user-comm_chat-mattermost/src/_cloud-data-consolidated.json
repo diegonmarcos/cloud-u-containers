@@ -160,7 +160,6 @@
       },
       "instance_id": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacj7dfxl7uifar574je7fzlvtdjp4ghljdwuwdemsdbiva",
       "services": [
-        "matrix-continuwuity",
         "languagetool",
         "c3-infra-api",
         "c3-infra-mcp",
@@ -190,6 +189,7 @@
         "my-ai-api",
         "session-memory",
         "chat-mattermost",
+        "matrix-continuwuity",
         "matrix-element",
         "matrix-mautrix-whatsapp",
         "scrappers-api",
@@ -799,107 +799,6 @@
     }
   },
   "services": {
-    "matrix-continuwuity": {
-      "category": "app",
-      "vm": "oci-A1-f_0",
-      "folder": "user-comm_matrix-continuwuity",
-      "description": "Continuwuity Matrix homeserver (maintained conduwuit fork, Rust/RocksDB) — central hub for chat bridges. Federation enabled via .well-known delegation over :443.",
-      "enabled": true,
-      "domain": "matrix.diegonmarcos.com",
-      "flake": "user-comm_matrix-continuwuity",
-      "port": 8008,
-      "dns": "matrix-continuwuity.app",
-      "upstream": "10.0.0.6:8008",
-      "containers": {
-        "app": {
-          "container_name": "continuwuity",
-          "image": "ghcr.io/diegonmarcos/matrix-continuwuity-binaries:latest",
-          "port": 8008,
-          "port_env": "CONTINUWUITY_PORT",
-          "dns": "matrix-continuwuity.app",
-          "public": true,
-          "proxy": {
-            "domain": "matrix.diegonmarcos.com",
-            "auth": "none"
-          },
-          "healthcheck": "/_matrix/client/versions",
-          "monitoring": {
-            "tls_check": true,
-            "dns_check": true,
-            "endpoint_check": true
-          },
-          "volumes": [
-            "continuwuity_data:/var/lib/continuwuity"
-          ],
-          "env_file": true,
-          "depends_on": [],
-          "resources": null,
-          "read_only": false,
-          "protocol": "http"
-        }
-      },
-      "container_names": [
-        "continuwuity"
-      ],
-      "all_ports": [
-        "8008"
-      ],
-      "all_dns": [
-        "matrix-continuwuity.app"
-      ],
-      "compose": {
-        "containers": [],
-        "ports": [],
-        "networks": []
-      },
-      "proxy": {
-        "primary": {
-          "wg_only": false,
-          "domain": "matrix.diegonmarcos.com",
-          "auth": "none"
-        }
-      },
-      "declared_ports": {
-        "app": 8008
-      },
-      "health": {
-        "path": "/_matrix/client/versions"
-      },
-      "monitoring": {
-        "tls_check": true,
-        "dns_check": true,
-        "endpoint_check": true
-      },
-      "backup": {
-        "enabled": true,
-        "volumes": [
-          "continuwuity_data"
-        ]
-      },
-      "timezone": "Europe/Madrid",
-      "upstream_image": "forgejo.ellis.link/continuwuation/continuwuity:latest",
-      "resources": {
-        "mem_limit": "768M",
-        "mem_reservation": "128M"
-      },
-      "api": {
-        "has_api": true,
-        "has_web_ui": true,
-        "api_path": "/_matrix",
-        "api_url": "https://matrix.diegonmarcos.com/_matrix",
-        "healthcheck_paths": [
-          "/_matrix/client/versions"
-        ],
-        "type": "custom-rest",
-        "base_path": "/_matrix",
-        "display_name": "Matrix (Continuwuity)",
-        "description": "Matrix client-server + federation API served by the Continuwuity homeserver.",
-        "auth": "bearer"
-      },
-      "secret_env_vars": [
-        "CONTINUWUITY_REGISTRATION_TOKEN"
-      ]
-    },
     "alerts-api": {
       "category": "tools",
       "vm": "oci-E2-f_1",
@@ -2700,9 +2599,7 @@
         "postlite-ntfy": {
           "container_name": "postlite-ntfy"
         },
-        "postlite-authelia": {
-          "container_name": "postlite-authelia"
-        },
+        "_doc_postlite-authelia": "Declared by infra-sec_authelia/build.json, which carries the real spec (image, volumes, depends_on) and deploys it as authelia's sidecar. A bare stub here made two build.json files claim the same container_name — the owner declares, the catalogue only points.",
         "sqlite-npm": {
           "container_name": "sqlite-npm"
         },
@@ -2720,7 +2617,7 @@
         "postlite-npm",
         "postlite-vaultwarden",
         "postlite-ntfy",
-        "postlite-authelia",
+        null,
         "sqlite-npm",
         "sqlite-vaultwarden",
         "sqlite-ntfy",
@@ -3770,6 +3667,7 @@
           "container_name": "rss-gateway",
           "image": "python:3.11-slim",
           "port": 8091,
+          "protocol": "http",
           "port_env": null,
           "dns": null,
           "public": false,
@@ -6272,6 +6170,107 @@
         "GMAIL_APP_PASSWORD"
       ]
     },
+    "matrix-continuwuity": {
+      "category": "app",
+      "vm": "oci-A1-f_0",
+      "folder": "user-comm_matrix-continuwuity",
+      "description": "Continuwuity Matrix homeserver (maintained conduwuit fork, Rust/RocksDB) — central hub for chat bridges. Federation enabled via .well-known delegation over :443.",
+      "enabled": true,
+      "domain": "matrix.diegonmarcos.com",
+      "flake": "user-comm_matrix-continuwuity",
+      "port": 8008,
+      "dns": "matrix-continuwuity.app",
+      "upstream": "10.0.0.6:8008",
+      "containers": {
+        "app": {
+          "container_name": "continuwuity",
+          "image": "ghcr.io/diegonmarcos/matrix-continuwuity-binaries:latest",
+          "port": 8008,
+          "port_env": "CONTINUWUITY_PORT",
+          "dns": "matrix-continuwuity.app",
+          "public": true,
+          "proxy": {
+            "domain": "matrix.diegonmarcos.com",
+            "auth": "none"
+          },
+          "healthcheck": "/_matrix/client/versions",
+          "monitoring": {
+            "tls_check": true,
+            "dns_check": true,
+            "endpoint_check": true
+          },
+          "volumes": [
+            "continuwuity_data:/var/lib/continuwuity"
+          ],
+          "env_file": true,
+          "depends_on": [],
+          "resources": null,
+          "read_only": false,
+          "protocol": "http"
+        }
+      },
+      "container_names": [
+        "continuwuity"
+      ],
+      "all_ports": [
+        "8008"
+      ],
+      "all_dns": [
+        "matrix-continuwuity.app"
+      ],
+      "compose": {
+        "containers": [],
+        "ports": [],
+        "networks": []
+      },
+      "proxy": {
+        "primary": {
+          "wg_only": false,
+          "domain": "matrix.diegonmarcos.com",
+          "auth": "none"
+        }
+      },
+      "declared_ports": {
+        "app": 8008
+      },
+      "health": {
+        "path": "/_matrix/client/versions"
+      },
+      "monitoring": {
+        "tls_check": true,
+        "dns_check": true,
+        "endpoint_check": true
+      },
+      "backup": {
+        "enabled": true,
+        "volumes": [
+          "continuwuity_data"
+        ]
+      },
+      "timezone": "Europe/Madrid",
+      "upstream_image": "forgejo.ellis.link/continuwuation/continuwuity:latest",
+      "resources": {
+        "mem_limit": "768M",
+        "mem_reservation": "128M"
+      },
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/_matrix",
+        "api_url": "https://matrix.diegonmarcos.com/_matrix",
+        "healthcheck_paths": [
+          "/_matrix/client/versions"
+        ],
+        "type": "custom-rest",
+        "base_path": "/_matrix",
+        "display_name": "Matrix (Continuwuity)",
+        "description": "Matrix client-server + federation API served by the Continuwuity homeserver.",
+        "auth": "bearer"
+      },
+      "secret_env_vars": [
+        "CONTINUWUITY_REGISTRATION_TOKEN"
+      ]
+    },
     "matrix-element": {
       "category": "app",
       "vm": "oci-A1-f_0",
@@ -7439,6 +7438,7 @@
           "container_name": "news-gdelt",
           "image": "ghcr.io/diegonmarcos/news-gdelt:latest",
           "port": 3019,
+          "protocol": "http",
           "port_env": "PORT"
         }
       },
@@ -10626,12 +10626,6 @@
     "internal_zones": [],
     "derived_entries": [
       {
-        "name": "matrix-continuwuity.app",
-        "type": "A",
-        "value": "10.0.0.6",
-        "service": "matrix-continuwuity"
-      },
-      {
         "name": "alerts-api.app",
         "type": "A",
         "value": "10.0.0.4",
@@ -10864,6 +10858,12 @@
         "type": "A",
         "value": "10.0.0.6",
         "service": "chat-mattermost"
+      },
+      {
+        "name": "matrix-continuwuity.app",
+        "type": "A",
+        "value": "10.0.0.6",
+        "service": "matrix-continuwuity"
       },
       {
         "name": "matrix-element.app",
@@ -11552,7 +11552,6 @@
         "is_public_ingress": false,
         "idle_shutdown": null,
         "containers": [
-          "matrix-continuwuity",
           "languagetool",
           "c3-infra-api",
           "c3-infra-mcp",
@@ -11582,6 +11581,7 @@
           "my-ai-api",
           "session-memory",
           "chat-mattermost",
+          "matrix-continuwuity",
           "matrix-element",
           "matrix-mautrix-whatsapp",
           "scrappers-api",
@@ -11865,11 +11865,6 @@
       }
     },
     "services": {
-      "matrix-continuwuity": {
-        "dir": "user-comm_matrix-continuwuity",
-        "vm": "oci-apps",
-        "has_docker": true
-      },
       "alerts-api": {
         "dir": "bc-obs_alerts-api",
         "vm": "oci-analytics",
@@ -12078,6 +12073,11 @@
       "mail-puller": {
         "dir": "user-comm_mail-puller",
         "vm": "oci-mail",
+        "has_docker": true
+      },
+      "matrix-continuwuity": {
+        "dir": "user-comm_matrix-continuwuity",
+        "vm": "oci-apps",
         "has_docker": true
       },
       "matrix-element": {
