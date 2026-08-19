@@ -16,7 +16,7 @@ set -eu
 export HOME="${OCTOCODE_HOME:-/home/appuser}"
 CFG="$HOME/.local/share/octocode/config.toml"
 MODELS="${OCTOCODE_LLM_MODELS:-ollama:claude-haiku openai:gpt-4o-mini}"
-REPOS="${OCTOCODE_REPOS:-cloud unix front tools cloud-data front-data}"
+REPOS="${OCTOCODE_REPOS:-cloud unix front tools cloud-data front-data cloud-android}"
 REPOS_ROOT="${OCTOCODE_REPOS_ROOT:-/repos}"
 HEALTH="${BRIDGE_HEALTH_URL:-http://10.0.0.6:3117/health}"
 PULL="${OCTOCODE_PULL:-0}"

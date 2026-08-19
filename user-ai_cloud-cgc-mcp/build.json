@@ -117,7 +117,8 @@
         "front",
         "tools",
         "cloud-data",
-        "front-data"
+        "front-data",
+        "cloud-android"
       ],
       "_repo_map_comment": "local index dir → GitHub repo to clone (producer GHA / arm DAG). Only 'front' differs (GitHub Pages repo). Data-driven — never hardcode in the workflow/DAG.",
       "repo_map": {
@@ -126,7 +127,8 @@
         "front": "diegonmarcos.github.io",
         "tools": "cloud-mykonsole-dtk",
         "cloud-data": "cloud-data",
-        "front-data": "front-data"
+        "front-data": "front-data",
+        "cloud-android": "cloud-android"
       },
       "home": "/home/appuser",
       "kg_store": {
