@@ -21,7 +21,7 @@ steps:
         fi
       " 2>&1
       RC=$?
-      [ $RC -ne 0 ] && curl -sf -X POST "$NTFY_URL/deploy" -H "Title: [$VM] pull-up FAILED" -H "Priority: 4" -d "exit=$RC" 2>/dev/null
+      [ $RC -ne 0 ] && curl -sf -X POST "$NTFY_URL/deploy_containers" -H "Title: [$VM] pull-up FAILED" -H "Priority: 4" -d "exit=$RC" 2>/dev/null
       exit $RC
   - name: oci-mail
     command: |
@@ -36,7 +36,7 @@ steps:
         fi
       " 2>&1
       RC=$?
-      [ $RC -ne 0 ] && curl -sf -X POST "$NTFY_URL/deploy" -H "Title: [$VM] pull-up FAILED" -H "Priority: 4" -d "exit=$RC" 2>/dev/null
+      [ $RC -ne 0 ] && curl -sf -X POST "$NTFY_URL/deploy_containers" -H "Title: [$VM] pull-up FAILED" -H "Priority: 4" -d "exit=$RC" 2>/dev/null
       exit $RC
   - name: oci-analytics
     command: |
@@ -51,7 +51,7 @@ steps:
         fi
       " 2>&1
       RC=$?
-      [ $RC -ne 0 ] && curl -sf -X POST "$NTFY_URL/deploy" -H "Title: [$VM] pull-up FAILED" -H "Priority: 4" -d "exit=$RC" 2>/dev/null
+      [ $RC -ne 0 ] && curl -sf -X POST "$NTFY_URL/deploy_containers" -H "Title: [$VM] pull-up FAILED" -H "Priority: 4" -d "exit=$RC" 2>/dev/null
       exit $RC
   - name: oci-apps
     command: |
@@ -66,5 +66,5 @@ steps:
         fi
       " 2>&1
       RC=$?
-      [ $RC -ne 0 ] && curl -sf -X POST "$NTFY_URL/deploy" -H "Title: [$VM] pull-up FAILED" -H "Priority: 4" -d "exit=$RC" 2>/dev/null
+      [ $RC -ne 0 ] && curl -sf -X POST "$NTFY_URL/deploy_containers" -H "Title: [$VM] pull-up FAILED" -H "Priority: 4" -d "exit=$RC" 2>/dev/null
       exit $RC

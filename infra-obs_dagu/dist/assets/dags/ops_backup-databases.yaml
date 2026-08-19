@@ -23,8 +23,9 @@ steps:
       # NOTE: consolidated derivation may miss `type: custom` entries with dump_cmd
       # (photos-webhook, crawlee redis/minio, matomo). Legacy fallback preserved for those.
       CONS=""
-      for p in /var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json \
-               /var/lib/dagu/data/cloud-data/2_configs/dist/_cloud-data-consolidated.json \
+      for p in /var/lib/dagu/data/cloud-source/1_cloud-configs/dist/_cloud-data-consolidated.json \
+               /var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json \
+               /var/lib/dagu/data/cloud-data/1_cloud-configs/dist/_cloud-data-consolidated.json \
                /app/_cloud-data-consolidated.json; do
         [ -f "$p" ] && CONS="$p" && break
       done
@@ -68,7 +69,7 @@ steps:
         ' "$CONS" > "$BACKUP_JSON"
       else
         for p in /var/lib/dagu/data/cloud-data/cloud-data-backup-targets.json \
-                 /var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-backup-targets.json \
+                 /var/lib/dagu/data/cloud-data/1_cicd/dist/cloud-data-backup-targets.json \
                  /app/cloud-data-backup-targets.json; do
           [ -f "$p" ] && BACKUP_JSON="$p" && break
         done
@@ -87,7 +88,7 @@ steps:
         elif .type == "mariadb" then
           "if docker ps --format {{.Names}} | grep -qx \(.container); then docker exec \(.container) mariadb-dump -u \(.user) \(.db) 2>/dev/null | gzip > \(.container)-\($s).sql.gz && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
         elif .type == "sqlite" then
-          "if docker ps --format {{.Names}} | grep -qx \(.container); then docker exec \(.container) sqlite3 \(.path) \".backup /tmp/backup-dump.db\" 2>/dev/null && docker cp \(.container):/tmp/backup-dump.db /var/backups/databases/\(.container)-\($s).sqlite && gzip -f /var/backups/databases/\(.container)-\($s).sqlite && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
+          "if docker ps --format {{.Names}} | grep -qx \(.container); then docker cp \(.container):\(.path) /var/backups/databases/\(.container)-\($s).sqlite 2>/dev/null && gzip -f /var/backups/databases/\(.container)-\($s).sqlite && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
         elif .type == "custom" then
           "if docker ps --format {{.Names}} | grep -qx \(.container); then docker exec \(.container) \(.dump_cmd) 2>/dev/null | gzip > \(.container)-\($s).dump.gz && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
         else "echo UNKNOWN_TYPE_\(.type)_\(.container)" end
@@ -105,8 +106,9 @@ steps:
       # NOTE: consolidated derivation may miss `type: custom` entries with dump_cmd
       # (photos-webhook, crawlee redis/minio, matomo). Legacy fallback preserved for those.
       CONS=""
-      for p in /var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json \
-               /var/lib/dagu/data/cloud-data/2_configs/dist/_cloud-data-consolidated.json \
+      for p in /var/lib/dagu/data/cloud-source/1_cloud-configs/dist/_cloud-data-consolidated.json \
+               /var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json \
+               /var/lib/dagu/data/cloud-data/1_cloud-configs/dist/_cloud-data-consolidated.json \
                /app/_cloud-data-consolidated.json; do
         [ -f "$p" ] && CONS="$p" && break
       done
@@ -150,7 +152,7 @@ steps:
         ' "$CONS" > "$BACKUP_JSON"
       else
         for p in /var/lib/dagu/data/cloud-data/cloud-data-backup-targets.json \
-                 /var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-backup-targets.json \
+                 /var/lib/dagu/data/cloud-data/1_cicd/dist/cloud-data-backup-targets.json \
                  /app/cloud-data-backup-targets.json; do
           [ -f "$p" ] && BACKUP_JSON="$p" && break
         done
@@ -169,14 +171,16 @@ steps:
         elif .type == "mariadb" then
           "if docker ps --format {{.Names}} | grep -qx \(.container); then docker exec \(.container) mariadb-dump -u \(.user) \(.db) 2>/dev/null | gzip > \(.container)-\($s).sql.gz && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
         elif .type == "sqlite" then
-          "if docker ps --format {{.Names}} | grep -qx \(.container); then docker exec \(.container) sqlite3 \(.path) \".backup /tmp/backup-dump.db\" 2>/dev/null && docker cp \(.container):/tmp/backup-dump.db /var/backups/databases/\(.container)-\($s).sqlite && gzip -f /var/backups/databases/\(.container)-\($s).sqlite && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
+          "if docker ps --format {{.Names}} | grep -qx \(.container); then docker cp \(.container):\(.path) /var/backups/databases/\(.container)-\($s).sqlite 2>/dev/null && gzip -f /var/backups/databases/\(.container)-\($s).sqlite && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
         elif .type == "custom" then
           "if docker ps --format {{.Names}} | grep -qx \(.container); then docker exec \(.container) \(.dump_cmd) 2>/dev/null | gzip > \(.container)-\($s).dump.gz && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
         else "echo UNKNOWN_TYPE_\(.type)_\(.container)" end
       ' "$BACKUP_JSON")
 
       ssh $SSH_OPTS "$USER@$IP" bash <<REMOTE
-        sudo mkdir -p /var/backups/databases && cd /var/backups/databases
+        # gcp-proxy's /var/backups is root-only; chown so the non-root dump
+        # user can write docker-cp'd files (else authelia sqlite never lands).
+        sudo mkdir -p /var/backups/databases && sudo chown "$USER" /var/backups/databases && cd /var/backups/databases
         $DUMP_SCRIPT
         echo ""; ls -lh /var/backups/databases/*${STAMP}* 2>/dev/null | wc -l | xargs -I{} echo "Total: {} dumps on $VM"
       REMOTE
@@ -187,8 +191,9 @@ steps:
       # NOTE: consolidated derivation may miss `type: custom` entries with dump_cmd
       # (photos-webhook, crawlee redis/minio, matomo). Legacy fallback preserved for those.
       CONS=""
-      for p in /var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json \
-               /var/lib/dagu/data/cloud-data/2_configs/dist/_cloud-data-consolidated.json \
+      for p in /var/lib/dagu/data/cloud-source/1_cloud-configs/dist/_cloud-data-consolidated.json \
+               /var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json \
+               /var/lib/dagu/data/cloud-data/1_cloud-configs/dist/_cloud-data-consolidated.json \
                /app/_cloud-data-consolidated.json; do
         [ -f "$p" ] && CONS="$p" && break
       done
@@ -232,7 +237,7 @@ steps:
         ' "$CONS" > "$BACKUP_JSON"
       else
         for p in /var/lib/dagu/data/cloud-data/cloud-data-backup-targets.json \
-                 /var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-backup-targets.json \
+                 /var/lib/dagu/data/cloud-data/1_cicd/dist/cloud-data-backup-targets.json \
                  /app/cloud-data-backup-targets.json; do
           [ -f "$p" ] && BACKUP_JSON="$p" && break
         done
@@ -251,7 +256,7 @@ steps:
         elif .type == "mariadb" then
           "if docker ps --format {{.Names}} | grep -qx \(.container); then docker exec \(.container) mariadb-dump -u \(.user) \(.db) 2>/dev/null | gzip > \(.container)-\($s).sql.gz && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
         elif .type == "sqlite" then
-          "if docker ps --format {{.Names}} | grep -qx \(.container); then docker exec \(.container) sqlite3 \(.path) \".backup /tmp/backup-dump.db\" 2>/dev/null && docker cp \(.container):/tmp/backup-dump.db /var/backups/databases/\(.container)-\($s).sqlite && gzip -f /var/backups/databases/\(.container)-\($s).sqlite && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
+          "if docker ps --format {{.Names}} | grep -qx \(.container); then docker cp \(.container):\(.path) /var/backups/databases/\(.container)-\($s).sqlite 2>/dev/null && gzip -f /var/backups/databases/\(.container)-\($s).sqlite && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
         elif .type == "custom" then
           "if docker ps --format {{.Names}} | grep -qx \(.container); then docker exec \(.container) \(.dump_cmd) 2>/dev/null | gzip > \(.container)-\($s).dump.gz && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
         else "echo UNKNOWN_TYPE_\(.type)_\(.container)" end
@@ -269,8 +274,9 @@ steps:
       # NOTE: consolidated derivation may miss `type: custom` entries with dump_cmd
       # (photos-webhook, crawlee redis/minio, matomo). Legacy fallback preserved for those.
       CONS=""
-      for p in /var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json \
-               /var/lib/dagu/data/cloud-data/2_configs/dist/_cloud-data-consolidated.json \
+      for p in /var/lib/dagu/data/cloud-source/1_cloud-configs/dist/_cloud-data-consolidated.json \
+               /var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json \
+               /var/lib/dagu/data/cloud-data/1_cloud-configs/dist/_cloud-data-consolidated.json \
                /app/_cloud-data-consolidated.json; do
         [ -f "$p" ] && CONS="$p" && break
       done
@@ -314,7 +320,7 @@ steps:
         ' "$CONS" > "$BACKUP_JSON"
       else
         for p in /var/lib/dagu/data/cloud-data/cloud-data-backup-targets.json \
-                 /var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-backup-targets.json \
+                 /var/lib/dagu/data/cloud-data/1_cicd/dist/cloud-data-backup-targets.json \
                  /app/cloud-data-backup-targets.json; do
           [ -f "$p" ] && BACKUP_JSON="$p" && break
         done
@@ -333,7 +339,7 @@ steps:
         elif .type == "mariadb" then
           "if docker ps --format {{.Names}} | grep -qx \(.container); then docker exec \(.container) mariadb-dump -u \(.user) \(.db) 2>/dev/null | gzip > \(.container)-\($s).sql.gz && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
         elif .type == "sqlite" then
-          "if docker ps --format {{.Names}} | grep -qx \(.container); then docker exec \(.container) sqlite3 \(.path) \".backup /tmp/backup-dump.db\" 2>/dev/null && docker cp \(.container):/tmp/backup-dump.db /var/backups/databases/\(.container)-\($s).sqlite && gzip -f /var/backups/databases/\(.container)-\($s).sqlite && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
+          "if docker ps --format {{.Names}} | grep -qx \(.container); then docker cp \(.container):\(.path) /var/backups/databases/\(.container)-\($s).sqlite 2>/dev/null && gzip -f /var/backups/databases/\(.container)-\($s).sqlite && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
         elif .type == "custom" then
           "if docker ps --format {{.Names}} | grep -qx \(.container); then docker exec \(.container) \(.dump_cmd) 2>/dev/null | gzip > \(.container)-\($s).dump.gz && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
         else "echo UNKNOWN_TYPE_\(.type)_\(.container)" end
@@ -357,8 +363,9 @@ steps:
       # NOTE: consolidated derivation may miss `type: custom` entries with dump_cmd
       # (photos-webhook, crawlee redis/minio, matomo). Legacy fallback preserved for those.
       CONS=""
-      for p in /var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json \
-               /var/lib/dagu/data/cloud-data/2_configs/dist/_cloud-data-consolidated.json \
+      for p in /var/lib/dagu/data/cloud-source/1_cloud-configs/dist/_cloud-data-consolidated.json \
+               /var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json \
+               /var/lib/dagu/data/cloud-data/1_cloud-configs/dist/_cloud-data-consolidated.json \
                /app/_cloud-data-consolidated.json; do
         [ -f "$p" ] && CONS="$p" && break
       done
@@ -402,7 +409,7 @@ steps:
         ' "$CONS" > "$BACKUP_JSON"
       else
         for p in /var/lib/dagu/data/cloud-data/cloud-data-backup-targets.json \
-                 /var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-backup-targets.json \
+                 /var/lib/dagu/data/cloud-data/1_cicd/dist/cloud-data-backup-targets.json \
                  /app/cloud-data-backup-targets.json; do
           [ -f "$p" ] && BACKUP_JSON="$p" && break
         done
@@ -461,8 +468,9 @@ steps:
       # NOTE: consolidated derivation may miss `type: custom` entries with dump_cmd
       # (photos-webhook, crawlee redis/minio, matomo). Legacy fallback preserved for those.
       CONS=""
-      for p in /var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json \
-               /var/lib/dagu/data/cloud-data/2_configs/dist/_cloud-data-consolidated.json \
+      for p in /var/lib/dagu/data/cloud-source/1_cloud-configs/dist/_cloud-data-consolidated.json \
+               /var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json \
+               /var/lib/dagu/data/cloud-data/1_cloud-configs/dist/_cloud-data-consolidated.json \
                /app/_cloud-data-consolidated.json; do
         [ -f "$p" ] && CONS="$p" && break
       done
@@ -506,7 +514,7 @@ steps:
         ' "$CONS" > "$BACKUP_JSON"
       else
         for p in /var/lib/dagu/data/cloud-data/cloud-data-backup-targets.json \
-                 /var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-backup-targets.json \
+                 /var/lib/dagu/data/cloud-data/1_cicd/dist/cloud-data-backup-targets.json \
                  /app/cloud-data-backup-targets.json; do
           [ -f "$p" ] && BACKUP_JSON="$p" && break
         done
@@ -515,7 +523,7 @@ steps:
       COLLECT_USER=$(jq -r '.by_vm."oci-apps".user' "$BACKUP_JSON")
       COUNT=$(ssh $SSH_OPTS "$COLLECT_USER@$COLLECT_IP" "ls /var/backups/collected/*$(date +%Y%m%d)* 2>/dev/null | wc -l")
       SIZE=$(ssh $SSH_OPTS "$COLLECT_USER@$COLLECT_IP" "du -sh /var/backups/collected/ 2>/dev/null | awk '{print \$1}'" || echo "N/A")
-      MSG="DB backup → OCI S3: $COUNT dumps ($SIZE)\nBucket: cloud-backups-db\nDagu: http://10.0.0.3:8070"
+      MSG="DB backup → OCI S3: $COUNT dumps ($SIZE)\nBucket: cloud-backups-db\nDagu: https://workflows.diegonmarcos.com"
       curl -s -X POST "$NTFY_URL/ops_backups" \
         -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
         -H "Title: Daily DB Backup OK ($COUNT dumps)" \

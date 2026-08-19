@@ -1,0 +1,52 @@
+schedule: "*/10 * * * *"
+env:
+  - NTFY_URL: http://10.0.0.6:8090
+  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
+  - GHA_POLL_PAT: ${GHA_POLL_PAT}
+  - GH_ORG: diegonmarcos
+  - GH_REPOS: cloud,unix,front,vault,tools
+mail_on:
+  failure: false
+  success: false
+steps:
+  - name: poll-and-notify
+    command: |
+      # Polls the latest GitHub Actions run per repo (outbound HTTPS to
+      # api.github.com — no new inbound exposure) and publishes a formatted
+      # status message to ntfy's dev_gha-status topic. WG-only: this runs
+      # inside the dagu container on oci-apps and posts to ntfy over the
+      # WireGuard mesh IP (10.0.0.6), never via a public route.
+      IFS=',' read -ra REPOS <<< "$GH_REPOS"
+      for repo in "${REPOS[@]}"; do
+        RUN=$(curl -sf \
+          -H "Authorization: Bearer $GHA_POLL_PAT" \
+          -H "Accept: application/vnd.github+json" \
+          "https://api.github.com/repos/${GH_ORG}/${repo}/actions/runs?per_page=1")
+        [ -z "$RUN" ] && continue
+
+        WF_NAME=$(echo "$RUN" | jq -r '.workflow_runs[0].name // "unknown"')
+        CONCLUSION=$(echo "$RUN" | jq -r '.workflow_runs[0].conclusion // "in_progress"')
+        STATUS=$(echo "$RUN" | jq -r '.workflow_runs[0].status // "unknown"')
+        HTML_URL=$(echo "$RUN" | jq -r '.workflow_runs[0].html_url // ""')
+        BRANCH=$(echo "$RUN" | jq -r '.workflow_runs[0].head_branch // "?"')
+
+        [ -z "$HTML_URL" ] || [ "$HTML_URL" = "null" ] && continue
+
+        case "$CONCLUSION" in
+          success)  PRIORITY=2; TAG="white_check_mark" ;;
+          failure)  PRIORITY=4; TAG="x" ;;
+          cancelled) PRIORITY=2; TAG="no_entry_sign" ;;
+          *)        PRIORITY=3; TAG="hourglass_flowing_sand" ;;
+        esac
+
+        MSG=$(printf "Repo: %s/%s\nBranch: %s\nStatus: %s (%s)\n\nRun: %s" \
+          "$GH_ORG" "$repo" "$BRANCH" "$STATUS" "$CONCLUSION" "$HTML_URL")
+
+        curl -s -X POST "$NTFY_URL/dev_gha-status" \
+          -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
+          -H "Title: [${repo}] ${WF_NAME}" \
+          -H "Priority: ${PRIORITY}" \
+          -H "Tags: ${TAG}" \
+          -H "Click: ${HTML_URL}" \
+          -d "$MSG"
+      done

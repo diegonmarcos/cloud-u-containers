@@ -1,0 +1,29 @@
+# ops_octocode-db-pull — oci-apps (arm) CONSUMES the cloud-cgc octocode DB from GHCR.
+#
+# ZERO logic here: this DAG only carries runtime config (mirroring build.json
+# .db_publish / .runtime.octocode / .containers) and TRIGGERS the universal
+# script /opt/scripts/cloud-cgc-db-restore.sh on oci-apps (deployed via vm-pilot
+# home-manager, same pattern as ops_deploy-pull-up.yaml's /opt/scripts/*.sh).
+# All routines (pull → restore volume → restart → notify) live in that script
+# and run identically anywhere. Runs after the producer's 04:00 update.
+schedule: "0 5 * * *"
+env:
+  - SSH: ssh -i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR
+  - OCI_APPS: ubuntu@10.0.0.6
+  - DB_IMAGE: ghcr.io/diegonmarcos/cloud-cgc-mcp-octocode-db:latest
+  - DB_VOLUME: octocode_db
+  - MCP_CONTAINER: cloud-cgc-mcp
+  - NTFY_URL: http://10.0.0.6:8090
+mail_on:
+  failure: true
+  success: false
+steps:
+  - name: restore
+    command: |
+      $SSH "$OCI_APPS" bash << REMOTE
+      if [ ! -x /opt/scripts/cloud-cgc-db-restore.sh ]; then
+        echo "SKIP: cloud-cgc-db-restore.sh not yet deployed via vm-pilot"
+        exit 0
+      fi
+      DB_IMAGE="$DB_IMAGE" DB_VOLUME="$DB_VOLUME" MCP_CONTAINER="$MCP_CONTAINER" NTFY_URL="$NTFY_URL" /opt/scripts/cloud-cgc-db-restore.sh
+      REMOTE
