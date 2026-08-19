@@ -11,8 +11,9 @@ steps:
     command: |
       # 2026-04-27 migrated: cloud-data-monitoring-targets.json -> _cloud-data-consolidated.json[.vms]
       CONS=""
-      for p in /var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json \
-               /var/lib/dagu/data/cloud-data/2_configs/dist/_cloud-data-consolidated.json \
+      for p in /var/lib/dagu/data/cloud-source/1_cloud-configs/dist/_cloud-data-consolidated.json \
+               /var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json \
+               /var/lib/dagu/data/cloud-data/1_cloud-configs/dist/_cloud-data-consolidated.json \
                /app/_cloud-data-consolidated.json; do
         [ -f "$p" ] && CONS="$p" && break
       done
@@ -25,7 +26,7 @@ steps:
         }' "$CONS" > "$MON_TARGETS"
       else
         for p in /var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json \
-                 /var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-monitoring-targets.json \
+                 /var/lib/dagu/data/cloud-data/1_cicd/dist/cloud-data-monitoring-targets.json \
                  /app/cloud-data-monitoring-targets.json; do
           [ -f "$p" ] && MON_TARGETS="$p" && break
         done
@@ -41,7 +42,7 @@ steps:
       if [ -f /tmp/mesh-failed.$$ ]; then
         FAILED=$(cat /tmp/mesh-failed.$$)
         rm -f /tmp/mesh-failed.$$
-        MSG=$(printf "Unreachable peers:\n%s\n\nAction:\n  ssh <vm> 'wg show'\n  ssh <vm> 'systemctl status wg-quick@wg0'\n\nDagu: http://10.0.0.3:8070" "$FAILED")
+        MSG=$(printf "Unreachable peers:\n%s\n\nAction:\n  ssh <vm> 'wg show'\n  ssh <vm> 'systemctl status wg-quick@wg0'\n\nDagu: https://workflows.diegonmarcos.com" "$FAILED")
         curl -s -X POST "$NTFY_URL/health_mesh" \
           -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
           -H "Title: Mesh Health FAILED" \

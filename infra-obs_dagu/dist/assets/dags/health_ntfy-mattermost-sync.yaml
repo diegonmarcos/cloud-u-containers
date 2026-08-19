@@ -37,6 +37,10 @@ steps:
       - check-mattermost-alive
     command: |
       echo "── Channel sync check ──"
+      if [ -z "$MM_BOT_TOKEN" ]; then
+        echo "SKIP: MM_BOT_TOKEN not configured in dagu secrets — add it to secrets.yaml to enable channel checks"
+        exit 0
+      fi
       MISSING=""
       FOUND=0
       TOTAL=0

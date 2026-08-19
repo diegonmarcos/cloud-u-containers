@@ -91,7 +91,7 @@ steps:
     command: |
       DATE=$(date +%Y-%m-%d)
       VM_COUNT=4
-      MSG="Evidence vault capture $DATE\n$VM_COUNT VMs targeted\nBucket: cloud-backups-evidence\nRetention: 30d/12w/12m\nDagu: http://10.0.0.3:8070"
+      MSG="Evidence vault capture $DATE\n$VM_COUNT VMs targeted\nBucket: cloud-backups-evidence\nRetention: 30d/12w/12m\nDagu: https://workflows.diegonmarcos.com"
       curl -s -X POST "$NTFY_URL/sec_audit" \
         -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
         -H "Title: Evidence Vault — $DATE" \

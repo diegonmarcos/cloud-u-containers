@@ -2,55 +2,44 @@ schedule: "0 3 * * *"
 env:
   - NTFY_URL: http://10.0.0.6:8090
   - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
-  - RSYNC_SSH: ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10
+  - RSYNC_SSH: ssh -i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=10
 mail_on:
   failure: false
   success: false
 steps:
-  - name: sync-caddy-cert-to-maddy
+  - name: sync-wildcard-cert-to-maddy
     command: |
-      # Caddy stores wildcard cert for *.diegonmarcos.com on gcp-proxy
-      # Maddy on oci-mail needs it for IMAPS/SMTPS TLS
-      # Extract cert from Caddy data volume, push to oci-mail
-
-      PROXY="diego@10.0.0.1"
-      MAIL="ubuntu@10.0.0.3"
-      CERT_SRC="/tmp/maddy-tls-sync"
-      CERT_DST="/opt/containers/maddy/tls"
-
-      mkdir -p "$CERT_SRC"
-
-      # Extract wildcard cert from Caddy's data dir on gcp-proxy
-      $RSYNC_SSH $PROXY 'sudo docker cp caddy:/data/caddy/certificates/acme-v02.api.letsencrypt.org-directory/wildcard_.diegonmarcos.com/. /tmp/caddy-cert-export/ 2>/dev/null && cat /tmp/caddy-cert-export/wildcard_.diegonmarcos.com.crt' > "$CERT_SRC/fullchain.pem" 2>/dev/null
-      $RSYNC_SSH $PROXY 'cat /tmp/caddy-cert-export/wildcard_.diegonmarcos.com.key' > "$CERT_SRC/privkey.pem" 2>/dev/null
-
-      # Verify cert is valid
-      if ! openssl x509 -noout -in "$CERT_SRC/fullchain.pem" 2>/dev/null; then
-        # Fallback: try Caddy's internal cert storage path
-        $RSYNC_SSH $PROXY 'sudo find /var/lib/docker/volumes/caddy_caddy_data/_data/caddy/certificates -name "*.crt" -path "*diegonmarcos*" 2>/dev/null | head -1 | xargs sudo cat' > "$CERT_SRC/fullchain.pem" 2>/dev/null
-        $RSYNC_SSH $PROXY 'sudo find /var/lib/docker/volumes/caddy_caddy_data/_data/caddy/certificates -name "*.key" -path "*diegonmarcos*" 2>/dev/null | head -1 | xargs sudo cat' > "$CERT_SRC/privkey.pem" 2>/dev/null
-      fi
-
-      if ! openssl x509 -noout -in "$CERT_SRC/fullchain.pem" 2>/dev/null; then
-        echo "FAILED: Could not extract Caddy wildcard cert"
-        curl -s -X POST "$NTFY_URL/ops_maddy" \
-          -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
-          -H "Title: Maddy TLS sync FAILED" \
-          -H "Priority: 4" \
-          -H "Tags: warning,lock" \
-          -d "Could not extract Caddy wildcard cert from gcp-proxy"
-        rm -rf "$CERT_SRC"
-        exit 1
-      fi
-
-      EXPIRY=$(openssl x509 -noout -enddate -in "$CERT_SRC/fullchain.pem" | cut -d= -f2)
-      echo "Cert valid until: $EXPIRY"
-
-      # Push to oci-mail
-      scp -o StrictHostKeyChecking=no "$CERT_SRC/fullchain.pem" "$CERT_SRC/privkey.pem" "$MAIL:$CERT_DST/"
-
-      # Verify Maddy can read the new cert
-      $RSYNC_SSH $MAIL "openssl x509 -noout -enddate -in $CERT_DST/fullchain.pem"
-
-      rm -rf "$CERT_SRC"
-      echo "OK: Maddy TLS cert synced (expires $EXPIRY)"
+      # The *.diegonmarcos.com wildcard (covers imap./smtps./mail./jmap.) is shared by
+      # Maddy + Stalwart via /opt/containers/maddy/tls. It MUST be sourced from
+      # gcp-proxy (10.0.0.1) — the ACME DNS-01 (Cloudflare) issuer of the wildcard.
+      # DNS-01 needs no public :443, so gcp-proxy renews it fine despite being
+      # WG-private (valid → 2026-10-04). The public edge (oci-analytics) issues
+      # per-HOST certs only (no wildcard, to avoid a DNS-01 collision), and oci-mail's
+      # LOCAL copy is stale (EXPIRED 2026-06-26) — the previous "source locally" logic
+      # shipped that EXPIRED cert (maddy served it → clients + the mail-mcp reject
+      # "certificate has expired"; stalwart never got a valid one). Pull from
+      # gcp-proxy, hard-assert SAN=*.diegonmarcos.com AND not-expiring-within-24h
+      # (NEVER ship apex OR expired), install to the shared tls dir, reload both
+      # daemons. Fail-safe: validation runs on a temp copy BEFORE overwrite, so a
+      # bad/missing/expired source leaves the currently-installed cert untouched.
+      # gcp-proxy caddy stores the DNS-01 wildcard in the caddy_caddy_data volume; SSH user is diego.
+      SRC_FIND='find /var/lib/docker/volumes/caddy_caddy_data/_data/caddy/certificates -path "*wildcard_.diegonmarcos.com*"'
+      CRT_B64=$($RSYNC_SSH diego@10.0.0.1 "sudo sh -c '$SRC_FIND -name \"*.crt\" | head -1 | xargs -r base64 -w0'")
+      KEY_B64=$($RSYNC_SSH diego@10.0.0.1 "sudo sh -c '$SRC_FIND -name \"*.key\" | head -1 | xargs -r base64 -w0'")
+      [ -n "$CRT_B64" ] && [ -n "$KEY_B64" ] || { echo "FAIL: no wildcard cert found on gcp-proxy (DNS-01 issuer)"; exit 1; }
+      $RSYNC_SSH ubuntu@10.0.0.3 "CRT_B64='$CRT_B64' KEY_B64='$KEY_B64' sh -s" <<'REMOTE'
+      set -e
+      DST=/opt/containers/maddy/tls
+      TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
+      printf '%s' "$CRT_B64" | base64 -d > "$TMP/fullchain.pem"
+      printf '%s' "$KEY_B64" | base64 -d > "$TMP/privkey.pem"
+      openssl x509 -noout -ext subjectAltName -in "$TMP/fullchain.pem" 2>/dev/null | grep -q '[*].diegonmarcos.com' \
+        || { echo "FAIL: SAN is not the wildcard — refusing to ship apex"; exit 1; }
+      openssl x509 -noout -checkend 86400 -in "$TMP/fullchain.pem" \
+        || { echo "FAIL: cert expired or expiring within 24h — refusing to ship"; exit 1; }
+      EXPIRY=$(openssl x509 -noout -enddate -in "$TMP/fullchain.pem" | cut -d= -f2)
+      sudo install -m 644 "$TMP/fullchain.pem" "$DST/fullchain.pem"
+      sudo install -m 600 "$TMP/privkey.pem" "$DST/privkey.pem"
+      sudo docker restart maddy stalwart >/dev/null 2>&1 || docker restart maddy stalwart >/dev/null 2>&1 || true
+      echo "OK: maddy+stalwart wildcard installed from oci-analytics (expires $EXPIRY)"
+      REMOTE

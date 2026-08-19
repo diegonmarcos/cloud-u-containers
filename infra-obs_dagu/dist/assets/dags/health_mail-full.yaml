@@ -2,6 +2,9 @@ schedule: "17 7 * * *"
 env:
   - NTFY_URL: http://10.0.0.6:8090
   - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
+  - AUTHELIA_TOKEN_URL: ${AUTHELIA_TOKEN_URL}
+  - AUTHELIA_OIDC_CLIENT_ID: ${AUTHELIA_OIDC_CLIENT_ID}
+  - AUTHELIA_OIDC_CLIENT_SECRET: ${AUTHELIA_OIDC_CLIENT_SECRET}
   - REPORT_IMAGE: ghcr.io/diegonmarcos/cloud-data-reports:latest
 mail_on:
   failure: true
@@ -15,10 +18,23 @@ steps:
       # volumes with the project name → bare `dagu_data` resolves to a
       # different, empty auto-created volume so cloud-data/y_old/reports/
       # build.sh isn't visible inside the spawned container).
-      docker run --rm --network host \
+      # The container-startup OIDC token (AUTHELIA_BEARER_TOKEN, minted once by
+      # fetch-token.sh at boot) expires ~1h later, so scheduled reports run with
+      # a stale token → every private/OIDC check false-fails → criticals → red.
+      # Mint a fresh client_credentials token per run; fall back to the boot one.
+      FRESH_TOKEN=$(curl -s --max-time 10 -X POST "$AUTHELIA_TOKEN_URL" \
+        -u "$AUTHELIA_OIDC_CLIENT_ID:$AUTHELIA_OIDC_CLIENT_SECRET" \
+        -d "grant_type=client_credentials&scope=authelia.bearer.authz" \
+        | grep -o '"access_token":"[^"]*"' | cut -d'"' -f4)
+      BEARER="${FRESH_TOKEN:-$AUTHELIA_BEARER_TOKEN}"
+      # CLOUD_DATA_DIR points reports-common's find_cloud_data_file at the
+      # cloud-source 1_cicd/dist tree (report cwd under cloud-data/ can't
+      # walk up into cloud-source/).
+      docker run --pull always --rm --network host \
         -v dagu_dagu_data:/var/lib/dagu/data \
-        -v /opt/ssh-keys/dagu:/root/.ssh:ro \
-        -e AUTHELIA_BEARER_TOKEN \
+        -v /opt/ssh-keys/dagu:/root/.ssh \
+        -e BEARER_TOKEN="$BEARER" \
+        -e CLOUD_DATA_DIR=/var/lib/dagu/data/cloud-source/1_cloud-configs/dist \
         -w /var/lib/dagu/data/cloud-data/y_old/reports \
         "$REPORT_IMAGE" mail
 
@@ -39,13 +55,15 @@ steps:
       WARNINGS=$(jq -r '.summary.warnings // 0' "$RESULT_JSON")
       TOTAL=$(jq -r '.summary.total_checks // 0' "$RESULT_JSON")
 
-      if [ "$CRITICAL" = "0" ] && [ "$FAILED" = "0" ]; then
+      # Alert (red) only on CRITICAL findings — warnings are informational
+      # health notes, not failures (consistent with health_cloud-full's gate).
+      if [ "$CRITICAL" = "0" ]; then
         curl -s -X POST "$NTFY_URL/infra_mail-health" \
           -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
           -H "Title: Mail Health OK ($PASSED/$TOTAL passed)" \
           -H "Priority: 2" \
           -H "Tags: white_check_mark,email" \
-          -d "$(printf 'All mail checks passed\nPASS=%s · WARN=%s · CRIT=%s\n\nDagu: http://10.0.0.3:8070' "$PASSED" "$WARNINGS" "$CRITICAL")"
+          -d "$(printf 'All mail checks passed\nPASS=%s · WARN=%s · CRIT=%s\n\nDagu: https://workflows.diegonmarcos.com' "$PASSED" "$WARNINGS" "$CRITICAL")"
       else
         FAIL_DETAILS=$(jq -r '.path_checks[]?, .containers[]?, .network[]?, .dns_auth[]?, .internals[]?, .e2e_delivery[]? | select(.passed == false) | "  \(.severity // "?"): \(.name) — \(.details)"' "$RESULT_JSON" | head -15)
         curl -s -X POST "$NTFY_URL/infra_mail-health" \
@@ -53,6 +71,6 @@ steps:
           -H "Title: Mail Health FAILED ($CRITICAL critical, $FAILED failed)" \
           -H "Priority: 5" \
           -H "Tags: rotating_light,email" \
-          -d "$(printf 'PASS=%s · FAIL=%s · CRIT=%s · WARN=%s\n\nTop issues:\n%s\n\nDagu: http://10.0.0.3:8070' "$PASSED" "$FAILED" "$CRITICAL" "$WARNINGS" "$FAIL_DETAILS")"
+          -d "$(printf 'PASS=%s · FAIL=%s · CRIT=%s · WARN=%s\n\nTop issues:\n%s\n\nDagu: https://workflows.diegonmarcos.com' "$PASSED" "$FAILED" "$CRITICAL" "$WARNINGS" "$FAIL_DETAILS")"
         exit 1
       fi

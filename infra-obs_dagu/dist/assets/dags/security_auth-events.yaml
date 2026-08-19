@@ -24,7 +24,7 @@ steps:
         RECENT_LOGINS=$($SSH $user@$ip "grep 'Accepted' /var/log/auth.log 2>/dev/null | grep '$TODAY' | tail -3 | awk '{print \"    \" \$0}'" 2>/dev/null || echo "    (none)")
         REPORT="${REPORT}$name ($ip):\n  SSH accepted: $ACCEPTED | failed: $FAILED_SSH\n  Sudo events: $SUDO_EVENTS\n  Active TCP: $ACTIVE_CONN | Docker listeners: $DOCKER_CONN\n  Recent logins:\n$RECENT_LOGINS\n\n"
       done
-      MSG=$(echo -e "Daily Connection Report ($TODAY):\n\n${REPORT}Inspect:\n  ssh <user>@<ip> 'journalctl -u ssh --since yesterday'\n  ssh <user>@<ip> 'last -20'\n  ssh <user>@<ip> 'ss -tunap'\n\nDagu: http://10.0.0.3:8070")
+      MSG=$(echo -e "Daily Connection Report ($TODAY):\n\n${REPORT}Inspect:\n  ssh <user>@<ip> 'journalctl -u ssh --since yesterday'\n  ssh <user>@<ip> 'last -20'\n  ssh <user>@<ip> 'ss -tunap'\n\nDagu: https://workflows.diegonmarcos.com")
       curl -s -X POST "$NTFY_URL/sec_connections" \
         -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
         -H "Title: Daily Connection Report" \

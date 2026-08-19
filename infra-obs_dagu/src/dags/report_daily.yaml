@@ -44,7 +44,7 @@ steps:
         -v dagu_dagu_data:/var/lib/dagu/data \
         -v octocode_repos:/repos:ro \
         -w /var/lib/dagu/data/cloud-data/y_old/reports \
-        -e CLOUD_DATA_DIR=/repos/cloud/1_cicd/dist \
+        -e CLOUD_DATA_DIR=/repos/cloud/1_cloud-configs/dist \
         -e BEARER_TOKEN="$AUTHELIA_BEARER_TOKEN" \
         -e NOREPLY_PASSWORD="$NOREPLY_PASSWORD" \
         -e STALWART_LOGIN_PASSWORD="$STALWART_LOGIN_PASSWORD" \

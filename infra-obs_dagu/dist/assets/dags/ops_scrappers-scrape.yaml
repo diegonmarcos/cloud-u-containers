@@ -1,0 +1,31 @@
+schedule: "0 4 * * *"
+description: "Run every scrappers-api target (data-driven from the API's /targets) and write flat JSON."
+mail_on:
+  failure: false
+  success: false
+env:
+  - API: http://10.0.0.6:3020/scrappers
+steps:
+  - name: run-all-targets
+    command: |
+      # scrappers-api on oci-apps host-net (:3020) — internal WG IP bypasses the Caddy 2FA edge.
+      # Targets are declared in the service's scrappers.json; we fetch the ids so the DAG stays
+      # data-driven (no hardcoded handles here). busybox sh: guard every curl with || true.
+      IDS=$(curl -fsS "$API/targets" 2>/dev/null | jq -r '.targets[].id') || true
+      if [ -z "$IDS" ]; then
+        echo "no targets (API down or empty) — nothing to do"
+        exit 0
+      fi
+      FAIL=0
+      for id in $IDS; do
+        echo "→ scraping target: $id"
+        if curl -fsS -X POST "$API/run/$id" 2>/dev/null; then
+          echo "  ✓ $id"
+        else
+          echo "  ✗ $id failed (continuing)"
+          FAIL=$((FAIL + 1))
+        fi
+      done
+      echo "done — $FAIL failed"
+      # Per-target scrape failures (private account, rate-limit) are expected; never fail the DAG.
+      exit 0
