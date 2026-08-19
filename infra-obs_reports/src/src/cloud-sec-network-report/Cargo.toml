@@ -1,0 +1,15 @@
+[package]
+name = "cloud-sec-network"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+reports-common = { path = "../reports-common" }
+tokio = { version = "1", features = ["full"] }
+reqwest = { version = "0.12", features = ["rustls-tls"], default-features = false }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+trust-dns-resolver = "0.23"
+chrono = "0.4"
+anyhow = "1"
+futures = "0.3"

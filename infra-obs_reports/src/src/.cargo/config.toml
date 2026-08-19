@@ -1,0 +1,14 @@
+# Workspace-wide cargo config.
+#
+# Android cross-compile uses `cargo ndk` (cargo-ndk crate), which auto-sets
+# the linker for each --target by reading $ANDROID_NDK_HOME. This file just
+# declares the alias profile + a sane default for `cargo build --target …`
+# when cargo-ndk isn't on PATH (CI installs it; local devs may not).
+#
+# Why we don't pin linker paths here: NDK install dirs differ between
+# Termux, Linux distros, macOS, GitHub runners — cargo-ndk discovers them
+# all via $ANDROID_NDK_HOME / $NDK_HOME.
+
+[alias]
+android = ["ndk", "-t", "arm64-v8a", "-t", "armeabi-v7a", "--platform", "26",
+           "build", "--profile", "release-android"]
