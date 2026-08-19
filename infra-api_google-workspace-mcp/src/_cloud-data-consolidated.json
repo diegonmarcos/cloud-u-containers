@@ -5497,7 +5497,8 @@
             "front",
             "tools",
             "cloud-data",
-            "front-data"
+            "front-data",
+            "cloud-android"
           ],
           "_repo_map_comment": "local index dir → GitHub repo to clone (producer GHA / arm DAG). Only 'front' differs (GitHub Pages repo). Data-driven — never hardcode in the workflow/DAG.",
           "repo_map": {
@@ -5506,7 +5507,8 @@
             "front": "diegonmarcos.github.io",
             "tools": "cloud-mykonsole-dtk",
             "cloud-data": "cloud-data",
-            "front-data": "front-data"
+            "front-data": "front-data",
+            "cloud-android": "cloud-android"
           },
           "home": "/home/appuser",
           "kg_store": {
@@ -8903,7 +8905,7 @@
         "git": 52
       },
       "github_repos": 26,
-      "github_indexed": 6,
+      "github_indexed": 7,
       "github_mirrored": 26
     },
     "_dangling_declarations": [],
@@ -9673,7 +9675,7 @@
       },
       {
         "id": "git#gh/cloud-android",
-        "service": "gitea",
+        "service": "cloud-cgc-mcp",
         "container": null,
         "engine": "git",
         "kind": "git-remote",
@@ -9682,8 +9684,8 @@
         "visibility": "public",
         "fork": false,
         "pushed_at": "2026-08-18T12:34:05Z",
-        "indexed": false,
-        "local_dir": null,
+        "indexed": true,
+        "local_dir": "cloud-android",
         "mirrored": true,
         "persistence": {
           "type": "git",
