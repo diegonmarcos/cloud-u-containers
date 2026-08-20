@@ -5376,8 +5376,9 @@
             "use_llm": false,
             "llm_model": "openai:qwen/qwen3-coder-30b-a3b-instruct",
             "schedule": "0 4,16 * * *",
-            "max_minutes": 300,
-            "repo_timeout_min": 285,
+            "_budget_comment": "MUST SATISFY: max_minutes + repo_timeout_min <= cgc-db-index.yml timeout-minutes (330), which is itself under GitHub's 360m hard job ceiling. The gate in cloud-cgc-db-update.sh reserves a full repo_timeout_min before admitting a repo, so max_minutes is the real worst-case wall time and the remaining ~90m covers clone + package + GHCR checkpoint pushes. Violating this is not a tuning issue but an outage: on 2026-08-14..20 repo_timeout_min was 285 against an implicit 360 ceiling, so ONE stalled repo (cloud-unix, parked at 26%) consumed the entire pass, GitHub killed the job mid-repo before the final publish, and every repo queued behind it went unindexed for six days across 12 consecutive runs.",
+            "max_minutes": 240,
+            "repo_timeout_min": 90,
             "code_embedding_model": "fastembed:nomic-ai/nomic-embed-text-v1.5",
             "text_embedding_model": "fastembed:nomic-ai/nomic-embed-text-v1.5"
           },
