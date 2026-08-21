@@ -41,8 +41,8 @@ export function registerKgStoreTools(server: McpServer): void {
     "Query the kg-store SurrealDB UNIFIED knowledge graph (read-only SurrealQL: SELECT / INFO only). " +
     "Code-graph tables: file {path,node_type,repo,name,language,size_lines,imports,exports,symbols,functions} + sibling_module edges (file->file). " +
     "Infra tables: vm, service, container, domain, module, repo, package + edges hosted_on, runs_container, depends_on, proxied_by, routes_to, belongs_to_repo, implements, declares_tool, consumes. " +
-    "Examples: \"SELECT path,language FROM file WHERE repo='cloud' AND node_type='source_file' LIMIT 20\"; " +
-    "\"SELECT count() FROM file GROUP BY repo\"; \"INFO FOR DB\"; graph traversal \"SELECT ->sibling_module->file AS siblings FROM file WHERE repo='unix' LIMIT 5\".",
+    "Examples: \"SELECT path,language FROM file WHERE repo='cloud-infra' AND node_type='source_file' LIMIT 20\"; " +
+    "\"SELECT count() FROM file GROUP BY repo\"; \"INFO FOR DB\"; graph traversal \"SELECT ->sibling_module->file AS siblings FROM file WHERE repo='cloud-unix' LIMIT 5\".",
     { surql: z.string().describe("Read-only SurrealQL (SELECT or INFO). Mutations are refused.") },
     async ({ surql: q }) => {
       if (MUTATING.test(q)) {

@@ -18,6 +18,16 @@ let
   # Single GHCR upstream for the octocode DB (producer = cloud-cgc-db-update.sh).
   # The db-restore init below pulls this and populates octocode_db on every deploy.
   dbImage = "${buildJson.db_publish.image}:${buildJson.db_publish.tag or "latest"}";
+  # Matrix-producer upstream (base + one image per repo — see
+  # cloud-cgc-db-restore-all.sh). Read here, at Nix eval time, so the restore
+  # container never needs its own build.json/jq access at runtime (it has no
+  # repo checkout, same reasoning as cloud-cgc-db-restore.sh's env-first
+  # design). db_publish above stays the default until cutover — see
+  # cloud-cgc-mcp-db-restore-multi below.
+  perRepo = buildJson.per_repo_publish or { };
+  perRepoImagePrefix = perRepo.image_prefix or "ghcr.io/diegonmarcos/cgc-db-";
+  perRepoTag = perRepo.tag or "latest";
+  perRepoBaseImage = perRepo.base_image or "${perRepoImagePrefix}base:${perRepoTag}";
   # Octocode index wiring (data-driven from build.json.runtime.octocode).
   oct = buildJson.runtime.octocode;
   # Shared body for the one-shot octocode jobs. Two profile-gated variants below
@@ -134,13 +144,58 @@ in
       '' ];
     };
 
+    # ── DB restore — MULTI-IMAGE (matrix producer: base + one image per repo,
+    # cloud-cgc-db-restore-all.sh — Task 4). Same opt-in shape as the monolith
+    # restore above: docker compose --profile restore-multi run --rm
+    # cloud-cgc-mcp-db-restore-multi. NOT the default — the monolith service
+    # above stays it until the matrix producer (cgc-db-index.yml) is proven
+    # green, per the migration plan.
+    #
+    # This container has no repo checkout (remote_path is just the compose
+    # project dir, not a cloud-infra clone), so it cannot `docker pull` a
+    # per-image builder or exec the ops/ script off disk. Two things solve
+    # that without duplicating cloud-cgc-db-restore-all.sh's logic by hand:
+    #   · docker:cli — official, has `docker` + `sh`, nothing else needed
+    #     (every value below is passed as env, so the script's own build.json
+    #     fallback — see its need_bj() — is never exercised here either).
+    #   · builtins.readFile embeds the ACTUAL script file's content at Nix
+    #     eval time (this repo checkout HAS it, even though the deployed
+    #     container won't) — single source of truth stays the ops/ script,
+    #     this is just how it reaches a host with no checkout of its own.
+    # docker.sock: this talks to the HOST's OWN daemon (same pattern as
+    # infra-bld_cloud-builder-x / infra-bld_gha-runner / infra-obs_dagu
+    # compose.nix) so `docker pull`/`create`/`cp` reach GHCR through the
+    # daemon's already-established login, and CGC_DB_TARGET_VOLUME routes the
+    # final swap through a throwaway container instead of a raw host path —
+    # this container's own filesystem is otherwise irrelevant to the restore.
+    cloud-cgc-mcp-db-restore-multi = {
+      image = "docker:cli";
+      container_name = "cloud-cgc-mcp-db-restore-multi";
+      profiles = [ "restore-multi" ];
+      restart = "no";
+      environment = {
+        CGC_DB_IMAGE_PREFIX = perRepoImagePrefix;
+        CGC_DB_BASE_IMAGE = perRepoBaseImage;
+        CGC_DB_TAG = perRepoTag;
+        CGC_INDEX_REPOS = toString oct.index_repos;
+        CGC_DB_TARGET_VOLUME = oct.db_volume;
+      };
+      volumes = [ "/var/run/docker.sock:/var/run/docker.sock" ];
+      entrypoint = [ "sh" "-c" ''
+        cat > /tmp/cloud-cgc-db-restore-all.sh <<'CGC_RESTORE_ALL_EOF_9f3a1b'
+        ${builtins.readFile ../../../1_cicd/src/ops/cloud-cgc-db-restore-all.sh}
+        CGC_RESTORE_ALL_EOF_9f3a1b
+        sh /tmp/cloud-cgc-db-restore-all.sh
+      '' ];
+    };
+
     # ── One-shot octocode jobs (profile-gated; never start on `compose up`) ──────
     # Both mount index+repos RW (live MCP mounts them :ro) + run as root. Triggers:
     #   FORCE rebuild (always re-runs GraphRAG LLM):
     #     docker compose --profile reindex run --rm cloud-cgc-mcp-reindex
     #   INCREMENTAL (git-aware, only changed files):
     #     docker compose --profile index run --rm cloud-cgc-mcp-index
-    #   Scope one repo: append `-e OCTOCODE_REPOS=tools`. (reindex.sh checks even this
+    #   Scope one repo: append `-e OCTOCODE_REPOS=cloud-android`. (reindex.sh checks even this
     #   override against SYNC_EXCLUDE above — a denied repo is refused, not indexed.)
     cloud-cgc-mcp-reindex = octocodeJob // {
       container_name = "cloud-cgc-mcp-reindex";

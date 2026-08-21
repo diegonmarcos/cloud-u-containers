@@ -4,7 +4,15 @@ import { homedir } from "os";
 import { join } from "path";
 
 export const HOME = homedir();
-export const GIT_BASE = process.env.GIT_BASE ?? join(HOME, "git");
+// GIT_ROOT is the env var compose.nix actually sets on this container
+// (buildJson.runtime.octocode.repos_path, e.g. "/repos" in prod — see
+// src/compose.nix). GIT_BASE is kept as a secondary override name for
+// back-compat with any caller that still sets it explicitly. Preferring
+// GIT_ROOT fixes a latent mismatch: before this, GIT_BASE always fell
+// through to `${HOME}/git`, which is NOT where the octocode repos volume
+// is mounted, so every REPOS-derived path below silently pointed at a
+// directory that doesn't exist in the container.
+export const GIT_BASE = process.env.GIT_ROOT ?? process.env.GIT_BASE ?? join(HOME, "git");
 
 // Android/Termux detection — WireGuard is managed by the Android WG app,
 // so mesh IPs work. Key paths differ from desktop NixOS.
@@ -22,14 +30,20 @@ export const IS_CLIENT = !IS_SERVER;
 // SSH identity key — find first available key across environments:
 //   Docker container: ~/.ssh/vault_id_rsa (mounted from VM)
 //   Android/Termux:   ~/.ssh/id_rsa (symlinked from vault)
-//   Desktop NixOS:    vault/A0_keys/ssh/id_rsa
+//   Desktop NixOS:    cloud-vault/A0_keys/ssh/id_rsa
 export const SSH_IDENTITY = [
   join(HOME, ".ssh/vault_id_rsa"),
   join(HOME, ".ssh/id_rsa"),
   join(HOME, ".ssh/id_ed25519"),
-  join(GIT_BASE, "vault/A0_keys/ssh/id_rsa"),
+  join(GIT_BASE, "cloud-vault/A0_keys/ssh/id_rsa"),
 ].find((p) => existsSync(p)) ?? join(HOME, ".ssh/id_rsa");
-export const SOLUTIONS_DIR = join(GIT_BASE, "cloud/a_solutions");
+// 2026-08-21: was join(GIT_BASE, "cloud/a_solutions") — "cloud" is the
+// PRE-RENAME repo dirname. The checkout under GIT_BASE is named "cloud-infra"
+// (see .runtime.octocode.index_repos / repo_map below); the stale segment
+// made every path derived from SOLUTIONS_DIR (BUILD_SCRIPT, the cloud-data
+// dev-fallback candidates, getOwnBuildPath) resolve to a directory that does
+// not exist in the container.
+export const SOLUTIONS_DIR = join(GIT_BASE, "cloud-infra", "a_solutions");
 
 // CLOUD_DATA_DIR / CLOUD_DATA_REPO declared early so resolveCloudDataPath can
 // reference them. Used as a legacy fallback path (the c3_git_repos volume clone).
@@ -158,13 +172,70 @@ export const FRONT_BUILD_SCRIPT = join(FRONT_DIR, "build.sh");
 
 // (CLOUD_DATA_DIR + CLOUD_DATA_REPO declared earlier in the file.)
 
+// ── Octocode repo map — data-driven from THIS solution's own build.json ────
+// 2026-08-21: replaces a hand-maintained REPOS map that still held PRE-RENAME
+// names (cloud, unix, tools) long after the cloud-* rename. octocode returns
+// EMPTY results for an unknown project key — no error — so the drift
+// silently served nothing for every renamed repo. .runtime.octocode
+// .index_repos is the single source of truth for which repos are indexed
+// (their checkout dirname under GIT_BASE IS the local_name, one-to-one —
+// confirmed by reindex.sh's `d="$REPOS_ROOT/$repo"` loop); .repo_map is
+// local_name -> GitHub remote name (not needed for path resolution here,
+// but exposed for callers that want it, e.g. display/validation).
+//
+// Resolution order mirrors config.ts's established getCloudDataPath pattern:
+//   1. /app/build.json                    — bundled in-image, if ever shipped
+//   2. GIT_BASE/cloud-infra/a_solutions/user-ai_cloud-cgc-mcp/build.json
+//                                          — the repos volume already holds a
+//      full cloud-infra checkout (cloud-infra is itself in index_repos), so
+//      this reads the live file with zero extra Dockerfile plumbing
+//   3. local dev — relative to this module's own position in the source tree
+const OWN_SOLUTION_REL = join("a_solutions", "user-ai_cloud-cgc-mcp");
+function resolveOwnBuildJsonPath(): string {
+  const candidates = [
+    "/app/build.json",
+    join(GIT_BASE, "cloud-infra", OWN_SOLUTION_REL, "build.json"),
+    join(import.meta.dirname ?? ".", "..", "..", "..", "..", "build.json"), // shared/libs -> code -> src -> solution root
+  ];
+  return candidates.find((p) => existsSync(p)) ?? candidates[1];
+}
+
+interface OctocodeRepoConfig { index_repos: string[]; repo_map: Record<string, string> }
+let _octRepoConfig: OctocodeRepoConfig | null = null;
+
+export function getOctocodeRepoConfig(): OctocodeRepoConfig {
+  if (_octRepoConfig) return _octRepoConfig;
+  const path = resolveOwnBuildJsonPath();
+  try {
+    const bj = JSON.parse(readFileSync(path, "utf-8"));
+    const oct = bj?.runtime?.octocode ?? {};
+    const index_repos: string[] = Array.isArray(oct.index_repos) ? oct.index_repos : [];
+    const repo_map: Record<string, string> = oct.repo_map && typeof oct.repo_map === "object" ? oct.repo_map : {};
+    if (!index_repos.length) throw new Error("empty .runtime.octocode.index_repos");
+    _octRepoConfig = { index_repos, repo_map };
+  } catch (e) {
+    // Fail LOUD to stderr and degrade to empty rather than reaching for a
+    // fresh hardcoded list — a hardcoded fallback is exactly what went stale
+    // (silently) before. An empty map makes repo-scoped tools clearly refuse
+    // every input instead of quietly resolving to the wrong directory.
+    process.stderr.write(`[cloud-cgc-mcp] WARNING: octocode repo config unavailable (${path}): ${(e as Error).message}\n`);
+    _octRepoConfig = { index_repos: [], repo_map: {} };
+  }
+  return _octRepoConfig;
+}
+
+/** local_name -> absolute checkout dir, scoped to indexed repos only (matches octocode's $REPOS_ROOT/$repo layout). */
+export function getOctocodeRepos(): Record<string, string> {
+  return Object.fromEntries(getOctocodeRepoConfig().index_repos.map((r) => [r, join(GIT_BASE, r)]));
+}
+
 export const REPOS: Record<string, string> = {
-  "cloud-data": CLOUD_DATA_DIR,
-  cloud: join(GIT_BASE, "cloud"),
-  unix: join(GIT_BASE, "unix"),
-  vault: join(GIT_BASE, "vault"),
-  front: FRONT_DIR,
-  tools: join(GIT_BASE, "tools"),
+  ...getOctocodeRepos(),
+  // Not part of .runtime.octocode.index_repos — deliberately excluded from
+  // octocode indexing (see build.json .runtime.octocode.sync_exclude:
+  // "credential store, secrets would be embedded in the GraphRAG DB") — but
+  // still a legitimate browse target for the plain filesystem tools below.
+  "cloud-vault": join(GIT_BASE, "cloud-vault"),
 };
 
 // ── Repo sync ────────────────────────────────────────────────────────
@@ -216,5 +287,5 @@ export function syncRepos(force = false): void {
 /** Git remote URLs for auto-cloning in server mode */
 const REPO_URLS: Record<string, string> = {
   "cloud-data": CLOUD_DATA_REPO,
-  cloud: "git@github.com:diegonmarcos/cloud-infra.git",
+  "cloud-infra": "git@github.com:diegonmarcos/cloud-infra.git", // 2026-08-21: key was "cloud" (pre-rename)
 };

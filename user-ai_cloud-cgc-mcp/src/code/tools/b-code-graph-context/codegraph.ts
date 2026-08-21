@@ -7,7 +7,7 @@ import { join, dirname, resolve } from "node:path";
 // CodeGraph — unified, queryable knowledge graph served by the cgc MCP.
 //
 // Auto-discovers and merges THREE graph layers from the cloud repo (which the
-// container has at $GIT_ROOT/cloud — the same octocode repos volume):
+// container has at $GIT_ROOT/cloud-infra — the same octocode repos volume):
 //
 //   1. INFRA (deterministic)    1_cloud-configs/dist/build-kg-graph_delta.json
 //      vm / service / container / domain / repo / module / package nodes + edges.
@@ -25,9 +25,9 @@ import { join, dirname, resolve } from "node:path";
 //   1. CODEGRAPH_GRAPHS_DIR env (explicit override)
 //   2. ./graphs bundled inside the image (/app/code/graphs) — ships with the cgc
 //      build, so the graph is live WITHOUT depending on the octocode repos volume.
-//   3. repo layout fallback ($GIT_ROOT/cloud/{1_cicd/dist, …/kg-graph/src}).
+//   3. repo layout fallback ($GIT_ROOT/cloud-infra/{1_cicd/dist, …/kg-graph/src}).
 const GIT_ROOT = process.env.GIT_ROOT ?? `${process.env.HOME ?? "/home/diego"}/git`;
-const CLOUD = join(GIT_ROOT, "cloud");
+const CLOUD = join(GIT_ROOT, "cloud-infra");
 const BUNDLED = join(import.meta.dirname!, "..", "..", "graphs");
 const useBundle = (): string | null => {
   if (process.env.CODEGRAPH_GRAPHS_DIR && existsSync(process.env.CODEGRAPH_GRAPHS_DIR)) return process.env.CODEGRAPH_GRAPHS_DIR;
