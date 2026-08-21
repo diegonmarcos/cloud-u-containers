@@ -2469,8 +2469,10 @@
           "source": "github-inventory",
           "include_forks": false,
           "_include_forks_doc": "FairEmail and octocode are upstream forks; mirroring them copies other people's code with no backup value. Flip to true to include them.",
-          "exclude": [],
-          "_exclude_doc": "Repo names to skip entirely. Empty = mirror every non-fork repo in the inventory."
+          "exclude": [
+            "cloud-vault"
+          ],
+          "_exclude_doc": "Repo names to skip entirely (exact match against github-repos.json .repos[].name — see expandGiteaMirrors in 1_cloud-configs/src/derive/cloud-data-config-consolidated.ts). Empty = mirror every non-fork repo in the inventory. cloud-vault is hard-excluded as defense in depth: mirror privacy otherwise depends solely on the inventory's private:true flag, and that same derived-flag mechanism already republished cloud-data (also private) as a public mirror once before it existed (see _mirrors_doc above). A credential store must not depend on a single flag being right every time."
         },
         "mirror_interval": "1h",
         "mirrors": {
@@ -2492,10 +2494,6 @@
           },
           "cloud-android": {
             "upstream": "https://github.com/diegonmarcos/cloud-android.git"
-          },
-          "cloud-vault": {
-            "upstream": "https://github.com/diegonmarcos/cloud-vault.git",
-            "private": true
           },
           "front-assets-cdn": {
             "upstream": "https://github.com/diegonmarcos/front-assets-cdn.git"
@@ -5334,9 +5332,11 @@
           "repos_path": "/repos",
           "noindex_patterns": [
             "z_archive/",
+            "y_old/",
             "vendor/",
             "node_modules/",
             "dist/",
+            "reports/",
             "ea_upstreams-sources/",
             "upstream/",
             "ea_keyboard-heliboard/",
@@ -5367,13 +5367,7 @@
             "*.bin",
             "*.icns",
             "*.efi",
-            "a_solutions/*/src/build-*.json",
-            "**/res/values*/",
-            "**/res/layout*/",
-            "**/res/drawable*/",
-            "**/res/mipmap*/",
-            "**/res/anim*/",
-            "**/res/color*/"
+            "a_solutions/*/src/build-*.json"
           ],
           "db_volume": "octocode_db",
           "db_path": "/home/appuser/.local/share/octocode",
@@ -8916,23 +8910,23 @@
   "databases": {
     "_doc": "Canonical registry of every datastore. `kind` is what it is; `persistence.type` is where it survives. Fleet groups project one axis — never hand-maintain a parallel list. Git existence comes from the fetched GitHub inventory (src/inputs/github-repos.json); mirrored/indexed are declaration-driven flags on top.",
     "_counts": {
-      "total": 80,
+      "total": 79,
       "by_kind": {
         "embedded": 14,
         "container": 9,
         "object-store": 5,
-        "git-remote": 52
+        "git-remote": 51
       },
       "by_persistence": {
         "docker-volume": 21,
         "docker-bind": 1,
         "unknown": 1,
         "s3": 5,
-        "git": 52
+        "git": 51
       },
       "github_repos": 26,
       "github_indexed": 7,
-      "github_mirrored": 26
+      "github_mirrored": 25
     },
     "_dangling_declarations": [],
     "entries": [
@@ -9746,7 +9740,7 @@
       },
       {
         "id": "git#gh/cloud-vault",
-        "service": "gitea",
+        "service": null,
         "container": null,
         "engine": "git",
         "kind": "git-remote",
@@ -9757,7 +9751,7 @@
         "pushed_at": "2026-08-18T12:34:02Z",
         "indexed": false,
         "local_dir": null,
-        "mirrored": true,
+        "mirrored": false,
         "persistence": {
           "type": "git",
           "ref": "https://github.com/diegonmarcos/cloud-vault.git",
@@ -9766,26 +9760,6 @@
         "vm": null,
         "backup": {
           "enabled": false,
-          "strategy": null
-        }
-      },
-      {
-        "id": "git#gitea/cloud-vault",
-        "service": "gitea",
-        "container": null,
-        "engine": "git",
-        "kind": "git-remote",
-        "host": "gitea",
-        "repo": "cloud-vault",
-        "upstream": "https://github.com/diegonmarcos/cloud-vault.git",
-        "persistence": {
-          "type": "git",
-          "ref": "https://github.com/diegonmarcos/cloud-vault.git",
-          "mount": null
-        },
-        "vm": "oci-A1-f_0",
-        "backup": {
-          "enabled": true,
           "strategy": null
         }
       },
