@@ -36,8 +36,10 @@
       "source": "github-inventory",
       "include_forks": false,
       "_include_forks_doc": "FairEmail and octocode are upstream forks; mirroring them copies other people's code with no backup value. Flip to true to include them.",
-      "exclude": [],
-      "_exclude_doc": "Repo names to skip entirely. Empty = mirror every non-fork repo in the inventory."
+      "exclude": [
+        "cloud-vault"
+      ],
+      "_exclude_doc": "Repo names to skip entirely (exact match against github-repos.json .repos[].name — see expandGiteaMirrors in 1_cloud-configs/src/derive/cloud-data-config-consolidated.ts). Empty = mirror every non-fork repo in the inventory. cloud-vault is hard-excluded as defense in depth: mirror privacy otherwise depends solely on the inventory's private:true flag, and that same derived-flag mechanism already republished cloud-data (also private) as a public mirror once before it existed (see _mirrors_doc above). A credential store must not depend on a single flag being right every time."
     },
     "mirror_interval": "1h"
   },

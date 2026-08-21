@@ -43,6 +43,12 @@ let
       OCTOCODE_REPOS      = toString oct.index_repos;
       OCTOCODE_REPOS_ROOT = oct.repos_path;
       OCTOCODE_PULL       = "0";
+      # Deny list for reindex.sh's own runtime guard (see there): repos that must never
+      # be indexed into the shared /repos volume (e.g. cloud-vault, the credential
+      # store). Same data-driven mechanism as OCTOCODE_REPOS above — the derive-time
+      # check in derive-repo-map.ts only validates the STATIC index_repos, so this is
+      # what catches a per-run `-e OCTOCODE_REPOS=<repo>` override (documented below).
+      SYNC_EXCLUDE        = toString (builtins.attrNames (oct.sync_exclude or { }));
       # kg-store (SurrealDB) ingest — reindex.sh mirrors octocode's full file-level
       # code graph (octocode-export.py → kg-ingest.mjs) per repo, then loads the infra
       # graph delta. Data-driven. KG_STORE_PASS is delivered via env_file ".secrets"
@@ -134,7 +140,8 @@ in
     #     docker compose --profile reindex run --rm cloud-cgc-mcp-reindex
     #   INCREMENTAL (git-aware, only changed files):
     #     docker compose --profile index run --rm cloud-cgc-mcp-index
-    #   Scope one repo: append `-e OCTOCODE_REPOS=tools`.
+    #   Scope one repo: append `-e OCTOCODE_REPOS=tools`. (reindex.sh checks even this
+    #   override against SYNC_EXCLUDE above — a denied repo is refused, not indexed.)
     cloud-cgc-mcp-reindex = octocodeJob // {
       container_name = "cloud-cgc-mcp-reindex";
       profiles = [ "reindex" ];

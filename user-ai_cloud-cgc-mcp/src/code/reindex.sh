@@ -21,6 +21,21 @@ MODELS="${OCTOCODE_LLM_MODELS:-ollama:claude-haiku openai:gpt-4o-mini}"
 # copy to go stale (this one still said "cloud unix front tools" long after the
 # cloud-* rename). Fail loudly instead of silently indexing the wrong set.
 REPOS="${OCTOCODE_REPOS:?OCTOCODE_REPOS unset — compose.nix must inject it from build.json .runtime.octocode.index_repos}"
+# DENY CHECK — compose.nix documents a per-run `-e OCTOCODE_REPOS=<repo>` override to
+# scope a manual reindex to one repo (see compose.nix), which bypasses derive-repo-map.ts's
+# derive-time check entirely (that check only validates the STATIC build.json index_repos).
+# This container mounts the shared /repos volume RW and indexes whatever $REPOS names, so a
+# denied repo (e.g. cloud-vault, the credential store) reaching here gets embedded in the
+# GraphRAG DB. SYNC_EXCLUDE is injected by compose.nix from the SAME build.json
+# .runtime.octocode.sync_exclude as the derive-time check — data-driven, never hardcoded.
+for _r in $REPOS; do
+  for _d in ${SYNC_EXCLUDE:-}; do
+    if [ "$_r" = "$_d" ]; then
+      echo "[reindex] ::error:: refusing to index '$_r' — denied by .runtime.octocode.sync_exclude" >&2
+      exit 1
+    fi
+  done
+done
 REPOS_ROOT="${OCTOCODE_REPOS_ROOT:-/repos}"
 HEALTH="${BRIDGE_HEALTH_URL:-http://10.0.0.6:3117/health}"
 PULL="${OCTOCODE_PULL:-0}"
