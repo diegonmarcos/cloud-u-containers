@@ -49,6 +49,13 @@ function missingParam(param: string): { isError: true; content: { type: "text"; 
 }
 
 const VALID_REPOS = Object.keys(REPOS);
+// z.enum needs a non-empty tuple type; VALID_REPOS is populated at runtime
+// from REPOS (data-driven from build.json — see shared/libs/paths.ts). Was a
+// hardcoded ["cloud", "unix", "vault", "front", "tools"] literal that still
+// held PRE-RENAME names — never touched by validateRepoPath's own
+// REPOS[repo] lookup, so a caller following THIS schema's own enum could
+// still be routed to `undefined` / the wrong directory. 2026-08-21.
+const REPO_ENUM = VALID_REPOS as [string, ...string[]];
 
 function validateRepoPath(repo: string, path: string): string {
   const repoBase = REPOS[repo];
@@ -141,7 +148,7 @@ export function registerInventoryTools(server: McpServer) {
       service: z.string().optional(),
       vm: z.string().optional(),
       category: z.string().optional(),
-      repo: z.enum(["cloud", "unix", "vault", "front", "tools"]).optional(),
+      repo: z.enum(REPO_ENUM).optional(),
       path: z.string().optional(),
       maxLines: z.number().optional(),
       pattern: z.string().optional(),

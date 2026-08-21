@@ -141,7 +141,16 @@ def export(repo):
     return out
 
 if __name__ == "__main__":
-    repos = sys.argv[1:] or (os.environ.get("OCTOCODE_REPOS", "cloud").split())
+    # 2026-08-21: no hardcoded repo-name default (was "cloud" — the PRE-RENAME
+    # dirname; a stale default here would silently export nothing, same class
+    # of bug as the REPOS map fix in shared/libs/paths.ts / octocode.ts). This
+    # is always invoked by reindex.sh with an explicit repo argv, so the env
+    # fallback is only for manual/ad-hoc runs — fail loudly instead of
+    # guessing a repo name that may no longer exist.
+    repos = sys.argv[1:] or os.environ.get("OCTOCODE_REPOS", "").split()
+    if not repos:
+        print("[export] no repos given (pass as argv or set OCTOCODE_REPOS) — nothing to export", file=sys.stderr)
+        sys.exit(1)
     rc = 0
     for repo in repos:
         if export(repo) is None:

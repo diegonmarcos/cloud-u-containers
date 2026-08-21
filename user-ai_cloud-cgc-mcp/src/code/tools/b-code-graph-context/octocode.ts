@@ -2,22 +2,24 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { getOctocodeRepos } from "../../shared/libs/paths.js";
 
 const exec = promisify(execFile);
 const OCTOCODE_BIN = process.env.OCTOCODE_BIN ?? "octocode";
-// Deployed container always sets GIT_ROOT explicitly (compose.nix → build.json.runtime.git_root,
-// e.g. /home/diego/Mounts/Git). The fallback is for local/dev only and MUST derive from $HOME —
-// the previous hardcoded "/home/diego/git" does not exist on any non-legacy host (e.g. Termux,
-// where HOME=/data/data/com.termux.nix/files/home), so octocode cwd'd into a missing dir and failed.
-const GIT_ROOT = process.env.GIT_ROOT ?? `${process.env.HOME ?? "/home/diego"}/git`;
-const REPOS: Record<string, string> = {
-  cloud: `${GIT_ROOT}/cloud`,
-  "cloud-data": `${GIT_ROOT}/cloud-data`,
-  front: `${GIT_ROOT}/front`,
-  "front-data": `${GIT_ROOT}/front-data`,
-  unix: `${GIT_ROOT}/unix`,
-  tools: `${GIT_ROOT}/tools`,
-};
+// REPOS: local repo name -> checkout dir, data-driven from build.json
+// .runtime.octocode.index_repos (via shared/libs/paths.ts's GIT_BASE, which
+// itself prefers $GIT_ROOT — the env var compose.nix actually sets). Replaces
+// a hardcoded map that still held PRE-RENAME names (cloud, unix, tools) long
+// after the cloud-* rename — octocode returns EMPTY results for an unknown
+// project key (no error), so the drift silently served nothing for every
+// renamed repo. 2026-08-21.
+const REPOS: Record<string, string> = getOctocodeRepos();
+// z.enum's TS type wants a non-empty tuple; the values themselves are only
+// known at runtime (from build.json). If the config load ever fails,
+// getOctocodeRepoConfig() degrades to an empty list (see paths.ts) rather
+// than falling back to a fresh hardcoded list — an empty enum just refuses
+// every repo value instead of silently resolving to the wrong directory.
+const REPO_ENUM = Object.keys(REPOS) as [string, ...string[]];
 
 async function runOctocode(args: string[], cwd?: string): Promise<string> {
   try {
@@ -42,7 +44,7 @@ export function registerOctocodeTools(server: McpServer): void {
     "Semantic code search across indexed repositories using Octocode",
     {
       query: z.string().describe("Natural language or code search query"),
-      repo: z.enum(["cloud", "cloud-data", "front", "front-data", "unix", "tools"]).describe("Repository to search in"),
+      repo: z.enum(REPO_ENUM).describe("Repository to search in"),
       mode: z.enum(["all", "code", "docs", "text"]).optional().describe("Search mode (default: all)"),
       format: z.enum(["json", "md", "text"]).optional().describe("Output format (default: text)"),
       threshold: z.number().optional().describe("Similarity threshold 0.0-1.0 (higher = stricter, default: 0.3)"),
@@ -62,7 +64,7 @@ export function registerOctocodeTools(server: McpServer): void {
     "Query the code relationship graph (GraphRAG) — search nodes, get relationships, find paths between files, or get an overview of the graph structure",
     {
       operation: z.enum(["search", "get-node", "get-relationships", "find-path", "overview"]).describe("GraphRAG operation: search (semantic query), get-node (node details), get-relationships (node edges), find-path (path between two nodes), overview (graph summary)"),
-      repo: z.enum(["cloud", "cloud-data", "front", "front-data", "unix", "tools"]).describe("Repository to query"),
+      repo: z.enum(REPO_ENUM).describe("Repository to query"),
       query: z.string().optional().describe("Search query (required for 'search' operation)"),
       node_id: z.string().optional().describe("Node ID (required for 'get-node' and 'get-relationships')"),
       source_id: z.string().optional().describe("Source node ID (required for 'find-path')"),
