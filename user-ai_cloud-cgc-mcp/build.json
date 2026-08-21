@@ -56,9 +56,11 @@
       "repos_path": "/repos",
       "noindex_patterns": [
         "z_archive/",
+        "y_old/",
         "vendor/",
         "node_modules/",
         "dist/",
+        "reports/",
         "ea_upstreams-sources/",
         "upstream/",
         "ea_keyboard-heliboard/",
@@ -89,13 +91,7 @@
         "*.bin",
         "*.icns",
         "*.efi",
-        "a_solutions/*/src/build-*.json",
-        "**/res/values*/",
-        "**/res/layout*/",
-        "**/res/drawable*/",
-        "**/res/mipmap*/",
-        "**/res/anim*/",
-        "**/res/color*/"
+        "a_solutions/*/src/build-*.json"
       ],
       "db_volume": "octocode_db",
       "db_path": "/home/appuser/.local/share/octocode",

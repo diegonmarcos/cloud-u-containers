@@ -43,11 +43,17 @@ def ident(s):
     return re.sub(r"[^a-zA-Z0-9_]", "_", str(s or "related")) or "related"
 
 def find_project_dir(repo, commit):
-    # octocode keys a project by its git-root PATH, not the indexed commit — the
-    # commit drifts (a pull/submodule bump after indexing). So: (1) try an exact
-    # commit_hash match (fast/unambiguous); (2) fall back to matching the project
-    # dir whose sampled node paths actually exist under /repos/<repo> (path-keyed,
-    # drift-proof). Without the fallback, a drifted repo (e.g. front) is skipped.
+    # octocode keys a project by sha256(normalized origin remote URL)[:16] — NOT
+    # by git-root path, and NOT by the indexed commit (verified octocode 0.12.2
+    # src/storage.rs:60-84,110-140; path hash is only a fallback for remote-less
+    # repos). Either way the key is opaque to us here, and the commit drifts (a
+    # pull/submodule bump after indexing), so: (1) try an exact commit_hash match
+    # (fast/unambiguous); (2) fall back to matching the project dir whose sampled
+    # node paths actually exist under /repos/<repo> (path-keyed, drift-proof).
+    # Without the fallback, a drifted repo (e.g. front) is skipped. Consequence of
+    # the URL-based key: a fork/mirror/remote-less clone of a repo hashes to a
+    # DIFFERENT project dir, so a restored index built under the original remote
+    # is silently invisible here (find_project_dir just finds no matching dir).
     if not os.path.isdir(DBROOT):
         return None
     cands = []

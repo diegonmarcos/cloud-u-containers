@@ -48,11 +48,51 @@ steps:
       done
       echo "All repos synced into $REPOS_VOLUME"
 
-  - name: notify
+  - name: prune-repos
     depends:
       - pull-repos
     command: |
-      curl -sf -d "Central git-sync complete (octocode_repos)" \
+      # Keep-list comes from REPO_MAP — the SAME data pull-repos just cloned
+      # from, never a second hand-maintained list (a stray manually-cloned
+      # dir left in the volume is readable by every consumer that mounts it:
+      # cloud-cgc-mcp, c3-infra-api, c3-infra-mcp, report_daily).
+      KEEP=""
+      for entry in $REPO_MAP; do
+        DIR=$(echo "$entry" | cut -d: -f1)
+        KEEP="$KEEP $DIR"
+      done
+      set -- $KEEP
+      KEEP="$*"
+
+      # If REPO_MAP failed to expand (env misconfig, deriver stamped it
+      # empty) KEEP resolves empty here. Never treat "empty keep-list" as
+      # "prune everything" — skip loudly instead of wiping the volume.
+      if [ "$#" -eq 0 ]; then
+        echo "WARN: REPO_MAP keep-list is EMPTY — refusing to prune $REPOS_VOLUME. Skipping prune." >&2
+        exit 0
+      fi
+
+      echo "=== Pruning $REPOS_VOLUME: keep [$KEEP] ==="
+      $SSH "$OCI_APPS" "docker run --rm \
+        -v $REPOS_VOLUME:/repos \
+        --entrypoint sh \
+        $GIT_IMAGE -c '
+          for d in /repos/*/; do
+            [ -d \"\$d\" ] || continue
+            name=\$(basename \"\$d\")
+            case \" $KEEP \" in
+              *\" \$name \"*) ;;
+              *) echo \"PRUNED stray top-level dir: \$name\"; rm -rf \"\$d\" ;;
+            esac
+          done
+        '" || echo "WARN: Failed to prune $REPOS_VOLUME"
+      echo "Prune pass complete for $REPOS_VOLUME"
+
+  - name: notify
+    depends:
+      - prune-repos
+    command: |
+      curl -sf -d "Central git-sync + prune complete (octocode_repos)" \
         -H "Title: Git Sync" \
         -H "Tags: arrows_counterclockwise,white_check_mark" \
         "$NTFY_URL/ops" 2>/dev/null || true
