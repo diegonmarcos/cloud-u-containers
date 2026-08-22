@@ -16,6 +16,8 @@ mod imap_loop;
 mod deliver;
 mod state;
 
+use futures::FutureExt;
+use std::panic::AssertUnwindSafe;
 use anyhow::Result;
 use tracing_subscriber::EnvFilter;
 
@@ -44,20 +46,42 @@ async fn main() -> Result<()> {
             let cfg_clone = cfg.clone();
             let state_clone = state.clone();
             handles.push(tokio::spawn(async move {
+                let backoffs: Vec<u64> = if cfg_clone.defaults.reconnect_backoff_secs.is_empty() {
+                    vec![5]
+                } else {
+                    cfg_clone.defaults.reconnect_backoff_secs.clone()
+                };
+                let mut attempt: usize = 0;
                 loop {
-                    let res = imap_loop::run(
+                    let started = std::time::Instant::now();
+                    // ponytail: catch_unwind because the JoinHandles are never awaited — a
+                    // panic used to kill a source silently, which is exactly how gmail-primary
+                    // went dark for two days while the other source kept logging.
+                    let res = AssertUnwindSafe(imap_loop::run(
                         &src_clone,
                         &mbox,
                         &cfg_clone,
                         state_clone.clone(),
-                    ).await;
+                    )).catch_unwind().await;
                     match res {
-                        Ok(()) => tracing::warn!(source = %src_clone.id, mailbox = %mbox, "loop returned Ok; restarting"),
-                        Err(e)  => tracing::error!(source = %src_clone.id, mailbox = %mbox, error = %e, "loop crashed; backing off"),
+                        Ok(Ok(())) => tracing::warn!(source = %src_clone.id, mailbox = %mbox, "loop returned Ok; restarting"),
+                        Ok(Err(e)) => {
+                            let chain = format!("{:#}", e);
+                            tracing::error!(source = %src_clone.id, mailbox = %mbox, error = %chain, "loop crashed; backing off");
+                        }
+                        Err(_) => tracing::error!(source = %src_clone.id, mailbox = %mbox, "loop PANICKED; backing off"),
                     }
-                    tokio::time::sleep(std::time::Duration::from_secs(
-                        cfg_clone.defaults.reconnect_backoff_secs.first().copied().unwrap_or(5)
-                    )).await;
+                    // Escalate through the configured backoff ladder instead of always
+                    // reusing the first entry — a fixed 5s retry is what earned us Gmail's
+                    // "Too many simultaneous connections". Reset once a run has held for a
+                    // few minutes, so a transient failure doesn't pin us at max forever.
+                    if started.elapsed() >= std::time::Duration::from_secs(300) {
+                        attempt = 0;
+                    }
+                    let secs = backoffs[attempt.min(backoffs.len() - 1)];
+                    attempt = attempt.saturating_add(1);
+                    tracing::info!(source = %src_clone.id, mailbox = %mbox, backoff_secs = secs, "restarting source");
+                    tokio::time::sleep(std::time::Duration::from_secs(secs)).await;
                 }
             }));
         }
