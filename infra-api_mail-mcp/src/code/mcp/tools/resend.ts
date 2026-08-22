@@ -117,21 +117,41 @@ export async function handle_resend_api_keys(_params: Record<string, unknown>) {
   return { content: [{ type: "text", text: `${keys.length} API keys:\n${lines.join("\n")}` }] };
 }
 
+export const resendSendSchema = {
+  to: z.string().describe("Recipient(s), comma-separated"),
+  subject: z.string().describe("Email subject"),
+  body: z.string().describe("Plain text body"),
+  from: z.string().optional().describe(`From address (default: ${DEFAULT_FROM})`),
+  html: z.string().optional().describe("HTML body (optional)"),
+  cc: z.string().optional().describe("CC address(es)"),
+  bcc: z.string().optional().describe("BCC address(es)"),
+  reply_to: z.string().optional().describe("Reply-To address"),
+};
+
+export const resendGetSchema = {
+  email_id: z.string().describe("Resend email ID"),
+};
+
+export const resendListSchema = {};
+
+export const resendDomainsSchema = {};
+
+export const resendDomainVerifySchema = {
+  domain_id: z.string().describe("Domain ID from resend_domains"),
+};
+
+export const resendDomainDnsSchema = {
+  domain_id: z.string().describe("Domain ID from resend_domains"),
+};
+
+export const resendApiKeysSchema = {};
+
 export function registerResendTools(server: McpServer): void {
   // ── resend_send ─────────────────────────────────────────────
   server.tool(
     "resend_send",
     "Send email via Resend API (uses mails.diegonmarcos.com domain)",
-    {
-      to: z.string().describe("Recipient(s), comma-separated"),
-      subject: z.string().describe("Email subject"),
-      body: z.string().describe("Plain text body"),
-      from: z.string().optional().describe(`From address (default: ${DEFAULT_FROM})`),
-      html: z.string().optional().describe("HTML body (optional)"),
-      cc: z.string().optional().describe("CC address(es)"),
-      bcc: z.string().optional().describe("BCC address(es)"),
-      reply_to: z.string().optional().describe("Reply-To address"),
-    },
+    resendSendSchema,
     handle_resend_send
   );
 
@@ -139,9 +159,7 @@ export function registerResendTools(server: McpServer): void {
   server.tool(
     "resend_get",
     "Get email status/details by Resend email ID",
-    {
-      email_id: z.string().describe("Resend email ID"),
-    },
+    resendGetSchema,
     handle_resend_get
   );
 
@@ -149,7 +167,7 @@ export function registerResendTools(server: McpServer): void {
   server.tool(
     "resend_list",
     "List recent emails sent via Resend",
-    {},
+    resendListSchema,
     handle_resend_list
   );
 
@@ -157,7 +175,7 @@ export function registerResendTools(server: McpServer): void {
   server.tool(
     "resend_domains",
     "List verified sending domains in Resend",
-    {},
+    resendDomainsSchema,
     handle_resend_domains
   );
 
@@ -165,9 +183,7 @@ export function registerResendTools(server: McpServer): void {
   server.tool(
     "resend_domain_verify",
     "Trigger domain verification in Resend (checks DNS records)",
-    {
-      domain_id: z.string().describe("Domain ID from resend_domains"),
-    },
+    resendDomainVerifySchema,
     handle_resend_domain_verify
   );
 
@@ -175,9 +191,7 @@ export function registerResendTools(server: McpServer): void {
   server.tool(
     "resend_domain_dns",
     "Get required DNS records for a Resend domain",
-    {
-      domain_id: z.string().describe("Domain ID from resend_domains"),
-    },
+    resendDomainDnsSchema,
     handle_resend_domain_dns
   );
 
@@ -185,7 +199,7 @@ export function registerResendTools(server: McpServer): void {
   server.tool(
     "resend_api_keys",
     "List Resend API keys (names only, not secrets)",
-    {},
+    resendApiKeysSchema,
     handle_resend_api_keys
   );
 }

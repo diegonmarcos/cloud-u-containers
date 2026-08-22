@@ -557,6 +557,24 @@ export async function handle_debug_trace({ server: srvName, message_id, sender, 
 
 // ── Registration ─────────────────────────────────────────────────────
 
+export const debugOutboundSchema = {
+  server: serverSchema,
+  minutes: z.number().default(5).describe("How many minutes of logs to check (default 5)"),
+};
+
+export const debugInboundSchema = {
+  server: serverSchema,
+  minutes: z.number().default(10).describe("How many minutes of logs to check (default 10)"),
+};
+
+export const debugTraceSchema = {
+  server: serverSchema,
+  message_id: z.string().optional().describe("Message-ID header value to trace (without angle brackets)"),
+  sender: z.string().optional().describe("Sender email to filter by"),
+  minutes: z.number().default(15).describe("Time window in minutes (default 15)"),
+  direction: z.enum(["inbound", "outbound", "both"]).default("both").describe("Filter by mail direction"),
+};
+
 export function registerDebugTools(server: McpServer): void {
   // ══════════════════════════════════════════════════════════════════
   // Tool 1: debug_outbound
@@ -564,10 +582,7 @@ export function registerDebugTools(server: McpServer): void {
   server.tool(
     "debug_outbound",
     "Debug outbound mail relay -- traces the full send path with logs",
-    {
-      server: serverSchema,
-      minutes: z.number().default(5).describe("How many minutes of logs to check (default 5)"),
-    },
+    debugOutboundSchema,
     handle_debug_outbound,
   );
 
@@ -577,10 +592,7 @@ export function registerDebugTools(server: McpServer): void {
   server.tool(
     "debug_inbound",
     "Debug inbound mail delivery -- traces the full receive path with logs",
-    {
-      server: serverSchema,
-      minutes: z.number().default(10).describe("How many minutes of logs to check (default 10)"),
-    },
+    debugInboundSchema,
     handle_debug_inbound,
   );
 
@@ -590,13 +602,7 @@ export function registerDebugTools(server: McpServer): void {
   server.tool(
     "debug_trace",
     "Trace a message across the full mail pipeline — correlates logs from Cloudflare Worker, Caddy L4, http-to-smtp-proxy-api, mail server, and OCI relay. Use message_id for a specific message or minutes for a time window.",
-    {
-      server: serverSchema,
-      message_id: z.string().optional().describe("Message-ID header value to trace (without angle brackets)"),
-      sender: z.string().optional().describe("Sender email to filter by"),
-      minutes: z.number().default(15).describe("Time window in minutes (default 15)"),
-      direction: z.enum(["inbound", "outbound", "both"]).default("both").describe("Filter by mail direction"),
-    },
+    debugTraceSchema,
     handle_debug_trace,
   );
 }

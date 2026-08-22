@@ -116,37 +116,45 @@ export async function handle_mail_forward({ server: srv, account, folder, uid, t
   return { content: [{ type: "text", text: `Forwarded to ${to}. Message-ID: ${info.messageId}` }] };
 }
 
+export const mailSendSchema = {
+  server: serverSchema,
+  account: accountSchema,
+  to: z.string().describe("Recipient address(es), comma-separated"),
+  subject: z.string().describe("Email subject"),
+  body: z.string().describe("Email body (plain text)"),
+  cc: z.string().optional().describe("CC address(es), comma-separated"),
+  bcc: z.string().optional().describe("BCC address(es), comma-separated"),
+  html: z.string().optional().describe("HTML body (overrides plain text body for HTML part)"),
+  transport: z.enum(["smtp", "jmap"]).default("smtp").describe("Send transport. 'jmap' submits via Stalwart JMAP (HTTP); 'smtp' uses nodemailer (Maddy/Stalwart submission port)"),
+};
+
+export const mailReplySchema = {
+  server: serverSchema,
+  account: accountSchema,
+  folder: z.string().default("INBOX").describe("Folder containing the original message"),
+  uid: z.number().describe("UID of the message to reply to"),
+  body: z.string().describe("Reply body text"),
+  replyAll: z.boolean().default(false).describe("Reply to all recipients"),
+};
+
+export const mailForwardSchema = {
+  server: serverSchema,
+  account: accountSchema,
+  folder: z.string().default("INBOX").describe("Folder containing the original message"),
+  uid: z.number().describe("UID of the message to forward"),
+  to: z.string().describe("Forward recipient(s), comma-separated"),
+  body: z.string().default("").describe("Optional message to prepend before forwarded content"),
+};
+
 export function registerComposeTools(server: McpServer): void {
   // ── mail_send ──────────────────────────────────────────────────
-  server.tool(
-    "mail_send",
-    "Send a new email",
-    {
-      server: serverSchema,
-      account: accountSchema,
-      to: z.string().describe("Recipient address(es), comma-separated"),
-      subject: z.string().describe("Email subject"),
-      body: z.string().describe("Email body (plain text)"),
-      cc: z.string().optional().describe("CC address(es), comma-separated"),
-      bcc: z.string().optional().describe("BCC address(es), comma-separated"),
-      html: z.string().optional().describe("HTML body (overrides plain text body for HTML part)"),
-      transport: z.enum(["smtp", "jmap"]).default("smtp").describe("Send transport. 'jmap' submits via Stalwart JMAP (HTTP); 'smtp' uses nodemailer (Maddy/Stalwart submission port)"),
-    },
-    handle_mail_send
-  );
+  server.tool("mail_send", "Send a new email", mailSendSchema, handle_mail_send);
 
   // ── mail_reply ─────────────────────────────────────────────────
   server.tool(
     "mail_reply",
     "Reply to a message (quotes original, preserves thread headers)",
-    {
-      server: serverSchema,
-      account: accountSchema,
-      folder: z.string().default("INBOX").describe("Folder containing the original message"),
-      uid: z.number().describe("UID of the message to reply to"),
-      body: z.string().describe("Reply body text"),
-      replyAll: z.boolean().default(false).describe("Reply to all recipients"),
-    },
+    mailReplySchema,
     handle_mail_reply
   );
 
@@ -154,14 +162,7 @@ export function registerComposeTools(server: McpServer): void {
   server.tool(
     "mail_forward",
     "Forward a message with its attachments",
-    {
-      server: serverSchema,
-      account: accountSchema,
-      folder: z.string().default("INBOX").describe("Folder containing the original message"),
-      uid: z.number().describe("UID of the message to forward"),
-      to: z.string().describe("Forward recipient(s), comma-separated"),
-      body: z.string().default("").describe("Optional message to prepend before forwarded content"),
-    },
+    mailForwardSchema,
     handle_mail_forward
   );
 }

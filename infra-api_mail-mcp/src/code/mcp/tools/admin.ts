@@ -13,22 +13,26 @@ export async function handle_mail_admin_domains({ server: srv }: { server: any }
   return { content: [{ type: "text", text: domains.length ? domains.join("\n") : "(no domains)" }] };
 }
 
+export const mailAdminUsersSchema = {
+  server: serverSchema,
+};
+
+export const mailAdminDomainsSchema = {
+  server: serverSchema,
+};
+
 export function registerAdminTools(server: McpServer): void {
   server.tool(
     "mail_admin_users",
     "List mailbox users on a mail server",
-    {
-      server: serverSchema,
-    },
+    mailAdminUsersSchema,
     handle_mail_admin_users
   );
 
   server.tool(
     "mail_admin_domains",
     "List mail domains on a server",
-    {
-      server: serverSchema,
-    },
+    mailAdminDomainsSchema,
     handle_mail_admin_domains
   );
 }
