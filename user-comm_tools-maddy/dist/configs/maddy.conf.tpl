@@ -56,22 +56,33 @@ msgpipeline local_routing {
         modify {
             replace_rcpt &local_rewrites
         }
-        # Dual-write: store in maddy's own imapsql AND relay to Stalwart
-        # (the JMAP/IMAP store on :2443/:2993). maddy commits both targets
-        # atomically — if either fails the whole delivery defers and retries,
-        # so no message is ever lost or duplicated across the two stores.
-        # This completes Phase 3 of the Stalwart migration: inbound external
-        # mail (via http-to-smtp-proxy-api / CF Worker -> :25) and mail-puller
+        # Dual-write: store in maddy's own imapsql AND mirror to Stalwart
+        # (the JMAP/IMAP store on :2443/:2993). The two legs are NOT atomic:
+        # local_mailboxes is written synchronously (its failure does defer/
+        # reject this delivery), but stalwart_relay is only ever reached via
+        # the on-disk stalwart_queue below. That means the inbound SMTP
+        # transaction is acknowledged as soon as the message is durably
+        # queued on /data — a transient Stalwart failure (e.g. its own rate
+        # limiting, "452 4.4.5 Rate limit exceeded") is retried with
+        # exponential backoff by maddy's queue and can NEVER propagate back
+        # as an RCPT/DATA error to the inbound caller (CF Worker ->
+        # c3-public-api -> here). Before this queue existed, deliver_to
+        # &stalwart_relay ran synchronously in this same pipeline, so a
+        # Stalwart 452 turned into a maddy 5xx/4xx here, which the HTTP
+        # bridge surfaced as a 500 with no retry — dropping the message from
+        # both local_mailboxes and Stalwart. This completes Phase 3 of the
+        # Stalwart migration: inbound external mail (via
+        # http-to-smtp-proxy-api / CF Worker -> :25) and mail-puller
         # re-injections (via submission :465) both converge here.
         deliver_to &local_mailboxes
-        deliver_to &stalwart_relay
+        deliver_to &stalwart_queue
     }
     default_destination {
         reject 550 5.1.1 "User doesn't exist"
     }
 }
 
-# ── Inbound SMTP (port 25) — from http-to-smtp-proxy-api / CF Worker ──────────
+# ── Inbound SMTP (port 25) — from CF Worker via c3-public-api bridge ──────────
 # Phase 4 dual-bind: `tcp://10.0.0.3:25 tcp://10.1.0.3:25` expands to one `tcp://<ip>:25` per bind in
 # build.json extra_ports[port=25].bind (wg0 10.0.0.3 + wg-public 10.1.0.3).
 smtp tcp://10.0.0.3:25 tcp://10.1.0.3:25 {
@@ -81,24 +92,21 @@ smtp tcp://10.0.0.3:25 tcp://10.1.0.3:25 {
     }
 
     # ── Security: two-tier architecture ────────────────────────────────
-    # Tier 1 (IP-based) — handled by http-to-smtp-proxy-api (has real sender IP via CF-Connecting-IP):
-    #   require_matching_rdns   — PTR record must exist for sender IP
-    #   dnsbl {                 — reject IPs listed in spam blocklists
-    #       zen.spamhaus.org
-    #       bl.spamcop.net
-    #   }
-    #   spf (IP check)          — verify sender IP is authorized by domain's SPF record
+    # Tier 1 (IP-based) — handled by Cloudflare Email Routing (the MX): it
+    # sees the true sender IP and enforces SPF/DKIM/DMARC before the CF
+    # Worker -> c3-public-api bridge delivers here over WG. Maddy never
+    # sees the real sender IP (no XCLIENT / Proxy Protocol) — inbound
+    # connections arrive from the WG hop (c3-public-api, 10.0.0.4), so
+    # IP-tier checks (rDNS, DNSBL, SPF-on-IP) cannot run here.
     #
-    # These checks CANNOT run in Maddy because http-to-smtp-proxy-api connects from
-    # gcp-proxy via WG (10.0.0.1). Maddy doesn't support XCLIENT or Proxy Protocol
-    # to receive the real sender IP. http-to-smtp-proxy-api does all IP checks
-    # before forwarding.
-    #
-    # Tier 2 (signature-based) — handled by Maddy (no IP needed):
+    # Tier 2 (signature-based) — handled by Maddy on message content:
     check {
         dkim
         spf
     }
+    # spf evaluates the WG hop IP, not the real sender — expect fail/softfail.
+    # Defaults: softfail ignored; fail deferred to DMARC (enforce_early no),
+    # which decides on aligned DKIM.
     # DMARC is enabled by default — aligns DKIM/SPF with From header (p=reject)
 
     default_source {
@@ -168,6 +176,18 @@ target.smtp stalwart_relay {
     # Stalwart's STARTTLS cert won't validate against the 10.0.0.3 IP.
     # Matches http-to-smtp-proxy-api's shadow delivery to this same port.
     starttls no
+}
+
+# Durable on-disk queue in front of stalwart_relay. Decouples the Stalwart
+# mirror from the inbound SMTP transaction: local_routing hands off here and
+# is done (message already persisted under /data/queue-stalwart, surviving
+# container restarts), while this queue retries stalwart_relay independently
+# with exponential backoff. This is what stops a transient Stalwart failure
+# (e.g. its own rate limiter) from ever rejecting the inbound delivery.
+target.queue stalwart_queue {
+    target &stalwart_relay
+    location /data/queue-stalwart
+    max_tries 20
 }
 
 # ── Outbound relay (OCI SMTP) ─────────────────────────────────────

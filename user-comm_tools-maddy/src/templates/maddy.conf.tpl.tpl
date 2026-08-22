@@ -48,15 +48,26 @@ msgpipeline local_routing {
         modify {
             replace_rcpt &local_rewrites
         }
-        # Dual-write: store in maddy's own imapsql AND relay to Stalwart
-        # (the JMAP/IMAP store on :2443/:2993). maddy commits both targets
-        # atomically — if either fails the whole delivery defers and retries,
-        # so no message is ever lost or duplicated across the two stores.
-        # This completes Phase 3 of the Stalwart migration: inbound external
-        # mail (via http-to-smtp-proxy-api / CF Worker -> :25) and mail-puller
+        # Dual-write: store in maddy's own imapsql AND mirror to Stalwart
+        # (the JMAP/IMAP store on :2443/:2993). The two legs are NOT atomic:
+        # local_mailboxes is written synchronously (its failure does defer/
+        # reject this delivery), but stalwart_relay is only ever reached via
+        # the on-disk stalwart_queue below. That means the inbound SMTP
+        # transaction is acknowledged as soon as the message is durably
+        # queued on /data — a transient Stalwart failure (e.g. its own rate
+        # limiting, "452 4.4.5 Rate limit exceeded") is retried with
+        # exponential backoff by maddy's queue and can NEVER propagate back
+        # as an RCPT/DATA error to the inbound caller (CF Worker ->
+        # c3-public-api -> here). Before this queue existed, deliver_to
+        # &stalwart_relay ran synchronously in this same pipeline, so a
+        # Stalwart 452 turned into a maddy 5xx/4xx here, which the HTTP
+        # bridge surfaced as a 500 with no retry — dropping the message from
+        # both local_mailboxes and Stalwart. This completes Phase 3 of the
+        # Stalwart migration: inbound external mail (via
+        # http-to-smtp-proxy-api / CF Worker -> :25) and mail-puller
         # re-injections (via submission :465) both converge here.
         deliver_to &local_mailboxes
-        deliver_to &stalwart_relay
+        deliver_to &stalwart_queue
     }
     default_destination {
         reject 550 5.1.1 "User doesn't exist"
@@ -157,6 +168,18 @@ target.smtp stalwart_relay {
     # Stalwart's STARTTLS cert won't validate against the 10.0.0.3 IP.
     # Matches http-to-smtp-proxy-api's shadow delivery to this same port.
     starttls no
+}
+
+# Durable on-disk queue in front of stalwart_relay. Decouples the Stalwart
+# mirror from the inbound SMTP transaction: local_routing hands off here and
+# is done (message already persisted under /data/queue-stalwart, surviving
+# container restarts), while this queue retries stalwart_relay independently
+# with exponential backoff. This is what stops a transient Stalwart failure
+# (e.g. its own rate limiter) from ever rejecting the inbound delivery.
+target.queue stalwart_queue {
+    target &stalwart_relay
+    location /data/queue-stalwart
+    max_tries 20
 }
 
 # ── Outbound relay (OCI SMTP) ─────────────────────────────────────
