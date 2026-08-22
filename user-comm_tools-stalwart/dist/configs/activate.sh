@@ -285,4 +285,88 @@ for cidr in os.environ["ALLOWED_IPS"].split():
 PYEOF
 fi
 
-echo "[activate] Done — folders + sieve + mta routes + tls cert + allowed-ip ensured"
+# ── Step G: inbound throttle cap raise (admin scope) ────────────────────
+# Stalwart ships two MtaInboundThrottle defaults: a per-remote-IP throttle
+# (5/sec — a sane runaway backstop, left untouched) and a per-(senderDomain,
+# rcpt) throttle (25/hour by default). This instance's ONLY inbound SMTP
+# peer is maddy on 10.0.0.3:2025 over the WireGuard mesh — nothing reaches
+# it from the public internet — and maddy (plus Cloudflare Email Routing
+# upstream of it) already performs DKIM/SPF/DMARC/dnsbl checks. So the
+# sender-domain throttle here is redundant anti-abuse policy applied to an
+# already-vetted internal relay, and it was actively harmful: a single busy
+# sender domain (observed: wg-gesucht.de) blows through 25/hour and every
+# subsequent message that hour gets `452 4.4.5 Rate limit exceeded` —
+# legitimate mail silently rejected (and, before maddy grew a durable
+# queue, actually lost). We raise the cap to 500/hour rather than removing
+# the throttle outright, keeping a (much wider) backstop in place. As with
+# Step F, config.toml is not loaded at runtime in v0.16 — this must go
+# through the JMAP registry. The object is looked up by its `key` shape
+# (senderDomain+rcpt), never by hardcoded id — ids are per-install.
+echo "[activate] Ensuring sender-domain inbound throttle cap >= 500/hour..."
+ADMIN_EMAIL="$ADMIN_EMAIL" ADMIN_PW="$ADMIN_PW" BASE="$BASE" python3 - <<'PYEOF'
+import os, ssl, json, base64
+from urllib import request as ur, error as ue
+BASE=os.environ["BASE"]
+AUTH="Basic "+base64.b64encode(f'{os.environ["ADMIN_EMAIL"]}:{os.environ["ADMIN_PW"]}'.encode()).decode()
+ctx=ssl._create_unverified_context()
+def jmap(calls):
+    body=json.dumps({"using":["urn:ietf:params:jmap:core","urn:stalwart:jmap"],"methodCalls":calls}).encode()
+    req=ur.Request(BASE+"/jmap/",data=body,method="POST",
+                   headers={"Content-Type":"application/json","Authorization":AUTH})
+    try: return json.loads(ur.urlopen(req,context=ctx,timeout=20).read())
+    except ue.HTTPError as e: return {"err":e.code,"body":e.read().decode(errors="replace")[:300]}
+try:
+    req=ur.Request(BASE+"/jmap/session",headers={"Authorization":AUTH})
+    s=json.loads(ur.urlopen(req,context=ctx,timeout=10).read())
+except Exception as e:
+    print("  [throttle] session failed (non-fatal):",e); raise SystemExit(0)
+acct=s.get("primaryAccounts",{}).get("urn:stalwart:jmap") or next(iter(s.get("accounts",{})),None)
+
+r=jmap([["x:MtaInboundThrottle/get",{"accountId":acct,"ids":None},"0"]])
+try: objs=r["methodResponses"][0][1].get("list",[])
+except Exception: objs=[]
+
+# Match by key shape first (senderDomain + rcpt); description is a fallback
+# only, since it's free text and could change across Stalwart versions.
+target=None
+for o in objs:
+    key=o.get("key") or {}
+    if key.get("senderDomain") and key.get("rcpt"):
+        target=o; break
+if target is None:
+    for o in objs:
+        d=(o.get("description") or "").lower()
+        if "sender" in d and "recipient throttle" in d:
+            target=o; break
+if target is None:
+    print("  [throttle] WARN: no sender-domain->rcpt MtaInboundThrottle object found — leaving throttles untouched")
+    raise SystemExit(0)
+
+tid=target["id"]
+TARGET_COUNT, TARGET_PERIOD = 500, 3600000
+cur=target.get("rate") or {}
+if cur.get("count")==TARGET_COUNT and cur.get("period")==TARGET_PERIOD:
+    print(f"  [throttle] {tid} already at {TARGET_COUNT}/{TARGET_PERIOD}ms, no-op")
+    raise SystemExit(0)
+
+rr=jmap([["x:MtaInboundThrottle/set",
+    {"accountId":acct,"update":{tid:{"rate":{"count":TARGET_COUNT,"period":TARGET_PERIOD}}}},"0"]])
+u=(rr.get("methodResponses") or [[None,{}]])[0][1]
+if u.get("updated"):
+    print(f"  [throttle] {tid}: rate -> {TARGET_COUNT}/hour")
+else:
+    print(f"  [throttle] FAIL update {tid}: {u.get('notUpdated') or rr}")
+    raise SystemExit(0)
+
+# Same reload dance as Step D — otherwise the live SMTP queue keeps using
+# the throttle snapshot loaded at container startup.
+for variant in ("ReloadSettings", "InvalidateCaches"):
+    rr=jmap([["x:Action/set",{"accountId":acct,"create":{"a":{"@type":variant}}},"0"]])
+    c=(rr.get("methodResponses") or [[None,{}]])[0][1]
+    if c.get("created"):
+        print(f"  [throttle] {variant}: dispatched")
+    else:
+        print(f"  [throttle] WARN {variant} not dispatched: {c.get('notCreated') or rr}")
+PYEOF
+
+echo "[activate] Done — folders + sieve + mta routes + tls cert + allowed-ip + throttle cap ensured"
