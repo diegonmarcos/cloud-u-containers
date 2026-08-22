@@ -31,7 +31,10 @@ in
       # references including the multi-line JWKS PEM. No oidc_jwks.pem
       # carve-out, no legacy /config/.secrets.d mount needed.
       ports = [ "${svc.authelia.ip}:${toString buildJson.ports.app}:9091" ];
-      networks = [ "auth-net" ];
+      # Static IP pin: infra-sec_introspect-proxy's JWKS_URL targets this
+      # address directly (the host-published port's docker-proxy hangs).
+      # Keep in sync with that JWKS_URL if this ever changes.
+      networks.auth-net.ipv4_address = "172.18.0.3";
       # service_healthy (not service_started): authelia FATALs with no retry if
       # it connects while redis is still "LOADING the dataset" — that race took
       # down all auth + mail (2026-06-20). The redis healthcheck below only goes
@@ -72,6 +75,11 @@ in
     authelia_redis_data = {};
   };
   networks = {
-    auth-net = { driver = "bridge"; };
+    # Explicit subnet (matches what Docker's IPAM had already assigned)
+    # so authelia's static ipv4_address above is valid on every recreate.
+    auth-net = {
+      driver = "bridge";
+      ipam.config = [ { subnet = "172.18.0.0/16"; } ];
+    };
   };
 }

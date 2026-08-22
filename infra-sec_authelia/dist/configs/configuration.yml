@@ -85,6 +85,9 @@ notifier:
     tls:
       server_name: mail.diegonmarcos.com
 
+# Passkey (WebAuthn) is the primary factor offered; TOTP is the fallback.
+default_2fa_method: 'webauthn'
+
 webauthn:
   disable: false
   display_name: diegonmarcos.com
