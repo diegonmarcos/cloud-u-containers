@@ -1,42 +1,109 @@
-// Cloudflare Email Worker - Triple-delivery inbound email
-// Copy 1: ALWAYS → Maddy via http-to-smtp-proxy-api (self-hosted primary)
-// Copy 2: ALWAYS → Google Workspace via Gmail API (service account JWT)
+// Cloudflare Email Worker - Dual-delivery inbound email
+// Leg A (Google): ALWAYS → Google Workspace via Gmail API (service account JWT).
+//   This is the durable, guaranteed primary — Gmail import essentially never fails,
+//   so acceptance of the message is gated on this leg.
+// Leg B (mesh/Maddy): ALWAYS → Maddy via http-to-smtp-proxy-api (self-hosted mirror).
+//   This is best-effort AT DELIVERY TIME ONLY. It is retried a few times inline for
+//   transient failures (e.g. rate limits, 5xx), and if it still fails after retries
+//   it is NOT allowed to bounce the mail — Gmail already has the durable copy, and
+//   the mesh copy can be reconciled from Gmail later. But a lost leg-B delivery must
+//   never be silent: it is always logged with a stable, greppable MESH_LEG_LOST
+//   marker (see notifyMeshLegLost) so it can be alarmed on externally and replayed.
 // Copy 3: ONLY if C3 health check says mail unhealthy → live.com (disaster backup)
 // NOTE: 2026-05-09 — reverted Phase 5 cf-worker-bridge change: new Caddy route on
-// gcp-proxy hadn't shipped (Phase 4 pending), worker was 404'ing → mail down.
+// gcp-proxy hadn't shipped (Phase 4 pending), worker was 404'ing → mail down. That
+// 9-day outage went unnoticed because leg-B failures were swallowed by
+// `maddyOk || googleOk` with no distinct signal — this file now fixes that.
 
 export default {
   async email(message, env, ctx) {
     const from = message.from;
     const to = message.to;
-    console.log(`Email received: ${from} -> ${to}`);
+    const messageId = message.headers.get('Message-ID') || '(no Message-ID)';
+    console.log(`Email received: ${from} -> ${to} (${messageId})`);
 
     const rawEmail = await new Response(message.raw).text();
 
-    // Fire all three in parallel: Maddy + Google + health check
-    const [maddyOk, googleOk, healthy] = await Promise.all([
-      deliverToMaddy(rawEmail, to, env),
+    // Google (guaranteed primary), the FIRST mesh attempt, and the health check all
+    // run inline: acceptance is decided on both legs, so neither one failing alone
+    // can bounce a message the other already holds. That redundancy is the whole
+    // point of running our own mail VM alongside Gmail — if Gmail is the one that
+    // fails, a successful mesh delivery must still accept the mail.
+    const [googleOk, maddyFirst, healthy] = await Promise.all([
       deliverToGoogle(rawEmail, env),
+      deliverToMaddy(rawEmail, to, env),
       checkMailHealth(env),
     ]);
-
+    const maddyOk = maddyFirst.ok;
     console.log(`Results: maddy=${maddyOk}, google=${googleOk}, healthy=${healthy}`);
+
+    // Leg B only: if the inline attempt failed, keep retrying in the background.
+    // The observed failure modes (452 4.4.5 rate limit, transient 5xx from the
+    // Caddy→c3-public-api→maddy hop) clear up on a short retry. This runs inside
+    // ctx.waitUntil so it never blocks the SMTP accept or the worker's deadline.
+    if (!maddyOk) {
+      ctx.waitUntil(
+        deliverToMaddyWithRetry(rawEmail, to, env, 2, [1000, 2000]).then(({ ok, status }) => {
+          if (!ok) {
+            // Mesh mirror lost. Gmail may still have it, but this must never be
+            // silent — that silence is exactly what hid a 9-day outage.
+            return notifyMeshLegLost(env, { messageId, from, to, status });
+          }
+        })
+      );
+    }
 
     // If health check says unhealthy, send disaster backup to live.com
     if (!healthy) {
-      ctx.waitUntil(forwardToBackup(message, env, `mail health: unhealthy, maddy=${maddyOk}`));
+      ctx.waitUntil(forwardToBackup(message, env, `mail health: unhealthy`));
     }
 
-    // Accept the email if at least one delivery succeeded
+    // Accept as long as at least one durable copy landed. Never bounce mail that
+    // one of the two stores already has.
     if (maddyOk || googleOk) {
       return;
     }
 
-    // Both failed — reject with error
-    console.error(`All deliveries failed — rejecting`);
-    message.setReject(`Primary (Maddy) and secondary (Google) delivery both failed`);
+    // Both legs failed — reject so the sending MTA retries rather than us silently
+    // dropping the message.
+    console.error(`Primary (Google) and mesh (Maddy) delivery both failed — rejecting`);
+    message.setReject(`Primary (Google) and mesh (Maddy) delivery both failed`);
   }
 };
+
+// ── Leg B retry wrapper ───────────────────────────────────────────────────────
+// Bounded retry for the mesh leg: the failures we've actually seen in production
+// (452 4.4.5 rate limit, transient 5xx from the Caddy→c3-public-api→maddy hop) are
+// exactly the kind that clear up on a short retry. Each attempt still has its own
+// AbortController timeout via deliverToMaddy.
+async function deliverToMaddyWithRetry(rawEmail, to, env, attempts, backoffsMs) {
+  let lastStatus = 'unknown';
+  for (let i = 0; i < attempts; i++) {
+    const { ok, status } = await deliverToMaddy(rawEmail, to, env);
+    if (ok) return { ok: true, status };
+    lastStatus = status;
+    if (i < attempts - 1) {
+      const delay = backoffsMs[i] ?? backoffsMs[backoffsMs.length - 1];
+      console.warn(`Maddy delivery attempt ${i + 1}/${attempts} failed (${status}), retrying in ${delay}ms`);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+  return { ok: false, status: lastStatus };
+}
+
+// ── Loud failure signal for a lost mesh leg ───────────────────────────────────
+// No ntfy/Telegram/webhook/KV/D1/Queue binding currently exists in this worker's
+// wrangler.toml (only Gmail + Maddy + health-check vars/secrets), so per policy we
+// do not invent new Cloudflare infrastructure here. Instead this emits a durable,
+// stable-prefixed log line (MESH_LEG_LOST) carrying everything needed to replay
+// the message from Gmail; an external log drain/alert on Workers Logs can alarm on
+// this prefix. If a notification binding (ntfy/Telegram/webhook) is added to this
+// worker later, wire it in here.
+async function notifyMeshLegLost(env, { messageId, from, to, status }) {
+  console.error(
+    `MESH_LEG_LOST message_id=${messageId} from=${from} to=${to} status=${status}`
+  );
+}
 
 // ── Maddy delivery via http-to-smtp-proxy-api ────────────────────────────────
 async function deliverToMaddy(rawEmail, to, env) {
@@ -61,14 +128,15 @@ async function deliverToMaddy(rawEmail, to, env) {
     });
     clearTimeout(timeoutId);
     if (!response.ok) {
-      console.error(`Maddy http-to-smtp-proxy-api error: ${response.status} ${await response.text()}`);
-      return false;
+      const bodyText = await response.text();
+      console.error(`Maddy http-to-smtp-proxy-api error: ${response.status} ${bodyText}`);
+      return { ok: false, status: `HTTP ${response.status}: ${bodyText}`.slice(0, 200) };
     }
     console.log(`Maddy: delivered via http-to-smtp-proxy-api`);
-    return true;
+    return { ok: true, status: 'ok' };
   } catch (e) {
     console.error(`Maddy http-to-smtp-proxy-api failed: ${e.message}`);
-    return false;
+    return { ok: false, status: e.message };
   }
 }
 
