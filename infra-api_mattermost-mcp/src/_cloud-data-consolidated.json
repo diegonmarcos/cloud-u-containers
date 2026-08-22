@@ -183,7 +183,7 @@
         "umami",
         "crowdsec",
         "claude-superset-api",
-        "cloud-cgc-mcp",
+        "cloud-cgc-pub-mcp",
         "hermes-agent",
         "kg-store",
         "my-ai-api",
@@ -1539,8 +1539,8 @@
         "_note": "URLs resolved at flake build time from cloud-data services{}. Container runs in bridge mode, so 127.0.0.1 will NOT reach host-bound services — we MUST use the WG IP (10.0.0.6) of whichever VM hosts the child MCP.",
         "infra": [
           {
-            "name": "cloud-cgc-mcp",
-            "service": "cloud-cgc-mcp",
+            "name": "cloud-cgc-pub-mcp",
+            "service": "cloud-cgc-pub-mcp",
             "path": "/mcp"
           }
         ],
@@ -2195,6 +2195,10 @@
           {
             "repo_url": "https://github.com/diegonmarcos/cloud-unix",
             "runner_name": "oci-apps-arm64-unix"
+          },
+          {
+            "repo_url": "https://github.com/diegonmarcos/cloud-data",
+            "runner_name": "oci-apps-arm64-data"
           }
         ],
         "_secret_comment": "secrets.yaml must contain ACCESS_TOKEN (GitHub classic PAT, repo scope) — used only for runner registration/deregistration. Each job token is auto-issued by GitHub."
@@ -4746,7 +4750,7 @@
         "messages": {
           "portless_placeholder": "Portless worker/sidecar — no HTTP endpoint",
           "db_catalog_template": "DB catalog — container={container} engine={engine} port={port} upstream={upstream} path={path} vm={vm}",
-          "mcp_hub_fallback": "MCP Hub — use /g-workspace/mcp, /mail-mcp/mcp, /mattermost-mcp/mcp, /c3-infra-mcp/mcp, /c3-services-mcp/mcp, /cloud-cgc-mcp/mcp",
+          "mcp_hub_fallback": "MCP Hub — use /g-workspace/mcp, /mail-mcp/mcp, /mattermost-mcp/mcp, /c3-infra-mcp/mcp, /c3-services-mcp/mcp, /cloud-cgc-pub-mcp/mcp",
           "app_hub_fallback": "Not Found"
         }
       },
@@ -4980,7 +4984,7 @@
         "messages": {
           "portless_placeholder": "Portless worker/sidecar — no HTTP endpoint",
           "db_catalog_template": "DB catalog — container={container} engine={engine} port={port} upstream={upstream} path={path} vm={vm}",
-          "mcp_hub_fallback": "MCP Hub — use /g-workspace/mcp, /mail-mcp/mcp, /mattermost-mcp/mcp, /c3-infra-mcp/mcp, /c3-services-mcp/mcp, /cloud-cgc-mcp/mcp",
+          "mcp_hub_fallback": "MCP Hub — use /g-workspace/mcp, /mail-mcp/mcp, /mattermost-mcp/mcp, /c3-infra-mcp/mcp, /c3-services-mcp/mcp, /cloud-cgc-pub-mcp/mcp",
           "app_hub_fallback": "Not Found"
         }
       },
@@ -5251,29 +5255,29 @@
         "AUTHELIA_OIDC_TOKEN_CLAUDE_ADMIN"
       ]
     },
-    "cloud-cgc-mcp": {
+    "cloud-cgc-pub-mcp": {
       "category": "obs",
       "vm": "oci-A1-f_0",
-      "folder": "user-ai_cloud-cgc-mcp",
-      "description": "Cloud CGC MCP — Code Graph Context: infra knowledge, specs, docs, semantic code search",
+      "folder": "user-ai_cloud-cgc-pub-mcp",
+      "description": "Cloud CGC Pub MCP — Code Graph Context: infra knowledge, specs, docs, semantic code search",
       "enabled": true,
-      "flake": "user-ai_cloud-cgc-mcp",
+      "flake": "user-ai_cloud-cgc-pub-mcp",
       "port": 3105,
-      "dns": "cloud-cgc-mcp.app",
+      "dns": "cloud-cgc-pub-mcp.app",
       "upstream": "10.0.0.6:3105",
       "containers": {
         "app": {
-          "container_name": "cloud-cgc-mcp",
-          "image": "ghcr.io/diegonmarcos/cloud-cgc-mcp:latest",
+          "container_name": "cloud-cgc-pub-mcp",
+          "image": "ghcr.io/diegonmarcos/cloud-cgc-pub-mcp:latest",
           "port": 3105,
           "port_env": "MCP_HTTP_PORT",
-          "dns": "cloud-cgc-mcp.app",
+          "dns": "cloud-cgc-pub-mcp.app",
           "public": true,
           "proxy": {
             "streaming": true,
             "type": "path",
             "parent_domain": "mcp.diegonmarcos.com",
-            "base_path": "/cloud-cgc-mcp"
+            "base_path": "/cloud-cgc-pub-mcp"
           },
           "healthcheck": "/mcp",
           "monitoring": null,
@@ -5288,13 +5292,13 @@
         }
       },
       "container_names": [
-        "cloud-cgc-mcp"
+        "cloud-cgc-pub-mcp"
       ],
       "all_ports": [
         "3105"
       ],
       "all_dns": [
-        "cloud-cgc-mcp.app"
+        "cloud-cgc-pub-mcp.app"
       ],
       "compose": {
         "containers": [],
@@ -5307,7 +5311,7 @@
           "streaming": true,
           "type": "path",
           "parent_domain": "mcp.diegonmarcos.com",
-          "base_path": "/cloud-cgc-mcp",
+          "base_path": "/cloud-cgc-pub-mcp",
           "wg_only": true
         }
       },
@@ -5319,7 +5323,7 @@
       },
       "db_publish": {
         "_comment": "Durability: the octocode GraphRAG index (FastEmbed vectors + LLM relationship graph, a multi-hour build) lives only in the octocode_db volume on `host`. ship-kg-db.yml (GHA) snapshots it to image:tag on GHCR so a volume wipe is restorable by pulling the image. GHA (not the local ship) so the package can be flipped PUBLIC. Consumed by 9_others/src/deploy/scripts/cloud-kg-db-snapshot.sh.",
-        "image": "ghcr.io/diegonmarcos/cloud-cgc-mcp-octocode-db",
+        "image": "ghcr.io/diegonmarcos/cloud-cgc-pub-mcp-octocode-db",
         "tag": "latest",
         "volume": "octocode_db",
         "host": "oci-apps"
@@ -5375,6 +5379,13 @@
             "*.efi",
             "a_solutions/*/src/build-*.json"
           ],
+          "_noindex_extra_comment": "PER-REPO noindex additions (data-driven, keyed by local repo name) layered ON TOP of noindex_patterns above, for content only ONE repo needs excluded. cloud-my-ai_memory: a_sessions/ holds raw Claude Code session transcripts (giant, opaque tool-result JSON that would abort the index; the text is invisible to embeddings anyway) and a_commits/ holds 18 rewritten-wholesale JSON snapshots up to 7.5MB each (embedding noise + whole-file-JSON abort risk). Honored by cloud-cgc-db-update.sh next to NOINDEX_PATTERNS.",
+          "noindex_extra": {
+            "cloud-my-ai_memory": [
+              "a_sessions/",
+              "a_commits/"
+            ]
+          },
           "db_volume": "octocode_db",
           "db_path": "/home/appuser/.local/share/octocode",
           "_db_upstream_comment": "GHCR is the SINGLE upstream for both octocode DBs (semantic FastEmbed vectors + GraphRAG graph). The producer (GHA x86, ship-cgc-db.yml) pulls db_publish.image, runs an INCREMENTAL octocode index on top, and pushes it back. oci-apps (arm) + local both CONSUME by pulling the same image — never build. Pinned octocode version keeps the on-disk DB schema compatible across x86/arm/local.",
@@ -5417,7 +5428,8 @@
             "cloud-mykonsole-dtk",
             "cloud-data",
             "front-data",
-            "cloud-android"
+            "cloud-android",
+            "cloud-my-ai_memory"
           ],
           "_repo_map_comment": "GENERATED by 1_cloud-configs/src/derive/derive-repo-map.ts from cloud/repos.json, scoped to index_repos. DO NOT EDIT — add the repo to the registry and to index_repos instead.",
           "repo_map": {
@@ -5429,6 +5441,10 @@
             "front-data": "front-data",
             "cloud-android": "cloud-android"
           },
+          "_graphrag_skip_comment": "Subset of index_repos (data-driven, no hardcoded names in the script) whose GraphRAG LLM relationship pass is skipped entirely — pure prose/text corpora have no code semantics to relate, so the pass is zero graph nodes for real per-node LLM cost. Structural/FastEmbed indexing (the semantic phase, USE_LLM=false) still runs normally; only the graphrag phase (USE_LLM=true) skips these repos. Honored by cloud-cgc-db-update.sh's per-repo loop.",
+          "graphrag_skip": [
+            "cloud-my-ai_memory"
+          ],
           "home": "/home/appuser",
           "kg_store": {
             "_comment": "reindex.sh ingests the infra graph delta into kg-store (SurrealDB) after building the code graph — unified 'build all graphs' job. Localhost host-network; ns/db/user data-driven; delta from the cgc bundle. KG_STORE_PASS (SurrealDB root) is wired as a shared secret later; until then the ingest gracefully no-ops.",
@@ -5444,7 +5460,7 @@
             "binary_ratio": 0.5
           },
           "sync_exclude": {
-            "cloud-vault": "credential store — cloud-cgc-mcp indexes the shared volume; secrets would be embedded in the GraphRAG DB"
+            "cloud-vault": "credential store — cloud-cgc-pub-mcp indexes the shared volume; secrets would be embedded in the GraphRAG DB"
           }
         }
       },
@@ -5465,7 +5481,7 @@
         "tools_count": 48,
         "resources_count": 2,
         "prompts_count": 0,
-        "display_name": "Cloud CGC MCP",
+        "display_name": "Cloud CGC Pub MCP",
         "description": "Code Graph Context: cloud specs, docs, inventory, configs, skills; Octocode semantic search; CodeGraph analysis (future).",
         "auth": "none",
         "sdk": "@modelcontextprotocol/sdk@^1.12.0"
@@ -5680,7 +5696,7 @@
             "key_source": "name"
           },
           {
-            "_comment": "octocode code-graph file nodes (full file-level mirror). One table; node_type property = file|source_file|test_file|config_file. Populated by a_solutions/user-ai_cloud-cgc-mcp/src/code/octocode-export.py reading octocode's Lance graphrag_nodes per repo. key = <repo>:<path>.",
+            "_comment": "octocode code-graph file nodes (full file-level mirror). One table; node_type property = file|source_file|test_file|config_file. Populated by a_solutions/user-ai_cloud-cgc-pub-mcp/src/code/octocode-export.py reading octocode's Lance graphrag_nodes per repo. key = <repo>:<path>.",
             "table": "file",
             "key_source": "path"
           }
@@ -9476,7 +9492,7 @@
       },
       {
         "id": "git#gh/cloud-unix",
-        "service": "cloud-cgc-mcp",
+        "service": "cloud-cgc-pub-mcp",
         "container": null,
         "engine": "git",
         "kind": "git-remote",
@@ -9521,7 +9537,7 @@
       },
       {
         "id": "git#gh/diegonmarcos.github.io",
-        "service": "cloud-cgc-mcp",
+        "service": "cloud-cgc-pub-mcp",
         "container": null,
         "engine": "git",
         "kind": "git-remote",
@@ -9566,7 +9582,7 @@
       },
       {
         "id": "git#gh/cloud-data",
-        "service": "cloud-cgc-mcp",
+        "service": "cloud-cgc-pub-mcp",
         "container": null,
         "engine": "git",
         "kind": "git-remote",
@@ -9611,7 +9627,7 @@
       },
       {
         "id": "git#gh/cloud-infra",
-        "service": "cloud-cgc-mcp",
+        "service": "cloud-cgc-pub-mcp",
         "container": null,
         "engine": "git",
         "kind": "git-remote",
@@ -9656,7 +9672,7 @@
       },
       {
         "id": "git#gh/cloud-mykonsole-dtk",
-        "service": "cloud-cgc-mcp",
+        "service": "cloud-cgc-pub-mcp",
         "container": null,
         "engine": "git",
         "kind": "git-remote",
@@ -9701,7 +9717,7 @@
       },
       {
         "id": "git#gh/cloud-android",
-        "service": "cloud-cgc-mcp",
+        "service": "cloud-cgc-pub-mcp",
         "container": null,
         "engine": "git",
         "kind": "git-remote",
@@ -9996,7 +10012,7 @@
       },
       {
         "id": "git#gh/front-data",
-        "service": "cloud-cgc-mcp",
+        "service": "cloud-cgc-pub-mcp",
         "container": null,
         "engine": "git",
         "kind": "git-remote",
@@ -10822,10 +10838,10 @@
         "service": "claude-superset-api"
       },
       {
-        "name": "cloud-cgc-mcp.app",
+        "name": "cloud-cgc-pub-mcp.app",
         "type": "A",
         "value": "10.0.0.6",
-        "service": "cloud-cgc-mcp"
+        "service": "cloud-cgc-pub-mcp"
       },
       {
         "name": "hermes-agent.app",
@@ -11579,7 +11595,7 @@
           "umami",
           "crowdsec",
           "claude-superset-api",
-          "cloud-cgc-mcp",
+          "cloud-cgc-pub-mcp",
           "hermes-agent",
           "kg-store",
           "my-ai-api",
@@ -12044,8 +12060,8 @@
         "vm": "oci-apps",
         "has_docker": true
       },
-      "cloud-cgc-mcp": {
-        "dir": "user-ai_cloud-cgc-mcp",
+      "cloud-cgc-pub-mcp": {
+        "dir": "user-ai_cloud-cgc-pub-mcp",
         "vm": "oci-apps",
         "has_docker": true
       },

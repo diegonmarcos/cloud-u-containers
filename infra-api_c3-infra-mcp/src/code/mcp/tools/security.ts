@@ -96,7 +96,7 @@ export function registerSecurityExecTools(server: McpServer) {
     }
   );
 
-  // ── Security READ tools (moved from cloud-cgc-mcp) ──
+  // ── Security READ tools (moved from cloud-cgc-pub-mcp) ──
 
   server.tool(
     "sec.topology",

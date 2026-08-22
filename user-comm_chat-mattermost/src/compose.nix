@@ -223,7 +223,7 @@ in
         MM_PLUGINSETTINGS_PLUGINS_MATTERMOST_AI_MCPSERVERS = builtins.toJSON [
           { name = "cloud-infra";      url = "https://mcp.${base_domain}/c3-infra-mcp/mcp";    headers = { Authorization = "Bearer \${BEARER_TOKEN}"; }; }
           { name = "cloud-services";   url = "https://mcp.${base_domain}/c3-services-mcp/mcp"; headers = { Authorization = "Bearer \${BEARER_TOKEN}"; }; }
-          { name = "cloud-cgc-mcp";    url = "https://mcp.${base_domain}/cloud-cgc-mcp/mcp";   headers = { Authorization = "Bearer \${BEARER_TOKEN}"; }; }
+          { name = "cloud-cgc-pub-mcp"; url = "https://mcp.${base_domain}/cloud-cgc-pub-mcp/mcp"; headers = { Authorization = "Bearer \${BEARER_TOKEN}"; }; }
           { name = "mattermost";       url = "https://mcp.${base_domain}/mattermost-mcp/mcp";  headers = { Authorization = "Bearer \${BEARER_TOKEN}"; }; }
           { name = "mail-mcp";         url = "https://mcp.${base_domain}/mail-mcp/mcp";        headers = { Authorization = "Bearer \${BEARER_TOKEN}"; }; }
           { name = "google-workspace"; url = "https://mcp.${base_domain}/g-workspace/mcp";     headers = { Authorization = "Bearer \${BEARER_TOKEN}"; }; }

@@ -12,7 +12,7 @@ GOOSE_CONTEXT_WINDOW: 8192
 GOOSE_TELEMETRY_ENABLED: false
 
 extensions:
-  cloud-cgc-mcp:
+  cloud-cgc-pub-mcp:
     name: Cloud Code Graph Context MCP
     type: streamable_http
     uri: http://10.0.0.6:3105/mcp

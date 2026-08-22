@@ -185,12 +185,12 @@ export const FRONT_BUILD_SCRIPT = join(FRONT_DIR, "build.sh");
 //
 // Resolution order mirrors config.ts's established getCloudDataPath pattern:
 //   1. /app/build.json                    — bundled in-image, if ever shipped
-//   2. GIT_BASE/cloud-infra/a_solutions/user-ai_cloud-cgc-mcp/build.json
+//   2. GIT_BASE/cloud-infra/a_solutions/user-ai_cloud-cgc-pub-mcp/build.json
 //                                          — the repos volume already holds a
 //      full cloud-infra checkout (cloud-infra is itself in index_repos), so
 //      this reads the live file with zero extra Dockerfile plumbing
 //   3. local dev — relative to this module's own position in the source tree
-const OWN_SOLUTION_REL = join("a_solutions", "user-ai_cloud-cgc-mcp");
+const OWN_SOLUTION_REL = join("a_solutions", "user-ai_cloud-cgc-pub-mcp");
 function resolveOwnBuildJsonPath(): string {
   const candidates = [
     "/app/build.json",
@@ -218,7 +218,7 @@ export function getOctocodeRepoConfig(): OctocodeRepoConfig {
     // fresh hardcoded list — a hardcoded fallback is exactly what went stale
     // (silently) before. An empty map makes repo-scoped tools clearly refuse
     // every input instead of quietly resolving to the wrong directory.
-    process.stderr.write(`[cloud-cgc-mcp] WARNING: octocode repo config unavailable (${path}): ${(e as Error).message}\n`);
+    process.stderr.write(`[cloud-cgc-pub-mcp] WARNING: octocode repo config unavailable (${path}): ${(e as Error).message}\n`);
     _octRepoConfig = { index_repos: [], repo_map: {} };
   }
   return _octRepoConfig;
