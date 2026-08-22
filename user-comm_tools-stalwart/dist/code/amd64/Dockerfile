@@ -7,8 +7,8 @@
 # ║ Rebuild: a_solutions/user-comm_tools-stalwart/build.sh ship
 # ╚══════════════════════════════════════════════════════════════════╝
 # Type B — wrap upstream, arch=amd64
-FROM stalwartlabs/stalwart:v0.14.1
+FROM stalwartlabs/stalwart:v0.16.5
 LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
-LABEL cloud.diegonmarcos.from-image="stalwartlabs/stalwart:v0.14.1"
+LABEL cloud.diegonmarcos.from-image="stalwartlabs/stalwart:v0.16.5"
 
 
