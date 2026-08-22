@@ -1,7 +1,7 @@
-# compose.nix — pure attrset describing docker-compose.yml for cloud-cgc-mcp.
+# compose.nix — pure attrset describing docker-compose.yml for cloud-cgc-pub-mcp.
 # engine.nix serialises it via lib.generators.toYAML, merging compose-defaults.json.
 #
-# Single service: cloud-cgc-mcp — Code Graph Context MCP server
+# Single service: cloud-cgc-pub-mcp — Code Graph Context MCP server
 #   - Own code (Type A) packaged by ship engine via native_build.type=image-wrapper
 #   - HTTP + stdio transports; host network so Caddy can reach it at 127.0.0.1:PORT
 #   - Reads CONFIG_PATH (points at /data/config.json, with sibling cloud-data/)
@@ -13,7 +13,7 @@ let
   # WG IP from cloud-data — passed to bindHost() so the listener is confined
   # to the WG mesh on host-network mode. Defensive default in source is
   # 127.0.0.1; we explicitly override to the WG IP here.
-  vmIp = svc."cloud-cgc-mcp".ip or "10.0.0.6";
+  vmIp = svc."cloud-cgc-pub-mcp".ip or "10.0.0.6";
   binariesImage = "ghcr.io/diegonmarcos/${buildJson.name}-binaries:latest";
   # Single GHCR upstream for the octocode DB (producer = cloud-cgc-db-update.sh).
   # The db-restore init below pulls this and populates octocode_db on every deploy.
@@ -23,11 +23,22 @@ let
   # container never needs its own build.json/jq access at runtime (it has no
   # repo checkout, same reasoning as cloud-cgc-db-restore.sh's env-first
   # design). db_publish above stays the default until cutover — see
-  # cloud-cgc-mcp-db-restore-multi below.
+  # cloud-cgc-pub-mcp-db-restore-multi below.
   perRepo = buildJson.per_repo_publish or { };
   perRepoImagePrefix = perRepo.image_prefix or "ghcr.io/diegonmarcos/cgc-db-";
   perRepoTag = perRepo.tag or "latest";
   perRepoBaseImage = perRepo.base_image or "${perRepoImagePrefix}base:${perRepoTag}";
+  # docker-compose does its OWN `$`-interpolation on every string in the rendered
+  # compose file — including text spliced in via builtins.readFile — and errors
+  # ("invalid interpolation format") on anything that isn't `$VAR` / `${VAR}` /
+  # `${VAR:-default}` (e.g. a raw script's `$1`, `$#`, `$((...))`, `$_e`). Doubling
+  # every literal `$` to `$$` here makes compose collapse it back to a single `$`
+  # for the in-container shell — same $-escaping class as escape_dollars for
+  # secrets, same convention already used for hand-written shell elsewhere in this
+  # repo's compose.nix files (infra-db_redis, infra-obs_dbgate, infra-sec_authelia,
+  # user-comm_snappymail); this just applies it to a builtins.readFile'd script
+  # instead of hand-doubling each `$` in the Nix source.
+  escapeDollars = builtins.replaceStrings [ "$" ] [ "$$" ];
   # Octocode index wiring (data-driven from build.json.runtime.octocode).
   oct = buildJson.runtime.octocode;
   # Shared body for the one-shot octocode jobs. Two profile-gated variants below
@@ -80,7 +91,7 @@ let
 in
 {
   services = {
-    cloud-cgc-mcp = {
+    cloud-cgc-pub-mcp = {
       image = binariesImage;
       container_name = app.container_name;
       network_mode = "host";
@@ -123,10 +134,10 @@ in
     # Profile-gated because the octocode-db image is built amd64-only by the x86
     # GHA runner; running it on arm64 oci-apps produces "exec format error".
     # The octocode_db volume is populated externally (Dagu DAG / cgc-db GHA).
-    # Explicit opt-in: docker compose --profile restore run --rm cloud-cgc-mcp-db-restore
-    cloud-cgc-mcp-db-restore = {
+    # Explicit opt-in: docker compose --profile restore run --rm cloud-cgc-pub-mcp-db-restore
+    cloud-cgc-pub-mcp-db-restore = {
       image = dbImage;
-      container_name = "cloud-cgc-mcp-db-restore";
+      container_name = "cloud-cgc-pub-mcp-db-restore";
       profiles = [ "restore" ];
       restart = "no";
       volumes = [ "${oct.db_volume}:${oct.db_path}" ];
@@ -147,7 +158,7 @@ in
     # ── DB restore — MULTI-IMAGE (matrix producer: base + one image per repo,
     # cloud-cgc-db-restore-all.sh — Task 4). Same opt-in shape as the monolith
     # restore above: docker compose --profile restore-multi run --rm
-    # cloud-cgc-mcp-db-restore-multi. NOT the default — the monolith service
+    # cloud-cgc-pub-mcp-db-restore-multi. NOT the default — the monolith service
     # above stays it until the matrix producer (cgc-db-index.yml) is proven
     # green, per the migration plan.
     #
@@ -168,9 +179,9 @@ in
     # daemon's already-established login, and CGC_DB_TARGET_VOLUME routes the
     # final swap through a throwaway container instead of a raw host path —
     # this container's own filesystem is otherwise irrelevant to the restore.
-    cloud-cgc-mcp-db-restore-multi = {
+    cloud-cgc-pub-mcp-db-restore-multi = {
       image = "docker:cli";
-      container_name = "cloud-cgc-mcp-db-restore-multi";
+      container_name = "cloud-cgc-pub-mcp-db-restore-multi";
       profiles = [ "restore-multi" ];
       restart = "no";
       environment = {
@@ -183,7 +194,7 @@ in
       volumes = [ "/var/run/docker.sock:/var/run/docker.sock" ];
       entrypoint = [ "sh" "-c" ''
         cat > /tmp/cloud-cgc-db-restore-all.sh <<'CGC_RESTORE_ALL_EOF_9f3a1b'
-        ${builtins.readFile ../../../1_cicd/src/ops/cloud-cgc-db-restore-all.sh}
+        ${escapeDollars (builtins.readFile ../../../1_cicd/src/ops/cloud-cgc-db-restore-all.sh)}
         CGC_RESTORE_ALL_EOF_9f3a1b
         sh /tmp/cloud-cgc-db-restore-all.sh
       '' ];
@@ -192,18 +203,18 @@ in
     # ── One-shot octocode jobs (profile-gated; never start on `compose up`) ──────
     # Both mount index+repos RW (live MCP mounts them :ro) + run as root. Triggers:
     #   FORCE rebuild (always re-runs GraphRAG LLM):
-    #     docker compose --profile reindex run --rm cloud-cgc-mcp-reindex
+    #     docker compose --profile reindex run --rm cloud-cgc-pub-mcp-reindex
     #   INCREMENTAL (git-aware, only changed files):
-    #     docker compose --profile index run --rm cloud-cgc-mcp-index
+    #     docker compose --profile index run --rm cloud-cgc-pub-mcp-index
     #   Scope one repo: append `-e OCTOCODE_REPOS=cloud-android`. (reindex.sh checks even this
     #   override against SYNC_EXCLUDE above — a denied repo is refused, not indexed.)
-    cloud-cgc-mcp-reindex = octocodeJob // {
-      container_name = "cloud-cgc-mcp-reindex";
+    cloud-cgc-pub-mcp-reindex = octocodeJob // {
+      container_name = "cloud-cgc-pub-mcp-reindex";
       profiles = [ "reindex" ];
       environment = octocodeJob.environment // { OCTOCODE_CLEAR = "1"; };
     };
-    cloud-cgc-mcp-index = octocodeJob // {
-      container_name = "cloud-cgc-mcp-index";
+    cloud-cgc-pub-mcp-index = octocodeJob // {
+      container_name = "cloud-cgc-pub-mcp-index";
       profiles = [ "index" ];
       environment = octocodeJob.environment // { OCTOCODE_CLEAR = "0"; };
     };

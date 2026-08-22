@@ -1,5 +1,5 @@
 #!/bin/sh
-# ── cloud-cgc-mcp · one-shot octocode GraphRAG reindexer (LLM via claude-api-superset) ──
+# ── cloud-cgc-pub-mcp · one-shot octocode GraphRAG reindexer (LLM via claude-api-superset) ──
 # Runs in a throwaway container (compose profile "reindex") with octocode_db +
 # octocode_repos mounted RW and the superset env set. Points octocode's
 # GraphRAG LLM at the superset (kg-bridge successor), sets use_llm=true (the flag

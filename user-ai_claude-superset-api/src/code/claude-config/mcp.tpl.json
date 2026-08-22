@@ -4,9 +4,9 @@
     "url": "https://mcp.diegonmarcos.com/c3-infra-mcp/mcp",
     "headers": { "Authorization": "Bearer ${AUTHELIA_OIDC_TOKEN_CLAUDE_ADMIN}" }
   },
-  "cloud-cgc-mcp": {
+  "cloud-cgc-pub-mcp": {
     "type": "http",
-    "url": "https://mcp.diegonmarcos.com/cloud-cgc-mcp/mcp",
+    "url": "https://mcp.diegonmarcos.com/cloud-cgc-pub-mcp/mcp",
     "headers": { "Authorization": "Bearer ${AUTHELIA_OIDC_TOKEN_CLAUDE_ADMIN}" }
   },
   "cloud-services": {

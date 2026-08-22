@@ -225,7 +225,7 @@ const NATIVE_WRAPPED: Set<string> = new Set([
   "syncthing", "umami", "vaultwarden",
 ]);
 const PROXIED_MCPS: Set<string> = new Set([
-  "cloud-cgc-mcp", "mattermost-mcp", "mail-mcp", "google-workspace-mcp",
+  "cloud-cgc-pub-mcp", "mattermost-mcp", "mail-mcp", "google-workspace-mcp",
   "chat-mattermost",
 ]);
 const SELF_SERVICES: Set<string> = new Set([

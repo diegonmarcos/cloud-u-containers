@@ -18,6 +18,10 @@
       {
         "repo_url": "https://github.com/diegonmarcos/cloud-unix",
         "runner_name": "oci-apps-arm64-unix"
+      },
+      {
+        "repo_url": "https://github.com/diegonmarcos/cloud-data",
+        "runner_name": "oci-apps-arm64-data"
       }
     ],
     "_secret_comment": "secrets.yaml must contain ACCESS_TOKEN (GitHub classic PAT, repo scope) \u2014 used only for runner registration/deregistration. Each job token is auto-issued by GitHub."

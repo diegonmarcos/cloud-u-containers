@@ -21,7 +21,7 @@ async function main() {
 
   registerMetaTools(server);           //  8 meta-tools (collapsed from 108)
   registerOllamaTools(server);         //  3: models, generate, chat
-  await registerProxiedInfraTools(server); // cloud-cgc-mcp (code graph, cloud knowledge)
+  await registerProxiedInfraTools(server); // cloud-cgc-pub-mcp (code graph, cloud knowledge)
   await registerProxiedUserTools(server); // mattermost-mcp, mail-mcp, google-workspace-mcp
 
   const transport = new StdioServerTransport();

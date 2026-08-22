@@ -1,5 +1,5 @@
 {
-  "name": "cloud-cgc-mcp",
+  "name": "cloud-cgc-pub-mcp",
   "version": "5.0.0",
   "description": "MCP server — A) Raw JSON infra knowledge, B) Octocode semantic code search, C) CodeGraph-Rust graph analysis (future)",
   "type": "module",
