@@ -62,6 +62,29 @@
       "targets": [
         "maddy"
       ]
+    },
+    {
+      "id": "gws-primary",
+      "provider": "google-workspace",
+      "imap_host": "imap.gmail.com",
+      "imap_port": 993,
+      "email": "me@diegonmarcos.com",
+      "mailboxes": [
+        "INBOX"
+      ],
+      "auth": {
+        "method": "oauth",
+        "client_id_env": "GWS_CLIENT_ID",
+        "client_secret_env": "GWS_CLIENT_SECRET",
+        "refresh_token_env": "GWS_REFRESH_TOKEN",
+        "token_url": "https://oauth2.googleapis.com/token"
+      },
+      "deliver_envelope_from": "me@diegonmarcos.com",
+      "deliver_envelope_to": "me@diegonmarcos.com",
+      "targets": [
+        "maddy"
+      ],
+      "initial_since": "2026-08-10"
     }
   ]
 }

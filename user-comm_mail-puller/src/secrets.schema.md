@@ -15,6 +15,9 @@ environment at runtime.
 | `OUTLOOK_CLIENT_ID`          | `sources[live-primary].oauth`               | Azure AD app registration client ID ("Personal Microsoft accounts" audience). |
 | `OUTLOOK_CLIENT_SECRET`      | same                                        | Azure client secret (or empty if public-client PKCE flow used).          |
 | `OUTLOOK_REFRESH_TOKEN`      | same                                        | Refresh token with `offline_access IMAP.AccessAsUser.All` scope.         |
+| `GWS_CLIENT_ID`              | `sources[gws-primary].auth`                 | Google Cloud OAuth 2.0 client ID (Desktop app type) for `me@diegonmarcos.com`. **Must be a distinct client from the Cloudflare Worker's service-account credential** — that one is a JWT-bearer service account scoped to `gmail.modify` and cannot do IMAP XOAUTH2. |
+| `GWS_CLIENT_SECRET`          | same                                        | Client secret for the OAuth client above.                                |
+| `GWS_REFRESH_TOKEN`          | same                                        | Refresh token minted with scope `https://mail.google.com/` (IMAP requires full-mailbox scope; `gmail.modify`/`gmail.insert` will NOT authenticate XOAUTH2). |
 | `LOCAL_DELIVERY_USER`        | `delivery_targets.{maddy,stalwart}`        | Authenticated sender for local SMTP submission (e.g. `no-reply@diegonmarcos.com`). |
 | `LOCAL_DELIVERY_PASSWORD`    | same                                        | Password for that sender on both Maddy + Stalwart.                       |
 
@@ -37,6 +40,18 @@ python mutt_oauth2.py --authorize \
     --provider microsoft \
     --client-id $OUTLOOK_CLIENT_ID \
     --scope "offline_access IMAP.AccessAsUser.All SMTP.Send"
+
+# Google Workspace (me@diegonmarcos.com) — needs its OWN OAuth client, NOT the
+# Cloudflare Worker's GOOGLE_SA_KEY service account (that's a JWT-bearer
+# credential scoped to gmail.modify — a different grant type entirely, and the
+# wrong scope for IMAP). Create a Desktop-app OAuth client in the same (or any)
+# Google Cloud project, add me@diegonmarcos.com as a test user if the consent
+# screen is in Testing mode, then:
+python mutt_oauth2.py --authorize \
+    --provider google \
+    --client-id $GWS_CLIENT_ID \
+    --client-secret $GWS_CLIENT_SECRET \
+    --scope "https://mail.google.com/"
 ```
 
 Each emits a `refresh_token` string. Drop it into sops and re-ship.

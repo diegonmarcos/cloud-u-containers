@@ -23,13 +23,35 @@ impl State {
                 updated_at    INTEGER NOT NULL DEFAULT (strftime('%s','now')),
                 PRIMARY KEY (source_id, mailbox)
             );
+        "#)?;
+
+        // The pre-dedup `delivered` table was keyed (source_id, mailbox, uid) and
+        // was write-only bookkeeping — nothing ever queried it before delivering,
+        // so a cursor reset or backfill re-injected every message with no guard.
+        // The real dedup gate needs a different grain: one row per (source,
+        // target, message-id), since the same message can fan out to several
+        // targets. If an already-deployed DB still has the old shape, drop it —
+        // those rows were never read by anything.
+        let old_shape = {
+            let mut stmt = conn.prepare("PRAGMA table_info(delivered)")?;
+            let mut rows = stmt.query([])?;
+            let mut found = false;
+            while let Some(row) = rows.next()? {
+                let name: String = row.get(1)?;
+                if name == "uid" { found = true; }
+            }
+            found
+        };
+        if old_shape {
+            conn.execute_batch("DROP TABLE delivered;")?;
+        }
+        conn.execute_batch(r#"
             CREATE TABLE IF NOT EXISTS delivered (
                 source_id     TEXT NOT NULL,
-                mailbox       TEXT NOT NULL,
-                uid           INTEGER NOT NULL,
-                message_id    TEXT,
+                target        TEXT NOT NULL,
+                message_id    TEXT NOT NULL,
                 delivered_at  INTEGER NOT NULL DEFAULT (strftime('%s','now')),
-                PRIMARY KEY (source_id, mailbox, uid)
+                PRIMARY KEY (source_id, target, message_id)
             );
         "#)?;
         Ok(Self { conn: Arc::new(Mutex::new(conn)) })
@@ -59,12 +81,24 @@ impl State {
         Ok(())
     }
 
-    pub fn record_delivered(&self, source_id: &str, mailbox: &str, uid: u32, msg_id: Option<&str>) -> Result<()> {
+    /// Has this exact message already been delivered to this target from this
+    /// source? Used to make delivery idempotent across cursor resets/backfills.
+    pub fn was_delivered(&self, source_id: &str, target: &str, message_id: &str) -> Result<bool> {
+        let conn = self.conn.lock().unwrap();
+        let exists: bool = conn.query_row(
+            "SELECT EXISTS(SELECT 1 FROM delivered WHERE source_id = ?1 AND target = ?2 AND message_id = ?3)",
+            params![source_id, target, message_id],
+            |r| r.get(0),
+        )?;
+        Ok(exists)
+    }
+
+    pub fn record_delivered(&self, source_id: &str, target: &str, message_id: &str) -> Result<()> {
         let conn = self.conn.lock().unwrap();
         conn.execute(
-            "INSERT OR IGNORE INTO delivered (source_id, mailbox, uid, message_id)
-             VALUES (?, ?, ?, ?)",
-            params![source_id, mailbox, uid as i64, msg_id],
+            "INSERT OR IGNORE INTO delivered (source_id, target, message_id)
+             VALUES (?, ?, ?)",
+            params![source_id, target, message_id],
         )?;
         Ok(())
     }
