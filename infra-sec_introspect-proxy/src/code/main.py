@@ -26,6 +26,10 @@ JWKS_URL = os.environ.get("JWKS_URL", "https://auth.diegonmarcos.com/jwks.json")
 ISSUER = os.environ.get("ISSUER", "https://auth.diegonmarcos.com")
 REQUIRED_SCOPE = os.environ.get("REQUIRED_SCOPE", "authelia.bearer.authz")
 DEBUG = os.environ.get("DEBUG", "false").lower() == "true"
+# JWKS fetch must never eat into the caller's request budget (Cloudflare
+# Worker fetches here have a ~10s deadline). Keep this well under that, and
+# well under PyJWKClient's 30s default.
+JWKS_FETCH_TIMEOUT = float(os.environ.get("JWKS_FETCH_TIMEOUT", "3"))
 
 # Logging setup
 logging.basicConfig(
@@ -36,20 +40,26 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-# JWKS client with caching (re-fetches on key rotation)
-_jwks_client = None
-_jwks_client_created = 0
-JWKS_CACHE_TTL = 3600  # re-create client every hour
+# JWKS TTL, in seconds. PyJWKClient's own jwk-set cache (cache_jwk_set)
+# refetches only after this many seconds; its per-kid signing-key cache
+# (cache_keys) never expires, so a key already resolved once keeps working
+# even while JWKS_URL is unreachable — a stale-but-valid key beats a hung
+# request. Built once at import time: a single long-lived PyJWKClient is the
+# whole point of caching, so it must never be thrown away on a fetch error
+# (that used to force a full refetch, with the default 30s timeout, on every
+# single request while Authelia was unreachable — the outage on 2026-08-22).
+JWKS_CACHE_TTL = int(os.environ.get("JWKS_CACHE_TTL", "600"))  # 10 min
+_jwks_client = PyJWKClient(
+    JWKS_URL,
+    cache_keys=True,
+    cache_jwk_set=True,
+    lifespan=JWKS_CACHE_TTL,
+    timeout=JWKS_FETCH_TIMEOUT,
+)
 
 
 def get_jwks_client():
-    """Get or create a cached JWKS client."""
-    global _jwks_client, _jwks_client_created
-    now = time.time()
-    if _jwks_client is None or (now - _jwks_client_created) > JWKS_CACHE_TTL:
-        logger.info(f"Fetching JWKS from {JWKS_URL}")
-        _jwks_client = PyJWKClient(JWKS_URL)
-        _jwks_client_created = now
+    """Return the shared, long-lived JWKS client (see caching note above)."""
     return _jwks_client
 
 
@@ -100,11 +110,12 @@ def auth():
         logger.debug(f"Invalid issuer")
         return Response("Invalid token issuer", status=401)
     except jwt.PyJWKClientError as e:
+        # Fail fast (short JWKS_FETCH_TIMEOUT above bounds this) rather than
+        # hanging the caller. Do NOT drop _jwks_client here: it holds the
+        # last-known-good JWKS/signing-key cache, which we want to keep
+        # serving on the next request rather than forcing a fresh fetch.
         logger.error(f"JWKS fetch failed: {e}")
-        # Reset client so next request retries
-        global _jwks_client
-        _jwks_client = None
-        return Response("Auth key server unavailable", status=502)
+        return Response("Auth key server unavailable", status=503)
     except jwt.InvalidTokenError as e:
         logger.debug(f"Invalid token: {e}")
         return Response("Invalid token", status=401)
