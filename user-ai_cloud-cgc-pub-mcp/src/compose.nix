@@ -116,7 +116,17 @@ in
         # octocode-reindex DAG. GIT_ROOT (=oct.repos_path) makes the MCP's octocode
         # query path match the DAG's index path, so the LanceDB project-hash resolves.
         "${oct.repos_volume}:${oct.repos_path}:ro"
-        "${oct.db_volume}:${oct.db_path}:ro"
+        # NOT :ro, however much we would like it to be. `octocode search` and
+        # `octocode graphrag` open the queried repo's LanceDB project dir
+        # read-write even for a pure read, so with a :ro mount EVERY tool call
+        # died with "Error: Read-only file system (os error 30)" the moment it
+        # had a real repo as its CWD. Measured both ways on oci-apps:
+        #   :ro + cd /repos/cloud-infra -> os error 30
+        #   rw  + cd /repos/cloud-infra -> query runs
+        # The repos mount above stays :ro — that one octocode never writes to.
+        # Drift is not a worry: this volume is disposable, rebuilt wholesale by
+        # cloud-cgc-db-restore-all.sh from the per-repo GHCR images.
+        "${oct.db_volume}:${oct.db_path}"
       ];
       healthcheck = {
         test = [
@@ -204,6 +214,12 @@ in
         CGC_DB_TAG = perRepoTag;
         CGC_INDEX_REPOS = toString oct.index_repos;
         CGC_DB_TARGET_VOLUME = oct.db_volume;
+        # The uid:gid cloud-cgc-pub-mcp runs as — the binaries image's USER
+        # (appuser). The restore extracts the GHCR images as whoever invoked it
+        # (root here, uid 1001 over the oci-apps SSH path), so without this the
+        # DB lands owned by the wrong user and octocode dies with "Permission
+        # denied (os error 13)" — it opens the queried project dir read-write.
+        CGC_DB_OWNER = "10001:999";
       };
       volumes = [ "/var/run/docker.sock:/var/run/docker.sock" ];
       entrypoint = [ "sh" "-c" ''
