@@ -21,12 +21,12 @@ async function main() {
   } else {
     const server = new McpServer({
       name: "mail-mcp",
-      version: "1.5.0",
+      version: "1.5.1",
     });
     registerMetaTool(server);
     await registerProxiedMcpTools(server);   // google-personal-mcp + future MCPs from build.json
     const transport = new StdioServerTransport();
-    log("Starting mail-mcp v1.5.0 (1 meta-tool + proxied MCPs)...");
+    log("Starting mail-mcp v1.5.1 (1 meta-tool + proxied MCPs)...");
     await server.connect(transport);
     log("Connected via stdio transport");
     startProxyRetryLoop(server);
