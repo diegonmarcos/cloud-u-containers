@@ -6,6 +6,7 @@ This module provides MCP tools for interacting with the Gmail API.
 
 import logging
 import asyncio
+import json
 import base64
 import re
 import ssl
@@ -944,6 +945,43 @@ async def get_gmail_message_content(
             )
 
     return "\n".join(content_lines)
+
+
+@server.tool()
+@handle_http_errors("get_gmail_message_raw", is_read_only=True, service_type="gmail")
+@require_google_service("gmail", "gmail_read")
+async def get_gmail_message_raw(
+    service, message_id: str, user_google_email: str
+) -> str:
+    """
+    Retrieves the complete raw RFC 822 source of a Gmail message, base64url-encoded.
+
+    Unlike get_gmail_message_content (lossy parsed digest), this returns the
+    verbatim wire-format message — all headers (DKIM-Signature, Received chain,
+    Message-ID), MIME structure and attachments included. Intended for
+    archival/replay (e.g. re-injecting into another mail store).
+
+    Args:
+        message_id (str): The unique ID of the Gmail message to retrieve.
+        user_google_email (str): The user's Google email address. Required.
+
+    Returns:
+        str: JSON object {"message_id", "internal_date_ms", "size_estimate", "raw_base64url"}.
+    """
+    logger.info(
+        f"[get_gmail_message_raw] Invoked. Message ID: '{message_id}', Email: '{user_google_email}'"
+    )
+    msg = await asyncio.to_thread(
+        service.users().messages().get(userId="me", id=message_id, format="raw").execute
+    )
+    return json.dumps(
+        {
+            "message_id": message_id,
+            "internal_date_ms": msg.get("internalDate"),
+            "size_estimate": msg.get("sizeEstimate"),
+            "raw_base64url": msg.get("raw", ""),
+        }
+    )
 
 
 @server.tool()

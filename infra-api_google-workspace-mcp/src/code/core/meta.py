@@ -7,6 +7,7 @@ GROUPS = {
     "workspace_gmail": [
         "search_gmail_messages",
         "get_gmail_message_content",
+        "get_gmail_message_raw",
         "get_gmail_messages_content_batch",
         "send_gmail_message",
         "get_gmail_attachment_content",
