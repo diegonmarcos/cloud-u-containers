@@ -30,14 +30,22 @@ export async function handle_stalwart_admin_settings({ prefix }: { prefix: any }
   return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
 }
 
+export const stalwartAdminAccountsSchema = {
+  name: z.string().optional().describe("Account name to inspect (omit to list all)"),
+};
+
+export const stalwartAdminDomainsSchema = {};
+
+export const stalwartAdminSettingsSchema = {
+  prefix: z.string().default("").describe("Settings prefix to filter (e.g. 'server.listener', 'store')"),
+};
+
 export function registerStalwartTools(server: McpServer): void {
   // ── stalwart_admin_accounts ──────────────────────────────────
   server.tool(
     "stalwart_admin_accounts",
     "List or inspect Stalwart accounts via admin API",
-    {
-      name: z.string().optional().describe("Account name to inspect (omit to list all)"),
-    },
+    stalwartAdminAccountsSchema,
     handle_stalwart_admin_accounts
   );
 
@@ -45,7 +53,7 @@ export function registerStalwartTools(server: McpServer): void {
   server.tool(
     "stalwart_admin_domains",
     "List domains configured in Stalwart via admin API",
-    {},
+    stalwartAdminDomainsSchema,
     handle_stalwart_admin_domains
   );
 
@@ -53,9 +61,7 @@ export function registerStalwartTools(server: McpServer): void {
   server.tool(
     "stalwart_admin_settings",
     "Get Stalwart server settings via admin API",
-    {
-      prefix: z.string().default("").describe("Settings prefix to filter (e.g. 'server.listener', 'store')"),
-    },
+    stalwartAdminSettingsSchema,
     handle_stalwart_admin_settings
   );
 }

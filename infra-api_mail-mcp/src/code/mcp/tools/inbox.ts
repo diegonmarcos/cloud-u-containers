@@ -224,15 +224,89 @@ export async function handle_mail_delete_folder({ server: srv, account, name }: 
   return { content: [{ type: "text", text: `Folder "${name}" deleted` }] };
 }
 
+// ── Schemas (also used by the grouped `mail` dispatcher in meta.ts, so
+// its per-method validation — and defaults — stay identical to these) ──
+export const mailListFoldersSchema = {
+  server: serverSchema,
+  account: accountSchema,
+};
+
+export const mailListMessagesSchema = {
+  server: serverSchema,
+  account: accountSchema,
+  folder: z.string().default("INBOX").describe("IMAP folder name"),
+  limit: z.number().min(1).max(100).default(20).describe("Number of messages to return"),
+  page: z.number().min(1).default(1).describe("Page number (1-based)"),
+};
+
+export const mailReadSchema = {
+  server: serverSchema,
+  account: accountSchema,
+  folder: z.string().default("INBOX").describe("IMAP folder name"),
+  uid: z.number().describe("Message UID"),
+};
+
+export const mailSearchSchema = {
+  server: serverSchema,
+  account: accountSchema,
+  folder: z.string().default("INBOX").describe("IMAP folder name"),
+  from: z.string().optional().describe("Filter by sender address"),
+  subject: z.string().optional().describe("Filter by subject substring"),
+  since: z.string().optional().describe("Filter messages since date (YYYY-MM-DD)"),
+  unseen: z.boolean().optional().describe("Only unseen messages"),
+  limit: z.number().min(1).max(50).default(20).describe("Max results"),
+};
+
+export const mailFlagSchema = {
+  server: serverSchema,
+  account: accountSchema,
+  folder: z.string().default("INBOX").describe("IMAP folder name"),
+  uid: z.number().describe("Message UID"),
+  flag: z.enum(["Seen", "Flagged", "Answered", "Deleted"]).describe("Flag name"),
+  set: z.boolean().default(true).describe("true to add, false to remove"),
+};
+
+export const mailMoveSchema = {
+  server: serverSchema,
+  account: accountSchema,
+  folder: z.string().default("INBOX").describe("Source folder"),
+  uid: z.number().describe("Message UID"),
+  destination: z.string().describe("Destination folder name"),
+};
+
+export const mailDeleteSchema = {
+  server: serverSchema,
+  account: accountSchema,
+  folder: z.string().default("INBOX").describe("Source folder"),
+  uid: z.number().describe("Message UID"),
+};
+
+export const mailDownloadAttachmentSchema = {
+  server: serverSchema,
+  account: accountSchema,
+  folder: z.string().default("INBOX").describe("IMAP folder name"),
+  uid: z.number().describe("Message UID"),
+  filename: z.string().describe("Attachment filename to download"),
+};
+
+export const mailCreateFolderSchema = {
+  server: serverSchema,
+  account: accountSchema,
+  name: z.string().describe("Folder name to create"),
+};
+
+export const mailDeleteFolderSchema = {
+  server: serverSchema,
+  account: accountSchema,
+  name: z.string().describe("Folder name to delete"),
+};
+
 export function registerInboxTools(server: McpServer): void {
   // ── mail_list_folders ──────────────────────────────────────────
   server.tool(
     "mail_list_folders",
     "List all IMAP folders with message counts",
-    {
-      server: serverSchema,
-      account: accountSchema,
-    },
+    mailListFoldersSchema,
     handle_mail_list_folders
   );
 
@@ -240,13 +314,7 @@ export function registerInboxTools(server: McpServer): void {
   server.tool(
     "mail_list_messages",
     "List messages in a folder (subject, from, date, flags, uid)",
-    {
-      server: serverSchema,
-      account: accountSchema,
-      folder: z.string().default("INBOX").describe("IMAP folder name"),
-      limit: z.number().min(1).max(100).default(20).describe("Number of messages to return"),
-      page: z.number().min(1).default(1).describe("Page number (1-based)"),
-    },
+    mailListMessagesSchema,
     handle_mail_list_messages
   );
 
@@ -254,12 +322,7 @@ export function registerInboxTools(server: McpServer): void {
   server.tool(
     "mail_read",
     "Read a full message (body text/html, headers, attachment list)",
-    {
-      server: serverSchema,
-      account: accountSchema,
-      folder: z.string().default("INBOX").describe("IMAP folder name"),
-      uid: z.number().describe("Message UID"),
-    },
+    mailReadSchema,
     handle_mail_read
   );
 
@@ -267,16 +330,7 @@ export function registerInboxTools(server: McpServer): void {
   server.tool(
     "mail_search",
     "Search messages by criteria (from, subject, date, unseen)",
-    {
-      server: serverSchema,
-      account: accountSchema,
-      folder: z.string().default("INBOX").describe("IMAP folder name"),
-      from: z.string().optional().describe("Filter by sender address"),
-      subject: z.string().optional().describe("Filter by subject substring"),
-      since: z.string().optional().describe("Filter messages since date (YYYY-MM-DD)"),
-      unseen: z.boolean().optional().describe("Only unseen messages"),
-      limit: z.number().min(1).max(50).default(20).describe("Max results"),
-    },
+    mailSearchSchema,
     handle_mail_search
   );
 
@@ -284,14 +338,7 @@ export function registerInboxTools(server: McpServer): void {
   server.tool(
     "mail_flag",
     "Set or unset a flag on a message (Seen, Flagged, Answered)",
-    {
-      server: serverSchema,
-      account: accountSchema,
-      folder: z.string().default("INBOX").describe("IMAP folder name"),
-      uid: z.number().describe("Message UID"),
-      flag: z.enum(["Seen", "Flagged", "Answered", "Deleted"]).describe("Flag name"),
-      set: z.boolean().default(true).describe("true to add, false to remove"),
-    },
+    mailFlagSchema,
     handle_mail_flag
   );
 
@@ -299,13 +346,7 @@ export function registerInboxTools(server: McpServer): void {
   server.tool(
     "mail_move",
     "Move a message to another folder",
-    {
-      server: serverSchema,
-      account: accountSchema,
-      folder: z.string().default("INBOX").describe("Source folder"),
-      uid: z.number().describe("Message UID"),
-      destination: z.string().describe("Destination folder name"),
-    },
+    mailMoveSchema,
     handle_mail_move
   );
 
@@ -313,12 +354,7 @@ export function registerInboxTools(server: McpServer): void {
   server.tool(
     "mail_delete",
     "Delete a message (moves to Trash folder)",
-    {
-      server: serverSchema,
-      account: accountSchema,
-      folder: z.string().default("INBOX").describe("Source folder"),
-      uid: z.number().describe("Message UID"),
-    },
+    mailDeleteSchema,
     handle_mail_delete
   );
 
@@ -326,13 +362,7 @@ export function registerInboxTools(server: McpServer): void {
   server.tool(
     "mail_download_attachment",
     "Get attachment content as base64",
-    {
-      server: serverSchema,
-      account: accountSchema,
-      folder: z.string().default("INBOX").describe("IMAP folder name"),
-      uid: z.number().describe("Message UID"),
-      filename: z.string().describe("Attachment filename to download"),
-    },
+    mailDownloadAttachmentSchema,
     handle_mail_download_attachment
   );
 
@@ -340,11 +370,7 @@ export function registerInboxTools(server: McpServer): void {
   server.tool(
     "mail_create_folder",
     "Create a new IMAP folder",
-    {
-      server: serverSchema,
-      account: accountSchema,
-      name: z.string().describe("Folder name to create"),
-    },
+    mailCreateFolderSchema,
     handle_mail_create_folder
   );
 
@@ -352,11 +378,7 @@ export function registerInboxTools(server: McpServer): void {
   server.tool(
     "mail_delete_folder",
     "Delete an IMAP folder",
-    {
-      server: serverSchema,
-      account: accountSchema,
-      name: z.string().describe("Folder name to delete"),
-    },
+    mailDeleteFolderSchema,
     handle_mail_delete_folder
   );
 }
