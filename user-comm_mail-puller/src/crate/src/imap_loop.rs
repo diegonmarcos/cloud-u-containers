@@ -49,16 +49,31 @@ pub async fn run(src: &Source, mbox: &str, cfg: &Config, state: State) -> Result
         "poll loop starting"
     );
 
+    // ponytail: idle cycles were debug-only, so a reconciler that silently stopped
+    // advancing looked identical to a healthy one at the default info level. Heartbeat
+    // every 60th idle cycle instead. Bump if 30s cadence ever makes this noisy.
+    let mut idle: u64 = 0;
     loop {
         match one_cycle(src, mbox, cfg, &state).await {
             Ok(delivered) => {
                 if delivered > 0 {
+                    idle = 0;
                     tracing::info!(source = %src.id, mailbox = %mbox, delivered, "cycle ok");
                 } else {
-                    tracing::debug!(source = %src.id, mailbox = %mbox, "cycle ok (no new)");
+                    if idle % 60 == 0 {
+                        tracing::info!(source = %src.id, mailbox = %mbox, idle, "cycle ok (no new)");
+                    } else {
+                        tracing::debug!(source = %src.id, mailbox = %mbox, "cycle ok (no new)");
+                    }
+                    idle = idle.wrapping_add(1);
                 }
             }
-            Err(e) => tracing::error!(source = %src.id, mailbox = %mbox, error = %e, "cycle failed"),
+            Err(e) => {
+                // `%e` prints only the outermost .context() label, which hid the real
+                // cause of a multi-day outage behind the bare string "oauth refresh".
+                let chain = format!("{:#}", e);
+                tracing::error!(source = %src.id, mailbox = %mbox, error = %chain, "cycle failed");
+            }
         }
         tokio::time::sleep(interval).await;
     }
@@ -98,12 +113,55 @@ async fn one_cycle(src: &Source, mbox: &str, cfg: &Config, state: &State) -> Res
     let select = session.select(mbox).await.with_context(|| format!("SELECT {}", mbox))?;
     let uidvalidity = select.uid_validity.unwrap_or(0) as u32;
     let (prev_uv, prev_uid) = state.get_cursor(&src.id, mbox)?;
-    let from_uid = if prev_uv != uidvalidity { 0 } else { prev_uid };
+    let has_cursor = prev_uv != 0 || prev_uid != 0;
+
+    let from_uid = if !has_cursor {
+        match &src.initial_since {
+            Some(since) => initial_from_uid(&mut session, since, select.uid_next).await?,
+            None => 0,
+        }
+    } else if prev_uv != uidvalidity {
+        0
+    } else {
+        prev_uid
+    };
 
     let count = fetch_and_deliver(&mut session, src, mbox, cfg, state, from_uid, uidvalidity).await?;
 
     let _ = session.logout().await;
     Ok(count)
+}
+
+/// Bounded first-run backfill: `UID SEARCH SINCE <date>` and start from the
+/// lowest matching UID, instead of `UID FETCH 1:*` pulling the whole mailbox.
+async fn initial_from_uid(session: &mut Session<ImapStream>, since: &str, uid_next: Option<u32>) -> Result<u32> {
+    let imap_date = to_imap_date(since)?;
+    let query = format!("SINCE {}", imap_date);
+    let uids = session.uid_search(&query).await.with_context(|| format!("UID SEARCH {}", query))?;
+    Ok(match uids.into_iter().min() {
+        Some(min_uid) => min_uid.saturating_sub(1),
+        // Nothing matched (e.g. no mail since that date yet) — skip straight
+        // to the current end of the mailbox rather than falling back to 0,
+        // which would re-trigger a full backfill.
+        None => uid_next.unwrap_or(1).saturating_sub(1),
+    })
+}
+
+/// `"2026-08-10"` -> `"10-Aug-2026"` (IMAP SEARCH date format, RFC 3501 §9).
+fn to_imap_date(s: &str) -> Result<String> {
+    const MONTHS: [&str; 12] = [
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    ];
+    let parts: Vec<&str> = s.split('-').collect();
+    let [y, m, d]: [&str; 3] = parts.try_into()
+        .map_err(|_| anyhow!("initial_since {:?}: expected YYYY-MM-DD", s))?;
+    let year: u32 = y.parse().with_context(|| format!("initial_since {:?}: bad year", s))?;
+    let month: usize = m.parse().with_context(|| format!("initial_since {:?}: bad month", s))?;
+    let day: u32 = d.parse().with_context(|| format!("initial_since {:?}: bad day", s))?;
+    if month == 0 || month > 12 {
+        return Err(anyhow!("initial_since {:?}: month out of range", s));
+    }
+    Ok(format!("{}-{}-{}", day, MONTHS[month - 1], year))
 }
 
 async fn fetch_and_deliver(
@@ -139,6 +197,20 @@ async fn fetch_and_deliver(
 
         for target_name in &src.targets {
             if let Some(t) = cfg.delivery_targets.get(target_name) {
+                // Dedup gate: messages with no parseable Message-ID can't be
+                // deduped, so fall back to always delivering them rather than
+                // silently dropping them.
+                if let Some(mid) = msg_id.as_deref() {
+                    match state.was_delivered(&src.id, target_name, mid) {
+                        Ok(true) => {
+                            tracing::debug!(source = %src.id, mailbox = %mbox, uid, target = %target_name, "already delivered, skipping");
+                            continue;
+                        }
+                        Ok(false) => {}
+                        Err(e) => tracing::warn!(source = %src.id, mailbox = %mbox, uid, target = %target_name, error = %format!("{:#}", e), "dedup lookup failed, delivering anyway"),
+                    }
+                }
+
                 match deliver::deliver_raw(
                     target_name, t,
                     &src.deliver_envelope_from,
@@ -146,7 +218,14 @@ async fn fetch_and_deliver(
                     &subject,
                     &raw,
                 ).await {
-                    Ok(()) => tracing::info!(source = %src.id, mailbox = %mbox, uid, target = %target_name, "delivered"),
+                    Ok(()) => {
+                        tracing::info!(source = %src.id, mailbox = %mbox, uid, target = %target_name, "delivered");
+                        if let Some(mid) = msg_id.as_deref() {
+                            if let Err(e) = state.record_delivered(&src.id, target_name, mid) {
+                                tracing::warn!(source = %src.id, mailbox = %mbox, uid, target = %target_name, error = %format!("{:#}", e), "record delivered failed");
+                            }
+                        }
+                    }
                     Err(e) => {
                         let err = format!("{:#}", e);
                         tracing::error!(source = %src.id, mailbox = %mbox, uid, target = %target_name, error = %err, "deliver failed");
@@ -155,7 +234,6 @@ async fn fetch_and_deliver(
             }
         }
 
-        state.record_delivered(&src.id, mbox, uid, msg_id.as_deref())?;
         if uid > max_uid { max_uid = uid; }
         count += 1;
         if count >= cfg.defaults.fetch_batch { break; }

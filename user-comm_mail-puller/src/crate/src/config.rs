@@ -71,6 +71,11 @@ pub struct Source {
     pub deliver_envelope_from: String,
     pub deliver_envelope_to:   String,
     pub targets: Vec<String>,
+    /// Bounded first-run backfill: `"YYYY-MM-DD"`. Only consulted when the
+    /// source has no stored cursor yet — an IMAP `UID SEARCH SINCE` seeds the
+    /// starting UID instead of fetching the whole mailbox from UID 1.
+    #[serde(default)]
+    pub initial_since: Option<String>,
 }
 
 impl Source {
