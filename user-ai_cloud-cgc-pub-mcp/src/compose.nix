@@ -184,6 +184,20 @@ in
       container_name = "cloud-cgc-pub-mcp-db-restore-multi";
       profiles = [ "restore-multi" ];
       restart = "no";
+      # Host networking, exactly like the app and octocodeJob above. This service
+      # runs `docker manifest inspect` INSIDE the container, and that is a CLI-side
+      # registry call made over the CONTAINER's network namespace — unlike `docker
+      # pull`, which the daemon performs on the host and which therefore worked
+      # fine here all along. On a compose bridge network Docker forces its embedded
+      # resolver at 127.0.0.11, which forwards to the configured dns
+      # [10.0.0.1, 1.1.1.1]; 10.0.0.1 is the WireGuard mesh resolver and is not
+      # routable from a bridge namespace, so every lookup stalls:
+      #   lookup ghcr.io on 127.0.0.11:53: i/o timeout
+      # restore-all.sh discards that probe's stderr, so it surfaced as the deeply
+      # misleading "base image not found on GHCR" and aborted the entire restore
+      # on a box that pulls from ghcr.io all day. Do not drop this back to bridge:
+      # the app escapes the bug only because it is host-networked too.
+      network_mode = "host";
       environment = {
         CGC_DB_IMAGE_PREFIX = perRepoImagePrefix;
         CGC_DB_BASE_IMAGE = perRepoBaseImage;
