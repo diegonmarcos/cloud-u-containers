@@ -4,7 +4,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { sshExec, checkVmReachable } from "../../shared/libs/ssh.js";
-import { getConfig, resolveVmId, getVmSshAlias, getServiceDir } from "../../shared/libs/config.js";
+import { getConfig, resolveVmId, getVmSshAlias, getServiceDir, composeCd } from "../../shared/libs/config.js";
 import { audit } from "../../shared/libs/audit.js";
 import {
   containerTop,
@@ -243,7 +243,7 @@ export function registerOperationsTools(server: McpServer) {
       const vmId = svc.vm;
       validatePath(service);
       const remotePath = `${config.remote_base}/${service}`;
-      const cmd = `cd ${remotePath} && docker compose down 2>/dev/null; docker compose up -d`;
+      const cmd = `${composeCd(remotePath)} && docker compose down 2>/dev/null; docker compose up -d`;
 
       const result = sshExec(vmId, cmd, 60_000);
       audit("docker_compose_up", `${service}@${getVmSshAlias(vmId)}`, result.ok ? "OK" : `FAILED (exit ${result.exitCode})`);

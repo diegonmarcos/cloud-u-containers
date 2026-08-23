@@ -182,6 +182,19 @@ export function getServiceFolder(name: string): string {
   return constructed;
 }
 
+// Deploy layout v2 (cloud-ship-container-engine.sh) writes the compose file to
+// <remote_base>/<service>/compose/docker-compose.yml; layout v1 kept it at the
+// service root. The ship engine still supports BOTH, so every remote `docker
+// compose` here must too. Until 2026-08-23 these call sites cd'd to the service
+// root unconditionally — which meant that once the fleet moved to v2, every
+// compose verb on this server (service.start/stop/restart, docker.compose_up,
+// docker.compose_up_all, build.backup) failed with "no configuration file
+// provided: not found". Precedence mirrors the engine: compose/ first, root as
+// fallback.
+export function composeCd(remotePath: string): string {
+  return `cd ${remotePath}/compose 2>/dev/null || cd ${remotePath}`;
+}
+
 export function getServiceDir(name: string): string {
   return join(SOLUTIONS_DIR, getServiceFolder(name));
 }

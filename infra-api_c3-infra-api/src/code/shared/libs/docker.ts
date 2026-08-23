@@ -1,5 +1,5 @@
 import { sshExec } from "./ssh.js";
-import { getConfig, resolveVmId, getVmSshAlias, getServiceFolder } from "./config.js";
+import { getConfig, resolveVmId, getVmSshAlias, getServiceFolder, composeCd } from "./config.js";
 import { audit } from "./audit.js";
 import { validateContainerName, validateSince, validatePathComponent } from "./validators.js";
 import type { z } from "zod";
@@ -81,7 +81,7 @@ export function composeUp(
   validatePathComponent(service);
   const remotePath = `${config.remote_base}/${service}`;
   const envFlag = '$([ -f .secrets ] && echo "--env-file .secrets")';
-  const cmd = `cd ${remotePath} && docker compose down 2>/dev/null; docker compose ${envFlag} up -d`;
+  const cmd = `${composeCd(remotePath)} && docker compose down 2>/dev/null; docker compose ${envFlag} up -d`;
 
   const result = sshExec(vmId, cmd, 60_000);
   const alias = getVmSshAlias(vmId);
@@ -300,7 +300,7 @@ export function composeUpAll(
 
   for (const dir of dirs) {
     const envFlag = '$([ -f .secrets ] && echo "--env-file .secrets")';
-    const cmd = `cd ${config.remote_base}/${dir} && docker compose ${envFlag} up -d 2>&1`;
+    const cmd = `${composeCd(`${config.remote_base}/${dir}`)} && docker compose ${envFlag} up -d 2>&1`;
     const result = sshExec(vmId, cmd, 60_000);
     const status = result.ok ? "OK" : "FAILED";
     results.push({ service: dir, ok: result.ok });
