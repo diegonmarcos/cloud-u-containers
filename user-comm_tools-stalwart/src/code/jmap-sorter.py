@@ -380,25 +380,70 @@ def _parse_iso8601(value):
 
 
 def apply_renames(client, rules, mailboxes):
-    """One-time in-place mailbox renames (old name -> new name) from
-    rules.folder_renames.map. Idempotent: rename only when the old name exists
-    AND the new name does not. JMAP Mailbox/set name-update preserves the
-    mailbox's emails + children — the whole point vs create-new + reap-old."""
+    """Reconcile mailbox names (old name -> new name) from rules.folder_renames.map.
+
+    Three cases, all idempotent:
+      1. old absent                -> nothing to do.
+      2. old present, new absent   -> in-place Mailbox/set name update. JMAP
+                                      preserves the mailbox's emails + children,
+                                      which is the whole point vs create+reap.
+      3. old present, new present  -> MERGE: move every email from old into new,
+                                      then destroy old.
+
+    Case 3 used to be a silent no-op ("rename only when new does not exist").
+    That stranded mail: once the new folder had been created by any other path,
+    the rename never fired and the old folder kept accumulating messages that
+    were invisible to every rule keyed on the new name. Observed in production
+    as 230 messages marooned in `Aa 📬 Others (fallback)` while `91 📬 Others
+    (fallback)` was the live target.
+    """
     renames = (rules.get("folder_renames") or {}).get("map") or {}
     if not renames:
         return
     by_name = {mb["name"]: mb["id"] for mb in mailboxes}
-    updates = {}
+
+    updates, merges = {}, []
     for old_name, new_name in renames.items():
         old_id = by_name.get(old_name)
-        if old_id and new_name not in by_name:
+        if not old_id:
+            continue
+        new_id = by_name.get(new_name)
+        if new_id is None:
             updates[old_id] = {"name": new_name}
-    if not updates:
-        return
-    logging.info("Renaming %d mailbox(es) in place (keep emails)...", len(updates))
-    result = client.mailbox_set(update=updates)
-    for mid, err in (result.get("notUpdated") or {}).items():
-        logging.warning("Rename failed %s: %s", mid, err)
+        elif new_id != old_id:
+            merges.append((old_name, old_id, new_name, new_id))
+
+    if updates:
+        logging.info("Renaming %d mailbox(es) in place (keep emails)...", len(updates))
+        result = client.mailbox_set(update=updates)
+        for mid, err in (result.get("notUpdated") or {}).items():
+            logging.warning("Rename failed %s: %s", mid, err)
+
+    for old_name, old_id, new_name, new_id in merges:
+        ids = client.email_query_in([old_id])
+        logging.info("Merging %r -> %r (%d message(s))", old_name, new_name, len(ids))
+        for chunk in (ids[i:i + client.PAGE] for i in range(0, len(ids), client.PAGE)):
+            emails = client.email_get(chunk, properties=["mailboxIds"])
+            patch = {}
+            for em in emails:
+                mids = dict(em.get("mailboxIds") or {})
+                mids.pop(old_id, None)
+                mids[new_id] = True
+                patch[em["id"]] = {"mailboxIds": mids}
+            if patch:
+                res = client.email_set(patch)
+                for eid, err in (res.get("notUpdated") or {}).items():
+                    logging.warning("Merge move failed %s: %s", eid, err)
+        # Only reap once empty; onDestroyRemoveEmails would delete stragglers
+        # outright, and losing mail is exactly the failure we are fixing.
+        left = client.email_query_in([old_id])
+        if left:
+            logging.warning("Not destroying %r: %d message(s) still present",
+                            old_name, len(left))
+            continue
+        res = client.mailbox_set(destroy=[old_id])
+        for mid, err in (res.get("notDestroyed") or {}).items():
+            logging.warning("Destroy failed %s: %s", mid, err)
 
 
 def maintain_filters(client, rules, name_to_id, mailboxes):

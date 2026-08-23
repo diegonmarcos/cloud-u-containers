@@ -30,7 +30,7 @@ if address :domain :is "From" ["42berlin.de", "42heilbronn.de", "42.fr", "intra.
 
 # route.profile.tax_authorities
 if address :domain :is "From" ["elster.de", "agenciatributaria.es", "tax.service.gov.uk"] {
-  fileinto :copy :create "23    🧻 Goverment";
+  fileinto :copy :create "23    🧻 Government";
   addflag "\\Seen";
   stop;
 }

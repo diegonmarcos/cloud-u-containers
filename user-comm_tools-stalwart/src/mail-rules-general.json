@@ -20,7 +20,7 @@
     "cloud_workflows": "14    ☁️ Cloud - Workflows",
     "career": "21    💼 Career & Network",
     "social": "22    📰 Social & General",
-    "government": "23    🧻 Goverment",
+    "government": "23    🧻 Government",
     "development": "31    🎓 Development & Tech",
     "others": "91    📬 Others (fallback)",
     "archive": "92    📥 Archive",
@@ -46,11 +46,12 @@
     "comment": "Used by cleanup-stale-mailboxes.sh, not by delivery filter."
   },
   "folder_renames": {
-    "_doc": "One-time in-place mailbox renames (old name -> new name) applied by jmap-sorter BEFORE ensure_mailboxes/cleanup, so a renamed folder KEEPS its emails (JMAP Mailbox/set name update) instead of being reaped + recreated empty. Idempotent: only renames when the old name exists and the new name does not.",
+    "_doc": "One-time in-place mailbox renames (old name -> new name) applied by jmap-sorter BEFORE ensure_mailboxes/cleanup, so a renamed folder KEEPS its emails (JMAP Mailbox/set name update) instead of being reaped + recreated empty. Idempotent, three cases: old absent -> no-op; old present and new absent -> in-place name update; old AND new both present -> MERGE (move every email from old into new, then destroy the emptied old). The merge case previously no-op'd, which stranded 230 messages in 'Aa 📬 Others (fallback)' once '91 📬 Others (fallback)' existed.",
     "map": {
       "Aa    📬 Others (fallback)": "91    📬 Others (fallback)",
       "Ab    📥 Archive": "92    📥 Archive",
       "Ac    🚫 Junk": "93    🚫 Junk",
+      "23    🧻 Goverment": "23    🧻 Government",
       "AA _ OTHERS": "90 _ OTHERS"
     }
   },
