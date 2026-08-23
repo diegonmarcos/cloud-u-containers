@@ -27,6 +27,23 @@
 # ntfy takes NO Authorization header — it is WireGuard-bound and accepts
 # anonymous publish, and rejects any bearer it does not recognise with 401.
 # Sending one made every alert in this repo fail silently for nine days.
+#
+# --- Auto-repair -----------------------------------------------------------
+# Gmail is the durable primary; maddy is only a best-effort mirror fed by a
+# Cloudflare Worker whose mesh leg to oci-mail has a measured ~14% transient
+# failure rate. The worker retries, but once retries exhaust, the message is
+# gone from maddy with nothing but a log line — detection alone (the alert
+# above) never closes that gap, it just tells a human about it. So once the
+# diff finds mail Gmail has that maddy doesn't, this DAG re-fetches those
+# messages from Gmail (by Gmail message id, raw MIME) and re-injects them into
+# maddy via SMTP, the same path backfills already use. That makes the system
+# eventually-consistent instead of merely alarmed.
+#
+# MAX_REPAIR caps how many messages get auto-injected in one run. A diff that
+# large means something structural broke (worker down, mesh partition, maddy
+# outage) rather than the expected trickle of transient drops — blindly
+# replaying hundreds of messages is the wrong reflex for that case. Past the
+# cap this DAG only alerts, at high priority, and leaves repair to a human.
 name: health_mail-reconcile
 description: Verify every Gmail message in a lagged window is present in maddy
 group: health
@@ -46,6 +63,9 @@ env:
   - LAG_DAYS: "1"
   # Alert if more than this many messages are missing. 0 = any loss alerts.
   - MISS_THRESHOLD: "0"
+  # Safety cap: auto-repair at most this many messages per run. Above this,
+  # something structural is broken — alert only, do not auto-inject.
+  - MAX_REPAIR: "200"
 
 steps:
   - name: reconcile
@@ -62,6 +82,8 @@ steps:
       # ---- Gmail side -------------------------------------------------------
       # Service-account domain-wide delegation is the only working read path;
       # the gws-primary OAuth client was deleted.
+      # Column 5 is the Gmail message id, carried along so a repair step can
+      # fetch the raw message directly by id without a second Gmail list call.
       $SSH ubuntu@10.0.0.6 "docker exec -i google-workspace-mcp sh -c 'cat > /tmp/recon_gmail.py'" <<'PYEOF'
       import os, sys, hashlib
       from google.oauth2 import service_account
@@ -90,8 +112,8 @@ steps:
               if not mid:
                   continue
               fp = hashlib.md5(mid.encode()).hexdigest()[:10]
-              print("%s\t%s\t%s\t%s" % (fp, h.get("date", "")[:31],
-                                        h.get("from", "")[:50], h.get("subject", "")[:70]))
+              print("%s\t%s\t%s\t%s\t%s" % (fp, h.get("date", "")[:31],
+                                            h.get("from", "")[:50], h.get("subject", "")[:70], i))
           except Exception as e:
               print("ERR\t%s\t%s\t" % (i, e), file=sys.stderr)
       PYEOF
@@ -157,14 +179,104 @@ steps:
         exit 0
       fi
 
-      # Re-attach headers so the alert names actual messages, not hashes.
-      grep -F -f "$TMP/missing.fps" "$TMP/gmail.tsv" | cut -f2-4 | head -15 > "$TMP/sample.txt"
+      # Re-attach headers so the alert/repair steps name actual messages, not
+      # hashes. Column 5 (added above) is the Gmail message id.
+      # Exact first-column match, one row per fingerprint. A plain `grep -F -f`
+      # matches the 10-hex-char fingerprint ANYWHERE in the line, so it can pull
+      # in Gmail ids whose subject/id happens to contain those characters and
+      # re-inject mail that was never missing. Duplicating mail is precisely the
+      # failure this DAG exists to avoid, so match on $1 only and dedupe.
+      awk -F'\t' 'NR==FNR { want[$1]; next } ($1 in want) && !seen[$1]++' \
+        "$TMP/missing.fps" "$TMP/gmail.tsv" > "$TMP/missing.tsv"
+      cut -f2-4 "$TMP/missing.tsv" | head -15 > "$TMP/sample.txt"
       echo "--- missing sample ---"; cat "$TMP/sample.txt"
 
+      # ---- cap check ----------------------------------------------------
+      # A diff bigger than MAX_REPAIR means something structural broke, not
+      # the expected trickle of transient worker->mesh drops. Don't blindly
+      # replay hundreds of messages — alert loudly and stop.
+      if [ "$MISS" -gt "$MAX_REPAIR" ]; then
+        curl -s -X POST "$NTFY_URL/infra_mail-health" \
+          -H "Title: Mail LOST - $MISS message(s) exceed auto-repair cap ($MAX_REPAIR)" \
+          -H "Priority: 5" \
+          -H "Tags: rotating_light,email" \
+          -d "$(printf '%s message(s) present in Gmail for after:%s before:%s never reached maddy — above MAX_REPAIR=%s, so auto-repair was skipped. This needs manual review; a diff this large usually means the worker or the mesh leg is structurally broken, not just transient drops.\n\nSample:\n%s\n' \
+                "$MISS" "$FROM" "$TO" "$MAX_REPAIR" "$(cat "$TMP/sample.txt")")"
+        exit 1
+      fi
+
+      # ---- repair ---------------------------------------------------------
+      # Re-fetch each missing message from Gmail by id and re-inject it into
+      # maddy over SMTP, exactly like an existing manual backfill does — just
+      # with a distinct HELO name so these injections are attributable.
+      cut -f5 "$TMP/missing.tsv" > "$TMP/missing.ids"
+
+      $SSH ubuntu@10.0.0.6 "docker exec -i google-workspace-mcp sh -c 'cat > /tmp/recon_missing_ids.txt'" < "$TMP/missing.ids"
+
+      $SSH ubuntu@10.0.0.6 "docker exec -i google-workspace-mcp sh -c 'cat > /tmp/recon_repair.py'" <<'PYEOF'
+      import os, base64, email, smtplib
+      from google.oauth2 import service_account
+      from google.auth.transport.requests import Request
+      from googleapiclient.discovery import build
+
+      ids = [l.strip() for l in open("/tmp/recon_missing_ids.txt") if l.strip()]
+
+      creds = service_account.Credentials.from_service_account_file(
+          os.environ.get("GOOGLE_SERVICE_ACCOUNT_KEY_PATH", "/run/secrets/GOOGLE_SERVICE_ACCOUNT_KEY"),
+          scopes=["https://www.googleapis.com/auth/gmail.readonly"],
+          subject="me@diegonmarcos.com")
+      creds.refresh(Request())
+      svc = build("gmail", "v1", credentials=creds, cache_discovery=False)
+
+      sent = failed = 0
+      for i in ids:
+          try:
+              raw = svc.users().messages().get(userId="me", id=i, format="raw").execute()["raw"]
+              data = base64.urlsafe_b64decode(raw.encode())
+              msg = email.message_from_bytes(data)
+              subj = (msg.get("Subject") or "")[:70]
+              rp = (msg.get("Return-Path") or "").strip("<> ") or "reconcile@diegonmarcos.com"
+              s = smtplib.SMTP("10.0.0.3", 25, timeout=90)
+              s.ehlo("reconcile.diegonmarcos.com")
+              s.sendmail(rp, ["me@diegonmarcos.com"], data)
+              s.quit()
+              sent += 1
+              print("REPAIRED_OK\t%s\t%s" % (i, subj), flush=True)
+          except Exception as e:
+              failed += 1
+              print("REPAIRED_FAIL\t%s\t%s" % (i, repr(e)[:160]), flush=True)
+      print("REPAIRED %d FAILED %d" % (sent, failed), flush=True)
+      PYEOF
+
+      $SSH ubuntu@10.0.0.6 \
+        "docker exec google-workspace-mcp /app/.venv/bin/python /tmp/recon_repair.py" \
+        > "$TMP/repair.log" 2>"$TMP/repair.err" || true
+
+      cat "$TMP/repair.log" || true
+
+      SENT=$(grep -oE '^REPAIRED [0-9]+ FAILED [0-9]+$' "$TMP/repair.log" | tail -1 | awk '{print $2}')
+      RFAILED=$(grep -oE '^REPAIRED [0-9]+ FAILED [0-9]+$' "$TMP/repair.log" | tail -1 | awk '{print $4}')
+      SENT=${SENT:-0}
+      RFAILED=${RFAILED:-$MISS}
+      echo "repaired=$SENT failed=$RFAILED"
+
+      grep '^REPAIRED_OK' "$TMP/repair.log" | cut -f3 | head -15 > "$TMP/repaired_subjects.txt"
+
+      if [ "$RFAILED" -eq 0 ] && [ "$SENT" -gt 0 ]; then
+        curl -s -X POST "$NTFY_URL/infra_mail-health" \
+          -H "Title: Mail auto-repaired - $SENT message(s) recovered from Gmail" \
+          -H "Priority: 3" \
+          -H "Tags: email,white_check_mark" \
+          -d "$(printf '%s message(s) present in Gmail for after:%s before:%s were missing from maddy and have been re-injected via SMTP.\n\nRepaired:\n%s\n' \
+                "$SENT" "$FROM" "$TO" "$(cat "$TMP/repaired_subjects.txt")")"
+        echo "auto-repair complete: $SENT repaired, 0 failed"
+        exit 0
+      fi
+
       curl -s -X POST "$NTFY_URL/infra_mail-health" \
-        -H "Title: Mail LOST - $MISS message(s) in Gmail are absent from maddy" \
+        -H "Title: Mail auto-repair incomplete - $RFAILED of $MISS message(s) failed" \
         -H "Priority: 5" \
         -H "Tags: rotating_light,email" \
-        -d "$(printf '%s message(s) present in Gmail for after:%s before:%s never reached maddy.\n\nGmail is the guaranteed primary, so this is real loss on the inbound leg.\n\nSample:\n%s\n' \
-              "$MISS" "$FROM" "$TO" "$(cat "$TMP/sample.txt")")"
+        -d "$(printf 'Auto-repair for after:%s before:%s: %s repaired, %s FAILED to re-inject into maddy. See this DAG run log for the per-message REPAIRED_FAIL lines. Manual review needed.\n\nRepaired:\n%s\n' \
+              "$FROM" "$TO" "$SENT" "$RFAILED" "$(cat "$TMP/repaired_subjects.txt")")"
       exit 1
