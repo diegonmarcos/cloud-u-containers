@@ -14,15 +14,9 @@
   "delivery_targets": {
     "maddy": {
       "host": "10.0.0.3",
-      "port": 587,
-      "starttls": true,
-      "user_env": "LOCAL_DELIVERY_USER",
-      "pass_env": "LOCAL_DELIVERY_PASSWORD"
-    },
-    "stalwart": {
-      "host": "10.0.0.3",
-      "port": 2587,
-      "starttls": true,
+      "port": 465,
+      "starttls": false,
+      "implicit_tls": true,
       "user_env": "LOCAL_DELIVERY_USER",
       "pass_env": "LOCAL_DELIVERY_PASSWORD"
     }
@@ -44,8 +38,7 @@
       "deliver_envelope_from": "diegonmarcos1@gmail.com",
       "deliver_envelope_to": "me@diegonmarcos.com",
       "targets": [
-        "maddy",
-        "stalwart"
+        "maddy"
       ]
     },
     {
@@ -61,15 +54,37 @@
         "client_id_env": "OUTLOOK_CLIENT_ID",
         "client_secret_env": "OUTLOOK_CLIENT_SECRET",
         "refresh_token_env": "OUTLOOK_REFRESH_TOKEN",
-        "token_url": "https://login.microsoftonline.com/consumers/oauth2/v2.0/token",
+        "token_url": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
         "scope": "https://outlook.office.com/IMAP.AccessAsUser.All offline_access"
       },
       "deliver_envelope_from": "diegonmarcos@live.com",
       "deliver_envelope_to": "me@diegonmarcos.com",
       "targets": [
-        "maddy",
-        "stalwart"
+        "maddy"
       ]
+    },
+    {
+      "id": "gws-primary",
+      "provider": "google-workspace",
+      "imap_host": "imap.gmail.com",
+      "imap_port": 993,
+      "email": "me@diegonmarcos.com",
+      "mailboxes": [
+        "INBOX"
+      ],
+      "auth": {
+        "method": "oauth",
+        "client_id_env": "GWS_CLIENT_ID",
+        "client_secret_env": "GWS_CLIENT_SECRET",
+        "refresh_token_env": "GWS_REFRESH_TOKEN",
+        "token_url": "https://oauth2.googleapis.com/token"
+      },
+      "deliver_envelope_from": "me@diegonmarcos.com",
+      "deliver_envelope_to": "me@diegonmarcos.com",
+      "targets": [
+        "maddy"
+      ],
+      "initial_since": "2026-08-10"
     }
   ]
 }
