@@ -1,0 +1,40 @@
+schedule: "*/2 * * * *"
+maxActiveRuns: 1
+env:
+  - RSYNC_SSH: ssh -i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=10
+mail_on:
+  failure: false
+  success: false
+steps:
+  - name: apply-rules
+    command: |
+      # INBOX distribution stalled for ~64 days (2026-06-20 → 2026-08-22,
+      # MEASURED: 1335/1536 INBOX messages never got the $distributed
+      # keyword) because no scheduler ever actually invoked apply-rules —
+      # the documented "2-min Dagu cron" never existed (no DAG, no crontab,
+      # no crond in the maddy container, no systemd timer). This DAG is
+      # that missing scheduler.
+      #
+      # apply-rules SQL-direct COPIES INBOX messages (skipping rows already
+      # tagged $distributed) into rule-matched category folders — see
+      # cmd_apply_rules() in
+      # a_solutions/user-comm_tools-maddy/src/mail-sieve-subset-post-hoc.sh.
+      # It is idempotent via the $distributed keyword on the INBOX
+      # original, so a 2-min cron cannot duplicate work even if a run
+      # overlaps — build.json's lifecycle._doc for the maddy app says so
+      # explicitly ("Dagu can run it on a 2-min cron without duplicating
+      # work"). maxActiveRuns: 1 above additionally stops a slow run from
+      # stacking with the next tick (this is Dagu's own default; no other
+      # DAG in this directory sets it explicitly since none run this
+      # frequently).
+      #
+      # Dagu runs on oci-apps, not oci-mail, so reach the maddy container
+      # over SSH — same mechanism as sync-wildcard-cert-to-maddy in
+      # ops_maddy-tls-sync.yaml (ubuntu@10.0.0.3, vault_id_rsa key).
+      #
+      # No ntfy/mail_on alerting here, matching ops_maddy-tls-sync.yaml's
+      # convention for this maddy-targeted DAG: health_mail-full.yaml
+      # (daily) already alerts via ntfy on mail health, including
+      # distribution backlog — a 2-min cron alerting on every transient
+      # failure would spam.
+      $RSYNC_SSH ubuntu@10.0.0.3 "docker exec maddy /usr/local/bin/mail-sieve-subset-post-hoc apply-rules"
