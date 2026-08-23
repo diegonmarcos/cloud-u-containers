@@ -1,6 +1,6 @@
 {
   "name": "cloud-cgc-pub-mcp",
-  "description": "Cloud CGC Pub MCP \u2014 Code Graph Context: infra knowledge, specs, docs, semantic code search",
+  "description": "Cloud CGC Pub MCP — Code Graph Context: infra knowledge, specs, docs, semantic code search",
   "dns": "cloud-cgc-pub-mcp.app",
   "ports": {
     "app": 3105,
@@ -16,7 +16,7 @@
     "native_build": {
       "type": "image-wrapper",
       "apt": "curl ca-certificates python3 python3-pip",
-      "_cmd_comment": "git config --system safe.directory '*' FIRST: octocode keys each GraphRAG project by its git-root. The repos volume is owned by root but the MCP runs as appuser \u2014 without this, git fails 'dubious ownership', octocode can't resolve the git-root, and the reader lands on a DIFFERENT project key than the root-built index (symptom: 'GraphRAG knowledge graph is empty' despite a populated DB). --system writes /etc/gitconfig as root during the RUN (before the USER appuser switch) so EVERY runtime user resolves the same key.",
+      "_cmd_comment": "git config --system safe.directory '*' FIRST: octocode keys each GraphRAG project by its git-root. The repos volume is owned by root but the MCP runs as appuser — without this, git fails 'dubious ownership', octocode can't resolve the git-root, and the reader lands on a DIFFERENT project key than the root-built index (symptom: 'GraphRAG knowledge graph is empty' despite a populated DB). --system writes /etc/gitconfig as root during the RUN (before the USER appuser switch) so EVERY runtime user resolves the same key.",
       "cmd": "git config --system --add safe.directory '*' && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -y --no-install-recommends nodejs && npm install --omit=dev && pip3 install --break-system-packages --no-cache-dir pylance",
       "entrypoint": "npx tsx index.ts",
       "base_image": "ghcr.io/diegonmarcos/octocode-fastembed-graphrag-indexed-arm:latest",
@@ -111,7 +111,7 @@
       "_pvt_db_volume_comment": "Volume cloud-cgc-pvt-mcp serves. Separate from db_volume ON PURPOSE: the public/private split is the VOLUME, not a tool subset -- octocode can only answer about the LanceDB tree it is pointed at, so a private repo's DB simply is not in db_volume. Populated by the same restore with CGC_INCLUDE_PRIVATE=1.",
       "pvt_db_volume": "octocode_db_pvt",
       "db_path": "/home/appuser/.local/share/octocode",
-      "_db_upstream_comment": "GHCR is the SINGLE upstream for both octocode DBs (semantic FastEmbed vectors + GraphRAG graph). The producer (GHA x86, ship-cgc-db.yml) pulls db_publish.image, runs an INCREMENTAL octocode index on top, and pushes it back. oci-apps (arm) + local both CONSUME by pulling the same image \u2014 never build. Pinned octocode version keeps the on-disk DB schema compatible across x86/arm/local.",
+      "_db_upstream_comment": "GHCR is the SINGLE upstream for both octocode DBs (semantic FastEmbed vectors + GraphRAG graph). The producer (GHA x86, ship-cgc-db.yml) pulls db_publish.image, runs an INCREMENTAL octocode index on top, and pushes it back. oci-apps (arm) + local both CONSUME by pulling the same image — never build. Pinned octocode version keeps the on-disk DB schema compatible across x86/arm/local.",
       "version": "0.12.2",
       "octocode_images": {
         "x86": "ghcr.io/diegonmarcos/octocode-fastembed-huggingface-graphrag-cpu-x86-linux-static:0.12.2",
@@ -124,24 +124,25 @@
         "cpu_weight": "100",
         "io_weight": "10",
         "_comment": "update = INCREMENTAL (octocode index, git-aware, changed files only) on top of the GHCR DB. NOT a reindex (clear+rebuild). First run with no upstream image bootstraps a full build once to seed GHCR. Structural incremental of changed files is minutes and matches the base.",
-        "_two_phase_comment": "TWO-PHASE ORCHESTRATION (.github/workflows/cgc-db.yml \u2192 cgc-db-index.yml). The schedule fires the orchestrator, which chains the reusable index workflow twice: (1) phase=semantic runs octocode index with USE_LLM=false (structural FastEmbed only, minutes), change-gated on .cgc-manifest-semantic.json; then (2) phase=graphrag runs with USE_LLM=true (the LLM relationship pass: one call PER node, hours over the full graph) ONLY after semantic succeeds, change-gated on its OWN .cgc-manifest-graphrag.json so it is NOT skipped just because semantic already advanced HEAD. The PHASE is the source of truth for USE_LLM \u2014 the cgc-db-index.yml job exports USE_LLM into the environment, which OVERRIDES the use_llm field below. Both manifests live inside the octocode home so they travel with the GHCR DB snapshot. workflow_dispatch can run a single phase via the `phase` input (both|semantic|graphrag).",
-        "_use_llm_comment": "FALLBACK DEFAULT ONLY \u2014 not the authority. cloud-cgc-db-update.sh reads this ONLY when the environment does not set USE_LLM (e.g. a bare local invocation with no phase). In CI the two-phase orchestrator always sets USE_LLM per phase, so this value is not consulted there. Kept false so a phase-less local run stays cheap/structural.",
+        "_two_phase_comment": "TWO-PHASE ORCHESTRATION (.github/workflows/cgc-db.yml → cgc-db-index.yml). The schedule fires the orchestrator, which chains the reusable index workflow twice: (1) phase=semantic runs octocode index with USE_LLM=false (structural FastEmbed only, minutes), change-gated on .cgc-manifest-semantic.json; then (2) phase=graphrag runs with USE_LLM=true (the LLM relationship pass: one call PER node, hours over the full graph) ONLY after semantic succeeds, change-gated on its OWN .cgc-manifest-graphrag.json so it is NOT skipped just because semantic already advanced HEAD. The PHASE is the source of truth for USE_LLM — the cgc-db-index.yml job exports USE_LLM into the environment, which OVERRIDES the use_llm field below. Both manifests live inside the octocode home so they travel with the GHCR DB snapshot. workflow_dispatch can run a single phase via the `phase` input (both|semantic|graphrag).",
+        "_use_llm_comment": "FALLBACK DEFAULT ONLY — not the authority. cloud-cgc-db-update.sh reads this ONLY when the environment does not set USE_LLM (e.g. a bare local invocation with no phase). In CI the two-phase orchestrator always sets USE_LLM per phase, so this value is not consulted there. Kept false so a phase-less local run stays cheap/structural.",
         "incremental": true,
         "use_llm": false,
-        "llm_model": "openai:qwen/qwen3-coder-30b-a3b-instruct",
+        "llm_model": "openrouter:qwen/qwen3-coder-30b-a3b-instruct",
         "schedule": "0 4,16 * * *",
-        "_budget_comment": "repo_timeout_min is a CEILING, not a reservation (corrected 2026-08-21). The gate clamps each repo's slice to min(ceiling, max_minutes - elapsed), so worst-case wall time is max_minutes ALONE and the invariant is simply max_minutes <= timeout-minutes (330) minus slack for the final propagate. The earlier 'max + repo <= timeout' rule described the pre-reserve gate; kept afterwards it deadlocked admission \u2014 a FIXED reserve must be big enough for the slowest repo (cloud-unix ~200m+ at measured throughput) yet small enough to still admit a repo late in a run, and both cannot hold, so the giants were never admitted at all while the small repos alone consumed ~75m.",
+        "_budget_comment": "repo_timeout_min is a CEILING, not a reservation (corrected 2026-08-21). The gate clamps each repo's slice to min(ceiling, max_minutes - elapsed), so worst-case wall time is max_minutes ALONE and the invariant is simply max_minutes <= timeout-minutes (330) minus slack for the final propagate. The earlier 'max + repo <= timeout' rule described the pre-reserve gate; kept afterwards it deadlocked admission — a FIXED reserve must be big enough for the slowest repo (cloud-unix ~200m+ at measured throughput) yet small enough to still admit a repo late in a run, and both cannot hold, so the giants were never admitted at all while the small repos alone consumed ~75m.",
         "max_minutes": 300,
         "repo_timeout_min": 240,
         "code_embedding_model": "fastembed:nomic-ai/nomic-embed-text-v1.5",
         "text_embedding_model": "fastembed:nomic-ai/nomic-embed-text-v1.5"
       },
       "llm": {
-        "_comment": "octocode GraphRAG LLM -> my-ai-api (OpenRouter-backed, port 3217). openai:* reads OPENAI_API_URL -> my-ai-api /v1 (3217); ollama:* reads OLLAMA_API_URL -> my-ai-api Ollama mimic (12436). Both faces route to OpenRouter; api_key is passed through and must match OPENROUTER_API_KEY in the container (my-ai-api src/secrets.yaml). my-ai-api's default model is deepseek/deepseek-v4-flash-0731, but that default does not apply here: llm_model below names the slug this service sends, and my-ai-api falls back to its default only when the caller sends none.",
+        "_comment": "octocode GraphRAG LLM -> my-ai-api (OpenRouter-backed, port 3217). The provider prefix on llm_model/models is what octocode resolves its endpoint from, and it reads that provider's OWN env pair: openrouter:* -> OPENROUTER_API_URL + OPENROUTER_API_KEY. Nothing ever exported those, so octocode aimed at the real openrouter.ai with no key and logged 'LLM client not initialized' -- only a Warning, after which it finished with a structural-only graph and exit 0, which reads as success. Switching the prefix to openai:* is NOT the fix: that provider validates against a slug allowlist and rejects 'qwen/qwen3-coder-30b-a3b-instruct' outright ('Provider openai does not support model'). openrouter:* applies no allowlist. openrouter_api_url MUST be the full /v1/chat/completions path -- the bare /v1 base initialises the client and then returns an empty body ('Failed to parse JSON from response'); both forms verified live against my-ai-api with octocode review. All three urls are declared so changing the prefix alone switches faces. api_key is a placeholder: my-ai-api injects its own upstream key (passthrough_auth false), so nothing in this path holds a provider credential. my-ai-api's own default model is deepseek/deepseek-v4-flash-0731 and applies only when a caller sends none.",
+        "openrouter_api_url": "http://10.0.0.6:3217/v1/chat/completions",
         "openai_api_url": "http://10.0.0.6:3217/v1/chat/completions",
         "ollama_api_url": "http://10.0.0.6:12436",
         "api_key": "sk-dummy",
-        "models": "openai:qwen/qwen3-coder-30b-a3b-instruct",
+        "models": "openrouter:qwen/qwen3-coder-30b-a3b-instruct",
         "health_url": "http://10.0.0.6:3217/health"
       },
       "index_repos": [
@@ -159,7 +160,7 @@
         "cloud-data",
         "cloud-my-ai_memory"
       ],
-      "_repo_map_comment": "GENERATED by 1_cloud-configs/src/derive/derive-repo-map.ts from cloud/repos.json, scoped to index_repos. DO NOT EDIT \u2014 add the repo to the registry and to index_repos instead.",
+      "_repo_map_comment": "GENERATED by 1_cloud-configs/src/derive/derive-repo-map.ts from cloud/repos.json, scoped to index_repos. DO NOT EDIT — add the repo to the registry and to index_repos instead.",
       "repo_map": {
         "cloud-infra": "cloud-infra",
         "cloud-unix": "cloud-unix",
@@ -170,13 +171,13 @@
         "cloud-android": "cloud-android",
         "cloud-my-ai_memory": "my-ai_memory"
       },
-      "_graphrag_skip_comment": "Subset of index_repos (data-driven, no hardcoded names in the script) whose GraphRAG LLM relationship pass is skipped entirely \u2014 pure prose/text corpora have no code semantics to relate, so the pass is zero graph nodes for real per-node LLM cost. Structural/FastEmbed indexing (the semantic phase, USE_LLM=false) still runs normally; only the graphrag phase (USE_LLM=true) skips these repos. Honored by cloud-cgc-db-update.sh's per-repo loop.",
+      "_graphrag_skip_comment": "Subset of index_repos (data-driven, no hardcoded names in the script) whose GraphRAG LLM relationship pass is skipped entirely — pure prose/text corpora have no code semantics to relate, so the pass is zero graph nodes for real per-node LLM cost. Structural/FastEmbed indexing (the semantic phase, USE_LLM=false) still runs normally; only the graphrag phase (USE_LLM=true) skips these repos. Honored by cloud-cgc-db-update.sh's per-repo loop.",
       "graphrag_skip": [
         "cloud-my-ai_memory"
       ],
       "home": "/home/appuser",
       "kg_store": {
-        "_comment": "reindex.sh ingests the infra graph delta into kg-store (SurrealDB) after building the code graph \u2014 unified 'build all graphs' job. Localhost host-network; ns/db/user data-driven; delta from the cgc bundle. KG_STORE_PASS (SurrealDB root) is wired as a shared secret later; until then the ingest gracefully no-ops.",
+        "_comment": "reindex.sh ingests the infra graph delta into kg-store (SurrealDB) after building the code graph — unified 'build all graphs' job. Localhost host-network; ns/db/user data-driven; delta from the cgc bundle. KG_STORE_PASS (SurrealDB root) is wired as a shared secret later; until then the ingest gracefully no-ops.",
         "url": "http://127.0.0.1:8001",
         "ns": "infra",
         "db": "production",
@@ -189,7 +190,7 @@
         "binary_ratio": 0.5
       },
       "sync_exclude": {
-        "cloud-vault": "credential store \u2014 cloud-cgc-pub-mcp indexes the shared volume; secrets would be embedded in the GraphRAG DB"
+        "cloud-vault": "credential store — cloud-cgc-pub-mcp indexes the shared volume; secrets would be embedded in the GraphRAG DB"
       }
     }
   },

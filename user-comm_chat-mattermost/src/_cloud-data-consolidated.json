@@ -5429,7 +5429,7 @@
             "_use_llm_comment": "FALLBACK DEFAULT ONLY — not the authority. cloud-cgc-db-update.sh reads this ONLY when the environment does not set USE_LLM (e.g. a bare local invocation with no phase). In CI the two-phase orchestrator always sets USE_LLM per phase, so this value is not consulted there. Kept false so a phase-less local run stays cheap/structural.",
             "incremental": true,
             "use_llm": false,
-            "llm_model": "openai:qwen/qwen3-coder-30b-a3b-instruct",
+            "llm_model": "openrouter:qwen/qwen3-coder-30b-a3b-instruct",
             "schedule": "0 4,16 * * *",
             "_budget_comment": "repo_timeout_min is a CEILING, not a reservation (corrected 2026-08-21). The gate clamps each repo's slice to min(ceiling, max_minutes - elapsed), so worst-case wall time is max_minutes ALONE and the invariant is simply max_minutes <= timeout-minutes (330) minus slack for the final propagate. The earlier 'max + repo <= timeout' rule described the pre-reserve gate; kept afterwards it deadlocked admission — a FIXED reserve must be big enough for the slowest repo (cloud-unix ~200m+ at measured throughput) yet small enough to still admit a repo late in a run, and both cannot hold, so the giants were never admitted at all while the small repos alone consumed ~75m.",
             "max_minutes": 300,
@@ -5438,11 +5438,12 @@
             "text_embedding_model": "fastembed:nomic-ai/nomic-embed-text-v1.5"
           },
           "llm": {
-            "_comment": "octocode GraphRAG LLM -> my-ai-api (OpenRouter-backed, port 3217). openai:* reads OPENAI_API_URL -> my-ai-api /v1 (3217); ollama:* reads OLLAMA_API_URL -> my-ai-api Ollama mimic (12436). Both faces route to OpenRouter; api_key is passed through and must match OPENROUTER_API_KEY in the container (my-ai-api src/secrets.yaml). my-ai-api's default model is deepseek/deepseek-v4-flash-0731, but that default does not apply here: llm_model below names the slug this service sends, and my-ai-api falls back to its default only when the caller sends none.",
+            "_comment": "octocode GraphRAG LLM -> my-ai-api (OpenRouter-backed, port 3217). The provider prefix on llm_model/models is what octocode resolves its endpoint from, and it reads that provider's OWN env pair: openrouter:* -> OPENROUTER_API_URL + OPENROUTER_API_KEY. Nothing ever exported those, so octocode aimed at the real openrouter.ai with no key and logged 'LLM client not initialized' -- only a Warning, after which it finished with a structural-only graph and exit 0, which reads as success. Switching the prefix to openai:* is NOT the fix: that provider validates against a slug allowlist and rejects 'qwen/qwen3-coder-30b-a3b-instruct' outright ('Provider openai does not support model'). openrouter:* applies no allowlist. openrouter_api_url MUST be the full /v1/chat/completions path -- the bare /v1 base initialises the client and then returns an empty body ('Failed to parse JSON from response'); both forms verified live against my-ai-api with octocode review. All three urls are declared so changing the prefix alone switches faces. api_key is a placeholder: my-ai-api injects its own upstream key (passthrough_auth false), so nothing in this path holds a provider credential. my-ai-api's own default model is deepseek/deepseek-v4-flash-0731 and applies only when a caller sends none.",
+            "openrouter_api_url": "http://10.0.0.6:3217/v1/chat/completions",
             "openai_api_url": "http://10.0.0.6:3217/v1/chat/completions",
             "ollama_api_url": "http://10.0.0.6:12436",
             "api_key": "sk-dummy",
-            "models": "openai:qwen/qwen3-coder-30b-a3b-instruct",
+            "models": "openrouter:qwen/qwen3-coder-30b-a3b-instruct",
             "health_url": "http://10.0.0.6:3217/health"
           },
           "index_repos": [
@@ -5469,7 +5470,7 @@
             "cloud-data": "cloud-data",
             "front-data": "front-data",
             "cloud-android": "cloud-android",
-            "cloud-my-ai_memory": "my-ai_memory"
+            "cloud-my-ai_memory": "cloud-my-ai_memory"
           },
           "_graphrag_skip_comment": "Subset of index_repos (data-driven, no hardcoded names in the script) whose GraphRAG LLM relationship pass is skipped entirely — pure prose/text corpora have no code semantics to relate, so the pass is zero graph nodes for real per-node LLM cost. Structural/FastEmbed indexing (the semantic phase, USE_LLM=false) still runs normally; only the graphrag phase (USE_LLM=true) skips these repos. Honored by cloud-cgc-db-update.sh's per-repo loop.",
           "graphrag_skip": [
@@ -8987,7 +8988,7 @@
     "_dangling_declarations": [
       {
         "kind": "octocode-index",
-        "repo": "my-ai_memory",
+        "repo": "cloud-my-ai_memory",
         "declared_by": "cloud-cgc-pub-mcp"
       }
     ],
