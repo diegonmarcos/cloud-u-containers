@@ -1,5 +1,5 @@
 schedule: "*/2 * * * *"
-maxActiveRuns: 1
+max_active_runs: 1
 env:
   - RSYNC_SSH: ssh -i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=10
 mail_on:
@@ -23,7 +23,7 @@ steps:
       # original, so a 2-min cron cannot duplicate work even if a run
       # overlaps — build.json's lifecycle._doc for the maddy app says so
       # explicitly ("Dagu can run it on a 2-min cron without duplicating
-      # work"). maxActiveRuns: 1 above additionally stops a slow run from
+      # work"). max_active_runs: 1 above additionally stops a slow run from
       # stacking with the next tick (this is Dagu's own default; no other
       # DAG in this directory sets it explicitly since none run this
       # frequently).
