@@ -100,7 +100,6 @@ steps:
       - verify-freshness
     command: |
       curl -s -X POST "$NTFY_URL/ops_backups" \
-        -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
         -H "Title: Gitea Mirror Sync OK" \
         -H "Priority: 1" \
         -H "Tags: mirror,white_check_mark" \

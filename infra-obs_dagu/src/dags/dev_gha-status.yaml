@@ -43,7 +43,6 @@ steps:
           "$GH_ORG" "$repo" "$BRANCH" "$STATUS" "$CONCLUSION" "$HTML_URL")
 
         curl -s -X POST "$NTFY_URL/dev_gha-status" \
-          -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
           -H "Title: [${repo}] ${WF_NAME}" \
           -H "Priority: ${PRIORITY}" \
           -H "Tags: ${TAG}" \

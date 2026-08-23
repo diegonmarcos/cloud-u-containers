@@ -58,7 +58,6 @@ steps:
     command: |
       MSG="Weekly media backup → OCI S3 (Archive)\nBucket: cloud-backups-media\nDagu: https://workflows.diegonmarcos.com"
       curl -s -X POST "$NTFY_URL/ops_backups" \
-        -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
         -H "Title: Weekly Media Backup OK" \
         -H "Priority: 2" \
         -H "Tags: floppy_disk,white_check_mark" \
