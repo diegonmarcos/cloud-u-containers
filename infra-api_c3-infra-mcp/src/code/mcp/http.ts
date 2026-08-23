@@ -22,6 +22,7 @@ import { registerWorkflowTools } from "./tools/workflows.js";
 import { registerVpsOpsTools } from "./tools/vps-ops.js";
 import { registerDeliveryTools } from "./tools/delivery.js";
 import { registerOperationsTools } from "./tools/operations.js";
+import { registerMailOpsTools } from "./tools/mail-ops.js";
 import { registerFrontendExecTools } from "./tools/frontend.js";
 import { registerTelegramTools } from "./tools/telegram.js";
 // C) Security
@@ -47,6 +48,7 @@ function createMcpServer(): McpServer {
   registerVpsOpsTools(server);
   registerDeliveryTools(server);
   registerOperationsTools(server);
+  registerMailOpsTools(server);
   registerFrontendExecTools(server);
   registerTelegramTools(server);
   // C) Security
