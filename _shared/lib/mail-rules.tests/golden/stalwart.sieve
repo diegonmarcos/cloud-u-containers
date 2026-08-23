@@ -56,6 +56,20 @@ if address :domain :is "From" ["ing.es", "ing.de", "commerzbank.de", "deutscheba
   stop;
 }
 
+# route.cloud_workflows.github_ci
+if anyof(header :contains "X-GitHub-Reason" "ci_activity", header :contains "Subject" ["Run failed:", "workflow run"]) {
+  fileinto :copy :create "14    ☁️ Cloud - Workflows";
+  addflag "\\Seen";
+  stop;
+}
+
+# route.government.agencies
+if anyof(address :domain :matches "From" "*.gov.br", address :domain :is "From" "dgt.es") {
+  fileinto :copy :create "23    🧻 Government";
+  addflag "\\Seen";
+  stop;
+}
+
 # route.dev.code_hosting
 if address :domain :is "From" ["github.com", "noreply.github.com", "gitlab.com", "bitbucket.org", "codeberg.org", "stackoverflow.com", "stackexchange.com", "npmjs.com", "crates.io", "pypi.org", "docker.com", "hub.docker.com", "nixos.org", "discourse.nixos.org"] {
   fileinto :copy :create "31    🎓 Development & Tech";
@@ -72,6 +86,34 @@ if address :domain :is "From" ["vercel.com", "netlify.com", "railway.app", "hero
 
 # route.dev.saas_creative
 if address :domain :is "From" ["jetbrains.com", "adobe.com", "canva.com"] {
+  fileinto :copy :create "31    🎓 Development & Tech";
+  addflag "\\Seen";
+  stop;
+}
+
+# route.dev.ai_llm
+if address :domain :is "From" ["mail.anthropic.com", "email.claude.com", "openrouter.ai", "email.openai.com"] {
+  fileinto :copy :create "31    🎓 Development & Tech";
+  addflag "\\Seen";
+  stop;
+}
+
+# route.dev.tools_extra
+if address :domain :is "From" ["unity3d.com", "bitwarden.eu", "sketchfab.com", "updates.resend.com", "notifications.resend.com", "em1.cloudflare.com", "build.coda.io", "verify.proton.me", "sendsafely.com", "techtree.dev"] {
+  fileinto :copy :create "31    🎓 Development & Tech";
+  addflag "\\Seen";
+  stop;
+}
+
+# route.dev.cloud_infra_extra
+if address :domain :is "From" ["aws.com", "amazonaws.com", "oracle-mail.com"] {
+  fileinto :copy :create "31    🎓 Development & Tech";
+  addflag "\\Seen";
+  stop;
+}
+
+# route.dev.misc
+if address :domain :is "From" ["omdbapi.com", "outbound.developers.giphy.com", "giphy.com", "hiddenjobs.dev", "openhivelab.com", "hive-open.com"] {
   fileinto :copy :create "31    🎓 Development & Tech";
   addflag "\\Seen";
   stop;
@@ -119,6 +161,34 @@ if address :domain :is "From" ["deliveroo.com", "ubereats.com", "glovo.com", "ju
   stop;
 }
 
+# route.lifestyle.housing_rental_de
+if address :domain :is "From" ["wg-gesucht.de", "nachrichten.immobilienscout24.de", "myplace.de", "kleinanzeigen.de"] {
+  fileinto :copy :create "12    ✈️ Logistics";
+  addflag "\\Seen";
+  stop;
+}
+
+# route.lifestyle.lodging_extra
+if address :domain :is "From" ["info.hostelworld.com", "email.hostelworld.com", "behappyhostels.com", "sandino-hostel-berlin.de", "wehostelgroup.com", "chekin.com", "sg.booking.com", "property.booking.com", "mews.li", "hotelgest.com", "avirato.com", "siriusfacilities.com", "sensorberg.com"] {
+  fileinto :copy :create "12    ✈️ Logistics";
+  addflag "\\Seen";
+  stop;
+}
+
+# route.lifestyle.transport_extra
+if address :domain :is "From" ["e.alsa.com", "alsa.es", "service.ryanairemail.com", "fin.ryanair.com", "wizzair.com", "trips.mail.flixbus.com", "mail.interrail.eu", "mvg.de", "bvg.de", "news.jelbi.de", "trans.voiapp.io", "clickrent.es", "citystorage.lt"] {
+  fileinto :copy :create "12    ✈️ Logistics";
+  addflag "\\Seen";
+  stop;
+}
+
+# route.lifestyle.travel_misc
+if address :domain :is "From" ["findacrew.com", "nomadmania.com", "esim.net", "email-support.uber.com"] {
+  fileinto :copy :create "12    ✈️ Logistics";
+  addflag "\\Seen";
+  stop;
+}
+
 # route.admin.payments
 if address :domain :is "From" ["paypal.com", "stripe.com"] {
   fileinto :copy :create "11    🛡️ Admin & Finance";
@@ -149,6 +219,27 @@ if address :domain :is "From" ["n26.com", "revolut.com", "wise.com"] {
 
 # route.admin.marketplace
 if address :domain :is "From" ["amazon.com", "amazon.de", "amazon.es", "ebay.com", "ebay.de", "aliexpress.com", "zalando.de"] {
+  fileinto :copy :create "11    🛡️ Admin & Finance";
+  addflag "\\Seen";
+  stop;
+}
+
+# route.admin.bank_es
+if address :domain :is "From" ["emailing.bancosantander-mail.es", "cofidis.es", "s.cofidis.es", "c.cofidis.es", "nordaccount.com"] {
+  fileinto :copy :create "11    🛡️ Admin & Finance";
+  addflag "\\Seen";
+  stop;
+}
+
+# route.admin.bank_intl
+if address :domain :is "From" ["btgpactual.com", "tcbs.com.vn", "b3.com.br", "bitpanda.com", "info.bitpanda.com", "getbernstein.com"] {
+  fileinto :copy :create "11    🛡️ Admin & Finance";
+  addflag "\\Seen";
+  stop;
+}
+
+# route.admin.telecom_utilities_de
+if address :domain :is "From" ["congstar.de", "news.congstar.de", "service.congstar.de", "mails.swm.de"] {
   fileinto :copy :create "11    🛡️ Admin & Finance";
   addflag "\\Seen";
   stop;
@@ -191,6 +282,20 @@ if address :domain :is "From" ["goodreads.com", "kindle.amazon.com", "audible.co
 
 # route.info.social
 if address :domain :is "From" ["twitter.com", "x.com", "mastodon.social", "facebook.com", "instagram.com", "whatsapp.com", "reddit.com"] {
+  fileinto :copy :create "22    📰 Social & General";
+  addflag "\\Seen";
+  stop;
+}
+
+# route.social.platforms_extra
+if address :domain :is "From" ["mail.instagram.com", "facebookmail.com", "legal.pinterest.com", "account.pinterest.com", "gotinder.com"] {
+  fileinto :copy :create "22    📰 Social & General";
+  addflag "\\Seen";
+  stop;
+}
+
+# route.social.lifestyle_extra
+if address :domain :is "From" ["tidal.com", "info.tidal.com", "c.rituals.com", "s.rituals.com", "rituals.com", "soundiiz.com", "ae.linktr.ee", "decathlon.com"] {
   fileinto :copy :create "22    📰 Social & General";
   addflag "\\Seen";
   stop;
