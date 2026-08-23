@@ -1,0 +1,170 @@
+# Gmail <-> maddy reconciliation.
+#
+# health_mail-ingest answers "is mail still arriving?". It cannot answer "did we
+# lose a specific message?" — during the 2026-08-13..08-21 blackout the INBOX was
+# simply empty, and nothing in the stack ever compared what Gmail holds against
+# what maddy holds. The Aug 1..12 gap was only found by hand, weeks later.
+#
+# This DAG closes that hole: it fingerprints every message Gmail has in a lagged
+# window (md5 of the RFC-5322 Message-ID) and checks each one is present in
+# maddy. Gmail is the guaranteed primary, so Gmail-minus-maddy is exactly the
+# set of mail that was lost in transit.
+#
+# Two details that are load-bearing:
+#
+#  * The maddy side fingerprints the WHOLE store, not the same date window.
+#    msgs.date is the delivery/injection time, not the origin date — a message
+#    backfilled today still carries today's date. Windowing the maddy side would
+#    report every recovered message as missing.
+#
+#  * The Message-ID header is frequently FOLDED onto a continuation line
+#    (Outlook/Exchange senders do it constantly). A naive `grep ^Message-ID:`
+#    returns an empty value for those, so they silently drop out of the compare
+#    and show up as phantom "missing" mail. That mistake sent a real backfill
+#    into re-injecting messages that were already present, creating duplicates.
+#    The awk below unfolds the header block before extracting.
+#
+# ntfy takes NO Authorization header — it is WireGuard-bound and accepts
+# anonymous publish, and rejects any bearer it does not recognise with 401.
+# Sending one made every alert in this repo fail silently for nine days.
+name: health_mail-reconcile
+description: Verify every Gmail message in a lagged window is present in maddy
+group: health
+tags:
+  - mail
+  - health
+  - reconciliation
+
+schedule: "23 5 * * *"
+
+env:
+  - SSH: "ssh -i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=10"
+  - NTFY_URL: "http://10.0.0.6:8090"
+  # Days of history to verify each run. The window is lagged by LAG_DAYS so
+  # mail still in flight is never counted as lost.
+  - WINDOW_DAYS: "8"
+  - LAG_DAYS: "1"
+  # Alert if more than this many messages are missing. 0 = any loss alerts.
+  - MISS_THRESHOLD: "0"
+
+steps:
+  - name: reconcile
+    command: |
+      set -u
+      TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
+
+      # busybox date has no relative-offset parsing; only `-d @<epoch>` works.
+      NOW=$(date -u +%s)
+      FROM=$(date -u -d @$((NOW - (WINDOW_DAYS + LAG_DAYS) * 86400)) +%Y/%m/%d)
+      TO=$(date -u -d @$((NOW - LAG_DAYS * 86400)) +%Y/%m/%d)
+      echo "window: after:$FROM before:$TO"
+
+      # ---- Gmail side -------------------------------------------------------
+      # Service-account domain-wide delegation is the only working read path;
+      # the gws-primary OAuth client was deleted.
+      $SSH ubuntu@10.0.0.6 "docker exec -i google-workspace-mcp sh -c 'cat > /tmp/recon_gmail.py'" <<'PYEOF'
+      import os, sys, hashlib
+      from google.oauth2 import service_account
+      from google.auth.transport.requests import Request
+      from googleapiclient.discovery import build
+      q = sys.argv[1]
+      creds = service_account.Credentials.from_service_account_file(
+          os.environ.get("GOOGLE_SERVICE_ACCOUNT_KEY_PATH", "/run/secrets/GOOGLE_SERVICE_ACCOUNT_KEY"),
+          scopes=["https://www.googleapis.com/auth/gmail.readonly"],
+          subject="me@diegonmarcos.com")
+      creds.refresh(Request())
+      svc = build("gmail", "v1", credentials=creds, cache_discovery=False)
+      ids, tok = [], None
+      while True:
+          r = svc.users().messages().list(userId="me", q=q, maxResults=500, pageToken=tok).execute()
+          ids += [m["id"] for m in r.get("messages", [])]
+          tok = r.get("nextPageToken")
+          if not tok:
+              break
+      for i in ids:
+          try:
+              m = svc.users().messages().get(userId="me", id=i, format="metadata",
+                      metadataHeaders=["Message-ID", "Subject", "From", "Date"]).execute()
+              h = {x["name"].lower(): x["value"] for x in m.get("payload", {}).get("headers", [])}
+              mid = h.get("message-id", "").strip().lstrip("<").split(">")[0]
+              if not mid:
+                  continue
+              fp = hashlib.md5(mid.encode()).hexdigest()[:10]
+              print("%s\t%s\t%s\t%s" % (fp, h.get("date", "")[:31],
+                                        h.get("from", "")[:50], h.get("subject", "")[:70]))
+          except Exception as e:
+              print("ERR\t%s\t%s\t" % (i, e), file=sys.stderr)
+      PYEOF
+
+      $SSH ubuntu@10.0.0.6 \
+        "docker exec google-workspace-mcp /app/.venv/bin/python /tmp/recon_gmail.py 'after:$FROM before:$TO'" \
+        > "$TMP/gmail.tsv" 2>"$TMP/gmail.err" || true
+
+      if [ ! -s "$TMP/gmail.tsv" ]; then
+        echo "Gmail read produced nothing:"; head -5 "$TMP/gmail.err" || true
+        curl -s -X POST "$NTFY_URL/infra_mail-health" \
+          -H "Title: Mail reconciliation could not read Gmail" \
+          -H "Priority: 4" \
+          -H "Tags: warning,email" \
+          -d "The reconciliation DAG could not list Gmail for after:$FROM before:$TO. The service-account read path may be broken. While this is down, silent mail loss is undetectable."
+        exit 1
+      fi
+      cut -f1 "$TMP/gmail.tsv" | sort -u > "$TMP/gmail.fps"
+      echo "gmail_messages=$(wc -l < "$TMP/gmail.tsv") distinct_fps=$(wc -l < "$TMP/gmail.fps")"
+
+      # ---- maddy side (whole store, folding-aware) --------------------------
+      $SSH ubuntu@10.0.0.3 "docker exec -i maddy sh -c 'cat > /tmp/recon_mid.awk'" <<'AWKEOF'
+      BEGIN { cap=0; done=0; mid="" }
+      done { next }
+      /^\r?$/ { done=1; next }
+      cap==1 {
+        if ($0 ~ /^[ \t]/) { mid = mid $0; next }
+        else { done=1; next }
+      }
+      { if (tolower($0) ~ /^message-id:/) { cap=1; mid=$0 } }
+      END {
+        sub(/^[Mm][Ee][Ss][Ss][Aa][Gg][Ee]-[Ii][Dd]:/, "", mid)
+        gsub(/[ \t\r\n]/, "", mid)
+        sub(/^</, "", mid); sub(/>.*$/, "", mid)
+        if (mid != "") print mid
+      }
+      AWKEOF
+
+      $SSH ubuntu@10.0.0.3 "docker exec maddy sh -c '
+        for k in \$(sqlite3 /data/imapsql.db \"SELECT DISTINCT extBodyKey FROM msgs;\"); do
+          m=\$(awk -f /tmp/recon_mid.awk /data/messages/\$k 2>/dev/null)
+          [ -n \"\$m\" ] && printf \"%s\" \"\$m\" | md5sum | cut -c1-10
+        done | sort -u'" > "$TMP/maddy.fps" 2>/dev/null || true
+
+      if [ ! -s "$TMP/maddy.fps" ]; then
+        echo "maddy fingerprint scan produced nothing"
+        curl -s -X POST "$NTFY_URL/infra_mail-health" \
+          -H "Title: Mail reconciliation could not read maddy" \
+          -H "Priority: 4" \
+          -H "Tags: warning,email" \
+          -d "The reconciliation DAG could not fingerprint the maddy store on oci-mail. maddy or the WG path may be down. Silent mail loss is undetectable while this is failing."
+        exit 1
+      fi
+      echo "maddy_distinct_fps=$(wc -l < "$TMP/maddy.fps")"
+
+      # ---- diff -------------------------------------------------------------
+      comm -23 "$TMP/gmail.fps" "$TMP/maddy.fps" > "$TMP/missing.fps"
+      MISS=$(wc -l < "$TMP/missing.fps" | tr -d ' ')
+      echo "missing_from_maddy=$MISS"
+
+      if [ "$MISS" -le "$MISS_THRESHOLD" ]; then
+        echo "reconciliation clean"
+        exit 0
+      fi
+
+      # Re-attach headers so the alert names actual messages, not hashes.
+      grep -F -f "$TMP/missing.fps" "$TMP/gmail.tsv" | cut -f2-4 | head -15 > "$TMP/sample.txt"
+      echo "--- missing sample ---"; cat "$TMP/sample.txt"
+
+      curl -s -X POST "$NTFY_URL/infra_mail-health" \
+        -H "Title: Mail LOST - $MISS message(s) in Gmail are absent from maddy" \
+        -H "Priority: 5" \
+        -H "Tags: rotating_light,email" \
+        -d "$(printf '%s message(s) present in Gmail for after:%s before:%s never reached maddy.\n\nGmail is the guaranteed primary, so this is real loss on the inbound leg.\n\nSample:\n%s\n' \
+              "$MISS" "$FROM" "$TO" "$(cat "$TMP/sample.txt")")"
+      exit 1
