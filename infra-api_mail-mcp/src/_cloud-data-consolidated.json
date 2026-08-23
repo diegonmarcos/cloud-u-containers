@@ -209,7 +209,7 @@
         "send",
         "vaultwarden"
       ],
-      "container_count": 61
+      "container_count": 62
     },
     "gcp-E2-f_0": {
       "ip": "35.226.147.64",
@@ -5289,13 +5289,34 @@
           "resources": null,
           "read_only": false,
           "protocol": "http"
+        },
+        "pvt": {
+          "container_name": "cloud-cgc-pvt-mcp",
+          "image": "ghcr.io/diegonmarcos/cloud-cgc-pub-mcp:latest",
+          "port": 3107,
+          "port_env": "MCP_HTTP_PORT",
+          "dns": null,
+          "public": false,
+          "proxy": null,
+          "healthcheck": "/mcp",
+          "monitoring": null,
+          "volumes": [
+            "./data:/data:ro"
+          ],
+          "env_file": false,
+          "depends_on": [],
+          "resources": null,
+          "read_only": false,
+          "protocol": "http"
         }
       },
       "container_names": [
-        "cloud-cgc-pub-mcp"
+        "cloud-cgc-pub-mcp",
+        "cloud-cgc-pvt-mcp"
       ],
       "all_ports": [
-        "3105"
+        "3105",
+        "3107"
       ],
       "all_dns": [
         "cloud-cgc-pub-mcp.app"
@@ -5316,7 +5337,8 @@
         }
       },
       "declared_ports": {
-        "app": 3105
+        "app": 3105,
+        "pvt": 3107
       },
       "health": {
         "path": "/mcp"
@@ -5387,6 +5409,8 @@
             ]
           },
           "db_volume": "octocode_db",
+          "_pvt_db_volume_comment": "Volume cloud-cgc-pvt-mcp serves. Separate from db_volume ON PURPOSE: the public/private split is the VOLUME, not a tool subset -- octocode can only answer about the LanceDB tree it is pointed at, so a private repo's DB simply is not in db_volume. Populated by the same restore with CGC_INCLUDE_PRIVATE=1.",
+          "pvt_db_volume": "octocode_db_pvt",
           "db_path": "/home/appuser/.local/share/octocode",
           "_db_upstream_comment": "GHCR is the SINGLE upstream for both octocode DBs (semantic FastEmbed vectors + GraphRAG graph). The producer (GHA x86, ship-cgc-db.yml) pulls db_publish.image, runs an INCREMENTAL octocode index on top, and pushes it back. oci-apps (arm) + local both CONSUME by pulling the same image — never build. Pinned octocode version keeps the on-disk DB schema compatible across x86/arm/local.",
           "version": "0.12.2",
@@ -5476,6 +5500,7 @@
         "api_path": null,
         "api_url": null,
         "healthcheck_paths": [
+          "/mcp",
           "/mcp"
         ]
       },
