@@ -113,8 +113,11 @@ assert "A+B contract: every canonical route rule is route_only or full in Maddy 
 assert "sieve starts with require" \
   grep -q '^require \[' "$TMP/stalwart.sieve"
 
-assert "sieve has fallback fileinto to Others (flat)" \
-  grep -qF 'fileinto :copy :create "Aa    📬 Others (fallback)"' "$TMP/stalwart.sieve"
+# Derive the fallback folder from the data, not a literal: hardcoding the
+# display name silently rotted through the Aa->91 folder rename.
+FALLBACK_FOLDER="$(jq -r '.folders[.routing_default]' "$GENERAL")"
+assert "sieve has fallback fileinto to routing_default ($FALLBACK_FOLDER)" \
+  grep -qF "fileinto :copy :create \"$FALLBACK_FOLDER\"" "$TMP/stalwart.sieve"
 
 # Spec: each routed leaf folder = 2-char prefix + TWO spaces + non-space.
 # Each folders_ui entry = 2-char prefix + ONE space + non-space. Validates
