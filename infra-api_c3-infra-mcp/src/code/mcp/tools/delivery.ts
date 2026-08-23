@@ -7,7 +7,7 @@ import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import { exec } from "../../shared/libs/exec.js";
 import { sshExec } from "../../shared/libs/ssh.js";
-import { getConfig, getServiceDir, getServiceFolder, resolveVmId, getVmSshAlias } from "../../shared/libs/config.js";
+import { getConfig, getServiceDir, getServiceFolder, resolveVmId, getVmSshAlias, composeCd } from "../../shared/libs/config.js";
 import { BUILD_SCRIPT, SOLUTIONS_DIR } from "../../shared/libs/paths.js";
 import { audit } from "../../shared/libs/audit.js";
 
@@ -251,7 +251,7 @@ export function registerDeliveryTools(server: McpServer) {
       const remotePath = `${remoteBase}/${folder}`;
       const backupType = type ?? "borg";
 
-      const cmd = `cd ${remotePath} && docker compose run --rm backup-${backupType} 2>&1 || docker compose run --rm backup 2>&1`;
+      const cmd = `${composeCd(remotePath)} && (docker compose run --rm backup-${backupType} 2>&1 || docker compose run --rm backup 2>&1)`;
 
       const result = sshExec(vmId, cmd, 300_000);
       audit("devops.build.backup", `${backupType} ${service}@${getVmSshAlias(vmId)}`, result.ok ? "OK" : `FAILED (exit ${result.exitCode})`);

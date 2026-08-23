@@ -16,7 +16,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from "fs";
 import { join } from "path";
 import { exec, execAsync } from "../../shared/libs/exec.js";
 import { sshExec, sshExecAsync, checkVmReachable } from "../../shared/libs/ssh.js";
-import { getConfig, getServiceDir, getServiceFolder, resolveVmId, getVmSshAlias } from "../../shared/libs/config.js";
+import { getConfig, getServiceDir, getServiceFolder, resolveVmId, getVmSshAlias, composeCd } from "../../shared/libs/config.js";
 import { BUILD_SCRIPT, SOLUTIONS_DIR, FRONT_DIR, CLOUD_DATA_DIR } from "../../shared/libs/paths.js";
 import { audit } from "../../shared/libs/audit.js";
 import {
@@ -895,7 +895,7 @@ export function registerMetaDevops(server: McpServer): void {
             const remotePath = `${config.remote_base}/${getServiceFolder(p.service)}`;
             validatePath(getServiceFolder(p.service));
             const backupType = p.type ?? "borg";
-            const cmd = `cd ${remotePath} && docker compose run --rm backup-${backupType} 2>&1 || docker compose run --rm backup 2>&1`;
+            const cmd = `${composeCd(remotePath)} && (docker compose run --rm backup-${backupType} 2>&1 || docker compose run --rm backup 2>&1)`;
             const result = sshExec(vmId, cmd, 300_000);
             audit("devops.build.backup", `${backupType} ${p.service}@${getVmSshAlias(vmId)}`, result.ok ? "OK" : `FAILED (exit ${result.exitCode})`);
             return { content: [{ type: "text" as const, text: [`Backup ${backupType} for ${p.service}@${p.vm}: ${result.ok ? "SUCCESS" : "FAILED"}`, `Exit code: ${result.exitCode}`, result.stdout ? `\n--- output ---\n${result.stdout.slice(-3000)}` : "", result.stderr ? `\n--- stderr ---\n${result.stderr.slice(-1000)}` : ""].join("\n") }], isError: !result.ok };
@@ -937,7 +937,7 @@ export function registerMetaDevops(server: McpServer): void {
             const vmId = (svc as any).vm;
             validatePath(p.service);
             const remotePath = `${config.remote_base}/${p.service}`;
-            const cmd = `cd ${remotePath} && docker compose down 2>/dev/null; docker compose up -d`;
+            const cmd = `${composeCd(remotePath)} && docker compose down 2>/dev/null; docker compose up -d`;
             const result = sshExec(vmId, cmd, 60_000);
             audit("docker_compose_up", `${p.service}@${getVmSshAlias(vmId)}`, result.ok ? "OK" : `FAILED (exit ${result.exitCode})`);
             return { content: [{ type: "text" as const, text: `docker compose up ${p.service} on ${getVmSshAlias(vmId)}:\n${result.ok ? "SUCCESS" : "FAILED"}\n\n${result.stdout}${result.stderr}` }], isError: !result.ok };
