@@ -109,15 +109,21 @@ async function notifyMeshLegLost(env, { messageId, from, to, status }) {
 async function deliverToMaddy(rawEmail, to, env) {
   try {
     const controller = new AbortController();
-    // 30s, not 10s. Measured on gcp-proxy's Caddy access log over a week of real
-    // inbound mail (n=177): the forward_auth roundtrip to the Authelia
-    // introspect-proxy runs p50=6.2s, p90=10.02s, max=39.4s. A 10s abort
-    // therefore killed roughly a tenth of all inbound mail before the mesh leg
-    // ever reached maddy — the timeout was landing exactly on the p90. That is
-    // a client-side self-inflicted failure, not an upstream one, and it is a
-    // large part of why the self-hosted mirror felt flaky.
-    // The slow introspection hop is worth fixing on its own; until it is, do not
-    // let this timeout sit at the p90 of the thing it is waiting for.
+    // 25s, not 10s. Measured on gcp-proxy's Caddy access log over a week of real
+    // inbound mail (n=177), this request ran p50=6.2s, p90=10.02s, max=39.4s —
+    // so a 10s abort was killing roughly a tenth of inbound mail before the mesh
+    // leg ever reached maddy. That was a client-side self-inflicted loss, not an
+    // upstream failure, and a large part of why the mirror felt flaky.
+    //
+    // Two different causes sat behind that latency. The first, a JWKS refetch on
+    // every introspect-proxy request, was fixed in ccb389bcc and that hop is now
+    // ~1ms. What remains is maddy's own SPF/DMARC evaluation: senders with long
+    // include chains (GitHub's SPF has 8 sequential includes) cost ~3s, and cold
+    // lookups through the mesh resolver run ~1.2s each. Real deliveries still
+    // measure 6-8s end to end because of it.
+    //
+    // So the headroom is still needed: SPF cost varies per sender and spikes well
+    // past 10s. Do not lower this until inbound delivery is measured fast.
     // Capped at 25s deliberately: the Workers wall-clock ceiling is ~30s, and a
     // worker killed at the ceiling never reaches the accept/reject decision at
     // all, which is worse than a failed mesh leg. Leave headroom.
