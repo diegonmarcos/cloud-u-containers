@@ -109,7 +109,19 @@ async function notifyMeshLegLost(env, { messageId, from, to, status }) {
 async function deliverToMaddy(rawEmail, to, env) {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    // 30s, not 10s. Measured on gcp-proxy's Caddy access log over a week of real
+    // inbound mail (n=177): the forward_auth roundtrip to the Authelia
+    // introspect-proxy runs p50=6.2s, p90=10.02s, max=39.4s. A 10s abort
+    // therefore killed roughly a tenth of all inbound mail before the mesh leg
+    // ever reached maddy — the timeout was landing exactly on the p90. That is
+    // a client-side self-inflicted failure, not an upstream one, and it is a
+    // large part of why the self-hosted mirror felt flaky.
+    // The slow introspection hop is worth fixing on its own; until it is, do not
+    // let this timeout sit at the p90 of the thing it is waiting for.
+    // Capped at 25s deliberately: the Workers wall-clock ceiling is ~30s, and a
+    // worker killed at the ceiling never reaches the accept/reject decision at
+    // all, which is worse than a failed mesh leg. Leave headroom.
+    const timeoutId = setTimeout(() => controller.abort(), 25000);
     const response = await fetch(env.HTTP_TO_SMTP_PROXY_API_URL, {
       method: 'POST',
       headers: {
