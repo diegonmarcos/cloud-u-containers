@@ -100,4 +100,85 @@ export function registerMailOpsTools(server: McpServer): void {
           };
     },
   );
+
+  // ── obs.health.mail_ingest — the blackout detector ───────────────────────
+  // Leg B (Cloudflare Worker -> http-to-smtp -> maddy) died 2026-08-13 and
+  // stayed dead until 2026-08-21. Nine days, zero inbound, and nothing noticed:
+  // every existing check asked "is the service up?", none asked "is mail still
+  // ARRIVING?". A live maddy with an empty INBOX looks perfectly healthy.
+  // age_hours is the alarm; the day map shows the shape of the hole.
+  server.tool(
+    "obs.health.mail_ingest",
+    "Inbound freshness for maddy INBOX: hours since the last delivery, plus a 21-day per-day delivery map. A large age_hours or a run of 0-delivery days means inbound is broken (leg B down) even though every container still reports healthy.",
+    {},
+    async () => {
+      const sql = [
+        "SELECT 'newest_delivery=' || COALESCE(datetime(MAX(m.date),'unixepoch'),'none')",
+        "    || ' age_hours=' || COALESCE(CAST((strftime('%s','now') - MAX(m.date))/3600 AS INT),-1)",
+        "  FROM msgs m JOIN mboxes b ON b.id = m.mboxId WHERE b.name = 'INBOX';",
+        "WITH RECURSIVE d(x) AS (",
+        "  SELECT date('now','-20 days')",
+        "  UNION ALL SELECT date(x,'+1 day') FROM d WHERE x < date('now'))",
+        "SELECT d.x || ' ' || COALESCE(c.n,0) ||",
+        "       CASE WHEN COALESCE(c.n,0) = 0 THEN '  <-- NO MAIL' ELSE '' END",
+        "  FROM d LEFT JOIN (SELECT date(m.date,'unixepoch') dd, COUNT(*) n",
+        "    FROM msgs m JOIN mboxes b ON b.id = m.mboxId",
+        "    WHERE b.name = 'INBOX' GROUP BY dd) c ON c.dd = d.x",
+        "  ORDER BY d.x;",
+      ].join(" ");
+      const result = containerExecCmd(
+        MAIL_VM,
+        MAIL_CONTAINER,
+        `sqlite3 -readonly /data/imapsql.db "${sql}"`,
+      );
+      return result.ok
+        ? { content: [{ type: "text" as const, text: result.output }] }
+        : {
+            content: [{ type: "text" as const, text: `Error: ${result.output}` }],
+            isError: true,
+          };
+    },
+  );
+
+  // ── obs.health.mail_puller — the safety net's own health ─────────────────
+  // mail-puller is the reconciliation leg: it pulls the Gmail/Workspace copy
+  // back into maddy, so anything leg B drops still lands. gws-primary — the
+  // connector covering the Workspace mailbox — had been failing every ~30s with
+  // "invalid_client" for thousands of cycles. That is why the Aug 13-21 blackout
+  // never self-healed: the net that exists to catch exactly this was itself
+  // down, and failing silently, for the entire outage.
+  server.tool(
+    "obs.health.mail_puller",
+    "Per-source health of the mail-puller reconciliation legs (gmail-primary / gws-primary / live-primary). Reports failing cycles per source in the recent log window. ANY source failing means lost mail will NOT be recovered automatically.",
+    {},
+    async () => {
+      const result = sshExec(
+        MAIL_VM,
+        "docker logs --since 15m mail-puller 2>&1 | sed 's/\\x1b\\[[0-9;]*m//g' " +
+          "| grep 'cycle failed' | grep -oE 'source=[a-z-]+' | sort | uniq -c " +
+          "| awk '{print $2, \"failed_cycles_15m=\" $1}'; " +
+          "echo '---'; docker logs --since 15m mail-puller 2>&1 " +
+          "| sed 's/\\x1b\\[[0-9;]*m//g' " +
+          "| grep -oE '\"error\": ?\"[a-zA-Z_]+\"' | sort -u",
+        60_000,
+      );
+      const raw = [result.stdout, result.stderr].filter(Boolean).join("\n").trim();
+      const text = raw.replace(/^---$/m, "").trim();
+      return result.ok
+        ? {
+            content: [
+              {
+                type: "text" as const,
+                text: text
+                  ? `${text}\n\nNOTE: any source listed above is FAILING. A healthy source logs no errors.`
+                  : "all pull sources healthy (no error cycles in the last 15m)",
+              },
+            ],
+          }
+        : {
+            content: [{ type: "text" as const, text: `Error: ${raw}` }],
+            isError: true,
+          };
+    },
+  );
 }
