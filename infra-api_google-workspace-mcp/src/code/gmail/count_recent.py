@@ -38,11 +38,12 @@ import argparse
 import sys
 from datetime import datetime, timezone
 
+import os
 from google.oauth2 import service_account
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 
-SA_KEY = "/run/secrets/service-account-key.json"
+SA_KEY = os.environ.get("GOOGLE_SERVICE_ACCOUNT_KEY_PATH", "/run/secrets/GOOGLE_SERVICE_ACCOUNT_KEY")
 
 
 def gmail_service(user: str):

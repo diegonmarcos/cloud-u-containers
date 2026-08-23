@@ -41,11 +41,12 @@ Gotcha — Stalwart per-account auth rate-limit:
   account while it runs, and give it a quiet window before starting.
 """
 import imaplib, ssl, sys, email, time, base64
+import os
 from google.oauth2 import service_account
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 
-SA_KEY = "/run/secrets/service-account-key.json"
+SA_KEY = os.environ.get("GOOGLE_SERVICE_ACCOUNT_KEY_PATH", "/run/secrets/GOOGLE_SERVICE_ACCOUNT_KEY")
 PASSWORD = sys.argv[1]
 USER = sys.argv[2] if len(sys.argv) > 2 else "me@diegonmarcos.com"
 STALW = ("10.0.0.3", 2993)
