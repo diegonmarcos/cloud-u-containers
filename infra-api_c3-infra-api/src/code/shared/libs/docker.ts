@@ -318,7 +318,15 @@ export function composeUpAll(
 // Wraps /opt/scripts/vm-images-pull-up.sh (home-manager managed, manifest-driven
 // serial pull then serial compose-up). Do not reimplement its logic here.
 
-const PULL_UP_CMD = "/opt/scripts/vm-images-pull-up.sh --manifest /opt/scripts/build-vm.json";
+// sudo is REQUIRED, not defensive. The script ships in the
+// nixhm-sudo-<vm> pilot package and needs root twice: it appends to
+// /var/log/images-pull-up.log, and it pulls from GHCR using root's stored
+// credentials. Run as the login user it logs "GHCR: no token — cleared
+// stale creds, using anonymous pull" and then hangs on an anonymous pull of
+// a private image until sshExec's 300s timeout fires — the caller sees a
+// silent stall, no container, and no log. ops_deploy-pull-up.yaml has always
+// invoked it with sudo; this caller was the outlier. Fixed 2026-08-23.
+const PULL_UP_CMD = "sudo /opt/scripts/vm-images-pull-up.sh --manifest /opt/scripts/build-vm.json";
 
 function runPullUp(
   vmNameOrAlias: string,
