@@ -54,3 +54,40 @@ if failures:
 
 print(f"ok: {len(probes)} sizes each land in exactly 1 of {len(size_views)} size views")
 print(f"    boundaries checked: {sorted(bounds)}")
+
+# --- the static/volatile contract the sorter relies on --------------------
+errs = []
+
+for v in views:
+    if "axis" not in v:
+        errs.append(f"view {v['folder']!r} has no 'axis'")
+    if "volatile" not in v:
+        errs.append(f"view {v['folder']!r} has no 'volatile'")
+
+axis = rules["filters"].get("partition_axis")
+if not axis:
+    errs.append("filters.partition_axis is unset -- the sorter would recompute "
+                "static views on every message, every poll")
+else:
+    part = [v for v in views if v.get("axis") == axis]
+    if not part:
+        errs.append(f"partition_axis={axis!r} matches no view")
+    # The sentinel only works if the partition axis is itself static: a volatile
+    # bucket could empty out and make an already-computed message look new.
+    for v in part:
+        if v.get("volatile"):
+            errs.append(f"partition view {v['folder']!r} is volatile -- "
+                        "cannot be used as the static-computed sentinel")
+    if {v["folder"] for v in part} != {v["folder"] for v in size_views}:
+        errs.append(f"partition_axis={axis!r} views disagree with the size views "
+                    "actually probed above")
+
+for e in errs:
+    print(f"FAIL {e}", file=sys.stderr)
+if errs:
+    sys.exit(1)
+
+vol = [v["folder"] for v in views if v.get("volatile")]
+print(f"ok: partition_axis={axis!r} is static and usable as sentinel")
+print(f"    {len(vol)} volatile view(s) recomputed per poll, "
+      f"{len(views) - len(vol)} static computed once: {vol}")

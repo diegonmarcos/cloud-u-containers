@@ -58,17 +58,19 @@
     "_doc": "Dynamic cross-cutting filter views maintained by jmap-sorter each poll over emails in the numeric 1*-9* folders. Multi-mailbox membership only (no copies, no $seen changes); add+remove each poll so time/read windows stay current.",
     "source_folder_regex": "^[0-9]",
     "section_headers": ["A0 _ SIZE", "B0 _ TIME", "C0 _ STATE", "D0 _ ATTACH"],
+    "_axis_doc": "Each view declares its axis and whether it is volatile. A volatile view depends on wall-clock time or read state and must be re-evaluated every poll; a static view is a property of the message itself (size, attachments) and is computed once. The size axis is a PARTITION: its buckets are half-open [lo,hi) and must tile the whole range, so every message lands in exactly one. That invariant is what lets the sorter use size-view membership as the sentinel for 'static views already computed' -- see test_filter_views.py.",
     "views": [
-      {"folder": "Aa    📏 Large (≥10MB)",       "predicate": {"type": "size_min", "bytes": 10485760}},
-      {"folder": "Ab    📏 Medium (1–10MB)",      "predicate": {"type": "size_range", "min": 1048576, "max": 10485760}},
-      {"folder": "Ac    📏 Small (<1MB)",         "predicate": {"type": "size_max", "bytes": 1048576}},
-      {"folder": "Ba    ⏱️ Last 24h",             "predicate": {"type": "newer_than_hours", "hours": 24}},
-      {"folder": "Bc    ⏱️ Last 7 days",          "predicate": {"type": "newer_than_hours", "hours": 168}},
-      {"folder": "Ca    📩 Unread",               "predicate": {"type": "unread"}},
-      {"folder": "Da    📎 With attachments",      "predicate": {"type": "has_attachment"}},
-      {"folder": "Db    📎 PDF",                   "predicate": {"type": "attach_type", "values": ["application/pdf"]}},
-      {"folder": "Dc    📎 Docs",                  "predicate": {"type": "attach_type", "values": ["application/msword","application/vnd.openxmlformats-officedocument.wordprocessingml.document","application/vnd.oasis.opendocument.text","text/plain"]}}
-    ]
+      {"folder": "Aa    📏 Large (≥10MB)",       "axis": "size",   "volatile": false, "predicate": {"type": "size_min", "bytes": 10485760}},
+      {"folder": "Ab    📏 Medium (1–10MB)",      "axis": "size",   "volatile": false, "predicate": {"type": "size_range", "min": 1048576, "max": 10485760}},
+      {"folder": "Ac    📏 Small (<1MB)",         "axis": "size",   "volatile": false, "predicate": {"type": "size_max", "bytes": 1048576}},
+      {"folder": "Ba    ⏱️ Last 24h",             "axis": "time",   "volatile": true,  "predicate": {"type": "newer_than_hours", "hours": 24}},
+      {"folder": "Bc    ⏱️ Last 7 days",          "axis": "time",   "volatile": true,  "predicate": {"type": "newer_than_hours", "hours": 168}},
+      {"folder": "Ca    📩 Unread",               "axis": "state",  "volatile": true,  "predicate": {"type": "unread"}},
+      {"folder": "Da    📎 With attachments",      "axis": "attach", "volatile": false, "predicate": {"type": "has_attachment"}},
+      {"folder": "Db    📎 PDF",                   "axis": "attach", "volatile": false, "predicate": {"type": "attach_type", "values": ["application/pdf"]}},
+      {"folder": "Dc    📎 Docs",                  "axis": "attach", "volatile": false, "predicate": {"type": "attach_type", "values": ["application/msword","application/vnd.openxmlformats-officedocument.wordprocessingml.document","application/vnd.oasis.opendocument.text","text/plain"]}}
+    ],
+    "partition_axis": "size"
   },
   "predicates": {
     "github_any": {

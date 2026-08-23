@@ -1,13 +1,14 @@
 {
   "account": "me@diegonmarcos.com",
+  "delivery_strategy": "unified-inbox",
   "generated_by": "_shared/lib/mail-rules.nix",
   "inbox_copy_flags": [
     "\\Seen"
   ],
-  "routing_default": "Aa    📬 Others (fallback)",
+  "routing_default": "91    📬 Others (fallback)",
   "rules": [
     {
-      "folder": "Ac    🚫 Junk",
+      "folder": "93    🚫 Junk",
       "id": "route.junk.spam_flagged",
       "priority": 30,
       "when": {
