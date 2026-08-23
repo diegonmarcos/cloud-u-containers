@@ -118,11 +118,21 @@ class JMAPClient:
         }, "0"]])
         return resp[0][1]
 
-    def email_query_in(self, mailbox_ids, limit=2000):
+    # JMAP servers cap `limit` server-side, so this is a page size, not a total.
+    PAGE = 500
+
+    def email_query_in(self, mailbox_ids, limit=None):
         """Return the union of email ids that live in ANY of mailbox_ids.
 
         Uses an `inMailboxOtherThan`-free OR filter so Stalwart returns
         every message present in at least one source (numeric 1*-9*) folder.
+
+        Pages until the result set is exhausted. The previous implementation
+        issued a single query with limit=2000 and never read `total`, so once
+        the store grew past 2000 messages it silently sorted a prefix and
+        reported success -- mail simply stopped being filed with no error.
+        `limit` (None = all) is retained as an explicit cap for callers that
+        want one.
         """
         if not mailbox_ids:
             return []
@@ -131,13 +141,35 @@ class JMAPClient:
         else:
             flt = {"operator": "OR",
                    "conditions": [{"inMailbox": m} for m in mailbox_ids]}
-        resp = self.call([["Email/query", {
-            "accountId": self.account_id,
-            "filter": flt,
-            "sort": [{"property": "receivedAt", "isAscending": False}],
-            "limit": limit,
-        }, "0"]])
-        return resp[0][1].get("ids", [])
+
+        ids, position, total = [], 0, None
+        while True:
+            want = self.PAGE if limit is None else min(self.PAGE, limit - len(ids))
+            if want <= 0:
+                break
+            resp = self.call([["Email/query", {
+                "accountId": self.account_id,
+                "filter": flt,
+                "sort": [{"property": "receivedAt", "isAscending": False}],
+                "position": position,
+                "limit": want,
+            }, "0"]])
+            page = resp[0][1].get("ids", [])
+            if total is None:
+                total = resp[0][1].get("total")
+            ids.extend(page)
+            # Short page means we reached the end; empty page guards against a
+            # server that ignores `position` (would otherwise loop forever).
+            if len(page) < want or not page:
+                break
+            position += len(page)
+
+        # Truncation must never be silent again.
+        if limit is not None and total is not None and total > len(ids):
+            logging.warning("Email/query truncated by caller limit: fetched %d of %s", len(ids), total)
+        elif total is not None and total != len(ids):
+            logging.warning("Email/query count mismatch: fetched %d, server total %s", len(ids), total)
+        return ids
 
 
 def ensure_mailboxes(client, rules):
@@ -306,12 +338,17 @@ def _email_matches(em, predicate, now):
     ptype = predicate.get("type")
     size = em.get("size") or 0
 
+    # Size views must tile the axis exactly once. All three are half-open
+    # [lo, hi) so a message on a boundary lands in exactly one bucket.
+    # size_range used to be fully closed, so a message of exactly max bytes
+    # (10485760) matched both "Medium" [1MB,10MB] and "Large" [10MB,inf) and
+    # was filed into two folders.
     if ptype == "size_min":
         return size >= predicate["bytes"]
     if ptype == "size_max":
         return size < predicate["bytes"]
     if ptype == "size_range":
-        return predicate["min"] <= size <= predicate["max"]
+        return predicate["min"] <= size < predicate["max"]
     if ptype == "newer_than_hours":
         ts = _parse_iso8601(em.get("receivedAt"))
         if ts is None:
@@ -394,6 +431,21 @@ def maintain_filters(client, rules, name_to_id, mailboxes):
         return 0
     view_id_set = set(view_ids.values())
 
+    # Static views (size, attachments) are properties of the message and never
+    # change; volatile views (time windows, read state) must be recomputed every
+    # poll. Recomputing all nine for every message on a 30s cycle was mostly
+    # wasted work, and that waste is what made paging the full mailbox costly.
+    volatile_views = [v for v in views if v.get("volatile")]
+
+    # The partition axis tiles its range, so every message sits in exactly one
+    # of its buckets (asserted by test_filter_views.py). Membership of that axis
+    # is therefore a reliable "static views already computed" sentinel, and it
+    # self-heals: a message missing it simply gets recomputed.
+    partition_axis = filters.get("partition_axis")
+    sentinel_ids = {view_ids[v["folder"]] for v in views
+                    if partition_axis and v.get("axis") == partition_axis
+                    and v["folder"] in view_ids}
+
     # 2. Union of emails in any source folder.
     email_ids = client.email_query_in(source_ids)
     if not email_ids:
@@ -401,6 +453,7 @@ def maintain_filters(client, rules, name_to_id, mailboxes):
 
     now = time.time()
     updates = {}
+    n_static = 0
 
     for batch_start in range(0, len(email_ids), BATCH_SIZE):
         batch_ids = email_ids[batch_start:batch_start + BATCH_SIZE]
@@ -413,7 +466,14 @@ def maintain_filters(client, rules, name_to_id, mailboxes):
             current = dict(em.get("mailboxIds") or {})
             desired = dict(current)
 
-            for view in views:
+            # Only compute static views when this message has never had them
+            # (or the sentinel axis isn't deployed, in which case always).
+            needs_static = not sentinel_ids or not (sentinel_ids & set(current))
+            if needs_static:
+                n_static += 1
+            todo = views if needs_static else volatile_views
+
+            for view in todo:
                 vid = view_ids.get(view["folder"])
                 if not vid:
                     continue
@@ -443,7 +503,10 @@ def maintain_filters(client, rules, name_to_id, mailboxes):
                     logging.warning("Filter update failed %s: %s", eid, err)
 
     if total:
-        logging.info("Filter views: updated membership on %d emails", total)
+        logging.info(
+            "Filter views: updated membership on %d emails "
+            "(%d scanned, %d needed static recompute, %d volatile views)",
+            total, len(email_ids), n_static, len(volatile_views))
     return total
 
 
