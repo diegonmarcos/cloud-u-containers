@@ -11,7 +11,7 @@
 set -euo pipefail
 
 HERE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-CANON_DIR="$HERE/../../../aa-sui_tools-stalwart/src"
+CANON_DIR="$HERE/../../../user-comm_tools-stalwart/src"
 GENERAL="$CANON_DIR/mail-rules-general.json"
 PROFILE="$CANON_DIR/mail-rules-profile-diego.json"
 GOLDEN_DIR="$HERE/golden"
