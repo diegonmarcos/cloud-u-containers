@@ -11,7 +11,12 @@ steps:
   - name: gcp-proxy
     command: |
       VM=gcp-proxy; IP=10.0.0.1; USER=diego
-      MANIFEST="/opt/scripts/containers-${VM}.json"
+      # build-vm.json is THIS VM's container manifest, deployed by home-manager.
+      # It was "containers-${VM}.json" until 2026-08-23 — a filename that has
+      # never existed on any VM, so every run silently took the else branch and
+      # rescanned all of /opt/containers/* on all four VMs. Matches the name
+      # c3-infra-api uses in shared/libs/docker.ts PULL_UP_CMD.
+      MANIFEST="/opt/scripts/build-vm.json"
       echo "── Pull + Up: $VM ──"
       ssh $SSH_OPTS ${USER}@${IP} "
         if [ -f $MANIFEST ] && [ -f /opt/scripts/vm-images-pull-up.sh ]; then
@@ -26,7 +31,12 @@ steps:
   - name: oci-mail
     command: |
       VM=oci-mail; IP=10.0.0.3; USER=ubuntu
-      MANIFEST="/opt/scripts/containers-${VM}.json"
+      # build-vm.json is THIS VM's container manifest, deployed by home-manager.
+      # It was "containers-${VM}.json" until 2026-08-23 — a filename that has
+      # never existed on any VM, so every run silently took the else branch and
+      # rescanned all of /opt/containers/* on all four VMs. Matches the name
+      # c3-infra-api uses in shared/libs/docker.ts PULL_UP_CMD.
+      MANIFEST="/opt/scripts/build-vm.json"
       echo "── Pull + Up: $VM ──"
       ssh $SSH_OPTS ${USER}@${IP} "
         if [ -f $MANIFEST ] && [ -f /opt/scripts/vm-images-pull-up.sh ]; then
@@ -41,7 +51,12 @@ steps:
   - name: oci-analytics
     command: |
       VM=oci-analytics; IP=10.0.0.4; USER=ubuntu
-      MANIFEST="/opt/scripts/containers-${VM}.json"
+      # build-vm.json is THIS VM's container manifest, deployed by home-manager.
+      # It was "containers-${VM}.json" until 2026-08-23 — a filename that has
+      # never existed on any VM, so every run silently took the else branch and
+      # rescanned all of /opt/containers/* on all four VMs. Matches the name
+      # c3-infra-api uses in shared/libs/docker.ts PULL_UP_CMD.
+      MANIFEST="/opt/scripts/build-vm.json"
       echo "── Pull + Up: $VM ──"
       ssh $SSH_OPTS ${USER}@${IP} "
         if [ -f $MANIFEST ] && [ -f /opt/scripts/vm-images-pull-up.sh ]; then
@@ -56,7 +71,12 @@ steps:
   - name: oci-apps
     command: |
       VM=oci-apps; IP=10.0.0.6; USER=ubuntu
-      MANIFEST="/opt/scripts/containers-${VM}.json"
+      # build-vm.json is THIS VM's container manifest, deployed by home-manager.
+      # It was "containers-${VM}.json" until 2026-08-23 — a filename that has
+      # never existed on any VM, so every run silently took the else branch and
+      # rescanned all of /opt/containers/* on all four VMs. Matches the name
+      # c3-infra-api uses in shared/libs/docker.ts PULL_UP_CMD.
+      MANIFEST="/opt/scripts/build-vm.json"
       echo "── Pull + Up: $VM ──"
       ssh $SSH_OPTS ${USER}@${IP} "
         if [ -f $MANIFEST ] && [ -f /opt/scripts/vm-images-pull-up.sh ]; then
