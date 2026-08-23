@@ -172,6 +172,37 @@
       "comment": "Route anything flagged by upstream spam engines (Stalwart internal, Gmail/Outlook via mail-puller, SA-style headers) into the unified Junk folder. Runs before all other routes so spam never pollutes category folders."
     },
     {
+      "id": "route.cloud_workflows.github_ci",
+      "kind": "route",
+      "priority": 95,
+      "when": {
+        "any_of": [
+          {
+            "type": "header_contains",
+            "header": "X-GitHub-Reason",
+            "values": [
+              "ci_activity"
+            ]
+          },
+          {
+            "type": "subject_contains",
+            "values": [
+              "Run failed:",
+              "workflow run"
+            ]
+          }
+        ]
+      },
+      "actions": {
+        "copy_to": "cloud_workflows"
+      },
+      "engines": {
+        "stalwart": "route_only",
+        "maddy": "route_only"
+      },
+      "comment": "Folder 14 (cloud_workflows) was declared but unreachable — zero rules targeted it. GitHub Actions/CI notifications share github.com with ordinary GitHub mail, so route on the CI-specific signal (X-GitHub-Reason: ci_activity, or a 'Run failed:'/'workflow run' subject) rather than domain. Priority 95, BEFORE route.dev.code_hosting (100), so CI mail lands in 14 first and everything else still falls through to 31."
+    },
+    {
       "id": "route.dev.code_hosting",
       "kind": "route",
       "priority": 100,
@@ -272,6 +303,101 @@
         "stalwart": "route_only",
         "maddy": "route_only"
       }
+    },
+    {
+      "id": "route.dev.ai_llm",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "mail.anthropic.com",
+          "email.claude.com",
+          "openrouter.ai",
+          "email.openai.com"
+        ]
+      },
+      "actions": {
+        "copy_to": "development"
+      },
+      "engines": {
+        "stalwart": "route_only",
+        "maddy": "route_only"
+      },
+      "comment": "Derived from the live fallback-folder corpus (91 Others): AI/LLM provider senders — mail.anthropic.com (15), openrouter.ai (9), email.openai.com (4), email.claude.com (1)."
+    },
+    {
+      "id": "route.dev.tools_extra",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "unity3d.com",
+          "bitwarden.eu",
+          "sketchfab.com",
+          "updates.resend.com",
+          "notifications.resend.com",
+          "em1.cloudflare.com",
+          "build.coda.io",
+          "verify.proton.me",
+          "sendsafely.com",
+          "techtree.dev"
+        ]
+      },
+      "actions": {
+        "copy_to": "development"
+      },
+      "engines": {
+        "stalwart": "route_only",
+        "maddy": "route_only"
+      },
+      "comment": "Derived from the live fallback-folder corpus (91 Others): dev-tooling/SaaS senders — unity3d.com (7), bitwarden.eu (4), updates.resend.com (3), sketchfab.com (2), notifications.resend.com (1), em1.cloudflare.com (1), build.coda.io (1), verify.proton.me (1), sendsafely.com (1), techtree.dev (1)."
+    },
+    {
+      "id": "route.dev.cloud_infra_extra",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "aws.com",
+          "amazonaws.com",
+          "oracle-mail.com"
+        ]
+      },
+      "actions": {
+        "copy_to": "development"
+      },
+      "engines": {
+        "stalwart": "route_only",
+        "maddy": "route_only"
+      },
+      "comment": "Derived from the live fallback-folder corpus (91 Others): cloud-infra provider senders distinct from the existing 'oracle.com'/'oraclecloud.com' match in route.cloud.providers — oracle-mail.com (3), aws.com (1), amazonaws.com (1)."
+    },
+    {
+      "id": "route.dev.misc",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "omdbapi.com",
+          "outbound.developers.giphy.com",
+          "giphy.com",
+          "hiddenjobs.dev",
+          "openhivelab.com",
+          "hive-open.com"
+        ]
+      },
+      "actions": {
+        "copy_to": "development"
+      },
+      "engines": {
+        "stalwart": "route_only",
+        "maddy": "route_only"
+      },
+      "comment": "Derived from the live fallback-folder corpus (91 Others): misc dev/API senders, one message each — omdbapi.com, outbound.developers.giphy.com, giphy.com, hiddenjobs.dev, openhivelab.com, hive-open.com."
     },
     {
       "id": "tag.dev.github",
@@ -746,6 +872,112 @@
       }
     },
     {
+      "id": "route.lifestyle.housing_rental_de",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "wg-gesucht.de",
+          "nachrichten.immobilienscout24.de",
+          "myplace.de",
+          "kleinanzeigen.de"
+        ]
+      },
+      "actions": {
+        "copy_to": "logistics"
+      },
+      "engines": {
+        "stalwart": "route_only",
+        "maddy": "route_only"
+      },
+      "comment": "Derived from the live fallback-folder corpus (91 Others): German housing/rental listing platforms — wg-gesucht.de (275 msgs), nachrichten.immobilienscout24.de (2), myplace.de (2), kleinanzeigen.de (1)."
+    },
+    {
+      "id": "route.lifestyle.lodging_extra",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "info.hostelworld.com",
+          "email.hostelworld.com",
+          "behappyhostels.com",
+          "sandino-hostel-berlin.de",
+          "wehostelgroup.com",
+          "chekin.com",
+          "sg.booking.com",
+          "property.booking.com",
+          "mews.li",
+          "hotelgest.com",
+          "avirato.com",
+          "siriusfacilities.com",
+          "sensorberg.com"
+        ]
+      },
+      "actions": {
+        "copy_to": "logistics"
+      },
+      "engines": {
+        "stalwart": "route_only",
+        "maddy": "route_only"
+      },
+      "comment": "Derived from the live fallback-folder corpus (91 Others): hostel/lodging sub-domains and hospitality-PMS senders not covered by the exact 'hostelworld.com'/'booking.com' match in route.lifestyle.lodging — info.hostelworld.com (32), email.hostelworld.com (18), behappyhostels.com (6), mews.li (6), sg.booking.com (3), property.booking.com (3), chekin.com (3), sensorberg.com (1), sandino-hostel-berlin.de (1), wehostelgroup.com (1), hotelgest.com (1), avirato.com (1), siriusfacilities.com (2)."
+    },
+    {
+      "id": "route.lifestyle.transport_extra",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "e.alsa.com",
+          "alsa.es",
+          "service.ryanairemail.com",
+          "fin.ryanair.com",
+          "wizzair.com",
+          "trips.mail.flixbus.com",
+          "mail.interrail.eu",
+          "mvg.de",
+          "bvg.de",
+          "news.jelbi.de",
+          "trans.voiapp.io",
+          "clickrent.es",
+          "citystorage.lt"
+        ]
+      },
+      "actions": {
+        "copy_to": "logistics"
+      },
+      "engines": {
+        "stalwart": "route_only",
+        "maddy": "route_only"
+      },
+      "comment": "Derived from the live fallback-folder corpus (91 Others): bus/rail/local-transit/car-rental senders — e.alsa.com (20), alsa.es (16), citystorage.lt (11, trailing-quote extraction artifact stripped), service.ryanairemail.com (5), clickrent.es (5), mvg.de (4), bvg.de (2), wizzair.com (2, trailing-quote artifact stripped), trips.mail.flixbus.com (2), fin.ryanair.com (1), mail.interrail.eu (1), news.jelbi.de (1), trans.voiapp.io (1)."
+    },
+    {
+      "id": "route.lifestyle.travel_misc",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "findacrew.com",
+          "nomadmania.com",
+          "esim.net",
+          "email-support.uber.com"
+        ]
+      },
+      "actions": {
+        "copy_to": "logistics"
+      },
+      "engines": {
+        "stalwart": "route_only",
+        "maddy": "route_only"
+      },
+      "comment": "Derived from the live fallback-folder corpus (91 Others): misc travel-related senders — findacrew.com (33), nomadmania.com (14), esim.net (1), email-support.uber.com (1)."
+    },
+    {
       "id": "route.lifestyle.wellness",
       "kind": "route",
       "priority": 110,
@@ -980,6 +1212,84 @@
       }
     },
     {
+      "id": "route.admin.bank_es",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "emailing.bancosantander-mail.es",
+          "cofidis.es",
+          "s.cofidis.es",
+          "c.cofidis.es",
+          "nordaccount.com"
+        ]
+      },
+      "actions": {
+        "copy_to": "admin",
+        "flags": [
+          "Fin_entity:Bank"
+        ]
+      },
+      "engines": {
+        "stalwart": "route_only",
+        "maddy": "route_only"
+      },
+      "comment": "Derived from the live fallback-folder corpus (91 Others): Spanish banking/consumer-credit senders — emailing.bancosantander-mail.es (29), cofidis.es (9), s.cofidis.es (5), c.cofidis.es (4), nordaccount.com (1)."
+    },
+    {
+      "id": "route.admin.bank_intl",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "btgpactual.com",
+          "tcbs.com.vn",
+          "b3.com.br",
+          "bitpanda.com",
+          "info.bitpanda.com",
+          "getbernstein.com"
+        ]
+      },
+      "actions": {
+        "copy_to": "admin",
+        "flags": [
+          "Fin_entity:Bank"
+        ]
+      },
+      "engines": {
+        "stalwart": "route_only",
+        "maddy": "route_only"
+      },
+      "comment": "Derived from the live fallback-folder corpus (91 Others): international banking/brokerage/exchange senders — btgpactual.com (10), tcbs.com.vn (6), b3.com.br (4), bitpanda.com (2), info.bitpanda.com (1), getbernstein.com (1)."
+    },
+    {
+      "id": "route.admin.telecom_utilities_de",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "congstar.de",
+          "news.congstar.de",
+          "service.congstar.de",
+          "mails.swm.de"
+        ]
+      },
+      "actions": {
+        "copy_to": "admin",
+        "flags": [
+          "Fin_type:Subscription"
+        ]
+      },
+      "engines": {
+        "stalwart": "route_only",
+        "maddy": "route_only"
+      },
+      "comment": "Derived from the live fallback-folder corpus (91 Others): German telecom/utility billing senders — congstar.de (13), news.congstar.de (2), mails.swm.de (2), service.congstar.de (1)."
+    },
+    {
       "id": "tag.admin.gdpr_en",
       "kind": "tag",
       "priority": 220,
@@ -1024,6 +1334,35 @@
         "stalwart": "drop",
         "maddy": "drop"
       }
+    },
+    {
+      "id": "route.government.agencies",
+      "kind": "route",
+      "priority": 96,
+      "when": {
+        "any_of": [
+          {
+            "type": "from_domain_suffix",
+            "values": [
+              ".gov.br"
+            ]
+          },
+          {
+            "type": "from_domain",
+            "values": [
+              "dgt.es"
+            ]
+          }
+        ]
+      },
+      "actions": {
+        "copy_to": "government"
+      },
+      "engines": {
+        "stalwart": "route_only",
+        "maddy": "route_only"
+      },
+      "comment": "Folder 23 (government) was declared but unreachable — zero rules targeted it. Derived from the live fallback-folder corpus: acesso.gov.br (3 msgs, matched via the .gov.br suffix so any Brazilian federal agency subdomain is covered) and dgt.es (2 msgs, exact domain — no other .es gov subdomains observed, so listed explicitly per the task's suffix-else-explicit guidance)."
     },
     {
       "id": "route.info.tech_media",
@@ -1172,6 +1511,58 @@
         "stalwart": "route_only",
         "maddy": "route_only"
       }
+    },
+    {
+      "id": "route.social.platforms_extra",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "mail.instagram.com",
+          "facebookmail.com",
+          "legal.pinterest.com",
+          "account.pinterest.com",
+          "gotinder.com"
+        ]
+      },
+      "actions": {
+        "copy_to": "social",
+        "flags": [
+          "Social_Notification"
+        ]
+      },
+      "engines": {
+        "stalwart": "route_only",
+        "maddy": "route_only"
+      },
+      "comment": "Derived from the live fallback-folder corpus (91 Others): social-platform sub-domains not covered by the exact 'instagram.com'/'facebook.com' match in route.info.social — mail.instagram.com (20), facebookmail.com (4), legal.pinterest.com (4), gotinder.com (3), account.pinterest.com (1)."
+    },
+    {
+      "id": "route.social.lifestyle_extra",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "tidal.com",
+          "info.tidal.com",
+          "c.rituals.com",
+          "s.rituals.com",
+          "rituals.com",
+          "soundiiz.com",
+          "ae.linktr.ee",
+          "decathlon.com"
+        ]
+      },
+      "actions": {
+        "copy_to": "social"
+      },
+      "engines": {
+        "stalwart": "route_only",
+        "maddy": "route_only"
+      },
+      "comment": "Derived from the live fallback-folder corpus (91 Others): media/lifestyle-brand senders — tidal.com (4), c.rituals.com (3), info.tidal.com (2), s.rituals.com (1), rituals.com (1), soundiiz.com (1), ae.linktr.ee (1), decathlon.com (1)."
     },
     {
       "id": "tag.info.promo_en",

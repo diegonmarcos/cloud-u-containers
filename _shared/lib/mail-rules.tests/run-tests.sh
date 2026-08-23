@@ -132,6 +132,24 @@ assert "folders_ui spacing: every parent matches '^AZ X…'" \
 assert "folders_ui: exactly 4 parent UI entries" \
   test "$(jq '.folders_ui | length' "$GENERAL")" = 4
 
+# Folder taxonomy and rule set are two sources of truth that can drift apart
+# silently (14/23 were declared with zero routing rules for a while and
+# nothing caught it). Fail the build if any declared folder — other than the
+# fallback (routing_default) and the manual archive destination — has no
+# rule targeting it anywhere in general+profile.
+UNREACHABLE_FOLDERS="$(jq -nr --slurpfile g "$GENERAL" --slurpfile p "$PROFILE" '
+  ($g[0].folders | to_entries) as $folders
+  | (($g[0].rules + $p[0].rules) | map(select(.kind=="route") | .actions.copy_to) | unique) as $targeted
+  | [ $folders[]
+      | select(.key != $g[0].routing_default and .key != "archive")
+      | .key as $k
+      | select(($targeted | index($k)) | not)
+      | $k ]
+  | join(", ")
+')"
+assert "every non-fallback, non-archive folder is targeted by at least one route rule (unreachable: ${UNREACHABLE_FOLDERS:-none})" \
+  test -z "$UNREACHABLE_FOLDERS"
+
 assert "sieve has inbox-read addflag on routes when inbox_copy.enabled" \
   test "$(grep -c 'addflag "\\\\Seen"' "$TMP/stalwart.sieve")" -gt 0
 
