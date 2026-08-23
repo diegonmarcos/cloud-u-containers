@@ -41,6 +41,15 @@ let
   escapeDollars = builtins.replaceStrings [ "$" ] [ "$$" ];
   # Octocode index wiring (data-driven from build.json.runtime.octocode).
   oct = buildJson.runtime.octocode;
+
+  # ── Private MCP surface (cloud-cgc-pvt-mcp) ────────────────────────────────
+  # Read from build.json, not hardcoded here: the port has to be in the port
+  # registry the derive pipeline builds from `ports`, and the volume name has to
+  # be the same string the restore writes to. Two literals in two files is how
+  # you end up with a private MCP serving an empty volume and nobody noticing.
+  pvtName     = buildJson.containers.pvt.container_name;
+  pvtPort     = buildJson.ports.pvt;
+  pvtDbVolume = oct.pvt_db_volume;
   # Shared body for the one-shot octocode jobs. Two profile-gated variants below
   # differ ONLY in OCTOCODE_CLEAR: `index` = incremental (git-aware, changed files
   # only), `reindex` = forced fresh build (octocode clear + index) that re-runs the
@@ -88,56 +97,144 @@ let
       "${oct.db_volume}:${oct.db_path}"
     ];
   };
+  # ── The MCP service itself, parameterized ──────────────────────────────────
+  # Public and private are the SAME container: same image, same code, same 48
+  # tools. What separates them is the DB VOLUME each is pointed at — octocode
+  # can only answer about the LanceDB tree it can see, so "the private repos'
+  # DBs are simply not in the public volume" is the whole isolation mechanism.
+  # That is deliberately stronger than a tool-subset flag: there is no code path
+  # on the public surface that could leak cloud-data, because the data is not
+  # there to leak. Three values differ; everything else is identical by
+  # construction rather than by two definitions someone has to keep in sync.
+  mcpService = { containerName, port, dbVolume }: {
+    image = binariesImage;
+    container_name = containerName;
+    network_mode = "host";
+    environment = {
+      MCP_TRANSPORT  = "http";
+      MCP_HTTP_PORT  = toString port;
+      MCP_HTTP_HOST  = vmIp;
+      CONFIG_PATH    = "${buildJson.runtime.data_path}/config.json";
+      GIT_ROOT       = buildJson.runtime.git_root;
+      # kg-store SurrealDB — exposed to MCP clients via the cgc.kgstore.* tools
+      # (read-only query of the unified code+infra graph). KG_STORE_PASS arrives
+      # via env_file ".secrets" below.
+      KG_STORE_URL   = oct.kg_store.url;
+      KG_STORE_NS    = oct.kg_store.ns;
+      KG_STORE_DB    = oct.kg_store.db;
+      KG_STORE_USER  = oct.kg_store.user;
+    };
+    env_file = [ ".secrets" ];
+    volumes = [
+      "./data:${buildJson.runtime.data_path}:ro"
+      # Read the FastEmbed/GraphRAG index + cloned repos maintained by the Dagu
+      # octocode-reindex DAG. GIT_ROOT (=oct.repos_path) makes the MCP's octocode
+      # query path match the DAG's index path, so the LanceDB project-hash resolves.
+      "${oct.repos_volume}:${oct.repos_path}:ro"
+      # NOT :ro, however much we would like it to be. `octocode search` and
+      # `octocode graphrag` open the queried repo's LanceDB project dir
+      # read-write even for a pure read, so with a :ro mount EVERY tool call
+      # died with "Error: Read-only file system (os error 30)" the moment it
+      # had a real repo as its CWD. Measured both ways on oci-apps:
+      #   :ro + cd /repos/cloud-infra -> os error 30
+      #   rw  + cd /repos/cloud-infra -> query runs
+      # The repos mount above stays :ro — that one octocode never writes to.
+      # Drift is not a worry: this volume is disposable, rebuilt wholesale by
+      # cloud-cgc-db-restore-all.sh from the per-repo GHCR images.
+      "${dbVolume}:${oct.db_path}"
+    ];
+    healthcheck = {
+      test = [
+        "CMD" "node" "-e"
+        "fetch('http://${vmIp}:${toString port}${app.healthcheck}').catch(()=>process.exit(1))"
+      ];
+      interval     = "30s";
+      timeout      = "10s";
+      retries      = 3;
+      start_period = "15s";
+    };
+  };
+
+  # ── Multi-image DB restore, parameterized ──────────────────────────────────
+  # One definition, two targets. The public restore filters the private repos
+  # out (CGC_INCLUDE_PRIVATE=0 + CGC_PRIVATE_REPOS); the private one takes the
+  # lot. Splitting these into two hand-written services is how the two would
+  # drift until one day the public one stopped filtering.
+  restoreMultiService = { containerName, profile, targetVolume, includePrivate }: {
+    image = "docker:cli";
+    container_name = containerName;
+    profiles = [ profile ];
+    restart = "no";
+    # Host networking, exactly like the app and octocodeJob above. This service
+    # runs `docker manifest inspect` INSIDE the container, and that is a CLI-side
+    # registry call made over the CONTAINER's network namespace — unlike `docker
+    # pull`, which the daemon performs on the host and which therefore worked
+    # fine here all along. On a compose bridge network Docker forces its embedded
+    # resolver at 127.0.0.11, which forwards to the configured dns
+    # [10.0.0.1, 1.1.1.1]; 10.0.0.1 is the WireGuard mesh resolver and is not
+    # routable from a bridge namespace, so every lookup stalls:
+    #   lookup ghcr.io on 127.0.0.11:53: i/o timeout
+    # restore-all.sh discards that probe's stderr, so it surfaced as the deeply
+    # misleading "base image not found on GHCR" and aborted the entire restore
+    # on a box that pulls from ghcr.io all day. Do not drop this back to bridge:
+    # the app escapes the bug only because it is host-networked too.
+    network_mode = "host";
+    environment = {
+      CGC_DB_IMAGE_PREFIX = perRepoImagePrefix;
+      CGC_DB_BASE_IMAGE = perRepoBaseImage;
+      CGC_DB_TAG = perRepoTag;
+      CGC_INDEX_REPOS = toString oct.index_repos;
+      # This container has no build.json, so the private list cannot be read
+      # from there — pass it explicitly. Without it the restore's public/private
+      # filter has nothing to filter on and a private repo's DB would be
+      # extracted into the volume the PUBLIC MCP serves. Today a second guard
+      # also holds (oci-apps has no ghcr.io credentials, so a private package
+      # is unpullable there), but that one is invisible and one `docker login`
+      # away from gone; this is the declared one.
+      CGC_PRIVATE_REPOS = toString oct.private_repos;
+      # The name of the PUBLIC volume, passed unconditionally. This container has
+      # no build.json, so the CGC_INCLUDE_PRIVATE guard in
+      # cloud-cgc-db-restore-all.sh cannot look it up and — by design — refuses
+      # rather than guessing. Passing it here is what lets the private restore
+      # prove it is not writing into the volume the public MCP serves.
+      CGC_PUBLIC_DB_VOLUME = oct.db_volume;
+      CGC_INCLUDE_PRIVATE = includePrivate;
+      CGC_DB_TARGET_VOLUME = targetVolume;
+      # The uid:gid cloud-cgc-pub-mcp runs as — the binaries image's USER
+      # (appuser). The restore extracts the GHCR images as whoever invoked it
+      # (root here, uid 1001 over the oci-apps SSH path), so without this the
+      # DB lands owned by the wrong user and octocode dies with "Permission
+      # denied (os error 13)" — it opens the queried project dir read-write.
+      CGC_DB_OWNER = "10001:999";
+    };
+    volumes = [ "/var/run/docker.sock:/var/run/docker.sock" ];
+    entrypoint = [ "sh" "-c" ''
+      cat > /tmp/cloud-cgc-db-restore-all.sh <<'CGC_RESTORE_ALL_EOF_9f3a1b'
+      ${escapeDollars (builtins.readFile ../../../1_cicd/src/ops/cloud-cgc-db-restore-all.sh)}
+      CGC_RESTORE_ALL_EOF_9f3a1b
+      sh /tmp/cloud-cgc-db-restore-all.sh
+    '' ];
+  };
+
 in
 {
   services = {
-    cloud-cgc-pub-mcp = {
-      image = binariesImage;
-      container_name = app.container_name;
-      network_mode = "host";
-      environment = {
-        MCP_TRANSPORT  = "http";
-        MCP_HTTP_PORT  = toString buildJson.ports.app;
-        MCP_HTTP_HOST  = vmIp;
-        CONFIG_PATH    = "${buildJson.runtime.data_path}/config.json";
-        GIT_ROOT       = buildJson.runtime.git_root;
-        # kg-store SurrealDB — exposed to MCP clients via the cgc.kgstore.* tools
-        # (read-only query of the unified code+infra graph). KG_STORE_PASS arrives
-        # via env_file ".secrets" below.
-        KG_STORE_URL   = oct.kg_store.url;
-        KG_STORE_NS    = oct.kg_store.ns;
-        KG_STORE_DB    = oct.kg_store.db;
-        KG_STORE_USER  = oct.kg_store.user;
-      };
-      env_file = [ ".secrets" ];
-      volumes = [
-        "./data:${buildJson.runtime.data_path}:ro"
-        # Read the FastEmbed/GraphRAG index + cloned repos maintained by the Dagu
-        # octocode-reindex DAG. GIT_ROOT (=oct.repos_path) makes the MCP's octocode
-        # query path match the DAG's index path, so the LanceDB project-hash resolves.
-        "${oct.repos_volume}:${oct.repos_path}:ro"
-        # NOT :ro, however much we would like it to be. `octocode search` and
-        # `octocode graphrag` open the queried repo's LanceDB project dir
-        # read-write even for a pure read, so with a :ro mount EVERY tool call
-        # died with "Error: Read-only file system (os error 30)" the moment it
-        # had a real repo as its CWD. Measured both ways on oci-apps:
-        #   :ro + cd /repos/cloud-infra -> os error 30
-        #   rw  + cd /repos/cloud-infra -> query runs
-        # The repos mount above stays :ro — that one octocode never writes to.
-        # Drift is not a worry: this volume is disposable, rebuilt wholesale by
-        # cloud-cgc-db-restore-all.sh from the per-repo GHCR images.
-        "${oct.db_volume}:${oct.db_path}"
-      ];
-      healthcheck = {
-        test = [
-          "CMD" "node" "-e"
-          "fetch('http://${vmIp}:${toString buildJson.ports.app}${app.healthcheck}').catch(()=>process.exit(1))"
-        ];
-        interval     = "30s";
-        timeout      = "10s";
-        retries      = 3;
-        start_period = "15s";
-      };
+    cloud-cgc-pub-mcp = mcpService {
+      containerName = app.container_name;
+      port          = buildJson.ports.app;
+      dbVolume      = oct.db_volume;
+    };
+
+    # ── Private surface (mesh-only) ────────────────────────────────────────────
+    # No Caddy route, no DNS record, no public port: host-networked on the WG IP,
+    # so it answers at ${vmIp}:${toString pvtPort} from inside the mesh and is
+    # unreachable from anywhere else. That is why build.json declares it
+    # public=false / proxy=null — a private index must not acquire a public
+    # hostname by accident the way an app_hub entry would give it one.
+    ${pvtName} = mcpService {
+      containerName = pvtName;
+      port          = pvtPort;
+      dbVolume      = pvtDbVolume;
     };
 
     # ── DB restore (profile-gated; NOT auto-started) ────────────────────────────
@@ -189,53 +286,23 @@ in
     # daemon's already-established login, and CGC_DB_TARGET_VOLUME routes the
     # final swap through a throwaway container instead of a raw host path —
     # this container's own filesystem is otherwise irrelevant to the restore.
-    cloud-cgc-pub-mcp-db-restore-multi = {
-      image = "docker:cli";
-      container_name = "cloud-cgc-pub-mcp-db-restore-multi";
-      profiles = [ "restore-multi" ];
-      restart = "no";
-      # Host networking, exactly like the app and octocodeJob above. This service
-      # runs `docker manifest inspect` INSIDE the container, and that is a CLI-side
-      # registry call made over the CONTAINER's network namespace — unlike `docker
-      # pull`, which the daemon performs on the host and which therefore worked
-      # fine here all along. On a compose bridge network Docker forces its embedded
-      # resolver at 127.0.0.11, which forwards to the configured dns
-      # [10.0.0.1, 1.1.1.1]; 10.0.0.1 is the WireGuard mesh resolver and is not
-      # routable from a bridge namespace, so every lookup stalls:
-      #   lookup ghcr.io on 127.0.0.11:53: i/o timeout
-      # restore-all.sh discards that probe's stderr, so it surfaced as the deeply
-      # misleading "base image not found on GHCR" and aborted the entire restore
-      # on a box that pulls from ghcr.io all day. Do not drop this back to bridge:
-      # the app escapes the bug only because it is host-networked too.
-      network_mode = "host";
-      environment = {
-        CGC_DB_IMAGE_PREFIX = perRepoImagePrefix;
-        CGC_DB_BASE_IMAGE = perRepoBaseImage;
-        CGC_DB_TAG = perRepoTag;
-        CGC_INDEX_REPOS = toString oct.index_repos;
-        # This container has no build.json, so the private list cannot be read
-        # from there — pass it explicitly. Without it the restore's public/private
-        # filter has nothing to filter on and a private repo's DB would be
-        # extracted into the volume the PUBLIC MCP serves. Today a second guard
-        # also holds (oci-apps has no ghcr.io credentials, so a private package
-        # is unpullable there), but that one is invisible and one `docker login`
-        # away from gone; this is the declared one.
-        CGC_PRIVATE_REPOS = toString oct.private_repos;
-        CGC_DB_TARGET_VOLUME = oct.db_volume;
-        # The uid:gid cloud-cgc-pub-mcp runs as — the binaries image's USER
-        # (appuser). The restore extracts the GHCR images as whoever invoked it
-        # (root here, uid 1001 over the oci-apps SSH path), so without this the
-        # DB lands owned by the wrong user and octocode dies with "Permission
-        # denied (os error 13)" — it opens the queried project dir read-write.
-        CGC_DB_OWNER = "10001:999";
-      };
-      volumes = [ "/var/run/docker.sock:/var/run/docker.sock" ];
-      entrypoint = [ "sh" "-c" ''
-        cat > /tmp/cloud-cgc-db-restore-all.sh <<'CGC_RESTORE_ALL_EOF_9f3a1b'
-        ${escapeDollars (builtins.readFile ../../../1_cicd/src/ops/cloud-cgc-db-restore-all.sh)}
-        CGC_RESTORE_ALL_EOF_9f3a1b
-        sh /tmp/cloud-cgc-db-restore-all.sh
-      '' ];
+    cloud-cgc-pub-mcp-db-restore-multi = restoreMultiService {
+      containerName  = "cloud-cgc-pub-mcp-db-restore-multi";
+      profile        = "restore-multi";
+      targetVolume   = oct.db_volume;
+      includePrivate = "0";
+    };
+
+    # Same restore, private target. CGC_INCLUDE_PRIVATE=1 disables the
+    # public/private filter, and the script REQUIRES it be paired with a
+    # CGC_DB_TARGET_VOLUME that is not the public one — see the guard at the top
+    # of cloud-cgc-db-restore-all.sh. The pvt volume is a superset: every repo,
+    # public and private, so the private surface answers about everything.
+    "${pvtName}-db-restore-multi" = restoreMultiService {
+      containerName  = "${pvtName}-db-restore-multi";
+      profile        = "restore-multi-pvt";
+      targetVolume   = pvtDbVolume;
+      includePrivate = "1";
     };
 
     # ── One-shot octocode jobs (profile-gated; never start on `compose up`) ──────
@@ -270,5 +337,7 @@ in
   volumes = {
     "${oct.repos_volume}" = { name = oct.repos_volume; };
     "${oct.db_volume}" = { name = oct.db_volume; };
+    # Private surface's own volume. NEVER the same name as db_volume.
+    "${pvtDbVolume}" = { name = pvtDbVolume; };
   };
 }
