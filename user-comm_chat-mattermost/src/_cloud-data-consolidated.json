@@ -5470,7 +5470,7 @@
             "cloud-data": "cloud-data",
             "front-data": "front-data",
             "cloud-android": "cloud-android",
-            "cloud-my-ai_memory": "cloud-my-ai_memory"
+            "cloud-my-ai_memory": "my-ai_memory"
           },
           "_graphrag_skip_comment": "Subset of index_repos (data-driven, no hardcoded names in the script) whose GraphRAG LLM relationship pass is skipped entirely — pure prose/text corpora have no code semantics to relate, so the pass is zero graph nodes for real per-node LLM cost. Structural/FastEmbed indexing (the semantic phase, USE_LLM=false) still runs normally; only the graphrag phase (USE_LLM=true) skips these repos. Honored by cloud-cgc-db-update.sh's per-repo loop.",
           "graphrag_skip": [
@@ -8988,7 +8988,7 @@
     "_dangling_declarations": [
       {
         "kind": "octocode-index",
-        "repo": "cloud-my-ai_memory",
+        "repo": "my-ai_memory",
         "declared_by": "cloud-cgc-pub-mcp"
       }
     ],
