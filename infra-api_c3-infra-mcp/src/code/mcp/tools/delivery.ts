@@ -310,6 +310,78 @@ export function registerDeliveryTools(server: McpServer) {
     }
   );
 
+  server.tool(
+    "devops.repo.rename",
+    "Rename a GitHub repository via the gh CLI (owner unchanged). GitHub keeps a permanent-ish redirect from the old name.",
+    {
+      repo: z.string().describe("Existing repo as owner/name, e.g. diegonmarcos/my-ai_memory"),
+      newName: z.string().describe("New repository name only (not owner/name)"),
+      dryRun: z.boolean().optional().describe("Print the gh command without running it (default: false)"),
+    },
+    async ({ repo, newName, dryRun }) => {
+      for (const part of repo.split("/")) validatePath(part);
+      validatePath(newName);
+
+      const args = ["repo", "rename", newName, "-R", repo, "--yes"];
+      if (dryRun) {
+        return { content: [{ type: "text" as const, text: `DRY RUN: gh ${args.join(" ")}` }] };
+      }
+
+      const result = exec("gh", args, { timeout: 30_000 });
+      audit("devops.repo.rename", `${repo} -> ${newName}`, result.ok ? "OK" : `FAILED (exit ${result.exitCode})`);
+
+      return {
+        content: [{
+          type: "text" as const,
+          text: [
+            `Rename ${repo} -> ${newName}: ${result.ok ? "SUCCESS" : "FAILED"}`,
+            `Exit code: ${result.exitCode}`,
+            result.stdout ? `\n--- stdout ---\n${result.stdout.slice(-2000)}` : "",
+            result.stderr ? `\n--- stderr ---\n${result.stderr.slice(-2000)}` : "",
+          ].join("\n"),
+        }],
+        isError: !result.ok,
+      };
+    }
+  );
+
+  server.tool(
+    "devops.repo.delete_branch",
+    "Delete a branch (git ref) from a GitHub repository via the gh API. Irreversible for the ref; commits survive if merged elsewhere.",
+    {
+      repo: z.string().describe("owner/name, e.g. diegonmarcos/cloud"),
+      branch: z.string().describe("Branch name to delete, e.g. feature/foo (may contain slashes)"),
+      dryRun: z.boolean().optional().describe("Print the gh command without running it (default: false)"),
+    },
+    async ({ repo, branch, dryRun }) => {
+      for (const part of repo.split("/")) validatePath(part);
+      // branch names legitimately contain '/', so validate each path segment
+      for (const part of branch.split("/")) validatePath(part);
+
+      const ref = `/repos/${repo}/git/refs/heads/${branch}`;
+      const args = ["api", "--method", "DELETE", ref];
+      if (dryRun) {
+        return { content: [{ type: "text" as const, text: `DRY RUN: gh ${args.join(" ")}` }] };
+      }
+
+      const result = exec("gh", args, { timeout: 30_000 });
+      audit("devops.repo.delete_branch", `${repo}#${branch}`, result.ok ? "OK" : `FAILED (exit ${result.exitCode})`);
+
+      return {
+        content: [{
+          type: "text" as const,
+          text: [
+            `Delete branch ${repo}#${branch}: ${result.ok ? "SUCCESS" : "FAILED"}`,
+            `Exit code: ${result.exitCode}`,
+            result.stdout ? `\n--- stdout ---\n${result.stdout.slice(-2000)}` : "",
+            result.stderr ? `\n--- stderr ---\n${result.stderr.slice(-2000)}` : "",
+          ].join("\n"),
+        }],
+        isError: !result.ok,
+      };
+    }
+  );
+
   // ── GitHub Actions secrets (3 tools) ──
   // These are the *GHA* secrets a workflow reads via ${{ secrets.NAME }} — a
   // different store from the sops-encrypted service secrets that
