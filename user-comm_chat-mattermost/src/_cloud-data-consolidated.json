@@ -455,6 +455,13 @@
           "wg_ipv6": "fd0c:1d00::201",
           "role": "client",
           "wg_public_key": "VeUK6t5/oXQiACcqXgCGkzLZlP2iBTgPghhhwFADViQ="
+        },
+        "vault-backup": {
+          "wg_ip": "10.0.0.202",
+          "wg_ipv6": "fd0c:1d00::202",
+          "role": "client",
+          "_doc": "Dedicated peer slot for the cloud-vault vault-db-backup workflow. Kept separate from gha-runner so a nightly backup never contends with a ship run for a peer slot. Private key lives in cloud-vault A0_keys/providers/wireguard/vault-backup/ and as the WG_PRIVATE_KEY secret on diegonmarcos/cloud-vault.",
+          "wg_public_key": "fHazadZ/yx10SiXGM258eBUssabuIz7hwXwBpv+FDE0="
         }
       }
     },
