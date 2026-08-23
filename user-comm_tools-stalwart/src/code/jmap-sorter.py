@@ -431,6 +431,21 @@ def maintain_filters(client, rules, name_to_id, mailboxes):
         return 0
     view_id_set = set(view_ids.values())
 
+    # Static views (size, attachments) are properties of the message and never
+    # change; volatile views (time windows, read state) must be recomputed every
+    # poll. Recomputing all nine for every message on a 30s cycle was mostly
+    # wasted work, and that waste is what made paging the full mailbox costly.
+    volatile_views = [v for v in views if v.get("volatile")]
+
+    # The partition axis tiles its range, so every message sits in exactly one
+    # of its buckets (asserted by test_filter_views.py). Membership of that axis
+    # is therefore a reliable "static views already computed" sentinel, and it
+    # self-heals: a message missing it simply gets recomputed.
+    partition_axis = filters.get("partition_axis")
+    sentinel_ids = {view_ids[v["folder"]] for v in views
+                    if partition_axis and v.get("axis") == partition_axis
+                    and v["folder"] in view_ids}
+
     # 2. Union of emails in any source folder.
     email_ids = client.email_query_in(source_ids)
     if not email_ids:
@@ -438,6 +453,7 @@ def maintain_filters(client, rules, name_to_id, mailboxes):
 
     now = time.time()
     updates = {}
+    n_static = 0
 
     for batch_start in range(0, len(email_ids), BATCH_SIZE):
         batch_ids = email_ids[batch_start:batch_start + BATCH_SIZE]
@@ -450,7 +466,14 @@ def maintain_filters(client, rules, name_to_id, mailboxes):
             current = dict(em.get("mailboxIds") or {})
             desired = dict(current)
 
-            for view in views:
+            # Only compute static views when this message has never had them
+            # (or the sentinel axis isn't deployed, in which case always).
+            needs_static = not sentinel_ids or not (sentinel_ids & set(current))
+            if needs_static:
+                n_static += 1
+            todo = views if needs_static else volatile_views
+
+            for view in todo:
                 vid = view_ids.get(view["folder"])
                 if not vid:
                     continue
@@ -480,7 +503,10 @@ def maintain_filters(client, rules, name_to_id, mailboxes):
                     logging.warning("Filter update failed %s: %s", eid, err)
 
     if total:
-        logging.info("Filter views: updated membership on %d emails", total)
+        logging.info(
+            "Filter views: updated membership on %d emails "
+            "(%d scanned, %d needed static recompute, %d volatile views)",
+            total, len(email_ids), n_static, len(volatile_views))
     return total
 
 
