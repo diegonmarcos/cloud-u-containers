@@ -37,6 +37,12 @@ in
         SHOW_PASSWORD_HINT  = "false";
         WEBSOCKET_ENABLED   = "true";
         LOG_LEVEL           = "warn";
+        # Advertise no client feature flags in /api/config. Vaultwarden's default
+        # list announces pm-19148-innovation-archive, but this build does not emit
+        # the archivedDate field on ciphers — so Bitwarden Android 2026.7.1 synced
+        # all 1256 items (HTTP 200) and then filtered every one of them out of the
+        # vault list. Empty = client falls back to pre-archive behaviour.
+        EXPERIMENTAL_CLIENT_FEATURE_FLAGS = "";
         SMTP_HOST           = svc.maddy.ip;
         SMTP_PORT           = toString svc.maddy.ports.smtp;
         SMTP_FROM           = "noreply@${base_domain}";
