@@ -26,7 +26,6 @@ steps:
       done
       MSG=$(echo -e "Daily Connection Report ($TODAY):\n\n${REPORT}Inspect:\n  ssh <user>@<ip> 'journalctl -u ssh --since yesterday'\n  ssh <user>@<ip> 'last -20'\n  ssh <user>@<ip> 'ss -tunap'\n\nDagu: https://workflows.diegonmarcos.com")
       curl -s -X POST "$NTFY_URL/sec_connections" \
-        -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
         -H "Title: Daily Connection Report" \
         -H "Priority: 2" \
         -H "Tags: key,shield" \

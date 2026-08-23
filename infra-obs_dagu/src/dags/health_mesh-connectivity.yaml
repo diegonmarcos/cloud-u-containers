@@ -44,7 +44,6 @@ steps:
         rm -f /tmp/mesh-failed.$$
         MSG=$(printf "Unreachable peers:\n%s\n\nAction:\n  ssh <vm> 'wg show'\n  ssh <vm> 'systemctl status wg-quick@wg0'\n\nDagu: https://workflows.diegonmarcos.com" "$FAILED")
         curl -s -X POST "$NTFY_URL/health_mesh" \
-          -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
           -H "Title: Mesh Health FAILED" \
           -H "Priority: 5" \
           -H "Tags: rotating_light" \
