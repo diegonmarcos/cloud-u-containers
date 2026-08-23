@@ -118,11 +118,21 @@ class JMAPClient:
         }, "0"]])
         return resp[0][1]
 
-    def email_query_in(self, mailbox_ids, limit=2000):
+    # JMAP servers cap `limit` server-side, so this is a page size, not a total.
+    PAGE = 500
+
+    def email_query_in(self, mailbox_ids, limit=None):
         """Return the union of email ids that live in ANY of mailbox_ids.
 
         Uses an `inMailboxOtherThan`-free OR filter so Stalwart returns
         every message present in at least one source (numeric 1*-9*) folder.
+
+        Pages until the result set is exhausted. The previous implementation
+        issued a single query with limit=2000 and never read `total`, so once
+        the store grew past 2000 messages it silently sorted a prefix and
+        reported success -- mail simply stopped being filed with no error.
+        `limit` (None = all) is retained as an explicit cap for callers that
+        want one.
         """
         if not mailbox_ids:
             return []
@@ -131,13 +141,35 @@ class JMAPClient:
         else:
             flt = {"operator": "OR",
                    "conditions": [{"inMailbox": m} for m in mailbox_ids]}
-        resp = self.call([["Email/query", {
-            "accountId": self.account_id,
-            "filter": flt,
-            "sort": [{"property": "receivedAt", "isAscending": False}],
-            "limit": limit,
-        }, "0"]])
-        return resp[0][1].get("ids", [])
+
+        ids, position, total = [], 0, None
+        while True:
+            want = self.PAGE if limit is None else min(self.PAGE, limit - len(ids))
+            if want <= 0:
+                break
+            resp = self.call([["Email/query", {
+                "accountId": self.account_id,
+                "filter": flt,
+                "sort": [{"property": "receivedAt", "isAscending": False}],
+                "position": position,
+                "limit": want,
+            }, "0"]])
+            page = resp[0][1].get("ids", [])
+            if total is None:
+                total = resp[0][1].get("total")
+            ids.extend(page)
+            # Short page means we reached the end; empty page guards against a
+            # server that ignores `position` (would otherwise loop forever).
+            if len(page) < want or not page:
+                break
+            position += len(page)
+
+        # Truncation must never be silent again.
+        if limit is not None and total is not None and total > len(ids):
+            logging.warning("Email/query truncated by caller limit: fetched %d of %s", len(ids), total)
+        elif total is not None and total != len(ids):
+            logging.warning("Email/query count mismatch: fetched %d, server total %s", len(ids), total)
+        return ids
 
 
 def ensure_mailboxes(client, rules):
@@ -306,12 +338,17 @@ def _email_matches(em, predicate, now):
     ptype = predicate.get("type")
     size = em.get("size") or 0
 
+    # Size views must tile the axis exactly once. All three are half-open
+    # [lo, hi) so a message on a boundary lands in exactly one bucket.
+    # size_range used to be fully closed, so a message of exactly max bytes
+    # (10485760) matched both "Medium" [1MB,10MB] and "Large" [10MB,inf) and
+    # was filed into two folders.
     if ptype == "size_min":
         return size >= predicate["bytes"]
     if ptype == "size_max":
         return size < predicate["bytes"]
     if ptype == "size_range":
-        return predicate["min"] <= size <= predicate["max"]
+        return predicate["min"] <= size < predicate["max"]
     if ptype == "newer_than_hours":
         ts = _parse_iso8601(em.get("receivedAt"))
         if ts is None:
