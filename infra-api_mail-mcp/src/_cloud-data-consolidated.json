@@ -5509,7 +5509,7 @@
         "mcp_url": null,
         "transport": "streamable-http",
         "endpoint_path": "/mcp",
-        "tools_count": 48,
+        "tools_count": 16,
         "resources_count": 2,
         "prompts_count": 0,
         "display_name": "Cloud CGC Pub MCP",
