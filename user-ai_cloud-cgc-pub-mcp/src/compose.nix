@@ -213,6 +213,14 @@ in
         CGC_DB_BASE_IMAGE = perRepoBaseImage;
         CGC_DB_TAG = perRepoTag;
         CGC_INDEX_REPOS = toString oct.index_repos;
+        # This container has no build.json, so the private list cannot be read
+        # from there — pass it explicitly. Without it the restore's public/private
+        # filter has nothing to filter on and a private repo's DB would be
+        # extracted into the volume the PUBLIC MCP serves. Today a second guard
+        # also holds (oci-apps has no ghcr.io credentials, so a private package
+        # is unpullable there), but that one is invisible and one `docker login`
+        # away from gone; this is the declared one.
+        CGC_PRIVATE_REPOS = toString oct.private_repos;
         CGC_DB_TARGET_VOLUME = oct.db_volume;
         # The uid:gid cloud-cgc-pub-mcp runs as — the binaries image's USER
         # (appuser). The restore extracts the GHCR images as whoever invoked it
