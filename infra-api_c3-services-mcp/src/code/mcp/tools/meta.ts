@@ -230,7 +230,7 @@ const PROXIED_MCPS: Set<string> = new Set([
 ]);
 const SELF_SERVICES: Set<string> = new Set([
   "c3-services-mcp", "c3-services-api", "c3-infra-mcp", "c3-infra-api",
-  "c3-diego-personal-data-mcp",
+  "cloud-vault-mcp",
 ]);
 const INFRA_NO_API: Set<string> = new Set([
   "caddy", "caddy-l4-image", "hickory-dns", "introspect-proxy",

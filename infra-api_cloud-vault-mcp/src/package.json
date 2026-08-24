@@ -1,7 +1,7 @@
 {
-  "name": "c3-diego-personal-data-mcp",
+  "name": "cloud-vault-mcp",
   "version": "1.0.0",
-  "description": "MCP stdio server — Diego's personal data (READ-ONLY, redacted)",
+  "description": "MCP stdio server — cloud-vault personal data (READ-ONLY, redacted)",
   "type": "module",
   "scripts": {
     "start": "tsx index.ts"

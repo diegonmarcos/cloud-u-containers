@@ -32,7 +32,7 @@ const PROXIED_MCPS: Set<string> = new Set([
 // ── Self (this service + siblings that ARE the MCP hub) ─────────────────
 const SELF_SERVICES: Set<string> = new Set([
   "c3-services-mcp", "c3-services-api", "c3-infra-mcp", "c3-infra-api",
-  "c3-diego-personal-data-mcp",
+  "cloud-vault-mcp",
 ]);
 
 // ── Infrastructure / no-API services ────────────────────────────────────

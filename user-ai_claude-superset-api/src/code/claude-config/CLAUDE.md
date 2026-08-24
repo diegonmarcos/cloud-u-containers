@@ -573,9 +573,9 @@ rpm -qR <package>           # RPM-based
 | `cloud://context/compact` | ~10k token infrastructure summary |
 | `cloud://context/full` | ~50k token full infrastructure context |
 
-## MCP: diego-personal-data (stdio, local vault/personal data)
+## MCP: cloud-vault-mcp (stdio, local vault/personal data)
 
-**Source**: `~/git/cloud-infra/a_solutions/ca-dat_c3-diego-personal-data-mcp/src/` · **16 tools, READ-ONLY**
+**Source**: `~/git/cloud-infra/a_solutions/infra-api_cloud-vault-mcp/src/` · **16 tools, READ-ONLY**
 
 | Category | Tools |
 |----------|-------|

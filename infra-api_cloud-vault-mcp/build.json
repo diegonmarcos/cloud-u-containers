@@ -1,5 +1,5 @@
 {
-  "name": "c3-diego-personal-data-mcp",
+  "name": "cloud-vault-mcp",
   "description": "MCP server — READ-ONLY personal data access (vault metadata, identity, comms, media, finance, health)",
   "category": "data",
   "build": {
@@ -10,7 +10,7 @@
     "tools_count": 17,
     "resources_count": 0,
     "prompts_count": 0,
-    "display_name": "Diego Personal Data MCP",
+    "display_name": "Cloud Vault MCP",
     "description": "READ-ONLY personal data access: vault metadata, identity docs, communications, media, finance, health (redacted).",
     "auth": "none",
     "sdk": "@modelcontextprotocol/sdk@^1.12.0"
