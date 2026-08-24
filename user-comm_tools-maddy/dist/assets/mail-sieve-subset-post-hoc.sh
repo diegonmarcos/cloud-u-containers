@@ -69,6 +69,7 @@ DB="${IMAPSQL_DB:-/data/imapsql.db}"
 RULES="${RULES_PATH:-/data/mail-rules.json}"
 BLOB_DIR="${BLOB_DIR:-/data/messages}"
 DRY_RUN=0
+PRUNE_FALLBACK="${PRUNE_FALLBACK:-0}"
 
 log()  { printf '[post-hoc] %s\n' "$*" >&2; }
 err()  { printf '[post-hoc] ERROR: %s\n' "$*" >&2; }
@@ -91,6 +92,13 @@ Subcommands:
                          (NOT MOVE) into the matched category folder with
                          rule-derived keyword flags but no \\Seen. INBOX
                          retains every original (marked \\Seen + \$distributed).
+                         Idempotent per-target-mailbox copy (never duplicates
+                         a body already filed in the target). Detects
+                         mail-rules.json changes (state file next to \$DB) and
+                         re-opens fallback-only messages for re-evaluation.
+                         --prune-fallback (default OFF; also PRUNE_FALLBACK=1)
+                         deletes the redundant fallback copy of a message
+                         just filed into a real category folder this run.
   reseed-inbox-archive   One-shot history backfill: COPY every msg from non-
                          system folders (Sent/Drafts/Trash/Junk excluded) into
                          INBOX as \\Seen + \$distributed, deduped by Message-Id.
@@ -101,12 +109,16 @@ Subcommands:
 
 Flags:
   --dry-run            Report intended changes, write nothing.
+  --prune-fallback     apply-rules only, default OFF: delete the redundant
+                       fallback copy of a message just filed into a real
+                       category folder this run.
 
 Env:
   IMAPSQL_DB           default: /data/imapsql.db
   RULES_PATH           default: /data/mail-rules.json
   BLOB_DIR             default: /data/messages
   FILTER_BIN           default: /usr/local/bin/mail-sieve-subset-delivery-time
+  PRUNE_FALLBACK       default: 0 — same as --prune-fallback
 EOF
 }
 
@@ -115,6 +127,7 @@ SUBCMD=""
 for arg in "$@"; do
   case "$arg" in
     --dry-run) DRY_RUN=1 ;;
+    --prune-fallback) PRUNE_FALLBACK=1 ;;
     -h|--help) usage; exit 0 ;;
     -*) fail "unknown flag: $arg" ;;
     *)  [ -z "$SUBCMD" ] && SUBCMD="$arg" || fail "unknown arg: $arg" ;;
@@ -132,6 +145,14 @@ backup_db() {
   ts="$(date +%Y%m%d-%H%M%S)"
   cp "$DB" "$DB.bak-$ts"
   log "backed up DB → $DB.bak-$ts"
+  # Retention. MEASURED 2026-08-24: 137 backups totalling 2.1G had piled up
+  # here — 87% of /data's 2.4G, oldest 2026-04-30 — because nothing ever
+  # pruned them. Harmless when backup_db ran by hand; a disk-filler now that
+  # apply-rules runs on a 2-min Dagu cron (~720 copies/day of a 22M DB).
+  # 20 keeps roughly the last hour of cron runs plus any manual ones.
+  ls -1t "$DB".bak-* 2>/dev/null | tail -n +21 | while IFS= read -r _old; do
+    rm -f "$_old"
+  done
 }
 
 ensure_writable() {
@@ -406,6 +427,10 @@ cmd_apply_rules() {
   #
   # Idempotency: $distributed keyword on the INBOX row excludes already-
   # processed messages from the next scan. Safe to run on a Dagu cron.
+  # In addition (Part 1 below), the per-target copy step itself is
+  # idempotent: a row is never INSERTed into a target mailbox that
+  # already holds a copy with the same extBodyKey (same body blob) —
+  # this makes re-opening a message (Part 2) safe to repeat.
   #
   # SQL-direct (one BEGIN IMMEDIATE TRANSACTION per run) is the
   # established pattern in this script (cf. cleanup-mailboxes,
@@ -415,26 +440,78 @@ cmd_apply_rules() {
   # second SQL pass anyway. One SQL pass is cleaner.
   #
   # Pipeline:
-  #   1. Resolve INBOX_ID, USER_ID; bail if no undistributed msgs.
-  #   2. Per candidate row: convert cachedHeader JSON → RFC822 → pipe
+  #   1. Resolve INBOX_ID, USER_ID.
+  #   2. Ruleset-change detection (Part 2): hash the semantic content of
+  #      $RULES; compare to the last-applied hash in a state file next
+  #      to $DB. If a PRIOR hash existed and differs, clear $distributed
+  #      on INBOX rows that are fallback-only (filed only in the
+  #      routing_default mailbox, nowhere else), so the scan below
+  #      re-evaluates them against the new rules. First-ever run (no
+  #      state file) never mass-clears — it just records the hash.
+  #   3. Bail if no undistributed msgs.
+  #   4. Per candidate row: convert cachedHeader JSON → RFC822 → pipe
   #      through delivery-time (MAIL_SIEVE_STRATEGY=split). Capture
   #      target folder + comma-separated flag list.
-  #   3. Generate one SQL script:
+  #   5. Generate one SQL script per target mailbox. Idempotency (Part
+  #      1): rows whose extBodyKey is already present in the target
+  #      mailbox are NOT re-inserted — only the INBOX original is
+  #      stamped \Seen + $distributed. Otherwise:
   #        INSERT INTO msgs (target row, fresh msgId from uidnext)
   #        UPDATE extKeys.refs += 1   (blob shared across copies)
   #        INSERT INTO flags (rule-derived keywords on copy, no \Seen)
   #        INSERT INTO flags (\Seen + $distributed on INBOX original)
   #        UPDATE msgs.seen=1 on INBOX original
   #        UPDATE mboxes (uidnext + msgsCount += N per target)
-  #   4. Execute. Resync msgsCount sanity (cleans up any drift).
+  #   6. Execute. Optionally (Part 3, --prune-fallback, default OFF)
+  #      delete the now-redundant fallback copy of any message that was
+  #      just filed into a real category folder this run.
+  #   7. Resync msgsCount sanity (cleans up any drift). Record the new
+  #      ruleset hash.
   #
   # Trade-off: per-message subprocess to delivery-time ≈ 30ms each.
   # 2k messages ≈ 60s. Acceptable for a Dagu run every 2 min.
+  # Single-instance guard. The Dagu DAG's max_active_runs:1 only bounds the
+  # DAG run, not this process: the step is
+  # `ssh ubuntu@10.0.0.3 "docker exec maddy ..."`, so when Dagu gives up on
+  # the ssh the container-side process keeps running and the next 2-min tick
+  # starts another one. MEASURED 2026-08-24: 10 concurrent apply-rules
+  # processes livelocked on SQLite's single-writer lock — no run ever reached
+  # the STATE_FILE write below, so the ruleset-hash re-open repeated on every
+  # tick and 822 re-opened messages were never distributed. mkdir is the
+  # atomic primitive (busybox sh in this image has no flock).
+  LOCK_DIR="$(dirname "$DB")/.apply-rules.lock"
+  if mkdir "$LOCK_DIR" 2>/dev/null; then
+    echo $$ > "$LOCK_DIR/pid"
+    trap 'rm -rf "$LOCK_DIR"' EXIT INT TERM
+  else
+    _lpid="$(cat "$LOCK_DIR/pid" 2>/dev/null || echo 0)"
+    if [ "$_lpid" -gt 0 ] 2>/dev/null && kill -0 "$_lpid" 2>/dev/null; then
+      log "apply-rules: run pid $_lpid still holds $LOCK_DIR — exiting"
+      return 0
+    fi
+    # Holder died without running its trap (SIGKILL, container restart).
+    log "apply-rules: clearing stale lock (pid ${_lpid} gone)"
+    rm -rf "$LOCK_DIR"
+    mkdir "$LOCK_DIR" || { log "apply-rules: cannot create $LOCK_DIR"; return 1; }
+    echo $$ > "$LOCK_DIR/pid"
+    trap 'rm -rf "$LOCK_DIR"' EXIT INT TERM
+  fi
+
+  # Copy-detection below joins INBOX rows to their copies via extBodyKey
+  # (copies share the body blob), but maddy's schema indexes only the msgs
+  # PK and (mboxId, seen) — so every correlated EXISTS was a full scan of
+  # all 12768 msgs rows, 4147 times over. MEASURED 2026-08-24: the
+  # fallback-only re-open query did not finish in 60s without this index
+  # and takes 3s with it. IF NOT EXISTS makes it a no-op after the first
+  # run; an extra index is transparent to maddy's own queries.
+  sq "CREATE INDEX IF NOT EXISTS idx_msgs_extbodykey ON msgs(extBodyKey);" >/dev/null
+
   FILTER_BIN_DEFAULT=/usr/local/bin/mail-sieve-subset-delivery-time
   FILTER_BIN="${FILTER_BIN:-$FILTER_BIN_DEFAULT}"
   [ -x "$FILTER_BIN" ] || fail "filter binary not found/executable: $FILTER_BIN"
   command -v xxd       >/dev/null 2>&1 || fail "xxd not in PATH (apk add xxd)"
   command -v maddy     >/dev/null 2>&1 || fail "maddy CLI not in PATH"
+  command -v md5sum    >/dev/null 2>&1 || fail "md5sum not in PATH"
 
   ACCT="$(jq -r '.account // empty' "$RULES")"
   [ -n "$ACCT" ] || fail "rules missing .account — cannot resolve user"
@@ -444,6 +521,79 @@ cmd_apply_rules() {
 
   INBOX_ID="$(sq "SELECT id FROM mboxes WHERE uid = $USER_ID AND name = 'INBOX'")"
   [ -n "$INBOX_ID" ] || fail "INBOX not found for user $ACCT (uid=$USER_ID)"
+
+  # routing_default in mail-rules.json is already the literal fallback
+  # mailbox name (e.g. "91    📬 Others (fallback)") — there is no
+  # .folders map to look it up through.
+  FALLBACK_NAME="$(jq -r '.routing_default // empty' "$RULES")"
+  FALLBACK_MBOXID=""
+  if [ -n "$FALLBACK_NAME" ]; then
+    fb_esc="$(printf '%s' "$FALLBACK_NAME" | sed "s/'/''/g")"
+    FALLBACK_MBOXID="$(sq "SELECT id FROM mboxes WHERE uid = $USER_ID AND name = '$fb_esc'")"
+  fi
+
+  _BACKED_UP=0
+  _ensure_writable_once() {
+    if [ "$_BACKED_UP" = "0" ]; then
+      ensure_writable
+      _BACKED_UP=1
+    fi
+  }
+
+  # ── Part 2: ruleset-change detection + fallback re-open ───────────
+  STATE_FILE="$(dirname "$DB")/.apply-rules-ruleset.md5"
+  RULESET_HASH="$(jq -Sc '{routing_default, rules}' "$RULES" | md5sum | cut -d' ' -f1)"
+  OLD_HASH=""
+  [ -f "$STATE_FILE" ] && OLD_HASH="$(cat "$STATE_FILE" 2>/dev/null || true)"
+
+  if [ -n "$OLD_HASH" ] && [ "$OLD_HASH" != "$RULESET_HASH" ] && [ -n "$FALLBACK_MBOXID" ]; then
+    log "apply-rules: ruleset changed ($(printf '%.8s' "$OLD_HASH") → $(printf '%.8s' "$RULESET_HASH")) — checking fallback-only messages to re-open"
+
+    REOPEN_IDS_FILE="$(mktemp)"
+    sq "SELECT m.msgId FROM msgs m
+        WHERE m.mboxId = $INBOX_ID
+          AND EXISTS (
+            SELECT 1 FROM flags f
+            WHERE f.mboxId = m.mboxId AND f.msgId = m.msgId AND f.flag = '\$distributed'
+          )
+          AND EXISTS (
+            SELECT 1 FROM msgs c
+            WHERE c.mboxId = $FALLBACK_MBOXID AND c.extBodyKey = m.extBodyKey
+          )
+          AND NOT EXISTS (
+            SELECT 1 FROM msgs c
+            JOIN mboxes mb ON mb.id = c.mboxId
+            WHERE mb.uid = $USER_ID AND mb.id != $FALLBACK_MBOXID
+              AND mb.name GLOB '[0-9][0-9]*'
+              AND c.extBodyKey = m.extBodyKey
+          )" > "$REOPEN_IDS_FILE"
+    REOPEN_COUNT="$(wc -l < "$REOPEN_IDS_FILE" 2>/dev/null || echo 0)"
+
+    if [ "$REOPEN_COUNT" -gt 0 ]; then
+      if [ "$DRY_RUN" = "1" ]; then
+        log "  [dry-run] would re-open $REOPEN_COUNT fallback-only messages for re-evaluation"
+      else
+        _ensure_writable_once
+        RTX="$(mktemp)"
+        {
+          echo "BEGIN IMMEDIATE TRANSACTION;"
+          echo "CREATE TEMP TABLE _reopen(msgId BIGINT PRIMARY KEY);"
+          awk 'NF { printf "INSERT INTO _reopen VALUES(%s);\n", $0 }' "$REOPEN_IDS_FILE"
+          echo "DELETE FROM flags WHERE mboxId = $INBOX_ID AND flag = '\$distributed' AND msgId IN (SELECT msgId FROM _reopen);"
+          echo "DROP TABLE _reopen;"
+          echo "COMMIT;"
+        } > "$RTX"
+        sqlite3 "$DB" < "$RTX"
+        rm -f "$RTX"
+        log "  re-opened $REOPEN_COUNT fallback-only messages (cleared \$distributed)"
+      fi
+    else
+      log "  no fallback-only messages to re-open"
+    fi
+    rm -f "$REOPEN_IDS_FILE"
+  elif [ -z "$OLD_HASH" ]; then
+    log "apply-rules: no prior ruleset state ($STATE_FILE) — first run, recording hash only, no re-open"
+  fi
 
   # Candidates: INBOX rows WITHOUT $distributed keyword.
   TOTAL="$(sq "SELECT COUNT(*) FROM msgs m
@@ -457,10 +607,11 @@ cmd_apply_rules() {
   if [ "$TOTAL" -eq 0 ]; then
     log "  nothing to do"
     _resync_msgs_count "$USER_ID"
+    [ "$DRY_RUN" = "1" ] || printf '%s\n' "$RULESET_HASH" > "$STATE_FILE"
     return 0
   fi
 
-  ensure_writable
+  _ensure_writable_once
 
   PLAN="$(mktemp)"   # cols: target_folder \t msgId \t comma-separated-flags
   SCAN="$(mktemp)"   # SQLite output — read via redirection so SCANNED
@@ -536,6 +687,7 @@ cmd_apply_rules() {
     awk -F'\t' '{ print $1 }' "$PLAN" | sort -u > "$TARGETS_FILE"
     COPIED_TOTAL=0
     SKIPPED_TOTAL=0
+    PRUNE_CANDIDATES="$(mktemp)"   # src msgIds copied into a real (non-fallback) folder this run
 
     while IFS= read -r target; do
       [ -z "$target" ] && continue
@@ -552,8 +704,36 @@ cmd_apply_rules() {
       PER_TGT="$(mktemp)"
       awk -F'\t' -v t="$target" '$1==t { print $2 "\t" $3 }' "$PLAN" > "$PER_TGT"
 
+      # Idempotency (Part 1): rows whose body (extBodyKey) is already
+      # present in the target mailbox must not be copied again — this
+      # is what makes re-opening a message (Part 2) safe to repeat.
+      DUP_IDS="$(mktemp)"
+      MSGIDS_CSV="$(awk -F'\t' '{ print $1 }' "$PER_TGT" | paste -sd, -)"
+      if [ -n "$MSGIDS_CSV" ]; then
+        sq "SELECT m.msgId FROM msgs m
+            WHERE m.mboxId = $INBOX_ID AND m.msgId IN ($MSGIDS_CSV)
+              AND m.extBodyKey IS NOT NULL
+              AND EXISTS (SELECT 1 FROM msgs t WHERE t.mboxId = $target_mboxId AND t.extBodyKey = m.extBodyKey)" > "$DUP_IDS"
+      fi
+      N_DUP="$(wc -l < "$DUP_IDS" 2>/dev/null || echo 0)"
+      if [ "$N_DUP" -gt 0 ]; then
+        SKIPPED_TOTAL=$((SKIPPED_TOTAL + N_DUP))
+        log "  idempotency: $N_DUP already have a body-copy in '$target' — skipping duplicate INSERT (INBOX original still marked processed)"
+      fi
+
       n=0
       while IFS=$(printf '\t') read -r src_msgid src_flags; do
+        if grep -qxF "$src_msgid" "$DUP_IDS" 2>/dev/null; then
+          # Body already filed here — just mark the INBOX original
+          # processed; do NOT insert a second copy.
+          cat <<SQL
+INSERT OR IGNORE INTO flags (mboxId, msgId, flag) VALUES ($INBOX_ID, $src_msgid, '\Seen');
+INSERT OR IGNORE INTO flags (mboxId, msgId, flag) VALUES ($INBOX_ID, $src_msgid, '\$distributed');
+UPDATE msgs SET seen = 1 WHERE mboxId = $INBOX_ID AND msgId = $src_msgid;
+SQL
+          continue
+        fi
+
         new_uid=$((start_uid + n))
         n=$((n + 1))
 
@@ -578,8 +758,12 @@ SQL
               "$target_mboxId" "$new_uid" "$f_esc"
           done
         fi
+
+        if [ "$PRUNE_FALLBACK" = "1" ] && [ -n "$FALLBACK_MBOXID" ] && [ "$target_mboxId" != "$FALLBACK_MBOXID" ]; then
+          printf '%s\n' "$src_msgid" >> "$PRUNE_CANDIDATES"
+        fi
       done >> "$SQLF" < "$PER_TGT"
-      rm -f "$PER_TGT"
+      rm -f "$PER_TGT" "$DUP_IDS"
 
       printf 'UPDATE mboxes SET uidnext = uidnext + %d, msgsCount = msgsCount + %d WHERE id = %s;\n' \
         "$n" "$n" "$target_mboxId" >> "$SQLF"
@@ -593,9 +777,42 @@ SQL
     rm -f "$SQLF" "$TARGETS_FILE"
 
     log "apply-rules: copied=$COPIED_TOTAL skipped=$SKIPPED_TOTAL of $PLAN_COUNT planned"
+
+    # Part 3 (default OFF): prune the now-redundant fallback copy of any
+    # message just filed into a real category folder this run. Not
+    # wired into the DAG — opt-in via --prune-fallback / PRUNE_FALLBACK=1.
+    if [ "$PRUNE_FALLBACK" = "1" ] && [ -n "$FALLBACK_MBOXID" ] && [ -s "$PRUNE_CANDIDATES" ]; then
+      PTX="$(mktemp)"
+      echo "BEGIN IMMEDIATE TRANSACTION;" > "$PTX"
+      PRUNED=0
+      while IFS= read -r src_msgid; do
+        [ -z "$src_msgid" ] && continue
+        cat <<SQL >> "$PTX"
+DELETE FROM flags WHERE mboxId = $FALLBACK_MBOXID AND msgId IN (
+  SELECT msgId FROM msgs WHERE mboxId = $FALLBACK_MBOXID
+    AND extBodyKey = (SELECT extBodyKey FROM msgs WHERE mboxId = $INBOX_ID AND msgId = $src_msgid)
+);
+UPDATE extKeys SET refs = refs - 1
+ WHERE id = (SELECT extBodyKey FROM msgs WHERE mboxId = $INBOX_ID AND msgId = $src_msgid)
+   AND EXISTS (
+     SELECT 1 FROM msgs WHERE mboxId = $FALLBACK_MBOXID
+       AND extBodyKey = (SELECT extBodyKey FROM msgs WHERE mboxId = $INBOX_ID AND msgId = $src_msgid)
+   );
+DELETE FROM msgs WHERE mboxId = $FALLBACK_MBOXID
+  AND extBodyKey = (SELECT extBodyKey FROM msgs WHERE mboxId = $INBOX_ID AND msgId = $src_msgid);
+SQL
+        PRUNED=$((PRUNED + 1))
+      done < "$PRUNE_CANDIDATES"
+      echo "COMMIT;" >> "$PTX"
+      log "  prune-fallback: removing redundant fallback copies for $PRUNED newly-categorized messages…"
+      sqlite3 "$DB" < "$PTX"
+      rm -f "$PTX"
+    fi
+    rm -f "$PRUNE_CANDIDATES"
   fi
 
   _resync_msgs_count "$USER_ID"
+  [ "$DRY_RUN" = "1" ] || printf '%s\n' "$RULESET_HASH" > "$STATE_FILE"
   rm -f "$PLAN"
 }
 
