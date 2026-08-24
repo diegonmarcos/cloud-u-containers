@@ -462,6 +462,33 @@ cmd_apply_rules() {
   #
   # Trade-off: per-message subprocess to delivery-time ≈ 30ms each.
   # 2k messages ≈ 60s. Acceptable for a Dagu run every 2 min.
+  # Single-instance guard. The Dagu DAG's max_active_runs:1 only bounds the
+  # DAG run, not this process: the step is
+  # `ssh ubuntu@10.0.0.3 "docker exec maddy ..."`, so when Dagu gives up on
+  # the ssh the container-side process keeps running and the next 2-min tick
+  # starts another one. MEASURED 2026-08-24: 10 concurrent apply-rules
+  # processes livelocked on SQLite's single-writer lock — no run ever reached
+  # the STATE_FILE write below, so the ruleset-hash re-open repeated on every
+  # tick and 822 re-opened messages were never distributed. mkdir is the
+  # atomic primitive (busybox sh in this image has no flock).
+  LOCK_DIR="$(dirname "$DB")/.apply-rules.lock"
+  if mkdir "$LOCK_DIR" 2>/dev/null; then
+    echo $$ > "$LOCK_DIR/pid"
+    trap 'rm -rf "$LOCK_DIR"' EXIT INT TERM
+  else
+    _lpid="$(cat "$LOCK_DIR/pid" 2>/dev/null || echo 0)"
+    if [ "$_lpid" -gt 0 ] 2>/dev/null && kill -0 "$_lpid" 2>/dev/null; then
+      log "apply-rules: run pid $_lpid still holds $LOCK_DIR — exiting"
+      return 0
+    fi
+    # Holder died without running its trap (SIGKILL, container restart).
+    log "apply-rules: clearing stale lock (pid ${_lpid} gone)"
+    rm -rf "$LOCK_DIR"
+    mkdir "$LOCK_DIR" || { log "apply-rules: cannot create $LOCK_DIR"; return 1; }
+    echo $$ > "$LOCK_DIR/pid"
+    trap 'rm -rf "$LOCK_DIR"' EXIT INT TERM
+  fi
+
   FILTER_BIN_DEFAULT=/usr/local/bin/mail-sieve-subset-delivery-time
   FILTER_BIN="${FILTER_BIN:-$FILTER_BIN_DEFAULT}"
   [ -x "$FILTER_BIN" ] || fail "filter binary not found/executable: $FILTER_BIN"
