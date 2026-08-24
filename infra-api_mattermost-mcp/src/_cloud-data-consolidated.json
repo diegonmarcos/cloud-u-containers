@@ -782,8 +782,8 @@
       },
       "per_service": [
         {
-          "service": "c3-diego-personal-data-mcp",
-          "folder": "infra-api_c3-diego-personal-data-mcp",
+          "service": "cloud-vault-mcp",
+          "folder": "infra-api_cloud-vault-mcp",
           "category": "data",
           "dependencies": {
             "@modelcontextprotocol/sdk": "^1.12.0",
@@ -926,50 +926,6 @@
         "api_path": null,
         "api_url": null,
         "healthcheck_paths": []
-      }
-    },
-    "c3-diego-personal-data-mcp": {
-      "category": "data",
-      "vm": "local",
-      "folder": "infra-api_c3-diego-personal-data-mcp",
-      "description": "MCP server — READ-ONLY personal data access (vault metadata, identity, comms, media, finance, health)",
-      "enabled": true,
-      "flake": "infra-api_c3-diego-personal-data-mcp",
-      "containers": {
-        "app": {
-          "container_name": "c3-diego-personal-data-mcp",
-          "image": "",
-          "public": false
-        }
-      },
-      "container_names": [
-        "c3-diego-personal-data-mcp"
-      ],
-      "all_ports": [],
-      "all_dns": [],
-      "compose": {
-        "containers": [],
-        "ports": [],
-        "networks": []
-      },
-      "api": {
-        "has_api": false,
-        "has_web_ui": false,
-        "api_path": null,
-        "api_url": null,
-        "healthcheck_paths": []
-      },
-      "mcp": {
-        "has_mcp": false,
-        "mcp_url": null,
-        "transport": "stdio",
-        "tools_count": 17,
-        "resources_count": 0,
-        "prompts_count": 0,
-        "display_name": "Diego Personal Data MCP",
-        "description": "READ-ONLY personal data access: vault metadata, identity docs, communications, media, finance, health (redacted).",
-        "auth": "none",
-        "sdk": "@modelcontextprotocol/sdk@^1.12.0"
       }
     },
     "c3-infra-api": {
@@ -1606,6 +1562,50 @@
         "GITHUB_TOKEN",
         "DAGU_BASIC_AUTH"
       ]
+    },
+    "cloud-vault-mcp": {
+      "category": "data",
+      "vm": "local",
+      "folder": "infra-api_cloud-vault-mcp",
+      "description": "MCP server — READ-ONLY personal data access (vault metadata, identity, comms, media, finance, health)",
+      "enabled": true,
+      "flake": "infra-api_cloud-vault-mcp",
+      "containers": {
+        "app": {
+          "container_name": "cloud-vault-mcp",
+          "image": "",
+          "public": false
+        }
+      },
+      "container_names": [
+        "cloud-vault-mcp"
+      ],
+      "all_ports": [],
+      "all_dns": [],
+      "compose": {
+        "containers": [],
+        "ports": [],
+        "networks": []
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
+      },
+      "mcp": {
+        "has_mcp": false,
+        "mcp_url": null,
+        "transport": "stdio",
+        "tools_count": 17,
+        "resources_count": 0,
+        "prompts_count": 0,
+        "display_name": "Cloud Vault MCP",
+        "description": "READ-ONLY personal data access: vault metadata, identity docs, communications, media, finance, health (redacted).",
+        "auth": "none",
+        "sdk": "@modelcontextprotocol/sdk@^1.12.0"
+      }
     },
     "google-personal-mcp": {
       "category": "app",

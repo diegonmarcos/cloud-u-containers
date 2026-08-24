@@ -1,6 +1,6 @@
 /**
  * Meta-tool — single entry point that dispatches to all 17 personal-data handlers.
- * Replaces individual tool registrations with one `diego_personal_data` tool.
+ * Replaces individual tool registrations with one `cloud_vault` tool.
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
@@ -390,8 +390,8 @@ Photos are managed via **PhotoPrism** at photos.diegonmarcos.com (wake-on-demand
 
 export function registerMetaTool(server: McpServer) {
   server.tool(
-    "diego_personal_data",
-    "Unified access to Diego's personal data. Pass `method` to select the operation and optional `params` for methods that require arguments (identity_read_note needs `filename`, vault_totp_code needs `service`).",
+    "cloud_vault",
+    "Unified access to the cloud-vault personal data store. Pass `method` to select the operation and optional `params` for methods that require arguments (identity_read_note needs `filename`, vault_totp_code needs `service`).",
     {
       method: z.enum(METHODS).describe("Operation to perform"),
       params: z.record(z.unknown()).optional().describe("Optional parameters for the selected method"),

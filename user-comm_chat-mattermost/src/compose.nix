@@ -209,9 +209,9 @@ in
         # BEARER_TOKEN is exposed at compose-parse time. Tracked as a
         # follow-up; the env-var path may not even take effect first.
         # Remote/HTTP MCP servers the Agents plugin can call. Mirrors the
-        # remote-callable subset of ~/.mcp.json (the 5 local stdio servers —
-        # cloud-infra-local, diego-personal-data, dtk, unix, plus cloud-cgc-
-        # mcp's stdio mode — only work from a local terminal, not Mattermost).
+        # remote-callable subset of ~/.mcp.json (the local stdio servers —
+        # cloud-infra-local, cloud-vault-mcp, dtk, plus cloud-cgc-mcp's stdio
+        # mode — only work from a local terminal, not Mattermost).
         #
         # ${BEARER_TOKEN} is substituted at compose-up time by docker compose
         # from --env-file .secrets (engine's ENV_FILE_FLAG default). NB the
