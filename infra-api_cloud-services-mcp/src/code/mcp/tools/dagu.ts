@@ -6,7 +6,7 @@ import { homedir } from "os";
 import { rawHttpRequest } from "../../shared/http.js";
 
 // Data-driven Dagu endpoint resolution (env override → topology → fallback).
-// Reads services.dagu.{ip,ports.app,api.base_path} from the same build-c3-services-mcp.json
+// Reads services.dagu.{ip,ports.app,api.base_path} from the same build-cloud-services-mcp.json
 // this MCP already consumes (see discovery.ts loadTopology), falling back to the
 // consolidated file. NEVER hardcode the IP — dagu runs on oci-apps (10.0.0.6:8070),
 // and a stale 10.0.0.3 default silently pointed every dagu tool at the wrong VM.
@@ -15,8 +15,8 @@ function resolveDagu(): { base: string; path: string } {
   const envPath = process.env.DAGU_API_PATH;
   const gitBase = process.env.GIT_BASE ?? join(homedir(), "git");
   const candidates = [
-    "/app/build-c3-services-mcp.json",
-    join(gitBase, "cloud", "1_cloud-configs", "dist", "build-c3-services-mcp.json"),
+    "/app/build-cloud-services-mcp.json",
+    join(gitBase, "cloud", "1_cloud-configs", "dist", "build-cloud-services-mcp.json"),
     "/app/_cloud-data-consolidated.json",
     join(gitBase, "cloud", "1_cloud-configs", "dist", "_cloud-data-consolidated.json"),
   ];

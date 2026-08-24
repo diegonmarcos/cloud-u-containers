@@ -9,7 +9,7 @@ import { registerMetaDevops, registerMetaObs, registerMetaFinops, registerMetaSe
 import { registerResources } from "./resources/index.js";
 
 const server = new McpServer({
-  name: "cloud-infra",
+  name: "cloud-infra-mcp",
   version: "7.0.0",
 });
 
@@ -22,7 +22,7 @@ registerMetaSec(server);     // infra.sec     — security scanning & auditing
 registerResources(server);   //      cloud:// resources
 
 // All logging must go to stderr (stdout is JSON-RPC)
-const log = (msg: string) => process.stderr.write(`[cloud-infra] ${msg}\n`);
+const log = (msg: string) => process.stderr.write(`[cloud-infra-mcp] ${msg}\n`);
 
 async function main() {
   const transport = new StdioServerTransport();

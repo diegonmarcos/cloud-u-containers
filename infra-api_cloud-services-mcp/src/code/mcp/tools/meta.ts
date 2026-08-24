@@ -21,8 +21,8 @@ function resolveDagu(): { base: string; path: string } {
   const envPath = process.env.DAGU_API_PATH;
   const gitBase = process.env.GIT_BASE ?? join(homedir(), "git");
   const candidates = [
-    "/app/build-c3-services-mcp.json",
-    join(gitBase, "cloud", "1_cloud-configs", "dist", "build-c3-services-mcp.json"),
+    "/app/build-cloud-services-mcp.json",
+    join(gitBase, "cloud", "1_cloud-configs", "dist", "build-cloud-services-mcp.json"),
     "/app/_cloud-data-consolidated.json",
     join(gitBase, "cloud", "1_cloud-configs", "dist", "_cloud-data-consolidated.json"),
   ];
@@ -262,8 +262,8 @@ interface TopoData {
 function loadTopology(): TopoData | null {
   const gitBase = process.env.GIT_BASE ?? join(homedir(), "git");
   const candidates = [
-    "/app/build-c3-services-mcp.json",
-    join(gitBase, "cloud", "1_cloud-configs", "dist", "build-c3-services-mcp.json"),
+    "/app/build-cloud-services-mcp.json",
+    join(gitBase, "cloud", "1_cloud-configs", "dist", "build-cloud-services-mcp.json"),
     "/app/_cloud-data-consolidated.json",
     join(gitBase, "cloud", "1_cloud-configs", "dist", "_cloud-data-consolidated.json"),
   ];
@@ -704,7 +704,7 @@ export function registerMetaTools(server: McpServer) {
       case "discovery.drift": {
         const topo = loadTopology();
         if (!topo) {
-          return { content: [{ type: "text" as const, text: "ERROR: build-c3-services-mcp.json not found" }], isError: true };
+          return { content: [{ type: "text" as const, text: "ERROR: build-cloud-services-mcp.json not found" }], isError: true };
         }
         const allServices = Object.keys(topo.services).sort();
         const covered: { name: string; how: string; vm?: string; domain?: string }[] = [];

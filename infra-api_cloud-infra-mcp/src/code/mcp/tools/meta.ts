@@ -469,8 +469,8 @@ interface TopologyService { category: string; vm: string; containers?: string[];
 
 function loadTopology(): { vms: Record<string, TopologyVm>; services: Record<string, TopologyService> } {
   const candidates = [
-    "/app/build-c3-infra-mcp.json",
-    join(CLOUD_DATA_DIR, "..", "cloud", "1_cloud-configs", "dist", "build-c3-infra-mcp.json"),
+    "/app/build-cloud-infra-mcp.json",
+    join(CLOUD_DATA_DIR, "..", "cloud", "1_cloud-configs", "dist", "build-cloud-infra-mcp.json"),
     "/app/_cloud-data-consolidated.json",
     join(CLOUD_DATA_DIR, "..", "cloud", "1_cloud-configs", "dist", "_cloud-data-consolidated.json"),
     join(CLOUD_DATA_DIR, "_cloud-data-consolidated.json"),

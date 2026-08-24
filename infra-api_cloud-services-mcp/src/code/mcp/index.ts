@@ -11,11 +11,11 @@ import { registerOllamaTools } from "./tools/ollama.js";
 // ── Proxied child MCPs ──────────────────────────────────────────────────────
 import { registerProxiedInfraTools, registerProxiedUserTools, startProxyRetryLoop } from "./tools/proxy-mcp.js";
 
-const log = (msg: string) => process.stderr.write(`[c3-services] ${msg}\n`);
+const log = (msg: string) => process.stderr.write(`[cloud-services-mcp] ${msg}\n`);
 
 async function main() {
   const server = new McpServer({
-    name: "c3-services",
+    name: "cloud-services-mcp",
     version: "2.2.0",
   });
 
@@ -25,7 +25,7 @@ async function main() {
   await registerProxiedUserTools(server); // cloud-mattermost-mcp, cloud-mail-mcp, google-workspace-mcp
 
   const transport = new StdioServerTransport();
-  log("Starting c3-services MCP server v2.2.0 (8 meta-tools + ollama + proxied)...");
+  log("Starting cloud-services-mcp MCP server v2.2.0 (8 meta-tools + ollama + proxied)...");
   await server.connect(transport);
   log("Connected via stdio transport");
 
