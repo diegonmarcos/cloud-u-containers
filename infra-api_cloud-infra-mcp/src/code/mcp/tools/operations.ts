@@ -225,7 +225,7 @@ export function registerOperationsTools(server: McpServer) {
     "devops.docker.compose_up",
     "Recreate all containers for a service from its compose file on the VM. Does NOT rebuild images — use build_ship for full pipeline.",
     {
-      service: z.string().describe("Service name (from build-c3-infra-mcp.json services map)"),
+      service: z.string().describe("Service name (from build-cloud-infra-mcp.json services map)"),
     },
     async ({ service }) => {
       const config = getConfig();
@@ -457,7 +457,7 @@ export function registerOperationsTools(server: McpServer) {
     "obs.debug.docker_logs_multi",
     "Get logs from all containers for a service",
     {
-      service: z.string().describe("Service name (from build-c3-infra-mcp.json services map)"),
+      service: z.string().describe("Service name (from build-cloud-infra-mcp.json services map)"),
       lines: z.number().optional().describe("Lines per container (default: 50)"),
     },
     async ({ service, lines }) => {

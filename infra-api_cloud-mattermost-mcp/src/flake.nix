@@ -7,7 +7,7 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
-    container = builtins.fromJSON (builtins.readFile ./build-mattermost-mcp.json);
+    container = builtins.fromJSON (builtins.readFile ./build-cloud-mattermost-mcp.json);
 
     engine = import ../../_shared/engine.nix;
     nb = buildJson.docker.native_build;

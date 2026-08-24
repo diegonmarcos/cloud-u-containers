@@ -12,7 +12,7 @@ let
 
   # ── Resolve proxied MCP URLs from cloud-data ────────────────────
   # build.json declares child MCP names; each is looked up in `svc.<name>`
-  # (from build-c3-services-mcp.json) to get its WG IP + app port.
+  # (from build-cloud-services-mcp.json) to get its WG IP + app port.
   # This container runs in bridge mode — 127.0.0.1 inside the container is
   # NOT the host, so we MUST use the WG IP for every child.
   proxyCfg = buildJson.proxied_mcps;

@@ -59,12 +59,12 @@ interface ServiceCostEntry {
 const log = (msg: string) => process.stderr.write(`[finops] ${msg}\n`);
 
 function loadTopology(): { vms: Record<string, TopologyVm>; services: Record<string, TopologyService> } {
-  // Migrated 2026-04-27: read own build-c3-infra-mcp.json (has services map enriched
+  // Migrated 2026-04-27: read own build-cloud-infra-mcp.json (has services map enriched
   // by deriveServiceConnections) + fall back to consolidated for full vm/service data.
   // 2026-04-27 migrated: cloud-data-topology.json legacy fallback dropped — consolidated covers all data
   const candidates = [
-    "/app/build-c3-infra-mcp.json",
-    join(CLOUD_DATA_DIR, "..", "cloud", "1_cloud-configs", "dist", "build-c3-infra-mcp.json"),
+    "/app/build-cloud-infra-mcp.json",
+    join(CLOUD_DATA_DIR, "..", "cloud", "1_cloud-configs", "dist", "build-cloud-infra-mcp.json"),
     "/app/_cloud-data-consolidated.json",
     join(CLOUD_DATA_DIR, "..", "cloud", "1_cloud-configs", "dist", "_cloud-data-consolidated.json"),
     join(CLOUD_DATA_DIR, "_cloud-data-consolidated.json"),

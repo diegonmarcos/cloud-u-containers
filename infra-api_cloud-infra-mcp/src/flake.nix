@@ -7,9 +7,9 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
-    # Single source of truth: build-c3-infra-mcp.json (symlink → 1_cicd/dist/).
+    # Single source of truth: build-cloud-infra-mcp.json (symlink → 1_cicd/dist/).
     # Engine resolves symlink before nix build.
-    container = builtins.fromJSON (builtins.readFile ./build-c3-infra-mcp.json);
+    container = builtins.fromJSON (builtins.readFile ./build-cloud-infra-mcp.json);
 
     engine = import ../../_shared/engine.nix;
     nb = buildJson.docker.native_build;
