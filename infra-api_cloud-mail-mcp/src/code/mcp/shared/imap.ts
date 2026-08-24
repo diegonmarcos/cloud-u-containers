@@ -19,12 +19,21 @@ export async function withImap<T>(
     ...(srv.tlsInsecure ? { tls: { rejectUnauthorized: false } } : {}),
     auth: { user: creds.user, pass: creds.password },
     logger: false,
+    // Without these, an unreachable IMAP host hangs on the OS TCP timeout
+    // (minutes) and the caller just sees the tool never return. A stalled
+    // reconciliation that never reports is worse than one that fails loudly.
+    connectionTimeout: 15000,
+    greetingTimeout: 10000,
+    socketTimeout: 60000,
   });
 
   await client.connect();
   try {
     return await fn(client);
   } finally {
-    await client.logout();
+    // logout() must never mask the real error: if fn() threw, a logout that
+    // also throws would replace the useful exception with a teardown one.
+    // ponytail: no reconnect/retry here — the caller retries the tool call.
+    await client.logout().catch(() => {});
   }
 }
