@@ -1,0 +1,42 @@
+[package]
+name         = "jmap-sorter"
+version      = "0.2.0"
+edition      = "2021"
+description  = "JMAP-native filter-view sorter for Stalwart — maintains dynamic A*/B*/C*/D* cross-cutting mailbox membership over the Sieve-routed numeric folders."
+
+[[bin]]
+name = "jmap-sorter"
+path = "src/main.rs"
+
+# NOTE: no Cargo.lock is committed. Generating one needs a local `cargo build`,
+# which this repo forbids (GHA is the only builder). The in-container compile
+# therefore resolves semver-compatible versions fresh on each build. Commit the
+# lock from the first green GHA run to make the image bit-reproducible — the
+# peer crate (user-fin_fin-api/src/code/Cargo.lock) does exactly that.
+
+[dependencies]
+# Blocking HTTP on purpose: this is a 30s poll loop, not a server. An async
+# runtime would be pure overhead for one request at a time.
+# rustls-tls + danger_accept_invalid_certs mirrors the Python's
+# ssl.CERT_NONE — Stalwart serves JMAP with a self-signed cert on the
+# docker bridge, so verification can never succeed there.
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls"] }
+
+serde      = { version = "1", features = ["derive"] }
+serde_json = "1"
+regex      = "1"
+base64     = "0.22"
+# Parsing only (JMAP UTCDate -> epoch); "now" comes from std::time, so the
+# clock/tz features and their iana-time-zone dependency stay out.
+chrono     = { version = "0.4", default-features = false, features = ["std", "alloc"] }
+
+tracing            = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+
+anyhow = "1"
+
+[profile.release]
+opt-level     = 3
+lto           = "thin"
+codegen-units = 1
+strip         = "symbols"

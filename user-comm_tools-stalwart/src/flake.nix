@@ -139,7 +139,7 @@
   in {
     packages = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
-      # Derived legacy JSON (what jmap-sorter.py reads at runtime).
+      # Derived legacy JSON (what the jmap-sorter binary reads at runtime).
       # Produced from canonical so there is exactly ONE source of truth.
       mailRulesDerived = pkgs.writeText "mail-rules.json" legacyJson;
     in {
@@ -164,12 +164,12 @@
           # Python helper: upsert LE wildcard cert as JMAP Certificate object.
           { name = "apply-tls-cert.py"; vars = {}; }
         ];
-        # jmap-sorter.py + mail-rules.json bind-mounted from dist/assets/.
+        # mail-rules.json bind-mounted from dist/assets/. The sorter itself is
+        # compiled into its own image (build.json::docker.native_build).
         # mail-rules.json is DERIVED from general + profile-diego canonicals.
         # The {name;src;} form is needed for derived assets so the dest
         # name is stable (otherwise baseNameOf would hash-prefix it).
         extraAssets = [
-          ./code/jmap-sorter.py
           { name = "mail-rules.json"; src = mailRulesDerived; }
         ];
         composeSpec = import ./compose.nix { inherit buildJson container base_domain lib; };

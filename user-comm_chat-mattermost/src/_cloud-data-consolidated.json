@@ -7158,7 +7158,8 @@
         },
         "sorter": {
           "container_name": "stalwart-sorter",
-          "image": "python:3-alpine",
+          "image": "ghcr.io/diegonmarcos/stalwart-sorter-binaries:latest",
+          "_doc_image": "Was python:3-alpine running a bind-mounted jmap-sorter.py. Now a compiled binary: the rules schema is parsed and validated once at startup, so a malformed or unknown predicate stops the container instead of silently producing an empty filter folder.",
           "resources": {
             "mem_limit": "64M",
             "mem_reservation": "16M"

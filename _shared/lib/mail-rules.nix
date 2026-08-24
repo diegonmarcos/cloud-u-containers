@@ -289,9 +289,9 @@ let
       rules             = rules;
     };
 
-  # ── Legacy schema (for jmap-sorter.py during transition) ─────────
+  # ── Legacy schema (the shape the jmap-sorter binary parses) ──────
   #
-  # jmap-sorter.py expects:
+  # jmap-sorter (src/crate, rules.rs) deserialises:
   #   { account, folders, routing_default, sieve_require,
   #     tags: [ { id, name, rules: [ { type, values|header|bytes, flag } ] } ],
   #     routing: [ { folder, match: { type, values } } ] }

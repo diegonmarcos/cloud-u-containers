@@ -22,9 +22,21 @@
   "recovery_mode": false,
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
-    "image": "stalwart",
-    "dockerfile": "Dockerfile",
-    "arch": "amd64"
+    "image": "stalwart-sorter-binaries",
+    "dockerfile": "Dockerfile.native",
+    "arch": "amd64",
+    "_doc": "The upstream Stalwart server image is pulled as-is (containers.app.image); the only thing built here is the JMAP filter-view sorter sidecar, compiled from src/crate.",
+    "native_build": {
+      "type": "binary",
+      "app_dir": "crate",
+      "builder_image": "rust:1-bookworm",
+      "_doc_builder_image": "In-container multi-stage compile so the binary is always the target arch, never the CI host's. app_dir keeps the build context to the crate alone — src/ also holds secrets.yaml and the config templates, none of which the compiler needs.",
+      "cmd": "cargo build --release",
+      "binary": "target/release/jmap-sorter",
+      "base_image": "debian:bookworm-slim",
+      "apt": "ca-certificates",
+      "_doc_apt": "rustls does the TLS, so no libssl — ca-certificates only, and even that is belt-and-braces since the JMAP peer is reached over the docker bridge with verification disabled."
+    }
   },
   "proxy": {
     "primary": {
@@ -198,7 +210,8 @@
     },
     "sorter": {
       "container_name": "stalwart-sorter",
-      "image": "python:3-alpine",
+      "image": "ghcr.io/diegonmarcos/stalwart-sorter-binaries:latest",
+      "_doc_image": "Was python:3-alpine running a bind-mounted jmap-sorter.py. Now a compiled binary: the rules schema is parsed and validated once at startup, so a malformed or unknown predicate stops the container instead of silently producing an empty filter folder.",
       "resources": {
         "mem_limit": "64M",
         "mem_reservation": "16M"
