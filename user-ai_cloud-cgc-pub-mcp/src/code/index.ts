@@ -73,7 +73,7 @@ async function startStdio(): Promise<void> {
   log("Connected via stdio transport");
 }
 
-// ── HTTP transport (for proxying via c3-services-mcp) ─────────────────
+// ── HTTP transport (for proxying via cloud-services-mcp) ─────────────────
 const HTTP_PORT = parseInt(process.env.MCP_HTTP_PORT ?? "3105", 10);
 const SESSION_ID = "cloud-cgc-pub-mcp-session";
 

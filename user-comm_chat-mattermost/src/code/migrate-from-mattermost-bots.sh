@@ -36,7 +36,7 @@ VOLUMES="mattermost_config mattermost_data mattermost_logs mattermost_postgres"
 # Old project's explicit container_name's — must be stopped+removed so the
 # new project can take the same names. (Compose enforces container_name
 # uniqueness across the daemon, not per-project.)
-OLD_CONTAINERS="mattermost mattermost-postgres mattermost-bots mattermost-mcp"
+OLD_CONTAINERS="mattermost mattermost-postgres mattermost-bots cloud-mattermost-mcp"
 
 log() { printf '[migrate] %s\n' "$1"; }
 

@@ -31,19 +31,19 @@ jobs:
           - name: cloud-mail-mcp
             context: a_solutions/aa-sui_mail-mcp/src
             file: a_solutions/aa-sui_mail-mcp/src/Dockerfile
-          - name: mattermost-mcp
+          - name: cloud-mattermost-mcp
             context: a_solutions/aa-sui_mattermost-mcp/src
             file: a_solutions/aa-sui_mattermost-mcp/src/Dockerfile
           - name: introspect-proxy
             context: a_solutions/bb-sec_introspect-proxy/src
             file: a_solutions/bb-sec_introspect-proxy/src/Dockerfile
-          - name: c3-infra-mcp
+          - name: cloud-infra-mcp
             context: a_solutions/bc-obs_c3-infra-mcp/src
             file: a_solutions/bc-obs_c3-infra-mcp/src/Dockerfile
           - name: c3-infra-api
             context: a_solutions/bc-obs_c3-infra-api/src
             file: a_solutions/bc-obs_c3-infra-api/src/Dockerfile
-          - name: c3-services-mcp
+          - name: cloud-services-mcp
             context: a_solutions/bc-obs_c3-services-mcp/src
             file: a_solutions/bc-obs_c3-services-mcp/src/Dockerfile
           - name: c3-services-api

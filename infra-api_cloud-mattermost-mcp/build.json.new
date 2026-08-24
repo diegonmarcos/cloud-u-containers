@@ -1,0 +1,65 @@
+{
+  "name": "cloud-mattermost-mcp",
+  "description": "Mattermost MCP server — chat tools via HTTP transport",
+  "dns": "mattermost-mcp.app",
+  "category": "app",
+  "upstream_image": "ghcr.io/diegonmarcos/cloud-mattermost-mcp:latest",
+  "build": {
+    "include_cloud_data": "true",
+    "headers_enforced": true
+  },
+  "docker": {
+    "image": "cloud-mattermost-mcp",
+    "dockerfile": "Dockerfile",
+    "registry": "ghcr.io/diegonmarcos",
+    "arch": "arm64",
+    "native_build": {
+      "type": "app",
+      "app_dir": "code",
+      "cmd": "npm ci --omit=dev",
+      "entrypoint": "npx tsx src/index.ts --http",
+      "base_image": "node:22-slim"
+    }
+  },
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/cloud-mattermost-mcp",
+    "compose_flags": "--build"
+  },
+  "proxy": {
+    "primary": {
+      "streaming": true,
+      "type": "path",
+      "parent_domain": "mcp.diegonmarcos.com",
+      "base_path": "/mattermost-mcp"
+    },
+    "app_hub": false
+  },
+  "ports": {
+    "app": 3102
+  },
+  "containers": {
+    "app": {
+      "container_name": "cloud-mattermost-mcp",
+      "image": "ghcr.io/diegonmarcos/cloud-mattermost-mcp:latest",
+      "port": 3102,
+      "port_env": "MCP_HTTP_PORT",
+      "dns": "mattermost-mcp.app",
+      "public": true,
+      "proxy": {
+        "streaming": true,
+        "type": "path",
+        "parent_domain": "mcp.diegonmarcos.com",
+        "base_path": "/mattermost-mcp"
+      },
+      "healthcheck": null,
+      "monitoring": null,
+      "volumes": [],
+      "env_file": true,
+      "depends_on": [],
+      "resources": null,
+      "read_only": false,
+      "protocol": "http"
+    }
+  }
+}
