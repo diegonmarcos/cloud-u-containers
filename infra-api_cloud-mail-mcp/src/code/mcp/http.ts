@@ -8,7 +8,7 @@ const log = (msg: string) => process.stderr.write(`[cloud-mail-mcp-http] ${msg}\
 const SESSION_ID = "cloud-mail-mcp-session";
 
 function createMcpServer(): McpServer {
-  const server = new McpServer({ name: "cloud-mail-mcp", version: "1.5.0" });
+  const server = new McpServer({ name: "cloud-mail-mcp", version: "1.5.1" });
   registerMetaTool(server);
   // Best-effort attach to proxied MCPs (google-personal-mcp et al). Failed
   // children are picked up by the background retry loop started below.

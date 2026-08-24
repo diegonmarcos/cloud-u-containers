@@ -19,8 +19,11 @@ export async function handle_mail_list_folders({ server: srv, account }: { serve
       try {
         const status = await client.status(path, { messages: true, unseen: true });
         details.push(`${path}: ${status.messages ?? 0} messages, ${status.unseen ?? 0} unseen`);
-      } catch {
-        details.push(`${path}: (status unavailable)`);
+      } catch (e: any) {
+        // Surface WHY. A bare "(status unavailable)" reads as an empty folder,
+        // which is indistinguishable from mail that never arrived — the exact
+        // failure this tool exists to catch.
+        details.push(`${path}: (status unavailable: ${e?.message ?? String(e)})`);
       }
     }
     return details.join("\n");
