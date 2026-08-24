@@ -40,7 +40,10 @@
       "targets": [
         "maddy"
       ]
-    },
+    }
+  ],
+  "_disabled_comment": "gws-primary and live-primary are parked here, not in .sources, because they have never had credentials: all six of their OAuth env vars (GWS_/OUTLOOK_ CLIENT_ID, CLIENT_SECRET, REFRESH_TOKEN) resolve to one identical 11-char placeholder, so Google answers invalid_client (\"The OAuth client was not found\") and Microsoft answers AADSTS7000012. Left in .sources they retried every 30s forever, spamming the log and holding health_mail-ingest permanently red, which buries real inbound failures. Re-enabling needs a one-time interactive browser authorize per account (see secrets.schema.md) to mint a real refresh token into secrets.yaml; then move the entry back into .sources. The loader ignores unknown top-level keys (no serde deny_unknown_fields), so entries parked here are simply not run. NOTE: me@diegonmarcos.com does NOT depend on gws-primary for recovery - health_mail-reconcile covers it daily by diffing Gmail against the whole maddy store by Message-ID and re-injecting over SMTP, using service-account creds that already work. diegonmarcos@live.com has no such fallback and is currently not mirrored at all.",
+  "disabled_sources": [
     {
       "id": "live-primary",
       "provider": "outlook",
