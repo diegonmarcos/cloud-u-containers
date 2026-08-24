@@ -18,7 +18,7 @@ export const MCP_SERVERS = [
   { key: "cloud-infra",      url: "https://mcp.diegonmarcos.com/c3-infra-mcp/mcp" },
   { key: "cloud-cgc-pub-mcp", url: "https://mcp.diegonmarcos.com/cloud-cgc-pub-mcp/mcp" },
   { key: "cloud-services",   url: "https://mcp.diegonmarcos.com/c3-services-mcp/mcp" },
-  { key: "mail-mcp",         url: "https://mcp.diegonmarcos.com/mail-mcp/mcp" },
+  { key: "cloud-mail-mcp",         url: "https://mcp.diegonmarcos.com/mail-mcp/mcp" },
   { key: "google-workspace", url: "https://mcp.diegonmarcos.com/g-workspace/mcp" },
   { key: "google-personal",  url: "https://mcp.diegonmarcos.com/g-personal/mcp" },
 ];

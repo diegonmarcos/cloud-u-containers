@@ -4,11 +4,11 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { registerMetaTool } from "./tools/meta.js";
 import { registerProxiedMcpTools, startProxyRetryLoop } from "./shared/proxy-mcp.js";
 
-const log = (msg: string) => process.stderr.write(`[mail-mcp-http] ${msg}\n`);
-const SESSION_ID = "mail-mcp-session";
+const log = (msg: string) => process.stderr.write(`[cloud-mail-mcp-http] ${msg}\n`);
+const SESSION_ID = "cloud-mail-mcp-session";
 
 function createMcpServer(): McpServer {
-  const server = new McpServer({ name: "mail-mcp", version: "1.5.0" });
+  const server = new McpServer({ name: "cloud-mail-mcp", version: "1.5.0" });
   registerMetaTool(server);
   // Best-effort attach to proxied MCPs (google-personal-mcp et al). Failed
   // children are picked up by the background retry loop started below.

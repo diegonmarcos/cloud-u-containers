@@ -67,7 +67,7 @@ pub struct RemoteData {
     pub config_host_hash: String,        // Host deployed config hash
 }
 
-/// Cached SSH batch data from oci-apps (mail-mcp container tests)
+/// Cached SSH batch data from oci-apps (cloud-mail-mcp container tests)
 #[derive(Debug, Clone, Default)]
 pub struct RemoteDataApps {
     pub mail_mcp_status: String,

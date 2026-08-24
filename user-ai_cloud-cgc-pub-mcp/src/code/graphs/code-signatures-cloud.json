@@ -12152,7 +12152,7 @@
         "proxiedMcpsJson",
         "mailWgIp",
         "services",
-        "mail-mcp",
+        "cloud-mail-mcp",
         "image",
         "container_name",
         "ports",

@@ -191,7 +191,7 @@ pub async fn run(cfg: &EmailE2EConfig, token: &str) -> EmailResult {
         mcp_checked = true;
         match check_liveness(url).await {
             Ok(()) => mcp_ok = true,
-            Err(e) => push_err(&mut error, "mail-mcp", e.to_string()),
+            Err(e) => push_err(&mut error, "cloud-mail-mcp", e.to_string()),
         }
     }
 

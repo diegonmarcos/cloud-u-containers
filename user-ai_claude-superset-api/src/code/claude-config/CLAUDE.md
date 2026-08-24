@@ -159,7 +159,7 @@ SSH aliases: `ssh oci-mail`, `ssh oci-analytics`, `ssh oci-apps`, `ssh gcp-t4`, 
 | grist | sheets.diegonmarcos.com | oci-apps | app |
 | hedgedoc | doc.diegonmarcos.com | oci-apps | app |
 | openobserve | analytics.diegonmarcos.com/openobserve | oci-apps | tools |
-| mail-mcp | mcp.diegonmarcos.com | oci-apps | app |
+| cloud-mail-mcp | mcp.diegonmarcos.com | oci-apps | app |
 | matomo | analytics.diegonmarcos.com | oci-apps | tools |
 | mattermost-bots | chat.diegonmarcos.com | oci-apps | app |
 | ntfy | rss.diegonmarcos.com | oci-apps | tools |

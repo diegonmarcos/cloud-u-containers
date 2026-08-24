@@ -4,7 +4,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { registerMetaTool } from "./tools/meta.js";
 import { registerProxiedMcpTools, startProxyRetryLoop } from "./shared/proxy-mcp.js";
 
-const log = (msg: string) => process.stderr.write(`[mail-mcp] ${msg}\n`);
+const log = (msg: string) => process.stderr.write(`[cloud-mail-mcp] ${msg}\n`);
 
 async function main() {
   const hasMaddyCreds = process.env.MADDY_ME_USER && process.env.MADDY_ME_PASSWORD;
@@ -20,13 +20,13 @@ async function main() {
     await startMcpHttpServer(port);
   } else {
     const server = new McpServer({
-      name: "mail-mcp",
+      name: "cloud-mail-mcp",
       version: "1.5.1",
     });
     registerMetaTool(server);
     await registerProxiedMcpTools(server);   // google-personal-mcp + future MCPs from build.json
     const transport = new StdioServerTransport();
-    log("Starting mail-mcp v1.5.1 (1 meta-tool + proxied MCPs)...");
+    log("Starting cloud-mail-mcp v1.5.1 (1 meta-tool + proxied MCPs)...");
     await server.connect(transport);
     log("Connected via stdio transport");
     startProxyRetryLoop(server);

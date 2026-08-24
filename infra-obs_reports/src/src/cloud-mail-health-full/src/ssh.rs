@@ -483,13 +483,13 @@ cat /etc/resolv.conf 2>/dev/null || true
     })
 }
 
-/// Batch SSH to oci-apps -- mail-mcp container tests via node
+/// Batch SSH to oci-apps -- cloud-mail-mcp container tests via node
 pub async fn ssh_batch_apps() -> Result<RemoteDataApps, String> {
-    // Node scripts run inside mail-mcp container
+    // Node scripts run inside cloud-mail-mcp container
     let node_script = |code: &str| -> String {
         let escaped = code.replace('"', r#"\""#).replace('\n', "");
         format!(
-            r#"docker exec mail-mcp node -e "{}" 2>&1 | head -5"#,
+            r#"docker exec cloud-mail-mcp node -e "{}" 2>&1 | head -5"#,
             escaped
         )
     };
@@ -516,7 +516,7 @@ pub async fn ssh_batch_apps() -> Result<RemoteDataApps, String> {
 
     let script = format!(
         r#"echo "===mailMcpStatus==="
-docker ps --filter name=mail-mcp --format '{{{{.Status}}}}' 2>/dev/null || echo "NOT FOUND"
+docker ps --filter name=cloud-mail-mcp --format '{{{{.Status}}}}' 2>/dev/null || echo "NOT FOUND"
 echo "===dnsResolve==="
 {}
 echo "===imapTls==="
