@@ -145,7 +145,7 @@ SSH aliases: `ssh oci-mail`, `ssh oci-analytics`, `ssh oci-apps`, `ssh gcp-t4`, 
 | dagu | workflows.diegonmarcos.com | oci-analytics | tools |
 | dozzle | logs.diegonmarcos.com | oci-analytics | tools |
 | c3-infra-api | api.diegonmarcos.com/c3-infra-api | oci-apps | sec |
-| c3-infra-mcp | mcp.diegonmarcos.com/c3-infra-mcp | oci-apps | sec |
+| cloud-infra-mcp | mcp.diegonmarcos.com/c3-infra-mcp | oci-apps | sec |
 | c3-services-api | api.diegonmarcos.com/c3-services-api | oci-apps | obs |
 | code-server | ide.diegonmarcos.com | oci-apps | app |
 | crawlee-cloud | api.diegonmarcos.com | oci-apps | fin |

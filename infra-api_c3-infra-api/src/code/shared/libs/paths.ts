@@ -150,7 +150,7 @@ export const AUTHELIA_TOKEN_PATH = join(HOME, ".config/authelia/tokens.json");
 function resolveC3Api(): { mesh: string; public: string } {
   try {
     const topo = JSON.parse(readFileSync(resolveConfigPath(), "utf-8"));
-    const c3Svc = topo.services?.["c3-infra-api"] ?? topo.services?.["c3-infra-mcp"];
+    const c3Svc = topo.services?.["c3-infra-api"] ?? topo.services?.["cloud-infra-mcp"];
     const c3Vm = c3Svc?.vm;
     const wgIp = c3Vm ? topo.vms?.[c3Vm]?.wg_ip : null;
     const port = c3Svc?.port;

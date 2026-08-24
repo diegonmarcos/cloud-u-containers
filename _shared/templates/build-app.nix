@@ -6,7 +6,7 @@
 # ╚══════════════════════════════════════════════════════════════════╝
 #
 # Covers: alerts-api, orchestrator, c3-infra-mcp-api, c3-services-mcp-api,
-#         google-workspace-mcp, mailu-mcp, mattermost-mcp, and similar
+#         google-workspace-mcp, mailu-mcp, cloud-mattermost-mcp, and similar
 #         services built from a Dockerfile in the dist/ directory.
 
 docker:

@@ -55,7 +55,7 @@ steps:
       # Keep-list comes from REPO_MAP — the SAME data pull-repos just cloned
       # from, never a second hand-maintained list (a stray manually-cloned
       # dir left in the volume is readable by every consumer that mounts it:
-      # cloud-cgc-pub-mcp, c3-infra-api, c3-infra-mcp, report_daily).
+      # cloud-cgc-pub-mcp, c3-infra-api, cloud-infra-mcp, report_daily).
       KEEP=""
       for entry in $REPO_MAP; do
         DIR=$(echo "$entry" | cut -d: -f1)

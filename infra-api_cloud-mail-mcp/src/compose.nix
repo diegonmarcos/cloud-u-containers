@@ -17,7 +17,7 @@ let
   mailHost      = mh.maddy;
   stalwartJmap  = "https://${mh.stalwart}:${toString mp.stalwart_jmap_https}";
 
-  # ── Resolve proxied MCP URLs from cloud-data (mirrors c3-services-mcp) ──
+  # ── Resolve proxied MCP URLs from cloud-data (mirrors cloud-services-mcp) ──
   # build.json declares child MCP names; each is looked up in `svc.<name>` to
   # get its WG IP + app port. Bridge-mode container, so we use WG IPs.
   proxyCfg = buildJson.proxied_mcps or { children = []; retry = {

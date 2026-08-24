@@ -41,7 +41,7 @@
   },
   "domain": "mcp.diegonmarcos.com",
   "proxied_mcps": {
-    "_note": "URLs resolved at flake build time from cloud-data services{}. Bridge mode → WG IPs only. Same retry/LRU pattern as c3-services-mcp.",
+    "_note": "URLs resolved at flake build time from cloud-data services{}. Bridge mode → WG IPs only. Same retry/LRU pattern as cloud-services-mcp.",
     "children": [
       {
         "name": "google-personal-mcp",
