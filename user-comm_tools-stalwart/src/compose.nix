@@ -89,7 +89,7 @@ in
     stalwart-sorter = {
       image          = sorter.image;
       container_name = sorter.container_name;
-      entrypoint     = [ "python3" "/app/jmap-sorter.py" ];
+      entrypoint     = [ "jmap-sorter" ];
       env_file       = [ ".secrets" ];
       environment = {
         # Container-to-container: use the bridge-network DNS name (matches
@@ -104,8 +104,10 @@ in
         RULES_PATH     = "/data/mail-rules.json";
         STARTUP_DELAY  = "20";
       };
+      # Only the rules travel as an asset now — the sorter itself is compiled
+      # into the image (docker.native_build), so there is no interpreter and
+      # no source file to keep in sync with the container.
       volumes = [
-        "./assets/jmap-sorter.py:/app/jmap-sorter.py:ro"
         "./assets/mail-rules.json:/data/mail-rules.json:ro"
       ];
       deploy.resources = {
