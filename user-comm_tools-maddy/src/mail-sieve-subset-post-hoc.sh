@@ -145,6 +145,14 @@ backup_db() {
   ts="$(date +%Y%m%d-%H%M%S)"
   cp "$DB" "$DB.bak-$ts"
   log "backed up DB → $DB.bak-$ts"
+  # Retention. MEASURED 2026-08-24: 137 backups totalling 2.1G had piled up
+  # here — 87% of /data's 2.4G, oldest 2026-04-30 — because nothing ever
+  # pruned them. Harmless when backup_db ran by hand; a disk-filler now that
+  # apply-rules runs on a 2-min Dagu cron (~720 copies/day of a 22M DB).
+  # 20 keeps roughly the last hour of cron runs plus any manual ones.
+  ls -1t "$DB".bak-* 2>/dev/null | tail -n +21 | while IFS= read -r _old; do
+    rm -f "$_old"
+  done
 }
 
 ensure_writable() {
