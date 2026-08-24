@@ -489,6 +489,15 @@ cmd_apply_rules() {
     trap 'rm -rf "$LOCK_DIR"' EXIT INT TERM
   fi
 
+  # Copy-detection below joins INBOX rows to their copies via extBodyKey
+  # (copies share the body blob), but maddy's schema indexes only the msgs
+  # PK and (mboxId, seen) — so every correlated EXISTS was a full scan of
+  # all 12768 msgs rows, 4147 times over. MEASURED 2026-08-24: the
+  # fallback-only re-open query did not finish in 60s without this index
+  # and takes 3s with it. IF NOT EXISTS makes it a no-op after the first
+  # run; an extra index is transparent to maddy's own queries.
+  sq "CREATE INDEX IF NOT EXISTS idx_msgs_extbodykey ON msgs(extBodyKey);" >/dev/null
+
   FILTER_BIN_DEFAULT=/usr/local/bin/mail-sieve-subset-delivery-time
   FILTER_BIN="${FILTER_BIN:-$FILTER_BIN_DEFAULT}"
   [ -x "$FILTER_BIN" ] || fail "filter binary not found/executable: $FILTER_BIN"
