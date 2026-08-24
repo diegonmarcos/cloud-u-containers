@@ -2,7 +2,7 @@
  * MCP Proxy — connects as MCP CLIENT to child MCP servers and re-exposes
  * their tools under this hub server. Mirrors the bounded-LRU pattern from
  * bc-obs_c3-services-mcp/src/code/mcp/tools/proxy-mcp.ts (no shared symlink
- * yet — duplicated to keep mail-mcp's container build context self-contained
+ * yet — duplicated to keep cloud-mail-mcp's container build context self-contained
  * for the docker/build-push-action layer cache).
  *
  * Data flow (no hardcoded URLs):
@@ -15,7 +15,7 @@ import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
-const log = (msg: string) => process.stderr.write(`[mail-mcp:proxy] ${msg}\n`);
+const log = (msg: string) => process.stderr.write(`[cloud-mail-mcp:proxy] ${msg}\n`);
 
 interface ChildMcp { name: string; url: string; }
 interface RetryCfg { initial_ms: number; max_ms: number; max_retry_state_entries: number; }
@@ -104,7 +104,7 @@ export function startProxyRetryLoop(server: McpServer): void {
 async function connectChild(server: McpServer, child: ChildMcp): Promise<void> {
   if (connectedChildren.has(child.name)) return;
   const transport = new StreamableHTTPClientTransport(new URL(child.url));
-  const client = new Client({ name: "mail-mcp-proxy", version: "1.0.0" }, { capabilities: {} });
+  const client = new Client({ name: "cloud-mail-mcp-proxy", version: "1.0.0" }, { capabilities: {} });
   try { await client.connect(transport); }
   catch (err) {
     await client.close().catch(() => {});

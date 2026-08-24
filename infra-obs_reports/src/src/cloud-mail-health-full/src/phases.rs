@@ -643,8 +643,8 @@ pub async fn preflight(
     {
         let t = Instant::now();
         let (ok, detail) = match &apps_result {
-            Ok(d) if d.mail_mcp_status.contains("Up") => (true, format!("mail-mcp: {}", &d.mail_mcp_status[..d.mail_mcp_status.len().min(30)])),
-            Ok(d) => (false, format!("mail-mcp: {}", &d.mail_mcp_status[..d.mail_mcp_status.len().min(30)])),
+            Ok(d) if d.mail_mcp_status.contains("Up") => (true, format!("cloud-mail-mcp: {}", &d.mail_mcp_status[..d.mail_mcp_status.len().min(30)])),
+            Ok(d) => (false, format!("cloud-mail-mcp: {}", &d.mail_mcp_status[..d.mail_mcp_status.len().min(30)])),
             Err(e) => (false, e.clone()),
         };
         checks.push(Check {
@@ -887,7 +887,7 @@ pub fn container_health(
         }
     }
 
-    // mail-mcp on oci-apps
+    // cloud-mail-mcp on oci-apps
     let mcp_ok = apps_data
         .as_ref()
         .map(|d| d.mail_mcp_status.contains("Up"))
@@ -897,7 +897,7 @@ pub fn container_health(
         .map(|d| d.mail_mcp_status[..d.mail_mcp_status.len().min(40)].to_string())
         .unwrap_or_else(|| "no data".into());
     checks.push(Check {
-        name: "mail-mcp".into(),
+        name: "cloud-mail-mcp".into(),
         passed: mcp_ok,
         details: mcp_detail.clone(),
         duration_ms: 0,
@@ -1319,7 +1319,7 @@ echo "$r993" | grep "Not After" | head -1"#,
         }));
     }
 
-    // mail-mcp container connectivity (from oci-apps batch)
+    // cloud-mail-mcp container connectivity (from oci-apps batch)
     let mcp_checks: Vec<(&str, Box<dyn Fn(&RemoteDataApps) -> (bool, String) + Send + Sync>)> = vec![
         ("mcp->DNS resolve", Box::new(|d: &RemoteDataApps| {
             let ok = d.dns_resolve.starts_with("OK:");
@@ -1337,7 +1337,7 @@ echo "$r993" | grep "Not After" | head -1"#,
         })),
         ("mcp->IMAP LOGIN", Box::new(|d: &RemoteDataApps| {
             if d.imap_login == "NO_CREDS" {
-                return (false, "MAIL_USER/MAIL_PASSWORD not set in mail-mcp".into());
+                return (false, "MAIL_USER/MAIL_PASSWORD not set in cloud-mail-mcp".into());
             }
             (d.imap_login.contains("LOGIN_OK"), d.imap_login.clone())
         })),
@@ -1372,7 +1372,7 @@ echo "$r993" | grep "Not After" | head -1"#,
             let (_, code, detail) = http_get(&cl, &url).await;
             let ok = matches!(code, 400 | 405 | 406);
             Check {
-                name: "mail-mcp MCP".into(),
+                name: "cloud-mail-mcp MCP".into(),
                 passed: ok,
                 details: format!("HTTP {} (alive)", detail),
                 duration_ms: t.elapsed().as_millis() as u64,

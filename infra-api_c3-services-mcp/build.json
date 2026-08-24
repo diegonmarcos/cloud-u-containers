@@ -60,8 +60,8 @@
         "path": "/mcp"
       },
       {
-        "name": "mail-mcp",
-        "service": "mail-mcp",
+        "name": "cloud-mail-mcp",
+        "service": "cloud-mail-mcp",
         "path": "/mcp"
       },
       {

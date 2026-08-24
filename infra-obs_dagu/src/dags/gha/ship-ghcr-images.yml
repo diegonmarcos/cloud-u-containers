@@ -28,7 +28,7 @@ jobs:
           - name: google-workspace-mcp
             context: a_solutions/aa-sui_google-workspace-mcp/src
             file: a_solutions/aa-sui_google-workspace-mcp/src/Dockerfile
-          - name: mail-mcp
+          - name: cloud-mail-mcp
             context: a_solutions/aa-sui_mail-mcp/src
             file: a_solutions/aa-sui_mail-mcp/src/Dockerfile
           - name: mattermost-mcp

@@ -1,5 +1,5 @@
 {
-  "name": "mail-mcp",
+  "name": "cloud-mail-mcp",
   "description": "Mail MCP server — IMAP/SMTP/Admin via Stalwart REST API",
   "dns": "mail-mcp.app",
   "category": "app",
@@ -8,7 +8,7 @@
     "headers_enforced": true
   },
   "docker": {
-    "image": "mail-mcp",
+    "image": "cloud-mail-mcp",
     "dockerfile": "Dockerfile",
     "registry": "ghcr.io/diegonmarcos",
     "arch": "arm64",
@@ -23,7 +23,7 @@
   },
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/mail-mcp",
+    "remote_path": "/opt/containers/cloud-mail-mcp",
     "compose_flags": "--build"
   },
   "proxy": {
@@ -68,8 +68,8 @@
   },
   "containers": {
     "app": {
-      "container_name": "mail-mcp",
-      "image": "ghcr.io/diegonmarcos/mail-mcp:latest",
+      "container_name": "cloud-mail-mcp",
+      "image": "ghcr.io/diegonmarcos/cloud-mail-mcp:latest",
       "port": 3103,
       "port_env": "PORT",
       "dns": "mail-mcp.app",

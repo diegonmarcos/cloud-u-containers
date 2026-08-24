@@ -25,7 +25,7 @@ const NATIVE_WRAPPED: Set<string> = new Set([
 
 // ── Proxied child MCP servers ───────────────────────────────────────────
 const PROXIED_MCPS: Set<string> = new Set([
-  "cloud-cgc-pub-mcp", "mattermost-mcp", "mail-mcp", "google-workspace-mcp",
+  "cloud-cgc-pub-mcp", "mattermost-mcp", "cloud-mail-mcp", "google-workspace-mcp",
   "chat-mattermost",   // same Mattermost instance, covered by mattermost-mcp
 ]);
 

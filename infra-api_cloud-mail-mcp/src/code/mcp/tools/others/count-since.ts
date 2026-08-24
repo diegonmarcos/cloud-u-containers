@@ -17,13 +17,13 @@
 // Prints: {"maddy":<N>,"stalwart":<M>}  (either count is -1 on error, with
 // the reason on stderr — the caller decides how to treat a -1).
 //
-// Credentials: reused exactly as mail-mcp's own tools read them — see
+// Credentials: reused exactly as cloud-mail-mcp's own tools read them — see
 // ../../shared/config.ts getAccount(). Set MADDY_ME_USER/MADDY_ME_PASSWORD
 // (or MAIL_USER/MAIL_PASSWORD, the maddy/me back-compat fallback) and
 // STALWART_ME_USER/STALWART_ME_PASSWORD in the environment this runs in —
-// same env vars the mail-mcp container already has via its .secrets file
+// same env vars the cloud-mail-mcp container already has via its .secrets file
 // (see ../../../compose.nix), so this is meant to run via `docker exec
-// mail-mcp ...` on oci-apps, not standalone.
+// cloud-mail-mcp ...` on oci-apps, not standalone.
 
 import { withImap } from "../../shared/imap.js";
 import { getServer, getAccount } from "../../shared/config.js";

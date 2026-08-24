@@ -1,7 +1,7 @@
-# compose.nix — docker-compose spec for mail-mcp (Type A own-code)
+# compose.nix — docker-compose spec for cloud-mail-mcp (Type A own-code)
 #
 # Pure-Nix attrset serialised to YAML by _shared/engine.nix. No heredocs.
-# Single-container service: mail-mcp (IMAP/SMTP/Admin via Stalwart REST API).
+# Single-container service: cloud-mail-mcp (IMAP/SMTP/Admin via Stalwart REST API).
 { buildJson, container }:
 
 let
@@ -11,7 +11,7 @@ let
   mp    = buildJson.mail_ports;
 
   binariesImage = "ghcr.io/diegonmarcos/${buildJson.name}-binaries:latest";
-  vmIp          = svc."mail-mcp".ip;
+  vmIp          = svc."cloud-mail-mcp".ip;
   port          = toString buildJson.ports.app;
   # Cert is for mail.<base>; use domain for TLS SNI (not the raw WG IP).
   mailHost      = mh.maddy;
@@ -50,7 +50,7 @@ let
 in
 {
   services = {
-    mail-mcp = {
+    cloud-mail-mcp = {
       image          = binariesImage;
       container_name = app.container_name;
       ports          = [ "${vmIp}:${port}:${port}" ];
