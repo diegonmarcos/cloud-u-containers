@@ -36,7 +36,9 @@ async function callHttp(spec: Json, backend: Json, params: Json): Promise<Json> 
     urlEnv: backend.url_env,
     basePath: backend.base_path,
   });
-  if ("error" in r) return { error: r.error, backend: backend.service };
+  // env-only backends (s3, sync) legitimately omit `service` — resolve via
+  // url_env instead — so don't report a bare `undefined` here.
+  if ("error" in r) return { error: r.error, backend: backend.service ?? "(env-configured)" };
 
   const { path, rest, missing } = fillPath(String(spec.path ?? ""), params);
   if (missing.length) return { error: `missing required params: ${missing.join(", ")}` };

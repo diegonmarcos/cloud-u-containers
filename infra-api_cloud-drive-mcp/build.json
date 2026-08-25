@@ -66,11 +66,10 @@
       },
       "sync": {
         "kind": "http",
-        "service": "syncthing",
         "base_path": "/rest",
         "url_env": "SYNCTHING_URL",
         "api_key_env": "SYNCTHING_API_KEY",
-        "_doc": "syncthing is NOT declared in cloud-data services{} — the existing cloud-services-mcp tools hardcode http://10.0.0.3:8384. Until it is declared, SYNCTHING_URL is the only way to reach it and sync.* reports itself unconfigured without one."
+        "_doc": "syncthing is RETIRED (a_solutions/z_archive/ab-mic_syncthing) and runs on no VM. The `service` key was removed: it named a retired service, which Phase 10 correctly flags as live drift, and it was already dead weight — resolveService() prefers url_env and syncthing was never declared in cloud-data services{}, so the lookup always missed. SYNCTHING_URL remains the only way to reach it, exactly as before; env-only backends (see s3 below) legitimately omit `service`. sync.* reports itself unconfigured without one."
       },
       "s3": {
         "kind": "s3",
@@ -86,38 +85,132 @@
       }
     },
     "methods": {
-      "repo.list":      { "backend": "repo",   "http": "GET",  "path": "/user/repos" },
-      "repo.detail":    { "backend": "repo",   "http": "GET",  "path": "/repos/{owner}/{repo}" },
-      "repo.releases":  { "backend": "repo",   "http": "GET",  "path": "/repos/{owner}/{repo}/releases" },
-      "repo.issues":    { "backend": "repo",   "http": "GET",  "path": "/repos/{owner}/{repo}/issues" },
-      "repo.orgs":      { "backend": "repo",   "http": "GET",  "path": "/user/orgs" },
-
-      "file.ls":        { "backend": "file",   "http": "GET",  "path": "/resources/{path}" },
-      "file.info":      { "backend": "file",   "http": "GET",  "path": "/resources/{path}?checksum=md5" },
-      "file.mkdir":     { "backend": "file",   "http": "POST", "path": "/resources/{path}?override=false" },
-      "file.move":      { "backend": "file",   "http": "PATCH","path": "/resources/{path}" },
-      "file.delete":    { "backend": "file",   "http": "DELETE","path": "/resources/{path}", "destructive": true },
-      "file.usage":     { "backend": "file",   "http": "GET",  "path": "/usage" },
-      "file.shares":    { "backend": "file",   "http": "GET",  "path": "/shares" },
-
-      "photo.search":   { "backend": "photo",  "http": "GET",  "path": "/photos" },
-      "photo.albums":   { "backend": "photo",  "http": "GET",  "path": "/albums" },
-      "photo.labels":   { "backend": "photo",  "http": "GET",  "path": "/labels" },
-
-      "scrape.targets": { "backend": "scrape", "http": "GET",  "path": "/targets" },
-      "scrape.run":     { "backend": "scrape", "http": "POST", "path": "/scrape" },
-
-      "sync.status":    { "backend": "sync",   "http": "GET",  "path": "/system/status" },
-      "sync.folders":   { "backend": "sync",   "http": "GET",  "path": "/config/folders" },
-      "sync.devices":   { "backend": "sync",   "http": "GET",  "path": "/config/devices" },
-
-      "s3.list":        { "backend": "s3",     "op": "list" },
-      "s3.get":         { "backend": "s3",     "op": "get" },
-      "s3.put":         { "backend": "s3",     "op": "put" },
-      "s3.delete":      { "backend": "s3",     "op": "delete", "destructive": true },
-
-      "convert.run":    { "backend": "convert", "op": "run" },
-      "convert.formats":{ "backend": "convert", "op": "formats" }
+      "repo.list": {
+        "backend": "repo",
+        "http": "GET",
+        "path": "/user/repos"
+      },
+      "repo.detail": {
+        "backend": "repo",
+        "http": "GET",
+        "path": "/repos/{owner}/{repo}"
+      },
+      "repo.releases": {
+        "backend": "repo",
+        "http": "GET",
+        "path": "/repos/{owner}/{repo}/releases"
+      },
+      "repo.issues": {
+        "backend": "repo",
+        "http": "GET",
+        "path": "/repos/{owner}/{repo}/issues"
+      },
+      "repo.orgs": {
+        "backend": "repo",
+        "http": "GET",
+        "path": "/user/orgs"
+      },
+      "file.ls": {
+        "backend": "file",
+        "http": "GET",
+        "path": "/resources/{path}"
+      },
+      "file.info": {
+        "backend": "file",
+        "http": "GET",
+        "path": "/resources/{path}?checksum=md5"
+      },
+      "file.mkdir": {
+        "backend": "file",
+        "http": "POST",
+        "path": "/resources/{path}?override=false"
+      },
+      "file.move": {
+        "backend": "file",
+        "http": "PATCH",
+        "path": "/resources/{path}"
+      },
+      "file.delete": {
+        "backend": "file",
+        "http": "DELETE",
+        "path": "/resources/{path}",
+        "destructive": true
+      },
+      "file.usage": {
+        "backend": "file",
+        "http": "GET",
+        "path": "/usage"
+      },
+      "file.shares": {
+        "backend": "file",
+        "http": "GET",
+        "path": "/shares"
+      },
+      "photo.search": {
+        "backend": "photo",
+        "http": "GET",
+        "path": "/photos"
+      },
+      "photo.albums": {
+        "backend": "photo",
+        "http": "GET",
+        "path": "/albums"
+      },
+      "photo.labels": {
+        "backend": "photo",
+        "http": "GET",
+        "path": "/labels"
+      },
+      "scrape.targets": {
+        "backend": "scrape",
+        "http": "GET",
+        "path": "/targets"
+      },
+      "scrape.run": {
+        "backend": "scrape",
+        "http": "POST",
+        "path": "/scrape"
+      },
+      "sync.status": {
+        "backend": "sync",
+        "http": "GET",
+        "path": "/system/status"
+      },
+      "sync.folders": {
+        "backend": "sync",
+        "http": "GET",
+        "path": "/config/folders"
+      },
+      "sync.devices": {
+        "backend": "sync",
+        "http": "GET",
+        "path": "/config/devices"
+      },
+      "s3.list": {
+        "backend": "s3",
+        "op": "list"
+      },
+      "s3.get": {
+        "backend": "s3",
+        "op": "get"
+      },
+      "s3.put": {
+        "backend": "s3",
+        "op": "put"
+      },
+      "s3.delete": {
+        "backend": "s3",
+        "op": "delete",
+        "destructive": true
+      },
+      "convert.run": {
+        "backend": "convert",
+        "op": "run"
+      },
+      "convert.formats": {
+        "backend": "convert",
+        "op": "formats"
+      }
     }
   },
   "containers": {
