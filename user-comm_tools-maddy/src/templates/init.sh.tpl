@@ -50,5 +50,14 @@ echo "[init] Ensuring accounts + syncing passwords..."
 # Source: aa-sui_tools-maddy/build.json#users (this service's own SoT).
 @USER_CREATION_BLOCK@
 
+# FOLDER_CREATION_BLOCK below — the F0 sender-classification folders
+# (mail-rules-general.json#filters.views, axis="sender"). Must exist before
+# apply-rules' first COPY into them: its SQL only UPDATEs an existing mboxes
+# row, never INSERTs one, so a missing folder makes every copy into it a
+# silent no-op. `imap-mboxes create` errors on an existing folder — expected,
+# same idempotent-boot pattern as USER_CREATION_BLOCK above.
+echo "[init] Ensuring F0 sender-classification folders..."
+@FOLDER_CREATION_BLOCK@
+
 echo "[init] Starting Maddy..."
 exec maddy -config /data/maddy.conf run
