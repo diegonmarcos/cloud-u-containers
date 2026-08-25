@@ -267,7 +267,7 @@ cmd_android() {
 
     echo ""
     echo "Done. Copy reports/dist/android/<abi>/*.so into the Cloud-SuperApp APK:"
-    echo "  ea_cloud-superapp/app/src/main/jniLibs/<abi>/"
+    echo "  aa_cloud-superapp/app/src/main/jniLibs/<abi>/"
 }
 
 target="${1:-all}"
