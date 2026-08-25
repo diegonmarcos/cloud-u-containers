@@ -14,23 +14,42 @@
     "regex"
   ],
   "folders": {
-    "admin": "11    🛡️ Admin & Finance",
-    "logistics": "12    ✈️ Logistics",
-    "cloud_reports": "13    ☁️ Cloud - General & Reports",
-    "cloud_workflows": "14    ☁️ Cloud - Workflows",
+    "admin": "11    🛡️ Admin",
+    "finance": "12    💰 Finance",
     "career": "21    💼 Career & Network",
     "social": "22    📰 Social & General",
     "government": "23    🧻 Government",
-    "development": "31    🎓 Development & Tech",
+    "house": "24    🏠 House",
     "others": "91    📬 Others (fallback)",
     "archive": "92    📥 Archive",
     "junk": "93    🚫 Junk"
   },
+  "_folders_doc": "Numeric 1*-9* folders are project-scoped, not sender-scoped -- that's what F0 (filters.views, axis=sender) is for. Logistics (flights/rideshare/postal/food-delivery) and Development (code hosting/SaaS dev tools/learning) were retired as numeric targets: covered by Fh Travel / Fe Dev-Tech in the sender axis instead. Only their housing-search subset survives, as 24 House. 30 CLOUD's GH-Workflows/Cloud-Reports/Rss-Notifications and VPS-Oracle/Google/Git live under `folder_groups` below (31/32 are two-level: a parent + 3 children each), not in this flat map.",
+  "folder_groups": [
+    {
+      "key": "cloud_reports_group",
+      "name": "31    ☁️ Cloud - Reports & CI",
+      "children": {
+        "cloud_gh_workflows": "GH Workflows",
+        "cloud_reports_child": "Cloud Reports",
+        "cloud_rss_notifications": "Rss Notifications"
+      }
+    },
+    {
+      "key": "vps_group",
+      "name": "32    ☁️ Cloud - VPS Providers",
+      "children": {
+        "vps_oracle": "VPS Oracle",
+        "vps_google": "VPS Google",
+        "vps_git": "VPS Git"
+      }
+    }
+  ],
   "_folders_ui_doc": "Visual section-headers — flat sibling mailboxes (NOT actual parents) that alphabetically sort just before each numeric block (10_ before 11/12/..., 20_ before 21/..., etc). Maddy creates these via the legacy `folders_ui` schema (see flake.nix line 82) and Stalwart's jmap-sorter now mirrors them so the two engines have identical mailbox listings. They are not routing targets — no rule.copy_to references them.",
   "folders_ui": [
     "10 _ ADMIN",
     "20 _ INFORMS",
-    "30 _ DEV",
+    "30 _ CLOUD",
     "90 _ OTHERS"
   ],
   "routing_default": "others",
@@ -1149,7 +1168,7 @@
         ]
       },
       "actions": {
-        "copy_to": "cloud_workflows"
+        "copy_to": "cloud_gh_workflows"
       },
       "engines": {
         "stalwart": "route_only",
@@ -1164,8 +1183,6 @@
       "when": {
         "type": "from_domain",
         "values": [
-          "github.com",
-          "noreply.github.com",
           "gitlab.com",
           "bitbucket.org",
           "codeberg.org",
@@ -1184,7 +1201,7 @@
         "copy_to": "development"
       },
       "engines": {
-        "stalwart": "route_only",
+        "stalwart": "drop",
         "maddy": "route_only"
       }
     },
@@ -1208,7 +1225,7 @@
         "copy_to": "development"
       },
       "engines": {
-        "stalwart": "route_only",
+        "stalwart": "drop",
         "maddy": "route_only"
       }
     },
@@ -1228,7 +1245,7 @@
         "copy_to": "development"
       },
       "engines": {
-        "stalwart": "route_only",
+        "stalwart": "drop",
         "maddy": "route_only"
       }
     },
@@ -1255,7 +1272,7 @@
         "copy_to": "development"
       },
       "engines": {
-        "stalwart": "route_only",
+        "stalwart": "drop",
         "maddy": "route_only"
       }
     },
@@ -1276,7 +1293,7 @@
         "copy_to": "development"
       },
       "engines": {
-        "stalwart": "route_only",
+        "stalwart": "drop",
         "maddy": "route_only"
       },
       "comment": "Derived from the live fallback-folder corpus (91 Others): AI/LLM provider senders — mail.anthropic.com (15), openrouter.ai (9), email.openai.com (4), email.claude.com (1)."
@@ -1304,7 +1321,7 @@
         "copy_to": "development"
       },
       "engines": {
-        "stalwart": "route_only",
+        "stalwart": "drop",
         "maddy": "route_only"
       },
       "comment": "Derived from the live fallback-folder corpus (91 Others): dev-tooling/SaaS senders — unity3d.com (7), bitwarden.eu (4), updates.resend.com (3), sketchfab.com (2), notifications.resend.com (1), em1.cloudflare.com (1), build.coda.io (1), verify.proton.me (1), sendsafely.com (1), techtree.dev (1)."
@@ -1317,18 +1334,17 @@
         "type": "from_domain",
         "values": [
           "aws.com",
-          "amazonaws.com",
-          "oracle-mail.com"
+          "amazonaws.com"
         ]
       },
       "actions": {
         "copy_to": "development"
       },
       "engines": {
-        "stalwart": "route_only",
+        "stalwart": "drop",
         "maddy": "route_only"
       },
-      "comment": "Derived from the live fallback-folder corpus (91 Others): cloud-infra provider senders distinct from the existing 'oracle.com'/'oraclecloud.com' match in route.cloud.providers — oracle-mail.com (3), aws.com (1), amazonaws.com (1)."
+      "comment": "Derived from the live fallback-folder corpus (91 Others): cloud-infra provider senders distinct from the existing 'oracle.com'/'oraclecloud.com' match in route.cloud.providers — aws.com (1), amazonaws.com (1). oracle-mail.com moved to route.cloud.vps_oracle."
     },
     {
       "id": "route.dev.misc",
@@ -1349,7 +1365,7 @@
         "copy_to": "development"
       },
       "engines": {
-        "stalwart": "route_only",
+        "stalwart": "drop",
         "maddy": "route_only"
       },
       "comment": "Derived from the live fallback-folder corpus (91 Others): misc dev/API senders, one message each — omdbapi.com, outbound.developers.giphy.com, giphy.com, hiddenjobs.dev, openhivelab.com, hive-open.com."
@@ -1685,7 +1701,7 @@
         ]
       },
       "engines": {
-        "stalwart": "route_only",
+        "stalwart": "drop",
         "maddy": "route_only"
       }
     },
@@ -1710,7 +1726,7 @@
         ]
       },
       "engines": {
-        "stalwart": "route_only",
+        "stalwart": "drop",
         "maddy": "route_only"
       }
     },
@@ -1730,7 +1746,7 @@
         "copy_to": "logistics"
       },
       "engines": {
-        "stalwart": "route_only",
+        "stalwart": "drop",
         "maddy": "route_only"
       }
     },
@@ -1796,7 +1812,7 @@
         ]
       },
       "engines": {
-        "stalwart": "route_only",
+        "stalwart": "drop",
         "maddy": "route_only"
       }
     },
@@ -1822,7 +1838,7 @@
         ]
       },
       "engines": {
-        "stalwart": "route_only",
+        "stalwart": "drop",
         "maddy": "route_only"
       }
     },
@@ -1840,7 +1856,7 @@
         ]
       },
       "actions": {
-        "copy_to": "logistics"
+        "copy_to": "house"
       },
       "engines": {
         "stalwart": "route_only",
@@ -1874,7 +1890,7 @@
         "copy_to": "logistics"
       },
       "engines": {
-        "stalwart": "route_only",
+        "stalwart": "drop",
         "maddy": "route_only"
       },
       "comment": "Derived from the live fallback-folder corpus (91 Others): hostel/lodging sub-domains and hospitality-PMS senders not covered by the exact 'hostelworld.com'/'booking.com' match in route.lifestyle.lodging — info.hostelworld.com (32), email.hostelworld.com (18), behappyhostels.com (6), mews.li (6), sg.booking.com (3), property.booking.com (3), chekin.com (3), sensorberg.com (1), sandino-hostel-berlin.de (1), wehostelgroup.com (1), hotelgest.com (1), avirato.com (1), siriusfacilities.com (2)."
@@ -1905,7 +1921,7 @@
         "copy_to": "logistics"
       },
       "engines": {
-        "stalwart": "route_only",
+        "stalwart": "drop",
         "maddy": "route_only"
       },
       "comment": "Derived from the live fallback-folder corpus (91 Others): bus/rail/local-transit/car-rental senders — e.alsa.com (20), alsa.es (16), citystorage.lt (11, trailing-quote extraction artifact stripped), service.ryanairemail.com (5), clickrent.es (5), mvg.de (4), bvg.de (2), wizzair.com (2, trailing-quote artifact stripped), trips.mail.flixbus.com (2), fin.ryanair.com (1), mail.interrail.eu (1), news.jelbi.de (1), trans.voiapp.io (1)."
@@ -1927,7 +1943,7 @@
         "copy_to": "logistics"
       },
       "engines": {
-        "stalwart": "route_only",
+        "stalwart": "drop",
         "maddy": "route_only"
       },
       "comment": "Derived from the live fallback-folder corpus (91 Others): misc travel-related senders — findacrew.com (33), nomadmania.com (14), esim.net (1), email-support.uber.com (1)."
@@ -2016,7 +2032,7 @@
         ]
       },
       "actions": {
-        "copy_to": "admin",
+        "copy_to": "finance",
         "flags": [
           "Fin_type:Receipt"
         ]
@@ -2061,7 +2077,7 @@
         ]
       },
       "actions": {
-        "copy_to": "admin",
+        "copy_to": "finance",
         "flags": [
           "Fin_type:Subscription"
         ]
@@ -2083,7 +2099,7 @@
         ]
       },
       "actions": {
-        "copy_to": "admin",
+        "copy_to": "finance",
         "flags": [
           "Fin_type:Insurance"
         ]
@@ -2106,7 +2122,7 @@
         ]
       },
       "actions": {
-        "copy_to": "admin",
+        "copy_to": "finance",
         "flags": [
           "Fin_entity:Bank"
         ]
@@ -2133,7 +2149,7 @@
         ]
       },
       "actions": {
-        "copy_to": "admin",
+        "copy_to": "finance",
         "flags": [
           "Shopping_Online"
         ]
@@ -2181,7 +2197,7 @@
         ]
       },
       "actions": {
-        "copy_to": "admin",
+        "copy_to": "finance",
         "flags": [
           "Fin_entity:Bank"
         ]
@@ -2208,7 +2224,7 @@
         ]
       },
       "actions": {
-        "copy_to": "admin",
+        "copy_to": "finance",
         "flags": [
           "Fin_entity:Bank"
         ]
@@ -2233,7 +2249,7 @@
         ]
       },
       "actions": {
-        "copy_to": "admin",
+        "copy_to": "finance",
         "flags": [
           "Fin_type:Subscription"
         ]
@@ -2554,7 +2570,7 @@
         ]
       },
       "actions": {
-        "copy_to": "cloud_reports",
+        "copy_to": "cloud_reports_child",
         "flags": [
           "Cloud_Sec:Cert_Renewal"
         ]
@@ -2578,7 +2594,7 @@
         ]
       },
       "actions": {
-        "copy_to": "cloud_reports",
+        "copy_to": "cloud_reports_child",
         "flags": [
           "Cloud_Cost:Domain_Renewal"
         ]
@@ -2602,7 +2618,7 @@
         ]
       },
       "actions": {
-        "copy_to": "cloud_reports",
+        "copy_to": "cloud_reports_child",
         "flags": [
           "Cloud_Cost:Hardware_Asset"
         ]
@@ -2619,16 +2635,12 @@
       "when": {
         "type": "from_domain",
         "values": [
-          "oraclecloud.com",
-          "oracle.com",
-          "cloud.google.com",
-          "google.cloud",
           "cloudflare.com",
           "digitalocean.com"
         ]
       },
       "actions": {
-        "copy_to": "cloud_reports",
+        "copy_to": "cloud_reports_child",
         "flags": [
           "Cloud_Cost:External_SaaS"
         ]
@@ -2636,7 +2648,67 @@
       "engines": {
         "stalwart": "route_only",
         "maddy": "route_only"
+      },
+      "comment": "oraclecloud.com/oracle.com moved to route.cloud.vps_oracle, cloud.google.com/google.cloud to route.cloud.vps_google -- both now project-scoped 32 VPS children instead of a shared 'external SaaS cost' bucket."
+    },
+    {
+      "id": "route.cloud.vps_oracle",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "oraclecloud.com",
+          "oracle.com",
+          "oracle-mail.com"
+        ]
+      },
+      "actions": {
+        "copy_to": "vps_oracle"
+      },
+      "engines": {
+        "stalwart": "route_only",
+        "maddy": "drop"
       }
+    },
+    {
+      "id": "route.cloud.vps_google",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "cloud.google.com",
+          "google.cloud"
+        ]
+      },
+      "actions": {
+        "copy_to": "vps_google"
+      },
+      "engines": {
+        "stalwart": "route_only",
+        "maddy": "drop"
+      }
+    },
+    {
+      "id": "route.cloud.vps_git",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "github.com",
+          "noreply.github.com"
+        ]
+      },
+      "actions": {
+        "copy_to": "vps_git"
+      },
+      "engines": {
+        "stalwart": "route_only",
+        "maddy": "drop"
+      },
+      "comment": "'emails from github for now' per user, 2026-08-25 -- placeholder scope, may need narrowing later (this matches ALL github.com mail, same domain set Fe Dev/Tech already classifies on the sender axis)."
     },
     {
       "id": "route.cloud.notifications",
@@ -2650,7 +2722,7 @@
         ]
       },
       "actions": {
-        "copy_to": "cloud_reports"
+        "copy_to": "cloud_rss_notifications"
       },
       "engines": {
         "stalwart": "route_only",
@@ -2994,11 +3066,5 @@
         "maddy": "drop"
       }
     }
-  ],
-  "folders_ui": [
-    "10 _ ADMIN",
-    "20 _ INFORMS",
-    "30 _ DEV",
-    "90 _ OTHERS"
   ]
 }

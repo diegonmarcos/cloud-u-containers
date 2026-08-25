@@ -105,6 +105,18 @@ pub fn ensure_mailboxes(
         plan.pick_or_create(folder, None, "inbox", i as u32 + 1);
     }
 
+    // Two-level folder groups (e.g. "31 Cloud - Reports & CI" -> GH Workflows
+    // / Cloud Reports / Rss Notifications). Real parent-child nesting, unlike
+    // the flat `folders` loop above — sort_order continues from where that
+    // loop left off so groups sort after the flat routing targets.
+    let folders_len = rules.folders.len() as u32;
+    for (gi, group) in rules.folder_groups.iter().enumerate() {
+        let parent = plan.pick_or_create(&group.name, None, "foldergroup", folders_len + 1 + gi as u32);
+        for (ci, child) in group.children.values().enumerate() {
+            plan.pick_or_create(child, Some(&parent), &format!("foldergroup_{gi}"), ci as u32);
+        }
+    }
+
     // Visual section-header folders (flat ROOT siblings, NOT parents). They
     // sort alphabetically just before each numeric block (10 _ ADMIN < 11 ...)
     // so users get the same grouped layout Maddy ships. Not routing targets.
@@ -237,6 +249,10 @@ pub fn apply_renames(client: &Client, rules: &Rules, mailboxes: &[Mailbox]) -> R
 fn valid_names(rules: &Rules) -> HashSet<String> {
     let mut valid: HashSet<String> = HashSet::new();
     valid.extend(rules.folders.values().cloned());
+    for group in &rules.folder_groups {
+        valid.insert(group.name.clone());
+        valid.extend(group.children.values().cloned());
+    }
     valid.extend(rules.folders_ui.iter().cloned());
     valid.extend(rules.filters.section_headers.iter().cloned());
     valid.extend(rules.filters.views.iter().map(|v| v.folder.clone()));

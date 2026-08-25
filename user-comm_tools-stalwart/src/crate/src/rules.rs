@@ -43,6 +43,16 @@ pub struct Rules {
     /// sortOrder to every folder created after each container restart.
     pub folders: BTreeMap<String, String>,
 
+    /// Two-level folder groups (e.g. "31 Cloud - Reports & CI" with real
+    /// children GH Workflows / Cloud Reports / Rss Notifications) — unlike
+    /// `folders` above, which is flat ROOT-only. A rule's `copy_to` targets
+    /// a child by its own key; the child's simple name (not a path string)
+    /// is what Sieve's `fileinto` and this sorter's own membership checks
+    /// use, since JMAP mailbox names only need to be unique per parent, and
+    /// none of these child names collide with anything else in the account.
+    #[serde(default, deserialize_with = "null_default")]
+    pub folder_groups: Vec<FolderGroup>,
+
     /// Visual section-header folders — flat ROOT siblings, not parents.
     #[serde(default, deserialize_with = "null_default")]
     pub folders_ui: Vec<String>,
@@ -52,6 +62,16 @@ pub struct Rules {
 
     #[serde(default, deserialize_with = "null_default")]
     pub folder_renames: FolderRenames,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct FolderGroup {
+    #[allow(dead_code)] // not consumed directly; present for schema fidelity / future use
+    pub key: String,
+    pub name: String,
+    /// child key -> child display name. BTreeMap for the same determinism
+    /// reason as [`Rules::folders`] — iteration order decides sortOrder.
+    pub children: BTreeMap<String, String>,
 }
 
 #[derive(Debug, Default, Deserialize)]

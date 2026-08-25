@@ -46,6 +46,12 @@ let
       account          = p.account or general.account or "";
       sieve_require    = lib.unique ((general.sieve_require or []) ++ (p.sieve_require or []));
       folders          = (general.folders or {}) // (p.folders_extend or {}) // (p.folders or {});
+      # Two-level folder groups (e.g. "31 Cloud - Reports & CI" with GH
+      # Workflows / Cloud Reports / Rss Notifications as real children) --
+      # a parent + named children, unlike the flat `folders` map above which
+      # is all ROOT-level. Concat, not merge-by-key: a profile can add a
+      # whole extra group but there's no per-group override story yet.
+      folder_groups    = (general.folder_groups or []) ++ (p.folder_groups or []);
       # Visual section-header siblings (flat ROOT mailboxes, NOT parents).
       # Carried through merge so toLegacyJson can hand them to jmap-sorter.
       folders_ui       = lib.unique ((general.folders_ui or []) ++ (p.folders_ui or []));
@@ -151,6 +157,16 @@ let
   #      flags (= every matching tag + \Seen).
 
   # Flags the engines.stalwart mode permits this rule to emit.
+  # Flat folder-name lookup for `copy_to` resolution: the ROOT-level
+  # `folders` map plus every folder_group's children (keyed by their own
+  # child key, valued by the child's simple name — NOT a "parent/child"
+  # path string). A rule's `copy_to` never needs to know or care whether
+  # its target is a flat folder or a group child; ensure_mailboxes creates
+  # the child under the right parentId independently of this lookup, and
+  # Sieve fileinto resolves an existing mailbox by its own (unique) name.
+  allFolderTargets = merged:
+    merged.folders // (lib.foldl (acc: g: acc // (g.children or {})) {} (merged.folder_groups or []));
+
   effectiveFlags = rule:
     let mode = rule.engines.stalwart or "full"; in
     if mode == "drop" || mode == "route_only" then []
@@ -200,7 +216,7 @@ let
   toSieve = merged:
     let
       account     = merged.account;
-      folders     = merged.folders;
+      folders     = allFolderTargets merged;
       predicates  = merged.predicates;
       requires    = concatMapStringsSep ", " (e: ''"${e}"'') merged.sieve_require;
       sorted      = sortByPriority merged.rules;
@@ -331,7 +347,7 @@ let
       routingFrom = rule:
         let
           mode = rule.engines.stalwart or "full";
-          folder = effectiveFolder merged.folders rule;
+          folder = effectiveFolder (allFolderTargets merged) rule;
           atom = resolvePredicate predicates rule.when;
         in
         if mode == "drop" || folder == null then null
@@ -349,6 +365,12 @@ let
       account        = merged.account;
       sieve_require  = merged.sieve_require;
       folders        = merged.folders;
+      # Two-level folder groups (parent + named children) -- ensure_mailboxes
+      # creates each parent then its children with the right parentId.
+      # `folders` above stays flat-only: group children are NOT flattened
+      # into it, or ensure_mailboxes would create them a second time as
+      # stray ROOT mailboxes instead of nesting them under their parent.
+      folder_groups  = merged.folder_groups or [];
       # Visual section-header siblings (flat ROOT mailboxes, NOT parents).
       # Consumed by jmap-sorter's ensure_mailboxes + cleanup_stale to
       # mirror Maddy's IMAP layout. Optional — defaults to [].

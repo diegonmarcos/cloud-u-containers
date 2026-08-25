@@ -46,12 +46,6 @@ if anyof(header :contains "X-Spam-Status" "Yes", header :contains "X-Spam-Flag" 
   stop;
 }
 
-# route.profile.42_school
-if address :domain :is "From" ["42berlin.de", "42heilbronn.de", "42.fr", "intra.42.fr"] {
-  fileinto :copy :create "31    🎓 Development & Tech";
-  stop;
-}
-
 # route.profile.tax_authorities
 if address :domain :is "From" ["elster.de", "agenciatributaria.es", "tax.service.gov.uk"] {
   fileinto :copy :create "23    🧻 Government";
@@ -61,25 +55,25 @@ if address :domain :is "From" ["elster.de", "agenciatributaria.es", "tax.service
 # route.admin.security_accounts
 if address :domain :is "From" ["bitwarden.com", "1password.com", "accounts.google.com"] {
   addflag "Sec_type:Login_Alert";
-  fileinto :copy :create "11    🛡️ Admin & Finance";
+  fileinto :copy :create "11    🛡️ Admin";
   stop;
 }
 
 # route.profile.homelab
 if address :domain :is "From" "diegonmarcos.com" {
-  fileinto :copy :create "13    ☁️ Cloud - General & Reports";
+  fileinto :copy :create "Cloud Reports";
   stop;
 }
 
 # route.profile.banks_es_de
 if address :domain :is "From" ["ing.es", "ing.de", "commerzbank.de", "deutschebank.de"] {
-  fileinto :copy :create "11    🛡️ Admin & Finance";
+  fileinto :copy :create "12    💰 Finance";
   stop;
 }
 
 # route.cloud_workflows.github_ci
 if anyof(header :contains "X-GitHub-Reason" "ci_activity", header :contains "Subject" ["Run failed:", "workflow run"]) {
-  fileinto :copy :create "14    ☁️ Cloud - Workflows";
+  fileinto :copy :create "GH Workflows";
   stop;
 }
 
@@ -89,160 +83,70 @@ if anyof(address :domain :matches "From" "*.gov.br", address :domain :is "From" 
   stop;
 }
 
-# route.dev.code_hosting
-if address :domain :is "From" ["github.com", "noreply.github.com", "gitlab.com", "bitbucket.org", "codeberg.org", "stackoverflow.com", "stackexchange.com", "npmjs.com", "crates.io", "pypi.org", "docker.com", "hub.docker.com", "nixos.org", "discourse.nixos.org"] {
-  fileinto :copy :create "31    🎓 Development & Tech";
-  stop;
-}
-
-# route.dev.saas_productivity
-if address :domain :is "From" ["vercel.com", "netlify.com", "railway.app", "heroku.com", "notion.so", "figma.com", "miro.com"] {
-  fileinto :copy :create "31    🎓 Development & Tech";
-  stop;
-}
-
-# route.dev.saas_creative
-if address :domain :is "From" ["jetbrains.com", "adobe.com", "canva.com"] {
-  fileinto :copy :create "31    🎓 Development & Tech";
-  stop;
-}
-
-# route.dev.ai_llm
-if address :domain :is "From" ["mail.anthropic.com", "email.claude.com", "openrouter.ai", "email.openai.com"] {
-  fileinto :copy :create "31    🎓 Development & Tech";
-  stop;
-}
-
-# route.dev.tools_extra
-if address :domain :is "From" ["unity3d.com", "bitwarden.eu", "sketchfab.com", "updates.resend.com", "notifications.resend.com", "em1.cloudflare.com", "build.coda.io", "verify.proton.me", "sendsafely.com", "techtree.dev"] {
-  fileinto :copy :create "31    🎓 Development & Tech";
-  stop;
-}
-
-# route.dev.cloud_infra_extra
-if address :domain :is "From" ["aws.com", "amazonaws.com", "oracle-mail.com"] {
-  fileinto :copy :create "31    🎓 Development & Tech";
-  stop;
-}
-
-# route.dev.misc
-if address :domain :is "From" ["omdbapi.com", "outbound.developers.giphy.com", "giphy.com", "hiddenjobs.dev", "openhivelab.com", "hive-open.com"] {
-  fileinto :copy :create "31    🎓 Development & Tech";
-  stop;
-}
-
 # route.career.platforms
 if address :domain :is "From" ["linkedin.com", "indeed.com", "glassdoor.com", "hired.com", "wellfound.com"] {
   fileinto :copy :create "21    💼 Career & Network";
   stop;
 }
 
-# route.lifestyle.travel_air
-if address :domain :is "From" ["ryanair.com", "easyjet.com", "vueling.com", "lufthansa.com", "klm.com", "iberia.com", "flixbus.com", "renfe.com"] {
-  fileinto :copy :create "12    ✈️ Logistics";
-  stop;
-}
-
-# route.lifestyle.rideshare
-if address :domain :is "From" ["uber.com", "bolt.eu", "freenow.com", "blablacar.com", "lyft.com"] {
-  fileinto :copy :create "12    ✈️ Logistics";
-  stop;
-}
-
-# route.lifestyle.lodging
-if address :domain :is "From" ["airbnb.com", "booking.com", "hostelworld.com"] {
-  fileinto :copy :create "12    ✈️ Logistics";
-  stop;
-}
-
-# route.lifestyle.postal_intl
-if address :domain :is "From" ["dhl.com", "dhl.de", "ups.com", "fedex.com", "dpd.com", "gls-group.com"] {
-  fileinto :copy :create "12    ✈️ Logistics";
-  stop;
-}
-
-# route.lifestyle.food_delivery
-if address :domain :is "From" ["deliveroo.com", "ubereats.com", "glovo.com", "justeat.com", "lieferando.de", "doordash.com"] {
-  fileinto :copy :create "12    ✈️ Logistics";
-  stop;
-}
-
 # route.lifestyle.housing_rental_de
 if address :domain :is "From" ["wg-gesucht.de", "nachrichten.immobilienscout24.de", "myplace.de", "kleinanzeigen.de"] {
-  fileinto :copy :create "12    ✈️ Logistics";
-  stop;
-}
-
-# route.lifestyle.lodging_extra
-if address :domain :is "From" ["info.hostelworld.com", "email.hostelworld.com", "behappyhostels.com", "sandino-hostel-berlin.de", "wehostelgroup.com", "chekin.com", "sg.booking.com", "property.booking.com", "mews.li", "hotelgest.com", "avirato.com", "siriusfacilities.com", "sensorberg.com"] {
-  fileinto :copy :create "12    ✈️ Logistics";
-  stop;
-}
-
-# route.lifestyle.transport_extra
-if address :domain :is "From" ["e.alsa.com", "alsa.es", "service.ryanairemail.com", "fin.ryanair.com", "wizzair.com", "trips.mail.flixbus.com", "mail.interrail.eu", "mvg.de", "bvg.de", "news.jelbi.de", "trans.voiapp.io", "clickrent.es", "citystorage.lt"] {
-  fileinto :copy :create "12    ✈️ Logistics";
-  stop;
-}
-
-# route.lifestyle.travel_misc
-if address :domain :is "From" ["findacrew.com", "nomadmania.com", "esim.net", "email-support.uber.com"] {
-  fileinto :copy :create "12    ✈️ Logistics";
+  fileinto :copy :create "24    🏠 House";
   stop;
 }
 
 # route.admin.payments
 if address :domain :is "From" ["paypal.com", "stripe.com"] {
   addflag "Fin_type:Receipt";
-  fileinto :copy :create "11    🛡️ Admin & Finance";
+  fileinto :copy :create "12    💰 Finance";
   stop;
 }
 
 # route.admin.subscriptions
 if address :domain :is "From" ["apple.com", "spotify.com", "netflix.com", "adobe.com"] {
   addflag "Fin_type:Subscription";
-  fileinto :copy :create "11    🛡️ Admin & Finance";
+  fileinto :copy :create "12    💰 Finance";
   stop;
 }
 
 # route.admin.insurance_intl
 if address :domain :is "From" ["allianz.com", "axa.com"] {
   addflag "Fin_type:Insurance";
-  fileinto :copy :create "11    🛡️ Admin & Finance";
+  fileinto :copy :create "12    💰 Finance";
   stop;
 }
 
 # route.admin.bank_neobank
 if address :domain :is "From" ["n26.com", "revolut.com", "wise.com"] {
   addflag "Fin_entity:Bank";
-  fileinto :copy :create "11    🛡️ Admin & Finance";
+  fileinto :copy :create "12    💰 Finance";
   stop;
 }
 
 # route.admin.marketplace
 if address :domain :is "From" ["amazon.com", "amazon.de", "amazon.es", "ebay.com", "ebay.de", "aliexpress.com", "zalando.de"] {
-  fileinto :copy :create "11    🛡️ Admin & Finance";
+  fileinto :copy :create "12    💰 Finance";
   stop;
 }
 
 # route.admin.bank_es
 if address :domain :is "From" ["emailing.bancosantander-mail.es", "cofidis.es", "s.cofidis.es", "c.cofidis.es", "nordaccount.com"] {
   addflag "Fin_entity:Bank";
-  fileinto :copy :create "11    🛡️ Admin & Finance";
+  fileinto :copy :create "12    💰 Finance";
   stop;
 }
 
 # route.admin.bank_intl
 if address :domain :is "From" ["btgpactual.com", "tcbs.com.vn", "b3.com.br", "bitpanda.com", "info.bitpanda.com", "getbernstein.com"] {
   addflag "Fin_entity:Bank";
-  fileinto :copy :create "11    🛡️ Admin & Finance";
+  fileinto :copy :create "12    💰 Finance";
   stop;
 }
 
 # route.admin.telecom_utilities_de
 if address :domain :is "From" ["congstar.de", "news.congstar.de", "service.congstar.de", "mails.swm.de"] {
   addflag "Fin_type:Subscription";
-  fileinto :copy :create "11    🛡️ Admin & Finance";
+  fileinto :copy :create "12    💰 Finance";
   stop;
 }
 
@@ -296,31 +200,49 @@ if address :domain :is "From" ["tidal.com", "info.tidal.com", "c.rituals.com", "
 
 # route.cloud.letsencrypt
 if address :domain :is "From" "letsencrypt.org" {
-  fileinto :copy :create "13    ☁️ Cloud - General & Reports";
+  fileinto :copy :create "Cloud Reports";
   stop;
 }
 
 # route.cloud.registrars
 if address :domain :is "From" ["namecheap.com", "gandi.net", "name.com", "godaddy.com"] {
-  fileinto :copy :create "13    ☁️ Cloud - General & Reports";
+  fileinto :copy :create "Cloud Reports";
   stop;
 }
 
 # route.cloud.hardware
 if address :domain :is "From" ["hetzner.com", "hetzner.de", "dell.com", "lenovo.com"] {
-  fileinto :copy :create "13    ☁️ Cloud - General & Reports";
+  fileinto :copy :create "Cloud Reports";
   stop;
 }
 
 # route.cloud.providers
-if address :domain :is "From" ["oraclecloud.com", "oracle.com", "cloud.google.com", "google.cloud", "cloudflare.com", "digitalocean.com"] {
-  fileinto :copy :create "13    ☁️ Cloud - General & Reports";
+if address :domain :is "From" ["cloudflare.com", "digitalocean.com"] {
+  fileinto :copy :create "Cloud Reports";
+  stop;
+}
+
+# route.cloud.vps_oracle
+if address :domain :is "From" ["oraclecloud.com", "oracle.com", "oracle-mail.com"] {
+  fileinto :copy :create "VPS Oracle";
+  stop;
+}
+
+# route.cloud.vps_google
+if address :domain :is "From" ["cloud.google.com", "google.cloud"] {
+  fileinto :copy :create "VPS Google";
+  stop;
+}
+
+# route.cloud.vps_git
+if address :domain :is "From" ["github.com", "noreply.github.com"] {
+  fileinto :copy :create "VPS Git";
   stop;
 }
 
 # route.cloud.notifications
 if address :domain :is "From" ["ntfy.sh", "resend.com"] {
-  fileinto :copy :create "13    ☁️ Cloud - General & Reports";
+  fileinto :copy :create "Rss Notifications";
   stop;
 }
 
@@ -332,13 +254,7 @@ if address :domain :is "From" ["indeed.de", "xing.com", "stepstone.de"] {
 
 # route.profile.housing_es_de
 if address :domain :is "From" ["idealista.com", "fotocasa.es", "pisos.com", "immobilienscout24.de", "immowelt.de"] {
-  fileinto :copy :create "12    ✈️ Logistics";
-  stop;
-}
-
-# route.profile.postal_es
-if address :domain :is "From" ["correos.es", "seur.com", "mrw.es"] {
-  fileinto :copy :create "12    ✈️ Logistics";
+  fileinto :copy :create "24    🏠 House";
   stop;
 }
 
@@ -350,19 +266,13 @@ if address :domain :is "From" ["doctolib.de", "doctolib.com"] {
 
 # route.profile.insurance_es_de
 if address :domain :is "From" ["mapfre.com", "huk.de"] {
-  fileinto :copy :create "11    🛡️ Admin & Finance";
+  fileinto :copy :create "12    💰 Finance";
   stop;
 }
 
 # route.profile.news_es_de
 if address :domain :is "From" ["elpais.com", "spiegel.de"] {
   fileinto :copy :create "22    📰 Social & General";
-  stop;
-}
-
-# route.dev.learning
-if address :domain :is "From" ["udemy.com", "coursera.org", "edx.org", "skillshare.com", "pluralsight.com", "duolingo.com", "babbel.com", "busuu.com", "dev.to", "hashnode.com"] {
-  fileinto :copy :create "31    🎓 Development & Tech";
   stop;
 }
 

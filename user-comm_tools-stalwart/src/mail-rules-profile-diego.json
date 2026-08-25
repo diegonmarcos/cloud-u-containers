@@ -26,7 +26,7 @@
         ]
       },
       "engines": {
-        "stalwart": "route_only",
+        "stalwart": "drop",
         "maddy": "route_only"
       },
       "comment": "42 Berlin / 42 network — routes to development folder, tags with school context."
@@ -75,7 +75,7 @@
         ]
       },
       "actions": {
-        "copy_to": "cloud_reports",
+        "copy_to": "cloud_reports_child",
         "flags": [
           "Cloud_Homelab"
         ]
@@ -175,7 +175,7 @@
         ]
       },
       "actions": {
-        "copy_to": "logistics",
+        "copy_to": "house",
         "flags": [
           "Housing_RealEstate"
         ]
@@ -204,7 +204,7 @@
         ]
       },
       "engines": {
-        "stalwart": "route_only",
+        "stalwart": "drop",
         "maddy": "route_only"
       }
     },
@@ -245,7 +245,7 @@
         ]
       },
       "actions": {
-        "copy_to": "admin",
+        "copy_to": "finance",
         "flags": [
           "Fin_entity:Bank"
         ]
@@ -267,7 +267,7 @@
         ]
       },
       "actions": {
-        "copy_to": "admin",
+        "copy_to": "finance",
         "flags": [
           "Fin_type:Insurance"
         ]
