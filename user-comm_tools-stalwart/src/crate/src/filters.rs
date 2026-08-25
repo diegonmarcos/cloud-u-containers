@@ -255,11 +255,32 @@ pub fn maintain_filters(
     // 9_others/test/test_mail_filter_views_partition.sh asserts it in CI.
     // It is simply no longer used to skip work here.
 
-    // 2. Union of emails in any source folder.
-    let email_ids = client.email_query_in(&source_ids, None)?;
+    // 2. Emails to reconcile = those in a source folder, UNION those already
+    //    sitting in a view folder.
+    //
+    // The union half is what makes removal work at all. Membership is only
+    // ever re-evaluated for messages this query returns, so scanning just the
+    // source folders means a message that LEAVES the source set (its numeric
+    // folder was renamed or reaped, it was archived, it was filed elsewhere)
+    // is never looked at again and keeps whatever view membership it had
+    // forever. MEASURED on oci-mail 2026-08-25: 3668 messages sat in
+    // "Ac Small (<1MB)" while belonging to no numeric folder at all —
+    // leftovers from the numeric-folder restructure earlier that day. The
+    // views looked plausible (Ac showed 4397) while being ~83% stale.
+    //
+    // Including the view folders costs one extra id-only query and makes the
+    // reconcile total: anything in a view but no longer in scope gets its
+    // view bits cleared below, because `in_source` is false for it and every
+    // `want` evaluates false.
+    let mut scan_ids: Vec<String> = source_ids.clone();
+    scan_ids.extend(view_ids.values().map(|id| id.to_string()));
+    let email_ids = client.email_query_in(&scan_ids, None)?;
     if email_ids.is_empty() {
         return Ok(0);
     }
+
+    // Set form for the per-message "is this still in scope?" test below.
+    let source_set: HashSet<&str> = source_ids.iter().map(String::as_str).collect();
 
     let header_props = headers_referenced(views);
     let props: Vec<&str> = EMAIL_PROPS
@@ -283,12 +304,17 @@ pub fn maintain_filters(
             // flips directly is equivalent to diffing the two sets — and it
             // guarantees non-view membership (numeric folders, INBOX) is never
             // rewritten just because it was re-serialised.
+            // A message outside the source folders is out of scope for every
+            // view, whatever its predicates would say — it only appears in
+            // this batch so its stale view bits can be cleared.
+            let in_source = em.mailbox_ids.keys().any(|id| source_set.contains(id.as_str()));
+
             let mut changed = false;
             for view in views {
                 let Some(vid) = view_ids.get(view.folder.as_str()).copied() else {
                     continue;
                 };
-                let want = email_matches(em, &view.predicate, now);
+                let want = in_source && email_matches(em, &view.predicate, now);
                 let have = desired.contains_key(vid);
                 if want && !have {
                     desired.insert(vid.to_string(), true);
