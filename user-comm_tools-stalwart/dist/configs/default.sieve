@@ -19,7 +19,25 @@ require ["fileinto", "imap4flags", "mailbox", "envelope", "mime", "copy", "body"
 # ════════════════════════════════════════════════════════════════
 
 # ─── TAGS ───────────────────────────────────────────────────────
+# tag.admin.invoice_en
+if header :contains "Subject" ["invoice", "billing statement"] {
+  addflag "Fin_type:Invoice";
+}
 
+# tag.admin.action_required
+if header :contains "Subject" ["review requested", "action required", "requires your attention", "please review"] {
+  addflag "Action_ReviewRequested";
+}
+
+# tag.cloud.auth_alert
+if header :contains "Subject" ["login attempt", "auth", "unauthorized", "suspicious sign"] {
+  addflag "Cloud_Sec:Auth_Alert";
+}
+
+# tag.cloud.threat_blocked
+if header :contains "Subject" ["blocked", "threat", "intrusion", "fail2ban", "banned"] {
+  addflag "Cloud_Sec:Threat_Blocked";
+}
 
 # ─── ROUTES ─────────────────────────────────────────────────────
 # route.junk.spam_flagged
@@ -42,6 +60,7 @@ if address :domain :is "From" ["elster.de", "agenciatributaria.es", "tax.service
 
 # route.admin.security_accounts
 if address :domain :is "From" ["bitwarden.com", "1password.com", "accounts.google.com"] {
+  addflag "Sec_type:Login_Alert";
   fileinto :copy :create "11    🛡️ Admin & Finance";
   stop;
 }
@@ -174,24 +193,28 @@ if address :domain :is "From" ["findacrew.com", "nomadmania.com", "esim.net", "e
 
 # route.admin.payments
 if address :domain :is "From" ["paypal.com", "stripe.com"] {
+  addflag "Fin_type:Receipt";
   fileinto :copy :create "11    🛡️ Admin & Finance";
   stop;
 }
 
 # route.admin.subscriptions
 if address :domain :is "From" ["apple.com", "spotify.com", "netflix.com", "adobe.com"] {
+  addflag "Fin_type:Subscription";
   fileinto :copy :create "11    🛡️ Admin & Finance";
   stop;
 }
 
 # route.admin.insurance_intl
 if address :domain :is "From" ["allianz.com", "axa.com"] {
+  addflag "Fin_type:Insurance";
   fileinto :copy :create "11    🛡️ Admin & Finance";
   stop;
 }
 
 # route.admin.bank_neobank
 if address :domain :is "From" ["n26.com", "revolut.com", "wise.com"] {
+  addflag "Fin_entity:Bank";
   fileinto :copy :create "11    🛡️ Admin & Finance";
   stop;
 }
@@ -204,18 +227,21 @@ if address :domain :is "From" ["amazon.com", "amazon.de", "amazon.es", "ebay.com
 
 # route.admin.bank_es
 if address :domain :is "From" ["emailing.bancosantander-mail.es", "cofidis.es", "s.cofidis.es", "c.cofidis.es", "nordaccount.com"] {
+  addflag "Fin_entity:Bank";
   fileinto :copy :create "11    🛡️ Admin & Finance";
   stop;
 }
 
 # route.admin.bank_intl
 if address :domain :is "From" ["btgpactual.com", "tcbs.com.vn", "b3.com.br", "bitpanda.com", "info.bitpanda.com", "getbernstein.com"] {
+  addflag "Fin_entity:Bank";
   fileinto :copy :create "11    🛡️ Admin & Finance";
   stop;
 }
 
 # route.admin.telecom_utilities_de
 if address :domain :is "From" ["congstar.de", "news.congstar.de", "service.congstar.de", "mails.swm.de"] {
+  addflag "Fin_type:Subscription";
   fileinto :copy :create "11    🛡️ Admin & Finance";
   stop;
 }

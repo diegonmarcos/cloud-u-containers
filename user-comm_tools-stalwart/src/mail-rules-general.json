@@ -58,7 +58,7 @@
   "filters": {
     "_doc": "Dynamic cross-cutting filter views maintained by jmap-sorter each poll over emails in the numeric 1*-9* folders. Multi-mailbox membership only (no copies, no $seen changes); add+remove each poll so time/read windows stay current.",
     "source_folder_regex": "^[0-9]",
-    "section_headers": ["A0 _ SIZE", "B0 _ TIME", "C0 _ STATE", "D0 _ ATTACH"],
+    "section_headers": ["A0 _ SIZE", "B0 _ TIME", "C0 _ STATE", "D0 _ ATTACH", "E0 _ PRIORITY"],
     "_axis_doc": "Each view declares its axis and whether it is volatile. A volatile view depends on wall-clock time or read state and must be re-evaluated every poll; a static view is a property of the message itself (size, attachments) and is computed once. The size axis is a PARTITION: its buckets are half-open [lo,hi) and must tile the whole range, so every message lands in exactly one. That invariant is what lets the sorter use size-view membership as the sentinel for 'static views already computed' -- guarded by 9_others/test/test_mail_filter_views_partition.sh.",
     "views": [
       {"folder": "Aa    📏 Large (≥10MB)",       "axis": "size",   "volatile": false, "predicate": {"type": "size_min", "bytes": 10485760}},
@@ -72,7 +72,71 @@
       {"folder": "Da    📎 With attachments",      "axis": "attach", "volatile": false, "predicate": {"type": "has_attachment"}},
       {"folder": "Db    📎 PDF",                   "axis": "attach", "volatile": false, "predicate": {"type": "attach_type", "values": ["application/pdf"]}},
       {"folder": "Dc    📎 Docs",                  "axis": "attach", "volatile": false, "predicate": {"type": "attach_type", "values": ["application/msword","application/vnd.openxmlformats-officedocument.wordprocessingml.document","application/vnd.oasis.opendocument.text","text/plain"]}},
-      {"folder": "Dd    📎 No attachments",        "axis": "attach", "volatile": false, "predicate": {"type": "no_attachment"}}
+      {"folder": "Dd    📎 No attachments",        "axis": "attach", "volatile": false, "predicate": {"type": "no_attachment"}},
+      {
+        "folder": "Ea    ⭐ Important",
+        "axis": "priority",
+        "volatile": true,
+        "_doc": "Any tag flag that already marks 'this matters': login/security alerts, money (invoices, receipts, subscriptions, insurance, bank mail), explicit review requests. Needs those specific rules' engines.stalwart flipped to full/tag_only (see rules[] below) -- they were all 'drop'/'route_only' before, so these flags were never emitted on Stalwart.",
+        "predicate": {
+          "any_of": [
+            {"type": "has_flag", "flag": "Sec_type:Login_Alert"},
+            {"type": "has_flag", "flag": "Cloud_Sec:Auth_Alert"},
+            {"type": "has_flag", "flag": "Cloud_Sec:Threat_Blocked"},
+            {"type": "has_flag", "flag": "Fin_type:Invoice"},
+            {"type": "has_flag", "flag": "Fin_type:Receipt"},
+            {"type": "has_flag", "flag": "Fin_type:Subscription"},
+            {"type": "has_flag", "flag": "Fin_type:Insurance"},
+            {"type": "has_flag", "flag": "Fin_entity:Bank"},
+            {"type": "has_flag", "flag": "Action_ReviewRequested"}
+          ]
+        }
+      },
+      {
+        "folder": "Eb    📄 Normal",
+        "axis": "priority",
+        "volatile": true,
+        "_doc": "Everything that is neither Junk nor Important -- NOT(Ec) AND NOT(Ea), kept in sync by referencing the same two predicate trees rather than a third hand-written definition.",
+        "predicate": {
+          "all_of": [
+            {"not": {
+              "any_of": [
+                {"type": "header_contains", "header": "X-Spam-Status", "values": ["Yes"]},
+                {"type": "header_contains", "header": "X-Spam-Flag", "values": ["YES"]},
+                {"type": "header_contains", "header": "X-Microsoft-Antispam-Message-Info", "values": ["spam"]},
+                {"type": "header_contains", "header": "Authentication-Results", "values": ["dmarc=fail", "spf=fail"]}
+              ]
+            }},
+            {"not": {
+              "any_of": [
+                {"type": "has_flag", "flag": "Sec_type:Login_Alert"},
+                {"type": "has_flag", "flag": "Cloud_Sec:Auth_Alert"},
+                {"type": "has_flag", "flag": "Cloud_Sec:Threat_Blocked"},
+                {"type": "has_flag", "flag": "Fin_type:Invoice"},
+                {"type": "has_flag", "flag": "Fin_type:Receipt"},
+                {"type": "has_flag", "flag": "Fin_type:Subscription"},
+                {"type": "has_flag", "flag": "Fin_type:Insurance"},
+                {"type": "has_flag", "flag": "Fin_entity:Bank"},
+                {"type": "has_flag", "flag": "Action_ReviewRequested"}
+              ]
+            }}
+          ]
+        }
+      },
+      {
+        "folder": "Ec    🚫 Junk",
+        "axis": "priority",
+        "volatile": true,
+        "_doc": "Same predicate as route.junk.spam_flagged.when, verbatim -- one spam signal, not two definitions of it to keep in sync.",
+        "predicate": {
+          "any_of": [
+            {"type": "header_contains", "header": "X-Spam-Status", "values": ["Yes"]},
+            {"type": "header_contains", "header": "X-Spam-Flag", "values": ["YES"]},
+            {"type": "header_contains", "header": "X-Microsoft-Antispam-Message-Info", "values": ["spam"]},
+            {"type": "header_contains", "header": "Authentication-Results", "values": ["dmarc=fail", "spf=fail"]}
+          ]
+        }
+      }
     ],
     "partition_axis": "size"
   },
@@ -1070,7 +1134,7 @@
         ]
       },
       "engines": {
-        "stalwart": "route_only",
+        "stalwart": "full",
         "maddy": "route_only"
       }
     },
@@ -1091,7 +1155,7 @@
         ]
       },
       "engines": {
-        "stalwart": "drop",
+        "stalwart": "tag_only",
         "maddy": "drop"
       }
     },
@@ -1115,7 +1179,7 @@
         ]
       },
       "engines": {
-        "stalwart": "route_only",
+        "stalwart": "full",
         "maddy": "route_only"
       }
     },
@@ -1137,7 +1201,7 @@
         ]
       },
       "engines": {
-        "stalwart": "route_only",
+        "stalwart": "full",
         "maddy": "route_only"
       }
     },
@@ -1160,7 +1224,7 @@
         ]
       },
       "engines": {
-        "stalwart": "route_only",
+        "stalwart": "full",
         "maddy": "route_only"
       }
     },
@@ -1210,7 +1274,7 @@
         ]
       },
       "engines": {
-        "stalwart": "route_only",
+        "stalwart": "full",
         "maddy": "route_only"
       }
     },
@@ -1235,7 +1299,7 @@
         ]
       },
       "engines": {
-        "stalwart": "route_only",
+        "stalwart": "full",
         "maddy": "route_only"
       },
       "comment": "Derived from the live fallback-folder corpus (91 Others): Spanish banking/consumer-credit senders — emailing.bancosantander-mail.es (29), cofidis.es (9), s.cofidis.es (5), c.cofidis.es (4), nordaccount.com (1)."
@@ -1262,7 +1326,7 @@
         ]
       },
       "engines": {
-        "stalwart": "route_only",
+        "stalwart": "full",
         "maddy": "route_only"
       },
       "comment": "Derived from the live fallback-folder corpus (91 Others): international banking/brokerage/exchange senders — btgpactual.com (10), tcbs.com.vn (6), b3.com.br (4), bitpanda.com (2), info.bitpanda.com (1), getbernstein.com (1)."
@@ -1287,7 +1351,7 @@
         ]
       },
       "engines": {
-        "stalwart": "route_only",
+        "stalwart": "full",
         "maddy": "route_only"
       },
       "comment": "Derived from the live fallback-folder corpus (91 Others): German telecom/utility billing senders — congstar.de (13), news.congstar.de (2), mails.swm.de (2), service.congstar.de (1)."
@@ -1334,7 +1398,7 @@
         ]
       },
       "engines": {
-        "stalwart": "drop",
+        "stalwart": "tag_only",
         "maddy": "drop"
       }
     },
@@ -1795,7 +1859,7 @@
         ]
       },
       "engines": {
-        "stalwart": "drop",
+        "stalwart": "tag_only",
         "maddy": "drop"
       }
     },
@@ -1819,7 +1883,7 @@
         ]
       },
       "engines": {
-        "stalwart": "drop",
+        "stalwart": "tag_only",
         "maddy": "drop"
       }
     },

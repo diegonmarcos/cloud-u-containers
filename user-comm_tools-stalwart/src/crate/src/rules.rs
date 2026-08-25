@@ -105,7 +105,7 @@ fn default_source_regex() -> String {
 #[derive(Debug, Deserialize)]
 pub struct View {
     pub folder: String,
-    pub predicate: Predicate,
+    pub predicate: PredicateNode,
 
     /// Time- and read-state windows go stale on their own and must be
     /// recomputed every poll; size and attachment views are properties of the
@@ -155,6 +155,72 @@ pub enum Predicate {
         #[serde(default, deserialize_with = "null_default")]
         values: Vec<String>,
     },
+    /// Any of `values` (case-insensitive substring) appears in header
+    /// `header`. Mirrors the route DSL's `header_contains` atom
+    /// (`_shared/lib/mail-rules.nix::sieveAtom`) one-for-one, so a view's
+    /// predicate can be copy-pasted verbatim from a route rule's `when`.
+    HeaderContains {
+        header: String,
+        #[serde(default, deserialize_with = "null_default")]
+        values: Vec<String>,
+    },
+    /// JMAP keyword `flag` is present. Only meaningful for flags the Sieve
+    /// side actually emits — see `engines.stalwart` in mail-rules-general.json;
+    /// a flag whose only emitting rule is "drop"/"route_only" never appears
+    /// in `keywords` and this predicate silently never matches, same as any
+    /// other view over data that was never computed.
+    HasFlag { flag: String },
+}
+
+/// A predicate tree: `Atom` is a leaf [`Predicate`]; `AnyOf`/`AllOf`/`Not`
+/// combine child trees. Combinators are NOT part of the `Predicate` tagged
+/// enum (no `type` field distinguishes them in the JSON — the route DSL uses
+/// the same untagged `{"any_of": [...]}` shape) so they get a hand-rolled
+/// `Deserialize`: try each combinator key in turn, fall back to a `Predicate`
+/// atom, and surface serde's own "unknown predicate.type" error unchanged
+/// when even that fails — preserving the same fail-loud guarantee as a bare
+/// `Predicate` for the common (atom, no combinator) case.
+#[derive(Debug)]
+pub enum PredicateNode {
+    AnyOf(Vec<PredicateNode>),
+    AllOf(Vec<PredicateNode>),
+    Not(Box<PredicateNode>),
+    Atom(Predicate),
+}
+
+impl<'de> Deserialize<'de> for PredicateNode {
+    fn deserialize<D>(d: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let value = serde_json::Value::deserialize(d)?;
+        Self::from_value(value).map_err(serde::de::Error::custom)
+    }
+}
+
+impl PredicateNode {
+    fn from_value(value: serde_json::Value) -> Result<Self, String> {
+        let obj = value
+            .as_object()
+            .ok_or_else(|| format!("predicate must be a JSON object, got {value}"))?;
+        if let Some(v) = obj.get("any_of") {
+            let items = v.as_array().ok_or("any_of must be an array")?;
+            return Ok(PredicateNode::AnyOf(
+                items.iter().cloned().map(Self::from_value).collect::<Result<_, _>>()?,
+            ));
+        }
+        if let Some(v) = obj.get("all_of") {
+            let items = v.as_array().ok_or("all_of must be an array")?;
+            return Ok(PredicateNode::AllOf(
+                items.iter().cloned().map(Self::from_value).collect::<Result<_, _>>()?,
+            ));
+        }
+        if let Some(v) = obj.get("not") {
+            return Ok(PredicateNode::Not(Box::new(Self::from_value(v.clone())?)));
+        }
+        let atom: Predicate = serde_json::from_value(value).map_err(|e| e.to_string())?;
+        Ok(PredicateNode::Atom(atom))
+    }
 }
 
 impl Rules {
