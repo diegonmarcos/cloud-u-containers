@@ -30,11 +30,47 @@ fn env_or<T: std::str::FromStr>(key: &str, default: T) -> T {
     std::env::var(key).ok().and_then(|v| v.parse().ok()).unwrap_or(default)
 }
 
+/// IMAP's own special-use folders. Never reaped, never routed into —
+/// mirrors SYSTEM_FOLDERS in the Stalwart crate's mailboxes.rs.
+const SYSTEM_FOLDERS: &[&str] = &[
+    "INBOX", "Sent", "Drafts", "Trash", "Junk", "Archive",
+    "Sent Items", "Deleted Items", "Junk Mail", "Outbox", "Templates",
+];
+
+/// The complete set of folder names Maddy is supposed to have: INBOX and
+/// the IMAP system folders, plus the F0 sender folders the rules declare.
+/// Everything else is a leftover to be reaped (after rehoming — see
+/// [`db::cleanup_stale_mailboxes`]).
+///
+/// Deliberately NOT including the numeric `1*`-`9*` folders: those are the
+/// Stalwart/JMAP side's project-scoped scheme. Maddy is INBOX + senders.
+fn valid_folder_names(rules: &Rules) -> std::collections::HashSet<String> {
+    let mut valid: std::collections::HashSet<String> =
+        SYSTEM_FOLDERS.iter().map(|s| s.to_string()).collect();
+    valid.extend(rules.rules.iter().map(|r| r.folder.clone()));
+    valid.insert(rules.routing_default.clone());
+    valid
+}
+
 fn one_run(db_path: &str, rules_path: &str, rules: &Rules) -> Result<()> {
     let mut conn = db::open(db_path)?;
     let user_id = db::find_user_id(&conn, &rules.account)?;
     let inbox_id = db::find_mailbox_id(&conn, user_id, "INBOX")?
         .ok_or_else(|| anyhow::anyhow!("INBOX not found for {}", rules.account))?;
+
+    // Reap folders the rules no longer declare, rehoming their mail into
+    // INBOX first. Idempotent: once the fleet is clean this is a single
+    // cheap SELECT per poll that finds nothing.
+    let (dropped, rehomed) = db::cleanup_stale_mailboxes(
+        &mut conn,
+        user_id,
+        inbox_id,
+        &valid_folder_names(rules),
+    )?;
+    if dropped > 0 {
+        tracing::info!("cleanup: dropped {dropped} stale folder(s), rehomed {rehomed} message(s) to INBOX");
+    }
+
     let fallback_id = db::find_mailbox_id(&conn, user_id, &rules.routing_default)?;
 
     // Ruleset-change detection: if the rules file changed since the last

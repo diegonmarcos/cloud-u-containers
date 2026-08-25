@@ -300,3 +300,110 @@ pub fn apply_plan(
 pub fn parse_email(cached_header: &[u8]) -> anyhow::Result<Email> {
     Email::from_cached_header_json(cached_header)
 }
+
+/// `(id, name)` of every mailbox this user owns.
+pub fn list_mailboxes(conn: &Connection, user_id: i64) -> anyhow::Result<Vec<(i64, String)>> {
+    let mut stmt = conn.prepare("SELECT id, name FROM mboxes WHERE uid = ?1")?;
+    let rows = stmt
+        .query_map(params![user_id], |r| Ok((r.get::<_, i64>(0)?, r.get::<_, String>(1)?)))?
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(rows)
+}
+
+/// Drops every mailbox this user owns that `valid` does not name, after
+/// rehoming its mail into INBOX.
+///
+/// Maddy's folder set is meant to be exactly INBOX + the F0 sender folders
+/// (+ IMAP's own system folders). Anything else is a leftover from an
+/// earlier scheme — the numeric `1*`-`9*` folders this account accumulated
+/// under the old split-delivery model, which Maddy no longer routes into.
+///
+/// MEASURED on oci-mail 2026-08-25 before writing this: 4392 of those
+/// messages existed ONLY in a numeric folder, with no copy in INBOX (they
+/// predate the unified-inbox switch, when delivery filed straight into the
+/// category folder instead of INBOX). So a plain DROP would have destroyed
+/// real mail. Every message is therefore COPIED into INBOX first (skipping
+/// bodies INBOX already holds, matched on extBodyKey) and only then is the
+/// folder emptied and removed. Mirrors what the Stalwart sorter's
+/// `cleanup_stale` does on the JMAP side: move to INBOX, then destroy.
+pub fn cleanup_stale_mailboxes(
+    conn: &mut Connection,
+    user_id: i64,
+    inbox_id: i64,
+    valid: &std::collections::HashSet<String>,
+) -> anyhow::Result<(usize, usize)> {
+    let stale: Vec<(i64, String)> = list_mailboxes(conn, user_id)?
+        .into_iter()
+        .filter(|(id, name)| *id != inbox_id && !valid.contains(name.as_str()))
+        .collect();
+    if stale.is_empty() {
+        return Ok((0, 0));
+    }
+
+    let tx = conn.transaction()?;
+    let mut rehomed = 0usize;
+
+    let mut inbox_uid: i64 =
+        tx.query_row("SELECT uidnext FROM mboxes WHERE id = ?1", params![inbox_id], |r| r.get(0))?;
+    let start_uid = inbox_uid;
+
+    for (mbox_id, name) in &stale {
+        let ids: Vec<i64> = {
+            let mut stmt = tx.prepare(
+                "SELECT m.msgId FROM msgs m
+                 WHERE m.mboxId = ?1
+                   AND (m.extBodyKey IS NULL OR NOT EXISTS (
+                     SELECT 1 FROM msgs i WHERE i.mboxId = ?2 AND i.extBodyKey = m.extBodyKey
+                   ))",
+            )?;
+            stmt.query_map(params![mbox_id, inbox_id], |r| r.get::<_, i64>(0))?
+                .collect::<Result<Vec<_>, _>>()?
+        };
+
+        for src_id in &ids {
+            tx.execute(
+                "INSERT INTO msgs (mboxId, msgId, date, bodyLen, mark, bodyStructure, cachedHeader, extBodyKey, seen, recent, compressAlgo)
+                 SELECT ?1, ?2, date, bodyLen, mark, bodyStructure, cachedHeader, extBodyKey, 1, 0, compressAlgo
+                 FROM msgs WHERE mboxId = ?3 AND msgId = ?4",
+                params![inbox_id, inbox_uid, mbox_id, src_id],
+            )?;
+            tx.execute(
+                "UPDATE extKeys SET refs = refs + 1
+                 WHERE id = (SELECT extBodyKey FROM msgs WHERE mboxId = ?1 AND msgId = ?2 AND extBodyKey IS NOT NULL)",
+                params![mbox_id, src_id],
+            )?;
+            // Rehomed mail is archive, not new work: mark it processed so
+            // route_new_mail doesn't immediately re-file 4k messages into
+            // the F folders on the very next poll.
+            tx.execute(
+                "INSERT OR IGNORE INTO flags (mboxId, msgId, flag) VALUES (?1, ?2, '$distributed')",
+                params![inbox_id, inbox_uid],
+            )?;
+            inbox_uid += 1;
+            rehomed += 1;
+        }
+
+        // extKeys.refs must come down for EVERY row about to be deleted,
+        // not just the ones copied above — otherwise a body whose only
+        // remaining reference was the duplicate we skipped leaks forever.
+        tx.execute(
+            "UPDATE extKeys SET refs = refs - 1
+             WHERE id IN (SELECT extBodyKey FROM msgs WHERE mboxId = ?1 AND extBodyKey IS NOT NULL)",
+            params![mbox_id],
+        )?;
+        // flags rows cascade on msgs delete (FK ON DELETE CASCADE).
+        tx.execute("DELETE FROM msgs WHERE mboxId = ?1", params![mbox_id])?;
+        tx.execute("DELETE FROM mboxes WHERE id = ?1", params![mbox_id])?;
+        tracing::info!("cleanup: removed stale mailbox {name:?}");
+    }
+
+    if inbox_uid != start_uid {
+        tx.execute(
+            "UPDATE mboxes SET uidnext = ?1, msgsCount = msgsCount + ?2 WHERE id = ?3",
+            params![inbox_uid, inbox_uid - start_uid, inbox_id],
+        )?;
+    }
+
+    tx.commit()?;
+    Ok((stale.len(), rehomed))
+}
