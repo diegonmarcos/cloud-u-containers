@@ -468,6 +468,29 @@ mod tests {
     }
 
     #[test]
+    fn empty_any_of_is_always_false_placeholder() {
+        // Fj Personal's placeholder predicate until real addresses exist.
+        let p = pred(json!({"any_of": []}));
+        let anything = email(json!({"id": "e", "from": [{"email": "a@b.com"}]}));
+        assert!(!email_matches(&anything, &p, 0.0));
+    }
+
+    #[test]
+    fn all_of_not_over_many_children_is_the_complement() {
+        // Fz Others' shape: all_of[not(child)...] over every other F view.
+        let a = pred(json!({"type": "from_domain", "values": ["a.com"]}));
+        let b = pred(json!({"type": "from_domain", "values": ["b.com"]}));
+        let complement = pred(json!({"all_of": [
+            {"not": {"type": "from_domain", "values": ["a.com"]}},
+            {"not": {"type": "from_domain", "values": ["b.com"]}}
+        ]}));
+        let from_a = email(json!({"id": "e", "from": [{"email": "x@a.com"}]}));
+        let from_c = email(json!({"id": "e", "from": [{"email": "x@c.com"}]}));
+        assert!(email_matches(&from_a, &a, 0.0) && !email_matches(&from_a, &complement, 0.0));
+        assert!(!email_matches(&from_c, &a, 0.0) && !email_matches(&from_c, &b, 0.0) && email_matches(&from_c, &complement, 0.0));
+    }
+
+    #[test]
     fn unknown_combinator_key_falls_through_to_atom_error() {
         // Not "any_of"/"all_of"/"not" and not a valid atom `type` either —
         // must fail to parse, not silently become a no-op predicate.

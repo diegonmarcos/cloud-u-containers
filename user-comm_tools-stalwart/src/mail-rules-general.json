@@ -141,11 +141,58 @@
         "folder": "Fa    🏛️ Gov / Official",
         "axis": "sender",
         "volatile": false,
-        "_doc": "Domains reused verbatim from route.profile.tax_authorities (DE/ES/UK tax) and route.government.agencies (BR gov, ES traffic authority). No Portugal, EU-institution, or courts/legal domain is known yet -- ask before adding, don't guess a .europa.eu-style catch-all that could misfile unrelated mail.",
+        "_doc": "DE/ES/EU/PT/US gov + tax authorities, plus tax.service.gov.uk and .gov.br from the existing route rules. No courts/legal domain known yet.",
         "predicate": {
           "any_of": [
-            {"type": "from_domain", "values": ["elster.de", "agenciatributaria.es", "tax.service.gov.uk", "dgt.es"]},
-            {"type": "from_domain_suffix", "values": [".gov.br"]}
+            {
+              "type": "from_domain",
+              "values": [
+                "bund.de",
+                "bundesregierung.de",
+                "finanzamt.de",
+                "elster.de",
+                "bafin.de",
+                "bamf.de",
+                "auswaertiges-amt.de",
+                "destatis.de",
+                "deutsche-rentenversicherung.de",
+                "arbeitsagentur.de",
+                "krankenkasse.de",
+                "tk.de",
+                "aok.de",
+                "berlin.de",
+                "muenchen.de",
+                "administracion.gob.es",
+                "agenciatributaria.es",
+                "seg-social.es",
+                "sepe.es",
+                "dgt.es",
+                "policia.es",
+                "boe.es",
+                "madrid.es",
+                "barcelona.cat",
+                "europa.eu",
+                "ec.europa.eu",
+                "europarl.europa.eu",
+                "eur-lex.europa.eu",
+                "echa.europa.eu",
+                "ecb.europa.eu",
+                "portaldasfinancas.gov.pt",
+                "seg-social.pt",
+                "gov.pt",
+                "irs.gov",
+                "ssa.gov",
+                "uscis.gov",
+                "state.gov",
+                "tax.service.gov.uk"
+              ]
+            },
+            {
+              "type": "from_domain_suffix",
+              "values": [
+                ".gov.br"
+              ]
+            }
           ]
         }
       },
@@ -155,7 +202,25 @@
         "volatile": false,
         "predicate": {
           "type": "from_domain",
-          "values": ["linkedin.com", "twitter.com", "x.com", "mastodon.social", "facebook.com", "facebookmail.com", "instagram.com", "mail.instagram.com", "whatsapp.com", "reddit.com"]
+          "values": [
+            "linkedin.com",
+            "twitter.com",
+            "x.com",
+            "instagram.com",
+            "mail.instagram.com",
+            "facebook.com",
+            "facebookmail.com",
+            "meta.com",
+            "reddit.com",
+            "tiktok.com",
+            "pinterest.com",
+            "snapchat.com",
+            "mastodon.social",
+            "discord.com",
+            "telegram.org",
+            "whatsapp.com",
+            "youtube.com"
+          ]
         }
       },
       {
@@ -164,7 +229,93 @@
         "volatile": false,
         "predicate": {
           "type": "from_domain",
-          "values": ["n26.com", "revolut.com", "wise.com", "ing.es", "ing.de", "commerzbank.de", "deutschebank.de", "emailing.bancosantander-mail.es", "cofidis.es", "s.cofidis.es", "c.cofidis.es", "nordaccount.com", "btgpactual.com", "tcbs.com.vn", "b3.com.br", "getbernstein.com", "bitpanda.com", "info.bitpanda.com", "allianz.com", "axa.com", "mapfre.com", "huk.de", "paypal.com", "stripe.com"]
+          "values": [
+            "n26.com",
+            "revolut.com",
+            "wise.com",
+            "ing.es",
+            "ing.de",
+            "bbva.es",
+            "santander.de",
+            "santander.es",
+            "deutschebank.de",
+            "deutsche-bank.de",
+            "commerzbank.de",
+            "caixabank.es",
+            "bancosabadell.com",
+            "sparkasse.de",
+            "dkb.de",
+            "emailing.bancosantander-mail.es",
+            "cofidis.es",
+            "s.cofidis.es",
+            "c.cofidis.es",
+            "nordaccount.com",
+            "interactivebrokers.com",
+            "degiro.com",
+            "traderepublic.com",
+            "etoro.com",
+            "scalable.capital",
+            "fidelity.com",
+            "schwab.com",
+            "btgpactual.com",
+            "tcbs.com.vn",
+            "b3.com.br",
+            "getbernstein.com",
+            "coinbase.com",
+            "binance.com",
+            "kraken.com",
+            "ledger.com",
+            "bitpanda.com",
+            "info.bitpanda.com",
+            "paypal.com",
+            "stripe.com",
+            "klarna.com",
+            "adyen.com",
+            "allianz.com",
+            "allianz.de",
+            "axa.com",
+            "mapfre.com",
+            "generali.com",
+            "huk.de"
+          ]
+        }
+      },
+      {
+        "folder": "Fd    💼 Work / Professional",
+        "axis": "sender",
+        "volatile": false,
+        "_doc": "Recruiters only (career platforms + recruiter-subject detection). Employer/Clients/Coworkers need this account's real employer/client/coworker addresses -- none exist anywhere in this repo, so they're deliberately left out rather than guessed. Add them to this predicate's any_of when known.",
+        "predicate": {
+          "any_of": [
+            {
+              "type": "from_domain",
+              "values": [
+                "linkedin.com",
+                "indeed.com",
+                "indeed.de",
+                "glassdoor.com",
+                "hired.com",
+                "wellfound.com",
+                "xing.com",
+                "stepstone.de",
+                "infojobs.net",
+                "hays.de",
+                "michaelpage.es"
+              ]
+            },
+            {
+              "type": "header_contains",
+              "header": "Subject",
+              "values": [
+                "recruiter",
+                "headhunt",
+                "opportunity",
+                "we found your profile",
+                "job match",
+                "talent"
+              ]
+            }
+          ]
         }
       },
       {
@@ -173,8 +324,81 @@
         "volatile": false,
         "predicate": {
           "any_of": [
-            {"type": "from_domain", "values": ["github.com", "noreply.github.com", "gitlab.com", "bitbucket.org", "codeberg.org", "stackoverflow.com", "stackexchange.com", "npmjs.com", "crates.io", "pypi.org", "docker.com", "hub.docker.com", "nixos.org", "discourse.nixos.org", "aws.com", "amazonaws.com", "oracle-mail.com", "oraclecloud.com", "oracle.com", "cloud.google.com", "google.cloud", "cloudflare.com", "digitalocean.com", "hetzner.com", "hetzner.de", "namecheap.com", "gandi.net", "name.com", "godaddy.com", "vercel.com", "netlify.com", "railway.app", "heroku.com", "notion.so", "figma.com", "miro.com", "jetbrains.com", "adobe.com", "canva.com", "bitwarden.com", "bitwarden.eu", "1password.com", "accounts.google.com", "sendsafely.com", "verify.proton.me", "mail.anthropic.com", "email.claude.com", "openrouter.ai", "email.openai.com"]},
-            {"type": "from_domain_suffix", "values": [".github.com"]}
+            {
+              "type": "from_domain",
+              "values": [
+                "github.com",
+                "noreply.github.com",
+                "gitlab.com",
+                "bitbucket.org",
+                "codeberg.org",
+                "stackoverflow.com",
+                "stackexchange.com",
+                "npmjs.com",
+                "crates.io",
+                "pypi.org",
+                "docker.com",
+                "dockerhub.com",
+                "hub.docker.com",
+                "nixos.org",
+                "discourse.nixos.org",
+                "google.com",
+                "cloud.google.com",
+                "google.cloud",
+                "aws.amazon.com",
+                "amazonaws.com",
+                "azure.microsoft.com",
+                "hetzner.com",
+                "hetzner.de",
+                "oracle.com",
+                "oracle-mail.com",
+                "oraclecloud.com",
+                "digitalocean.com",
+                "linode.com",
+                "vultr.com",
+                "cloudflare.com",
+                "namecheap.com",
+                "godaddy.com",
+                "porkbun.com",
+                "ovh.com",
+                "ionos.de",
+                "gandi.net",
+                "name.com",
+                "vercel.com",
+                "netlify.com",
+                "heroku.com",
+                "sentry.io",
+                "datadoghq.com",
+                "atlassian.com",
+                "jetbrains.com",
+                "anthropic.com",
+                "openai.com",
+                "mail.anthropic.com",
+                "email.claude.com",
+                "openrouter.ai",
+                "email.openai.com",
+                "railway.app",
+                "notion.so",
+                "figma.com",
+                "miro.com",
+                "adobe.com",
+                "canva.com",
+                "1password.com",
+                "bitwarden.com",
+                "bitwarden.eu",
+                "letsencrypt.org",
+                "haveibeenpwned.com",
+                "accounts.google.com",
+                "sendsafely.com",
+                "verify.proton.me"
+              ]
+            },
+            {
+              "type": "from_domain_suffix",
+              "values": [
+                ".github.com"
+              ]
+            }
           ]
         }
       },
@@ -184,18 +408,88 @@
         "volatile": false,
         "predicate": {
           "type": "from_domain",
-          "values": ["amazon.com", "amazon.de", "amazon.es", "ebay.com", "ebay.de", "aliexpress.com", "zalando.de", "dhl.com", "dhl.de", "ups.com", "fedex.com", "dpd.com", "gls-group.com", "correos.es", "seur.com", "mrw.es", "deliveroo.com", "ubereats.com", "glovo.com", "justeat.com", "lieferando.de", "doordash.com"]
+          "values": [
+            "amazon.de",
+            "amazon.es",
+            "amazon.com",
+            "ebay.com",
+            "ebay.de",
+            "etsy.com",
+            "zalando.de",
+            "zalando.es",
+            "aliexpress.com",
+            "temu.com",
+            "shein.com",
+            "mediamarkt.de",
+            "elcorteingles.es",
+            "ikea.com",
+            "decathlon.es",
+            "dhl.de",
+            "dhl.com",
+            "ups.com",
+            "fedex.com",
+            "gls-group.eu",
+            "gls-group.com",
+            "dpd.com",
+            "correos.es",
+            "seur.com",
+            "mrw.es",
+            "deutschepost.de",
+            "hermesworld.com",
+            "deliveroo.com",
+            "ubereats.com",
+            "glovo.com",
+            "justeat.com",
+            "lieferando.de",
+            "doordash.com"
+          ]
         }
       },
       {
         "folder": "Fg    📰 Subscriptions / Newsletters",
         "axis": "sender",
         "volatile": false,
-        "_doc": "Marketing/Promo has no sender domain (it's mixed into every retailer's own domain) so it's detected by subject instead, same values as tag.info.promo_en + tag.profile.promo_es_de.",
+        "_doc": "Marketing/Promo has no sender domain of its own (mixed into every retailer's), so it's detected by subject instead, same values as tag.info.promo_en + tag.profile.promo_es_de.",
         "predicate": {
           "any_of": [
-            {"type": "from_domain", "values": ["bbc.com", "reuters.com", "theguardian.com", "nytimes.com", "elpais.com", "spiegel.de", "theregister.com", "arstechnica.com", "hackernewsletter.com", "substack.com", "medium.com", "beehiiv.com", "revue.email"]},
-            {"type": "header_contains", "header": "Subject", "values": ["% off", "sale", "discount", "promo", "deal", "oferta", "descuento", "Rabatt"]}
+            {
+              "type": "from_domain",
+              "values": [
+                "substack.com",
+                "medium.com",
+                "mailchimp.com",
+                "sendgrid.net",
+                "theverge.com",
+                "nytimes.com",
+                "wired.com",
+                "techcrunch.com",
+                "hackernewsletter.com",
+                "morningbrew.com",
+                "bbc.com",
+                "reuters.com",
+                "theguardian.com",
+                "elpais.com",
+                "spiegel.de",
+                "theregister.com",
+                "arstechnica.com",
+                "beehiiv.com",
+                "revue.email"
+              ]
+            },
+            {
+              "type": "header_contains",
+              "header": "Subject",
+              "values": [
+                "% off",
+                "sale",
+                "discount",
+                "promo",
+                "deal",
+                "oferta",
+                "descuento",
+                "Rabatt"
+              ]
+            }
           ]
         }
       },
@@ -205,17 +499,75 @@
         "volatile": false,
         "predicate": {
           "type": "from_domain",
-          "values": ["ryanair.com", "easyjet.com", "vueling.com", "lufthansa.com", "klm.com", "iberia.com", "service.ryanairemail.com", "fin.ryanair.com", "wizzair.com", "booking.com", "sg.booking.com", "property.booking.com", "airbnb.com", "hostelworld.com", "info.hostelworld.com", "email.hostelworld.com"]
+          "values": [
+            "lufthansa.com",
+            "ryanair.com",
+            "easyjet.com",
+            "iberia.com",
+            "vueling.com",
+            "airfrance.com",
+            "klm.com",
+            "service.ryanairemail.com",
+            "fin.ryanair.com",
+            "wizzair.com",
+            "booking.com",
+            "sg.booking.com",
+            "property.booking.com",
+            "airbnb.com",
+            "expedia.com",
+            "hotels.com",
+            "trivago.com",
+            "skyscanner.com",
+            "hostelworld.com",
+            "info.hostelworld.com",
+            "email.hostelworld.com"
+          ]
         }
       },
       {
         "folder": "Fi    🏠 Utilities / Services",
         "axis": "sender",
         "volatile": false,
-        "_doc": "No energy-provider domain is known yet -- ask before adding.",
+        "_doc": "Telecom/Energy/Housing/Health. No energy provider outside DE/ES known yet.",
         "predicate": {
           "type": "from_domain",
-          "values": ["congstar.de", "news.congstar.de", "service.congstar.de", "mails.swm.de", "wg-gesucht.de", "nachrichten.immobilienscout24.de", "myplace.de", "kleinanzeigen.de", "idealista.com", "fotocasa.es", "pisos.com", "immobilienscout24.de", "immowelt.de", "allianz.com", "axa.com", "mapfre.com", "huk.de", "doctolib.de", "doctolib.com"]
+          "values": [
+            "congstar.de",
+            "news.congstar.de",
+            "service.congstar.de",
+            "mails.swm.de",
+            "vodafone.de",
+            "telekom.de",
+            "o2online.de",
+            "movistar.es",
+            "orange.es",
+            "vodafone.es",
+            "1und1.de",
+            "eon.de",
+            "vattenfall.de",
+            "iberdrola.es",
+            "endesa.com",
+            "wg-gesucht.de",
+            "nachrichten.immobilienscout24.de",
+            "myplace.de",
+            "kleinanzeigen.de",
+            "idealista.com",
+            "fotocasa.es",
+            "pisos.com",
+            "immobilienscout24.de",
+            "immowelt.de",
+            "doctolib.de",
+            "doctolib.com"
+          ]
+        }
+      },
+      {
+        "folder": "Fj    👪 Personal",
+        "axis": "sender",
+        "volatile": false,
+        "_doc": "PLACEHOLDER -- always false (empty any_of). Generic ISP domains (gmail.com, gmx.de, web.de, outlook.com, icloud.com) are NOT classifiers, they're shared by millions of unrelated senders -- personal mail needs actual Family/Friends addresses, which live nowhere in this repo. Left empty on purpose rather than guessed; fill in any_of with real addresses/domains when available.",
+        "predicate": {
+          "any_of": []
         }
       },
       {
@@ -224,7 +576,453 @@
         "volatile": false,
         "predicate": {
           "type": "from_domain",
-          "values": ["udemy.com", "coursera.org", "edx.org", "skillshare.com", "pluralsight.com", "duolingo.com", "babbel.com", "busuu.com", "dev.to", "hashnode.com", "42berlin.de", "42heilbronn.de", "42.fr", "intra.42.fr"]
+          "values": [
+            "coursera.org",
+            "udemy.com",
+            "edx.org",
+            "khanacademy.org",
+            "duolingo.com",
+            "skillshare.com",
+            "pluralsight.com",
+            "babbel.com",
+            "busuu.com",
+            "dev.to",
+            "hashnode.com",
+            "42berlin.de",
+            "42heilbronn.de",
+            "42.fr",
+            "intra.42.fr"
+          ]
+        }
+      },
+      {
+        "folder": "Fz    📭 Others",
+        "axis": "sender",
+        "volatile": false,
+        "_doc": "Fallback: matches nothing Fa-Fk already claims. References those same predicate trees (not a re-typed copy) so it can't silently drift out of sync when a domain is added above.",
+        "predicate": {
+          "all_of": [
+            {
+              "not": {
+                "any_of": [
+                  {
+                    "type": "from_domain",
+                    "values": [
+                      "bund.de",
+                      "bundesregierung.de",
+                      "finanzamt.de",
+                      "elster.de",
+                      "bafin.de",
+                      "bamf.de",
+                      "auswaertiges-amt.de",
+                      "destatis.de",
+                      "deutsche-rentenversicherung.de",
+                      "arbeitsagentur.de",
+                      "krankenkasse.de",
+                      "tk.de",
+                      "aok.de",
+                      "berlin.de",
+                      "muenchen.de",
+                      "administracion.gob.es",
+                      "agenciatributaria.es",
+                      "seg-social.es",
+                      "sepe.es",
+                      "dgt.es",
+                      "policia.es",
+                      "boe.es",
+                      "madrid.es",
+                      "barcelona.cat",
+                      "europa.eu",
+                      "ec.europa.eu",
+                      "europarl.europa.eu",
+                      "eur-lex.europa.eu",
+                      "echa.europa.eu",
+                      "ecb.europa.eu",
+                      "portaldasfinancas.gov.pt",
+                      "seg-social.pt",
+                      "gov.pt",
+                      "irs.gov",
+                      "ssa.gov",
+                      "uscis.gov",
+                      "state.gov",
+                      "tax.service.gov.uk"
+                    ]
+                  },
+                  {
+                    "type": "from_domain_suffix",
+                    "values": [
+                      ".gov.br"
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "not": {
+                "type": "from_domain",
+                "values": [
+                  "linkedin.com",
+                  "twitter.com",
+                  "x.com",
+                  "instagram.com",
+                  "mail.instagram.com",
+                  "facebook.com",
+                  "facebookmail.com",
+                  "meta.com",
+                  "reddit.com",
+                  "tiktok.com",
+                  "pinterest.com",
+                  "snapchat.com",
+                  "mastodon.social",
+                  "discord.com",
+                  "telegram.org",
+                  "whatsapp.com",
+                  "youtube.com"
+                ]
+              }
+            },
+            {
+              "not": {
+                "type": "from_domain",
+                "values": [
+                  "n26.com",
+                  "revolut.com",
+                  "wise.com",
+                  "ing.es",
+                  "ing.de",
+                  "bbva.es",
+                  "santander.de",
+                  "santander.es",
+                  "deutschebank.de",
+                  "deutsche-bank.de",
+                  "commerzbank.de",
+                  "caixabank.es",
+                  "bancosabadell.com",
+                  "sparkasse.de",
+                  "dkb.de",
+                  "emailing.bancosantander-mail.es",
+                  "cofidis.es",
+                  "s.cofidis.es",
+                  "c.cofidis.es",
+                  "nordaccount.com",
+                  "interactivebrokers.com",
+                  "degiro.com",
+                  "traderepublic.com",
+                  "etoro.com",
+                  "scalable.capital",
+                  "fidelity.com",
+                  "schwab.com",
+                  "btgpactual.com",
+                  "tcbs.com.vn",
+                  "b3.com.br",
+                  "getbernstein.com",
+                  "coinbase.com",
+                  "binance.com",
+                  "kraken.com",
+                  "ledger.com",
+                  "bitpanda.com",
+                  "info.bitpanda.com",
+                  "paypal.com",
+                  "stripe.com",
+                  "klarna.com",
+                  "adyen.com",
+                  "allianz.com",
+                  "allianz.de",
+                  "axa.com",
+                  "mapfre.com",
+                  "generali.com",
+                  "huk.de"
+                ]
+              }
+            },
+            {
+              "not": {
+                "any_of": [
+                  {
+                    "type": "from_domain",
+                    "values": [
+                      "linkedin.com",
+                      "indeed.com",
+                      "indeed.de",
+                      "glassdoor.com",
+                      "hired.com",
+                      "wellfound.com",
+                      "xing.com",
+                      "stepstone.de",
+                      "infojobs.net",
+                      "hays.de",
+                      "michaelpage.es"
+                    ]
+                  },
+                  {
+                    "type": "header_contains",
+                    "header": "Subject",
+                    "values": [
+                      "recruiter",
+                      "headhunt",
+                      "opportunity",
+                      "we found your profile",
+                      "job match",
+                      "talent"
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "not": {
+                "any_of": [
+                  {
+                    "type": "from_domain",
+                    "values": [
+                      "github.com",
+                      "noreply.github.com",
+                      "gitlab.com",
+                      "bitbucket.org",
+                      "codeberg.org",
+                      "stackoverflow.com",
+                      "stackexchange.com",
+                      "npmjs.com",
+                      "crates.io",
+                      "pypi.org",
+                      "docker.com",
+                      "dockerhub.com",
+                      "hub.docker.com",
+                      "nixos.org",
+                      "discourse.nixos.org",
+                      "google.com",
+                      "cloud.google.com",
+                      "google.cloud",
+                      "aws.amazon.com",
+                      "amazonaws.com",
+                      "azure.microsoft.com",
+                      "hetzner.com",
+                      "hetzner.de",
+                      "oracle.com",
+                      "oracle-mail.com",
+                      "oraclecloud.com",
+                      "digitalocean.com",
+                      "linode.com",
+                      "vultr.com",
+                      "cloudflare.com",
+                      "namecheap.com",
+                      "godaddy.com",
+                      "porkbun.com",
+                      "ovh.com",
+                      "ionos.de",
+                      "gandi.net",
+                      "name.com",
+                      "vercel.com",
+                      "netlify.com",
+                      "heroku.com",
+                      "sentry.io",
+                      "datadoghq.com",
+                      "atlassian.com",
+                      "jetbrains.com",
+                      "anthropic.com",
+                      "openai.com",
+                      "mail.anthropic.com",
+                      "email.claude.com",
+                      "openrouter.ai",
+                      "email.openai.com",
+                      "railway.app",
+                      "notion.so",
+                      "figma.com",
+                      "miro.com",
+                      "adobe.com",
+                      "canva.com",
+                      "1password.com",
+                      "bitwarden.com",
+                      "bitwarden.eu",
+                      "letsencrypt.org",
+                      "haveibeenpwned.com",
+                      "accounts.google.com",
+                      "sendsafely.com",
+                      "verify.proton.me"
+                    ]
+                  },
+                  {
+                    "type": "from_domain_suffix",
+                    "values": [
+                      ".github.com"
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "not": {
+                "type": "from_domain",
+                "values": [
+                  "amazon.de",
+                  "amazon.es",
+                  "amazon.com",
+                  "ebay.com",
+                  "ebay.de",
+                  "etsy.com",
+                  "zalando.de",
+                  "zalando.es",
+                  "aliexpress.com",
+                  "temu.com",
+                  "shein.com",
+                  "mediamarkt.de",
+                  "elcorteingles.es",
+                  "ikea.com",
+                  "decathlon.es",
+                  "dhl.de",
+                  "dhl.com",
+                  "ups.com",
+                  "fedex.com",
+                  "gls-group.eu",
+                  "gls-group.com",
+                  "dpd.com",
+                  "correos.es",
+                  "seur.com",
+                  "mrw.es",
+                  "deutschepost.de",
+                  "hermesworld.com",
+                  "deliveroo.com",
+                  "ubereats.com",
+                  "glovo.com",
+                  "justeat.com",
+                  "lieferando.de",
+                  "doordash.com"
+                ]
+              }
+            },
+            {
+              "not": {
+                "any_of": [
+                  {
+                    "type": "from_domain",
+                    "values": [
+                      "substack.com",
+                      "medium.com",
+                      "mailchimp.com",
+                      "sendgrid.net",
+                      "theverge.com",
+                      "nytimes.com",
+                      "wired.com",
+                      "techcrunch.com",
+                      "hackernewsletter.com",
+                      "morningbrew.com",
+                      "bbc.com",
+                      "reuters.com",
+                      "theguardian.com",
+                      "elpais.com",
+                      "spiegel.de",
+                      "theregister.com",
+                      "arstechnica.com",
+                      "beehiiv.com",
+                      "revue.email"
+                    ]
+                  },
+                  {
+                    "type": "header_contains",
+                    "header": "Subject",
+                    "values": [
+                      "% off",
+                      "sale",
+                      "discount",
+                      "promo",
+                      "deal",
+                      "oferta",
+                      "descuento",
+                      "Rabatt"
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "not": {
+                "type": "from_domain",
+                "values": [
+                  "lufthansa.com",
+                  "ryanair.com",
+                  "easyjet.com",
+                  "iberia.com",
+                  "vueling.com",
+                  "airfrance.com",
+                  "klm.com",
+                  "service.ryanairemail.com",
+                  "fin.ryanair.com",
+                  "wizzair.com",
+                  "booking.com",
+                  "sg.booking.com",
+                  "property.booking.com",
+                  "airbnb.com",
+                  "expedia.com",
+                  "hotels.com",
+                  "trivago.com",
+                  "skyscanner.com",
+                  "hostelworld.com",
+                  "info.hostelworld.com",
+                  "email.hostelworld.com"
+                ]
+              }
+            },
+            {
+              "not": {
+                "type": "from_domain",
+                "values": [
+                  "congstar.de",
+                  "news.congstar.de",
+                  "service.congstar.de",
+                  "mails.swm.de",
+                  "vodafone.de",
+                  "telekom.de",
+                  "o2online.de",
+                  "movistar.es",
+                  "orange.es",
+                  "vodafone.es",
+                  "1und1.de",
+                  "eon.de",
+                  "vattenfall.de",
+                  "iberdrola.es",
+                  "endesa.com",
+                  "wg-gesucht.de",
+                  "nachrichten.immobilienscout24.de",
+                  "myplace.de",
+                  "kleinanzeigen.de",
+                  "idealista.com",
+                  "fotocasa.es",
+                  "pisos.com",
+                  "immobilienscout24.de",
+                  "immowelt.de",
+                  "doctolib.de",
+                  "doctolib.com"
+                ]
+              }
+            },
+            {
+              "not": {
+                "any_of": []
+              }
+            },
+            {
+              "not": {
+                "type": "from_domain",
+                "values": [
+                  "coursera.org",
+                  "udemy.com",
+                  "edx.org",
+                  "khanacademy.org",
+                  "duolingo.com",
+                  "skillshare.com",
+                  "pluralsight.com",
+                  "babbel.com",
+                  "busuu.com",
+                  "dev.to",
+                  "hashnode.com",
+                  "42berlin.de",
+                  "42heilbronn.de",
+                  "42.fr",
+                  "intra.42.fr"
+                ]
+              }
+            }
+          ]
         }
       }
     ],
