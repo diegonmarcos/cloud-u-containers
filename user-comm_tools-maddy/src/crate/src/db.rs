@@ -356,8 +356,15 @@ pub fn cleanup_stale_mailboxes(
                      SELECT 1 FROM msgs i WHERE i.mboxId = ?2 AND i.extBodyKey = m.extBodyKey
                    ))",
             )?;
-            stmt.query_map(params![mbox_id, inbox_id], |r| r.get::<_, i64>(0))?
-                .collect::<Result<Vec<_>, _>>()?
+            // Bound to a local before leaving the block on purpose: with the
+            // `?` in tail position the Try temporary outlives `stmt` and the
+            // borrow checker rejects it (E0597 — `stmt` dropped while still
+            // borrowed). The sibling query fns above use this same
+            // let-then-return shape for the same reason.
+            let rows = stmt
+                .query_map(params![mbox_id, inbox_id], |r| r.get::<_, i64>(0))?
+                .collect::<Result<Vec<_>, _>>()?;
+            rows
         };
 
         for src_id in &ids {

@@ -75,6 +75,9 @@ pub struct Email {
 /// Response shape shared by `Mailbox/set` and `Email/set`.
 #[derive(Debug, Default, Deserialize)]
 pub struct SetResponse {
+    /// Part of the JMAP `*/set` response contract; this binary only creates
+    /// mailboxes (whose ids it re-fetches) so nothing reads it today.
+    #[allow(dead_code)]
     #[serde(default, deserialize_with = "null_default")]
     pub created: Map<String, Value>,
     #[serde(default, deserialize_with = "null_default")]
