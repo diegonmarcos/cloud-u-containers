@@ -5606,7 +5606,7 @@
       "per_repo_publish": {
         "_comment": "MATRIX CI packaging target (cgc-db-index.yml matrix jobs; CGC_PACKAGE_MODE=per-repo in cloud-cgc-db-update.sh), replacing db_publish for per-repo checkpoints during the migration. One GHCR image per indexed repo: <image_prefix><local_name>:<tag>, e.g. ghcr.io/diegonmarcos/cgc-db-cloud-data:latest -- built by cloud-cgc-db-package.sh (mode auto-detected from the image name) from that repo's own <project_id>/ dir only. Visibility mirrors the repo's OWN GitHub visibility (gh repo view --json isPrivate on repo_map[local_name]): private repo -> private package, public -> public, force-corrected at publish if drifted. base_image carries the SHARED octocode home root state (config.toml + fastembed/ + sentencetransformer/ model caches) restored before indexing so embedding models stay pinned identical across every per-repo image -- a mismatch silently drop_tables a repo. Read back by cloud-cgc-db-restore-all.sh (consumer side) with the same three keys. db_publish above stays the monolith path until the matrix is proven green; do not delete it.",
         "image_prefix": "ghcr.io/diegonmarcos/cgc-db-",
-        "base_image": "ghcr.io/diegonmarcos/cgc-db-base:latest",
+        "base_image": "ghcr.io/diegonmarcos/cgc-db-base:0.22.0",
         "tag": "latest"
       },
       "runtime": {
@@ -5666,10 +5666,15 @@
           "pvt_db_volume": "octocode_db_pvt",
           "db_path": "/home/appuser/.local/share/octocode",
           "_db_upstream_comment": "GHCR is the SINGLE upstream for both octocode DBs (semantic FastEmbed vectors + GraphRAG graph). The producer (GHA x86, ship-cgc-db.yml) pulls db_publish.image, runs an INCREMENTAL octocode index on top, and pushes it back. oci-apps (arm) + local both CONSUME by pulling the same image — never build. Pinned octocode version keeps the on-disk DB schema compatible across x86/arm/local.",
-          "version": "0.12.2",
-          "octocode_images": {
-            "x86": "ghcr.io/diegonmarcos/octocode-fastembed-huggingface-graphrag-cpu-x86-linux-static:0.12.2",
-            "arm": "ghcr.io/diegonmarcos/octocode-fastembed-graphrag-indexed-arm:latest"
+          "version": "0.22.0",
+          "_release_comment": "The octocode binary is the UPSTREAM static musl release, fetched by version + sha256 of the .tar.gz (hashed locally 2026-08-25 — upstream's .sha256 assets cover the .mcpb bundles, not the tarballs). Consumed by cloud-cgc-db-update.sh ensure_octocode (producer: x86_64 GHA, aarch64 box) and by docker.native_build.cmd (consumer image) — same version + sha in both, asserted equal by 9_others/test/cgc-db-octocode-pin.test.sh. No custom octocode image any more: the 0.12.2-era octocode-fastembed-*-static / -indexed-arm GHCR images were hand-built once (2026-03-26) with no builder in this repo. Bumping = version + both sha256 here + per_repo_publish.base_image tag + native_build.cmd, then a forced cgc-db run (the DB schema follows the binary) and a consumer ship AFTER restore-all (0.12 cannot read a v2 config, 0.22 cannot read a v1 one).",
+          "release": {
+            "repo": "Muvon/octocode",
+            "asset": "octocode-{version}-{arch}-unknown-linux-musl.tar.gz",
+            "sha256": {
+              "x86_64": "afe65212f513d09dd3489b0a60cae28854527d46ffdd94752ebdd2bbfaf39a6c",
+              "aarch64": "546ec36683406189fed174ee08ffae0b60f0d630c0691599112b01d2817dd6f5"
+            }
           },
           "update": {
             "mem_max": "16G",
@@ -5682,7 +5687,7 @@
             "_use_llm_comment": "FALLBACK DEFAULT ONLY — not the authority. cloud-cgc-db-update.sh reads this ONLY when the environment does not set USE_LLM (e.g. a bare local invocation with no phase). In CI the two-phase orchestrator always sets USE_LLM per phase, so this value is not consulted there. Kept false so a phase-less local run stays cheap/structural.",
             "incremental": true,
             "use_llm": false,
-            "llm_model": "openrouter:qwen/qwen3-coder-30b-a3b-instruct",
+            "llm_model": "openrouter:openai/gpt-4o-mini",
             "schedule": "0 4,16 * * *",
             "_budget_comment": "repo_timeout_min is a CEILING, not a reservation (corrected 2026-08-21). The gate clamps each repo's slice to min(ceiling, max_minutes - elapsed), so worst-case wall time is max_minutes ALONE and the invariant is simply max_minutes <= timeout-minutes (330) minus slack for the final propagate. The earlier 'max + repo <= timeout' rule described the pre-reserve gate; kept afterwards it deadlocked admission — a FIXED reserve must be big enough for the slowest repo (cloud-unix ~200m+ at measured throughput) yet small enough to still admit a repo late in a run, and both cannot hold, so the giants were never admitted at all while the small repos alone consumed ~75m.",
             "max_minutes": 300,
@@ -5696,7 +5701,7 @@
             "openai_api_url": "http://10.0.0.6:3217/v1/chat/completions",
             "ollama_api_url": "http://10.0.0.6:12436",
             "api_key": "sk-dummy",
-            "models": "openrouter:qwen/qwen3-coder-30b-a3b-instruct",
+            "models": "openrouter:openai/gpt-4o-mini",
             "health_url": "http://10.0.0.6:3217/health"
           },
           "index_repos": [
