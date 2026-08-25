@@ -30,7 +30,6 @@
       "env_file": false,
       "depends_on": [],
       "resources": {
-        "mem_limit": "32m"
       },
       "healthcheck": {
         "test": ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/"],

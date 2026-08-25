@@ -880,7 +880,6 @@
           "env_file": false,
           "depends_on": [],
           "resources": {
-            "mem_limit": "2g",
             "mem_reservation": "512m"
           },
           "read_only": false,
@@ -1924,7 +1923,6 @@
           "env_file": true,
           "depends_on": [],
           "resources": {
-            "mem_limit": "2G",
             "mem_reservation": "256M",
             "pids_limit": 256
           },
@@ -2424,17 +2422,14 @@
           "depends_on": [],
           "resources": {
             "limits": {
-              "memory": "4G",
-              "cpus": "3.0"
+              "memory": "4G"
             },
             "reservations": {
               "memory": "256M"
             }
           },
           "read_only": false,
-          "protocol": null,
-          "mem_limit": "16G",
-          "cpus": "3.0"
+          "protocol": null
         }
       },
       "container_names": [
@@ -3032,9 +3027,7 @@
           ],
           "env_file": false,
           "depends_on": [],
-          "resources": {
-            "mem_limit": "64M"
-          },
+          "resources": {},
           "read_only": false,
           "protocol": "udp"
         }
@@ -3091,9 +3084,7 @@
           ],
           "env_file": false,
           "depends_on": [],
-          "resources": {
-            "mem_limit": "64M"
-          },
+          "resources": {},
           "read_only": false,
           "protocol": "udp"
         }
@@ -3149,9 +3140,7 @@
           ],
           "env_file": false,
           "depends_on": [],
-          "resources": {
-            "mem_limit": "32m"
-          },
+          "resources": {},
           "healthcheck": {
             "test": [
               "CMD",
@@ -3251,9 +3240,7 @@
           ],
           "env_file": true,
           "depends_on": [],
-          "resources": {
-            "mem_limit": "64m"
-          },
+          "resources": {},
           "healthcheck": null,
           "monitoring": {
             "tls_check": true
@@ -3539,9 +3526,7 @@
           ],
           "env_file": true,
           "depends_on": [],
-          "resources": {
-            "mem_limit": "256m"
-          },
+          "resources": {},
           "read_only": false,
           "protocol": "http",
           "embedded_dbs": [
@@ -4293,9 +4278,7 @@
           ],
           "env_file": false,
           "depends_on": [],
-          "resources": {
-            "mem_limit": "512m"
-          },
+          "resources": {},
           "read_only": false,
           "port_format": "colon",
           "protocol": "http",
@@ -5417,7 +5400,6 @@
       },
       "bind_host": "10.0.0.1",
       "resources": {
-        "mem_limit": "64M",
         "mem_reservation": "16M"
       },
       "api": {
@@ -5821,7 +5803,6 @@
       },
       "timezone": "UTC",
       "resources": {
-        "mem_limit": "64m",
         "mem_reservation": "16m"
       },
       "api": {
@@ -6596,7 +6577,6 @@
       "timezone": "Europe/Madrid",
       "upstream_image": "forgejo.ellis.link/continuwuation/continuwuity:latest",
       "resources": {
-        "mem_limit": "768M",
         "mem_reservation": "128M"
       },
       "api": {
@@ -6690,7 +6670,6 @@
       "timezone": "Europe/Madrid",
       "upstream_image": "vectorim/element-web:latest",
       "resources": {
-        "mem_limit": "128M",
         "mem_reservation": "16M"
       },
       "api": {
@@ -6766,7 +6745,6 @@
       "timezone": "Europe/Madrid",
       "upstream_image": "dock.mau.dev/mautrix/whatsapp:latest",
       "resources": {
-        "mem_limit": "512M",
         "mem_reservation": "64M"
       },
       "api": {
@@ -6810,7 +6788,6 @@
           "env_file": false,
           "depends_on": [],
           "resources": {
-            "mem_limit": "64M",
             "mem_reservation": "16M"
           },
           "read_only": false,
@@ -6852,7 +6829,6 @@
       },
       "upstream_image": "djmaze/snappymail:latest",
       "resources": {
-        "mem_limit": "64M",
         "mem_reservation": "16M"
       },
       "api": {
@@ -7161,7 +7137,6 @@
           "image": "ghcr.io/diegonmarcos/stalwart-sorter-binaries:latest",
           "_doc_image": "Was python:3-alpine running a bind-mounted jmap-sorter.py. Now a compiled binary: the rules schema is parsed and validated once at startup, so a malformed or unknown predicate stops the container instead of silently producing an empty filter folder.",
           "resources": {
-            "mem_limit": "64M",
             "mem_reservation": "16M"
           }
         }
@@ -7429,8 +7404,7 @@
           "env_file": false,
           "resources": {
             "limits": {
-              "memory": "512M",
-              "cpus": "1"
+              "memory": "512M"
             },
             "reservations": {
               "memory": "128M"
@@ -9014,7 +8988,6 @@
       "upstream_image": "vaultwarden/server:latest",
       "timezone": "Europe/Madrid",
       "resources": {
-        "mem_limit": "512M",
         "mem_reservation": "64M"
       },
       "api": {

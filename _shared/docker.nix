@@ -181,10 +181,39 @@ in {
     depends_on ? {},          # { service_name = { condition = "service_healthy"; }; }
     startAfter ? [],          # list of service names — auto-generates depends_on with service_healthy
 
-    # Resource limits (Docker Compose v2 deploy syntax)
-    memLimit ? "512M",        # default: 512MB max per container
-    memReservation ? "64M",   # default: 64MB guaranteed per container
-    cpuLimit ? "1.0",         # default: 1 CPU core max per container (50% of 2-core VM)
+    # ── Resource limits — DELIBERATELY INERT ────────────────────────────────
+    #
+    # memLimit and cpuLimit are still ACCEPTED so the ~175 call sites that pass
+    # them keep evaluating, and are no longer EMITTED. System pressure is not
+    # this file's job any more: it belongs to my-watchdog, which reads
+    # /proc/pressure and acts on PSI (cloud-unix/da_watchdog/configs/
+    # watchdog-policy.json).
+    #
+    # Why the memory ceiling had to go. deploy.resources.limits.memory becomes
+    # cgroup memory.max, which is a LOCAL wall: the instant a container touches
+    # it the kernel force-reclaims from that container synchronously, no matter
+    # how much RAM the host has free. Measured on oci-apps — stalwart pinned at
+    # 250.8MB of a 256MB cap with 2909 breach events, snappymail at 60MB of
+    # 64MB with 2852 — while the host itself was fine. That is not pressure
+    # management, it is thrashing on a schedule, and with swappiness biased
+    # toward anonymous pages every breach paged app memory to disk.
+    #
+    # The desktop reached the same conclusion first and removed its own caps on
+    # 2026-08-07 (see no_hard_memcap_services in the surface's
+    # cloud-data-system-protection.json): plasmashell's cap alone caused two
+    # freezes through memory.high throttle-thrash while real PSI stayed flat.
+    #
+    # cpuLimit goes with it for the same reason — a CPU quota throttles a
+    # container that is not causing anyone to stall, and cpu PSI measures the
+    # stalling directly.
+    #
+    # What is KEPT and why: memReservation, because it is a soft floor
+    # (protection, the analogue of MemoryMin) rather than a ceiling; and
+    # pidsLimit, because a fork-bomb guard is a safety limit, not a pressure
+    # control, and removing it would be a real regression for no benefit.
+    memLimit ? null,          # INERT — see above
+    memReservation ? "64M",   # kept: a floor, not a ceiling
+    cpuLimit ? null,          # INERT — see above
 
     # Security escape hatches
     skipCapDrop ? false,      # DEPRECATED — cap_drop removed, kept for backward compat
@@ -263,7 +292,10 @@ in {
           + (if healthcheck ? start_period then "\n${i3}start_period: ${healthcheck.start_period}" else "");
 
       # ── Resource limits (deploy.resources syntax — Compose v2) ──
-      hasLimits = memLimit != null || cpuLimit != null;
+      # Only pids can put a limits block on the wire now. memLimit and cpuLimit
+      # are accepted and discarded — see the parameter block above.
+      _ignoredCeilings = [ memLimit cpuLimit ];
+      hasLimits = pidsLimit != 0;
       hasReservations = memReservation != null;
 
       # ── PID limit ──
@@ -275,8 +307,6 @@ in {
       deployLines = if !hasLimits && !hasReservations then ""
         else "${i2}deploy:\n${i3}resources:"
           + (if hasLimits then "\n${i3}  limits:"
-            + (if memLimit != null then "\n${i3}    memory: ${memLimit}" else "")
-            + (if cpuLimit != null then "\n${i3}    cpus: \"${cpuLimit}\"" else "")
             + (if pidsLimit != 0 then "\n${i3}    pids: ${toString pidsLimit}" else "")
             else "")
           + (if hasReservations then "\n${i3}  reservations:"

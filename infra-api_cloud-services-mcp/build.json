@@ -102,7 +102,6 @@
       "env_file": true,
       "depends_on": [],
       "resources": {
-        "mem_limit": "2G",
         "mem_reservation": "256M",
         "pids_limit": 256
       },
