@@ -379,13 +379,16 @@ pub fn cleanup_stale_mailboxes(
                  WHERE id = (SELECT extBodyKey FROM msgs WHERE mboxId = ?1 AND msgId = ?2 AND extBodyKey IS NOT NULL)",
                 params![mbox_id, src_id],
             )?;
-            // Rehomed mail is archive, not new work: mark it processed so
-            // route_new_mail doesn't immediately re-file 4k messages into
-            // the F folders on the very next poll.
-            tx.execute(
-                "INSERT OR IGNORE INTO flags (mboxId, msgId, flag) VALUES (?1, ?2, '$distributed')",
-                params![inbox_id, inbox_uid],
-            )?;
+            // Deliberately NOT stamped `$distributed`: rehomed mail must be
+            // classified into its F0 sender folder like everything else.
+            // The design is "every email in INBOX, plus a copy in its sender
+            // folder" — archive included. An earlier version stamped these to
+            // avoid a large one-off re-file on the next poll; that traded the
+            // user's actual requirement for a bit of transient work, and left
+            // the F folders holding only post-deploy arrivals (measured: 29
+            // of 8699 messages). The re-file is a single bounded transaction
+            // and the copies share their body blob via extBodyKey, so it
+            // costs msgs rows, not mail storage.
             inbox_uid += 1;
             rehomed += 1;
         }
