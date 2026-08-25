@@ -101,17 +101,42 @@ export function startProxyRetryLoop(server: McpServer): void {
   }, CFG.retry.initial_ms);
 }
 
+// The MCP SDK's StreamableHTTPClientTransport has no built-in timeout on its
+// underlying fetch(), so a child that's unreachable at the network level
+// (dropped SYN, not refused) hangs on Node's default undici connect timeout
+// — MEASURED 10s per attempt against a firewall-dropped destination, and
+// registerProxiedMcpTools() is called fresh for every new client session
+// (createMcpServer() in http.ts), so this is squarely in the request path
+// even though the outer call is "fire and forget" from http.ts's point of
+// view: a caller that awaits registerProxiedMcpTools() (there isn't one
+// today, but a future refactor could easily add one without noticing this)
+// or any code path that ends up serialised behind it inherits the hang.
+// Bounding it here is strictly defensive — it cannot make a working child
+// connect any slower, only caps how long a BROKEN one can block.
+const CHILD_CONNECT_TIMEOUT_MS = 5_000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)
+    ),
+  ]);
+}
+
 async function connectChild(server: McpServer, child: ChildMcp): Promise<void> {
   if (connectedChildren.has(child.name)) return;
   const transport = new StreamableHTTPClientTransport(new URL(child.url));
   const client = new Client({ name: "cloud-mail-mcp-proxy", version: "1.0.0" }, { capabilities: {} });
-  try { await client.connect(transport); }
+  try {
+    await withTimeout(client.connect(transport), CHILD_CONNECT_TIMEOUT_MS, `${child.name}: connect`);
+  }
   catch (err) {
     await client.close().catch(() => {});
     await transport.close().catch(() => {});
     throw err;
   }
-  const { tools } = await client.listTools();
+  const { tools } = await withTimeout(client.listTools(), CHILD_CONNECT_TIMEOUT_MS, `${child.name}: listTools`);
   log(`${child.name}: discovered ${tools.length} tools at ${child.url}`);
   for (const tool of tools) {
     const zodShape = jsonSchemaToZod(tool.inputSchema);
