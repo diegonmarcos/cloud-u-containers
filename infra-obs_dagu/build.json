@@ -69,7 +69,6 @@
       "env_file": true,
       "depends_on": [],
       "resources": {
-        "mem_limit": "256m"
       },
       "read_only": false,
       "protocol": "http",

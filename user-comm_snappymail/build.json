@@ -53,7 +53,6 @@
       "env_file": false,
       "depends_on": [],
       "resources": {
-        "mem_limit": "64M",
         "mem_reservation": "16M"
       },
       "read_only": false,
@@ -68,7 +67,6 @@
   },
   "upstream_image": "djmaze/snappymail:latest",
   "resources": {
-    "mem_limit": "64M",
     "mem_reservation": "16M"
   }
 }

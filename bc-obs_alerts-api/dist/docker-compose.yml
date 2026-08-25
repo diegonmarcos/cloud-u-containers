@@ -37,8 +37,6 @@ services:
     deploy:
       resources:
         limits:
-          memory: 64m
-          cpus: "0.1"
           pids: 256
         reservations:
           memory: 64M

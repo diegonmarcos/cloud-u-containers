@@ -64,7 +64,6 @@
   },
   "upstream_image": "dock.mau.dev/mautrix/whatsapp:latest",
   "resources": {
-    "mem_limit": "512M",
     "mem_reservation": "64M"
   },
   "api": {

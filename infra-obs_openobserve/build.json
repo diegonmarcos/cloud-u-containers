@@ -70,7 +70,6 @@
       "env_file": false,
       "depends_on": [],
       "resources": {
-        "mem_limit": "512m"
       },
       "read_only": false,
       "port_format": "colon",

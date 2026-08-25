@@ -79,7 +79,6 @@
   },
   "upstream_image": "forgejo.ellis.link/continuwuation/continuwuity:latest",
   "resources": {
-    "mem_limit": "768M",
     "mem_reservation": "128M"
   },
   "api": {
