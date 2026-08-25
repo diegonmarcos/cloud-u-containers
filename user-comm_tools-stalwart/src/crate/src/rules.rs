@@ -137,10 +137,19 @@ pub enum Predicate {
     SizeRange { min: u64, max: u64 },
     /// Received within the last `hours`.
     NewerThanHours { hours: f64 },
+    /// Received longer than `hours` ago. Exact complement of
+    /// `NewerThanHours` at the same `hours` value (strict `>`, so a message
+    /// at exactly the boundary matches `NewerThanHours` — its `<=` — and not
+    /// this one, keeping the pair from double-matching on the boundary).
+    OlderThanHours { hours: f64 },
     /// `$seen` keyword absent.
     Unread,
+    /// `$seen` keyword present. Exact complement of `Unread`.
+    Read,
     /// Has a real (non-inline) attachment.
     HasAttachment,
+    /// No real (non-inline) attachment. Exact complement of `HasAttachment`.
+    NoAttachment,
     /// Attachment MIME type is one of `values` (compared lowercase).
     AttachType {
         #[serde(default, deserialize_with = "null_default")]

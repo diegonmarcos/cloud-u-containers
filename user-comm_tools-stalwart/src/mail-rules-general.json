@@ -66,10 +66,13 @@
       {"folder": "Ac    📏 Small (<1MB)",         "axis": "size",   "volatile": false, "predicate": {"type": "size_max", "bytes": 1048576}},
       {"folder": "Ba    ⏱️ Last 24h",             "axis": "time",   "volatile": true,  "predicate": {"type": "newer_than_hours", "hours": 24}},
       {"folder": "Bc    ⏱️ Last 7 days",          "axis": "time",   "volatile": true,  "predicate": {"type": "newer_than_hours", "hours": 168}},
+      {"folder": "Bd    ⏱️ Older than 7 days",    "axis": "time",   "volatile": true,  "predicate": {"type": "older_than_hours", "hours": 168}},
       {"folder": "Ca    📩 Unread",               "axis": "state",  "volatile": true,  "predicate": {"type": "unread"}},
+      {"folder": "Cb    📩 Read",                 "axis": "state",  "volatile": true,  "predicate": {"type": "read"}},
       {"folder": "Da    📎 With attachments",      "axis": "attach", "volatile": false, "predicate": {"type": "has_attachment"}},
       {"folder": "Db    📎 PDF",                   "axis": "attach", "volatile": false, "predicate": {"type": "attach_type", "values": ["application/pdf"]}},
-      {"folder": "Dc    📎 Docs",                  "axis": "attach", "volatile": false, "predicate": {"type": "attach_type", "values": ["application/msword","application/vnd.openxmlformats-officedocument.wordprocessingml.document","application/vnd.oasis.opendocument.text","text/plain"]}}
+      {"folder": "Dc    📎 Docs",                  "axis": "attach", "volatile": false, "predicate": {"type": "attach_type", "values": ["application/msword","application/vnd.openxmlformats-officedocument.wordprocessingml.document","application/vnd.oasis.opendocument.text","text/plain"]}},
+      {"folder": "Dd    📎 No attachments",        "axis": "attach", "volatile": false, "predicate": {"type": "no_attachment"}}
     ],
     "partition_axis": "size"
   },
