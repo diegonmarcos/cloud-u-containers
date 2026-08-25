@@ -59,5 +59,23 @@ echo "[init] Ensuring accounts + syncing passwords..."
 echo "[init] Ensuring F0 sender-classification folders..."
 @FOLDER_CREATION_BLOCK@
 
+echo "[init] Starting maddy-sorter in background..."
+# Compiled into this same image (build.json#docker.native_build, src/crate)
+# from maddy's OWN src/, same as jmap-sorter is for Stalwart -- NOT a
+# separate sidecar container (Stalwart's docker.* slot was free since its
+# main app image is pulled upstream as-is; Maddy's isn't, so this native_build
+# both compiles maddy-sorter AND still gets maddy itself for free from
+# base_image=foxcpp/maddy:0.9). Runs its own poll loop internally
+# (STARTUP_DELAY/POLL_INTERVAL env vars, same shape as jmap-sorter) -- no
+# external Dagu cron, no wrapper shell loop. Was previously an external
+# Dagu DAG that ssh'd in every 2 min and caused a real livelock incident
+# (see git history / this repo's mail-sieve-subset-post-hoc.sh comments on
+# cmd_apply_rules, now dead code kept only for manual/testing use).
+# This container runs with `init: true` (docker-compose.yml), so tini is
+# the real PID1 and reaps this backgrounded process's tree regardless of
+# the `exec maddy` below (exec only replaces THIS shell's own image, it
+# doesn't touch already-backgrounded children).
+/usr/local/bin/maddy-sorter &
+
 echo "[init] Starting Maddy..."
 exec maddy -config /data/maddy.conf run

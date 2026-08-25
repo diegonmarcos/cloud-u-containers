@@ -14,7 +14,7 @@
     "pre_hook": "configs/init.sh"
   },
   "lifecycle": {
-    "_doc": "Operator-triggered post-hoc maintenance via mail-sieve-subset-post-hoc.sh. SQL-direct on /data/imapsql.db using the actual go-imap-sql schema. UNIFIED-INBOX delivery model: maddy delivery-time always places mail in INBOX (with \\Seen via inbox_copy_flags from mail-rules.json); apply-rules then SQL-direct COPIES (NOT moves) into matched category folders with rule-derived keywords (no \\Seen — copies are unread). INBOX is the chronological archive; category folders are the unread working set. apply-rules is idempotent via the $distributed keyword on the INBOX original — Dagu can run it on a 2-min cron without duplicating work. reseed-inbox-archive is a one-shot history backfill that COPIES every existing non-system folder msg back into INBOX as \\Seen + $distributed (Message-Id deduped). recover-headers stays intentionally NOT a subcommand: missing-blob bodies are unrecoverable, integrity-fix is the right action.",
+    "_doc": "Post-hoc maintenance via mail-sieve-subset-post-hoc.sh. SQL-direct on /data/imapsql.db using the actual go-imap-sql schema. UNIFIED-INBOX delivery model: maddy delivery-time always places mail in INBOX (with \\Seen via inbox_copy_flags from mail-rules.json); apply-rules then SQL-direct COPIES (NOT moves) into matched category folders with rule-derived keywords (no \\Seen — copies are unread). INBOX is the chronological archive; category folders are the unread working set. apply-rules is idempotent via the $distributed keyword on the INBOX original — maddy-sorter (src/crate, Rust, compiled into this same image via docker.native_build) runs the equivalent logic continuously (started by init.sh alongside `maddy run`, no external scheduler); the bash cmd_apply_rules / post-hoc-apply-rules lifecycle entries below are for manual/testing use only now. reseed-inbox-archive is a one-shot history backfill that COPIES every existing non-system folder msg back into INBOX as \\Seen + $distributed (Message-Id deduped). recover-headers stays intentionally NOT a subcommand: missing-blob bodies are unrecoverable, integrity-fix is the right action.",
     "post-hoc-integrity-check": [
       { "action": "ssh_run", "vm": "oci-mail",
         "script": "docker exec maddy /usr/local/bin/mail-sieve-subset-post-hoc integrity-check" }
@@ -150,10 +150,18 @@
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
     "image": "maddy-binaries",
-    "dockerfile": "code/amd64/Dockerfile",
     "arch": "amd64",
-    "runtime_packages": {
-      "apk": "jq sqlite coreutils"
+    "_doc": "Was Type-B (FROM foxcpp/maddy:0.9 + apk add, no compile). Now native_build: same base image (still gets maddy itself for free from upstream), same apk packages (moved from runtime_packages -- that field only fed the Type-B auto-detect path, which native_build.type bypasses entirely), PLUS an in-container compile of maddy-sorter (src/crate) copied in alongside. One image, both binaries -- maddy-sorter's own code lives in this service's src/, same as jmap-sorter does for Stalwart.",
+    "native_build": {
+      "type": "binary",
+      "app_dir": "crate",
+      "builder_image": "rust:1-alpine",
+      "_doc_builder_image": "MUST be an alpine/musl builder, not rust:1-bookworm (glibc) -- base_image below is foxcpp/maddy:0.9 (alpine/musl). A glibc-linked binary copied into a musl final image has no dynamic linker to run against (this isn't a PATH issue patchelf can fix, unlike the nix-store-ld-linux case elsewhere in this repo -- glibc and musl are different libcs, not just different paths to the same one). rust:1-alpine's native target already IS x86_64-unknown-linux-musl, so no --target flag or cross toolchain needed, just a C compiler for libsqlite3-sys's build script (rusqlite's \"bundled\" feature compiles its own sqlite3.c) -- hence build-base in cmd below.",
+      "cmd": "apk add --no-cache build-base && cargo build --release",
+      "binary": "target/release/maddy-sorter",
+      "base_image": "foxcpp/maddy:0.9",
+      "apk": "jq sqlite coreutils",
+      "_doc_apk": "jq/sqlite/coreutils are for the OTHER post-hoc subcommands (integrity-check, dedupe, cleanup-mailboxes, reseed-inbox-archive), which stay bash + sqlite3-CLI. maddy-sorter itself needs neither -- rusqlite's bundled feature compiles its own libsqlite3, no apk sqlite required for apply-rules specifically."
     }
   },
   "upstream_image": "foxcpp/maddy:0.9",

@@ -1,15 +1,24 @@
 #!/bin/sh
 # ╔══════════════════════════════════════════════════════════════════╗
 # ║ mail-sieve-subset-post-hoc.sh                                    ║
-# ║   Maddy operator-triggered batch maintenance.                    ║
+# ║   Maddy batch maintenance. Most subcommands are operator-         ║
+# ║   triggered; apply-rules is the one exception — it runs           ║
+# ║   continuously via maddy-sorter (src/crate, Rust), compiled       ║
+# ║   into this same image and started by init.sh alongside           ║
+# ║   `maddy run`.                                                    ║
+# ║   (started by init.sh alongside `maddy run`), not by an operator  ║
+# ║   or an external scheduler.                                       ║
 # ║                                                                  ║
-# ║ Wired via build.json#lifecycle.post-hoc-* (each subcommand has   ║
-# ║   its own lifecycle entry). Operator runs:                       ║
+# ║ Operator subcommands wired via build.json#lifecycle.post-hoc-*   ║
+# ║   (each has its own lifecycle entry):                            ║
 # ║     ./build.sh post-hoc-integrity-check                          ║
 # ║     ./build.sh post-hoc-integrity-fix                            ║
 # ║     ./build.sh post-hoc-dedupe                                   ║
 # ║     ./build.sh post-hoc-cleanup-mailboxes                        ║
 # ║     ./build.sh post-hoc-all                                      ║
+# ║     ./build.sh post-hoc-apply-rules        (manual one-off run;  ║
+# ║       the loop already does this continuously — for testing /    ║
+# ║       forcing a run outside the poll interval)                   ║
 # ║                                                                  ║
 # ║ Schema (go-imap-sql, observed against running maddy 0.x):        ║
 # ║   users(id, username, msgsizelimit, inboxId)                     ║
@@ -43,7 +52,7 @@
 # ║                      direct COPY (NOT move) into the matched     ║
 # ║                      category folder with rule keywords + no     ║
 # ║                      \\Seen; tag the INBOX original \\Seen+        ║
-# ║                      \$distributed. Idempotent — Dagu-friendly.   ║
+# ║                      \$distributed. Idempotent — safe under a tight poll loop. ║
 # ║   reseed-inbox-archive  one-shot: COPY every msg from non-system  ║
 # ║                      mailboxes into INBOX as \\Seen + \$distributed║
 # ║                      (Message-Id deduped). Backfills the         ║
@@ -148,7 +157,7 @@ backup_db() {
   # Retention. MEASURED 2026-08-24: 137 backups totalling 2.1G had piled up
   # here — 87% of /data's 2.4G, oldest 2026-04-30 — because nothing ever
   # pruned them. Harmless when backup_db ran by hand; a disk-filler now that
-  # apply-rules runs on a 2-min Dagu cron (~720 copies/day of a 22M DB).
+  # apply-rules runs on a 2-min poll loop (~720 copies/day of a 22M DB).
   # 20 keeps roughly the last hour of cron runs plus any manual ones.
   ls -1t "$DB".bak-* 2>/dev/null | tail -n +21 | while IFS= read -r _old; do
     rm -f "$_old"
@@ -426,7 +435,7 @@ cmd_apply_rules() {
   #                    INBOX original with \Seen + $distributed.
   #
   # Idempotency: $distributed keyword on the INBOX row excludes already-
-  # processed messages from the next scan. Safe to run on a Dagu cron.
+  # processed messages from the next scan. Safe under a tight poll loop.
   # In addition (Part 1 below), the per-target copy step itself is
   # idempotent: a row is never INSERTed into a target mailbox that
   # already holds a copy with the same extBodyKey (same body blob) —
@@ -469,16 +478,23 @@ cmd_apply_rules() {
   #      ruleset hash.
   #
   # Trade-off: per-message subprocess to delivery-time ≈ 30ms each.
-  # 2k messages ≈ 60s. Acceptable for a Dagu run every 2 min.
-  # Single-instance guard. The Dagu DAG's max_active_runs:1 only bounds the
-  # DAG run, not this process: the step is
-  # `ssh ubuntu@10.0.0.3 "docker exec maddy ..."`, so when Dagu gives up on
-  # the ssh the container-side process keeps running and the next 2-min tick
-  # starts another one. MEASURED 2026-08-24: 10 concurrent apply-rules
-  # processes livelocked on SQLite's single-writer lock — no run ever reached
-  # the STATE_FILE write below, so the ruleset-hash re-open repeated on every
-  # tick and 822 re-opened messages were never distributed. mkdir is the
-  # atomic primitive (busybox sh in this image has no flock).
+  # 2k messages ≈ 60s. Acceptable for a maddy-sorter poll tick every
+  # 2 min (POLL_INTERVAL, default 120s).
+  # Single-instance guard. Historical note: this used to matter a lot more.
+  # apply-rules was driven by an external Dagu DAG that ssh'd in every 2 min
+  # (`ssh ubuntu@10.0.0.3 "docker exec maddy ..."`) whose `max_active_runs:1`
+  # only bounded the DAG *run*, not that ssh'd child — when Dagu gave up on a
+  # slow/hung ssh connection, the container-side process kept running and the
+  # next 2-min tick started ANOTHER one, unbounded. MEASURED 2026-08-24: 10
+  # concurrent apply-rules processes livelocked on SQLite's single-writer
+  # lock this way — no run ever reached the STATE_FILE write below, so the
+  # ruleset-hash re-open repeated on every tick and 822 re-opened messages
+  # were never distributed. That DAG is gone now — apply-rules itself is
+  # gone too, replaced by maddy-sorter (src/crate, Rust), which runs its
+  # own poll loop inside this same container, one invocation at a time,
+  # nothing external to trigger it. This function and its lock stay only
+  # for manual/testing use (build.sh post-hoc-apply-rules[-dry-run]).
+  # mkdir is the atomic primitive (busybox sh in this image has no flock).
   LOCK_DIR="$(dirname "$DB")/.apply-rules.lock"
   if mkdir "$LOCK_DIR" 2>/dev/null; then
     echo $$ > "$LOCK_DIR/pid"
