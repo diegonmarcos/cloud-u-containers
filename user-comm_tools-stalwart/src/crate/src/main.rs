@@ -84,11 +84,10 @@ fn main() -> Result<()> {
         let path = args.iter().find(|a| !a.starts_with("--")).cloned().unwrap_or(rules_path);
         let rules = Rules::load(&path)?;
         println!(
-            "{path}: OK — {} routing folders, {} section headers, {} filter views, {} tag groups",
+            "{path}: OK — {} routing folders, {} section headers, {} filter views",
             rules.folders.len(),
             rules.folders_ui.len() + rules.filters.section_headers.len(),
             rules.filters.views.len(),
-            rules.tags.len(),
         );
         return Ok(());
     }

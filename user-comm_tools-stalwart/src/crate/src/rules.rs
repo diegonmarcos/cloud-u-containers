@@ -48,25 +48,10 @@ pub struct Rules {
     pub folders_ui: Vec<String>,
 
     #[serde(default, deserialize_with = "null_default")]
-    pub tags: Vec<TagGroup>,
-
-    #[serde(default, deserialize_with = "null_default")]
     pub filters: Filters,
 
     #[serde(default, deserialize_with = "null_default")]
     pub folder_renames: FolderRenames,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct TagGroup {
-    pub name: String,
-    #[serde(default, deserialize_with = "null_default")]
-    pub rules: Vec<TagRule>,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct TagRule {
-    pub flag: String,
 }
 
 #[derive(Debug, Default, Deserialize)]

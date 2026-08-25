@@ -293,83 +293,23 @@ let
   #
   # jmap-sorter (src/crate, rules.rs) deserialises:
   #   { account, folders, routing_default, sieve_require,
-  #     tags: [ { id, name, rules: [ { type, values|header|bytes, flag } ] } ],
   #     routing: [ { folder, match: { type, values } } ] }
   #
-  # We synthesize one tag bucket per top-level rule prefix (dev, career,
-  # lifestyle, admin, info, cloud, meta.route, meta.attach, profile) so
-  # jmap-sorter's "folder subfolder per bucket" logic still produces
-  # a stable layout. Meta/attachment rules go into synthetic B7/B8-named
-  # groups so jmap-sorter's `META_TAG_IDS = {"B7", "B8"}` self-seen
-  # behavior continues to fire.
-
-  # Flatten a v2 rule into legacy tag-rule shape (one per flag emitted).
-  legacyTagRulesFor = predicates: rule:
-    let
-      mode = rule.engines.stalwart or "full";
-      flags = effectiveFlags rule;
-      atom = resolvePredicate predicates rule.when;
-      # Legacy jmap-sorter only understands simple atoms. Skip combinators.
-      usable = !(hasAttr "any_of" atom) && !(hasAttr "all_of" atom) && !(hasAttr "not" atom);
-    in
-    # `route_only` means "this engine should only execute the copy_to action,
-    # skip the tag/keyword action entirely" — symmetric with Maddy's
-    # routingFromRule above at line ~245 (`hasFlags = mode == "full" ||
-    # "tag_only"`). Without this check the sorter created the full
-    # B1..B9 tag bucket hierarchy + ~30 subfolders even when the operator
-    # had set every rule's stalwart-mode to `route_only` to match Maddy's
-    # "route, don't tag" behaviour. Result: Stalwart and Maddy ended up
-    # with wildly different mailbox shapes for the same SoT.
-    if mode == "drop" || mode == "route_only" || flags == [] || !usable then []
-    else
-      map (flag:
-        { type = atom.type; flag = flag; }
-        // (optionalAttrs (atom ? values) { inherit (atom) values; })
-        // (optionalAttrs (atom ? header) { inherit (atom) header; })
-        // (optionalAttrs (atom ? bytes)  { inherit (atom) bytes;  })
-        // (optionalAttrs (atom ? value)  { inherit (atom) value;  })
-      ) flags;
-
-  # Synthetic tag-bucket grouping: map rule.id prefix to legacy group id/name.
-  legacyBucketOf = rule:
-    let id = rule.id; in
-    if lib.hasPrefix "route.dev" id || lib.hasPrefix "tag.dev" id            then { id = "B1"; name = "1- Development, Education & Tools"; }
-    else if lib.hasPrefix "route.career" id || lib.hasPrefix "tag.career" id then { id = "B2"; name = "2- Career & Networking"; }
-    else if lib.hasPrefix "route.lifestyle" id || lib.hasPrefix "tag.lifestyle" id then { id = "B3"; name = "3- Lifestyle, Travel & Logistics"; }
-    else if lib.hasPrefix "route.admin" id || lib.hasPrefix "tag.admin" id   then { id = "B4"; name = "4- Admin, Finance & E-commerce"; }
-    else if lib.hasPrefix "route.info" id || lib.hasPrefix "tag.info" id     then { id = "B5"; name = "5- Information, Media & Feeds"; }
-    else if lib.hasPrefix "route.cloud" id || lib.hasPrefix "tag.cloud" id   then { id = "B6"; name = "6- Cloud (Homelab) Management"; }
-    else if lib.hasPrefix "meta.attach" id || lib.hasPrefix "meta.size" id   then { id = "B7"; name = "7- Meta Size & Attachment Types"; }
-    else if lib.hasPrefix "meta" id                                          then { id = "B8"; name = "8- Meta Routing & Sender Properties"; }
-    else                                                                          { id = "B9"; name = "9- Profile Overlay"; };
+  # A per-flag "tag bucket" subfolder tree (one physical folder per rule
+  # flag, e.g. "4- Admin, Finance & E-commerce" / "4-4 Fin_entity:Bank")
+  # used to be synthesized here for the old Python jmap-sorter. It was
+  # removed from rules.rs/mailboxes.rs: it never checked engines.stalwart
+  # at creation time, so it silently created these folders for every rule
+  # with a flag regardless of whether that flag was ever actually emitted
+  # on Stalwart — an always-empty, ever-growing folder tree that visually
+  # clashed with the two-digit numeric routing folders (11, 12, 13, ...)
+  # it sat next to. The dynamic E/F cross-cutting views (JMAP multi-mailbox
+  # membership) are what a flag like Fin_entity:Bank should surface as now.
 
   toLegacyJson = merged:
     let
       predicates = merged.predicates;
       sorted     = sortByPriority merged.rules;
-
-      # Tags: flatten rules with flags to legacy {type, values, flag} items,
-      # grouped by synthetic bucket. Rules with combinator predicates
-      # contribute to the `rules` list but without a usable atom — keep
-      # them out (jmap-sorter would crash on unknown shape).
-      tagsByBucket =
-        lib.foldl (acc: rule:
-          let
-            bucket = legacyBucketOf rule;
-            items = legacyTagRulesFor predicates rule;
-          in
-          if items == [] then acc
-          else acc // {
-            ${bucket.id} = (acc.${bucket.id} or { inherit (bucket) id name; rules = []; }) // {
-              rules = (acc.${bucket.id}.rules or []) ++ items;
-            };
-          }
-        ) {} sorted;
-
-      # Fixed display order B1..B9
-      orderedBuckets =
-        filter (b: b != null)
-          (map (k: tagsByBucket.${k} or null) ["B1" "B2" "B3" "B4" "B5" "B6" "B7" "B8" "B9"]);
 
       # Routing: route-kind rules with from_domain-style atoms (jmap-sorter
       # only understands type==from_domain at match time — keep the subset).
@@ -399,7 +339,6 @@ let
       # mirror Maddy's IMAP layout. Optional — defaults to [].
       folders_ui     = merged.folders_ui or [];
       routing_default = defFolder;
-      tags           = orderedBuckets;
       # Dynamic cross-cutting filter views — maintained by jmap-sorter via
       # JMAP multi-mailbox membership over emails in the numeric folders.
       filters        = merged.filters or { views = []; section_headers = []; };

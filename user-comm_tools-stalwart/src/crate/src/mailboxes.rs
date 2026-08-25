@@ -122,16 +122,6 @@ pub fn ensure_mailboxes(
         plan.pick_or_create(&view.folder, None, "filterview", 300 + vi as u32);
     }
 
-    // Tag groups + their subfolders.
-    for (gi, group) in rules.tags.iter().enumerate() {
-        let parent = plan.pick_or_create(&group.name, None, "group", 10 + gi as u32);
-        let group_num = group.name.split('-').next().unwrap_or("").to_string();
-        for (ri, rule) in group.rules.iter().enumerate() {
-            let sub_name = format!("{group_num}-{ri} {}", rule.flag);
-            plan.pick_or_create(&sub_name, Some(&parent), &format!("sub_{gi}"), ri as u32);
-        }
-    }
-
     if !plan.creates.is_empty() || !plan.updates.is_empty() {
         if !plan.creates.is_empty() {
             tracing::info!("Creating {} mailboxes...", plan.creates.len());
@@ -250,13 +240,6 @@ fn valid_names(rules: &Rules) -> HashSet<String> {
     valid.extend(rules.folders_ui.iter().cloned());
     valid.extend(rules.filters.section_headers.iter().cloned());
     valid.extend(rules.filters.views.iter().map(|v| v.folder.clone()));
-    for group in &rules.tags {
-        valid.insert(group.name.clone());
-        let group_num = group.name.split('-').next().unwrap_or("");
-        for (ri, rule) in group.rules.iter().enumerate() {
-            valid.insert(format!("{group_num}-{ri} {}", rule.flag));
-        }
-    }
     valid.extend(SYSTEM_FOLDERS.iter().map(|s| s.to_string()));
     valid
 }
