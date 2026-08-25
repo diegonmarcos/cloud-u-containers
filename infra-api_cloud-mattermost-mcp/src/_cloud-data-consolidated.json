@@ -1710,9 +1710,13 @@
           "volumes": [],
           "env_file": true,
           "depends_on": [],
-          "resources": null,
+          "resources": {
+            "mem_reservation": "256M",
+            "pids_limit": 256
+          },
           "read_only": false,
-          "protocol": "http"
+          "protocol": "http",
+          "restart_policy": "unless-stopped"
         }
       },
       "container_names": [
