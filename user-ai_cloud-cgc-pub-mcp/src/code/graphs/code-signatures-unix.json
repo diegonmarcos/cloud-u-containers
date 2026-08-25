@@ -9614,7 +9614,7 @@
       ]
     },
     {
-      "path": "ea_cloud-ide/build.sh",
+      "path": "aa_cloud-ide/build.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -9674,7 +9674,7 @@
       ]
     },
     {
-      "path": "ea_cloud-ide/flake.nix",
+      "path": "aa_cloud-ide/flake.nix",
       "lang": "nix",
       "role": "flake",
       "exports": [],
@@ -9712,7 +9712,7 @@
       ]
     },
     {
-      "path": "ea_cloud-nav/build.sh",
+      "path": "aa_cloud-nav/build.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -9778,7 +9778,7 @@
       ]
     },
     {
-      "path": "ea_cloud-nav/flake.nix",
+      "path": "aa_cloud-nav/flake.nix",
       "lang": "nix",
       "role": "flake",
       "exports": [],
@@ -9816,7 +9816,7 @@
       ]
     },
     {
-      "path": "ea_cloud-superapp/build.sh",
+      "path": "aa_cloud-superapp/build.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -9886,7 +9886,7 @@
       ]
     },
     {
-      "path": "ea_cloud-superapp/flake.nix",
+      "path": "aa_cloud-superapp/flake.nix",
       "lang": "nix",
       "role": "flake",
       "exports": [],
