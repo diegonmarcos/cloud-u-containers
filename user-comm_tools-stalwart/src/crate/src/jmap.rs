@@ -56,6 +56,12 @@ pub struct Email {
     pub has_attachment: Option<bool>,
     #[serde(rename = "bodyStructure", default, deserialize_with = "null_default")]
     pub body_structure: Option<BodyPart>,
+    /// Catches every `header:X:asText`-shaped property a view's predicate
+    /// asked for (see `filters::headers_referenced`) — header names are
+    /// data-driven, so a fixed field per header would need a Rust edit every
+    /// time a view adds one.
+    #[serde(flatten)]
+    pub headers: Map<String, Value>,
 }
 
 /// Response shape shared by `Mailbox/set` and `Email/set`.

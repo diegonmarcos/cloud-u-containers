@@ -17,7 +17,7 @@ use serde_json::{json, Map, Value};
 use std::collections::{HashMap, HashSet};
 
 use crate::jmap::{BodyPart, Client, Email, Mailbox};
-use crate::rules::{Predicate, Rules, View};
+use crate::rules::{Predicate, PredicateNode, Rules, View};
 
 /// Emails per `Email/get` / `Email/set` call.
 const BATCH_SIZE: usize = 100;
@@ -30,6 +30,33 @@ const EMAIL_PROPS: &[&str] = &[
     "hasAttachment",
     "bodyStructure",
 ];
+
+fn header<'a>(em: &'a Email, name: &str) -> Option<&'a str> {
+    em.headers.get(&format!("header:{name}:asText")).and_then(Value::as_str)
+}
+
+/// Header names every `HeaderContains` atom across `views` references, as
+/// `header:X:asText` JMAP property strings — appended to [`EMAIL_PROPS`] so
+/// adding a header-based view never needs a matching Rust edit here.
+fn headers_referenced(views: &[View]) -> Vec<String> {
+    fn walk(node: &PredicateNode, out: &mut HashSet<String>) {
+        match node {
+            PredicateNode::AnyOf(children) | PredicateNode::AllOf(children) => {
+                children.iter().for_each(|c| walk(c, out));
+            }
+            PredicateNode::Not(child) => walk(child, out),
+            PredicateNode::Atom(Predicate::HeaderContains { header, .. }) => {
+                out.insert(header.clone());
+            }
+            PredicateNode::Atom(_) => {}
+        }
+    }
+    let mut names = HashSet::new();
+    for v in views {
+        walk(&v.predicate, &mut names);
+    }
+    names.into_iter().map(|h| format!("header:{h}:asText")).collect()
+}
 
 /// True if the email has a real (non-inline) attachment.
 ///
@@ -79,14 +106,25 @@ fn parse_utcdate(value: &str) -> Option<f64> {
         .map(|dt| dt.timestamp() as f64)
 }
 
-/// Evaluate one filter predicate against an `Email/get` object.
+/// Evaluate a predicate tree (combinators + atoms) against an `Email/get`
+/// object.
+pub fn email_matches(em: &Email, node: &PredicateNode, now: f64) -> bool {
+    match node {
+        PredicateNode::AnyOf(children) => children.iter().any(|c| email_matches(em, c, now)),
+        PredicateNode::AllOf(children) => children.iter().all(|c| email_matches(em, c, now)),
+        PredicateNode::Not(child) => !email_matches(em, child, now),
+        PredicateNode::Atom(atom) => atom_matches(em, atom, now),
+    }
+}
+
+/// Evaluate one leaf predicate against an `Email/get` object.
 ///
 /// Size views must tile the axis exactly once. All three size predicates are
 /// half-open `[lo, hi)` so a message on a boundary lands in exactly one
 /// bucket; `SizeRange` used to be fully closed, so a message of exactly
 /// 10485760 bytes matched both "Medium" `[1MB,10MB]` and "Large" `[10MB,inf)`
 /// and was filed into two folders.
-pub fn email_matches(em: &Email, predicate: &Predicate, now: f64) -> bool {
+fn atom_matches(em: &Email, predicate: &Predicate, now: f64) -> bool {
     let size = em.size;
     match predicate {
         Predicate::SizeMin { bytes } => size >= *bytes,
@@ -121,6 +159,14 @@ pub fn email_matches(em: &Email, predicate: &Predicate, now: f64) -> bool {
                 .iter()
                 .any(|v| types.contains(&v.to_ascii_lowercase()))
         }
+        Predicate::HeaderContains { header: name, values } => match header(em, name) {
+            Some(h) => {
+                let hl = h.to_ascii_lowercase();
+                values.iter().any(|v| hl.contains(&v.to_ascii_lowercase()))
+            }
+            None => false,
+        },
+        Predicate::HasFlag { flag } => em.keywords.get(flag).copied().unwrap_or(false),
     }
 }
 
@@ -187,12 +233,19 @@ pub fn maintain_filters(
         return Ok(0);
     }
 
+    let header_props = headers_referenced(views);
+    let props: Vec<&str> = EMAIL_PROPS
+        .iter()
+        .copied()
+        .chain(header_props.iter().map(String::as_str))
+        .collect();
+
     let now = crate::now_epoch();
     let mut updates: Map<String, Value> = Map::new();
     let mut n_static = 0usize;
 
     for batch in email_ids.chunks(BATCH_SIZE) {
-        let emails = client.email_get(batch, EMAIL_PROPS)?;
+        let emails = client.email_get(batch, &props)?;
 
         for em in &emails {
             let mut desired: HashMap<String, bool> = em.mailbox_ids.clone();
@@ -271,7 +324,7 @@ mod tests {
         serde_json::from_value(v).expect("email fixture")
     }
 
-    fn pred(v: Value) -> Predicate {
+    fn pred(v: Value) -> PredicateNode {
         serde_json::from_value(v).expect("predicate fixture")
     }
 
@@ -347,6 +400,47 @@ mod tests {
         let no_attach = pred(json!({"type": "no_attachment"}));
         assert!(!email_matches(&with, &no_attach, 0.0));
         assert!(email_matches(&without, &no_attach, 0.0));
+    }
+
+    #[test]
+    fn header_contains_atom() {
+        let p = pred(json!({"type": "header_contains", "header": "X-Spam-Status", "values": ["Yes"]}));
+        let spam = email(json!({"id": "e", "header:X-Spam-Status:asText": "Yes, score=9.1"}));
+        let clean = email(json!({"id": "e", "header:X-Spam-Status:asText": "No, score=0.1"}));
+        let absent = email(json!({"id": "e"}));
+        assert!(email_matches(&spam, &p, 0.0));
+        assert!(!email_matches(&clean, &p, 0.0));
+        assert!(!email_matches(&absent, &p, 0.0));
+    }
+
+    #[test]
+    fn has_flag_atom() {
+        let p = pred(json!({"type": "has_flag", "flag": "Sec_type:Login_Alert"}));
+        let flagged = email(json!({"id": "e", "keywords": {"Sec_type:Login_Alert": true}}));
+        let other = email(json!({"id": "e", "keywords": {"$seen": true}}));
+        assert!(email_matches(&flagged, &p, 0.0));
+        assert!(!email_matches(&other, &p, 0.0));
+    }
+
+    #[test]
+    fn combinators_recurse() {
+        let any = pred(json!({"any_of": [{"type": "has_flag", "flag": "a"}, {"type": "has_flag", "flag": "b"}]}));
+        let all = pred(json!({"all_of": [{"type": "has_flag", "flag": "a"}, {"type": "has_flag", "flag": "b"}]}));
+        let not_a = pred(json!({"not": {"type": "has_flag", "flag": "a"}}));
+        let both = email(json!({"id": "e", "keywords": {"a": true, "b": true}}));
+        let only_a = email(json!({"id": "e", "keywords": {"a": true}}));
+        let neither = email(json!({"id": "e"}));
+        assert!(email_matches(&both, &any, 0.0) && email_matches(&only_a, &any, 0.0) && !email_matches(&neither, &any, 0.0));
+        assert!(email_matches(&both, &all, 0.0) && !email_matches(&only_a, &all, 0.0));
+        assert!(!email_matches(&only_a, &not_a, 0.0) && email_matches(&neither, &not_a, 0.0));
+    }
+
+    #[test]
+    fn unknown_combinator_key_falls_through_to_atom_error() {
+        // Not "any_of"/"all_of"/"not" and not a valid atom `type` either —
+        // must fail to parse, not silently become a no-op predicate.
+        let bad: Result<PredicateNode, _> = serde_json::from_value(json!({"any_off": []}));
+        assert!(bad.is_err());
     }
 
     #[test]
