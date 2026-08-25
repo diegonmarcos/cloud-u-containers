@@ -24,6 +24,17 @@
     };
     maddyRulesJson = builtins.toJSON (mailRules.toMaddyJson merged);
 
+    # F0 sender-classification folders (Fa..Fk, Fz) -- the ONLY category
+    # folders Maddy routes into now (see toMaddyJson). Unlike Stalwart,
+    # nothing here auto-creates a target mailbox: apply-rules' SQL-direct
+    # COPY only UPDATEs an existing mboxes row, it never INSERTs one, so
+    # these must exist before the first apply-rules run or every copy into
+    # them silently no-ops. `maddy imap-mboxes create` is idempotent enough
+    # for a boot-time init.sh (errors on a folder that already exists;
+    # piped to /dev/null + `|| true` like every other create call here).
+    senderFolders = map (v: v.folder)
+      (lib.filter (v: (v.axis or null) == "sender") (merged.filters.views or []));
+
     # base_domain derived from service domain: "mail.example.com" → "example.com"
     base_domain =
       lib.concatStringsSep "." (lib.drop 1 (lib.splitString "." buildJson.domain));
@@ -75,9 +86,18 @@
 
     userBlock = lib.concatStringsSep "\n" (lib.mapAttrsToList mkUserLines (buildJson.users or {}));
 
+    mkFolderLines = key: u:
+      let addr = "${u.name}@${base_domain}";
+      in lib.concatMapStringsSep "\n"
+        (f: "maddy imap-mboxes create ${addr} '${f}' 2>&1 | sed 's|^|  [mboxes:create ${u.name}]   |' || true")
+        senderFolders;
+
+    folderBlock = lib.concatStringsSep "\n" (lib.mapAttrsToList mkFolderLines (buildJson.users or {}));
+
     initShVars = {
       BASE_DOMAIN          = base_domain;
       USER_CREATION_BLOCK  = userBlock;
+      FOLDER_CREATION_BLOCK = folderBlock;
     };
 
   in {

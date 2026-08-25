@@ -263,29 +263,44 @@ let
 
   toMaddyJson = merged:
     let
-      folders    = merged.folders;
-      predicates = merged.predicates;
-      sorted     = sortByPriority merged.rules;
-      rules      = filter (x: x != null) (map (maddyRule folders predicates) sorted);
-      defFolder  = folders.${merged.routing_default} or merged.routing_default;
-      # delivery_strategy derives from inbox_copy.enabled so the script
-      # has a single boolean to read. Cases:
-      #   enabled = true  → "unified-inbox": maddy delivery-time always
-      #     places the message in INBOX (with inbox_copy_flags applied);
-      #     per-rule placement into category folders is done by
-      #     post-hoc apply-rules as COPY (INBOX retains the original).
-      #   enabled = false → "split": maddy delivery-time places the
-      #     message directly in the matched rule''s folder. INBOX only
-      #     gets messages that don''t match any routing rule.
-      strategy = if (merged.inbox_copy.enabled or false)
-                 then "unified-inbox" else "split";
+      senderViews = filter (v: (v.axis or null) == "sender") (merged.filters.views or []);
+      # Maddy gets ONLY the F0 sender-classification folders now, not the
+      # numeric 1*-9* routing folders or the A-E axes. Each F view's own
+      # `predicate` IS the delivery-time `when` tree unchanged (from_domain /
+      # from_domain_suffix / header_contains / any_of / all_of / not are ALL
+      # already supported by this script's atom_match/match_when -- verified,
+      # no jq changes needed). id/folder both use the view's folder name
+      # since sender views don''t have the separate route-id concept the old
+      # numeric rules[] had.
+      rules = map (v: { id = v.folder; when = v.predicate; folder = v.folder; }) senderViews;
+      # Fz (the sender axis's own NOT-any-of-the-others catch-all) is
+      # deliberately the true fallback too: it's built to match exactly what
+      # nothing else does, so setting routing_default to it is redundant with
+      # first-match-wins ordering, but explicit here as defense in depth in
+      # case a future edit reorders `rules` or leaves the F axis empty.
+      fzView = lib.findFirst (v: lib.hasPrefix "Fz" v.folder) null senderViews;
+      defFolder = if fzView != null then fzView.folder
+                  else (merged.folders.${merged.routing_default} or merged.routing_default);
     in {
       schema_version    = 2;
       generated_by      = "_shared/lib/mail-rules.nix";
       account           = merged.account;
       routing_default   = defFolder;
-      delivery_strategy = strategy;
-      inbox_copy_flags  = merged.inbox_copy.flags or [];
+      # Permanently unified-inbox: every message lands in INBOX (marked per
+      # inbox_copy_flags, typically \Seen), and mail-sieve-subset-post-hoc.sh
+      # apply-rules COPIES (not moves) an unread duplicate into the matched
+      # F folder -- real IMAP COPY, independent flags per copy, unlike
+      # JMAP/Stalwart where fileinto :copy shares one Email object and can't
+      # do this (see route.rs's header doc on the Stalwart side for why).
+      # No longer derived from inbox_copy.enabled: that flag went false when
+      # Stalwart's JMAP model made an independent flag per copy impossible
+      # there, but Maddy's IMAP backend genuinely CAN do it, so Maddy keeps
+      # doing it regardless of what Stalwart's flag says. Coupling the two
+      # through one shared boolean was itself a bug -- flipping inbox_copy
+      # off for the JMAP fix silently flipped Maddy's delivery_strategy to
+      # "split" too, undoing the real unread-copy behavior it already had.
+      delivery_strategy = "unified-inbox";
+      inbox_copy_flags  = merged.inbox_copy.flags or [ "\\Seen" ];
       rules             = rules;
     };
 
