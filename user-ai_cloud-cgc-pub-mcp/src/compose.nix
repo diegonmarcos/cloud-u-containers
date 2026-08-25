@@ -63,6 +63,9 @@ let
     environment = {
       HOME                = oct.home;
       OCTOCODE_HOME       = oct.home;
+      # octocode >=0.22 caches fastembed models under $XDG_CACHE_HOME/octolib/fastembed;
+      # keep them inside the DB volume, where the base image restores them.
+      XDG_CACHE_HOME      = "${oct.db_path}/fastembed";
       # octocode reads *_API_URL (NOT *_BASE_URL) per provider — both point at the bridge.
       OPENAI_API_URL      = oct.llm.openai_api_url;
       OPENAI_API_KEY      = oct.llm.api_key;
@@ -116,6 +119,9 @@ let
       MCP_HTTP_HOST  = vmIp;
       CONFIG_PATH    = "${buildJson.runtime.data_path}/config.json";
       GIT_ROOT       = buildJson.runtime.git_root;
+      # octocode >=0.22 caches fastembed models under $XDG_CACHE_HOME/octolib/fastembed;
+      # the restored base image carries them at <db_path>/fastembed — no download at first query.
+      XDG_CACHE_HOME = "${oct.db_path}/fastembed";
       # kg-store SurrealDB — exposed to MCP clients via the cgc.kgstore.* tools
       # (read-only query of the unified code+infra graph). KG_STORE_PASS arrives
       # via env_file ".secrets" below.
