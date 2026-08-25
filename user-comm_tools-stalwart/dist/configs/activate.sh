@@ -118,17 +118,15 @@ for PAIR in me=ME_PASSWORD admin=ADMIN_PASSWORD no-reply=NOREPLY_PASSWORD; do
 
   printf '%s\n' '10 _ ADMIN|
 20 _ INFORMS|
-30 _ DEV|
+30 _ CLOUD|
 90 _ OTHERS|
-11    🛡️ Admin & Finance|10 _ ADMIN
+11    🛡️ Admin|10 _ ADMIN
 92    📥 Archive|90 _ OTHERS
 21    💼 Career & Network|20 _ INFORMS
-13    ☁️ Cloud - General & Reports|10 _ ADMIN
-14    ☁️ Cloud - Workflows|10 _ ADMIN
-31    🎓 Development & Tech|30 _ DEV
-23    🧻 Goverment|20 _ INFORMS
+12    💰 Finance|10 _ ADMIN
+23    🧻 Government|20 _ INFORMS
+24    🏠 House|20 _ INFORMS
 93    🚫 Junk|90 _ OTHERS
-12    ✈️ Logistics|10 _ ADMIN
 91    📬 Others (fallback)|90 _ OTHERS
 22    📰 Social & General|20 _ INFORMS' | while IFS='|' read -r FNAME FPARENT; do
     [ -z "$FNAME" ] && continue
