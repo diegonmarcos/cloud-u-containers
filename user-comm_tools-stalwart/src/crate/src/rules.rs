@@ -96,9 +96,15 @@ pub struct Filters {
     #[serde(default = "default_source_regex")]
     pub source_folder_regex: String,
 
-    /// Axis whose views tile their range exactly once, so membership in it is
-    /// a reliable "static views already computed" sentinel. `None` disables
-    /// the optimisation and every view is recomputed each poll.
+    /// Axis whose views tile their range exactly once (every message lands in
+    /// exactly one bucket). Asserted in CI by
+    /// 9_others/test/test_mail_filter_views_partition.sh.
+    ///
+    /// This binary no longer reads it: it used to drive a "static views
+    /// already computed" skip in `filters.rs` that silently starved every
+    /// newly-added static view of pre-existing messages. The invariant is
+    /// still worth declaring and testing, so the field stays.
+    #[allow(dead_code)]
     #[serde(default, deserialize_with = "null_default")]
     pub partition_axis: Option<String>,
 }
@@ -112,12 +118,24 @@ pub struct View {
     pub folder: String,
     pub predicate: PredicateNode,
 
-    /// Time- and read-state windows go stale on their own and must be
-    /// recomputed every poll; size and attachment views are properties of the
-    /// message and never change.
+    /// Time- and read-state windows go stale on their own; size, attachment
+    /// and sender views are properties of the message and never change.
+    ///
+    /// Documentation only — `filters.rs` evaluates every view on every poll
+    /// regardless. It used to skip non-volatile views for messages already
+    /// carrying a `partition_axis` sentinel, which silently starved any
+    /// NEWLY-ADDED static view of every pre-existing message (see the long
+    /// comment in `filters::maintain_filters`). Kept in the schema because
+    /// the rules data declares it and CI asserts it
+    /// (9_others/test/test_mail_filter_views_partition.sh).
+    #[allow(dead_code)]
     #[serde(default)]
     pub volatile: bool,
 
+    /// Which axis this view belongs to (`size`, `time`, `state`, `attach`,
+    /// `priority`, `sender`). Consumed by the CI partition test and by
+    /// `toMaddyJson` (which selects `axis == "sender"`), not by this binary.
+    #[allow(dead_code)]
     #[serde(default, deserialize_with = "null_default")]
     pub axis: Option<String>,
 }

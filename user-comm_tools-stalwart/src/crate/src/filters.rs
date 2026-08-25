@@ -1,15 +1,17 @@
-//! Dynamic cross-cutting filter views (`A*`/`B*`/`C*`/`D*`).
+//! Dynamic cross-cutting filter views — the `A*`-`F*` axes (size, time,
+//! read-state, attachments, priority, sender).
 //!
 //! Routing is owned entirely by the native Sieve (`_shared/lib/mail-rules.nix`
-//! `::toSieve`): every inbound email lands in INBOX (read) plus exactly one
-//! numeric `1*`-`9*` category folder as an UNREAD copy. This module never
-//! routes and never touches keywords.
+//! `::toSieve`): every inbound email lands in INBOX plus exactly one numeric
+//! `1*`-`9*` category folder. This module never routes and never touches
+//! keywords.
 //!
 //! It maintains membership of the filter mailboxes over the messages already
 //! living in the numeric folders, using JMAP multi-mailbox membership — the
 //! existing message is added to the view mailbox, so there are no copies and
-//! no `$seen`/`$Sorted` changes. Membership is both added AND removed each
-//! poll so time and read-state windows stay current.
+//! no keyword changes. Membership is both added AND removed on every poll,
+//! for every view, so a view added to the rules later still backfills onto
+//! existing mail (see the sentinel note in [`maintain_filters`]).
 
 use anyhow::Result;
 use regex::Regex;
@@ -224,25 +226,34 @@ pub fn maintain_filters(
         return Ok(0);
     }
 
-    // Static views (size, attachments) are properties of the message and never
-    // change; volatile views (time windows, read state) must be recomputed
-    // every poll. Recomputing all of them for every message on a 30s cycle was
-    // mostly wasted work, and that waste is what made paging the full mailbox
-    // costly.
-    let volatile_views: Vec<&View> = views.iter().filter(|v| v.volatile).collect();
-
-    // The partition axis tiles its range, so every message sits in exactly one
-    // of its buckets. Membership of that axis is therefore a reliable "static
-    // views already computed" sentinel, and it self-heals: a message missing
-    // it simply gets recomputed.
-    let sentinel_ids: HashSet<&str> = match &rules.filters.partition_axis {
-        Some(axis) => views
-            .iter()
-            .filter(|v| v.axis.as_deref() == Some(axis.as_str()))
-            .filter_map(|v| view_ids.get(v.folder.as_str()).copied())
-            .collect(),
-        None => HashSet::new(),
-    };
+    // Every view is evaluated for every message, every poll.
+    //
+    // There used to be a "skip static views" optimisation here: views declaring
+    // `volatile: false` (size, attachments, sender) are properties of the
+    // message that never change, so membership of the `partition_axis` views
+    // was used as a sentinel meaning "static views already computed for this
+    // message" and they were skipped on later polls.
+    //
+    // That sentinel is subtly wrong and it bit us for real. It records THAT
+    // some static views were computed, not WHICH — so the moment a new static
+    // view is added to the rules, every message already carrying the sentinel
+    // skips it forever and the new folder stays permanently, silently empty.
+    // MEASURED on oci-mail 2026-08-25, after adding the Dd + F* views:
+    // "Dd No attachments" held 46 of the 4425 messages it should have (only
+    // the ones that happened to arrive after the deploy), and Fb/Fe/Fi held
+    // 38 between them for the same reason. Exactly the class of silent,
+    // looks-like-it-works failure the rest of this engine is written to avoid.
+    //
+    // Removing it costs almost nothing: the expensive part of a poll is the
+    // JMAP round-trips (`email_query_in` + `email_get` below), and those
+    // fetch every message regardless of this flag. All the sentinel ever
+    // saved was in-memory predicate evaluation — string compares and a
+    // bodyStructure walk, microseconds per message.
+    //
+    // `partition_axis` stays in the rules data: the tiling invariant it
+    // describes is still genuinely worth asserting, and
+    // 9_others/test/test_mail_filter_views_partition.sh asserts it in CI.
+    // It is simply no longer used to skip work here.
 
     // 2. Union of emails in any source folder.
     let email_ids = client.email_query_in(&source_ids, None)?;
@@ -259,26 +270,12 @@ pub fn maintain_filters(
 
     let now = crate::now_epoch();
     let mut updates: Map<String, Value> = Map::new();
-    let mut n_static = 0usize;
 
     for batch in email_ids.chunks(BATCH_SIZE) {
         let emails = client.email_get(batch, &props)?;
 
         for em in &emails {
             let mut desired: HashMap<String, bool> = em.mailbox_ids.clone();
-
-            // Only compute static views when this message has never had them
-            // (or the sentinel axis isn't deployed, in which case always).
-            let needs_static = sentinel_ids.is_empty()
-                || !sentinel_ids.iter().any(|s| em.mailbox_ids.contains_key(*s));
-            if needs_static {
-                n_static += 1;
-            }
-            let todo: Vec<&View> = if needs_static {
-                views.iter().collect()
-            } else {
-                volatile_views.clone()
-            };
 
             // Only emit an update if a VIEW-mailbox bit actually flipped.
             // `desired` starts as an exact copy of the current membership and
@@ -287,7 +284,7 @@ pub fn maintain_filters(
             // guarantees non-view membership (numeric folders, INBOX) is never
             // rewritten just because it was re-serialised.
             let mut changed = false;
-            for view in todo {
+            for view in views {
                 let Some(vid) = view_ids.get(view.folder.as_str()).copied() else {
                     continue;
                 };
@@ -323,10 +320,9 @@ pub fn maintain_filters(
 
     if total > 0 {
         tracing::info!(
-            "Filter views: updated membership on {total} emails \
-             ({} scanned, {n_static} needed static recompute, {} volatile views)",
+            "Filter views: updated membership on {total} emails ({} scanned, {} views)",
             email_ids.len(),
-            volatile_views.len()
+            views.len()
         );
     }
     Ok(total)
