@@ -79,8 +79,16 @@ export function startMcpHttpServer(port: number = 3103): Promise<void> {
       try { await handleMcpRequest(req, res); }
       catch (err) { log(`Error: ${err}`); if (!res.headersSent) { res.writeHead(500); res.end(JSON.stringify({ error: "Internal Server Error" })); } }
     });
-    httpServer.listen(port, "0.0.0.0", async () => {
-      log(`MCP Streamable HTTP server listening on 0.0.0.0:${port}`);
+    // Bind host is configurable, defaulting to 0.0.0.0 for backward
+    // compatibility. Under network_mode:host (which this service now uses —
+    // see compose.nix) 0.0.0.0 would publish on EVERY host interface, so the
+    // compose file pins MCP_HTTP_HOST to the WG mesh IP, matching the
+    // sibling MCPs (google-personal-mcp, google-workspace-mcp). The VM
+    // firewall's INPUT policy is DROP anyway, so this is defence in depth
+    // rather than the only guard.
+    const bindHost = process.env.MCP_HTTP_HOST || "0.0.0.0";
+    httpServer.listen(port, bindHost, async () => {
+      log(`MCP Streamable HTTP server listening on ${bindHost}:${port}`);
       await initSession(port);
       resolve();
     });
