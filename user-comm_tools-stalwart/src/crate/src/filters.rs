@@ -100,8 +100,21 @@ pub fn email_matches(em: &Email, predicate: &Predicate, now: f64) -> bool {
             Some(ts) => (now - ts) <= hours * 3600.0,
             None => false,
         },
+        // Undated mail matches neither side of the pair, same as
+        // NewerThanHours — an unparseable date shouldn't silently join
+        // every "everything older" catch-all either.
+        Predicate::OlderThanHours { hours } => match em
+            .received_at
+            .as_deref()
+            .and_then(parse_utcdate)
+        {
+            Some(ts) => (now - ts) > hours * 3600.0,
+            None => false,
+        },
         Predicate::Unread => !em.keywords.get("$seen").copied().unwrap_or(false),
+        Predicate::Read => em.keywords.get("$seen").copied().unwrap_or(false),
         Predicate::HasAttachment => has_attachment(em),
+        Predicate::NoAttachment => !has_attachment(em),
         Predicate::AttachType { values } => {
             let types = attachment_types(em);
             values
@@ -301,6 +314,39 @@ mod tests {
         // An unparseable/absent date must not silently join every time view.
         let undated = email(json!({"id": "e"}));
         assert!(!email_matches(&undated, &p, ts));
+    }
+
+    #[test]
+    fn older_than_hours_is_exact_complement_of_newer() {
+        let newer = pred(json!({"type": "newer_than_hours", "hours": 168}));
+        let older = pred(json!({"type": "older_than_hours", "hours": 168}));
+        let ts = parse_utcdate("2026-06-18T10:20:30Z").unwrap();
+        let em = email(json!({"id": "e", "receivedAt": "2026-06-18T10:20:30Z"}));
+        for now in [ts, ts + 168.0 * 3600.0, ts + 168.0 * 3600.0 + 1.0, ts + 30.0 * 24.0 * 3600.0] {
+            let hits = [&newer, &older].iter().filter(|p| email_matches(&em, p, now)).count();
+            assert_eq!(hits, 1, "now={now} matched {hits} of {{newer,older}}, expected exactly 1");
+        }
+        // Undated mail must not silently join the "everything older" catch-all.
+        let undated = email(json!({"id": "e"}));
+        assert!(!email_matches(&undated, &older, ts));
+    }
+
+    #[test]
+    fn read_is_exact_complement_of_unread() {
+        let seen = email(json!({"id": "e", "keywords": {"$seen": true}}));
+        let unseen = email(json!({"id": "e"}));
+        let read = pred(json!({"type": "read"}));
+        assert!(email_matches(&seen, &read, 0.0));
+        assert!(!email_matches(&unseen, &read, 0.0));
+    }
+
+    #[test]
+    fn no_attachment_is_exact_complement_of_has_attachment() {
+        let with = email(json!({"id": "e", "hasAttachment": true}));
+        let without = email(json!({"id": "e", "hasAttachment": false}));
+        let no_attach = pred(json!({"type": "no_attachment"}));
+        assert!(!email_matches(&with, &no_attach, 0.0));
+        assert!(email_matches(&without, &no_attach, 0.0));
     }
 
     #[test]
