@@ -20,6 +20,16 @@ in
       network_mode = "host";
       entrypoint = [ "sh" "/etc/maddy/init.sh" ];
       env_file = [ ".secrets" ];
+      environment = {
+        # maddy-sorter's own config (init.sh backgrounds it before `exec
+        # maddy run` -- same container, same process tree, so it sees
+        # these same env vars too; maddy itself ignores the ones it
+        # doesn't know about).
+        IMAPSQL_DB = "/data/imapsql.db";
+        RULES_PATH = "/data/mail-rules.json";
+        STARTUP_DELAY = "30";
+        POLL_INTERVAL = "120";
+      };
       volumes = [
         "maddy_data:/data"
         # Config + startup script (rendered by engine into dist/configs/)
