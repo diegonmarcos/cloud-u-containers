@@ -29,10 +29,19 @@ const EMAIL_PROPS: &[&str] = &[
     "mailboxIds",
     "hasAttachment",
     "bodyStructure",
+    "from",
 ];
 
 fn header<'a>(em: &'a Email, name: &str) -> Option<&'a str> {
     em.headers.get(&format!("header:{name}:asText")).and_then(Value::as_str)
+}
+
+fn from_email(em: &Email) -> String {
+    em.from.first().and_then(|a| a.email.as_deref()).unwrap_or("").to_ascii_lowercase()
+}
+
+fn from_domain(em: &Email) -> String {
+    from_email(em).rsplit('@').next().unwrap_or("").to_string()
 }
 
 /// Header names every `HeaderContains` atom across `views` references, as
@@ -167,6 +176,14 @@ fn atom_matches(em: &Email, predicate: &Predicate, now: f64) -> bool {
             None => false,
         },
         Predicate::HasFlag { flag } => em.keywords.get(flag).copied().unwrap_or(false),
+        Predicate::FromDomain { values } => {
+            let d = from_domain(em);
+            values.iter().any(|v| d == v.to_ascii_lowercase())
+        }
+        Predicate::FromDomainSuffix { values } => {
+            let d = from_domain(em);
+            values.iter().any(|v| d.ends_with(v.to_ascii_lowercase().as_str()))
+        }
     }
 }
 
@@ -420,6 +437,21 @@ mod tests {
         let other = email(json!({"id": "e", "keywords": {"$seen": true}}));
         assert!(email_matches(&flagged, &p, 0.0));
         assert!(!email_matches(&other, &p, 0.0));
+    }
+
+    #[test]
+    fn from_domain_atoms() {
+        let em = email(json!({"id": "e", "from": [{"email": "Alerts@GitHub.com"}]}));
+        let exact = pred(json!({"type": "from_domain", "values": ["github.com"]}));
+        let suffix = pred(json!({"type": "from_domain_suffix", "values": [".github.com"]}));
+        let wrong = pred(json!({"type": "from_domain", "values": ["gitlab.com"]}));
+        assert!(email_matches(&em, &exact, 0.0));
+        assert!(!email_matches(&em, &suffix, 0.0), "exact domain must not match a suffix that requires a subdomain");
+        assert!(!email_matches(&em, &wrong, 0.0));
+        let sub = email(json!({"id": "e", "from": [{"email": "noreply@notify.github.com"}]}));
+        assert!(email_matches(&sub, &suffix, 0.0));
+        let no_from = email(json!({"id": "e"}));
+        assert!(!email_matches(&no_from, &exact, 0.0));
     }
 
     #[test]

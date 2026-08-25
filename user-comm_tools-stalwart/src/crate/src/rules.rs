@@ -164,6 +164,18 @@ pub enum Predicate {
         #[serde(default, deserialize_with = "null_default")]
         values: Vec<String>,
     },
+    /// Sender's address domain is exactly one of `values` (case-insensitive).
+    /// Mirrors the route DSL's `from_domain` atom one-for-one.
+    FromDomain {
+        #[serde(default, deserialize_with = "null_default")]
+        values: Vec<String>,
+    },
+    /// Sender's address domain ends with one of `values`. Mirrors the route
+    /// DSL's `from_domain_suffix` atom one-for-one.
+    FromDomainSuffix {
+        #[serde(default, deserialize_with = "null_default")]
+        values: Vec<String>,
+    },
     /// JMAP keyword `flag` is present. Only meaningful for flags the Sieve
     /// side actually emits — see `engines.stalwart` in mail-rules-general.json;
     /// a flag whose only emitting rule is "drop"/"route_only" never appears
