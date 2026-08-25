@@ -81,9 +81,13 @@ in
         "/opt/containers/maddy/tls:/opt/stalwart-mail/tls:ro"
         "./configs/config.json:/opt/stalwart-mail/etc/config.json:ro"
       ];
+      # Same conditional-limit shape as the sorter below — app still declares
+      # limits.memory today, but reading it unconditionally is exactly what
+      # broke the sorter, so don't leave the same trap here.
       deploy.resources = {
-        limits       = { memory = app.resources.limits.memory;       cpus = "1.0"; };
         reservations = { memory = app.resources.reservations.memory; };
+      } // lib.optionalAttrs (app.resources ? limits) {
+        limits = { memory = app.resources.limits.memory; };
       };
     };
     stalwart-sorter = {
@@ -110,9 +114,17 @@ in
       volumes = [
         "./assets/mail-rules.json:/data/mail-rules.json:ro"
       ];
+      # Reservations are a floor and always declared; a memory LIMIT is
+      # optional and only emitted when build.json still declares one.
+      # 9ad4168d2 removed limits fleet-wide (memory.max is a local wall that
+      # force-reclaims per-container regardless of host free RAM) but left
+      # this reference behind, so every stalwart build since then died with
+      # `attribute 'mem_limit' missing`. Reading it conditionally means the
+      # next limit removal degrades to "no limit" instead of a build break.
       deploy.resources = {
-        limits       = { memory = sorter.resources.mem_limit;       cpus = "1.0"; };
         reservations = { memory = sorter.resources.mem_reservation; };
+      } // lib.optionalAttrs (sorter.resources ? mem_limit) {
+        limits = { memory = sorter.resources.mem_limit; };
       };
     };
   };
