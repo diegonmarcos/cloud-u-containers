@@ -203,10 +203,26 @@ pub fn maintain_filters(
 
     let src_re = Regex::new(&rules.filters.source_folder_regex)?;
 
-    // 1. Source mailboxes = those whose NAME matches the regex.
-    let source_ids: Vec<String> = mailboxes
+    // 1. Source mailboxes = those whose NAME matches the regex, PLUS the
+    //    children of any such mailbox.
+    //
+    // The regex is `^[0-9]` — it matches the numeric category folders. Group
+    // children (folder_groups: "31 Cloud - Reports & CI" -> "GH Workflows")
+    // are leaf-named, so they never match it, and every message filed into
+    // one was invisible to all A-F views. Matching a child by its PARENT
+    // keeps the rule "mail in a numeric category is in scope" true whether
+    // that category is flat or has a sub-level.
+    let matched_parents: HashSet<&str> = mailboxes
         .iter()
         .filter(|mb| src_re.is_match(&mb.name))
+        .map(|mb| mb.id.as_str())
+        .collect();
+    let source_ids: Vec<String> = mailboxes
+        .iter()
+        .filter(|mb| {
+            src_re.is_match(&mb.name)
+                || mb.parent_id.as_deref().is_some_and(|p| matched_parents.contains(p))
+        })
         .map(|mb| mb.id.clone())
         .collect();
     if source_ids.is_empty() {

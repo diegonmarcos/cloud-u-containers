@@ -61,7 +61,7 @@ if address :domain :is "From" ["bitwarden.com", "1password.com", "accounts.googl
 
 # route.profile.homelab
 if address :domain :is "From" "diegonmarcos.com" {
-  fileinto :copy :create "Cloud Reports";
+  fileinto :copy :create "31    ☁️ Cloud - Reports & CI/Cloud Reports";
   stop;
 }
 
@@ -73,7 +73,7 @@ if address :domain :is "From" ["ing.es", "ing.de", "commerzbank.de", "deutscheba
 
 # route.cloud_workflows.github_ci
 if anyof(header :contains "X-GitHub-Reason" "ci_activity", header :contains "Subject" ["Run failed:", "workflow run"]) {
-  fileinto :copy :create "GH Workflows";
+  fileinto :copy :create "31    ☁️ Cloud - Reports & CI/GH Workflows";
   stop;
 }
 
@@ -200,49 +200,49 @@ if address :domain :is "From" ["tidal.com", "info.tidal.com", "c.rituals.com", "
 
 # route.cloud.letsencrypt
 if address :domain :is "From" "letsencrypt.org" {
-  fileinto :copy :create "Cloud Reports";
+  fileinto :copy :create "31    ☁️ Cloud - Reports & CI/Cloud Reports";
   stop;
 }
 
 # route.cloud.registrars
 if address :domain :is "From" ["namecheap.com", "gandi.net", "name.com", "godaddy.com"] {
-  fileinto :copy :create "Cloud Reports";
+  fileinto :copy :create "31    ☁️ Cloud - Reports & CI/Cloud Reports";
   stop;
 }
 
 # route.cloud.hardware
 if address :domain :is "From" ["hetzner.com", "hetzner.de", "dell.com", "lenovo.com"] {
-  fileinto :copy :create "Cloud Reports";
+  fileinto :copy :create "31    ☁️ Cloud - Reports & CI/Cloud Reports";
   stop;
 }
 
 # route.cloud.providers
 if address :domain :is "From" ["cloudflare.com", "digitalocean.com"] {
-  fileinto :copy :create "Cloud Reports";
+  fileinto :copy :create "31    ☁️ Cloud - Reports & CI/Cloud Reports";
   stop;
 }
 
 # route.cloud.vps_oracle
 if address :domain :is "From" ["oraclecloud.com", "oracle.com", "oracle-mail.com"] {
-  fileinto :copy :create "VPS Oracle";
+  fileinto :copy :create "32    ☁️ Cloud - VPS Providers/VPS Oracle";
   stop;
 }
 
 # route.cloud.vps_google
 if address :domain :is "From" ["cloud.google.com", "google.cloud"] {
-  fileinto :copy :create "VPS Google";
+  fileinto :copy :create "32    ☁️ Cloud - VPS Providers/VPS Google";
   stop;
 }
 
 # route.cloud.vps_git
 if address :domain :is "From" ["github.com", "noreply.github.com"] {
-  fileinto :copy :create "VPS Git";
+  fileinto :copy :create "32    ☁️ Cloud - VPS Providers/VPS Git";
   stop;
 }
 
 # route.cloud.notifications
 if address :domain :is "From" ["ntfy.sh", "resend.com"] {
-  fileinto :copy :create "Rss Notifications";
+  fileinto :copy :create "31    ☁️ Cloud - Reports & CI/Rss Notifications";
   stop;
 }
 

@@ -158,14 +158,31 @@ let
 
   # Flags the engines.stalwart mode permits this rule to emit.
   # Flat folder-name lookup for `copy_to` resolution: the ROOT-level
-  # `folders` map plus every folder_group's children (keyed by their own
-  # child key, valued by the child's simple name — NOT a "parent/child"
-  # path string). A rule's `copy_to` never needs to know or care whether
-  # its target is a flat folder or a group child; ensure_mailboxes creates
-  # the child under the right parentId independently of this lookup, and
-  # Sieve fileinto resolves an existing mailbox by its own (unique) name.
+  # `folders` map plus every folder_group's children, keyed by child key and
+  # valued by the child's FULL IMAP PATH ("<parent>/<child>").
+  #
+  # The path, not the bare leaf name. Sieve `fileinto` resolves a mailbox by
+  # its hierarchical path, so `fileinto "GH Workflows"` does not find the
+  # child of "31 Cloud - Reports & CI" — it creates a NEW top-level mailbox
+  # of that name. That produced an endless churn loop in production: Sieve
+  # created the root copy on delivery, ensure_mailboxes reparented it under
+  # the group, cleanup_stale then reaped it as a duplicate, and the next
+  # message started the cycle over. Observed 22 create/reparent/delete
+  # events on oci-mail before it was caught; the folder's mail survived only
+  # because cleanup_stale moves messages to INBOX before destroying.
+  #
+  # Delimiter verified against the live server rather than assumed —
+  # IMAP LIST on stalwart returns:
+  #   * LIST () "/" "31    ☁️ Cloud - Reports & CI/GH Workflows"
+  #
+  # This affects the SIEVE side only. The Rust sorter keeps addressing
+  # children by leaf name + parentId, which is what JMAP Mailbox/set wants;
+  # it has no notion of a path.
   allFolderTargets = merged:
-    merged.folders // (lib.foldl (acc: g: acc // (g.children or {})) {} (merged.folder_groups or []));
+    merged.folders
+    // (lib.foldl (acc: g:
+         acc // (lib.mapAttrs (_: child: "${g.name}/${child}") (g.children or {}))
+       ) {} (merged.folder_groups or []));
 
   effectiveFlags = rule:
     let mode = rule.engines.stalwart or "full"; in
