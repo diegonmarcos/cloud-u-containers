@@ -58,7 +58,7 @@
   "filters": {
     "_doc": "Dynamic cross-cutting filter views maintained by jmap-sorter each poll over emails in the numeric 1*-9* folders. Multi-mailbox membership only (no copies, no $seen changes); add+remove each poll so time/read windows stay current.",
     "source_folder_regex": "^[0-9]",
-    "section_headers": ["A0 _ SIZE", "B0 _ TIME", "C0 _ STATE", "D0 _ ATTACH", "E0 _ PRIORITY"],
+    "section_headers": ["A0 _ SIZE", "B0 _ TIME", "C0 _ STATE", "D0 _ ATTACH", "E0 _ PRIORITY", "F0 _ SENDER"],
     "_axis_doc": "Each view declares its axis and whether it is volatile. A volatile view depends on wall-clock time or read state and must be re-evaluated every poll; a static view is a property of the message itself (size, attachments) and is computed once. The size axis is a PARTITION: its buckets are half-open [lo,hi) and must tile the whole range, so every message lands in exactly one. That invariant is what lets the sorter use size-view membership as the sentinel for 'static views already computed' -- guarded by 9_others/test/test_mail_filter_views_partition.sh.",
     "views": [
       {"folder": "Aa    📏 Large (≥10MB)",       "axis": "size",   "volatile": false, "predicate": {"type": "size_min", "bytes": 10485760}},
@@ -135,6 +135,96 @@
             {"type": "header_contains", "header": "X-Microsoft-Antispam-Message-Info", "values": ["spam"]},
             {"type": "header_contains", "header": "Authentication-Results", "values": ["dmarc=fail", "spf=fail"]}
           ]
+        }
+      },
+      {
+        "folder": "Fa    🏛️ Gov / Official",
+        "axis": "sender",
+        "volatile": false,
+        "_doc": "Domains reused verbatim from route.profile.tax_authorities (DE/ES/UK tax) and route.government.agencies (BR gov, ES traffic authority). No Portugal, EU-institution, or courts/legal domain is known yet -- ask before adding, don't guess a .europa.eu-style catch-all that could misfile unrelated mail.",
+        "predicate": {
+          "any_of": [
+            {"type": "from_domain", "values": ["elster.de", "agenciatributaria.es", "tax.service.gov.uk", "dgt.es"]},
+            {"type": "from_domain_suffix", "values": [".gov.br"]}
+          ]
+        }
+      },
+      {
+        "folder": "Fb    💬 Socials",
+        "axis": "sender",
+        "volatile": false,
+        "predicate": {
+          "type": "from_domain",
+          "values": ["linkedin.com", "twitter.com", "x.com", "mastodon.social", "facebook.com", "facebookmail.com", "instagram.com", "mail.instagram.com", "whatsapp.com", "reddit.com"]
+        }
+      },
+      {
+        "folder": "Fc    💰 Finance",
+        "axis": "sender",
+        "volatile": false,
+        "predicate": {
+          "type": "from_domain",
+          "values": ["n26.com", "revolut.com", "wise.com", "ing.es", "ing.de", "commerzbank.de", "deutschebank.de", "emailing.bancosantander-mail.es", "cofidis.es", "s.cofidis.es", "c.cofidis.es", "nordaccount.com", "btgpactual.com", "tcbs.com.vn", "b3.com.br", "getbernstein.com", "bitpanda.com", "info.bitpanda.com", "allianz.com", "axa.com", "mapfre.com", "huk.de", "paypal.com", "stripe.com"]
+        }
+      },
+      {
+        "folder": "Fe    💻 Dev / Tech",
+        "axis": "sender",
+        "volatile": false,
+        "predicate": {
+          "any_of": [
+            {"type": "from_domain", "values": ["github.com", "noreply.github.com", "gitlab.com", "bitbucket.org", "codeberg.org", "stackoverflow.com", "stackexchange.com", "npmjs.com", "crates.io", "pypi.org", "docker.com", "hub.docker.com", "nixos.org", "discourse.nixos.org", "aws.com", "amazonaws.com", "oracle-mail.com", "oraclecloud.com", "oracle.com", "cloud.google.com", "google.cloud", "cloudflare.com", "digitalocean.com", "hetzner.com", "hetzner.de", "namecheap.com", "gandi.net", "name.com", "godaddy.com", "vercel.com", "netlify.com", "railway.app", "heroku.com", "notion.so", "figma.com", "miro.com", "jetbrains.com", "adobe.com", "canva.com", "bitwarden.com", "bitwarden.eu", "1password.com", "accounts.google.com", "sendsafely.com", "verify.proton.me", "mail.anthropic.com", "email.claude.com", "openrouter.ai", "email.openai.com"]},
+            {"type": "from_domain_suffix", "values": [".github.com"]}
+          ]
+        }
+      },
+      {
+        "folder": "Ff    🛍️ Shopping / Commerce",
+        "axis": "sender",
+        "volatile": false,
+        "predicate": {
+          "type": "from_domain",
+          "values": ["amazon.com", "amazon.de", "amazon.es", "ebay.com", "ebay.de", "aliexpress.com", "zalando.de", "dhl.com", "dhl.de", "ups.com", "fedex.com", "dpd.com", "gls-group.com", "correos.es", "seur.com", "mrw.es", "deliveroo.com", "ubereats.com", "glovo.com", "justeat.com", "lieferando.de", "doordash.com"]
+        }
+      },
+      {
+        "folder": "Fg    📰 Subscriptions / Newsletters",
+        "axis": "sender",
+        "volatile": false,
+        "_doc": "Marketing/Promo has no sender domain (it's mixed into every retailer's own domain) so it's detected by subject instead, same values as tag.info.promo_en + tag.profile.promo_es_de.",
+        "predicate": {
+          "any_of": [
+            {"type": "from_domain", "values": ["bbc.com", "reuters.com", "theguardian.com", "nytimes.com", "elpais.com", "spiegel.de", "theregister.com", "arstechnica.com", "hackernewsletter.com", "substack.com", "medium.com", "beehiiv.com", "revue.email"]},
+            {"type": "header_contains", "header": "Subject", "values": ["% off", "sale", "discount", "promo", "deal", "oferta", "descuento", "Rabatt"]}
+          ]
+        }
+      },
+      {
+        "folder": "Fh    ✈️ Travel",
+        "axis": "sender",
+        "volatile": false,
+        "predicate": {
+          "type": "from_domain",
+          "values": ["ryanair.com", "easyjet.com", "vueling.com", "lufthansa.com", "klm.com", "iberia.com", "service.ryanairemail.com", "fin.ryanair.com", "wizzair.com", "booking.com", "sg.booking.com", "property.booking.com", "airbnb.com", "hostelworld.com", "info.hostelworld.com", "email.hostelworld.com"]
+        }
+      },
+      {
+        "folder": "Fi    🏠 Utilities / Services",
+        "axis": "sender",
+        "volatile": false,
+        "_doc": "No energy-provider domain is known yet -- ask before adding.",
+        "predicate": {
+          "type": "from_domain",
+          "values": ["congstar.de", "news.congstar.de", "service.congstar.de", "mails.swm.de", "wg-gesucht.de", "nachrichten.immobilienscout24.de", "myplace.de", "kleinanzeigen.de", "idealista.com", "fotocasa.es", "pisos.com", "immobilienscout24.de", "immowelt.de", "allianz.com", "axa.com", "mapfre.com", "huk.de", "doctolib.de", "doctolib.com"]
+        }
+      },
+      {
+        "folder": "Fk    🎓 Education",
+        "axis": "sender",
+        "volatile": false,
+        "predicate": {
+          "type": "from_domain",
+          "values": ["udemy.com", "coursera.org", "edx.org", "skillshare.com", "pluralsight.com", "duolingo.com", "babbel.com", "busuu.com", "dev.to", "hashnode.com", "42berlin.de", "42heilbronn.de", "42.fr", "intra.42.fr"]
         }
       }
     ],
