@@ -35,11 +35,11 @@
   ],
   "routing_default": "others",
   "inbox_copy": {
-    "enabled": true,
+    "enabled": false,
     "flags": [
       "\\Seen"
     ],
-    "comment": "Every inbound message lands in INBOX marked read; unread copies live in the category folders."
+    "comment": "Stalwart's fileinto :copy files a message into INBOX + its category folder as ONE JMAP object with ONE shared keywords set (mailboxes are labels, not IMAP folders) — verified live, not a Sieve ordering trick. There is no such thing as read-in-INBOX-but-unread-in-category for the same object here, so `enabled:true` (add \\Seen after fileinto, banking on it only reaching the later implicit keep) marked BOTH read; every category folder measured unreadEmails=0. `enabled:false` embraces the shared flag instead of fighting it: a message is unread everywhere it's filed until it's actually read in any one of them, same as a Gmail label. Toggle back to true only if you want everything pre-read at delivery again (defeats unread counts everywhere, not just INBOX)."
   },
   "cleanup": {
     "drop_name_regex": "^[0-9]-",
