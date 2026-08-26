@@ -15,7 +15,7 @@
   # ACME via DNS-01 (Cloudflare) — eliminates port-80 HTTP-01 dependency
   # and supports wildcard certs for *.diegonmarcos.com. Token sourced
   # from .secrets (env_file in compose.nix). Phase 2a of public-surface
-  # collapse plan (0_tasks/TASK-net-20260508-01_collapse-public-to-443.md).
+  # collapse plan (a0_tasks/TASK-net-20260508-01_collapse-public-to-443.md).
   # resolvers 1.1.1.1: caddy-public's HOST resolver is Hickory (10.0.0.1),
   # which answers *.diegonmarcos.com → 10.0.0.1 and has NO view of the
   # Cloudflare _acme-challenge TXT. Without this, certmagic creates the TXT
@@ -59,7 +59,7 @@
 @m_imap_diegonmarcos_com tls sni imap.diegonmarcos.com
 route @m_imap_diegonmarcos_com {
   proxy {
-    upstream 10.0.0.3:2993
+    upstream 10.0.0.3:993
   }
 }
 @m_smtps_diegonmarcos_com tls sni smtps.diegonmarcos.com
@@ -68,7 +68,7 @@ route @m_smtps_diegonmarcos_com {
     upstream 10.0.0.3:2465
   }
 }
-          @public tls sni diegonmarcos.com www.diegonmarcos.com linktree.diegonmarcos.com nexus.diegonmarcos.com suite.diegonmarcos.com maps.diegonmarcos.com matrix.diegonmarcos.com vpn.diegonmarcos.com
+          @public tls sni diegonmarcos.com www.diegonmarcos.com linktree.diegonmarcos.com nexus.diegonmarcos.com suite.diegonmarcos.com maps.diegonmarcos.com vpn.diegonmarcos.com matrix.diegonmarcos.com
           route @public {
             proxy {
               proxy_protocol v2
@@ -77,7 +77,7 @@ route @m_smtps_diegonmarcos_com {
           }
           @rest not {
             tls {
-              sni imap.diegonmarcos.com smtps.diegonmarcos.com diegonmarcos.com www.diegonmarcos.com linktree.diegonmarcos.com nexus.diegonmarcos.com suite.diegonmarcos.com maps.diegonmarcos.com matrix.diegonmarcos.com vpn.diegonmarcos.com
+              sni imap.diegonmarcos.com smtps.diegonmarcos.com diegonmarcos.com www.diegonmarcos.com linktree.diegonmarcos.com nexus.diegonmarcos.com suite.diegonmarcos.com maps.diegonmarcos.com vpn.diegonmarcos.com matrix.diegonmarcos.com
             }
           }
           route @rest {
@@ -331,10 +331,10 @@ reverse_proxy https://diegonmarcos.github.io {
   # PUBLIC SUBDOMAINS (auth==none — served at edge; routed here by layer4 @public)
   # ════════════════════════════════════════════════════════════
 
-# subdomain: Continuwuity Matrix homeserver (maintained conduwuit fork, Rust/RocksDB) — central hub for chat bridges. Federation enabled via .well-known delegation over :443.
-matrix.diegonmarcos.com {
+# subdomain: WireGuard-over-TCP/443 fallback for hostile networks (airport / hotel / corporate guest Wi-Fi blocking UDP). Sibling to bb-net_wireguard-mesh (the panel) — this folder owns the wstunnel-server that terminates WSS on gcp-proxy and forwards UDP to the kernel WG listener at 127.0.0.1:51820. UDP/51820 remains the primary transport; this kicks in only when clients can't reach UDP.
+vpn.diegonmarcos.com {
 import security
-reverse_proxy 10.0.0.6:8008 {
+reverse_proxy 10.0.0.1:8080 {
       header_up X-Real-IP {http.request.remote.host}
     }
     handle_errors {
@@ -358,10 +358,10 @@ reverse_proxy 10.0.0.6:8008 {
     }
 }
 
-# subdomain: WireGuard-over-TCP/443 fallback for hostile networks (airport / hotel / corporate guest Wi-Fi blocking UDP). Sibling to bb-net_wireguard-mesh (the panel) — this folder owns the wstunnel-server that terminates WSS on gcp-proxy and forwards UDP to the kernel WG listener at 127.0.0.1:51820. UDP/51820 remains the primary transport; this kicks in only when clients can't reach UDP.
-vpn.diegonmarcos.com {
+# subdomain: Continuwuity Matrix homeserver (maintained conduwuit fork, Rust/RocksDB) — central hub for chat bridges. Federation enabled via .well-known delegation over :443.
+matrix.diegonmarcos.com {
 import security
-reverse_proxy 10.0.0.1:8080 {
+reverse_proxy 10.0.0.6:8008 {
       header_up X-Real-IP {http.request.remote.host}
     }
     handle_errors {
