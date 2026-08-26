@@ -62,6 +62,54 @@ pub struct Rules {
 
     #[serde(default, deserialize_with = "null_default")]
     pub folder_renames: FolderRenames,
+
+    /// Per-folder client-visibility options. See [`FolderOptions`].
+    #[serde(default, deserialize_with = "null_default")]
+    pub folder_options: FolderOptions,
+}
+
+/// Controls how the mailboxes this sorter manages present themselves to mail
+/// clients. `default` applies to every managed folder; `overrides` is keyed by
+/// the folder's display name and wins where present.
+///
+/// Only `subscribed` today, because it is the only one of these that JMAP
+/// actually models: `isSubscribed` is the IMAP LSUB bit, i.e. whether a
+/// client shows the folder in its normal folder list at all. Stalwart creates
+/// mailboxes UNSUBSCRIBED, so every folder this sorter ever made was hidden
+/// in clients that only list subscribed folders (measured on oci-mail: 53 of
+/// 60 unsubscribed — everything except the 7 built-in system folders).
+///
+/// Deliberately NOT modelled here: per-folder "notify me". JMAP has no such
+/// mailbox property, and inventing one in this file would be a setting that
+/// silently does nothing. Client notification behaviour is driven by
+/// subscription plus the folder's `role`, both of which are real.
+#[derive(Debug, Default, Deserialize)]
+pub struct FolderOptions {
+    #[serde(default, deserialize_with = "null_default")]
+    pub default: FolderOption,
+    /// folder display name -> option overrides.
+    #[serde(default, deserialize_with = "null_default")]
+    pub overrides: BTreeMap<String, FolderOption>,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct FolderOption {
+    /// `None` means "inherit" (override falls back to default; default falls
+    /// back to true — a managed folder you cannot see is not useful).
+    #[serde(default, deserialize_with = "null_default")]
+    pub subscribed: Option<bool>,
+}
+
+impl FolderOptions {
+    /// Should `name` appear in a client's folder list? Override, else
+    /// default, else true.
+    pub fn subscribed_for(&self, name: &str) -> bool {
+        self.overrides
+            .get(name)
+            .and_then(|o| o.subscribed)
+            .or(self.default.subscribed)
+            .unwrap_or(true)
+    }
 }
 
 #[derive(Debug, Deserialize)]

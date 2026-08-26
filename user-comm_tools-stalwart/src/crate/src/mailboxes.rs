@@ -5,7 +5,7 @@ use serde_json::{json, Map, Value};
 use std::collections::{HashMap, HashSet};
 
 use crate::jmap::{Client, Mailbox, PAGE};
-use crate::rules::Rules;
+use crate::rules::{FolderOptions, Rules};
 
 /// Mailbox names the server owns; never reaped, never renamed.
 const SYSTEM_FOLDERS: &[&str] = &[
@@ -27,15 +27,18 @@ struct Planner<'a> {
     creates: Map<String, Value>,
     updates: Map<String, Value>,
     counter: usize,
+    /// Per-folder client-visibility options, consulted by name at create time
+    /// and by the subscription reconcile below.
+    opts: &'a FolderOptions,
 }
 
 impl<'a> Planner<'a> {
-    fn new(existing: &'a [Mailbox]) -> Self {
+    fn new(existing: &'a [Mailbox], opts: &'a FolderOptions) -> Self {
         let mut by_name: HashMap<&str, Vec<&Mailbox>> = HashMap::new();
         for mb in existing {
             by_name.entry(mb.name.as_str()).or_default().push(mb);
         }
-        Self { by_name, creates: Map::new(), updates: Map::new(), counter: 0 }
+        Self { by_name, creates: Map::new(), updates: Map::new(), counter: 0, opts }
     }
 
     /// Mailbox id for `(name, parent)`. Moves a straggler rather than creating
@@ -77,7 +80,16 @@ impl<'a> Planner<'a> {
                 let r = format!("{ref_prefix}_{}", self.counter - 1);
                 self.creates.insert(
                     r.clone(),
-                    json!({ "name": name, "parentId": parent, "sortOrder": sort_order }),
+                    json!({
+                        "name": name,
+                        "parentId": parent,
+                        "sortOrder": sort_order,
+                        // Create SUBSCRIBED (unless the rules say otherwise):
+                        // Stalwart's default is unsubscribed, which hides the
+                        // folder from every client that lists only subscribed
+                        // mailboxes. See FolderOptions.
+                        "isSubscribed": self.opts.subscribed_for(name),
+                    }),
                 );
                 format!("#{r}")
             }
@@ -98,7 +110,7 @@ pub fn ensure_mailboxes(
     rules: &Rules,
 ) -> Result<(HashMap<String, String>, Vec<Mailbox>)> {
     let existing = client.mailbox_get()?;
-    let mut plan = Planner::new(&existing);
+    let mut plan = Planner::new(&existing, &rules.folder_options);
 
     // Routing targets — all at ROOT (parentId = None).
     for (i, folder) in rules.folders.values().enumerate() {
@@ -154,6 +166,36 @@ pub fn ensure_mailboxes(
     // missing mailboxes; those resolve to real ids only via a fresh
     // Mailbox/get.
     let existing = client.mailbox_get()?;
+
+    // Reconcile subscription on folders that ALREADY existed. Setting
+    // isSubscribed at create time only helps mailboxes created from now on;
+    // every folder made before this shipped is still unsubscribed and
+    // therefore invisible in clients that list only subscribed mailboxes
+    // (measured on oci-mail: 53 of 60). Idempotent — once each folder matches
+    // its declared value this builds an empty patch and issues no call.
+    //
+    // Scope is deliberately narrow: only names the rules actually manage.
+    // The server's own system folders (INBOX/Sent/Drafts/...) are left
+    // exactly as the server set them.
+    let managed = valid_names(rules);
+    let mut sub_updates: Map<String, Value> = Map::new();
+    for mb in &existing {
+        if !managed.contains(&mb.name) || SYSTEM_FOLDERS.contains(&mb.name.as_str()) {
+            continue;
+        }
+        let want = rules.folder_options.subscribed_for(&mb.name);
+        if mb.is_subscribed != want {
+            sub_updates.insert(mb.id.clone(), json!({ "isSubscribed": want }));
+        }
+    }
+    if !sub_updates.is_empty() {
+        tracing::info!("Updating subscription on {} mailboxes...", sub_updates.len());
+        let res = client.mailbox_set(None, Some(sub_updates), None, false)?;
+        for (mid, err) in &res.not_updated {
+            tracing::warn!("Failed to set isSubscribed on {mid}: {err}");
+        }
+    }
+
     let name_to_id = existing
         .iter()
         .map(|mb| (mb.name.clone(), mb.id.clone()))

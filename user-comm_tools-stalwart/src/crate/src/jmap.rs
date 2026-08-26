@@ -26,6 +26,12 @@ pub struct Mailbox {
     pub parent_id: Option<String>,
     #[serde(default, deserialize_with = "null_default")]
     pub role: Option<String>,
+    /// Whether the mailbox appears in a client's default folder list (IMAP
+    /// LSUB). Stalwart creates mailboxes UNSUBSCRIBED, so every folder this
+    /// sorter made was hidden in clients that only show subscribed folders —
+    /// measured 53 of 60 unsubscribed on oci-mail.
+    #[serde(rename = "isSubscribed", default, deserialize_with = "null_default")]
+    pub is_subscribed: bool,
 }
 
 #[derive(Debug, Default, Deserialize)]
