@@ -251,10 +251,18 @@ let
                       (map (sieveRouteBlock predicates account folders inboxSeen) routeRules);
 
       defFolder   = folders.${merged.routing_default} or merged.routing_default;
+      # No routing folders declared => no fallback. Without this guard the
+      # generator emitted `fileinto :copy :create "others"` even with an empty
+      # `folders` map, so the very folder the config had just removed got
+      # recreated by Sieve on the next delivery. Implicit keep already puts
+      # unmatched mail in INBOX, which is exactly the desired behaviour when
+      # there is nowhere else to file it.
+      hasRouting  = (folders != {}) && (routeLines != []);
       fallbackBody =
         [ ''fileinto :copy :create "${defFolder}";'' ]
         ++ (optional inboxSeen ''addflag "\\Seen";'');
-      fallbackBlock = "# fallback (no route matched)\n"
+      fallbackBlock = if !hasRouting then "# no routing folders — unmatched mail stays in INBOX via implicit keep"
+        else "# fallback (no route matched)\n"
         + concatStringsSep "\n" fallbackBody;
     in ''
       require [${requires}];
