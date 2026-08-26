@@ -84,10 +84,25 @@
     "_doc": "Per-folder client visibility, applied by jmap-sorter's ensure_mailboxes to EVERY folder it manages -- the numeric 1*-9* folders, folder_group children (Rss Notifications, GH Workflows, VPS *), the A*-F* filter views and the '_' section headers alike. One uniform mechanism, so an RSS folder is configured exactly like a mail folder.",
     "_doc_subscribed": "subscribed = the IMAP LSUB / JMAP isSubscribed bit: whether a client lists the folder in its normal folder menu at all. Stalwart CREATES mailboxes unsubscribed, which is why folders this engine made were missing from client menus -- measured on oci-mail, 53 of 60 were unsubscribed, i.e. everything except the 7 built-in system folders. Default true. Set an override to false to hide a folder from the menu WITHOUT deleting it or touching its contents.",
     "_doc_notifications": "There is deliberately NO per-folder 'notify me' toggle here. JMAP models no such mailbox property, so a setting for it in this file would silently do nothing -- the exact class of dead config this engine is written to avoid. Client notification behaviour follows subscription (above) plus the folder's special-use role, which are the real honoured knobs.",
+    "_doc_policy": "Only the F* sender-axis folders are subscribed. Stalwart serves JMAP and IMAP from ONE mailbox store, so a folder cannot exist in JMAP but be absent from IMAP -- subscription is the only lever. Default false keeps the full 1*-9* + A*-E* structure intact server-side for JMAP/sorting while an IMAP client's folder menu shows just INBOX + F*.",
     "default": {
-      "subscribed": true
+      "subscribed": false
     },
-    "overrides": {}
+    "overrides": {
+      "Fa    🏛️ Gov & Official": { "subscribed": true },
+      "Fb    💬 Socials": { "subscribed": true },
+      "Fc    💰 Finance": { "subscribed": true },
+      "Fd    💼 Work & Professional": { "subscribed": true },
+      "Fe    💻 Dev & Tech": { "subscribed": true },
+      "Ff    🛍️ Shopping & Commerce": { "subscribed": true },
+      "Fg    📰 Subscriptions & Newsletters": { "subscribed": true },
+      "Fh    ✈️ Travel": { "subscribed": true },
+      "Fi    🏠 Utilities & Services": { "subscribed": true },
+      "Fj    👪 Personal": { "subscribed": true },
+      "Fk    🎓 Education": { "subscribed": true },
+      "Fz    📭 Others": { "subscribed": true },
+      "F0 _ SENDER": { "subscribed": true }
+    }
   },
   "filters": {
     "_doc": "Dynamic cross-cutting filter views maintained by jmap-sorter each poll over emails in the numeric 1*-9* folders. Multi-mailbox membership only (no copies, no $seen changes); add+remove each poll so time/read windows stay current.",
