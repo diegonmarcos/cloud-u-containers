@@ -67,6 +67,12 @@
   "folder_renames": {
     "_doc": "One-time in-place mailbox renames (old name -> new name) applied by jmap-sorter BEFORE ensure_mailboxes/cleanup, so a renamed folder KEEPS its emails (JMAP Mailbox/set name update) instead of being reaped + recreated empty. Idempotent, three cases: old absent -> no-op; old present and new absent -> in-place name update; old AND new both present -> MERGE (move every email from old into new, then destroy the emptied old). The merge case previously no-op'd, which stranded 230 messages in 'Aa 📬 Others (fallback)' once '91 📬 Others (fallback)' existed.",
     "map": {
+      "Fa    🏛️ Gov / Official": "Fa    🏛️ Gov & Official",
+      "Fd    💼 Work / Professional": "Fd    💼 Work & Professional",
+      "Fe    💻 Dev / Tech": "Fe    💻 Dev & Tech",
+      "Ff    🛍️ Shopping / Commerce": "Ff    🛍️ Shopping & Commerce",
+      "Fg    📰 Subscriptions / Newsletters": "Fg    📰 Subscriptions & Newsletters",
+      "Fi    🏠 Utilities / Services": "Fi    🏠 Utilities & Services",
       "Aa    📬 Others (fallback)": "91    📬 Others (fallback)",
       "Ab    📥 Archive": "92    📥 Archive",
       "Ac    🚫 Junk": "93    🚫 Junk",
@@ -166,7 +172,7 @@
         }
       },
       {
-        "folder": "Fa    🏛️ Gov / Official",
+        "folder": "Fa    🏛️ Gov & Official",
         "axis": "sender",
         "volatile": false,
         "_doc": "DE/ES/EU/PT/US gov + tax authorities, plus tax.service.gov.uk and .gov.br from the existing route rules. No courts/legal domain known yet.",
@@ -309,7 +315,7 @@
         }
       },
       {
-        "folder": "Fd    💼 Work / Professional",
+        "folder": "Fd    💼 Work & Professional",
         "axis": "sender",
         "volatile": false,
         "_doc": "Recruiters only (career platforms + recruiter-subject detection). Employer/Clients/Coworkers need this account's real employer/client/coworker addresses -- none exist anywhere in this repo, so they're deliberately left out rather than guessed. Add them to this predicate's any_of when known.",
@@ -347,7 +353,7 @@
         }
       },
       {
-        "folder": "Fe    💻 Dev / Tech",
+        "folder": "Fe    💻 Dev & Tech",
         "axis": "sender",
         "volatile": false,
         "predicate": {
@@ -431,7 +437,7 @@
         }
       },
       {
-        "folder": "Ff    🛍️ Shopping / Commerce",
+        "folder": "Ff    🛍️ Shopping & Commerce",
         "axis": "sender",
         "volatile": false,
         "predicate": {
@@ -474,7 +480,7 @@
         }
       },
       {
-        "folder": "Fg    📰 Subscriptions / Newsletters",
+        "folder": "Fg    📰 Subscriptions & Newsletters",
         "axis": "sender",
         "volatile": false,
         "_doc": "Marketing/Promo has no sender domain of its own (mixed into every retailer's), so it's detected by subject instead, same values as tag.info.promo_en + tag.profile.promo_es_de.",
@@ -553,7 +559,7 @@
         }
       },
       {
-        "folder": "Fi    🏠 Utilities / Services",
+        "folder": "Fi    🏠 Utilities & Services",
         "axis": "sender",
         "volatile": false,
         "_doc": "Telecom/Energy/Housing/Health. No energy provider outside DE/ES known yet.",
