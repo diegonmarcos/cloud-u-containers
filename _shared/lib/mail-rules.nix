@@ -65,6 +65,9 @@ let
       # One-time in-place mailbox renames (old->new), applied by jmap-sorter
       # before ensure/cleanup so renamed folders keep their emails.
       folder_renames   = p.folder_renames or general.folder_renames or { map = {}; };
+      # Per-folder client-visibility options (isSubscribed today). Profile
+      # wins wholesale if it declares any — same precedence as cleanup/filters.
+      folder_options   = p.folder_options or general.folder_options or {};
       predicates       = (general.predicates or {}) // (p.predicates or {});
       rules            = (general.rules or []) ++ (p.rules or []);
     };
@@ -397,6 +400,9 @@ let
       # JMAP multi-mailbox membership over emails in the numeric folders.
       filters        = merged.filters or { views = []; section_headers = []; };
       folder_renames = merged.folder_renames or { map = {}; };
+      # Consumed by the sorter's ensure_mailboxes: decides whether each
+      # managed folder is SUBSCRIBED, i.e. whether clients list it at all.
+      folder_options = merged.folder_options or {};
       inherit routing;
     };
 
