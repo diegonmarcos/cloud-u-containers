@@ -27,14 +27,12 @@ in
       ports = [ "${toString app.port}:${toString app.port}" ];
       volumes = app.volumes;
       deploy = {
-        resources = {
-          limits = {
-            memory = app.resources.mem_limit;
-          };
-          reservations = {
-            memory = app.resources.mem_reservation;
-          };
-        };
+        # mem_limit/mem_reservation are optional in build.json (only
+        # mem_reservation is declared fleet-wide today). Reading them
+        # unconditionally fails eval with "attribute ... missing".
+        resources =
+             (if app.resources ? mem_limit       then { limits       = { memory = app.resources.mem_limit; };       } else {})
+          // (if app.resources ? mem_reservation then { reservations = { memory = app.resources.mem_reservation; }; } else {});
       };
       logging = {
         driver = "json-file";

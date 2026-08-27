@@ -38,11 +38,11 @@ in
         retries  = app.healthcheck.retries;
       };
       deploy = {
-        resources = {
-          limits = {
-            memory = app.resources.mem_limit;
-          };
-        };
+        # mem_limit is optional in build.json — reading it unconditionally
+        # fails eval with "attribute 'mem_limit' missing".
+        resources = if app.resources ? mem_limit
+                    then { limits = { memory = app.resources.mem_limit; }; }
+                    else {};
       };
       logging = {
         driver = "json-file";

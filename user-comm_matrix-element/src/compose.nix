@@ -15,10 +15,12 @@ in
       # Caddy (edge) can reach it as matrix-element.app:8082 over WireGuard.
       ports = [ "${self.ip}:${toString buildJson.ports.app}:80" ];
       volumes = [ "./configs/config.json:/app/config.json:ro" ];
-      deploy.resources = {
-        limits       = { memory = buildJson.resources.mem_limit;       cpus = "0.5"; };
-        reservations = { memory = buildJson.resources.mem_reservation; };
-      };
+        # mem_limit/mem_reservation are optional in build.json (only
+        # mem_reservation is declared fleet-wide today). Reading them
+        # unconditionally fails eval with "attribute ... missing".
+      deploy.resources =
+           { limits = { cpus = "0.5"; } // (if buildJson.resources ? mem_limit then { memory = buildJson.resources.mem_limit; } else {}); }
+        // (if buildJson.resources ? mem_reservation then { reservations = { memory = buildJson.resources.mem_reservation; }; } else {});
     };
   };
 }

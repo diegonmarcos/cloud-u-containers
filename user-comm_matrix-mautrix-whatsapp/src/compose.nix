@@ -17,10 +17,12 @@ in
         TZ = buildJson.timezone;
       };
       volumes = [ "./data:/data" ];
-      deploy.resources = {
-        limits       = { memory = buildJson.resources.mem_limit;       cpus = "1.0"; };
-        reservations = { memory = buildJson.resources.mem_reservation; };
-      };
+        # mem_limit/mem_reservation are optional in build.json (only
+        # mem_reservation is declared fleet-wide today). Reading them
+        # unconditionally fails eval with "attribute ... missing".
+      deploy.resources =
+           { limits = { cpus = "1.0"; } // (if buildJson.resources ? mem_limit then { memory = buildJson.resources.mem_limit; } else {}); }
+        // (if buildJson.resources ? mem_reservation then { reservations = { memory = buildJson.resources.mem_reservation; }; } else {});
     };
   };
 }

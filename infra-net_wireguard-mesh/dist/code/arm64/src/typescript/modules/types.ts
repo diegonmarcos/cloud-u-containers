@@ -1,5 +1,5 @@
 // Domain types — wireguard-mesh
-// Mirrors the schema emitted by 2_configs/src/engines/derive-mesh-snapshot.ts
+// Mirrors the schema emitted by 9_others/src/engine/derive-mesh-snapshot.ts
 // (wg-mesh/v1).
 
 export type NodeRole = 'hub' | 'spoke' | 'client';

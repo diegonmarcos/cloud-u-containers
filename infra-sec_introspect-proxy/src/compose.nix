@@ -70,10 +70,12 @@ in
         timeout  = "10s";
         retries  = 3;
       };
-      deploy.resources = {
-        limits       = { memory = buildJson.resources.mem_limit; };
-        reservations = { memory = buildJson.resources.mem_reservation; };
-      };
+        # mem_limit/mem_reservation are optional in build.json (only
+        # mem_reservation is declared fleet-wide today). Reading them
+        # unconditionally fails eval with "attribute ... missing".
+      deploy.resources =
+           (if buildJson.resources ? mem_limit       then { limits       = { memory = buildJson.resources.mem_limit; };       } else {})
+        // (if buildJson.resources ? mem_reservation then { reservations = { memory = buildJson.resources.mem_reservation; }; } else {});
     };
   };
 }
