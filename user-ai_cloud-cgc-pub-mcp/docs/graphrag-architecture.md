@@ -103,3 +103,37 @@ Everything above collapses into two engine problems:
 
 New probes are added as data (a JSON object), never as prose here. This document is
 regenerated from the JSON, so the JSON is the only thing to edit.
+
+## 6. Framework enhancements (researched 2026-08)
+
+The audit above is home-grown. To make it industry-grade — and to test what it
+currently can't (retrieval quality) — five external standards map onto our flaws.
+Full mapping + actions live in `graphrag-audit.json` → `frameworks`.
+
+| Standard | Buys us | Fixes / adds |
+|----------|---------|--------------|
+| [PG-Schema / PG-Keys](https://arxiv.org/html/2211.10962) | declarative LPG schema + key/participation/referential constraints (the basis of the GQL & SQL/PGQ ISO standards) | INV-03, INV-04 → `deeper_tests.schema_constraints` |
+| [SHACL / Trav-SHACL](https://arxiv.org/abs/2101.07136) + [xpSHACL](https://arxiv.org/abs/2504.19120) | the *shapes → violation-report-with-explanation* pattern (borrowed, not the RDF tech) | every constraint returns violating rows + an `explain` string |
+| [RAGAS](https://docs.ragas.io/) | context precision / recall / faithfulness + retrieval MRR | INV-13 → `deeper_tests.retrieval_quality` |
+| [GraphRAG-Bench](https://github.com/GraphRAG-Bench/GraphRAG-Benchmark) | 4 task levels (fact → multi-hop → summary → novel); Accuracy / ROUGE-L / coverage | structures the golden set so we test *multi-hop* traversal |
+| [SCIP](https://sourcegraph.com/blog/announcing-scip) (+ [Kythe](https://kythe.io/), [Glean](https://glean.software/)) | a standard protobuf code index: documents → symbols → occurrences → xrefs, cross-repo monikers | INV-07 root cause → replace bespoke `code-signatures` with one deterministic scan feeding *both* stores |
+
+### The three deeper-test suites (in the JSON, runnable now)
+
+1. **`schema_constraints`** — PG-Keys/SHACL-style. Each rule's SurrealQL returns
+   *violating rows*; empty = pass. Seeded with live results (2026-08-27):
+   - `SC-01` dangling `file.repo` → **1,135 files** (front 938, front-data 7, tools 190) — FAIL
+   - `SC-05` repo id/name drift (`repo:cloud_data` vs name `cloud-data`) — FAIL
+   - `SC-06` `belongs_to_repo` participation (only `repo:cloud` attributed) — FAIL
+   - `SC-02/03/04` routes resolve / service-name unique / no empty repo — **PASS** (0 violations)
+2. **`cross_store_consistency`** — assert CodeGraph `overview` and SurrealDB agree
+   where they model the same thing: file count 2,905 vs 3,843 (FAIL), `routes_to`
+   42 vs 41 (FAIL), `symbol` 29,660 vs 0 (FAIL). This is INV-01/07 as a live diff.
+3. **`retrieval_quality`** — the biggest blind spot: octocode/graphrag correctness is
+   *unmeasured*. A RAGAS + GraphRAG-Bench golden set (≥20 Q, ≥5 multi-hop), scored on
+   context precision/recall + MRR. **TODO** — schema and two example questions seeded.
+
+**Highest-leverage single adopt:** SCIP. The bespoke `code-signatures` derive is the
+root of the file-count divergence *and* the empty symbol layer. One standard indexer
+per language (`scip-typescript`, `scip-python`, rust-analyzer) yields one file+symbol
+set both stores share — collapsing INV-01, INV-07, and the whole symbol/defines gap.
