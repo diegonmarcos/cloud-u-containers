@@ -63,12 +63,14 @@ Ranked by severity:
 | INV-02 | 🔴 high | **3 repo vocabularies** (cloud vs cloud-infra vs …) | named across the repo rename | canonical names + alias map at ingest |
 | INV-03 | 🔴 high | `file.repo` refs 6 repos, only 3 `repo` nodes (front/front-data/tools dangle) | delta builder emits 3 | emit a repo node per distinct file.repo |
 | INV-05 | 🔴 high | tool's **own example queries return 0 rows** (`repo='cloud-infra'`) | doc uses new names, data uses old | fix example strings (or fix INV-02) |
+| INV-15 | 🔴 high | **octocode search misses ground truth** — "mutation guard" query never returns `kgstore.ts` (2 phrasings) | embedding/chunk quality; recall untested until now | symbol-aware chunking + re-embed; pin as RAGAS regression |
 | INV-04 | 🟡 med | `belongs_to_repo` collapses all 62 modules → `repo:cloud` | only infra modules modeled | document as infra-only until code modules land |
 | INV-06 | 🟡 med | `kgstore_overview` lists phantom tables (`connected_to`/`documentation`/`log`), hides real (`parent_module`/`imports`) | hardcoded table list drifted | derive list from `INFO FOR DB` |
 | INV-07 | 🟡 med | file inventory 2,905 vs 3,843 (per-repo wildly off) | baked scan vs live scan | share one enumeration, pin to one commit |
 | INV-09 | 🟡 med | `code_depends_on` is really file→**package**, not file→file | misnaming | rename `depends_on_package` |
 | INV-10 | 🟡 med | missing table → silent `count:0`, not an error | SurrealDB semantics | validate FROM targets vs `INFO FOR DB` |
 | INV-11 | 🟡 med | octocode index freshness **uneven** (cloud-infra fresh, cloud-unix stale) | per-repo reindex not fired on rename | reindex-on-push for all repos |
+| INV-14 | 🟡 med | `trace_call_path` **resolves bare names to the wrong node** (`oci-apps`→a `build.sh` file, not `vm:oci_apps`; fqdn→nothing) while impact/deps resolve fine | `resolveTarget` substring-matches without node-type ranking | exact-match + type-rank in `resolveTarget` |
 | INV-08 | 🟢 low | `routes_to` 42 vs 41 | baked delta one gen behind | rebuild delta in the ingest job |
 | INV-12 | 🟢 low | version split: package.json 5.0.0 vs code 7.0.0 | hand-edited | import version from package.json |
 | INV-13 | ⚪ open | `octocode_graphrag search` dumped ~4MB; graph ops unvalidated | unknown | cap result size, then validate |
@@ -129,9 +131,22 @@ Full mapping + actions live in `graphrag-audit.json` → `frameworks`.
 2. **`cross_store_consistency`** — assert CodeGraph `overview` and SurrealDB agree
    where they model the same thing: file count 2,905 vs 3,843 (FAIL), `routes_to`
    42 vs 41 (FAIL), `symbol` 29,660 vs 0 (FAIL). This is INV-01/07 as a live diff.
-3. **`retrieval_quality`** — the biggest blind spot: octocode/graphrag correctness is
-   *unmeasured*. A RAGAS + GraphRAG-Bench golden set (≥20 Q, ≥5 multi-hop), scored on
-   context precision/recall + MRR. **TODO** — schema and two example questions seeded.
+3. **`retrieval_quality`** — the biggest blind spot, now **measured**. A RAGAS +
+   GraphRAG-Bench golden set of **20 questions** (L1 fact ×5, L2 multi-hop ×7, L3
+   summary ×4, L4 semantic ×4) **executed live 2026-08-27** against the running MCP:
+
+   | metric | result |
+   |---|---|
+   | overall accuracy | **17/20 = 0.85** |
+   | multi-hop (L2) accuracy | 6/7 = 0.86 — `Q-12` is the resolver bug (INV-14) |
+   | semantic recall (L4) | **1/3 = 0.33** — `Q-18`/`Q-19` miss `kgstore.ts` (INV-15) |
+   | semantic MRR (L4) | 0.33 |
+
+   The alarm is L4: the semantic index answers *some* queries at rank 1 (`Q-17`
+   returns `codegraph.ts` for "register codegraph tools") but **fails to recall the
+   mutation guard** under two phrasings. Retrieval correctness is now a regression
+   gate — each question's `args` is its reproduction. Two new flaws (INV-14 resolver,
+   INV-15 recall) fell straight out of running the set.
 
 **Highest-leverage single adopt:** SCIP. The bespoke `code-signatures` derive is the
 root of the file-count divergence *and* the empty symbol layer. One standard indexer
