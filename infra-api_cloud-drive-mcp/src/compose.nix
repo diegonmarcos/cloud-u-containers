@@ -20,7 +20,12 @@ in
       image          = binariesImage;
       container_name = app.container_name;
       ports          = [ "${vmIp}:${port}:${port}" ];
-      env_file       = [ ".secrets" ];
+      # Optional: this service has no secrets.yaml, so ship logs "No secrets.yaml
+      # -- skipping" and never writes .secrets. A required env_file makes compose
+      # abort before it even pulls, which is why the deploy failure surfaced as
+      # "binaries:latest neither pullable nor cached" -- the pull never ran.
+      # Same idiom as user-comm_mail-puller.
+      env_file       = [ { path = ".secrets"; required = false; } ];
       environment = {
         PORT = port;
       };
