@@ -191,9 +191,6 @@
       "env_file": true,
       "depends_on": [],
       "resources": {
-        "limits": {
-          "memory": "256M"
-        },
         "reservations": {
           "memory": "32M"
         }

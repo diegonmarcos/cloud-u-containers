@@ -62,10 +62,25 @@ in
         retries = 3;
         start_period = "10s";
       };
+      # No memory/cpu ceiling — same reasoning as _shared/docker.nix, which
+      # made memLimit/cpuLimit inert fleet-wide: deploy.resources.limits.memory
+      # becomes cgroup memory.max, a LOCAL wall that force-reclaims from this
+      # container the instant it is touched no matter how much RAM the host has
+      # free. Measured on oci-mail: 60MB against a 64MB cap with 2852 breach
+      # events, host RAM fine — thrashing on a schedule, and with swappiness
+      # biased to anonymous pages every breach paged app memory to disk.
+      # Pressure is my-watchdog's job now (PSI cpu/mem/io).
+      #
+      # Reservations stay: a floor is protection, not a ceiling. The limit is
+      # read CONDITIONALLY — build.json declares only mem_reservation, and
+      # reading mem_limit unconditionally is exactly what broke stalwart-sorter
+      # after limits were dropped there. Plain `if` rather than lib.optionalAttrs
+      # because flake.nix does not pass `lib` into this file.
       deploy.resources = {
-        limits       = { memory = buildJson.resources.mem_limit;       cpus = "1.0"; };
         reservations = { memory = buildJson.resources.mem_reservation; };
-      };
+      } // (if buildJson.resources ? mem_limit
+            then { limits = { memory = buildJson.resources.mem_limit; }; }
+            else {});
     };
   };
   volumes = {
