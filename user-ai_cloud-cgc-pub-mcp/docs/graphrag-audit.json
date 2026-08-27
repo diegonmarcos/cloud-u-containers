@@ -1,0 +1,256 @@
+{
+  "_schema": "graphrag-audit/v1",
+  "_doc": "Data-driven audit of the cloud-cgc-pub-mcp GraphRAG stack. This file is the SOURCE OF TRUTH; docs/graphrag-architecture.md is a human view of it. Each invariant carries a re-runnable `probe` (tool + args) so the audit is a regression gate, not a one-off. To refresh: run every probe, write the result into `observed`, set `status` (PASS = claim holds, FAIL = violated, OPEN = not yet validated), and fix anything that regressed from PASS. Continuous-improvement loop: an invariant is DONE when status=PASS and its `fix` is empty.",
+  "generated": "2026-08-27",
+  "generator": "manual adversarial probe session (claude-opus-4-8); automate via a workflow that iterates `invariants[].probe`",
+  "endpoint": "https://mcp.diegonmarcos.com/cloud-cgc-pub-mcp/mcp  (+ stdio twin cloud-cgc-pub-mcp-local)",
+
+  "subsystems": {
+    "codegraph": {
+      "tools": ["cgc_codegraph_overview", "cgc_codegraph_search", "cgc_codegraph_dependencies", "cgc_codegraph_impact_analysis", "cgc_codegraph_trace_call_path"],
+      "store": "in-memory graph, rebuilt per query with a 5-min TTL cache",
+      "source": "image-baked ./graphs/*.json (CODEGRAPH_GRAPHS_DIR | bundled | $GIT_ROOT/cloud-infra/1_cloud-configs/dist): build-kg-graph_delta.json (infra) + code-signatures-<repo>.json (code)",
+      "engine_file": "src/code/tools/b-code-graph-context/codegraph.ts",
+      "synthesizes": ["symbol", "file", "defines", "imports", "code_depends_on"],
+      "note": "The ONLY subsystem that has symbol/defines/code_depends_on. They are synthesized from code-signatures at load time and exist nowhere else."
+    },
+    "kgstore": {
+      "tools": ["cgc_kgstore_query", "cgc_kgstore_overview"],
+      "store": "persistent SurrealDB @ 127.0.0.1:8001 ns=infra db=production (read-only SELECT/INFO)",
+      "source": "separate ingest pipeline: octocode per-repo mirror (file + sibling_module + parent_module) + infra topology delta",
+      "engine_file": "src/code/tools/b-code-graph-context/kgstore.ts",
+      "has_tables_node": ["container", "domain", "file", "module", "package", "repo", "service", "vm"],
+      "has_tables_edge": ["belongs_to_repo", "consumes", "declares_tool", "depends_on", "hosted_on", "implements", "imports", "parent_module", "proxied_by", "routes_to", "runs_container", "sibling_module"],
+      "note": "Does NOT contain symbol/defines/code_depends_on. `imports` exists as a table but is empty; imports live as an array field on `file`."
+    },
+    "octocode": {
+      "tools": ["cgc_octocode_search", "cgc_octocode_graphrag", "cgc_octocode_index"],
+      "store": "LanceDB vectors + LLM GraphRAG, per-repo indices",
+      "source": "per-repo semantic index (reindexed independently per repo)",
+      "engine_file": "src/code/tools/b-code-graph-context/octocode.ts",
+      "repo_enum": ["cloud-infra", "cloud-unix", "front", "cloud-data", "front-data", "cloud-android", "cloud-data-my-ai-memory"],
+      "note": "Uses NEW repo names (cloud-infra/cloud-unix). Its own SurrealDB mirror uses OLD names (cloud/unix). Reindex freshness is per-repo and uneven."
+    }
+  },
+
+  "divergence_matrix": {
+    "_doc": "What each element counts in CodeGraph `overview` vs what is actually queryable in the SurrealDB kg-store. The overview banner sums ONLY CodeGraph; it does not describe kgstore.",
+    "columns": ["element", "codegraph_overview", "surrealdb_kgstore"],
+    "rows": [
+      ["symbol nodes", 29660, "0 — no `symbol` table"],
+      ["file nodes", 2905, 3843],
+      ["defines edges", 32510, "0 — no `defines` table"],
+      ["imports edges", 1063, "0 — table exists but empty; imports = field on `file`"],
+      ["code_depends_on edges", 3959, "0 — no `code_depends_on` table"],
+      ["sibling_module edges", "not counted", 44354],
+      ["parent_module edges", "not counted", "present, uncounted"],
+      ["routes_to edges", 42, 41],
+      ["repo nodes", 3, "3 (cloud, cloud_data, unix)"],
+      ["repos referenced by files", "cloud/unix/front/tools/cloud-data/front-data", "same 6, but only 3 have a repo node"]
+    ]
+  },
+
+  "invariants": [
+    {
+      "id": "INV-01",
+      "severity": "high",
+      "status": "FAIL",
+      "title": "overview counts must be queryable somewhere",
+      "claim": "Every node/edge table `cgc_codegraph_overview` reports is reachable by at least one query tool.",
+      "probe": [
+        {"tool": "cgc_codegraph_overview"},
+        {"tool": "cgc_kgstore_query", "surql": "SELECT count() FROM symbol GROUP ALL"},
+        {"tool": "cgc_kgstore_query", "surql": "SELECT count() FROM defines GROUP ALL"},
+        {"tool": "cgc_kgstore_query", "surql": "SELECT count() FROM code_depends_on GROUP ALL"}
+      ],
+      "expected": "counts > 0 in kgstore for symbol/defines/code_depends_on, OR overview labels them codegraph-only",
+      "observed": "overview: symbol=29660, defines=32510, code_depends_on=3959; kgstore: 0/0/0 (tables absent). ~65k claimed elements unreachable via SurrealQL.",
+      "root_cause": "codegraph.ts synthesizes symbol/defines/code_depends_on in-memory from code-signatures; they are never ingested into SurrealDB. overview reports the in-memory graph only.",
+      "fix": {"files": ["codegraph.ts", "kgstore.ts"], "change": "Label overview rows by which tool can query them (codegraph-only vs kgstore-backed), OR ingest symbol/defines into SurrealDB. Cheapest: annotate overview output with `queryable_via`."}
+    },
+    {
+      "id": "INV-02",
+      "severity": "high",
+      "status": "FAIL",
+      "title": "single repo vocabulary across subsystems",
+      "claim": "A repo has ONE identifier used by codegraph, kgstore, and octocode.",
+      "probe": [
+        {"tool": "cgc_kgstore_query", "surql": "SELECT array::group(repo) AS repos FROM file GROUP ALL"},
+        {"tool": "cgc_kgstore_query", "surql": "SELECT VALUE id FROM repo"},
+        {"note": "compare against octocode.repo_enum in this file"}
+      ],
+      "expected": "identical repo id set across all three",
+      "observed": "file.repo & code-signatures: cloud/unix/front/tools/cloud-data/front-data. repo table: cloud, cloud_data (id underscore, name hyphen), unix. octocode enum: cloud-infra/cloud-unix/front/cloud-data/front-data/cloud-android/cloud-data-my-ai-memory. THREE vocabularies.",
+      "root_cause": "code-signatures filenames, the delta repo-node builder, and octocode's index registry were named at different times across the repo rename (cloud->cloud-infra, unix->cloud-unix).",
+      "fix": {"files": ["code-signatures derive (1_cloud-configs)", "kg-graph delta builder", "octocode.ts"], "change": "Adopt the new canonical names everywhere; add an alias map at the ingest boundary so old snapshots still resolve."}
+    },
+    {
+      "id": "INV-03",
+      "severity": "high",
+      "status": "FAIL",
+      "title": "no dangling file->repo",
+      "claim": "Every value of file.repo has a corresponding node in the `repo` table.",
+      "probe": [
+        {"tool": "cgc_kgstore_query", "surql": "SELECT array::group(repo) AS repos FROM file GROUP ALL"},
+        {"tool": "cgc_kgstore_query", "surql": "SELECT id, name FROM repo"}
+      ],
+      "expected": "6 repo nodes matching the 6 file.repo values",
+      "observed": "files reference 6 repos; only 3 repo nodes exist (cloud, cloud_data, unix). front / front-data / tools (1135 files) have NO repo node.",
+      "root_cause": "delta builder only emits repo nodes for the 3 infra-tracked repos; code-signatures for front/tools/front-data add files but no repo node.",
+      "fix": {"files": ["kg-graph delta builder"], "change": "Emit a repo node for every distinct repo seen in code-signatures; reconcile id (cloud_data) vs name (cloud-data) to one form."}
+    },
+    {
+      "id": "INV-04",
+      "severity": "medium",
+      "status": "FAIL",
+      "title": "belongs_to_repo attributes modules to their real repo",
+      "claim": "module -> belongs_to_repo -> repo points to the repo the module actually lives in.",
+      "probe": [
+        {"tool": "cgc_kgstore_query", "surql": "SELECT out AS repo_node, count() AS n FROM belongs_to_repo GROUP BY repo_node"}
+      ],
+      "expected": "modules distributed across their repos",
+      "observed": "all 62 belongs_to_repo edges point to repo:cloud. repo:unix and repo:cloud_data have zero incoming.",
+      "root_cause": "all modeled modules are infra modules (they DO live in cloud-infra), but the edge then carries no cross-repo signal — attribution is degenerate, not wrong-but-useful.",
+      "fix": {"files": ["kg-graph delta builder"], "change": "Only meaningful once code modules from unix/front are modeled; until then document belongs_to_repo as infra-only."}
+    },
+    {
+      "id": "INV-05",
+      "severity": "high",
+      "status": "FAIL",
+      "title": "tool documentation examples execute and return rows",
+      "claim": "Every example query in a tool's own description runs and returns data.",
+      "probe": [
+        {"tool": "cgc_kgstore_query", "surql": "SELECT count() AS n FROM file WHERE repo = 'cloud-infra' GROUP ALL"},
+        {"note": "cgc_kgstore_query description ships: \"...WHERE repo='cloud-infra'...\" and \"...WHERE repo='cloud-unix'...\""}
+      ],
+      "expected": "n > 0",
+      "observed": "empty result — real vocab is repo='cloud' / 'unix', so both documented examples return zero rows.",
+      "root_cause": "tool description written against the new repo names; the ingested data uses the old names (see INV-02).",
+      "fix": {"files": ["kgstore.ts"], "change": "Fix the example strings to the vocab actually ingested, OR fix the vocab (INV-02) so the examples become true."}
+    },
+    {
+      "id": "INV-06",
+      "severity": "medium",
+      "status": "FAIL",
+      "title": "kgstore.overview reflects real tables",
+      "claim": "cgc_kgstore_overview lists exactly the tables INFO FOR DB reports.",
+      "probe": [
+        {"tool": "cgc_kgstore_query", "surql": "INFO FOR DB"},
+        {"note": "compare against NODE_TABLES/EDGE_TABLES hardcoded in kgstore.ts"}
+      ],
+      "expected": "hardcoded lists == INFO FOR DB tables",
+      "observed": "kgstore.ts hardcodes phantom `documentation`, `log`, `connected_to` (absent from DB) and omits real `parent_module` + `imports`.",
+      "root_cause": "NODE_TABLES/EDGE_TABLES are a hand-maintained constant that drifted from the schema.",
+      "fix": {"files": ["kgstore.ts"], "change": "Derive the table list from INFO FOR DB at runtime instead of hardcoding it."}
+    },
+    {
+      "id": "INV-07",
+      "severity": "medium",
+      "status": "FAIL",
+      "title": "file inventory agrees between CodeGraph and kg-store",
+      "claim": "CodeGraph and SurrealDB scan the same file set.",
+      "probe": [
+        {"tool": "cgc_codegraph_overview"},
+        {"tool": "cgc_kgstore_query", "surql": "SELECT repo, count() AS n FROM file GROUP BY repo"}
+      ],
+      "expected": "matching per-repo file counts",
+      "observed": "overview total=2905 (cloud 1435, unix 387, front 915, tools 63, cloud-data 106, front-data 1). kgstore total=3843 (cloud 2148, unix 347, front 938, tools 190, cloud-data 213, front-data 7).",
+      "root_cause": "CodeGraph reads image-baked code-signatures (frozen at build); SurrealDB reads octocode's live mirror. Different scanners, different include rules, different times.",
+      "fix": {"files": ["code-signatures derive", "octocode mirror ingest"], "change": "Share one file-enumeration (same ignore rules); or rebuild code-signatures on every image build and pin both to the same commit."}
+    },
+    {
+      "id": "INV-08",
+      "severity": "low",
+      "status": "FAIL",
+      "title": "infra edge counts agree between delta and kg-store",
+      "claim": "routes_to (and peers) count the same in overview and SurrealDB.",
+      "probe": [
+        {"tool": "cgc_codegraph_overview"},
+        {"tool": "cgc_kgstore_query", "surql": "SELECT count() FROM routes_to GROUP ALL"}
+      ],
+      "expected": "equal",
+      "observed": "overview routes_to=42, kgstore=41 (off by one).",
+      "root_cause": "infra delta baked into the image is one generation behind the SurrealDB ingest.",
+      "fix": {"files": ["image build"], "change": "Rebuild build-kg-graph_delta.json in the same job that ingests SurrealDB."}
+    },
+    {
+      "id": "INV-09",
+      "severity": "medium",
+      "status": "FAIL",
+      "title": "code_depends_on name matches its semantics",
+      "claim": "code_depends_on models file->file code dependencies.",
+      "probe": [
+        {"tool": "cgc_kgstore_query", "surql": "SELECT out.name AS target, count() AS fanin FROM code_depends_on GROUP BY target ORDER BY fanin DESC LIMIT 5"},
+        {"note": "codegraph.ts comment: local import => `imports` (file->file); external import => `code_depends_on` (file->package)"}
+      ],
+      "expected": "targets are files",
+      "observed": "code_depends_on targets are `package:` nodes (external deps). File->file lives under `imports`. The name overpromises; fan-in aggregation on it is meaningless. (Also unreachable via kgstore, see INV-01.)",
+      "root_cause": "naming: the edge is really `depends_on_package`.",
+      "fix": {"files": ["codegraph.ts"], "change": "Rename to depends_on_package, or fold into a typed `depends_on` with a kind field; document that file->file = imports."}
+    },
+    {
+      "id": "INV-10",
+      "severity": "medium",
+      "status": "FAIL",
+      "title": "querying a missing table is an error, not silent zero",
+      "claim": "A query against a non-existent table surfaces the mistake.",
+      "probe": [
+        {"tool": "cgc_kgstore_query", "surql": "SELECT count() FROM this_table_does_not_exist GROUP ALL"}
+      ],
+      "expected": "an error or explicit 'unknown table' signal",
+      "observed": "returns count:0 (SurrealDB returns empty for missing tables). Bad SYNTAX errors (400) but a missing TABLE silently zeros — indistinguishable from a truly empty table. Masks INV-01 for callers.",
+      "root_cause": "SurrealDB semantics; the tool does not pre-validate the table against INFO FOR DB.",
+      "fix": {"files": ["kgstore.ts"], "change": "Before executing, extract FROM targets and warn if any is not in INFO FOR DB."}
+    },
+    {
+      "id": "INV-11",
+      "severity": "medium",
+      "status": "FAIL",
+      "title": "octocode indices are uniformly fresh",
+      "claim": "All repos' octocode indices reflect the latest commit.",
+      "probe": [
+        {"tool": "cgc_octocode_search", "args": {"repo": "cloud-infra", "query": "cloud-cgc-pub-mcp version", "mode": "code"}},
+        {"tool": "cgc_octocode_search", "args": {"repo": "cloud-unix", "query": "mcp.json.tpl server names", "mode": "code"}}
+      ],
+      "expected": "both fresh",
+      "observed": "cloud-infra index FRESH (shows cloud-cgc-pub-mcp v7.0.0, new .mcp.json names). cloud-unix index STALE (still shows cloud-cgc-mcp / diego-personal-data / unix from before the 2026-08-27 rename).",
+      "root_cause": "reindex is triggered per-repo and did not run for cloud-unix after the rename push.",
+      "fix": {"files": ["reindex pipeline"], "change": "Trigger octocode reindex on push for every indexed repo; expose last-indexed commit per repo via cgc_octocode_index."}
+    },
+    {
+      "id": "INV-12",
+      "severity": "low",
+      "status": "FAIL",
+      "title": "service version is single-sourced",
+      "claim": "The cgc service reports one version.",
+      "probe": [
+        {"tool": "cgc_octocode_search", "args": {"repo": "cloud-infra", "query": "cloud-cgc-pub-mcp version McpServer", "mode": "code"}}
+      ],
+      "expected": "package.json version == McpServer version == build.json",
+      "observed": "package.json=5.0.0, src/code/index.ts McpServer version=7.0.0.",
+      "root_cause": "version hand-edited in code, not read from package.json.",
+      "fix": {"files": ["src/code/index.ts"], "change": "Import version from package.json."}
+    },
+    {
+      "id": "INV-13",
+      "severity": "medium",
+      "status": "OPEN",
+      "title": "octocode graphrag operations return bounded output",
+      "claim": "cgc_octocode_graphrag search/get-node/get-relationships/find-path return a summary, not the raw graph.",
+      "probe": [
+        {"tool": "cgc_octocode_graphrag", "args": {"repo": "cloud-unix", "operation": "search", "query": "home-manager mcp activation"}}
+      ],
+      "expected": "a ranked, bounded result",
+      "observed": "operation=search dumped a ~4MB blob (186k lines) to a tool-results file. get-node/get-relationships/find-path NOT YET validated (need node ids).",
+      "root_cause": "unknown — needs investigation; possibly returns all matched nodes with full content.",
+      "fix": {"files": ["octocode.ts"], "change": "Cap result size / add top-k; then validate get-relationships and find-path and move this to PASS or a concrete FAIL."}
+    }
+  ],
+
+  "passing_controls": [
+    {"id": "SEC-01", "title": "kgstore read-only guard", "detail": "UPDATE/DELETE/CREATE/DEFINE refused by kgstore.ts MUTATING guard. Load-bearing: SurrealDB tables are PERMISSIONS NONE (wide open), so this app-layer guard is the only write protection. Keep it covered by a test.", "probe": {"tool": "cgc_kgstore_query", "surql": "UPDATE domain SET x=1"}},
+    {"id": "FUNC-01", "title": "cross-layer impact_analysis", "detail": "impact_analysis(c3-infra-mcp) correctly returns domain + module dependents across the infra/code boundary.", "probe": {"tool": "cgc_codegraph_impact_analysis", "args": {"target": "c3-infra-mcp"}}},
+    {"id": "FUNC-02", "title": "directed trace honesty", "detail": "trace_call_path returns 'no path (directed)' with a swap hint instead of a false path.", "probe": {"tool": "cgc_codegraph_trace_call_path", "args": {"from": "mail-mcp", "to": "cloud"}}},
+    {"id": "FUNC-03", "title": "routes_to catalog correct", "detail": "routes_to.in.fqdn -> out.name matches the live MCP hub (mcp.diegonmarcos.com/c3-infra-mcp -> c3-infra-mcp, etc).", "probe": {"tool": "cgc_kgstore_query", "surql": "SELECT in.fqdn AS domain, out.name AS service FROM routes_to WHERE out.name = 'c3-infra-mcp'"}}
+  ]
+}
