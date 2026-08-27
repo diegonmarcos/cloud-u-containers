@@ -3046,7 +3046,7 @@
       "repos": [
         "diegonmarcos/cloud-infra",
         "diegonmarcos/cloud-data",
-        "diegonmarcos/cloud-unix",
+        "diegonmarcos/cloud-infra-desktop",
         "diegonmarcos/front",
         "diegonmarcos/cloud-mykonsole-dtk"
       ],
@@ -3132,7 +3132,7 @@
         "scan_tree": true
       },
       {
-        "path": "~/git/cloud-unix",
+        "path": "~/git/cloud-infra-desktop",
         "visibility": "public",
         "scan_history": true,
         "scan_tree": true

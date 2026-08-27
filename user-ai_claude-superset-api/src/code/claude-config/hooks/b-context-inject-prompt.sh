@@ -6,7 +6,7 @@
 # + forbidden patterns to stdout — Claude Code captures as additionalContext.
 # Deliberate per-prompt repetition pressure to prevent mid-session drift.
 #
-# Source: ~/git/cloud-unix/{ba_flakes_desktop,bb_flakes_termux}/src/modules/dotfiles/claude/
+# Source: ~/git/cloud-infra-desktop/{ba_flakes_desktop,bb_flakes_termux}/src/modules/dotfiles/claude/
 # Deployed: ~/.claude/hooks/b-context-inject-prompt.sh (via home-manager)
 # Wired in: settings.json → hooks.UserPromptSubmit[0].hooks[0].command
 # ============================================================================
@@ -57,7 +57,7 @@ Before EVERY modification:
 | `docker compose up` on VM | `build.sh compose` |
 | `which cmd` | `command -v cmd` |
 | Edit `dist/` files | Edit `src/` + `build.sh build` |
-| Edit `~/.claude/CLAUDE.md` | Edit source in `~/git/cloud-unix/` flakes |
+| Edit `~/.claude/CLAUDE.md` | Edit source in `~/git/cloud-infra-desktop/` flakes |
 | `cd dir && git mv dir/...` | `git -C /abs/path mv ...` (absolute paths) |
 | `git add -f` / `git add --force` | plain `git add` — NEVER bypass gitignore. `-f` force-stages secrets, decrypted keys, sensitive/ — gitignore exists for a reason. |
 

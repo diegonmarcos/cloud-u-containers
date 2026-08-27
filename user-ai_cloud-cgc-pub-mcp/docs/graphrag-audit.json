@@ -28,8 +28,8 @@
       "store": "LanceDB vectors + LLM GraphRAG, per-repo indices",
       "source": "per-repo semantic index (reindexed independently per repo)",
       "engine_file": "src/code/tools/b-code-graph-context/octocode.ts",
-      "repo_enum": ["cloud-infra", "cloud-unix", "front", "cloud-data", "front-data", "cloud-android", "cloud-data-my-ai-memory"],
-      "note": "Uses NEW repo names (cloud-infra/cloud-unix). Its own SurrealDB mirror uses OLD names (cloud/unix). Reindex freshness is per-repo and uneven."
+      "repo_enum": ["cloud-infra", "cloud-infra-desktop", "front", "cloud-data", "front-data", "cloud-u-android", "cloud-data-my-ai-memory"],
+      "note": "Uses NEW repo names (cloud-infra/cloud-infra-desktop). Its own SurrealDB mirror uses OLD names (cloud/unix). Reindex freshness is per-repo and uneven."
     }
   },
 
@@ -80,8 +80,8 @@
         {"note": "compare against octocode.repo_enum in this file"}
       ],
       "expected": "identical repo id set across all three",
-      "observed": "file.repo & code-signatures: cloud/unix/front/tools/cloud-data/front-data. repo table: cloud, cloud_data (id underscore, name hyphen), unix. octocode enum: cloud-infra/cloud-unix/front/cloud-data/front-data/cloud-android/cloud-data-my-ai-memory. THREE vocabularies.",
-      "root_cause": "code-signatures filenames, the delta repo-node builder, and octocode's index registry were named at different times across the repo rename (cloud->cloud-infra, unix->cloud-unix).",
+      "observed": "file.repo & code-signatures: cloud/unix/front/tools/cloud-data/front-data. repo table: cloud, cloud_data (id underscore, name hyphen), unix. octocode enum: cloud-infra/cloud-infra-desktop/front/cloud-data/front-data/cloud-u-android/cloud-data-my-ai-memory. THREE vocabularies.",
+      "root_cause": "code-signatures filenames, the delta repo-node builder, and octocode's index registry were named at different times across the repo rename (cloud->cloud-infra, unix->cloud-infra-desktop).",
       "fix": {"files": ["code-signatures derive (1_cloud-configs)", "kg-graph delta builder", "octocode.ts"], "change": "Adopt the new canonical names everywhere; add an alias map at the ingest boundary so old snapshots still resolve."}
     },
     {
@@ -121,7 +121,7 @@
       "claim": "Every example query in a tool's own description runs and returns data.",
       "probe": [
         {"tool": "cgc_kgstore_query", "surql": "SELECT count() AS n FROM file WHERE repo = 'cloud-infra' GROUP ALL"},
-        {"note": "cgc_kgstore_query description ships: \"...WHERE repo='cloud-infra'...\" and \"...WHERE repo='cloud-unix'...\""}
+        {"note": "cgc_kgstore_query description ships: \"...WHERE repo='cloud-infra'...\" and \"...WHERE repo='cloud-infra-desktop'...\""}
       ],
       "expected": "n > 0",
       "observed": "empty result — real vocab is repo='cloud' / 'unix', so both documented examples return zero rows.",
@@ -210,11 +210,11 @@
       "claim": "All repos' octocode indices reflect the latest commit.",
       "probe": [
         {"tool": "cgc_octocode_search", "args": {"repo": "cloud-infra", "query": "cloud-cgc-pub-mcp version", "mode": "code"}},
-        {"tool": "cgc_octocode_search", "args": {"repo": "cloud-unix", "query": "mcp.json.tpl server names", "mode": "code"}}
+        {"tool": "cgc_octocode_search", "args": {"repo": "cloud-infra-desktop", "query": "mcp.json.tpl server names", "mode": "code"}}
       ],
       "expected": "both fresh",
-      "observed": "cloud-infra index FRESH (shows cloud-cgc-pub-mcp v7.0.0, new .mcp.json names). cloud-unix index STALE (still shows cloud-cgc-mcp / diego-personal-data / unix from before the 2026-08-27 rename).",
-      "root_cause": "reindex is triggered per-repo and did not run for cloud-unix after the rename push.",
+      "observed": "cloud-infra index FRESH (shows cloud-cgc-pub-mcp v7.0.0, new .mcp.json names). cloud-infra-desktop index STALE (still shows cloud-cgc-mcp / diego-personal-data / unix from before the 2026-08-27 rename).",
+      "root_cause": "reindex is triggered per-repo and did not run for cloud-infra-desktop after the rename push.",
       "fix": {"files": ["reindex pipeline"], "change": "Trigger octocode reindex on push for every indexed repo; expose last-indexed commit per repo via cgc_octocode_index."}
     },
     {
@@ -238,7 +238,7 @@
       "title": "octocode graphrag operations return bounded output",
       "claim": "cgc_octocode_graphrag search/get-node/get-relationships/find-path return a summary, not the raw graph.",
       "probe": [
-        {"tool": "cgc_octocode_graphrag", "args": {"repo": "cloud-unix", "operation": "search", "query": "home-manager mcp activation"}}
+        {"tool": "cgc_octocode_graphrag", "args": {"repo": "cloud-infra-desktop", "operation": "search", "query": "home-manager mcp activation"}}
       ],
       "expected": "a ranked, bounded result",
       "observed": "operation=search dumped a ~4MB blob (186k lines). operation=overview VALIDATED 2026-08-27: bounded ~20-line summary (cloud-infra: 1222 nodes / 35111 rels). So overview is safe; `search` is the only uncapped op.",

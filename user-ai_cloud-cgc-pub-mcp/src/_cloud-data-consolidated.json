@@ -2455,7 +2455,7 @@
             "runner_name": "oci-apps-arm64"
           },
           {
-            "repo_url": "https://github.com/diegonmarcos/cloud-unix",
+            "repo_url": "https://github.com/diegonmarcos/cloud-infra-desktop",
             "runner_name": "oci-apps-arm64-unix"
           },
           {
@@ -2752,8 +2752,8 @@
           "cloud": {
             "upstream": "https://github.com/diegonmarcos/cloud.git"
           },
-          "cloud-unix": {
-            "upstream": "https://github.com/diegonmarcos/cloud-unix.git"
+          "cloud-infra-desktop": {
+            "upstream": "https://github.com/diegonmarcos/cloud-infra-desktop.git"
           },
           "diegonmarcos": {
             "upstream": "https://github.com/diegonmarcos/diegonmarcos.git"
@@ -2788,8 +2788,8 @@
           "cloud-mykonsole-dtk": {
             "upstream": "https://github.com/diegonmarcos/cloud-mykonsole-dtk.git"
           },
-          "cloud-android": {
-            "upstream": "https://github.com/diegonmarcos/cloud-android.git"
+          "cloud-u-android": {
+            "upstream": "https://github.com/diegonmarcos/cloud-u-android.git"
           },
           "cloud-data-lfs": {
             "upstream": "https://github.com/diegonmarcos/cloud-data-lfs.git",
@@ -3710,14 +3710,14 @@
       "enabled": true,
       "domain": "analytics.diegonmarcos.com/matomo",
       "flake": "infra-obs_matomo",
-      "port": 8084,
+      "port": 8080,
       "dns": "matomo.app",
-      "upstream": "10.0.0.6:8084",
+      "upstream": "10.0.0.6:8080",
       "containers": {
         "app": {
           "container_name": "matomo-hybrid",
           "image": null,
-          "port": 8084,
+          "port": 8080,
           "extra_ports": [],
           "port_env": null,
           "dns": "matomo.app",
@@ -3762,7 +3762,7 @@
         "matomo-hybrid"
       ],
       "all_ports": [
-        "8084"
+        "8080"
       ],
       "all_dns": [
         "matomo.app"
@@ -3780,32 +3780,35 @@
           "base_path": "/matomo",
           "auth": "two_factor",
           "paths": {
-            "/matomo.js": {
+            "/matomo/matomo.js": {
               "auth": "public"
             },
-            "/matomo.php": {
+            "/matomo/matomo.php": {
               "auth": "public"
             },
-            "/piwik.js": {
+            "/matomo/piwik.js": {
               "auth": "public"
             },
-            "/piwik.php": {
+            "/matomo/piwik.php": {
               "auth": "public"
             },
-            "/collect.php": {
+            "/matomo/collect.php": {
               "auth": "public"
             },
-            "/api.php": {
+            "/matomo/api.php": {
               "auth": "public"
             },
-            "/track.php": {
+            "/matomo/track.php": {
               "auth": "public"
             },
-            "/js/*": {
+            "/matomo/js/*": {
               "auth": "public"
             }
           }
         }
+      },
+      "declared_ports": {
+        "app": 8080
       },
       "health": {
         "path": "/"
@@ -4500,10 +4503,10 @@
           "base_path": "/umami",
           "auth": "two_factor",
           "paths": {
-            "/script.js": {
+            "/umami/script.js": {
               "auth": "public"
             },
-            "/api/send": {
+            "/umami/api/send": {
               "auth": "public"
             }
           },
@@ -5692,7 +5695,7 @@
             "use_llm": false,
             "llm_model": "openrouter:openai/gpt-4o-mini",
             "schedule": "0 4,16 * * *",
-            "_budget_comment": "repo_timeout_min is a CEILING, not a reservation (corrected 2026-08-21). The gate clamps each repo's slice to min(ceiling, max_minutes - elapsed), so worst-case wall time is max_minutes ALONE and the invariant is simply max_minutes <= timeout-minutes (330) minus slack for the final propagate. The earlier 'max + repo <= timeout' rule described the pre-reserve gate; kept afterwards it deadlocked admission — a FIXED reserve must be big enough for the slowest repo (cloud-unix ~200m+ at measured throughput) yet small enough to still admit a repo late in a run, and both cannot hold, so the giants were never admitted at all while the small repos alone consumed ~75m.",
+            "_budget_comment": "repo_timeout_min is a CEILING, not a reservation (corrected 2026-08-21). The gate clamps each repo's slice to min(ceiling, max_minutes - elapsed), so worst-case wall time is max_minutes ALONE and the invariant is simply max_minutes <= timeout-minutes (330) minus slack for the final propagate. The earlier 'max + repo <= timeout' rule described the pre-reserve gate; kept afterwards it deadlocked admission — a FIXED reserve must be big enough for the slowest repo (cloud-infra-desktop ~200m+ at measured throughput) yet small enough to still admit a repo late in a run, and both cannot hold, so the giants were never admitted at all while the small repos alone consumed ~75m.",
             "max_minutes": 300,
             "repo_timeout_min": 240,
             "code_embedding_model": "fastembed:nomic-ai/nomic-embed-text-v1.5",
@@ -5709,11 +5712,11 @@
           },
           "index_repos": [
             "cloud-infra",
-            "cloud-unix",
+            "cloud-infra-desktop",
             "front",
             "cloud-data",
             "front-data",
-            "cloud-android",
+            "cloud-u-android",
             "cloud-data-my-ai-memory"
           ],
           "_private_repos_comment": "Repos in index_repos whose GitHub source is PRIVATE. Their DBs must never land in the volume the PUBLIC MCP mounts. cloud-cgc-db-restore-all.sh filters these out unless CGC_INCLUDE_PRIVATE=1, which cloud-cgc-pvt-mcp will set together with its own CGC_DB_TARGET_VOLUME. Keep in sync with repo_map: the value is the local_name (the index_repos entry), not the GitHub remote name.",
@@ -5724,11 +5727,11 @@
           "_repo_map_comment": "GENERATED by 1_cloud-configs/src/derive/derive-repo-map.ts from cloud/repos.json, scoped to index_repos. DO NOT EDIT — add the repo to the registry and to index_repos instead.",
           "repo_map": {
             "cloud-infra": "cloud-infra",
-            "cloud-unix": "cloud-unix",
+            "cloud-infra-desktop": "cloud-infra-desktop",
             "front": "diegonmarcos.github.io",
             "cloud-data": "cloud-data",
             "front-data": "front-data",
-            "cloud-android": "cloud-android",
+            "cloud-u-android": "cloud-u-android",
             "cloud-data-my-ai-memory": "cloud-data-my-ai-memory"
           },
           "_graphrag_skip_comment": "Subset of index_repos (data-driven, no hardcoded names in the script) whose GraphRAG LLM relationship pass is skipped entirely — pure prose/text corpora have no code semantics to relate, so the pass is zero graph nodes for real per-node LLM cost. Structural/FastEmbed indexing (the semantic phase, USE_LLM=false) still runs normally; only the graphrag phase (USE_LLM=true) skips these repos. Honored by cloud-cgc-db-update.sh's per-repo loop.",
@@ -9224,10 +9227,21 @@
         "git": 55
       },
       "github_repos": 28,
-      "github_indexed": 7,
+      "github_indexed": 5,
       "github_mirrored": 27
     },
-    "_dangling_declarations": [],
+    "_dangling_declarations": [
+      {
+        "kind": "octocode-index",
+        "repo": "cloud-infra-desktop",
+        "declared_by": "cloud-cgc-pub-mcp"
+      },
+      {
+        "kind": "octocode-index",
+        "repo": "cloud-u-android",
+        "declared_by": "cloud-cgc-pub-mcp"
+      }
+    ],
     "entries": [
       {
         "id": "gitea/app#sqlite",
@@ -9928,22 +9942,22 @@
         }
       },
       {
-        "id": "git#gh/cloud-unix",
-        "service": "cloud-cgc-pub-mcp",
+        "id": "git#gh/cloud-infra-desktop",
+        "service": "gitea",
         "container": null,
         "engine": "git",
         "kind": "git-remote",
         "host": "github",
-        "repo": "diegonmarcos/cloud-unix",
+        "repo": "diegonmarcos/cloud-infra-desktop",
         "visibility": "public",
         "fork": false,
         "pushed_at": "2026-08-23T17:57:29Z",
-        "indexed": true,
-        "local_dir": "cloud-unix",
+        "indexed": false,
+        "local_dir": null,
         "mirrored": true,
         "persistence": {
           "type": "git",
-          "ref": "https://github.com/diegonmarcos/cloud-unix.git",
+          "ref": "https://github.com/diegonmarcos/cloud-infra-desktop.git",
           "mount": null
         },
         "vm": null,
@@ -9953,17 +9967,17 @@
         }
       },
       {
-        "id": "git#gitea/cloud-unix",
+        "id": "git#gitea/cloud-infra-desktop",
         "service": "gitea",
         "container": null,
         "engine": "git",
         "kind": "git-remote",
         "host": "gitea",
-        "repo": "cloud-unix",
-        "upstream": "https://github.com/diegonmarcos/cloud-unix.git",
+        "repo": "cloud-infra-desktop",
+        "upstream": "https://github.com/diegonmarcos/cloud-infra-desktop.git",
         "persistence": {
           "type": "git",
-          "ref": "https://github.com/diegonmarcos/cloud-unix.git",
+          "ref": "https://github.com/diegonmarcos/cloud-infra-desktop.git",
           "mount": null
         },
         "vm": "oci-A1-f_0",
@@ -10423,22 +10437,22 @@
         }
       },
       {
-        "id": "git#gh/cloud-android",
-        "service": "cloud-cgc-pub-mcp",
+        "id": "git#gh/cloud-u-android",
+        "service": "gitea",
         "container": null,
         "engine": "git",
         "kind": "git-remote",
         "host": "github",
-        "repo": "diegonmarcos/cloud-android",
+        "repo": "diegonmarcos/cloud-u-android",
         "visibility": "public",
         "fork": false,
         "pushed_at": "2026-08-18T12:34:05Z",
-        "indexed": true,
-        "local_dir": "cloud-android",
+        "indexed": false,
+        "local_dir": null,
         "mirrored": true,
         "persistence": {
           "type": "git",
-          "ref": "https://github.com/diegonmarcos/cloud-android.git",
+          "ref": "https://github.com/diegonmarcos/cloud-u-android.git",
           "mount": null
         },
         "vm": null,
@@ -10448,17 +10462,17 @@
         }
       },
       {
-        "id": "git#gitea/cloud-android",
+        "id": "git#gitea/cloud-u-android",
         "service": "gitea",
         "container": null,
         "engine": "git",
         "kind": "git-remote",
         "host": "gitea",
-        "repo": "cloud-android",
-        "upstream": "https://github.com/diegonmarcos/cloud-android.git",
+        "repo": "cloud-u-android",
+        "upstream": "https://github.com/diegonmarcos/cloud-u-android.git",
         "persistence": {
           "type": "git",
-          "ref": "https://github.com/diegonmarcos/cloud-android.git",
+          "ref": "https://github.com/diegonmarcos/cloud-u-android.git",
           "mount": null
         },
         "vm": "oci-A1-f_0",

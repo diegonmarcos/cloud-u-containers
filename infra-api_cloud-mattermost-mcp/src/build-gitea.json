@@ -1634,8 +1634,8 @@
       "diegonmarcos.github.io": {
         "upstream": "https://github.com/diegonmarcos/diegonmarcos.github.io.git"
       },
-      "cloud-android": {
-        "upstream": "https://github.com/diegonmarcos/cloud-android.git"
+      "cloud-u-android": {
+        "upstream": "https://github.com/diegonmarcos/cloud-u-android.git"
       },
       "cloud-master": {
         "upstream": "https://github.com/diegonmarcos/cloud-infra.git"
@@ -1670,7 +1670,7 @@
         "upstream": "https://github.com/diegonmarcos/cloud-mykonsole-dtk.git"
       },
       "unix": {
-        "upstream": "https://github.com/diegonmarcos/cloud-unix.git"
+        "upstream": "https://github.com/diegonmarcos/cloud-infra-desktop.git"
       },
       "diegonmarcos": {
         "upstream": "https://github.com/diegonmarcos/diegonmarcos.git"

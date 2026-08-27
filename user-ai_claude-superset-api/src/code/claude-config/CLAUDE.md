@@ -57,7 +57,7 @@
 # SECTION A: UNIX (NixOS & System Configuration)
 # ══════════════════════════════════════════════════════════════════════════════
 
-> **Full documentation**: See `~/git/cloud-unix/README.md`
+> **Full documentation**: See `~/git/cloud-infra-desktop/README.md`
 
 ## A.1 System Overview
 
@@ -73,18 +73,18 @@
 
 | Resource | Path |
 |----------|------|
-| **Unix Repo** | `/home/diego/git/cloud-unix` |
+| **Unix Repo** | `/home/diego/git/cloud-infra-desktop` |
 | **Surface Host Flake** | `unix/aa_nixos-surface_host/` |
 | **Home-Manager Desktop** | `unix/ba_flakes_desktop/` |
 | **Home-Manager Termux** | `unix/bb_flakes_termux/` |
 
 ```bash
 # Rebuild NixOS system
-~/git/cloud-unix/aa_nixos-surface_host/build.sh    # Cmds: s|switch  b|boot  t|test  c|check  u|update  d|diff  i|install  build {raw|iso|qcow|vm}  burn  (no arg = TUI)
+~/git/cloud-infra-desktop/aa_nixos-surface_host/build.sh    # Cmds: s|switch  b|boot  t|test  c|check  u|update  d|diff  i|install  build {raw|iso|qcow|vm}  burn  (no arg = TUI)
 
 # Rebuild home-manager
-~/git/cloud-unix/ba_flakes_desktop/build.sh        # Desktop
-~/git/cloud-unix/bb_flakes_termux/build.sh         # Termux
+~/git/cloud-infra-desktop/ba_flakes_desktop/build.sh        # Desktop
+~/git/cloud-infra-desktop/bb_flakes_termux/build.sh         # Termux
 ```
 
 **Host Configs**: `surface-plasma` (all 8 profiles + Plasma 6), `surface-gnome`, `server`, `cli`, `minimal`.
@@ -358,8 +358,8 @@ _mtm.push({'mtm.startTime': (new Date().getTime()), 'event': 'mtm.Start'});
 ║   NEVER edit deployed/output files directly (e.g. ~/.claude/,    ║
 ║   dist/, ~/). ALWAYS find and edit the SOURCE in the git repo    ║
 ║   flake. This file (CLAUDE.md) is deployed output — its source:  ║
-║     ~/git/cloud-unix/ba_flakes_desktop/src/modules/dotfiles/claude/    ║
-║     ~/git/cloud-unix/bb_flakes_termux/src/modules/dotfiles/claude/     ║
+║     ~/git/cloud-infra-desktop/ba_flakes_desktop/src/modules/dotfiles/claude/    ║
+║     ~/git/cloud-infra-desktop/bb_flakes_termux/src/modules/dotfiles/claude/     ║
 ║                                                                  ║
 ╚══════════════════════════════════════════════════════════════════╝
 ```
@@ -455,7 +455,7 @@ This ensures consistent context loading and access to CLAUDE.md instructions.
 | `docker compose up` on VM | `build.sh compose` |
 | `which cmd` | `command -v cmd` |
 | Edit `dist/` files | Edit `src/` + `build.sh build` |
-| Edit `~/.claude/CLAUDE.md` | Edit source in `~/git/cloud-unix/` flakes |
+| Edit `~/.claude/CLAUDE.md` | Edit source in `~/git/cloud-infra-desktop/` flakes |
 | `cd dir && git mv dir/...` | `git -C /abs/path mv ...` (absolute paths) |
 | **`git add -f` / `git add --force`** | **plain `git add` — NEVER bypass gitignore. `-f` force-stages secrets, decrypted keys, sensitive/ — gitignore exists for a reason.** |
 
@@ -494,7 +494,7 @@ rpm -qR <package>           # RPM-based
 | Git Root | `/home/diego/git` |
 | Front-end | `/home/diego/git/front` |
 | Cloud Backend | `/home/diego/git/cloud-infra` |
-| Unix/NixOS | `/home/diego/git/cloud-unix` |
+| Unix/NixOS | `/home/diego/git/cloud-infra-desktop` |
 | Security Vault | `/home/diego/git/cloud-vault` |
 
 ## F.2 Domains

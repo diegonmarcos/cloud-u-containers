@@ -1,9 +1,9 @@
 {
   "_warning": "DO NOT EDIT — AUTO-GENERATED FILE. Source of truth lives in a_solutions/*/build.json + config.json + b_infra/*/build.json. Edits here are overwritten on every `bash 9_others/build.sh all`.",
   "_meta": {
-    "description": "flakes_termux external consumer build (Home-manager Termux flake (~/git/cloud-unix/bb_flakes_termux). Activates on Android via nix-on-droid; subset of desktop (no WG, no docker).)",
+    "description": "flakes_termux external consumer build (Home-manager Termux flake (~/git/cloud-infra-desktop/bb_flakes_termux). Activates on Android via nix-on-droid; subset of desktop (no WG, no docker).)",
     "format_version": 1,
-    "consumer_path": "~/git/cloud-unix/bb_flakes_termux",
+    "consumer_path": "~/git/cloud-infra-desktop/bb_flakes_termux",
     "replaces": [
       "cloud-data-deps.json (npm dependencies merged into ~/.node_modules)",
       "cloud-data-topology.json (CLAUDE.md generation)"
@@ -2122,7 +2122,7 @@
             "runner_name": "oci-apps-arm64"
           },
           {
-            "repo_url": "https://github.com/diegonmarcos/cloud-unix",
+            "repo_url": "https://github.com/diegonmarcos/cloud-infra-desktop",
             "runner_name": "oci-apps-arm64-unix"
           }
         ],
@@ -2409,8 +2409,8 @@
           "diegonmarcos.github.io": {
             "upstream": "https://github.com/diegonmarcos/diegonmarcos.github.io.git"
           },
-          "cloud-android": {
-            "upstream": "https://github.com/diegonmarcos/cloud-android.git"
+          "cloud-u-android": {
+            "upstream": "https://github.com/diegonmarcos/cloud-u-android.git"
           },
           "cloud-master": {
             "upstream": "https://github.com/diegonmarcos/cloud-infra.git"
@@ -2445,7 +2445,7 @@
             "upstream": "https://github.com/diegonmarcos/cloud-mykonsole-dtk.git"
           },
           "unix": {
-            "upstream": "https://github.com/diegonmarcos/cloud-unix.git"
+            "upstream": "https://github.com/diegonmarcos/cloud-infra-desktop.git"
           },
           "diegonmarcos": {
             "upstream": "https://github.com/diegonmarcos/diegonmarcos.git"
