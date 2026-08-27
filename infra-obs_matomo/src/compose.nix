@@ -20,7 +20,14 @@ in
       # External port → internal 8080 (receiver-nginx default_server).
       # receiver-nginx handles public tracker endpoints and proxies admin
       # traffic to matomo-nginx on 8081 internally.
-      ports = [ "${svc.matomo.ip}:${toString app.port}:8080" ];
+      # host networking, NOT published ports. The docker daemon runs with
+      # iptables = false (vm-pilot container/daemon-firewall.nix), so -p
+      # publishing installs no DNAT rule: dockerd holds the socket and never
+      # forwards, so the port accepts TCP and then hangs. Every working
+      # service in the fleet binds the host stack directly.
+      # receiver-nginx listens on 8080, so that is now the HOST port and
+      # build.json ports.app must stay 8080 or caddy proxies a dead port.
+      network_mode = "host";
       volumes = [
         "matomo_matomo_data:/var/www/html"
         "matomo_matomo_db:/var/lib/mysql"
