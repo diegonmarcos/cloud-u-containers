@@ -127,8 +127,9 @@ function loadGraph(): Graph {
 }
 
 // ── Query helpers ────────────────────────────────────────────────────────────
-// Separators drift across pipelines — node keys read `oci_apps`, callers say `oci-apps`.
-const nsep = (s: string) => s.toLowerCase().replace(/[-_]/g, "");
+// Separators drift across pipelines: keys read `oci_apps`, callers say `oci-apps`
+// or paste the fqdn `mcp.diegonmarcos.com/...`. Fold -_. so all three forms match.
+const nsep = (s: string) => s.toLowerCase().replace(/[-_.]/g, "");
 // A bare name means the entity, not a file/symbol that merely mentions it in a path.
 const TYPE_RANK: Record<string, number> = { vm: 0, service: 1, subsystem: 2, repo: 3, module: 3, package: 4, file: 5, symbol: 6 };
 const nrank = (n: GNode): number => TYPE_RANK[n.table] ?? 4;
