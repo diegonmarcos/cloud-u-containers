@@ -26,10 +26,15 @@ in
     umami = {
       image = binariesImage;
       container_name = app.container_name;
-      ports = [ "${svc.umami.ip}:${appPort}:${appPort}" ];
+      # host networking, NOT published ports. The docker daemon runs with
+      # iptables = false (vm-pilot container/daemon-firewall.nix), so -p
+      # publishing installs no DNAT rule: dockerd holds the socket and
+      # never forwards, so the port accepts TCP and then hangs forever.
+      # Every working service in the fleet binds the host stack directly.
+      network_mode = "host";
       env_file = [ ".secrets" ];
       environment = {
-        DATABASE_URL      = "postgresql://${db.db_user}:\${DB_PASSWORD}@${db.container_name}:${dbPort}/${db.db_name}";
+        DATABASE_URL      = "postgresql://${db.db_user}:\${DB_PASSWORD}@localhost:${dbPort}/${db.db_name}";  # localhost, not the container name: host networking has no docker DNS
         DATABASE_TYPE     = "postgresql";
         APP_SECRET        = "\${APP_SECRET}";
         PORT              = appPort;
@@ -53,7 +58,10 @@ in
     "${db.container_name}" = {
       image          = db.image;
       container_name = db.container_name;
-      expose         = [ dbPort ];
+      # host networking too: the app resolves it as localhost:${dbPort}, and
+      # `expose` is meaningless on the host stack. Postgres is started with
+      # -p ${dbPort} (below) so it does not collide with any system postgres.
+      network_mode   = "host";
       environment = {
         POSTGRES_DB       = db.db_name;
         POSTGRES_USER     = db.db_user;

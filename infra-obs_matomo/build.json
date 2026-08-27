@@ -84,7 +84,7 @@
     "app": {
       "container_name": "matomo-hybrid",
       "image": null,
-      "port": 8084,
+      "port": 8080,
       "extra_ports": [],
       "port_env": null,
       "dns": "matomo.app",
@@ -131,5 +131,8 @@
     "display_name": "Matomo Reporting API",
     "description": "Web analytics platform with Matomo Reporting API for tracking and admin operations.",
     "auth": "api-key"
+  },
+  "ports": {
+    "app": 8080
   }
 }
