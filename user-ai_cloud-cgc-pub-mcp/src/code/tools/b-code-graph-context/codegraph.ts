@@ -127,12 +127,25 @@ function loadGraph(): Graph {
 }
 
 // ── Query helpers ────────────────────────────────────────────────────────────
+// Separators drift across pipelines — node keys read `oci_apps`, callers say `oci-apps`.
+const nsep = (s: string) => s.toLowerCase().replace(/[-_]/g, "");
+// A bare name means the entity, not a file/symbol that merely mentions it in a path.
+const TYPE_RANK: Record<string, number> = { vm: 0, service: 1, subsystem: 2, repo: 3, module: 3, package: 4, file: 5, symbol: 6 };
+const nrank = (n: GNode): number => TYPE_RANK[n.table] ?? 4;
+
 function resolveTarget(g: Graph, t: string): GNode[] {
   if (g.nodes.has(t)) return [g.nodes.get(t)!];
-  const low = t.toLowerCase();
-  const exact = [...g.nodes.values()].filter((n) => n.id.toLowerCase() === low || String(n.properties.name ?? "").toLowerCase() === low || String(n.properties.path ?? "").toLowerCase().endsWith(low));
-  if (exact.length) return exact;
-  return [...g.nodes.values()].filter((n) => n.key.toLowerCase().includes(low) || String(n.properties.name ?? "").toLowerCase().includes(low) || String(n.properties.path ?? "").toLowerCase().includes(low)).slice(0, 15);
+  const low = t.toLowerCase(), sep = nsep(t);
+  const nodes = [...g.nodes.values()];
+  // exact identity on key/id/name (separator-insensitive), entities before files
+  const exact = nodes.filter((n) => nsep(n.key) === sep || nsep(n.id) === sep || nsep(String(n.properties.name ?? "")) === sep);
+  if (exact.length) return exact.sort((a, b) => nrank(a) - nrank(b));
+  // then an exact path suffix (how file nodes are addressed)
+  const byPath = nodes.filter((n) => String(n.properties.path ?? "").toLowerCase().endsWith(low));
+  if (byPath.length) return byPath;
+  // substring fallback, ranked so a matched entity wins over an incidental path hit
+  return nodes.filter((n) => nsep(n.key).includes(sep) || nsep(String(n.properties.name ?? "")).includes(sep) || String(n.properties.path ?? "").toLowerCase().includes(low))
+    .sort((a, b) => nrank(a) - nrank(b)).slice(0, 15);
 }
 const nlabel = (n: GNode): string => `${n.key}${n.properties.name ? ` (${n.properties.name})` : ""}`;
 const txt = (s: string) => ({ content: [{ type: "text" as const, text: s }] });
