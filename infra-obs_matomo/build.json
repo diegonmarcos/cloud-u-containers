@@ -39,28 +39,28 @@
       "base_path": "/matomo",
       "auth": "two_factor",
       "paths": {
-        "/matomo.js": {
+        "/matomo/matomo.js": {
           "auth": "public"
         },
-        "/matomo.php": {
+        "/matomo/matomo.php": {
           "auth": "public"
         },
-        "/piwik.js": {
+        "/matomo/piwik.js": {
           "auth": "public"
         },
-        "/piwik.php": {
+        "/matomo/piwik.php": {
           "auth": "public"
         },
-        "/collect.php": {
+        "/matomo/collect.php": {
           "auth": "public"
         },
-        "/api.php": {
+        "/matomo/api.php": {
           "auth": "public"
         },
-        "/track.php": {
+        "/matomo/track.php": {
           "auth": "public"
         },
-        "/js/*": {
+        "/matomo/js/*": {
           "auth": "public"
         }
       }

@@ -54,10 +54,10 @@
       "base_path": "/umami",
       "auth": "two_factor",
       "paths": {
-        "/script.js": {
+        "/umami/script.js": {
           "auth": "public"
         },
-        "/api/send": {
+        "/umami/api/send": {
           "auth": "public"
         }
       }
