@@ -1,9 +1,9 @@
 {
   "_warning": "DO NOT EDIT — AUTO-GENERATED FILE. Source of truth lives in a_solutions/*/build.json + config.json + b_infra/*/build.json. Edits here are overwritten on every `bash 9_others/build.sh all`.",
   "_meta": {
-    "description": "builders external consumer build (Container-builder images (~/git/cloud-unix/cb_containers-builders). Builds the cloud-builder-x docker image used by GHA + local ship runs.)",
+    "description": "builders external consumer build (Container-builder images (~/git/cloud-infra-desktop/cb_containers-builders). Builds the cloud-builder-x docker image used by GHA + local ship runs.)",
     "format_version": 1,
-    "consumer_path": "~/git/cloud-unix/cb_containers-builders",
+    "consumer_path": "~/git/cloud-infra-desktop/cb_containers-builders",
     "replaces": [
       "cloud-data-gha-config.json (vm wg_ip/host/user lookup + service matrix for ship-services.sh)"
     ],

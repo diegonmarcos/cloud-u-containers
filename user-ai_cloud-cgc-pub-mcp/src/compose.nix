@@ -317,7 +317,7 @@ in
     #     docker compose --profile reindex run --rm cloud-cgc-pub-mcp-reindex
     #   INCREMENTAL (git-aware, only changed files):
     #     docker compose --profile index run --rm cloud-cgc-pub-mcp-index
-    #   Scope one repo: append `-e OCTOCODE_REPOS=cloud-android`. (reindex.sh checks even this
+    #   Scope one repo: append `-e OCTOCODE_REPOS=cloud-u-android`. (reindex.sh checks even this
     #   override against SYNC_EXCLUDE above — a denied repo is refused, not indexed.)
     cloud-cgc-pub-mcp-reindex = octocodeJob // {
       container_name = "cloud-cgc-pub-mcp-reindex";

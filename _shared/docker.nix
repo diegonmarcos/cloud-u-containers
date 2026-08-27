@@ -186,7 +186,7 @@ in {
     # memLimit and cpuLimit are still ACCEPTED so the ~175 call sites that pass
     # them keep evaluating, and are no longer EMITTED. System pressure is not
     # this file's job any more: it belongs to my-watchdog, which reads
-    # /proc/pressure and acts on PSI (cloud-unix/da_watchdog/configs/
+    # /proc/pressure and acts on PSI (cloud-u-linux/da_watchdog/configs/
     # watchdog-policy.json).
     #
     # Why the memory ceiling had to go. deploy.resources.limits.memory becomes

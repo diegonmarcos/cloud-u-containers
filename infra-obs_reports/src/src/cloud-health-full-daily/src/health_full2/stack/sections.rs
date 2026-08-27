@@ -686,7 +686,7 @@ fn build_framework_paths(ctx: &Context) -> String {
         "    Service engine       ~/git/cloud-infra/a_solutions/_engine.sh".into(),
         "    HM engine            ~/git/cloud-infra/1_cicd/src/scripts/cloud-ship-nix-homemanager-engine.sh".into(),
         "    Front engine         ~/git/front/1.ops/build_main.sh".into(),
-        "    NixOS host           ~/git/cloud-unix/aa_nixos-surface_host/build.sh".into(),
+        "    NixOS host           ~/git/cloud-infra-desktop/aa_nixos-surface_host/build.sh".into(),
         String::new(),
         "  HOME-MANAGER".into(),
     ];

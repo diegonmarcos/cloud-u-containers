@@ -29,7 +29,7 @@ They share no code-level edge tables. `codegraph_overview` describes *only* Code
                                         │
    octocode reindex ─(live)─▶ SurrealDB kg-store   file + sibling_module + parent_module + infra
                                         │           (NO symbol/defines/code_depends_on)
-   per-repo vectors ────────▶ octocode GraphRAG   (new repo names: cloud-infra/cloud-unix/…)
+   per-repo vectors ────────▶ octocode GraphRAG   (new repo names: cloud-infra/cloud-infra-desktop/…)
 ```
 
 ## 2. The divergence, quantified
@@ -71,7 +71,7 @@ Ranked by severity:
 | INV-07 | 🟡 med | file inventory 2,905 vs 3,843 (per-repo wildly off) | baked scan vs live scan | share one enumeration, pin to one commit |
 | INV-09 | 🟡 med | `code_depends_on` is really file→**package**, not file→file | misnaming | rename `depends_on_package` |
 | INV-10 | 🟡 med | missing table → silent `count:0`, not an error | SurrealDB semantics | validate FROM targets vs `INFO FOR DB` |
-| INV-11 | 🟡 med | octocode index freshness **uneven** (cloud-infra fresh, cloud-unix stale) | per-repo reindex not fired on rename | reindex-on-push for all repos |
+| INV-11 | 🟡 med | octocode index freshness **uneven** (cloud-infra fresh, cloud-infra-desktop stale) | per-repo reindex not fired on rename | reindex-on-push for all repos |
 | INV-14 | ✅ fixed | `trace_call_path` resolved bare names to the wrong node (`oci-apps`→a `build.sh` file, not `vm:oci_apps`; fqdn→nothing) | `resolveTarget` substring-matched with no separator-fold or node-type rank | **shipped 2026-08-27**: `resolveTarget` folds `-_.` + ranks by node-type → `oci-apps`→`vm:oci_apps`, fqdn→`domain:…`, `Q-12` PASS |
 | INV-08 | 🟢 low | `routes_to` 42 vs 41 | baked delta one gen behind | rebuild delta in the ingest job |
 | INV-12 | 🟢 low | version split: package.json 5.0.0 vs code 7.0.0 | hand-edited | import version from package.json |
@@ -87,7 +87,7 @@ catalog matching the live hub.
 Everything above collapses into two engine problems:
 
 1. **One vocabulary.** (INV-02/03/05) Pick the canonical repo names
-   (`cloud-infra`, `cloud-unix`, …), use them in code-signatures filenames, the
+   (`cloud-infra`, `cloud-infra-desktop`, …), use them in code-signatures filenames, the
    delta repo-node builder, and octocode — with an alias map so old baked snapshots
    still resolve. This alone fixes the dangling repos and the broken tool examples.
 

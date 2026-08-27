@@ -392,7 +392,7 @@ export function registerDeliveryTools(server: McpServer) {
     "devops.secrets.list",
     "List GitHub Actions secret NAMES for a repo (values are never retrievable — GitHub stores them write-only).",
     {
-      repo: z.string().describe("owner/repo, e.g. diegonmarcos/cloud-unix"),
+      repo: z.string().describe("owner/repo, e.g. diegonmarcos/cloud-infra-desktop"),
     },
     async ({ repo }) => {
       for (const part of repo.split("/")) validatePath(part);
@@ -415,7 +415,7 @@ export function registerDeliveryTools(server: McpServer) {
     "devops.secrets.set",
     "Create or update a GitHub Actions secret. Overwrites silently if the name already exists. The value is passed via stdin, never argv, so it cannot leak through the process table.",
     {
-      repo: z.string().describe("owner/repo, e.g. diegonmarcos/cloud-unix"),
+      repo: z.string().describe("owner/repo, e.g. diegonmarcos/cloud-infra-desktop"),
       name: z.string().describe("Secret name, e.g. BITWARDEN_PACKAGES_TOKEN"),
       value: z.string().describe("Secret value — written to stdin, not logged"),
     },
@@ -448,7 +448,7 @@ export function registerDeliveryTools(server: McpServer) {
     "devops.secrets.delete",
     "Delete a GitHub Actions secret. Irreversible — any workflow reading it starts resolving it to the empty string on the next run.",
     {
-      repo: z.string().describe("owner/repo, e.g. diegonmarcos/cloud-unix"),
+      repo: z.string().describe("owner/repo, e.g. diegonmarcos/cloud-infra-desktop"),
       name: z.string().describe("Secret name to delete"),
     },
     async ({ repo, name }) => {

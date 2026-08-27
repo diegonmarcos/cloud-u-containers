@@ -16,8 +16,8 @@ Model Context Protocol (MCP) allows Claude Code to call external tools beyond it
 
 | Environment | Source (EDIT THIS) | Deployed to |
 |-------------|-------------------|-------------|
-| **Desktop** | `~/git/cloud-unix/ba_flakes_desktop/src/modules/dotfiles/claude/mcp.json` | `~/.mcp.json` |
-| **Termux** | `~/git/cloud-unix/bb_flakes_termux/src/modules/dotfiles/claude/mcp.json` | `~/.mcp.json` |
+| **Desktop** | `~/git/cloud-infra-desktop/ba_flakes_desktop/src/modules/dotfiles/claude/mcp.json` | `~/.mcp.json` |
+| **Termux** | `~/git/cloud-infra-desktop/bb_flakes_termux/src/modules/dotfiles/claude/mcp.json` | `~/.mcp.json` |
 
 ### Current config (Termux)
 
