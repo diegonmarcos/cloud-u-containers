@@ -73,39 +73,39 @@ maddy imap-acct create no-reply@diegonmarcos.com 2>/dev/null || true
 # silent no-op. `imap-mboxes create` errors on an existing folder — expected,
 # same idempotent-boot pattern as USER_CREATION_BLOCK above.
 echo "[init] Ensuring F0 sender-classification folders..."
-maddy imap-mboxes create me@diegonmarcos.com 'Fa    🏛️ Gov / Official' 2>&1 | sed 's|^|  [mboxes:create me]   |' || true
+maddy imap-mboxes create me@diegonmarcos.com 'Fa    🏛️ Gov & Official' 2>&1 | sed 's|^|  [mboxes:create me]   |' || true
 maddy imap-mboxes create me@diegonmarcos.com 'Fb    💬 Socials' 2>&1 | sed 's|^|  [mboxes:create me]   |' || true
 maddy imap-mboxes create me@diegonmarcos.com 'Fc    💰 Finance' 2>&1 | sed 's|^|  [mboxes:create me]   |' || true
-maddy imap-mboxes create me@diegonmarcos.com 'Fd    💼 Work / Professional' 2>&1 | sed 's|^|  [mboxes:create me]   |' || true
-maddy imap-mboxes create me@diegonmarcos.com 'Fe    💻 Dev / Tech' 2>&1 | sed 's|^|  [mboxes:create me]   |' || true
-maddy imap-mboxes create me@diegonmarcos.com 'Ff    🛍️ Shopping / Commerce' 2>&1 | sed 's|^|  [mboxes:create me]   |' || true
-maddy imap-mboxes create me@diegonmarcos.com 'Fg    📰 Subscriptions / Newsletters' 2>&1 | sed 's|^|  [mboxes:create me]   |' || true
+maddy imap-mboxes create me@diegonmarcos.com 'Fd    💼 Work & Professional' 2>&1 | sed 's|^|  [mboxes:create me]   |' || true
+maddy imap-mboxes create me@diegonmarcos.com 'Fe    💻 Dev & Tech' 2>&1 | sed 's|^|  [mboxes:create me]   |' || true
+maddy imap-mboxes create me@diegonmarcos.com 'Ff    🛍️ Shopping & Commerce' 2>&1 | sed 's|^|  [mboxes:create me]   |' || true
+maddy imap-mboxes create me@diegonmarcos.com 'Fg    📰 Subscriptions & Newsletters' 2>&1 | sed 's|^|  [mboxes:create me]   |' || true
 maddy imap-mboxes create me@diegonmarcos.com 'Fh    ✈️ Travel' 2>&1 | sed 's|^|  [mboxes:create me]   |' || true
-maddy imap-mboxes create me@diegonmarcos.com 'Fi    🏠 Utilities / Services' 2>&1 | sed 's|^|  [mboxes:create me]   |' || true
+maddy imap-mboxes create me@diegonmarcos.com 'Fi    🏠 Utilities & Services' 2>&1 | sed 's|^|  [mboxes:create me]   |' || true
 maddy imap-mboxes create me@diegonmarcos.com 'Fj    👪 Personal' 2>&1 | sed 's|^|  [mboxes:create me]   |' || true
 maddy imap-mboxes create me@diegonmarcos.com 'Fk    🎓 Education' 2>&1 | sed 's|^|  [mboxes:create me]   |' || true
 maddy imap-mboxes create me@diegonmarcos.com 'Fz    📭 Others' 2>&1 | sed 's|^|  [mboxes:create me]   |' || true
-maddy imap-mboxes create admin@diegonmarcos.com 'Fa    🏛️ Gov / Official' 2>&1 | sed 's|^|  [mboxes:create admin]   |' || true
+maddy imap-mboxes create admin@diegonmarcos.com 'Fa    🏛️ Gov & Official' 2>&1 | sed 's|^|  [mboxes:create admin]   |' || true
 maddy imap-mboxes create admin@diegonmarcos.com 'Fb    💬 Socials' 2>&1 | sed 's|^|  [mboxes:create admin]   |' || true
 maddy imap-mboxes create admin@diegonmarcos.com 'Fc    💰 Finance' 2>&1 | sed 's|^|  [mboxes:create admin]   |' || true
-maddy imap-mboxes create admin@diegonmarcos.com 'Fd    💼 Work / Professional' 2>&1 | sed 's|^|  [mboxes:create admin]   |' || true
-maddy imap-mboxes create admin@diegonmarcos.com 'Fe    💻 Dev / Tech' 2>&1 | sed 's|^|  [mboxes:create admin]   |' || true
-maddy imap-mboxes create admin@diegonmarcos.com 'Ff    🛍️ Shopping / Commerce' 2>&1 | sed 's|^|  [mboxes:create admin]   |' || true
-maddy imap-mboxes create admin@diegonmarcos.com 'Fg    📰 Subscriptions / Newsletters' 2>&1 | sed 's|^|  [mboxes:create admin]   |' || true
+maddy imap-mboxes create admin@diegonmarcos.com 'Fd    💼 Work & Professional' 2>&1 | sed 's|^|  [mboxes:create admin]   |' || true
+maddy imap-mboxes create admin@diegonmarcos.com 'Fe    💻 Dev & Tech' 2>&1 | sed 's|^|  [mboxes:create admin]   |' || true
+maddy imap-mboxes create admin@diegonmarcos.com 'Ff    🛍️ Shopping & Commerce' 2>&1 | sed 's|^|  [mboxes:create admin]   |' || true
+maddy imap-mboxes create admin@diegonmarcos.com 'Fg    📰 Subscriptions & Newsletters' 2>&1 | sed 's|^|  [mboxes:create admin]   |' || true
 maddy imap-mboxes create admin@diegonmarcos.com 'Fh    ✈️ Travel' 2>&1 | sed 's|^|  [mboxes:create admin]   |' || true
-maddy imap-mboxes create admin@diegonmarcos.com 'Fi    🏠 Utilities / Services' 2>&1 | sed 's|^|  [mboxes:create admin]   |' || true
+maddy imap-mboxes create admin@diegonmarcos.com 'Fi    🏠 Utilities & Services' 2>&1 | sed 's|^|  [mboxes:create admin]   |' || true
 maddy imap-mboxes create admin@diegonmarcos.com 'Fj    👪 Personal' 2>&1 | sed 's|^|  [mboxes:create admin]   |' || true
 maddy imap-mboxes create admin@diegonmarcos.com 'Fk    🎓 Education' 2>&1 | sed 's|^|  [mboxes:create admin]   |' || true
 maddy imap-mboxes create admin@diegonmarcos.com 'Fz    📭 Others' 2>&1 | sed 's|^|  [mboxes:create admin]   |' || true
-maddy imap-mboxes create no-reply@diegonmarcos.com 'Fa    🏛️ Gov / Official' 2>&1 | sed 's|^|  [mboxes:create no-reply]   |' || true
+maddy imap-mboxes create no-reply@diegonmarcos.com 'Fa    🏛️ Gov & Official' 2>&1 | sed 's|^|  [mboxes:create no-reply]   |' || true
 maddy imap-mboxes create no-reply@diegonmarcos.com 'Fb    💬 Socials' 2>&1 | sed 's|^|  [mboxes:create no-reply]   |' || true
 maddy imap-mboxes create no-reply@diegonmarcos.com 'Fc    💰 Finance' 2>&1 | sed 's|^|  [mboxes:create no-reply]   |' || true
-maddy imap-mboxes create no-reply@diegonmarcos.com 'Fd    💼 Work / Professional' 2>&1 | sed 's|^|  [mboxes:create no-reply]   |' || true
-maddy imap-mboxes create no-reply@diegonmarcos.com 'Fe    💻 Dev / Tech' 2>&1 | sed 's|^|  [mboxes:create no-reply]   |' || true
-maddy imap-mboxes create no-reply@diegonmarcos.com 'Ff    🛍️ Shopping / Commerce' 2>&1 | sed 's|^|  [mboxes:create no-reply]   |' || true
-maddy imap-mboxes create no-reply@diegonmarcos.com 'Fg    📰 Subscriptions / Newsletters' 2>&1 | sed 's|^|  [mboxes:create no-reply]   |' || true
+maddy imap-mboxes create no-reply@diegonmarcos.com 'Fd    💼 Work & Professional' 2>&1 | sed 's|^|  [mboxes:create no-reply]   |' || true
+maddy imap-mboxes create no-reply@diegonmarcos.com 'Fe    💻 Dev & Tech' 2>&1 | sed 's|^|  [mboxes:create no-reply]   |' || true
+maddy imap-mboxes create no-reply@diegonmarcos.com 'Ff    🛍️ Shopping & Commerce' 2>&1 | sed 's|^|  [mboxes:create no-reply]   |' || true
+maddy imap-mboxes create no-reply@diegonmarcos.com 'Fg    📰 Subscriptions & Newsletters' 2>&1 | sed 's|^|  [mboxes:create no-reply]   |' || true
 maddy imap-mboxes create no-reply@diegonmarcos.com 'Fh    ✈️ Travel' 2>&1 | sed 's|^|  [mboxes:create no-reply]   |' || true
-maddy imap-mboxes create no-reply@diegonmarcos.com 'Fi    🏠 Utilities / Services' 2>&1 | sed 's|^|  [mboxes:create no-reply]   |' || true
+maddy imap-mboxes create no-reply@diegonmarcos.com 'Fi    🏠 Utilities & Services' 2>&1 | sed 's|^|  [mboxes:create no-reply]   |' || true
 maddy imap-mboxes create no-reply@diegonmarcos.com 'Fj    👪 Personal' 2>&1 | sed 's|^|  [mboxes:create no-reply]   |' || true
 maddy imap-mboxes create no-reply@diegonmarcos.com 'Fk    🎓 Education' 2>&1 | sed 's|^|  [mboxes:create no-reply]   |' || true
 maddy imap-mboxes create no-reply@diegonmarcos.com 'Fz    📭 Others' 2>&1 | sed 's|^|  [mboxes:create no-reply]   |' || true

@@ -25,10 +25,21 @@ in
         "./assets/sources.json:/etc/mail-puller/sources.json:ro"
       ];
       entrypoint = [ "sh" "/usr/local/bin/init.sh" ];
+      # No memory/cpu ceiling — see _shared/docker.nix, which made memLimit and
+      # cpuLimit inert fleet-wide: deploy.resources.limits.memory becomes cgroup
+      # memory.max, a LOCAL wall that force-reclaims from this container the
+      # instant it is touched regardless of host free RAM. Pressure is
+      # load-shedder's job now (PSI cpu/mem/io). Reservations stay: a floor is
+      # protection, not a ceiling.
+      #
+      # Read the limit CONDITIONALLY so removing it from build.json degrades to
+      # "no limit" instead of `attribute 'limits' missing`. Plain `if` rather
+      # than lib.optionalAttrs because flake.nix does not pass `lib` here.
       deploy.resources = {
-        limits       = { memory = app.resources.limits.memory;       cpus = "0.5"; };
         reservations = { memory = app.resources.reservations.memory; };
-      };
+      } // (if app.resources ? limits
+            then { limits = { memory = app.resources.limits.memory; }; }
+            else {});
     };
   };
   volumes = {
