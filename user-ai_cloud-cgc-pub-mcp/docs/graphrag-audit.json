@@ -252,5 +252,84 @@
     {"id": "FUNC-01", "title": "cross-layer impact_analysis", "detail": "impact_analysis(c3-infra-mcp) correctly returns domain + module dependents across the infra/code boundary.", "probe": {"tool": "cgc_codegraph_impact_analysis", "args": {"target": "c3-infra-mcp"}}},
     {"id": "FUNC-02", "title": "directed trace honesty", "detail": "trace_call_path returns 'no path (directed)' with a swap hint instead of a false path.", "probe": {"tool": "cgc_codegraph_trace_call_path", "args": {"from": "mail-mcp", "to": "cloud"}}},
     {"id": "FUNC-03", "title": "routes_to catalog correct", "detail": "routes_to.in.fqdn -> out.name matches the live MCP hub (mcp.diegonmarcos.com/c3-infra-mcp -> c3-infra-mcp, etc).", "probe": {"tool": "cgc_kgstore_query", "surql": "SELECT in.fqdn AS domain, out.name AS service FROM routes_to WHERE out.name = 'c3-infra-mcp'"}}
-  ]
+  ],
+
+  "frameworks": {
+    "_doc": "Researched external standards (2026) to raise this stack from ad-hoc to industry-grade. Each maps to invariants above and to the deeper_tests below. Sources in graphrag-architecture.md section 6.",
+    "adopt": [
+      {
+        "name": "PG-Schema / PG-Keys",
+        "what": "Declarative schema + key/participation/referential-integrity constraints for Labeled Property Graphs; basis of the GQL (ISO 39075:2024) and SQL/PGQ standards.",
+        "why_here": "kg-store IS an LPG (SurrealDB). A PG-Schema gives node/edge types, mandatory participation, and referential integrity as DATA, not code. Directly closes INV-03 (dangling file->repo) and INV-04 (belongs_to_repo participation).",
+        "action": "Author a pg-schema.json (node types, edge endpoints, keys, participation) and generate the deeper_tests.schema_constraints SurrealQL from it."
+      },
+      {
+        "name": "SHACL family (Trav-SHACL, xpSHACL)",
+        "what": "Shapes-Constraint-Language pattern: declare shapes, validator emits a violation report; xpSHACL adds human-readable explanations.",
+        "why_here": "SurrealDB is not RDF, so we borrow the PATTERN, not the tech: shapes -> a violations report with an explanation per failure. schema_constraints below is our SHACL-report equivalent.",
+        "action": "Every constraint returns violating rows (not a bool) + an `explain` string, mirroring xpSHACL."
+      },
+      {
+        "name": "RAGAS",
+        "what": "RAG-eval metrics: context precision, context recall, faithfulness, answer relevancy; plus retrieval MRR. LLM-as-judge.",
+        "why_here": "octocode/graphrag retrieval is currently UNTESTED for quality (INV-13 only checks output size). RAGAS gives measurable retrieval quality.",
+        "action": "See deeper_tests.retrieval_quality — a golden Q->expected-nodes set scored on context precision/recall + MRR."
+      },
+      {
+        "name": "GraphRAG-Bench",
+        "what": "GraphRAG benchmark with 4 task levels (fact retrieval -> complex/multi-hop reasoning -> summarization -> novel generation); metrics Accuracy, ROUGE-L, coverage.",
+        "why_here": "Structures our golden set by reasoning depth so we test multi-hop graph traversal (this stack's whole point), not just fact lookup.",
+        "action": "Tag each golden question with a level 1-4; require >=1 multi-hop (level 2) case per infra<->code boundary."
+      },
+      {
+        "name": "SCIP (+ Kythe/Glean)",
+        "what": "SCIP = Sourcegraph Code Intelligence Protocol: protobuf index of documents -> symbols -> occurrences -> relationships, with cross-repo monikers; successor to LSIF. Kythe/Glean are the Google/Meta equivalents.",
+        "why_here": "The home-grown code-signatures derive is the root of INV-07 (2905 vs 3843 file scans diverge) and the weak symbol layer. A standard indexer yields ONE deterministic file+symbol set both stores can share, with real definition/reference xrefs.",
+        "action": "Evaluate emitting SCIP per repo (scip-typescript, scip-python, rust-analyzer SCIP) and ingesting THAT into both CodeGraph and kg-store, replacing bespoke code-signatures."
+      }
+    ]
+  },
+
+  "deeper_tests": {
+    "_doc": "Executable test suites beyond the divergence invariants. schema_constraints run NOW against SurrealDB (seeded with real observed violations 2026-08-27). cross_store_consistency compares CodeGraph vs kg-store. retrieval_quality is the RAGAS/GraphRAG-Bench harness to build.",
+
+    "schema_constraints": {
+      "_doc": "PG-Keys/SHACL-style. Each rule's SurrealQL returns VIOLATING rows; expected = empty. Seeded with observed results.",
+      "rules": [
+        {"id": "SC-01", "kind": "referential-integrity", "status": "FAIL", "rule": "every file.repo has a repo node", "surql": "SELECT repo, count() AS n FROM file WHERE repo NOT IN (SELECT VALUE name FROM repo) GROUP BY repo", "expected": "[]", "observed": "front=938, front-data=7, tools=190 (1135 files dangle)", "explain": "repo nodes only emitted for cloud/cloud_data/unix; see INV-03"},
+        {"id": "SC-02", "kind": "referential-integrity", "status": "PASS", "rule": "every routes_to edge resolves to a named service", "surql": "SELECT count() AS v FROM routes_to WHERE out.name = NONE GROUP ALL", "expected": "[]", "observed": "[]"},
+        {"id": "SC-03", "kind": "key-uniqueness", "status": "PASS", "rule": "service.name is unique", "surql": "SELECT VALUE c FROM (SELECT name, count() AS c FROM service GROUP BY name) WHERE c > 1", "expected": "[]", "observed": "[]"},
+        {"id": "SC-04", "kind": "existence", "status": "PASS", "rule": "no file has empty/absent repo", "surql": "SELECT count() AS v FROM file WHERE repo = NONE OR repo = '' GROUP ALL", "expected": "[]", "observed": "[]"},
+        {"id": "SC-05", "kind": "domain", "status": "FAIL", "rule": "repo node id-slug equals its name (no underscore/hyphen drift)", "surql": "SELECT id, name FROM repo", "expected": "id slug == name for all", "observed": "repo:cloud_data has name 'cloud-data' (underscore id vs hyphen name)", "explain": "id/name normalization drift; breaks any join that reconstructs repo:<name>"},
+        {"id": "SC-06", "kind": "participation", "status": "FAIL", "rule": "every repo node has >=1 incoming belongs_to_repo", "surql": "SELECT out AS repo, count() AS n FROM belongs_to_repo GROUP BY repo", "expected": "all 3 repos present", "observed": "only repo:cloud (n=62); repo:unix and repo:cloud_data have zero", "explain": "module->repo attribution collapsed; see INV-04"}
+      ]
+    },
+
+    "cross_store_consistency": {
+      "_doc": "Assert CodeGraph `overview` and SurrealDB agree where they model the same thing. codegraph values via cgc_codegraph_overview; kgstore via the surql shown.",
+      "checks": [
+        {"id": "XS-01", "status": "FAIL", "element": "file count", "codegraph": "overview.node_tables.file", "kgstore_surql": "SELECT count() FROM file GROUP ALL", "assert": "equal", "observed": "2905 vs 3843"},
+        {"id": "XS-02", "status": "FAIL", "element": "routes_to count", "codegraph": "overview.edge_tables.routes_to", "kgstore_surql": "SELECT count() FROM routes_to GROUP ALL", "assert": "equal", "observed": "42 vs 41"},
+        {"id": "XS-03", "status": "FAIL", "element": "symbol reachability", "codegraph": "overview.node_tables.symbol (29660)", "kgstore_surql": "SELECT count() FROM symbol GROUP ALL", "assert": "both > 0 OR overview labels codegraph-only", "observed": "29660 vs 0 (no table)"},
+        {"id": "XS-04", "status": "FAIL", "element": "service catalog", "codegraph": "distinct services in impact/dependencies", "kgstore_surql": "SELECT count() FROM service GROUP ALL", "assert": "equal", "observed": "both report 60 services — verify names match, not just counts"}
+      ]
+    },
+
+    "retrieval_quality": {
+      "_doc": "RAGAS + GraphRAG-Bench harness for octocode/graphrag. NOT YET BUILT. Build a golden set, then score. This is the biggest blind spot: search/graphrag correctness is currently unmeasured.",
+      "status": "TODO",
+      "metrics": ["context_precision", "context_recall", "mrr", "accuracy", "rouge_l"],
+      "golden_set_schema": {"id": "Q-NN", "level": "1=fact | 2=multi-hop | 3=summary | 4=novel", "question": "...", "tool": "cgc_octocode_search | cgc_octocode_graphrag | cgc_codegraph_*", "args": {}, "expected_nodes": ["file/symbol/service ids that MUST appear"], "expected_answer_substr": ["..."]},
+      "requirements": [
+        ">= 20 questions, >= 5 at level 2 (multi-hop across the infra<->code boundary)",
+        "each infra<->code trace (e.g. domain -> service -> module -> repo) has a level-2 case",
+        "score context_precision/recall on expected_nodes; MRR on rank of first expected node",
+        "seed level-1 cases from the passing FUNC-01/02/03 controls above"
+      ],
+      "example_golden": [
+        {"id": "Q-01", "level": 1, "question": "Which service does mcp.diegonmarcos.com/c3-infra-mcp route to?", "tool": "cgc_kgstore_query", "args": {"surql": "SELECT out.name FROM routes_to WHERE in.fqdn = 'mcp.diegonmarcos.com/c3-infra-mcp'"}, "expected_nodes": ["service:c3_infra_mcp"], "expected_answer_substr": ["c3-infra-mcp"]},
+        {"id": "Q-02", "level": 2, "question": "If c3-infra-mcp changes, which domain and which module are impacted?", "tool": "cgc_codegraph_impact_analysis", "args": {"target": "c3-infra-mcp"}, "expected_nodes": ["domain:mcp_diegonmarcos_com/c3_infra_mcp", "module:bc_obs_c3_infra_mcp"], "expected_answer_substr": ["bc-obs_c3-infra-mcp"]}
+      ]
+    }
+  }
 }
