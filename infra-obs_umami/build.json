@@ -9,7 +9,7 @@
   },
   "domain": "analytics.diegonmarcos.com/umami",
   "deploy": {
-    "host": "oci-apps",
+    "host": "oci-analytics",
     "remote_path": "/opt/containers/umami",
     "compose_flags": "--pull always --force-recreate"
   },
@@ -34,14 +34,14 @@
     "migrate-from-matomo": [
       {
         "action": "ssh_run",
-        "vm": "oci-apps",
+        "vm": "oci-analytics",
         "script": "/opt/containers/umami/migrate-from-matomo/migrate.sh"
       }
     ],
     "migrate-test": [
       {
         "action": "ssh_run",
-        "vm": "oci-apps",
+        "vm": "oci-analytics",
         "script": "/opt/containers/umami/migrate-from-matomo/test.sh"
       }
     ]
@@ -84,7 +84,7 @@
         "base_path": "/umami",
         "auth": "two_factor"
       },
-      "healthcheck": "curl -sf http://localhost:3000/api/heartbeat || exit 1",
+      "healthcheck": "curl -sf http://localhost:3006/api/heartbeat || exit 1",
       "monitoring": {
         "tls_check": true
       },
