@@ -77,7 +77,6 @@ steps:
       if [ -n "$ALERTS" ]; then
         MSG=$(echo -e "Backup freshness issues:\n${ALERTS}\nAction:\n  ssh <user>@<ip> 'ls -lt /var/backups/ | head -10'\n  Check backup cron: ssh <user>@<ip> 'crontab -l'\n\nDagu: https://workflows.diegonmarcos.com")
         curl -s -X POST "$NTFY_URL/ops_backups" \
-          -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
           -H "Title: Backup Alert" \
           -H "Priority: 4" \
           -H "Tags: floppy_disk,warning" \

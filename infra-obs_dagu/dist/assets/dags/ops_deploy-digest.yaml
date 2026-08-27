@@ -31,7 +31,6 @@ steps:
       done
       MSG=$(echo -e "Deploy Digest (24h): $TOTAL total restarts\n\n${REPORT}Action:\n  ssh <user>@<ip> 'docker ps --format \"table {{.Names}}\t{{.Status}}\"'\n\nDagu: https://workflows.diegonmarcos.com")
       curl -s -X POST "$NTFY_URL/cicd_deploy-digest" \
-        -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
         -H "Title: Daily Deploy Digest ($TOTAL restarts)" \
         -H "Priority: 2" \
         -H "Tags: rocket" \

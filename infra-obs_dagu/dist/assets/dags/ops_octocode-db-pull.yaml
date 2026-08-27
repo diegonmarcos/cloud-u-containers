@@ -23,7 +23,7 @@ env:
   - CGC_DB_IMAGE_PREFIX: ghcr.io/diegonmarcos/cgc-db-
   - CGC_DB_BASE_IMAGE: ghcr.io/diegonmarcos/cgc-db-base:latest
   - CGC_DB_TAG: latest
-  - CGC_INDEX_REPOS: "cloud-infra cloud-unix front cloud-mykonsole-dtk cloud-data front-data cloud-android"
+  - CGC_INDEX_REPOS: "cloud-infra cloud-infra-desktop front cloud-mykonsole-dtk cloud-data front-data cloud-u-android"
   - MCP_CONTAINER: cloud-cgc-pub-mcp
   - NTFY_URL: http://10.0.0.6:8090
 mail_on:

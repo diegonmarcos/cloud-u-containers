@@ -56,7 +56,6 @@ steps:
       RESULT_JSON=/var/lib/dagu/data/cloud-data/y_old/reports/dist/cloud_mail_full.json
       if [ ! -f "$RESULT_JSON" ]; then
         curl -s -X POST "$NTFY_URL/infra_mail-health" \
-          -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
           -H "Title: Mail Health FAILED — no report artefact" \
           -H "Priority: 5" \
           -H "Tags: rotating_light,email" \
@@ -74,7 +73,6 @@ steps:
       # health notes, not failures (consistent with health_cloud-full's gate).
       if [ "$CRITICAL" = "0" ]; then
         curl -s -X POST "$NTFY_URL/infra_mail-health" \
-          -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
           -H "Title: Mail Health OK ($PASSED/$TOTAL passed)" \
           -H "Priority: 2" \
           -H "Tags: white_check_mark,email" \
@@ -82,7 +80,6 @@ steps:
       else
         FAIL_DETAILS=$(jq -r '.path_checks[]?, .containers[]?, .network[]?, .dns_auth[]?, .internals[]?, .e2e_delivery[]? | select(.passed == false) | "  \(.severity // "?"): \(.name) — \(.details)"' "$RESULT_JSON" | head -15)
         curl -s -X POST "$NTFY_URL/infra_mail-health" \
-          -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
           -H "Title: Mail Health FAILED ($CRITICAL critical, $FAILED failed)" \
           -H "Priority: 5" \
           -H "Tags: rotating_light,email" \
