@@ -42,15 +42,17 @@ is reachable through `kgstore_query`:
 | symbol nodes | 29,660 | **0** — no table |
 | file nodes | 2,905 | **3,843** |
 | defines edges | 32,510 | **0** — no table |
-| imports edges | 1,063 | **0** — table empty (imports = field on `file`) |
+| imports edges | 1,063 | **219,385** — was 0; re-ingested with dist/vendored code (≈200× codegraph) |
 | code_depends_on | 3,959 | **0** — no table |
 | sibling_module | *uncounted* | **44,354** |
 | parent_module | *uncounted* | present |
 | routes_to | 42 | 41 |
 
-So `overview`'s edge total (37,908) is *smaller than a single kg-store table it
-doesn't count* (`sibling_module` = 44,354), and *larger than everything kg-store can
-actually answer about code* (≈0). The number is meaningless to anyone writing SurrealQL.
+So `overview`'s edge total (37,908) is *smaller than two kg-store tables it miscounts*
+(`sibling_module` = 44,354; `imports` = 219,385, which `overview` reports as 1,063),
+while the `symbol` / `defines` / `code_depends_on` it advertises (≈65k) stay **0** in
+kg-store. The number reconciles with nothing — and it drifts: `imports` read 0 then
+219,385 on a same-day re-run (§6.3). Meaningless to anyone writing SurrealQL.
 
 ## 3. Flaw register
 
