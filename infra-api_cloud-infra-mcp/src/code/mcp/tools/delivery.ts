@@ -314,7 +314,7 @@ export function registerDeliveryTools(server: McpServer) {
     "devops.repo.rename",
     "Rename a GitHub repository via the gh CLI (owner unchanged). GitHub keeps a permanent-ish redirect from the old name.",
     {
-      repo: z.string().describe("Existing repo as owner/name, e.g. diegonmarcos/my-ai_memory"),
+      repo: z.string().describe("Existing repo as owner/name, e.g. diegonmarcos/cloud-data-my-ai-memory"),
       newName: z.string().describe("New repository name only (not owner/name)"),
       dryRun: z.boolean().optional().describe("Print the gh command without running it (default: false)"),
     },
