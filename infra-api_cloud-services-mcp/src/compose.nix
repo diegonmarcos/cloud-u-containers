@@ -38,26 +38,44 @@ in
     cloud-services-mcp = {
       image          = binariesImage;
       container_name = app.container_name;
-      # Bridge mode — port mapping binds to WG IP only (NOT host network).
-      ports = [ "${vmIp}:${port}:${port}" ];
+      # host network, not published ports. dockerd on this fleet runs with
+      # iptables:false and userland-proxy:false (b_infra/_shared/vm-pilot/src/
+      # modules/network/firewall.nix), so a published port has NO forwarding
+      # mechanism: dockerd binds the socket and the container looks healthy --
+      # it even logs the inbound initialize -- but the response never returns,
+      # and outbound calls to other services on the WG IP fail outright.
+      # Measured 2026-08-27, identical MCP initialize to three endpoints:
+      #   mail-mcp (host network)  -> event: message {"result":...}
+      #   bridge + ports           -> nothing
+      # Confirmed by fixing cloud-drive-mcp the same way (024612772).
+      network_mode = "host";
       env_file = [ ".secrets" ];
       environment = {
         NODE_ENV      = "production";
         MCP_HTTP_PORT = port;
         # bindHost() reads MCP_HTTP_HOST. Defaults to 127.0.0.1 in source
-        # (defensive, never expose by default). Bridge-mode containers must
-        # accept on the container's own private net namespace, so 0.0.0.0
-        # is scoped to the container — docker maps from WG IP via the
-        # `ports = [ "${vmIp}:${port}:${port}" ]` rule above.
-        MCP_HTTP_HOST = "0.0.0.0";
+        # (defensive, never expose by default). Under host network 0.0.0.0
+        # would put the listener on every host interface, so pin it to the WG
+        # IP — same convention as the sibling host-mode MCPs.
+        MCP_HTTP_HOST = vmIp;
         NODE_OPTIONS  = "--max-old-space-size=1536";
         PROXIED_MCPS  = proxiedMcpsJson;
       };
       init = buildJson.runtime.init or false;
+      # No memory ceiling — _shared/docker.nix made memLimit/cpuLimit inert
+      # fleet-wide: deploy.resources.limits.memory becomes cgroup memory.max,
+      # a LOCAL wall that force-reclaims from this container the instant it is
+      # touched regardless of host free RAM. Pressure is the PSI watchdog's job.
+      #
+      # Read the limit CONDITIONALLY: build.json declares only mem_reservation,
+      # and reading mem_limit unconditionally is what broke this service's build
+      # outright ("attribute 'mem_limit' missing" at this line). Plain `if`
+      # rather than lib.optionalAttrs because flake.nix does not pass `lib`.
       deploy.resources = {
-        limits       = { memory = app.resources.mem_limit; };
         reservations = { memory = app.resources.mem_reservation; };
-      };
+      } // (if app.resources ? mem_limit
+            then { limits = { memory = app.resources.mem_limit; }; }
+            else {});
       healthcheck = {
         test = [
           "CMD-SHELL"
