@@ -148,27 +148,6 @@ else
   echo "EXISTS diego/cloud"
 fi
 
-if ! api "$API/repos/diego/cloud-android" >/dev/null 2>&1; then
-  echo "Creating mirror: diego/cloud-android <- https://github.com/diegonmarcos/cloud-android.git"
-  AUTH_JSON="{}"
-  if [ "false" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
-    AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
-  elif [ "false" = "true" ]; then
-    echo "  WARN: cloud-android is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
-  fi
-  PAYLOAD=$(jq -n \
-    --arg clone_addr "https://github.com/diegonmarcos/cloud-android.git" \
-    --arg repo_name "cloud-android" \
-    --arg repo_owner "diego" \
-    --arg mirror_interval "1h" \
-    --argjson private false \
-    --argjson auth "$AUTH_JSON" \
-    '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
-  api -X POST "$API/repos/migrate" -d "$PAYLOAD" >/dev/null && echo "  OK cloud-android" || echo "  FAIL cloud-android"
-else
-  echo "EXISTS diego/cloud-android"
-fi
-
 if ! api "$API/repos/diego/cloud-data" >/dev/null 2>&1; then
   echo "Creating mirror: diego/cloud-data <- https://github.com/diegonmarcos/cloud-data.git"
   AUTH_JSON="{}"
@@ -211,6 +190,27 @@ else
   echo "EXISTS diego/cloud-data-lfs"
 fi
 
+if ! api "$API/repos/diego/cloud-data-my-ai-memory" >/dev/null 2>&1; then
+  echo "Creating mirror: diego/cloud-data-my-ai-memory <- https://github.com/diegonmarcos/cloud-data-my-ai-memory.git"
+  AUTH_JSON="{}"
+  if [ "true" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
+    AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
+  elif [ "true" = "true" ]; then
+    echo "  WARN: cloud-data-my-ai-memory is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
+  fi
+  PAYLOAD=$(jq -n \
+    --arg clone_addr "https://github.com/diegonmarcos/cloud-data-my-ai-memory.git" \
+    --arg repo_name "cloud-data-my-ai-memory" \
+    --arg repo_owner "diego" \
+    --arg mirror_interval "1h" \
+    --argjson private true \
+    --argjson auth "$AUTH_JSON" \
+    '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
+  api -X POST "$API/repos/migrate" -d "$PAYLOAD" >/dev/null && echo "  OK cloud-data-my-ai-memory" || echo "  FAIL cloud-data-my-ai-memory"
+else
+  echo "EXISTS diego/cloud-data-my-ai-memory"
+fi
+
 if ! api "$API/repos/diego/cloud-infra" >/dev/null 2>&1; then
   echo "Creating mirror: diego/cloud-infra <- https://github.com/diegonmarcos/cloud-infra.git"
   AUTH_JSON="{}"
@@ -232,25 +232,25 @@ else
   echo "EXISTS diego/cloud-infra"
 fi
 
-if ! api "$API/repos/diego/cloud-mykonsole-dtk" >/dev/null 2>&1; then
-  echo "Creating mirror: diego/cloud-mykonsole-dtk <- https://github.com/diegonmarcos/cloud-mykonsole-dtk.git"
+if ! api "$API/repos/diego/cloud-infra-desktop" >/dev/null 2>&1; then
+  echo "Creating mirror: diego/cloud-infra-desktop <- https://github.com/diegonmarcos/cloud-infra-desktop.git"
   AUTH_JSON="{}"
   if [ "false" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
     AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
   elif [ "false" = "true" ]; then
-    echo "  WARN: cloud-mykonsole-dtk is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
+    echo "  WARN: cloud-infra-desktop is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
   fi
   PAYLOAD=$(jq -n \
-    --arg clone_addr "https://github.com/diegonmarcos/cloud-mykonsole-dtk.git" \
-    --arg repo_name "cloud-mykonsole-dtk" \
+    --arg clone_addr "https://github.com/diegonmarcos/cloud-infra-desktop.git" \
+    --arg repo_name "cloud-infra-desktop" \
     --arg repo_owner "diego" \
     --arg mirror_interval "1h" \
     --argjson private false \
     --argjson auth "$AUTH_JSON" \
     '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
-  api -X POST "$API/repos/migrate" -d "$PAYLOAD" >/dev/null && echo "  OK cloud-mykonsole-dtk" || echo "  FAIL cloud-mykonsole-dtk"
+  api -X POST "$API/repos/migrate" -d "$PAYLOAD" >/dev/null && echo "  OK cloud-infra-desktop" || echo "  FAIL cloud-infra-desktop"
 else
-  echo "EXISTS diego/cloud-mykonsole-dtk"
+  echo "EXISTS diego/cloud-infra-desktop"
 fi
 
 if ! api "$API/repos/diego/cloud-notes" >/dev/null 2>&1; then
@@ -274,46 +274,67 @@ else
   echo "EXISTS diego/cloud-notes"
 fi
 
-if ! api "$API/repos/diego/cloud-unix" >/dev/null 2>&1; then
-  echo "Creating mirror: diego/cloud-unix <- https://github.com/diegonmarcos/cloud-unix.git"
+if ! api "$API/repos/diego/cloud-u-android" >/dev/null 2>&1; then
+  echo "Creating mirror: diego/cloud-u-android <- https://github.com/diegonmarcos/cloud-u-android.git"
   AUTH_JSON="{}"
   if [ "false" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
     AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
   elif [ "false" = "true" ]; then
-    echo "  WARN: cloud-unix is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
+    echo "  WARN: cloud-u-android is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
   fi
   PAYLOAD=$(jq -n \
-    --arg clone_addr "https://github.com/diegonmarcos/cloud-unix.git" \
-    --arg repo_name "cloud-unix" \
+    --arg clone_addr "https://github.com/diegonmarcos/cloud-u-android.git" \
+    --arg repo_name "cloud-u-android" \
     --arg repo_owner "diego" \
     --arg mirror_interval "1h" \
     --argjson private false \
     --argjson auth "$AUTH_JSON" \
     '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
-  api -X POST "$API/repos/migrate" -d "$PAYLOAD" >/dev/null && echo "  OK cloud-unix" || echo "  FAIL cloud-unix"
+  api -X POST "$API/repos/migrate" -d "$PAYLOAD" >/dev/null && echo "  OK cloud-u-android" || echo "  FAIL cloud-u-android"
 else
-  echo "EXISTS diego/cloud-unix"
+  echo "EXISTS diego/cloud-u-android"
 fi
 
-if ! api "$API/repos/diego/cloud-vault" >/dev/null 2>&1; then
-  echo "Creating mirror: diego/cloud-vault <- https://github.com/diegonmarcos/cloud-vault.git"
+if ! api "$API/repos/diego/cloud-u-containers" >/dev/null 2>&1; then
+  echo "Creating mirror: diego/cloud-u-containers <- https://github.com/diegonmarcos/cloud-u-containers.git"
   AUTH_JSON="{}"
-  if [ "true" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
+  if [ "false" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
     AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
-  elif [ "true" = "true" ]; then
-    echo "  WARN: cloud-vault is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
+  elif [ "false" = "true" ]; then
+    echo "  WARN: cloud-u-containers is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
   fi
   PAYLOAD=$(jq -n \
-    --arg clone_addr "https://github.com/diegonmarcos/cloud-vault.git" \
-    --arg repo_name "cloud-vault" \
+    --arg clone_addr "https://github.com/diegonmarcos/cloud-u-containers.git" \
+    --arg repo_name "cloud-u-containers" \
     --arg repo_owner "diego" \
     --arg mirror_interval "1h" \
-    --argjson private true \
+    --argjson private false \
     --argjson auth "$AUTH_JSON" \
     '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
-  api -X POST "$API/repos/migrate" -d "$PAYLOAD" >/dev/null && echo "  OK cloud-vault" || echo "  FAIL cloud-vault"
+  api -X POST "$API/repos/migrate" -d "$PAYLOAD" >/dev/null && echo "  OK cloud-u-containers" || echo "  FAIL cloud-u-containers"
 else
-  echo "EXISTS diego/cloud-vault"
+  echo "EXISTS diego/cloud-u-containers"
+fi
+
+if ! api "$API/repos/diego/cloud-u-linux" >/dev/null 2>&1; then
+  echo "Creating mirror: diego/cloud-u-linux <- https://github.com/diegonmarcos/cloud-u-linux.git"
+  AUTH_JSON="{}"
+  if [ "false" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
+    AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
+  elif [ "false" = "true" ]; then
+    echo "  WARN: cloud-u-linux is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
+  fi
+  PAYLOAD=$(jq -n \
+    --arg clone_addr "https://github.com/diegonmarcos/cloud-u-linux.git" \
+    --arg repo_name "cloud-u-linux" \
+    --arg repo_owner "diego" \
+    --arg mirror_interval "1h" \
+    --argjson private false \
+    --argjson auth "$AUTH_JSON" \
+    '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
+  api -X POST "$API/repos/migrate" -d "$PAYLOAD" >/dev/null && echo "  OK cloud-u-linux" || echo "  FAIL cloud-u-linux"
+else
+  echo "EXISTS diego/cloud-u-linux"
 fi
 
 if ! api "$API/repos/diego/cyber-Cyberwarfare" >/dev/null 2>&1; then
@@ -398,6 +419,27 @@ if ! api "$API/repos/diego/diegonmarcos.github.io" >/dev/null 2>&1; then
   api -X POST "$API/repos/migrate" -d "$PAYLOAD" >/dev/null && echo "  OK diegonmarcos.github.io" || echo "  FAIL diegonmarcos.github.io"
 else
   echo "EXISTS diego/diegonmarcos.github.io"
+fi
+
+if ! api "$API/repos/diego/ffront" >/dev/null 2>&1; then
+  echo "Creating mirror: diego/ffront <- https://github.com/diegonmarcos/ffront.git"
+  AUTH_JSON="{}"
+  if [ "false" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
+    AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
+  elif [ "false" = "true" ]; then
+    echo "  WARN: ffront is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
+  fi
+  PAYLOAD=$(jq -n \
+    --arg clone_addr "https://github.com/diegonmarcos/ffront.git" \
+    --arg repo_name "ffront" \
+    --arg repo_owner "diego" \
+    --arg mirror_interval "1h" \
+    --argjson private false \
+    --argjson auth "$AUTH_JSON" \
+    '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
+  api -X POST "$API/repos/migrate" -d "$PAYLOAD" >/dev/null && echo "  OK ffront" || echo "  FAIL ffront"
+else
+  echo "EXISTS diego/ffront"
 fi
 
 if ! api "$API/repos/diego/front-assets-cdn" >/dev/null 2>&1; then

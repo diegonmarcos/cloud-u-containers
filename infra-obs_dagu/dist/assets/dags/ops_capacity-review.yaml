@@ -22,7 +22,6 @@ steps:
       done
       MSG=$(echo -e "Weekly Capacity Review:\n\n${REPORT}Action:\n  ssh <user>@<ip> 'docker system prune -f'\n  ssh <user>@<ip> 'du -sh /opt/containers/*/data | sort -rh'\n\nDagu: https://workflows.diegonmarcos.com")
       curl -s -X POST "$NTFY_URL/ops_reports" \
-        -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
         -H "Title: Weekly Capacity Review" \
         -H "Priority: 2" \
         -H "Tags: bar_chart" \

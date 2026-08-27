@@ -525,7 +525,6 @@ steps:
       SIZE=$(ssh $SSH_OPTS "$COLLECT_USER@$COLLECT_IP" "du -sh /var/backups/collected/ 2>/dev/null | awk '{print \$1}'" || echo "N/A")
       MSG="DB backup → OCI S3: $COUNT dumps ($SIZE)\nBucket: cloud-backups-db\nDagu: https://workflows.diegonmarcos.com"
       curl -s -X POST "$NTFY_URL/ops_backups" \
-        -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
         -H "Title: Daily DB Backup OK ($COUNT dumps)" \
         -H "Priority: 2" \
         -H "Tags: floppy_disk,white_check_mark" \

@@ -16,7 +16,7 @@ steps:
       # WG-private (valid → 2026-10-04). The public edge (oci-analytics) issues
       # per-HOST certs only (no wildcard, to avoid a DNS-01 collision), and oci-mail's
       # LOCAL copy is stale (EXPIRED 2026-06-26) — the previous "source locally" logic
-      # shipped that EXPIRED cert (maddy served it → clients + the mail-mcp reject
+      # shipped that EXPIRED cert (maddy served it → clients + the cloud-mail-mcp reject
       # "certificate has expired"; stalwart never got a valid one). Pull from
       # gcp-proxy, hard-assert SAN=*.diegonmarcos.com AND not-expiring-within-24h
       # (NEVER ship apex OR expired), install to the shared tls dir, reload both

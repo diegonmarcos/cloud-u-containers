@@ -23,7 +23,6 @@ steps:
       done
       MSG=$(echo -e "Daily Ops Summary:\n\n${REPORT}Dagu: https://workflows.diegonmarcos.com")
       curl -s -X POST "$NTFY_URL/ops_reports" \
-        -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
         -H "Title: Daily Ops Summary" \
         -H "Priority: 2" \
         -H "Tags: chart_with_upwards_trend" \
