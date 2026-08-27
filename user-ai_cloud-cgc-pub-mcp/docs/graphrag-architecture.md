@@ -72,7 +72,7 @@ Ranked by severity:
 | INV-09 | 🟡 med | `code_depends_on` is really file→**package**, not file→file | misnaming | rename `depends_on_package` |
 | INV-10 | 🟡 med | missing table → silent `count:0`, not an error | SurrealDB semantics | validate FROM targets vs `INFO FOR DB` |
 | INV-11 | 🟡 med | octocode index freshness **uneven** (cloud-infra fresh, cloud-unix stale) | per-repo reindex not fired on rename | reindex-on-push for all repos |
-| INV-14 | 🟡 med | `trace_call_path` **resolves bare names to the wrong node** (`oci-apps`→a `build.sh` file, not `vm:oci_apps`; fqdn→nothing) while impact/deps resolve fine | `resolveTarget` substring-matches without node-type ranking | exact-match + type-rank in `resolveTarget` |
+| INV-14 | ✅ fixed | `trace_call_path` resolved bare names to the wrong node (`oci-apps`→a `build.sh` file, not `vm:oci_apps`; fqdn→nothing) | `resolveTarget` substring-matched with no separator-fold or node-type rank | **shipped 2026-08-27**: `resolveTarget` folds `-_.` + ranks by node-type → `oci-apps`→`vm:oci_apps`, fqdn→`domain:…`, `Q-12` PASS |
 | INV-08 | 🟢 low | `routes_to` 42 vs 41 | baked delta one gen behind | rebuild delta in the ingest job |
 | INV-12 | 🟢 low | version split: package.json 5.0.0 vs code 7.0.0 | hand-edited | import version from package.json |
 | INV-13 | ⚪ open | `octocode_graphrag search` dumped ~4MB; graph ops unvalidated | unknown | cap result size, then validate |
@@ -139,15 +139,15 @@ Full mapping + actions live in `graphrag-audit.json` → `frameworks`.
 
    | metric | result |
    |---|---|
-   | overall accuracy | **17/20 = 0.85** |
-   | multi-hop (L2) accuracy | 6/7 = 0.86 — `Q-12` is the resolver bug (INV-14) |
+   | overall accuracy | **18/20 = 0.90** |
+   | multi-hop (L2) accuracy | **7/7 = 1.0** — `Q-12` resolver bug fixed 2026-08-27 (INV-14) |
    | semantic recall (L4) | **1/3 = 0.33** — `Q-18`/`Q-19` miss `kgstore.ts` (INV-15) |
    | semantic MRR (L4) | 0.33 |
 
    The alarm is L4: the semantic index answers *some* queries at rank 1 (`Q-17`
    returns `codegraph.ts` for "register codegraph tools") but **fails to recall the
    mutation guard** under two phrasings. Retrieval correctness is now a regression
-   gate — each question's `args` is its reproduction. Two new flaws (INV-14 resolver,
+   gate — each question's `args` is its reproduction. Two new flaws (INV-14 resolver — since fixed,
    INV-15 recall) fell straight out of running the set.
 
 **Highest-leverage single adopt:** SCIP. The bespoke `code-signatures` derive is the
