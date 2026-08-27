@@ -79,7 +79,9 @@ in
       healthcheck = {
         test = [
           "CMD-SHELL"
-          "curl -so /dev/null -w '%{http_code}' http://localhost:${port}${app.healthcheck} | grep -qE '^[2-4]' || exit 1"
+          # Target vmIp, not localhost: with network_mode=host the app binds
+          # MCP_HTTP_HOST (=vmIp) only, so localhost:${port} is never listening.
+          "curl -so /dev/null -w '%{http_code}' http://${vmIp}:${port}${app.healthcheck} | grep -qE '^[2-4]' || exit 1"
         ];
         interval     = "30s";
         timeout      = "10s";
