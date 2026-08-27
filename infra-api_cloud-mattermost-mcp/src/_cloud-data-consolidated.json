@@ -125,9 +125,10 @@
         "alerts-api",
         "c3-public-api",
         "unbound-dns64",
+        "umami",
         "caddy-public"
       ],
-      "container_count": 4
+      "container_count": 7
     },
     "oci-A1-f_0": {
       "ip": "82.70.229.129",
@@ -181,7 +182,6 @@
         "matomo",
         "ntfy",
         "openobserve",
-        "umami",
         "crowdsec",
         "claude-superset-api",
         "cloud-cgc-pub-mcp",
@@ -210,7 +210,7 @@
         "send",
         "vaultwarden"
       ],
-      "container_count": 63
+      "container_count": 60
     },
     "gcp-E2-f_0": {
       "ip": "35.226.147.64",
@@ -4381,7 +4381,7 @@
     },
     "umami": {
       "category": "tools",
-      "vm": "oci-A1-f_0",
+      "vm": "oci-E2-f_1",
       "folder": "infra-obs_umami",
       "description": "Umami Analytics - lightweight privacy-focused web analytics",
       "enabled": true,
@@ -4389,7 +4389,7 @@
       "flake": "infra-obs_umami",
       "port": 3006,
       "dns": "umami.app",
-      "upstream": "10.0.0.6:3006",
+      "upstream": "10.0.0.4:3006",
       "containers": {
         "app": {
           "container_name": "umami",
@@ -4403,7 +4403,7 @@
             "base_path": "/umami",
             "auth": "two_factor"
           },
-          "healthcheck": "curl -sf http://localhost:3000/api/heartbeat || exit 1",
+          "healthcheck": "curl -sf http://localhost:3006/api/heartbeat || exit 1",
           "monitoring": {
             "tls_check": true
           },
@@ -9354,7 +9354,7 @@
           "mount": "/var/lib/postgresql/data"
         },
         "port": 5442,
-        "vm": "oci-A1-f_0",
+        "vm": "oci-E2-f_1",
         "backup": {
           "enabled": true,
           "strategy": null
@@ -11153,19 +11153,19 @@
       {
         "name": "umami.app",
         "type": "A",
-        "value": "10.0.0.6",
+        "value": "10.0.0.4",
         "service": "umami"
       },
       {
         "name": "umami-db.app",
         "type": "A",
-        "value": "10.0.0.6",
+        "value": "10.0.0.4",
         "service": "umami"
       },
       {
         "name": "umami-setup.app",
         "type": "A",
-        "value": "10.0.0.6",
+        "value": "10.0.0.4",
         "service": "umami"
       },
       {
@@ -11912,6 +11912,7 @@
           "alerts-api",
           "c3-public-api",
           "unbound-dns64",
+          "umami",
           "caddy-public"
         ],
         "method": "key",
@@ -11966,7 +11967,6 @@
           "matomo",
           "ntfy",
           "openobserve",
-          "umami",
           "crowdsec",
           "claude-superset-api",
           "cloud-cgc-pub-mcp",
@@ -12406,7 +12406,7 @@
       },
       "umami": {
         "dir": "infra-obs_umami",
-        "vm": "oci-apps",
+        "vm": "oci-analytics",
         "has_docker": true
       },
       "authelia": {
