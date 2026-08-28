@@ -106,9 +106,6 @@
       ],
       "env_file": false,
       "resources": {
-        "limits": {
-          "memory": "1024M"
-        },
         "reservations": {
           "memory": "64M"
         }

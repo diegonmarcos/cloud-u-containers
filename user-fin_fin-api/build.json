@@ -60,9 +60,6 @@
       "volumes": [],
       "env_file": false,
       "resources": {
-        "limits": {
-          "memory": "512M"
-        },
         "reservations": {
           "memory": "128M"
         }
