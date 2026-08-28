@@ -94,9 +94,6 @@
         "db"
       ],
       "resources": {
-        "limits": {
-          "memory": "1G"
-        },
         "reservations": {
           "memory": "256M"
         }
@@ -117,9 +114,6 @@
       ],
       "env_file": false,
       "resources": {
-        "limits": {
-          "memory": "512M"
-        },
         "reservations": {
           "memory": "128M"
         }

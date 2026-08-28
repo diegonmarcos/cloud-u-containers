@@ -47,11 +47,10 @@
         "send_uploads:/uploads"
       ],
       "env_file": false,
-      "depends_on": ["redis"],
+      "depends_on": [
+        "redis"
+      ],
       "resources": {
-        "limits": {
-          "memory": "256M"
-        },
         "reservations": {
           "memory": "64M"
         }
@@ -75,9 +74,6 @@
       "env_file": false,
       "depends_on": [],
       "resources": {
-        "limits": {
-          "memory": "64M"
-        },
         "reservations": {
           "memory": "16M"
         }
