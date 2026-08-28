@@ -10,19 +10,7 @@
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
     container = builtins.fromJSON (builtins.readFile ./build-dbgate.json);
     # 2026-04-27 migrated: cloud-data-databases.json → _cloud-data-consolidated.json (databases derived from .services[].containers[].db_engine)
-    # _cloud-data-consolidated.json resolution:
-    #   1. /app/_cloud-data-consolidated.json        — bundled in-image
-    #   2. ../../../1_cicd/dist/...               — dev: cloud repo dist/
-    #   3. ../../../cloud-data/...                   — legacy: c3_git_repos clone
-    #   4. ../../../_cloud-data-consolidated.json    — legacy: cloud repo root
-    consolidatedPath =
-      if builtins.pathExists /app/_cloud-data-consolidated.json
-        then /app/_cloud-data-consolidated.json
-      else if builtins.pathExists ../../../1_cloud-configs/dist/_cloud-data-consolidated.json
-        then ../../../1_cloud-configs/dist/_cloud-data-consolidated.json
-      else if builtins.pathExists ../../../cloud-data/_cloud-data-consolidated.json
-        then ../../../cloud-data/_cloud-data-consolidated.json
-      else ../../../_cloud-data-consolidated.json;
+    consolidatedPath = ./_cloud-data-consolidated.json;  # in-tree; guard materialises the src/ symlink at build. Was /app + ../../../1_cloud-configs/... — both forbidden in pure eval post-carve-out.
     consolidated = builtins.fromJSON (builtins.readFile consolidatedPath);
 
     # Derive the database list (same shape as the deprecated split file — migrated 2026-04-27) from
