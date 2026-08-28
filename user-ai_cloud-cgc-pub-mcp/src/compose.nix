@@ -216,7 +216,7 @@ let
     volumes = [ "/var/run/docker.sock:/var/run/docker.sock" ];
     entrypoint = [ "sh" "-c" ''
       cat > /tmp/cloud-cgc-db-restore-all.sh <<'CGC_RESTORE_ALL_EOF_9f3a1b'
-      ${escapeDollars (builtins.readFile ../../../1_cicd/src/ops/cloud-cgc-db-restore-all.sh)}
+      ${escapeDollars (builtins.readFile ./cloud-cgc-db-restore-all.sh)}
       CGC_RESTORE_ALL_EOF_9f3a1b
       sh /tmp/cloud-cgc-db-restore-all.sh
     '' ];
