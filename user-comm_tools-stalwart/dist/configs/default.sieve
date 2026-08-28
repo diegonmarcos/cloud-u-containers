@@ -40,12 +40,6 @@ if header :contains "Subject" ["blocked", "threat", "intrusion", "fail2ban", "ba
 }
 
 # ─── ROUTES ─────────────────────────────────────────────────────
-# route.junk.spam_flagged
-if anyof(header :contains "X-Spam-Status" "Yes", header :contains "X-Spam-Flag" "YES", header :contains "X-Microsoft-Antispam-Message-Info" "spam", header :contains "Authentication-Results" ["dmarc=fail", "spf=fail"]) {
-  fileinto :copy :create "93    🚫 Junk";
-  stop;
-}
-
 # route.profile.tax_authorities
 if address :domain :is "From" ["elster.de", "agenciatributaria.es", "tax.service.gov.uk"] {
   fileinto :copy :create "23    🧻 Government";
@@ -291,6 +285,12 @@ if address :domain :is "From" ["eventbrite.com", "meetup.com", "ticketmaster.com
 # route.lifestyle.dating
 if address :domain :is "From" ["tinder.com", "bumble.com", "hinge.co", "okcupid.com"] {
   fileinto :copy :create "22    📰 Social & General";
+  stop;
+}
+
+# route.junk.spam_flagged
+if anyof(header :contains "X-Spam-Status" "Yes", header :contains "X-Spam-Flag" "YES", header :contains "X-Microsoft-Antispam-Message-Info" "spam", header :contains "Authentication-Results" ["dmarc=fail", "spf=fail"]) {
+  fileinto :copy :create "93    🚫 Junk";
   stop;
 }
 

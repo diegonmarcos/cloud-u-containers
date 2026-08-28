@@ -1132,7 +1132,7 @@
     {
       "id": "route.junk.spam_flagged",
       "kind": "route",
-      "priority": 30,
+      "priority": 150,
       "when": {
         "any_of": [
           {
@@ -1173,7 +1173,7 @@
         "stalwart": "route_only",
         "maddy": "route_only"
       },
-      "comment": "Route anything flagged by upstream spam engines (Stalwart internal, Gmail/Outlook via mail-puller, SA-style headers) into the unified Junk folder. Runs before all other routes so spam never pollutes category folders."
+      "comment": "Route anything flagged by upstream spam engines (Stalwart internal, Gmail/Outlook via mail-puller, SA-style headers) into the unified Junk folder. Runs AFTER the curated route.* domain rules (150 > their 30-110) so an explicitly listed sender beats a heuristic spam flag: every route ends with stop;, so at priority 30 this rule silently swallowed known-good bulk senders that Stalwart false-positives on (wg-gesucht.de -> 24 House, flixbus, pepephone, BVG Jelbi). Still ahead of tag.*/meta.* (200+) and of the 91 Others fallback, so unlisted spam is unaffected."
     },
     {
       "id": "route.cloud_workflows.github_ci",
