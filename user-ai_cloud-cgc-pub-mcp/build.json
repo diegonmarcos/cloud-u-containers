@@ -157,7 +157,8 @@
         "cloud-data",
         "front-data",
         "cloud-u-android",
-        "cloud-data-my-ai-memory"
+        "cloud-data-my-ai-memory",
+        "cloud-u-containers"
       ],
       "_private_repos_comment": "Repos in index_repos whose GitHub source is PRIVATE. Their DBs must never land in the volume the PUBLIC MCP mounts. cloud-cgc-db-restore-all.sh filters these out unless CGC_INCLUDE_PRIVATE=1, which cloud-cgc-pvt-mcp will set together with its own CGC_DB_TARGET_VOLUME. Keep in sync with repo_map: the value is the local_name (the index_repos entry), not the GitHub remote name.",
       "private_repos": [
@@ -172,7 +173,8 @@
         "cloud-data": "cloud-data",
         "front-data": "front-data",
         "cloud-u-android": "cloud-u-android",
-        "cloud-data-my-ai-memory": "cloud-data-my-ai-memory"
+        "cloud-data-my-ai-memory": "cloud-data-my-ai-memory",
+        "cloud-u-containers": "cloud-u-containers"
       },
       "_graphrag_skip_comment": "Subset of index_repos (data-driven, no hardcoded names in the script) whose GraphRAG LLM relationship pass is skipped entirely — pure prose/text corpora have no code semantics to relate, so the pass is zero graph nodes for real per-node LLM cost. Structural/FastEmbed indexing (the semantic phase, USE_LLM=false) still runs normally; only the graphrag phase (USE_LLM=true) skips these repos. Honored by cloud-cgc-db-update.sh's per-repo loop.",
       "graphrag_skip": [
