@@ -73,6 +73,20 @@ pub fn maintain_routing(
             routing_ids.insert(r.folder.as_str(), id.as_str());
         }
     }
+    // The junk folder is managed even though no routing entry targets it: the
+    // junk rule matches on headers (the spam heuristic), and the legacy emitter
+    // only emits from_domain routes, so `93 Junk` never appears in routing[].
+    // Without this the pass could add `24 House` but not take `93 Junk` away,
+    // leaving a curated sender tagged both -- which is exactly what happened to
+    // the wg-gesucht mail. Removing it is provable: a curated route outranks the
+    // spam heuristic (priority 100 vs 150), which is the whole point of the
+    // ordering fix. This keeps 93 in step with the Ec view's carve-out.
+    if let Some(junk) = rules.folders.get("junk") {
+        if let Some(id) = name_to_id.get(junk) {
+            routing_ids.insert(junk.as_str(), id.as_str());
+        }
+    }
+
     if routing_ids.is_empty() {
         tracing::warn!("routing: no target folder exists yet — skipping");
         return Ok(0);
