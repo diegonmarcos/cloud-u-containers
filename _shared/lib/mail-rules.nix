@@ -389,6 +389,30 @@ let
         (map routingFrom (filter isRouteKind sorted));
 
       defFolder = merged.folders.${merged.routing_default} or merged.routing_default;
+
+      # Every from_domain a curated route claims for a NON-junk folder. Junk
+      # routes are excluded or the carve-out would cancel itself out.
+      junkFolder = merged.folders.junk or null;
+      curatedDomains = lib.unique (lib.concatMap
+        (r: if r.folder == junkFolder then []
+            else (r.match.values or []))
+        (filter (r: (r.match.type or "") == "from_domain") routing));
+
+      curatedCarveOut = f:
+        if curatedDomains == [] then f
+        else f // {
+          views = map (v:
+            if (v.excludes_curated_senders or false)
+            then v // {
+              predicate = {
+                all_of = [
+                  v.predicate
+                  { not = { type = "from_domain"; values = curatedDomains; }; }
+                ];
+              };
+            }
+            else v) (f.views or []);
+        };
     in {
       account        = merged.account;
       sieve_require  = merged.sieve_require;
@@ -406,7 +430,22 @@ let
       routing_default = defFolder;
       # Dynamic cross-cutting filter views — maintained by jmap-sorter via
       # JMAP multi-mailbox membership over emails in the numeric folders.
-      filters        = merged.filters or { views = []; section_headers = []; };
+      #
+      # Views carrying `excludes_curated_senders` get "AND NOT from a domain a
+      # curated route claims" folded into their predicate. This is the view
+      # equivalent of sieve priority ordering, and it is needed because the two
+      # engines disagree by construction: a route rule loses to a higher-priority
+      # rule and stops, but a view has NO ordering — its membership is recomputed
+      # from the predicate on every poll. So `Ec Junk`, whose predicate is the
+      # same X-Spam-Status/dmarc=fail heuristic as route.junk.spam_flagged, kept
+      # re-adding wg-gesucht mail no matter how the routes were ordered or how
+      # many times the message was moved out. Those senders genuinely fail SPF
+      # and DMARC; the headers never change, so the predicate is the only place
+      # the carve-out can live.
+      #
+      # The domain list is DERIVED from routing, never restated — a new curated
+      # route is automatically never junk.
+      filters        = curatedCarveOut (merged.filters or { views = []; section_headers = []; });
       folder_renames = merged.folder_renames or { map = {}; };
       # Consumed by the sorter's ensure_mailboxes: decides whether each
       # managed folder is SUBSCRIBED, i.e. whether clients list it at all.
