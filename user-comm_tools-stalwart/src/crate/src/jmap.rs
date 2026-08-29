@@ -251,6 +251,29 @@ impl Client {
         Ok(serde_json::from_value(list).unwrap_or_default())
     }
 
+    /// `Email/set` in batches. Stalwart caps objects per set request
+    /// (`maxObjectsInSet`), and a first backfill re-files thousands of messages
+    /// at once -- the whole pass then fails with "The number of ids requested
+    /// by the client exceeds the maximum" and nothing moves at all. Chunking
+    /// also means a rejected batch costs one batch, not the entire run.
+    ///
+    /// ponytail: 100 to match filters.rs BATCH_SIZE rather than reading
+    /// maxObjectsInSet off the session -- one number, already proven against
+    /// this server by the views pass, which is exactly why that pass survived
+    /// the same backfill that killed routing.
+    pub fn email_set_chunked(&self, updates: Map<String, Value>) -> Result<(usize, usize)> {
+        const CHUNK: usize = 100;
+        let entries: Vec<(String, Value)> = updates.into_iter().collect();
+        let (mut ok, mut bad) = (0usize, 0usize);
+        for batch in entries.chunks(CHUNK) {
+            let patch: Map<String, Value> = batch.iter().cloned().collect();
+            let r = self.email_set(patch)?;
+            ok += r.updated.len();
+            bad += r.not_updated.len();
+        }
+        Ok((ok, bad))
+    }
+
     pub fn email_set(&self, updates: Map<String, Value>) -> Result<SetResponse> {
         if updates.is_empty() {
             return Ok(SetResponse::default());
