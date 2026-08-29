@@ -10,8 +10,12 @@
 //!   * an unknown `predicate.type` is a startup error (see [`Predicate`]),
 //!     where the Python returned `False` and produced a permanently empty
 //!     filter folder that is indistinguishable from a working one;
-//!   * keys the sorter does not consume (`routing`, `sieve_require`, ...) are
-//!     ignored, because routing is owned by the native Sieve.
+//!   * `routing` IS consumed — see `routing.rs`. The Sieve owns routing at
+//!     DELIVERY, but sieve fires once per message and never again, so a rule
+//!     fix or a new rule leaves every already-delivered message where it was.
+//!     The sorter re-applies the same routing rules over all mail, exactly as
+//!     it already does for the filter views.
+//!   * keys the sorter does not consume (`sieve_require`, ...) are ignored.
 
 use serde::Deserialize;
 use std::collections::BTreeMap;
@@ -59,6 +63,19 @@ pub struct Rules {
 
     #[serde(default, deserialize_with = "null_default")]
     pub filters: Filters,
+    /// Routing rules in priority order. Empty means "sieve only", which is
+    /// the pre-2026-08-29 behaviour.
+    #[serde(default, deserialize_with = "null_default")]
+    pub routing: Vec<Route>,
+    /// Folder the SIEVE sends mail no rule claims, at delivery. Parsed so the
+    /// schema round-trips, but deliberately NOT applied by `routing.rs`: the
+    /// backfill only ever adds what a rule positively matched, because this
+    /// rule list is a subset of the sieve's and defaulting would undo the
+    /// rest. See the comment in routing.rs.
+    #[allow(dead_code)]
+    #[serde(default, deserialize_with = "null_default")]
+    pub routing_default: Option<String>,
+
 
     #[serde(default, deserialize_with = "null_default")]
     pub folder_renames: FolderRenames,
@@ -159,6 +176,19 @@ pub struct Filters {
 
 fn default_source_regex() -> String {
     "^[0-9]".to_string()
+}
+
+/// One routing rule. Same predicate DSL as a filter view -- deliberately, so
+/// the generator emits one shape for both -- but routing is ORDERED and
+/// EXCLUSIVE: the list is in sieve priority order, first match wins, and the
+/// message ends up in exactly one folder. A view is unordered and additive.
+#[derive(Debug, Deserialize)]
+pub struct Route {
+    /// Full mailbox name, e.g. "24    \u{1f3e0} House".
+    pub folder: String,
+    /// Emitted as `match` to mirror the sieve rule's `when`.
+    #[serde(rename = "match")]
+    pub predicate: PredicateNode,
 }
 
 #[derive(Debug, Deserialize)]

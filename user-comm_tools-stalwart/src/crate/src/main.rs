@@ -15,6 +15,7 @@
 mod filters;
 mod jmap;
 mod mailboxes;
+mod routing;
 mod rules;
 
 use anyhow::{bail, Result};
@@ -57,6 +58,10 @@ fn one_poll(client: &jmap::Client, rules: &Rules) -> Result<()> {
     // A*/B*/C*/D* filter views over the emails in the numeric folders
     // (membership add/remove; no $seen/$Sorted, no copies).
     filters::maintain_filters(client, rules, &name_to_id, &mailboxes)?;
+    // Routing is owned by the Sieve at DELIVERY, but sieve never revisits a
+    // message. Re-applying the same rules here is what makes a rule fix reach
+    // mail that already arrived -- see routing.rs.
+    routing::maintain_routing(client, rules, &name_to_id, &mailboxes)?;
     Ok(())
 }
 
