@@ -166,19 +166,14 @@ pub fn maintain_routing(
         return Ok(0);
     }
     let n = updates.len();
-    let result = client.email_set(updates)?;
-    if !result.not_updated.is_empty() {
-        tracing::warn!(
-            "routing: {} of {n} re-files rejected, first: {:?}",
-            result.not_updated.len(),
-            result.not_updated.iter().take(3).collect::<Vec<_>>()
-        );
+    let (ok, bad) = client.email_set_chunked(updates)?;
+    if bad > 0 {
+        tracing::warn!("routing: {bad} of {n} re-files rejected");
     }
     tracing::info!(
-        "routing: re-filed {} message(s), {unmatched} left untouched (no rule matched)",
-        result.updated.len()
+        "routing: re-filed {ok} message(s), {unmatched} left untouched (no rule matched)"
     );
-    Ok(result.updated.len())
+    Ok(ok)
 }
 
 #[cfg(test)]
