@@ -1,0 +1,49 @@
+#!/bin/bash
+# cloud-analytics-daily — build + send the Umami and Matomo daily reports.
+#
+#   build.sh build   generate dist/cloud_analytics_{umami,matomo}.{md,html}
+#   build.sh ship    build, then mail each report (reuses the ops sender)
+#
+# Two reports, not one: the engines are independent collectors and the whole
+# point of running both is being able to see them disagree. Merging them into a
+# single document would hide exactly the discrepancy worth looking at.
+set -eu
+
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DIST="${DIST_DIR:-$HERE/../../dist}"
+SENDER="$HERE/../cloud-health-full-daily/src/send.sh"
+DATE=$(date '+%Y-%m-%d')
+WINDOW_H="${WINDOW_H:-24}"
+export WINDOW_H
+
+mkdir -p "$DIST"
+
+gen() { # $1 engine label, $2 query script, $3 slug
+  echo "[analytics] querying $1 …"
+  # A dead engine must not take the other one's report down with it: emit an
+  # empty section set and let render.sh print "No data in this window."
+  if ! "$HERE/src/$2" > "$DIST/.$3.raw" 2>"$DIST/.$3.err"; then
+    echo "[analytics] WARN: $1 query failed — $(tail -1 "$DIST/.$3.err" 2>/dev/null)" >&2
+    : > "$DIST/.$3.raw"
+  fi
+  "$HERE/src/render.sh" "$1" "$DIST/cloud_analytics_$3.md" "$DIST/cloud_analytics_$3.html" < "$DIST/.$3.raw"
+  rm -f "$DIST/.$3.raw" "$DIST/.$3.err"
+}
+
+case "${1:-build}" in
+  build)
+    gen "Umami"  umami-query.sh  umami
+    gen "Matomo" matomo-query.sh matomo
+    ;;
+  ship)
+    "$0" build
+    RC=0
+    for e in umami matomo; do
+      L=$(echo "$e" | sed 's/^./\U&/')
+      MAIL_SUBJECT="Cloud Analytics Report ($L) - $DATE" \
+        "$SENDER" "$DIST/cloud_analytics_$e.html" || RC=1
+    done
+    exit $RC
+    ;;
+  *) echo "usage: build.sh {build|ship}" >&2; exit 2;;
+esac

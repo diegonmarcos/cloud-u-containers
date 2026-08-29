@@ -12,7 +12,10 @@ env:
   - GITHUB_TOKEN: ${GITHUB_TOKEN}
   - UMAMI_USERNAME: ${UMAMI_USERNAME}
   - UMAMI_PASSWORD: ${UMAMI_PASSWORD}
-  - UMAMI_URL: http://10.0.0.6:3006
+  # umami is deployed to oci-analytics (wg 10.0.0.4). 10.0.0.6 is oci-apps,
+  # where nothing answers on 3006 — the umami section of this report has
+  # been silently empty for as long as this line has been wrong.
+  - UMAMI_URL: http://10.0.0.4:3006
 mail_on:
   failure: true
   success: false

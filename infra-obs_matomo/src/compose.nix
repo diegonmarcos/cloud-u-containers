@@ -11,6 +11,7 @@ let
   # Engine builds per-arch Dockerfiles into dist/code/<arch>/ and wraps them
   # into a GHCR image; at runtime we pull the published binaries image.
   binariesImage = "ghcr.io/diegonmarcos/${buildJson.name}-binaries:latest";
+  arch = buildJson.docker.arch;
 in
 {
   services = {
@@ -32,6 +33,25 @@ in
         "matomo_matomo_data:/var/www/html"
         "matomo_matomo_db:/var/lib/mysql"
         "matomo_inbox:/inbox"
+      ]
+      # Bind the SHIPPED config/ over the copies baked into the image, at the
+      # exact paths src/code/Dockerfile COPYs them to.
+      #
+      # Without this, editing src/code/config/ does nothing: the deploy faithfully
+      # ships those files to <remote_path>/code/<arch>/config/ and the container
+      # then ignores them, because the running image carries its own copy from
+      # build time. Worse, this service's binaries image has never been pushed to
+      # GHCR at all (the package `matomo-binaries` does not exist; `--pull always`
+      # 404s and compose silently falls back to a local image from weeks ago), so
+      # "rebuild the image" was not in practice a way to change a config either.
+      # That is how matomo sat dead for two days with the fix already on disk.
+      ++ map (c: "../code/${arch}/config/${c.src}:${c.dst}:ro") [
+        { src = "supervisord.conf";   dst = "/etc/supervisor/supervisord.conf"; }
+        { src = "receiver-nginx.conf"; dst = "/etc/nginx/sites-available/receiver.conf"; }
+        { src = "matomo-nginx.conf";  dst = "/etc/nginx/matomo-nginx.conf"; }
+        { src = "receiver-fpm.conf";  dst = "/etc/php/8.2/fpm/receiver-fpm.conf"; }
+        { src = "matomo-fpm.conf";    dst = "/etc/php/8.2/fpm/matomo-fpm.conf"; }
+        { src = "mariadb.cnf";        dst = "/etc/mysql/mariadb.conf.d/99-matomo.cnf"; }
       ];
       env_file = [ ".secrets" ];
       environment = {

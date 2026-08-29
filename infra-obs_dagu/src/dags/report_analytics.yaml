@@ -1,0 +1,58 @@
+# ══════════════════════════════════════════════════════════════════════
+# Cloud Analytics Report — daily Umami + Matomo digest, mailed like the
+# C3 Daily Ops Report (report_daily.yaml).
+#
+# Runs an hour after report_daily so the two never contend for the mail
+# submission path, and reads a full 24h window regardless.
+#
+# Both engines are read over SSH + `docker exec` + SQL rather than their HTTP
+# APIs. That is not laziness about auth, it is the only uniform option:
+#   · umami lives on oci-analytics, matomo on oci-apps — no single host sees both;
+#   · no MATOMO_API_TOKEN is provisioned in the fleet (matomo's compose
+#     interpolates one, but secrets.yaml has never carried the key);
+#   · matomo's MariaDB is socket-only (skip-networking), because the container
+#     is host-networked and 3306 belongs to photoprism_mariadb — there is no
+#     TCP listener to reach even from its own host.
+# The SSH key the reports runner already mounts covers all of it, so this DAG
+# adds no new credential.
+# ══════════════════════════════════════════════════════════════════════
+schedule: "0 8 * * *"
+type: graph
+env:
+  - NOREPLY_PASSWORD: ${NOREPLY_PASSWORD}
+  # Stalwart leg authenticates as me@ — see send.sh.
+  - STALWART_LOGIN_PASSWORD: ${STALWART_LOGIN_PASSWORD}
+mail_on:
+  failure: true
+  success: false
+steps:
+  - name: analytics-mail
+    # --network host: the SSH hops target WG mesh addresses (10.0.0.x).
+    # /opt/ssh-keys/dagu is the same key mount report_daily.yaml uses; the
+    # entrypoint's `bash|sh)` case installs the SSH config before exec'ing.
+    command: |
+      docker run --rm --network host \
+        --pull always \
+        -v /opt/ssh-keys/dagu:/root/.ssh \
+        -v dagu_dagu_data:/var/lib/dagu/data \
+        -v octocode_repos:/repos:ro \
+        -w /var/lib/dagu/data/cloud-source/a_solutions/infra-obs_reports/src \
+        -e CLOUD_DATA_DIR=/repos/cloud-infra/1_cloud-configs/dist \
+        -e NOREPLY_PASSWORD="$NOREPLY_PASSWORD" \
+        -e STALWART_LOGIN_PASSWORD="$STALWART_LOGIN_PASSWORD" \
+        -e LOCAL_ENVELOPE_FROM="no-reply@diegonmarcos.com" \
+        -e WINDOW_H=24 \
+        ghcr.io/diegonmarcos/cloud-data-reports:latest \
+        bash src/cloud-analytics-daily/build.sh ship
+
+      # Persist the rendered reports into the cloud-data checkout, exactly as
+      # report_daily.yaml does: cloud-source/ is hard-reset hourly by
+      # sync_secrets.yaml, so dist/ written there is not kept by anything.
+      docker run --rm --entrypoint sh \
+        -v dagu_dagu_data:/var/lib/dagu/data \
+        ghcr.io/diegonmarcos/cloud-data-reports:latest -c '
+          set -e
+          mkdir -p /var/lib/dagu/data/cloud-data/y_old/reports/dist
+          cp -a /var/lib/dagu/data/cloud-source/a_solutions/infra-obs_reports/src/dist/. \
+                /var/lib/dagu/data/cloud-data/y_old/reports/dist/
+        '

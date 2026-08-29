@@ -29,6 +29,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # SCRIPT_DIR = reports/src/cloud-health-full-daily/src/  →  reports/ is 3 up.
 HTML_FILE="${1:-$SCRIPT_DIR/../../../dist/cloud_health_daily.html}"
 DATE=$(date '+%Y-%m-%d')
+# Subject is env-driven so other daily reports (cloud-analytics-daily) can
+# reuse this sender verbatim. Every SMTP quirk worked out below — the
+# external-envelope/local-routing trick, Stalwart's :2025 MX fallback, the
+# base64 -w 76 line-length cap — is report-agnostic and must not be forked.
+MAIL_SUBJECT="${MAIL_SUBJECT:-C3 Daily Ops Report - $DATE}"
 
 MAIL_FROM="${MAIL_FROM:-no-reply@diegonmarcos.com}"
 MAIL_TO="${MAIL_TO:-me@diegonmarcos.com}"
@@ -57,7 +62,7 @@ trap 'rm -f "$MIME_FILE"' EXIT
 cat > "$MIME_FILE" <<EOHEADERS
 From: $MAIL_FROM
 To: $MAIL_TO
-Subject: C3 Daily Ops Report - $DATE
+Subject: $MAIL_SUBJECT
 MIME-Version: 1.0
 Content-Type: text/html; charset=UTF-8
 Content-Transfer-Encoding: base64
@@ -99,7 +104,7 @@ STALWART_LOGIN_PASSWORD="${STALWART_LOGIN_PASSWORD:-$STALWART_NOREPLY_PASSWORD}"
 
 RC=0
 if deliver_local "$MAIL_SUBMIT_PRIMARY" "$MAIL_USER" "$NOREPLY_PASSWORD"; then
-  echo "C3 Daily Ops Report $DATE → Maddy local mailbox (IMAP) via $MAIL_SUBMIT_PRIMARY"
+  echo "$MAIL_SUBJECT → Maddy local mailbox (IMAP) via $MAIL_SUBMIT_PRIMARY"
 else
   echo "FAILED local delivery to Maddy ($MAIL_SUBMIT_PRIMARY)" >&2; RC=1
 fi
@@ -115,7 +120,7 @@ _sl="${MAIL_SUBMIT_FALLBACK/smtps:\/\//smtp:\/\/}"
 STALWART_LOCAL_MX="${STALWART_LOCAL_MX:-${_sl/:2465/:2025}}"
 if curl -s --show-error --url "$STALWART_LOCAL_MX" --ssl -k \
      --mail-from "$MAIL_FROM" --mail-rcpt "$MAIL_TO" -T "$MIME_FILE"; then
-  echo "C3 Daily Ops Report $DATE → Stalwart local mailbox (JMAP) via $STALWART_LOCAL_MX (MX, RCPT $MAIL_TO)"
+  echo "$MAIL_SUBJECT → Stalwart local mailbox (JMAP) via $STALWART_LOCAL_MX (MX, RCPT $MAIL_TO)"
 else
   echo "FAILED local delivery to Stalwart ($STALWART_LOCAL_MX)" >&2; RC=1
 fi
