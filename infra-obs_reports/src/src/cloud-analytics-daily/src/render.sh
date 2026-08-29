@@ -11,6 +11,7 @@ NOW=$(date '+%Y-%m-%d %H:%M %Z')
 # Section titles and the column headers each one carries.
 hdr_for() {
   case "$1" in
+    ENGINE)    echo "Component|State";;
     SITES)     echo "Website|Pageviews|Visitors|Avg session (s)";;
     APPS)      echo "App|Events|Installs seen|app_open";;
     PAGES)     echo "Page|Views";;
@@ -23,6 +24,7 @@ hdr_for() {
 }
 title_for() {
   case "$1" in
+    ENGINE)    echo "Engine health";;
     SITES)     echo "Websites";;
     APPS)      echo "Android apps";;
     PAGES)     echo "Top pages";;
@@ -50,7 +52,7 @@ RAW=$(cat)
     echo "| Sessions / sources | $(echo "$SUM" | cut -d'|' -f3) |"
     echo
   fi
-  for S in SITES APPS PAGES COUNTRIES DEVICES REFERRERS HOURLY; do
+  for S in ENGINE SITES APPS PAGES COUNTRIES DEVICES REFERRERS HOURLY; do
     BODY=$(printf '%s\n' "$RAW" | awk -v s="^##$S\$" '$0~s{f=1;next}/^##/{f=0}f' | sed '/^$/d')
     echo "## $(title_for "$S")"; echo
     if [ -z "$BODY" ]; then
@@ -88,7 +90,7 @@ EOH
     done
     echo '</table>'
   fi
-  for S in SITES APPS PAGES COUNTRIES DEVICES REFERRERS HOURLY; do
+  for S in ENGINE SITES APPS PAGES COUNTRIES DEVICES REFERRERS HOURLY; do
     BODY=$(printf '%s\n' "$RAW" | awk -v s="^##$S\$" '$0~s{f=1;next}/^##/{f=0}f' | sed '/^$/d')
     echo "<h2 style=\"font-size:15px;margin:22px 0 8px;padding-bottom:6px;border-bottom:2px solid #1877f2\">$(title_for "$S")</h2>"
     if [ -z "$BODY" ]; then
