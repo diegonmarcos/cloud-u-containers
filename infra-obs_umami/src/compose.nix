@@ -50,7 +50,10 @@ in
         start_period = "30s";
       };
       deploy.resources = {
-        limits       = { memory = app.resources.limits.memory; };
+        # No memory ceiling: build.json declares no limits.memory. A cgroup memory.max
+        # is a LOCAL wall that reclaims from this container regardless of host free
+        # RAM; pressure is the PSI watchdog's job. Reading the absent attribute is
+        # itself an eval error, so do not read it.
         reservations = { memory = app.resources.reservations.memory; };
       };
     };
@@ -77,7 +80,10 @@ in
         retries  = 5;
       };
       deploy.resources = {
-        limits       = { memory = db.resources.limits.memory; };
+        # No memory ceiling: build.json declares no limits.memory. A cgroup memory.max
+        # is a LOCAL wall that reclaims from this container regardless of host free
+        # RAM; pressure is the PSI watchdog's job. Reading the absent attribute is
+        # itself an eval error, so do not read it.
         reservations = { memory = db.resources.reservations.memory; };
       };
     };

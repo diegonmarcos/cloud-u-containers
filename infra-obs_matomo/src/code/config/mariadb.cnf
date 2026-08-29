@@ -12,6 +12,11 @@ max_allowed_packet = 64M
 socket = /run/mysqld/mysqld.sock
 datadir = /var/lib/mysql
 
+# network_mode: host means a TCP listener here collides with other host
+# services (photoprism_mariadb owns 3306). This DB is consumed only by the
+# co-located Matomo PHP over the unix socket above, so never bind TCP.
+skip-networking = 1
+
 # Performance (1GB RAM VM)
 innodb_log_file_size = 48M
 innodb_flush_log_at_trx_commit = 2
