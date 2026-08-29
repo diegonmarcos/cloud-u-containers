@@ -58,6 +58,19 @@ in
         { src = "receiver-fpm.conf";  dst = "/etc/php/8.2/fpm/receiver-fpm.conf"; }
         { src = "matomo-fpm.conf";    dst = "/etc/php/8.2/fpm/matomo-fpm.conf"; }
         { src = "mariadb.cnf";        dst = "/etc/mysql/mariadb.conf.d/99-matomo.cnf"; }
+      ]
+      # scripts/ and receiver/ have exactly the same problem as config/: they are
+      # baked in at image build time, and this image is never rebuilt. That is how
+      # import-inbox.sh kept dropping every POST hit — it read only .query, so no
+      # Android app event could ever be ingested — with the corrected script
+      # sitting on the host, unused.
+      ++ map (c: "./code/${arch}/${c.src}:${c.dst}:ro") [
+        { src = "scripts/entrypoint.sh";      dst = "/scripts/entrypoint.sh"; }
+        { src = "scripts/matomo-wake.sh";     dst = "/scripts/matomo-wake.sh"; }
+        { src = "scripts/matomo-sleep.sh";    dst = "/scripts/matomo-sleep.sh"; }
+        { src = "scripts/import-inbox.sh";    dst = "/scripts/import-inbox.sh"; }
+        { src = "scripts/matomo-archiver.sh"; dst = "/scripts/matomo-archiver.sh"; }
+        { src = "receiver/receive.php";       dst = "/var/www/receiver/receive.php"; }
       ];
       env_file = [ ".secrets" ];
       environment = {

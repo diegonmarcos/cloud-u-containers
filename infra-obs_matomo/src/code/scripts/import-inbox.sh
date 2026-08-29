@@ -84,7 +84,15 @@ for filepath in "${FILE_LIST[@]}"; do
     [ -z "$filepath" ] && continue
 
     # Parse JSON payload
+    # A GET hit carries its params in .query; a POST hit carries them in
+    # .post_body (receive.php records the raw body verbatim). Reading only
+    # .query silently dropped EVERY POST — which is exactly what the Android
+    # analytics module sends, so no app event could ever reach Matomo even
+    # with the collector healthy. Prefer .query, fall back to .post_body.
     query=$(jq -r '.query // ""' "$filepath" 2>/dev/null) || query=""
+    if [ -z "$query" ]; then
+        query=$(jq -r '.post_body // ""' "$filepath" 2>/dev/null) || query=""
+    fi
     ip=$(jq -r '.ip // ""' "$filepath" 2>/dev/null) || ip=""
     timestamp=$(jq -r '.timestamp // ""' "$filepath" 2>/dev/null) || timestamp=""
 
