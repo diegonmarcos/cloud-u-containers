@@ -42,7 +42,10 @@ in
         MATOMO_API_TOKEN         = "\${MATOMO_API_TOKEN}";
       };
       deploy.resources = {
-        limits       = { memory = app.resources.limits.memory; };
+        # No memory ceiling: build.json declares no limits.memory. A cgroup memory.max
+        # is a LOCAL wall that reclaims from this container regardless of host free
+        # RAM; pressure is the PSI watchdog's job. Reading the absent attribute is
+        # itself an eval error, so do not read it.
         reservations = { memory = app.resources.reservations.memory; };
       };
     };

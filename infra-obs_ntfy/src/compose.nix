@@ -38,7 +38,11 @@ in
       # (cloud-data-config-derive emits svc.<name>.ip per VM WG address).
       ports = [ "${svc.ntfy.ip}:${toString buildJson.ports.app}:${toString buildJson.ports.app}" ];
       deploy.resources = {
-        limits       = { memory = appC.resources.limits.memory;       cpus = "1.0"; };
+        # No memory ceiling: build.json declares no limits.memory. A cgroup memory.max
+        # is a LOCAL wall that reclaims from this container regardless of host free
+        # RAM; pressure is the PSI watchdog's job. Reading the absent attribute is
+        # itself an eval error, so do not read it.
+        limits       = { cpus = "1.0"; };
         reservations = { memory = appC.resources.reservations.memory; };
       };
     };
@@ -58,7 +62,11 @@ in
       ];
       depends_on.ntfy = { condition = "service_started"; };
       deploy.resources = {
-        limits       = { memory = syslogC.resources.limits.memory;       cpus = "1.0"; };
+        # No memory ceiling: build.json declares no limits.memory. A cgroup memory.max
+        # is a LOCAL wall that reclaims from this container regardless of host free
+        # RAM; pressure is the PSI watchdog's job. Reading the absent attribute is
+        # itself an eval error, so do not read it.
+        limits       = { cpus = "1.0"; };
         reservations = { memory = syslogC.resources.reservations.memory; };
       };
     };
@@ -77,7 +85,11 @@ in
       ];
       depends_on.ntfy = { condition = "service_started"; };
       deploy.resources = {
-        limits       = { memory = githubRssC.resources.limits.memory;       cpus = "1.0"; };
+        # No memory ceiling: build.json declares no limits.memory. A cgroup memory.max
+        # is a LOCAL wall that reclaims from this container regardless of host free
+        # RAM; pressure is the PSI watchdog's job. Reading the absent attribute is
+        # itself an eval error, so do not read it.
+        limits       = { cpus = "1.0"; };
         reservations = { memory = githubRssC.resources.reservations.memory; };
       };
     };
@@ -100,7 +112,11 @@ in
       ports = [ "${svc.ntfy.ip}:${toString buildJson.ports.rss_gateway}:${toString buildJson.ports.rss_gateway}" ];
       depends_on.ntfy = { condition = "service_started"; };
       deploy.resources = {
-        limits       = { memory = rssGatewayC.resources.limits.memory;       cpus = "1.0"; };
+        # No memory ceiling: build.json declares no limits.memory. A cgroup memory.max
+        # is a LOCAL wall that reclaims from this container regardless of host free
+        # RAM; pressure is the PSI watchdog's job. Reading the absent attribute is
+        # itself an eval error, so do not read it.
+        limits       = { cpus = "1.0"; };
         reservations = { memory = rssGatewayC.resources.reservations.memory; };
       };
     };
