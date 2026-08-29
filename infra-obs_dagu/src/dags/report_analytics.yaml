@@ -42,6 +42,14 @@ steps:
         -e STALWART_LOGIN_PASSWORD="$STALWART_LOGIN_PASSWORD" \
         -e LOCAL_ENVELOPE_FROM="no-reply@diegonmarcos.com" \
         -e WINDOW_H=24 \
+        `# This report reads two databases over SSH and touches no HTTP
+         # endpoint, so it needs no Authelia bearer. The shared entrypoint
+         # otherwise refuses to start ("BEARER_TOKEN unset") because a
+         # health report without one would false-fail private endpoints and
+         # mask real state. REQUIRE_BEARER=false is the entrypoint own
+         # documented opt-out for a run that checks nothing bearer-gated —
+         # declaring an unused secret here would be worse.` \
+        -e REQUIRE_BEARER=false \
         ghcr.io/diegonmarcos/cloud-data-reports:latest \
         bash src/cloud-analytics-daily/build.sh ship
 
