@@ -21,6 +21,14 @@ remote() { ssh -o BatchMode=yes -o ConnectTimeout=15 "$HOST" 'bash -s'; }
 remote <<EOF
 W="${WINDOW_H} hours"
 
+# Same rationale as matomo-query.sh: emitted first and unconditionally so a
+# dead collector is never indistinguishable from a quiet day.
+echo "##ENGINE"
+if $DB "select 1;" 2>/dev/null | grep -q 1; then echo "database|reachable"; else echo "database|DOWN — no data can be ingested"; fi
+for c in umami umami-db; do
+  echo "\$c|\$(docker inspect -f '{{.State.Status}}{{if .State.Health}} ({{.State.Health.Status}}){{end}}' \$c 2>/dev/null || echo missing)"
+done
+
 echo "##SUMMARY"
 $DB "select count(*) filter (where event_type=1),
             count(distinct session_id),
