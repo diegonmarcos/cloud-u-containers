@@ -27,8 +27,15 @@ fi
 
 # Check for API token
 if [ -z "$TOKEN" ]; then
-    echo "[import] WARNING: MATOMO_API_TOKEN not set, cip (client IP) override will not work"
-    echo "[import] Payloads will be imported but with server IP instead of original client IP"
+    echo "[import] WARNING: MATOMO_API_TOKEN not set — Matomo IGNORES both cip and cdt"
+    echo "[import]   · cip: every visit is attributed to the server IP, so location_country"
+    echo "[import]     is 'xx' for the whole batch."
+    echo "[import]   · cdt: any hit older than 24h is stamped with the IMPORT time instead of"
+    echo "[import]     when it was captured. A backlog therefore collapses into one hour and"
+    echo "[import]     every by-time report of it is wrong. THIS IS SILENT — the requests"
+    echo "[import]     succeed, the counts look right, only the timestamps are fiction."
+    echo "[import]   Provision MATOMO_API_TOKEN (sops) before importing a backlog you intend"
+    echo "[import]   to trust for anything time-based."
 fi
 
 IMPORTED=0
