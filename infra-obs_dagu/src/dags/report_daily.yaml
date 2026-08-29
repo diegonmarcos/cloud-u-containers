@@ -51,7 +51,17 @@ steps:
         -e BEARER_TOKEN="$AUTHELIA_BEARER_TOKEN" \
         -e NOREPLY_PASSWORD="$NOREPLY_PASSWORD" \
         -e STALWART_LOGIN_PASSWORD="$STALWART_LOGIN_PASSWORD" \
-        -e LOCAL_ENVELOPE_FROM="no-reply@diegonmarcos.com" \
+        `# Do NOT set LOCAL_ENVELOPE_FROM to an address in a LOCAL domain.
+         # send.sh defaults it to no-reply@bounce.diegonmarcos.com — an
+         # EXTERNAL domain — on purpose: maddy/stalwart then match
+         # default_source and route to local_routing (the mailbox). A
+         # local-domain envelope matches the outbound remote_queue instead,
+         # relays out, and the OCI-relay -> Cloudflare hop drops it on
+         # SPF/DKIM/DMARC. maddy still logs "submission: accepted" then
+         # "delivered", so it reads as success while the mail lands nowhere
+         # at all. Proven on report_analytics 2026-08-29: both reports
+         # logged delivered and were absent from the IMAP store AND Gmail;
+         # removing this line made them arrive on the next run.` \
         -e HTTP_TO_SMTP_PROXY_API_URL="$HTTP_TO_SMTP_PROXY_API_URL" \
         -e HTTP_TO_SMTP_PROXY_API_KEY="$HTTP_TO_SMTP_PROXY_API_KEY" \
         -e GITHUB_TOKEN="$GITHUB_TOKEN" \
