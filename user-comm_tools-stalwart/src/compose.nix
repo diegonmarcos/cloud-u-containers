@@ -107,6 +107,14 @@ in
         JMAP_URL       = "https://${app.container_name}:${appJmapInternalPort}";
         RULES_PATH     = "/data/mail-rules.json";
         STARTUP_DELAY  = "20";
+        # 30s (the code default) re-queried 27 filter views over a 9k-message
+        # Inbox every half minute and was the bulk of this box's IO pressure
+        # (psi io full ~15% -- 15% of every window with EVERY task stalled on
+        # disk, on 2 cores shared with maddy). Nothing these views partition on
+        # is fast-moving: the tightest time window is measured in hours, and
+        # read-state can lag a few minutes without anyone noticing. 300s is the
+        # same work at a tenth the cost.
+        POLL_INTERVAL  = "300";
       };
       # Only the rules travel as an asset now — the sorter itself is compiled
       # into the image (docker.native_build), so there is no interpreter and

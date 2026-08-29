@@ -24,7 +24,7 @@ use crate::rules::{Predicate, PredicateNode, Rules, View};
 /// Emails per `Email/get` / `Email/set` call.
 const BATCH_SIZE: usize = 100;
 
-const EMAIL_PROPS: &[&str] = &[
+pub const EMAIL_PROPS: &[&str] = &[
     "size",
     "receivedAt",
     "keywords",
@@ -49,7 +49,7 @@ fn from_domain(em: &Email) -> String {
 /// Header names every `HeaderContains` atom across `views` references, as
 /// `header:X:asText` JMAP property strings — appended to [`EMAIL_PROPS`] so
 /// adding a header-based view never needs a matching Rust edit here.
-fn headers_referenced(views: &[View]) -> Vec<String> {
+pub fn headers_referenced<'a>(preds: impl Iterator<Item = &'a PredicateNode>) -> Vec<String> {
     fn walk(node: &PredicateNode, out: &mut HashSet<String>) {
         match node {
             PredicateNode::AnyOf(children) | PredicateNode::AllOf(children) => {
@@ -63,8 +63,8 @@ fn headers_referenced(views: &[View]) -> Vec<String> {
         }
     }
     let mut names = HashSet::new();
-    for v in views {
-        walk(&v.predicate, &mut names);
+    for p in preds {
+        walk(p, &mut names);
     }
     names.into_iter().map(|h| format!("header:{h}:asText")).collect()
 }
@@ -298,7 +298,7 @@ pub fn maintain_filters(
     // Set form for the per-message "is this still in scope?" test below.
     let source_set: HashSet<&str> = source_ids.iter().map(String::as_str).collect();
 
-    let header_props = headers_referenced(views);
+    let header_props = headers_referenced(views.iter().map(|v| &v.predicate));
     let props: Vec<&str> = EMAIL_PROPS
         .iter()
         .copied()
