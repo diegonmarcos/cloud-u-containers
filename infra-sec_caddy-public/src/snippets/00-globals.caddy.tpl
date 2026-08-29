@@ -15,8 +15,16 @@
   # cert times out ("waiting for record to fully propagate" — apex / vpn /
   # suite / nexus stuck at attempt 21, 2026-06-23). 1.1.1.1 polls Cloudflare's
   # public authoritative view directly.
+  # Same default as gcp-proxy's caddy, so the two instances cannot drift on
+  # TLS again: the 2026-06-23 fix landed here and not there, and the result
+  # was 29 uncertificated vhosts on the other host. 8.8.8.8 is a fallback if
+  # 1.1.1.1 is unreachable; the explicit propagation delay/timeout keep the
+  # first poll from racing the TXT write. Values taken from the per-site
+  # blocks that survived that incident.
   acme_dns cloudflare {env.CF_API_TOKEN} {
-    resolvers 1.1.1.1
+    resolvers 1.1.1.1 8.8.8.8
+    propagation_delay 30s
+    propagation_timeout 5m
   }
   # caddy-l4 owns :443 (Phase 3): https_port 8443 keeps Caddy HTTPS off
   # the public socket so caddy-l4 SNI mux + fall-through can run.
