@@ -19,8 +19,19 @@
   # internal_error alert because Caddy had no certificate to present for that
   # SNI. Only mta-sts and the *.diegonmarcos.com catch-all carried per-site
   # overrides; fixing it globally makes those redundant rather than load-bearing.
+  # These are the mta-sts / catch-all per-site values promoted to the default,
+  # not a weaker global. Those two blocks are the ONLY vhosts here that kept
+  # their certs through the outage, so their settings are the ones with
+  # evidence behind them: a second resolver in case 1.1.1.1 is unreachable,
+  # and explicit propagation timing so the first poll does not race the TXT
+  # write it is polling for. Every vhost now inherits that by default; the
+  # per-site tls{} blocks in 90-mta-sts and 99-catch-all become redundant
+  # rather than load-bearing, and are left in place only so this change does
+  # not touch the two hosts that were already working.
   acme_dns cloudflare {env.CF_API_TOKEN} {
-    resolvers 1.1.1.1
+    resolvers 1.1.1.1 8.8.8.8
+    propagation_delay 30s
+    propagation_timeout 5m
   }
   # caddy-l4 owns :443 (Phase 3): https_port 8443 keeps Caddy HTTPS off
   # the public socket so caddy-l4 SNI mux + fall-through can run.
