@@ -19,11 +19,22 @@ HOST="${MATOMO_SSH_HOST:-oci-apps}"
 WINDOW_H="${WINDOW_H:-24}"
 
 ssh -o BatchMode=yes -o ConnectTimeout=15 "$HOST" 'bash -s' <<EOF
-set -eu
+set -u
 W=${WINDOW_H}
-PW=\$(docker exec matomo-hybrid sh -c 'echo \$MATOMO_DATABASE_PASSWORD')
-q() { docker exec matomo-hybrid mysql -umatomo -p"\$PW" matomo -N -B -e "\$1" 2>/dev/null | tr '\t' '|'; }
+PW=\$(docker exec matomo-hybrid sh -c 'echo \$MATOMO_DATABASE_PASSWORD' 2>/dev/null || echo '')
+q() { docker exec matomo-hybrid mysql -umatomo -p"\$PW" matomo -N -B -e "\$1" 2>/dev/null | tr '\t' '|' || true; }
 CUT="DATE_SUB(NOW(), INTERVAL \$W HOUR)"
+
+# Emitted FIRST and unconditionally. When Matomo's DB is down every metric
+# section below is empty, and an empty report reads identically to "a quiet
+# day" — which is exactly how this engine sat dead for two days. The backlog
+# and the per-process status are the numbers that tell those apart.
+echo "##ENGINE"
+if q "select 1;" | grep -q 1; then echo "database|reachable"; else echo "database|DOWN — no data can be ingested"; fi
+docker exec matomo-hybrid supervisorctl status 2>/dev/null | awk '{print \$1"|"\$2}' || true
+
+echo "##INBOX"
+docker exec matomo-hybrid sh -c 'ls /inbox 2>/dev/null | wc -l' 2>/dev/null || echo 0
 
 echo "##SUMMARY"
 q "select
@@ -75,6 +86,4 @@ echo "##HOURLY"
 q "select date_format(server_time,'%m-%d %H:00'), count(*)
    from matomo_log_link_visit_action where server_time > \$CUT group by 1 order by 1;"
 
-echo "##INBOX"
-docker exec matomo-hybrid sh -c 'ls /inbox 2>/dev/null | wc -l'
 EOF
