@@ -44,6 +44,34 @@ fn is_transport_error(err: &anyhow::Error) -> bool {
     })
 }
 
+
+/// Name of the sentinel mailbox the SuperApp creates to ask for an immediate
+/// re-apply. A mailbox, not a keyword or an HTTP endpoint, because JMAP
+/// mailboxes are just tags: creating one needs no new service, no new port and
+/// no secret in the APK, and the sorter is already authenticated to see it.
+const REAPPLY_SENTINEL: &str = ".reapply";
+
+/// Poll in short ticks so a tap does not wait out the full interval. Each tick
+/// is one cheap `Mailbox/get`; the expensive pass still runs at most once per
+/// POLL_INTERVAL, or immediately when the sentinel shows up.
+const TICK: Duration = Duration::from_secs(10);
+
+/// True if the sentinel exists. Consumes it, so one tap means one pass and a
+/// failed pass does not loop forever on a sentinel nobody cleared.
+fn take_reapply_request(client: &jmap::Client) -> Result<bool> {
+    let Some(mb) = client
+        .mailbox_get()?
+        .into_iter()
+        .find(|m| m.name == REAPPLY_SENTINEL)
+    else {
+        return Ok(false);
+    };
+    // Destroy without touching mail: the sentinel never holds any.
+    client.mailbox_set(None, None, Some(vec![mb.id]), false)?;
+    tracing::info!("re-apply requested via {REAPPLY_SENTINEL} — running now");
+    Ok(true)
+}
+
 fn one_poll(client: &jmap::Client, rules: &Rules) -> Result<()> {
     // One-time in-place renames first (old -> new name), so a renamed folder
     // keeps its emails instead of being recreated empty and the old one reaped
@@ -148,7 +176,22 @@ fn main() -> Result<()> {
                 }
                 tracing::error!("Sort error: {e:#}");
             }
-            std::thread::sleep(poll_interval);
+
+            // Sleep in ticks so the sentinel is noticed in ~10s rather than up
+            // to POLL_INTERVAL. A tick is one Mailbox/get against a handful of
+            // mailboxes -- nothing next to the full pass, which is what let the
+            // interval go to 300s in the first place.
+            let mut slept = Duration::ZERO;
+            while slept < poll_interval {
+                std::thread::sleep(TICK);
+                slept += TICK;
+                match take_reapply_request(&client) {
+                    Ok(true) => break,
+                    Ok(false) => {}
+                    Err(e) if is_transport_error(&e) => break,
+                    Err(e) => tracing::warn!("sentinel check failed: {e:#}"),
+                }
+            }
         }
     }
 }
