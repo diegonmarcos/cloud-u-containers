@@ -8,7 +8,20 @@
   # and supports wildcard certs for *.diegonmarcos.com. Token sourced
   # from .secrets (env_file in compose.nix). Phase 2a of public-surface
   # collapse plan (a0_tasks/TASK-net-20260508-01_collapse-public-to-443.md).
-  acme_dns cloudflare {env.CF_API_TOKEN}
+  # resolvers 1.1.1.1: same fix caddy-public got on 2026-06-23, ported here.
+  # This host's resolver is Hickory (10.0.0.1), which answers
+  # *.diegonmarcos.com → 10.0.0.1 and has NO view of the Cloudflare
+  # _acme-challenge TXT. Without it certmagic writes the TXT fine, then polls
+  # Hickory, never sees it, and issuance times out ("waiting for record to
+  # fully propagate"). caddy-public was patched then; gcp-proxy was not, so
+  # every vhost here without a per-site tls{} override never got a cert --
+  # mcp.diegonmarcos.com among them, which aborted TLS handshakes with an
+  # internal_error alert because Caddy had no certificate to present for that
+  # SNI. Only mta-sts and the *.diegonmarcos.com catch-all carried per-site
+  # overrides; fixing it globally makes those redundant rather than load-bearing.
+  acme_dns cloudflare {env.CF_API_TOKEN} {
+    resolvers 1.1.1.1
+  }
   # caddy-l4 owns :443 (Phase 3): https_port 8443 keeps Caddy HTTPS off
   # the public socket so caddy-l4 SNI mux + fall-through can run.
   https_port 8443
