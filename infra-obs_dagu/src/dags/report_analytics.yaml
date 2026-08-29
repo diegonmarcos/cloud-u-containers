@@ -40,7 +40,18 @@ steps:
         -e CLOUD_DATA_DIR=/repos/cloud-infra/1_cloud-configs/dist \
         -e NOREPLY_PASSWORD="$NOREPLY_PASSWORD" \
         -e STALWART_LOGIN_PASSWORD="$STALWART_LOGIN_PASSWORD" \
-        -e LOCAL_ENVELOPE_FROM="no-reply@diegonmarcos.com" \
+        `# Do NOT set LOCAL_ENVELOPE_FROM to an address in a LOCAL domain.
+         # send.sh defaults it to no-reply@bounce.diegonmarcos.com — an
+         # EXTERNAL domain — on purpose: maddy/stalwart then match
+         # default_source and route to local_routing (the mailbox). A
+         # local-domain envelope matches the outbound remote_queue instead,
+         # relays out, and the OCI-relay -> Cloudflare hop drops it on
+         # SPF/DKIM/DMARC. maddy still logs "submission: accepted" then
+         # "delivered", so it reads as success while the mail lands nowhere.
+         # Proven 2026-08-29: with the override both reports logged
+         # delivered and were absent from the IMAP store AND Gmail; without
+         # it they arrived (INBOX 9349 -> 9351) and the Stalwart leg, which
+         # had been timing out, succeeded too.` \
         -e WINDOW_H=24 \
         `# This report reads two databases over SSH and touches no HTTP
          # endpoint, so it needs no Authelia bearer. The shared entrypoint
