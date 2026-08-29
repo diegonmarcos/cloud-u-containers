@@ -37,6 +37,12 @@ in
       # Bind the SHIPPED config/ over the copies baked into the image, at the
       # exact paths src/code/Dockerfile COPYs them to.
       #
+      # Paths are ./-relative to the PROJECT directory (<remote_path>), not to
+      # the compose file that sits in <remote_path>/compose/. Getting that wrong
+      # does not fail loudly: docker auto-creates the missing host path as a
+      # DIRECTORY, then dies with "are you trying to mount a directory onto a
+      # file" and leaves the container in `created` — nothing running, no logs.
+      #
       # Without this, editing src/code/config/ does nothing: the deploy faithfully
       # ships those files to <remote_path>/code/<arch>/config/ and the container
       # then ignores them, because the running image carries its own copy from
@@ -45,7 +51,7 @@ in
       # 404s and compose silently falls back to a local image from weeks ago), so
       # "rebuild the image" was not in practice a way to change a config either.
       # That is how matomo sat dead for two days with the fix already on disk.
-      ++ map (c: "../code/${arch}/config/${c.src}:${c.dst}:ro") [
+      ++ map (c: "./code/${arch}/config/${c.src}:${c.dst}:ro") [
         { src = "supervisord.conf";   dst = "/etc/supervisor/supervisord.conf"; }
         { src = "receiver-nginx.conf"; dst = "/etc/nginx/sites-available/receiver.conf"; }
         { src = "matomo-nginx.conf";  dst = "/etc/nginx/matomo-nginx.conf"; }
