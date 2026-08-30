@@ -169,7 +169,11 @@ let
     # `$$KG_STORE_PASS_PUB` survives compose's pass as a literal `$KG_STORE_PASS_PUB`,
     # which `sh -c` then expands at container start from the value env_file
     # ".secrets" already injected under that name.
-    command = [ "sh" "-c" "KG_STORE_PASS=\"$$${kgPassVar}\" exec npx tsx index.ts" ];
+    # `exec env VAR=...` (not a bare `VAR=... exec`): busybox ash does NOT export
+    # a prefix assignment across the `exec` special builtin, so the old form left
+    # PID 1 with the base KG_STORE_PASS (verified on-box). `env` builds the child
+    # environment explicitly and remains PID 1 via exec (clean signal handling).
+    command = [ "sh" "-c" "exec env KG_STORE_PASS=\"$$${kgPassVar}\" npx tsx index.ts" ];
     volumes = [
       "./data:${buildJson.runtime.data_path}:ro"
       # Read the FastEmbed/GraphRAG index + cloned repos maintained by the Dagu
