@@ -384,16 +384,23 @@ ${plainOut}${sniMuxBlock}
       }'') route.bypass_paths
       else "";
 
-      # Well-known grafts are "public per spec" (mkWellKnownBlock) but the WG
-      # gate's `respond` is ordered before every `handle`, so on a wg_only route
-      # the grafted handlers were dead code — e.g. RFC 8620 JMAP discovery on
-      # jmap.diegonmarcos.com answered 403 off-mesh. Exempt exactly the grafted
-      # paths from @not_wg; every other path on the vhost stays gated.
-      wkExemptPaths = lib.concatMapStringsSep " " (wk: wk.path) matchingWellKnown;
-      wgBlock = if isWgOnly && matchingWellKnown != [] then ''
+      # Paths that must stay reachable off-mesh even on a wg_only vhost. Two
+      # sources, same requirement: well-known grafts (public per spec) and
+      # bypass_paths (declared auth-skip endpoints — mobile-app login, OAuth
+      # callbacks, and the auth vhost's own public OIDC machine endpoints).
+      # The WG gate's `respond` is ordered before every `handle`, so on a
+      # wg_only route BOTH were dead code off-mesh unless the path is exempted
+      # from the @not_wg matcher itself — e.g. RFC 8620 JMAP discovery answered
+      # 403, and every bypass_paths on a wg_only route (chat /api/v4/*,
+      # playlist OAuth callbacks) was silently unreachable off-mesh despite
+      # being declared as a public bypass. Exempting them is what makes those
+      # declarations do what they say; every other path stays gated.
+      wgExemptPaths = (map (wk: wk.path) matchingWellKnown)
+                      ++ (if hasBypassPaths then route.bypass_paths else []);
+      wgBlock = if isWgOnly && wgExemptPaths != [] then ''
       @not_wg {
         not remote_ip ${wgCidrs}
-        not path ${wkExemptPaths}
+        not path ${lib.concatStringsSep " " wgExemptPaths}
       }
       respond @not_wg "Forbidden" 403''
       else if isWgOnly then ''
