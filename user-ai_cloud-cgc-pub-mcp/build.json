@@ -47,7 +47,7 @@
       "type": "path",
       "parent_domain": "mcp.diegonmarcos.com",
       "base_path": "/cloud-cgc-pub-mcp",
-      "wg_only": true
+      "wg_only": false
     },
     "app_hub": false
   },

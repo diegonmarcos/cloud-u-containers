@@ -91,6 +91,21 @@ let
   # `sec` imported inline at the top of every served site block.
   sec = ''  import security'';
 
+  # ── Bearer introspection (MCP bearer tier) — same 21-bearer snippet the hub
+  # renders, pointed at the same introspection upstream over the mesh. Needed
+  # here because bearer-gated MCP endpoints terminate at THIS edge: a public
+  # client can only ever present its token where its TLS ends, and that is
+  # never gcp-proxy. wgCidrs mirrors caddyfile.nix's binding for the @wg
+  # parity branch in mkMcpRouteGroup below.
+  auth = caddyPublic.auth or {};
+  introspectUpstream = (caddyPublic.auth_upstreams or {}).introspect_proxy or "10.0.0.1:4182";
+  bearer = stripTrail (subst {
+    "@INTROSPECT_UPSTREAM@" = introspectUpstream;
+    "@INTROSPECT_URI@"      = auth.introspect_uri or "/auth";
+    "@INTROSPECT_COPY@"     = lib.concatStringsSep " " (auth.introspect_copy or [ "X-Auth-User" ]);
+  } (readTpl "21-bearer.caddy.tpl"));
+  wgCidrs = (caddyPublic.global or {}).wg_cidrs or "10.0.0.0/24 fd0c:1d00::/64";
+
   # ── Error handler (snippet-driven from caddyPublic.error_handler) ──
   eh = caddyPublic.error_handler or { status_codes = [ 502 503 504 ]; error_html = "/srv/error.html"; };
   codesExpr = lib.concatMapStringsSep " || " (c: "{err.status_code} == ${toString c}") eh.status_codes;
@@ -298,6 +313,71 @@ ${lib.concatMapStringsSep "\n" mkMailL4Route mailL4}
       ${handleErrors}
     }'';
 
+  # ── MCP hub (public_mcp_routes) — port of caddyfile.nix mkMcpRouteGroup ──
+  # mcp.diegonmarcos.com is in public_sni_hosts, so layer4 @public routes it to
+  # THIS L7 tier; without a site block here Caddy holds no cert for the SNI and
+  # every public MCP client dies in the handshake ("tlsv1 alert internal
+  # error") — which is exactly how the hub-only rendering failed. Two tiers
+  # reach this edge (the derive's isEdgeMcp filter): fully-public endpoints
+  # (wg_only:false — cloud-cgc-pub-mcp) proxy bare; bearer_auth endpoints
+  # (cloud-infra-mcp) verify `Authorization: Bearer` by forward_auth against
+  # the introspection upstream over the mesh. No Authelia browser fallback for
+  # the same reason as the hub: an MCP client speaks JSON-RPC and cannot
+  # follow a login redirect, so no/invalid token is a clean 403.
+  # The @wg branch is kept for hub parity (a mesh client that lands here still
+  # passes); a wg_only endpoint WITHOUT bearer_auth should never be emitted to
+  # this file — if one ever is, it renders as WG-or-403, fail closed.
+  # Endpoint upstreams are direct mesh addresses (plain HTTP) — deliberately
+  # NOT `fwd`, whose plain reverse_proxy to the hub's TLS port is untested.
+  mcpGroups = caddyPublic.public_mcp_routes or [];
+  mkMcpRouteGroup = group:
+    let
+      mkEndpoint = ep:
+        let
+          proxyBody = ''reverse_proxy ${ep.upstream} {
+          flush_interval -1
+          ${xreal}
+          header_up Accept "application/json, text/event-stream"
+        }'';
+          bearerGate = ''@wg remote_ip ${wgCidrs}
+        handle @wg {
+          ${proxyBody}
+        }
+        @bearer header Authorization Bearer*
+        handle @bearer {
+${bearer}
+          ${proxyBody}
+        }
+        handle {
+          respond "Forbidden" 403
+        }'';
+          wgGate = ''@wg remote_ip ${wgCidrs}
+        handle @wg {
+          ${proxyBody}
+        }
+        handle {
+          respond "Forbidden" 403
+        }'';
+          inner = if (ep.bearer_auth or false) then bearerGate
+                  else if (ep.wg_only or false) then wgGate
+                  else proxyBody;
+        in ''
+      handle_path ${ep.base_path}/* {
+        ${inner}
+      }'';
+      endpointBlocks = lib.concatMapStringsSep "\n" mkEndpoint group.endpoints;
+      fallbackMsg = group.fallback_message or "MCP Hub";
+    in ''
+    # mcp-hub: ${group.comment or group.parent_domain}
+    ${group.parent_domain} {
+    ${sec}
+    ${endpointBlocks}
+      handle {
+        respond "${fallbackMsg}" 200
+      }
+      ${handleErrors}
+    }'';
+
   # NOTE: there is intentionally NO L7 *.diegonmarcos.com fail-closed site.
   # Private/unmatched subdomains are handled one tier earlier by the layer4
   # @rest passthrough (raw TLS → gcp-proxy 10.1.0.2:443, no termination), so
@@ -331,6 +411,12 @@ ${lib.concatMapStringsSep "\n\n" mkGithubPagesRoute ghPages}
   # ════════════════════════════════════════════════════════════
 
 ${lib.concatMapStringsSep "\n\n" mkSubdomainRoute (builtins.filter (r: (r.auth or null) == "none") (caddyPublic.public_routes or []))}
+
+  # ════════════════════════════════════════════════════════════
+  # MCP HUB (public_mcp_routes — public + bearer tiers served at edge)
+  # ════════════════════════════════════════════════════════════
+
+${lib.concatMapStringsSep "\n\n" mkMcpRouteGroup mcpGroups}
 
   # ════════════════════════════════════════════════════════════
   # NO L7 *.diegonmarcos.com catch-all — a named-wildcard site would force
