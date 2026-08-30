@@ -45,6 +45,10 @@ PULL="${OCTOCODE_PULL:-0}"
 # then index WITH git — a fresh full build that runs the AI phase → LLM calls.
 # OCTOCODE_CLEAR=1 → force/reindex; =0 → incremental (only changed files).
 CLEAR="${OCTOCODE_CLEAR:-1}"
+# SKIP_INDEX=1 → cheap export→ingest only (no octocode index / LLM / bridge calls).
+# Used by the CI restore path to refresh SurrealDB in lockstep with a LanceDB
+# restore without tripping the freeze-guard. Default 0 = unchanged behavior.
+SKIP_INDEX="${OCTOCODE_SKIP_INDEX:-0}"
 KG_GRAPHS_DIR="${KG_GRAPHS_DIR:-/app/graphs}"; export KG_GRAPHS_DIR
 
 bridge_calls() { curl -s -m 5 "$HEALTH" 2>/dev/null | grep -oE '"calls":[0-9]+' | grep -oE '[0-9]+' | head -1 || echo 0; }
@@ -82,12 +86,29 @@ exclude_submodules() {
   done
 }
 
-echo "[reindex] bridge=$HEALTH models=[$MODELS] repos=[$REPOS] use_llm=forced-true"
+if [ "$SKIP_INDEX" = "1" ]; then
+  echo "[reindex] SKIP_INDEX=1 — cheap export→ingest only (no octocode index / LLM / bridge) repos=[$REPOS]"
+else
+  echo "[reindex] bridge=$HEALTH models=[$MODELS] repos=[$REPOS] use_llm=forced-true"
+fi
 command -v git >/dev/null 2>&1 && git config --global --add safe.directory '*' >/dev/null 2>&1 || true
 
 for repo in $REPOS; do
   d="$REPOS_ROOT/$repo"
   [ -d "$d" ] || { echo "[reindex] MISSING $d — skip"; continue; }
+  if [ "$SKIP_INDEX" = "1" ]; then
+    # ④ Cheap mirror only: export octocode's existing Lance tables for this
+    # repo → ingest into kg-store (SurrealDB). No index/LLM/bridge calls.
+    if command -v python3 >/dev/null 2>&1; then
+      if python3 /app/octocode-export.py "$repo" 2>&1; then
+        KG_DELTA="$KG_GRAPHS_DIR/octocode-$repo.json" node /app/kg-ingest.mjs \
+          || echo "[reindex] $repo · code-graph ingest failed (continuing)"
+      else
+        echo "[reindex] $repo · octocode-export failed (continuing)"
+      fi
+    fi
+    continue
+  fi
   exclude_submodules "$d"
   if [ "$PULL" = "1" ] && [ -d "$d/.git" ] && command -v git >/dev/null 2>&1; then
     git -C "$d" pull --ff-only 2>&1 | tail -1 || echo "[reindex] pull $repo failed (continuing)"
@@ -121,7 +142,11 @@ for repo in $REPOS; do
     fi
   fi
 done
-echo "[reindex] octocode code-graph DONE — final bridge calls=$(bridge_calls)"
+if [ "$SKIP_INDEX" = "1" ]; then
+  echo "[reindex] octocode code-graph DONE (SKIP_INDEX export→ingest only)"
+else
+  echo "[reindex] octocode code-graph DONE — final bridge calls=$(bridge_calls)"
+fi
 
 # ── Also (re)deploy the INFRA knowledge-graph into kg-store (SurrealDB) ────────
 # Unified job: after octocode builds the code graph, ingest the infra graph delta

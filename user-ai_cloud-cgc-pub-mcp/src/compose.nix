@@ -28,6 +28,9 @@ let
   perRepoImagePrefix = perRepo.image_prefix or "ghcr.io/diegonmarcos/cgc-db-";
   perRepoTag = perRepo.tag or "latest";
   perRepoBaseImage = perRepo.base_image or "${perRepoImagePrefix}base:${perRepoTag}";
+  # ntfy — same shape as sibling compose files (user-comm_chat-mattermost/src/compose.nix):
+  # data-driven from cloud-data's ntfy service ip/port, not hand-rolled per compose.nix.
+  ntfyUrl = "http://${svc.ntfy.ip}:${toString svc.ntfy.ports.app}";
   # docker-compose does its OWN `$`-interpolation on every string in the rendered
   # compose file — including text spliced in via builtins.readFile — and errors
   # ("invalid interpolation format") on anything that isn't `$VAR` / `${VAR}` /
@@ -150,9 +153,13 @@ let
       "${dbVolume}:${oct.db_path}"
     ];
     healthcheck = {
+      # NOT a bare `fetch(...).catch(()=>process.exit(1))` — that passes on ANY
+      # response, including a 404/500 from a half-started process, so the
+      # container can report healthy while serving nothing. Check res.ok
+      # instead, so a non-2xx from GET /health fails the probe.
       test = [
         "CMD" "node" "-e"
-        "fetch('http://${vmIp}:${toString port}${app.healthcheck}').catch(()=>process.exit(1))"
+        "fetch('http://${vmIp}:${toString port}/health').then(res=>{if(!res.ok)process.exit(1)}).catch(()=>process.exit(1))"
       ];
       interval     = "30s";
       timeout      = "10s";
@@ -166,7 +173,7 @@ let
   # out (CGC_INCLUDE_PRIVATE=0 + CGC_PRIVATE_REPOS); the private one takes the
   # lot. Splitting these into two hand-written services is how the two would
   # drift until one day the public one stopped filtering.
-  restoreMultiService = { containerName, profile, targetVolume, includePrivate }: {
+  restoreMultiService = { containerName, profile, targetVolume, includePrivate, mcpContainerName }: {
     image = "docker:cli";
     container_name = containerName;
     profiles = [ profile ];
@@ -212,6 +219,14 @@ let
       # DB lands owned by the wrong user and octocode dies with "Permission
       # denied (os error 13)" — it opens the queried project dir read-write.
       CGC_DB_OWNER = "10001:999";
+      # Without these, cloud-cgc-db-restore-all.sh's stop-swap-restart bracket
+      # (guarded by `[ -n "${MCP_CONTAINER:-}" ]`) is silently skipped on this
+      # manual `--profile restore-multi[-pvt]` path: the volume swap still
+      # happens, but the running MCP container is never restarted onto it, so
+      # octocode keeps serving stale unlinked inodes from the old volume
+      # mount. See cloud-cgc-db-restore-all.sh for the guard itself.
+      MCP_CONTAINER = mcpContainerName;
+      NTFY_URL = ntfyUrl;
     };
     volumes = [ "/var/run/docker.sock:/var/run/docker.sock" ];
     entrypoint = [ "sh" "-c" ''
@@ -297,6 +312,7 @@ in
       profile        = "restore-multi";
       targetVolume   = oct.db_volume;
       includePrivate = "0";
+      mcpContainerName = app.container_name;
     };
 
     # Same restore, private target. CGC_INCLUDE_PRIVATE=1 disables the
@@ -309,6 +325,7 @@ in
       profile        = "restore-multi-pvt";
       targetVolume   = pvtDbVolume;
       includePrivate = "1";
+      mcpContainerName = pvtName;
     };
 
     # ── One-shot octocode jobs (profile-gated; never start on `compose up`) ──────

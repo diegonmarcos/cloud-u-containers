@@ -134,7 +134,9 @@ const nsep = (s: string) => s.toLowerCase().replace(/[-_.]/g, "");
 const TYPE_RANK: Record<string, number> = { vm: 0, service: 1, subsystem: 2, repo: 3, module: 3, package: 4, file: 5, symbol: 6 };
 const nrank = (n: GNode): number => TYPE_RANK[n.table] ?? 4;
 
-function resolveTarget(g: Graph, t: string): GNode[] {
+const SUBSTRING_MATCH_CEILING = 500;
+
+function resolveTarget(g: Graph, t: string, limit: number = SUBSTRING_MATCH_CEILING): GNode[] {
   if (g.nodes.has(t)) return [g.nodes.get(t)!];
   const low = t.toLowerCase(), sep = nsep(t);
   const nodes = [...g.nodes.values()];
@@ -146,7 +148,7 @@ function resolveTarget(g: Graph, t: string): GNode[] {
   if (byPath.length) return byPath;
   // substring fallback, ranked so a matched entity wins over an incidental path hit
   return nodes.filter((n) => nsep(n.key).includes(sep) || nsep(String(n.properties.name ?? "")).includes(sep) || String(n.properties.path ?? "").toLowerCase().includes(low))
-    .sort((a, b) => nrank(a) - nrank(b)).slice(0, 15);
+    .sort((a, b) => nrank(a) - nrank(b)).slice(0, limit);
 }
 const nlabel = (n: GNode): string => `${n.key}${n.properties.name ? ` (${n.properties.name})` : ""}`;
 const txt = (s: string) => ({ content: [{ type: "text" as const, text: s }] });
@@ -172,7 +174,7 @@ export function registerCodegraphTools(server: McpServer): void {
     { query: z.string().describe("Substring to match against node key/name/path"), limit: z.number().optional().default(25) },
     async ({ query, limit }) => {
       const g = loadGraph();
-      const hits = resolveTarget(g, query).slice(0, limit);
+      const hits = resolveTarget(g, query, limit).slice(0, limit);
       return txt(hits.length ? hits.map((n) => `• [${n.layer}/${n.table}] ${n.key}${n.properties.description ? ` — ${String(n.properties.description).slice(0, 140)}` : n.properties.role ? ` «${n.properties.role}»` : ""}`).join("\n") : `No nodes match "${query}".`);
     }
   );

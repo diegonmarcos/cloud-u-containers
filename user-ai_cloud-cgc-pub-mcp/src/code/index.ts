@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 import { createServer, IncomingMessage, ServerResponse, request as httpRequest } from "node:http";
+import { existsSync, readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
@@ -14,13 +18,35 @@ import { registerKgStoreTools } from "./tools/b-code-graph-context/kgstore.js";
 import { buildContextSummary } from "./context.js";
 import { bindHost } from "./shared/libs/binds.js";
 
+const exec = promisify(execFile);
 const log = (msg: string) => process.stderr.write(`[cloud-cgc-pub-mcp] ${msg}\n`);
 
-function createMcpServer(): McpServer {
+interface CreatedServer {
+  server: McpServer;
+  toolCount: number;
+  resourceCount: number;
+}
+
+function createMcpServer(): CreatedServer {
   const server = new McpServer({
     name: "cloud-cgc-pub-mcp",
     version: "7.0.0",
   });
+
+  // Wrap tool/resource registration so the startup banner + /health report the
+  // REAL counts instead of a hardcoded number someone forgets to bump.
+  let toolCount = 0;
+  let resourceCount = 0;
+  const registerTool = server.tool.bind(server);
+  const registerResource = server.resource.bind(server);
+  server.tool = ((...args: Parameters<typeof registerTool>) => {
+    toolCount += 1;
+    return registerTool(...args);
+  }) as typeof server.tool;
+  server.resource = ((...args: Parameters<typeof registerResource>) => {
+    resourceCount += 1;
+    return registerResource(...args);
+  }) as typeof server.resource;
 
   // ── Resources ─────────────────────────────────────────────────────────
   server.resource(
@@ -61,14 +87,94 @@ function createMcpServer(): McpServer {
   registerCodegraphTools(server);         //  3: stubs (future)
   registerKgStoreTools(server);           //  2: query, overview (kg-store SurrealDB unified graph)
 
-  return server;
+  return { server, toolCount, resourceCount };
+}
+
+// ── /health checks — cheap, parallel, never block or throw ────────────────
+const KG_STORE_URL = process.env.KG_STORE_URL ?? "http://127.0.0.1:8001";
+const OCTOCODE_BIN = process.env.OCTOCODE_BIN ?? "octocode";
+const GIT_ROOT = process.env.GIT_ROOT ?? `${process.env.HOME ?? "/home/diego"}/git`;
+const GRAPHS_DIR = join(import.meta.dirname!, "graphs");
+
+async function checkKgStore(): Promise<{ reachable: boolean; error: string | null }> {
+  try {
+    const r = await fetch(`${KG_STORE_URL.replace(/\/$/, "")}/health`, { signal: AbortSignal.timeout(2000) });
+    return { reachable: r.ok, error: r.ok ? null : `HTTP ${r.status}` };
+  } catch (e) {
+    return { reachable: false, error: (e as Error).message };
+  }
+}
+
+function checkCodegraphBundle(): { present: boolean; count: number; generated_at: string | null } {
+  try {
+    if (!existsSync(GRAPHS_DIR)) return { present: false, count: 0, generated_at: null };
+    const files = readdirSync(GRAPHS_DIR).filter((f) => f.startsWith("code-signatures-") && f.endsWith(".json"));
+    let newest = 0;
+    for (const f of files) {
+      const mtime = statSync(join(GRAPHS_DIR, f)).mtimeMs;
+      if (mtime > newest) newest = mtime;
+    }
+    return {
+      present: files.length > 0,
+      count: files.length,
+      generated_at: newest > 0 ? new Date(newest).toISOString() : null,
+    };
+  } catch {
+    return { present: false, count: 0, generated_at: null };
+  }
+}
+
+async function checkOctocode(): Promise<{
+  binary: boolean;
+  version: string | null;
+  repos_volume_present: boolean;
+  repo_count: number;
+}> {
+  let binary = false;
+  let version: string | null = null;
+  try {
+    const { stdout } = await exec(OCTOCODE_BIN, ["--version"], { timeout: 2000 });
+    binary = true;
+    version = stdout.trim() || null;
+  } catch {
+    binary = false;
+  }
+
+  let repos_volume_present = false;
+  let repo_count = 0;
+  try {
+    repos_volume_present = existsSync(GIT_ROOT);
+    if (repos_volume_present) repo_count = readdirSync(GIT_ROOT).length;
+  } catch {
+    repos_volume_present = false;
+    repo_count = 0;
+  }
+
+  return { binary, version, repos_volume_present, repo_count };
+}
+
+async function buildHealthBody(toolCount: number, resourceCount: number) {
+  const [kgstore, codegraph_bundle, octocode] = await Promise.all([
+    checkKgStore(),
+    Promise.resolve(checkCodegraphBundle()),
+    checkOctocode(),
+  ]);
+
+  const degraded = !kgstore.reachable || !codegraph_bundle.present || !octocode.binary;
+  return {
+    status: degraded ? "degraded" : "ok",
+    timestamp: new Date().toISOString(),
+    tools: toolCount,
+    resources: resourceCount,
+    checks: { kgstore, codegraph_bundle, octocode },
+  };
 }
 
 // ── Stdio transport (default, for local CLI usage) ────────────────────
 async function startStdio(): Promise<void> {
-  const server = createMcpServer();
+  const { server, toolCount, resourceCount } = createMcpServer();
   const transport = new StdioServerTransport();
-  log("Starting cloud-cgc-pub-mcp v7.0.0 (48 tools, 2 resources) via stdio...");
+  log(`Starting cloud-cgc-pub-mcp v7.0.0 (${toolCount} tools, ${resourceCount} resources) via stdio...`);
   await server.connect(transport);
   log("Connected via stdio transport");
 }
@@ -78,19 +184,25 @@ const HTTP_PORT = parseInt(process.env.MCP_HTTP_PORT ?? "3105", 10);
 const SESSION_ID = "cloud-cgc-pub-mcp-session";
 
 async function startHttp(): Promise<void> {
-  let session: { transport: StreamableHTTPServerTransport; server: McpServer } | null = null;
+  let session: { transport: StreamableHTTPServerTransport; server: McpServer; toolCount: number; resourceCount: number } | null = null;
 
   const initSession = async (): Promise<void> => {
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: () => SESSION_ID });
-    const server = createMcpServer();
+    const { server, toolCount, resourceCount } = createMcpServer();
     await server.connect(transport);
-    session = { transport, server };
+    session = { transport, server, toolCount, resourceCount };
   };
 
   await initSession();
 
   const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse) => {
     const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
+    if (url.pathname === "/health") {
+      const body = await buildHealthBody(session?.toolCount ?? 0, session?.resourceCount ?? 0);
+      res.writeHead(body.checks.octocode.binary === false ? 503 : 200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(body));
+      return;
+    }
     if (url.pathname !== "/mcp") {
       res.writeHead(404, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: "Not Found" }));

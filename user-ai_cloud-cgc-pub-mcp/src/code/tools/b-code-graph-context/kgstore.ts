@@ -29,8 +29,24 @@ async function surql(q: string): Promise<string> {
 }
 
 // Read-only guard: the MCP must never mutate the graph (writes come only from the
-// reindex/ingest pipeline). Reject any statement that could change state.
-const MUTATING = /\b(CREATE|UPSERT|UPDATE|DELETE|RELATE|REMOVE|DEFINE|INSERT|LET|BEGIN|COMMIT|CANCEL|REBUILD)\b/i;
+// reindex/ingest pipeline). Allowlist the leading verb of every statement instead of
+// denylisting substrings — a denylist false-positives on any SELECT whose field/table/
+// string literal contains a mutating word (e.g. WHERE status='update') and is trivially
+// bypassable. ponytail: the proper long-term fix is a read-only SurrealDB user; today
+// only a single root credential (KG_STORE_PASS) is wired, so this guard is load-bearing.
+const READ_ONLY_VERBS = new Set(["SELECT", "INFO", "RETURN"]);
+
+function isReadOnly(q: string): boolean {
+  const stripped = q
+    .replace(/\/\*[\s\S]*?\*\//g, " ")
+    .replace(/--.*$/gm, " ");
+  const statements = stripped.split(";").map((s) => s.trim()).filter((s) => s.length > 0);
+  if (statements.length === 0) return false;
+  return statements.every((s) => {
+    const verb = s.match(/^[A-Za-z]+/)?.[0]?.toUpperCase();
+    return !!verb && READ_ONLY_VERBS.has(verb);
+  });
+}
 
 const NODE_TABLES = ["file", "vm", "service", "container", "domain", "module", "repo", "package", "documentation", "log"];
 const EDGE_TABLES = ["sibling_module", "hosted_on", "runs_container", "depends_on", "proxied_by", "routes_to", "belongs_to_repo", "implements", "declares_tool", "consumes", "connected_to"];
@@ -45,7 +61,7 @@ export function registerKgStoreTools(server: McpServer): void {
     "\"SELECT count() FROM file GROUP BY repo\"; \"INFO FOR DB\"; graph traversal \"SELECT ->sibling_module->file AS siblings FROM file WHERE repo='cloud-infra-desktop' LIMIT 5\".",
     { surql: z.string().describe("Read-only SurrealQL (SELECT or INFO). Mutations are refused.") },
     async ({ surql: q }) => {
-      if (MUTATING.test(q)) {
+      if (!isReadOnly(q)) {
         return { content: [{ type: "text" as const, text: "Refused: cgc.kgstore.query is read-only (SELECT / INFO only)." }] };
       }
       const out = await surql(q);
