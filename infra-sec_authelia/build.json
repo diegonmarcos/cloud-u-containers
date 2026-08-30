@@ -28,7 +28,12 @@
   "proxy": {
     "primary": {
       "domain": "auth.diegonmarcos.com",
-      "auth": "bypass"
+      "auth": "bypass",
+      "oidc_public_paths": [
+        "/.well-known/openid-configuration",
+        "/api/oidc/token",
+        "/jwks.json"
+      ]
     },
     "app_hub": false
   },

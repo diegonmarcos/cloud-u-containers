@@ -266,7 +266,10 @@
       "scopes": ["authelia.bearer.authz"],
       "token_endpoint_auth_method": "client_secret_basic",
       "access_token_signed_response_alg": "RS256",
-      "audience": ["https://api.@BASE_DOMAIN@/"]
+      "audience": [
+        "https://api.@BASE_DOMAIN@/",
+        "https://mcp.@BASE_DOMAIN@/"
+      ]
     },
     {
       "client_id": "cli",

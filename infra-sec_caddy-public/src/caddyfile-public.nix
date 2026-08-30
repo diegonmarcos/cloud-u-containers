@@ -378,6 +378,41 @@ ${bearer}
       ${handleErrors}
     }'';
 
+  # ── OIDC public machine endpoints (oidc_public) ──
+  # The bearer-gated MCP tier needs its tokens MINTED from off-mesh, and the
+  # hub 403s auth.diegonmarcos.com for non-WG clients by design. This serves
+  # ONLY the declared machine endpoints (token endpoint, discovery, JWKS) at
+  # the edge, straight to the authelia upstream over the mesh; every other
+  # path on the host — the login portal, the authorization endpoint, the
+  # admin surface — answers 403 here, keeping the browser-facing portal
+  # mesh-only. A public token endpoint yields nothing without a client
+  # secret; this is the standard shape of every public IdP.
+  # Deliberately NOT `fwd` (plain HTTP at the hub's TLS port, untested) and
+  # deliberately not the portal-wide mkSubdomainRoute: explicit paths only,
+  # fail closed.
+  oidcPub = caddyPublic.oidc_public or null;
+  autheliaUpstream = (caddyPublic.auth_upstreams or {}).authelia or "10.0.0.1:9091";
+  mkOidcPublicSite =
+    if oidcPub == null then "" else
+    let
+      mkOidcHandle = p: ''
+      handle ${p} {
+        reverse_proxy ${autheliaUpstream} {
+          ${xreal}
+        }
+      }'';
+      handles = lib.concatMapStringsSep "\n" mkOidcHandle (oidcPub.paths or []);
+    in ''
+    # oidc-public: machine endpoints only; portal stays mesh-only
+    ${oidcPub.domain} {
+    ${sec}
+    ${handles}
+      handle {
+        respond "Forbidden" 403
+      }
+      ${handleErrors}
+    }'';
+
   # NOTE: there is intentionally NO L7 *.diegonmarcos.com fail-closed site.
   # Private/unmatched subdomains are handled one tier earlier by the layer4
   # @rest passthrough (raw TLS → gcp-proxy 10.1.0.2:443, no termination), so
@@ -417,6 +452,12 @@ ${lib.concatMapStringsSep "\n\n" mkSubdomainRoute (builtins.filter (r: (r.auth o
   # ════════════════════════════════════════════════════════════
 
 ${lib.concatMapStringsSep "\n\n" mkMcpRouteGroup mcpGroups}
+
+  # ════════════════════════════════════════════════════════════
+  # OIDC PUBLIC MACHINE ENDPOINTS (token/discovery/JWKS only; portal 403s)
+  # ════════════════════════════════════════════════════════════
+
+${mkOidcPublicSite}
 
   # ════════════════════════════════════════════════════════════
   # NO L7 *.diegonmarcos.com catch-all — a named-wildcard site would force
