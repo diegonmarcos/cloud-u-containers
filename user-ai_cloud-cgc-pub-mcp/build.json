@@ -62,6 +62,8 @@
       "repos_volume": "octocode_repos",
       "repos_path": "/repos",
       "noindex_patterns": [
+        "z_archive/",
+        "y_old/",
         "node_modules/",
         "dist/",
         "reports/",
