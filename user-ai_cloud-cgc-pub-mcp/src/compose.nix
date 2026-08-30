@@ -90,11 +90,20 @@ let
       # graph delta. Data-driven. KG_STORE_PASS is delivered via env_file ".secrets"
       # below (sops src/secrets.yaml → build.sh secrets → .secrets); kg-ingest.mjs
       # no-ops if it's unset, so this stays safe when secrets aren't decrypted.
-      KG_STORE_URL        = oct.kg_store.url;
-      KG_STORE_NS         = oct.kg_store.ns;
-      KG_STORE_DB         = oct.kg_store.db;
-      KG_STORE_USER       = oct.kg_store.user;
-      KG_DELTA            = oct.kg_store.delta;
+      #
+      # This standalone `reindex`/`index` profile default targets the PVT store
+      # (8001, the full store) — there is no per-container split for a bare
+      # `docker compose --profile reindex run`. The path that actually matters,
+      # the box-side split tail, does NOT use this: cloud-cgc-db-restore-all.sh
+      # execs reindex.sh INSIDE the specific MCP container via mcpContainerName
+      # (see restoreMultiService below), so it inherits THAT container's own
+      # KG_STORE_* env — pub gets 8002/KG_STORE_PASS_PUB, pvt gets
+      # 8001/KG_STORE_PASS, exactly matching each container's own kg-store.
+      KG_STORE_URL        = oct.kg_store_pvt.url;
+      KG_STORE_NS         = oct.kg_store_pvt.ns;
+      KG_STORE_DB         = oct.kg_store_pvt.db;
+      KG_STORE_USER       = oct.kg_store_pvt.user;
+      KG_DELTA            = oct.kg_store_pvt.delta;
       KG_GRAPHS_DIR       = "/app/graphs";
     };
     env_file = [ ".secrets" ];
@@ -112,7 +121,18 @@ let
   # on the public surface that could leak cloud-data, because the data is not
   # there to leak. Three values differ; everything else is identical by
   # construction rather than by two definitions someone has to keep in sync.
-  mcpService = { containerName, port, dbVolume }: {
+  # kgStore: which SurrealDB instance this container talks to — kg_store_pub
+  # (8002, public repos only) for the pub container, kg_store_pvt (8001, full
+  # store) for the pvt one. THIS is the leak fix: two physically separate
+  # SurrealDB instances, not a shared one two containers both happen to read.
+  # kgPassVar: the env_file ".secrets" var carrying THAT instance's SurrealDB
+  # password. kgstore.ts / kg-ingest.mjs only ever read the fixed name
+  # KG_STORE_PASS (not touched here — see compose.nix header), so a container
+  # whose password lives under a different secrets key (pub -> KG_STORE_PASS_PUB)
+  # needs it remapped onto KG_STORE_PASS before the app starts. The command
+  # override below does that remap via a one-line shell indirection; for the
+  # pvt container kgPassVar is already "KG_STORE_PASS" so the remap is a no-op.
+  mcpService = { containerName, port, dbVolume, kgStore, kgPassVar }: {
     image = binariesImage;
     container_name = containerName;
     network_mode = "host";
@@ -126,14 +146,30 @@ let
       # the restored base image carries them at <db_path>/fastembed — no download at first query.
       XDG_CACHE_HOME = "${oct.db_path}/fastembed";
       # kg-store SurrealDB — exposed to MCP clients via the cgc.kgstore.* tools
-      # (read-only query of the unified code+infra graph). KG_STORE_PASS arrives
-      # via env_file ".secrets" below.
-      KG_STORE_URL   = oct.kg_store.url;
-      KG_STORE_NS    = oct.kg_store.ns;
-      KG_STORE_DB    = oct.kg_store.db;
-      KG_STORE_USER  = oct.kg_store.user;
+      # (read-only query of this container's OWN graph — see kgStore above).
+      # KG_STORE_PASS itself arrives via env_file ".secrets" below / the
+      # command-level remap, never set here.
+      KG_STORE_URL   = kgStore.url;
+      KG_STORE_NS    = kgStore.ns;
+      KG_STORE_DB    = kgStore.db;
+      KG_STORE_USER  = kgStore.user;
     };
     env_file = [ ".secrets" ];
+    # Dockerfile.native sets `ENTRYPOINT [] / CMD ["npx","tsx","index.ts"]` — no
+    # shell in the default command, so a "read this env var under that name"
+    # remap has to be done by wrapping the launch in a shell ourselves. Both
+    # KG_STORE_PASS and KG_STORE_PASS_PUB are present in every container's env
+    # (same env_file ".secrets" list for both services); this just picks the
+    # one that matches kgStore above and re-exports it as the name the app
+    # actually reads.
+    # NOTE the doubled `$$` — docker-compose does its OWN $-interpolation on
+    # every string in the rendered compose file (see escapeDollars above); a
+    # single `$KG_STORE_PASS_PUB` here would be swallowed by COMPOSE reading
+    # its own (unset) host env instead of reaching the container's shell.
+    # `$$KG_STORE_PASS_PUB` survives compose's pass as a literal `$KG_STORE_PASS_PUB`,
+    # which `sh -c` then expands at container start from the value env_file
+    # ".secrets" already injected under that name.
+    command = [ "sh" "-c" "KG_STORE_PASS=\"$$${kgPassVar}\" exec npx tsx index.ts" ];
     volumes = [
       "./data:${buildJson.runtime.data_path}:ro"
       # Read the FastEmbed/GraphRAG index + cloned repos maintained by the Dagu
@@ -244,6 +280,10 @@ in
       containerName = app.container_name;
       port          = buildJson.ports.app;
       dbVolume      = oct.db_volume;
+      # Public surface -> public-repos-only SurrealDB (8002), password under
+      # its own secrets key so it can never be the same credential as pvt's.
+      kgStore       = oct.kg_store_pub;
+      kgPassVar     = "KG_STORE_PASS_PUB";
     };
 
     # ── Private surface (mesh-only) ────────────────────────────────────────────
@@ -256,6 +296,10 @@ in
       containerName = pvtName;
       port          = pvtPort;
       dbVolume      = pvtDbVolume;
+      # Private surface -> the existing full-store SurrealDB (8001), same
+      # password/env-var name it always used.
+      kgStore       = oct.kg_store_pvt;
+      kgPassVar     = "KG_STORE_PASS";
     };
 
     # ── DB restore (profile-gated; NOT auto-started) ────────────────────────────

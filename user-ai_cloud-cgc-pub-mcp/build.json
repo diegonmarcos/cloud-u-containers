@@ -181,9 +181,16 @@
         "cloud-data-my-ai-memory"
       ],
       "home": "/home/appuser",
-      "kg_store": {
-        "_comment": "reindex.sh ingests the infra graph delta into kg-store (SurrealDB) after building the code graph — unified 'build all graphs' job. Localhost host-network; ns/db/user data-driven; delta from the cgc bundle. KG_STORE_PASS (SurrealDB root) is wired as a shared secret later; until then the ingest gracefully no-ops.",
+      "_kg_store_comment": "TWO physically separate SurrealDB instances, one per MCP container — the public MCP must never be able to query private-repo data. kg_store_pub (127.0.0.1:8002, public repos only) feeds cloud-cgc-pub-mcp; kg_store_pvt (127.0.0.1:8001, full store) feeds cloud-cgc-pvt-mcp. reindex.sh ingests the infra graph delta into kg-store (SurrealDB) after building the code graph — unified 'build all graphs' job. Localhost host-network; ns/db/user data-driven; delta from the cgc bundle. KG_STORE_PASS / KG_STORE_PASS_PUB (SurrealDB root, one per instance) are wired as shared secrets; until then the ingest gracefully no-ops.",
+      "kg_store_pvt": {
         "url": "http://127.0.0.1:8001",
+        "ns": "infra",
+        "db": "production",
+        "user": "root",
+        "delta": "/app/graphs/build-kg-graph_delta.json"
+      },
+      "kg_store_pub": {
+        "url": "http://127.0.0.1:8002",
         "ns": "infra",
         "db": "production",
         "user": "root",
