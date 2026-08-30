@@ -390,22 +390,16 @@ ${bearer}
   # Deliberately NOT `fwd` (plain HTTP at the hub's TLS port, untested) and
   # deliberately not the portal-wide mkSubdomainRoute: explicit paths only,
   # fail closed.
+  # oidc_public.upstream carries the hub-auth-vhost mesh endpoint (data-driven;
+  # see the derive comment for WHY it is the hub over wg0, not authelia:9091).
   oidcPub = caddyPublic.oidc_public or null;
-  # NOT the raw authelia upstream (10.0.0.1:9091): gcp-proxy firewalls that
-  # port to itself — probed 2026-08-30, the edge times out on it while the
-  # introspect proxy on 4182 answers in <1s. Go through the hub's own HTTPS
-  # vhost over wg0 instead: the edge's mesh source address passes the hub's
-  # @wg gate and the hub proxies to authelia locally, so no firewall change
-  # and no second opinion on what the auth vhost serves. Must be the 10.0.0.1
-  # mesh path — via 10.1.0.2 (wg-public) the hub sees source 10.1.0.1, which
-  # is outside wgCidrs and 403s (documented in the l4Section comment above).
-  hubMeshHost = builtins.head (lib.splitString ":" ((caddyPublic.auth_upstreams or {}).authelia or "10.0.0.1:9091"));
   mkOidcPublicSite =
     if oidcPub == null then "" else
     let
+      oidcUpstream = oidcPub.upstream or "https://10.0.0.1:8443";
       mkOidcHandle = p: ''
       handle ${p} {
-        reverse_proxy https://${hubMeshHost}:8443 {
+        reverse_proxy ${oidcUpstream} {
           header_up Host ${oidcPub.domain}
           ${xreal}
           transport http {
