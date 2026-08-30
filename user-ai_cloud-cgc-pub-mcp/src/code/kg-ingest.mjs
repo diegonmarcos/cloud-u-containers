@@ -32,16 +32,18 @@ if (!Array.isArray(d.nodes)) die("delta.nodes is not an array");
 if (!Array.isArray(d.edges)) die("delta.edges is not an array");
 if (d.nodes.length === 0) die("delta.nodes is empty");
 
+// kg-ingest handles TWO delta shapes: per-repo code-graph deltas (file nodes, all
+// repo-scoped) AND the infra topology delta (vm/service/domain/container nodes with
+// NO repo — keyed by stable id, naturally idempotent). So structural fields (table/
+// id/key) are required on every node, but repo is OPTIONAL: collect it where present
+// to drive the repo-scoped replace below; nodes without it just UPSERT by id.
 const repos = new Set();
 for (const n of d.nodes) {
   if (!n?.table) die(`node missing "table": ${JSON.stringify(n)}`);
   if (n?.id == null) die(`node missing "id": ${JSON.stringify(n)}`);
   if (!n?.key) die(`node missing "key": ${JSON.stringify(n)}`);
-  if (typeof n?.properties?.repo !== "string" || !n.properties.repo) die(`node missing properties.repo: ${JSON.stringify(n)}`);
-  if (typeof n?.properties?.path !== "string" || !n.properties.path) die(`node missing properties.path: ${JSON.stringify(n)}`);
-  repos.add(n.properties.repo);
+  if (typeof n?.properties?.repo === "string" && n.properties.repo) repos.add(n.properties.repo);
 }
-if (repos.size === 0) die("no repos found in delta nodes");
 
 const nodes = d.nodes ?? [], edges = d.edges ?? [];
 const byKey = new Map(nodes.map((n) => [n.key, n]));
