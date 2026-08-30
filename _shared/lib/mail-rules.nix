@@ -413,6 +413,36 @@ let
             }
             else v) (f.views or []);
         };
+
+      # `93 Junk` is a ROUTE (exclusive, first-match-wins, ends in `stop;`) while
+      # `Ec Junk` is a VIEW (additive, membership recomputed from the predicate
+      # every poll). Those two engines can never agree: any message a
+      # higher-priority route already claimed never reaches the junk route at
+      # priority 150, so 93 sat at 0 while Ec held 349 of the same spam.
+      #
+      # Mirroring the Ec view onto the 93 folder makes them equal BY
+      # CONSTRUCTION -- it clones the carved-out view object itself, so there is
+      # still exactly one junk predicate and one curated carve-out in the whole
+      # system. The route stays as-is: it files spam at DELIVERY time, the view
+      # then keeps 93 in agreement with Ec for everything already in the store.
+      junkMirror = f:
+        let
+          src = lib.findFirst (v: v.excludes_curated_senders or false) null (f.views or []);
+        in
+          if junkFolder == null || src == null then f
+          else f // {
+            views = (f.views or []) ++ [ (src // {
+              folder = junkFolder;
+              # Its own axis: the priority axis is a hand-tiled partition
+              # (Ea/Eb/Ec) and a second member on it would break Eb's
+              # NOT(Ec) AND NOT(Ea) tiling.
+              axis = "junk_mirror";
+              # Carve-out is already folded into src.predicate above; leaving
+              # the flag set would double-wrap it on any future re-application.
+              excludes_curated_senders = false;
+              _doc = "Derived mirror of the Ec Junk view onto the 93 Junk route folder, so the additive view engine and the exclusive route engine report the same junk set. Do not hand-edit -- change the Ec view instead.";
+            }) ];
+          };
     in {
       account        = merged.account;
       sieve_require  = merged.sieve_require;
@@ -445,7 +475,7 @@ let
       #
       # The domain list is DERIVED from routing, never restated — a new curated
       # route is automatically never junk.
-      filters        = curatedCarveOut (merged.filters or { views = []; section_headers = []; });
+      filters        = junkMirror (curatedCarveOut (merged.filters or { views = []; section_headers = []; }));
       folder_renames = merged.folder_renames or { map = {}; };
       # Consumed by the sorter's ensure_mailboxes: decides whether each
       # managed folder is SUBSCRIBED, i.e. whether clients list it at all.
