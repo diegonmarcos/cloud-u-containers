@@ -19,7 +19,30 @@ if (!URL_)  skip("KG_STORE_URL unset");
 if (!PASS)  skip("KG_STORE_PASS unset");
 if (!existsSync(DELTA)) skip(`delta not found: ${DELTA}`);
 
-const d = JSON.parse(readFileSync(DELTA, "utf8"));
+const die = (m) => { console.error(`[kg-ingest] ABORT — ${m} (writing NOTHING)`); process.exit(1); };
+
+let d;
+try {
+  d = JSON.parse(readFileSync(DELTA, "utf8"));
+} catch (e) {
+  die(`failed to parse delta JSON: ${e.message}`);
+}
+if (d == null || typeof d !== "object") die("delta root is not an object");
+if (!Array.isArray(d.nodes)) die("delta.nodes is not an array");
+if (!Array.isArray(d.edges)) die("delta.edges is not an array");
+if (d.nodes.length === 0) die("delta.nodes is empty");
+
+const repos = new Set();
+for (const n of d.nodes) {
+  if (!n?.table) die(`node missing "table": ${JSON.stringify(n)}`);
+  if (n?.id == null) die(`node missing "id": ${JSON.stringify(n)}`);
+  if (!n?.key) die(`node missing "key": ${JSON.stringify(n)}`);
+  if (typeof n?.properties?.repo !== "string" || !n.properties.repo) die(`node missing properties.repo: ${JSON.stringify(n)}`);
+  if (typeof n?.properties?.path !== "string" || !n.properties.path) die(`node missing properties.path: ${JSON.stringify(n)}`);
+  repos.add(n.properties.repo);
+}
+if (repos.size === 0) die("no repos found in delta nodes");
+
 const nodes = d.nodes ?? [], edges = d.edges ?? [];
 const byKey = new Map(nodes.map((n) => [n.key, n]));
 const q = (s) => JSON.stringify(String(s));            // safe SurrealQL string literal
@@ -66,6 +89,26 @@ const sql = async (body) => {
   }
   return { errs, firstErr };
 };
+
+// ── Idempotency: repo-scoped replace. Delete existing rows for every repo present
+// in THIS delta before reinserting, so a re-ingest doesn't accumulate duplicates.
+// Edges MUST be deleted before nodes — the in.repo/out.repo traversal below only
+// resolves while the endpoint nodes still exist.
+// ponytail: every DELETE is scoped to a specific repo string drawn from this delta
+// (never an unscoped `DELETE FROM file;`); this assumes the delta is complete-per-repo
+// (reindex.sh's one-KG_DELTA-per-repo contract).
+const nodeTables = new Set(nodes.map((n) => n.table).filter(Boolean));
+const edgeTables = new Set(edges.map((e) => e.table).filter(Boolean));
+const deleteStmts = [];
+for (const repo of repos) {
+  for (const t of edgeTables) deleteStmts.push(`DELETE FROM ${t} WHERE in.repo = ${q(repo)} OR out.repo = ${q(repo)};`);
+  for (const t of nodeTables) deleteStmts.push(`DELETE FROM ${t} WHERE repo = ${q(repo)};`);
+}
+if (deleteStmts.length) {
+  console.error(`[kg-ingest] repo-scoped replace: deleting existing rows for [${[...repos].join(", ")}]`);
+  const { errs, firstErr } = await sql(deleteStmts.join("\n"));
+  if (errs) die(`repo-scoped delete failed (${errs} statements) — first: ${firstErr}`);
+}
 
 // ── Nodes: UPSERT batched by statement count AND request byte size. SurrealDB's
 // /sql rejects oversized bodies (HTTP 413); node CONTENT (imports/exports/symbols

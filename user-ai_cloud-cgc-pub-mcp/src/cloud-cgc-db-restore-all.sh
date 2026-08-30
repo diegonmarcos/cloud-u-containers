@@ -124,6 +124,11 @@
 #                         only across the volume swap. Kept HERE
 #                         rather than in the DAG/compose caller, because
 #                         both of those carry zero logic of their own.
+#                         MCP_CONTAINER set also triggers a kg-store
+#                         (SurrealDB) export/ingest refresh via `docker exec`
+#                         (OCTOCODE_SKIP_INDEX=1 reindex.sh) for the repos
+#                         this run staged — the fix for the pipeline split
+#                         where SurrealDB used to go stale by construction.
 #
 #  Requires: docker, jq on PATH. GHCR auth (if any image is private) is the
 #  caller's responsibility, same as every other cgc-db consumer script here.
@@ -355,6 +360,9 @@ fi
 # ── 2) each repo image — bootstrap tolerance: missing = warn + continue ────
 FOUND=0
 MISSING=""
+# Repos actually staged this run — data-driven input to the kg-store
+# (SurrealDB) export/ingest hook below; never a hardcoded list.
+STAGED_REPOS=""
 for r in "$@"; do
   img="${IMAGE_PREFIX}${r}:${TAG}"
   if ! docker manifest inspect "$img" >/dev/null 2>&1; then
@@ -370,6 +378,7 @@ for r in "$@"; do
   rm -f "$STAGING"/.cgc-manifest-*.json "$STAGING"/.cgc-index-manifest.json 2>/dev/null || true
   docker rmi "$img" >/dev/null 2>&1 || true
   FOUND=$((FOUND + 1))
+  STAGED_REPOS="$STAGED_REPOS $r"
   echo "[cgc-db-restore-all] staged $r ($FOUND/$TOTAL)"
 done
 
@@ -438,8 +447,32 @@ fi
 CONTAINER="${MCP_CONTAINER:-}"
 NTFY="${NTFY_URL:-}"
 if [ -n "$CONTAINER" ]; then
-  docker restart "$CONTAINER" >/dev/null 2>&1 && echo "[cgc-db-restore-all] restarted $CONTAINER" \
-    || echo "[cgc-db-restore-all] WARN restart $CONTAINER failed"
+  if docker restart "$CONTAINER" >/dev/null 2>&1; then
+    echo "[cgc-db-restore-all] restarted $CONTAINER"
+    # ── kg-store (SurrealDB) refresh — closes the split-pipeline gap ─────────
+    # $CONTAINER runs the same binaries image as the reindex/index compose
+    # profiles: python3 + node + octocode-export.py + kg-ingest.mjs baked in,
+    # KG_STORE_PASS via env_file, and it just came back up on the LanceDB
+    # volume swapped in above. OCTOCODE_SKIP_INDEX=1 skips octocode's own
+    # LLM indexing (GHA-x86-only, freeze-guarded off this box) and runs ONLY
+    # the cheap export→ingest mirror for the repos THIS run staged — so
+    # SurrealDB refreshes in lockstep with LanceDB instead of only on a
+    # manual `docker compose --profile reindex` nobody in CI ever runs.
+    # Best-effort: a failure here does not undo an otherwise-successful
+    # LanceDB restore.
+    if [ -n "$STAGED_REPOS" ]; then
+      if docker exec -e OCTOCODE_REPOS="${STAGED_REPOS# }" -e OCTOCODE_SKIP_INDEX=1 \
+           "$CONTAINER" sh /app/reindex.sh; then
+        echo "[cgc-db-restore-all] kg-store refresh OK ($FOUND repo(s))"
+      else
+        echo "::warning::[cgc-db-restore-all] kg-store refresh failed (continuing — LanceDB restore already succeeded)"
+      fi
+    else
+      echo "[cgc-db-restore-all] kg-store refresh skipped — no repos staged this run"
+    fi
+  else
+    echo "[cgc-db-restore-all] WARN restart $CONTAINER failed"
+  fi
 fi
 if [ -n "$NTFY" ]; then
   if [ -n "$MISSING" ]; then
