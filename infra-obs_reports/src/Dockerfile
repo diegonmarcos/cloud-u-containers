@@ -28,6 +28,15 @@ RUN ARCH=$(dpkg --print-architecture) && \
     curl -sfL "https://github.com/terrastruct/d2/releases/latest/download/d2-linux-${ARCH}.tar.gz" | \
     tar xz -C /usr/local/bin --strip-components=1 --wildcards '*/d2' || true
 
+# Install sops — entrypoint.sh decrypts NOREPLY_PASSWORD (outbound SMTP-AUTH
+# for the daily-mail send) from 2_secrets/src/builds/aa-sui_tools-maddy-secrets.yaml.
+# Version pinned to the same v3.9.4 used by 1_cicd/src/scripts/cloud-ship-terraform-deploy-apply.sh,
+# 1_cicd/src/cicd/lint-secrets-coverage.yml and 9_others/src/ensure-deps.sh.
+RUN ARCH=$(dpkg --print-architecture) && \
+    curl -fsSL -o /usr/local/bin/sops \
+      "https://github.com/getsops/sops/releases/download/v3.9.4/sops-v3.9.4.linux.${ARCH}" && \
+    chmod 0755 /usr/local/bin/sops && sops --version
+
 # Install Pikchr (inline SVG diagrams) — pinned fossil tarball → make
 # Source of truth: reports/build-deps.json (URL + sha256 + version hash).
 COPY build-deps.json /tmp/build-deps.json
