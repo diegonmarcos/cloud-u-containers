@@ -52,7 +52,10 @@ session:
       expiration: 1h
       remember_me: 30d
   redis:
-    host: redis
+    # Static IP (compose.nix pins redis to 172.18.0.4 on auth-net): the
+    # embedded-DNS name "redis" timed out on this host, fataling authelia at
+    # boot and stalling every session read 6s before that.
+    host: 172.18.0.4
     port: @REDIS_PORT@
     password: '{{ secret "/run/secrets/AUTHELIA_REDIS_PASSWORD" }}'
 
