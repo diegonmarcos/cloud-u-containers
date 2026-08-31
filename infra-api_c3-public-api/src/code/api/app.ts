@@ -10,6 +10,7 @@ import { errorHandler } from "./plugins/error-handler.js";
 import { registerHealth } from "./routes/health.js";
 import { registerAnalytics } from "./routes/analytics.js";
 import { registerMail } from "./routes/mail.js";
+import { registerSuperapp } from "./routes/superapp.js";
 
 export async function buildApp(): Promise<{ app: FastifyInstance; cfg: AppConfig }> {
   const cfg = loadConfig();
@@ -76,6 +77,11 @@ export async function buildApp(): Promise<{ app: FastifyInstance; cfg: AppConfig
   // since fastify-plugin scoping is positional.
   await app.register(registerHealth);
   await registerAnalytics(app, cfg);
+
+  // Bearer-gated at the Caddy layer (not in-app): /superapp/* is absent from
+  // build.json's proxy.primary.public_paths[], so mkProtected requires a valid
+  // Authelia bearer via introspect-proxy before the request ever arrives.
+  await registerSuperapp(app);
 
   // Bearer-gated — auth plugin is registered inside this scope.
   await registerMail(app, cfg);
