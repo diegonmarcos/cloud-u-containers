@@ -225,6 +225,41 @@ else
   echo "[setup] WARNING: no SOPS age key (not mounted, not in env, or config dir RO)" >&2
 fi
 
+# ── 3b. NOREPLY_PASSWORD (sops-decrypted) ─────────────────────────
+# send.sh (the `daily-mail` verb) needs NOREPLY_PASSWORD for outbound SMTP-AUTH
+# as no-reply@diegonmarcos.com. It is deliberately NOT a GHA/Dagu plaintext
+# secret: the single source of truth is the sops-encrypted maddy secrets file in
+# the cloud-infra repo, decrypted here with the age key section 3 just installed.
+MADDY_SECRETS_REL="2_secrets/src/builds/aa-sui_tools-maddy-secrets.yaml"
+if [ -z "${NOREPLY_PASSWORD:-}" ]; then
+  MADDY_SECRETS=""
+  for cand in ${CLOUD_REPO_DIR:+"$CLOUD_REPO_DIR/$MADDY_SECRETS_REL"} \
+              "/root/git/cloud-infra/$MADDY_SECRETS_REL" \
+              "/var/lib/dagu/data/cloud-source/$MADDY_SECRETS_REL"; do
+    [ -z "$cand" ] && continue
+    [ -f "$cand" ] && { MADDY_SECRETS="$cand"; break; }
+  done
+  if [ -z "$MADDY_SECRETS" ]; then
+    echo "[setup] WARNING: NOREPLY_PASSWORD unset and $MADDY_SECRETS_REL not found (probed \$CLOUD_REPO_DIR, /root/git/cloud-infra, /var/lib/dagu/data/cloud-source)" >&2
+  elif ! command -v sops >/dev/null 2>&1; then
+    echo "[setup] WARNING: NOREPLY_PASSWORD unset and sops not in image — cannot decrypt $MADDY_SECRETS (fix Dockerfile)" >&2
+  elif [ -z "${SOPS_AGE_KEY_FILE:-}" ]; then
+    echo "[setup] WARNING: NOREPLY_PASSWORD unset and no SOPS age key — cannot decrypt $MADDY_SECRETS" >&2
+  elif _noreply=$(sops --decrypt --extract '["NOREPLY_PASSWORD"]' "$MADDY_SECRETS" 2>&1) && [ -n "$_noreply" ]; then
+    export NOREPLY_PASSWORD="$_noreply"
+    echo "[setup] NOREPLY_PASSWORD decrypted from $MADDY_SECRETS"
+  else
+    echo "[setup] ERROR: sops failed to extract [\"NOREPLY_PASSWORD\"] from $MADDY_SECRETS: $_noreply" >&2
+  fi
+fi
+# Fail loud BEFORE rendering a 600 KB report we cannot send.
+if [ "${1:-}" = "daily-mail" ] && [ -z "${NOREPLY_PASSWORD:-}" ]; then
+  echo "[setup] FATAL: daily-mail needs NOREPLY_PASSWORD and it could not be obtained." >&2
+  echo "        Expected sops key [\"NOREPLY_PASSWORD\"] in $MADDY_SECRETS_REL, decrypted with \$SOPS_AGE_KEY." >&2
+  echo "        See the preceding WARNING/ERROR line for which step failed." >&2
+  exit 1
+fi
+
 # ── 4. GHCR login (optional — only if docker client is in image) ──
 if ! command -v docker >/dev/null 2>&1; then
   echo "[setup] docker client not in image — skipping GHCR login (reports don't need it)"
