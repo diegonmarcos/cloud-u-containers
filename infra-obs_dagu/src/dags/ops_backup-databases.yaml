@@ -49,6 +49,7 @@ steps:
                             | select(.value.backup.enabled == true)
                             | select($canon_to_alias[.value.vm] == $alias)
                             | (.key) as $svc
+                            | .value.data_path as $data_path
                             | .value.containers | to_entries[]
                             | select(.value.db_engine or .value.db_path)
                             | (.key) as $ckey
@@ -59,6 +60,8 @@ steps:
                                 {service: $svc, container: $c.container_name, container_key: $ckey, type: "mariadb", user: $c.db_user, db: $c.db_name}
                               elif $c.db_path then
                                 {service: $svc, container: $c.container_name, container_key: $ckey, type: "sqlite", path: $c.db_path}
+                              elif $c.db_engine == "surrealdb" then
+                                {service: $svc, container: $c.container_name, container_key: $ckey, type: "surrealdb", data_path: $data_path}
                               else empty end
                           ]
                         })
@@ -89,6 +92,8 @@ steps:
           "if docker ps --format {{.Names}} | grep -qx \(.container); then docker exec \(.container) mariadb-dump -u \(.user) \(.db) 2>/dev/null | gzip > \(.container)-\($s).sql.gz && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
         elif .type == "sqlite" then
           "if docker ps --format {{.Names}} | grep -qx \(.container); then docker cp \(.container):\(.path) /var/backups/databases/\(.container)-\($s).sqlite 2>/dev/null && gzip -f /var/backups/databases/\(.container)-\($s).sqlite && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
+        elif .type == "surrealdb" then
+          "if docker ps --format {{.Names}} | grep -qx \(.container); then tar -czf \(.container)-\($s).tar.gz -C \(.data_path) . 2>/dev/null && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
         elif .type == "custom" then
           "if docker ps --format {{.Names}} | grep -qx \(.container); then docker exec \(.container) \(.dump_cmd) 2>/dev/null | gzip > \(.container)-\($s).dump.gz && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
         else "echo UNKNOWN_TYPE_\(.type)_\(.container)" end
@@ -132,6 +137,7 @@ steps:
                             | select(.value.backup.enabled == true)
                             | select($canon_to_alias[.value.vm] == $alias)
                             | (.key) as $svc
+                            | .value.data_path as $data_path
                             | .value.containers | to_entries[]
                             | select(.value.db_engine or .value.db_path)
                             | (.key) as $ckey
@@ -142,6 +148,8 @@ steps:
                                 {service: $svc, container: $c.container_name, container_key: $ckey, type: "mariadb", user: $c.db_user, db: $c.db_name}
                               elif $c.db_path then
                                 {service: $svc, container: $c.container_name, container_key: $ckey, type: "sqlite", path: $c.db_path}
+                              elif $c.db_engine == "surrealdb" then
+                                {service: $svc, container: $c.container_name, container_key: $ckey, type: "surrealdb", data_path: $data_path}
                               else empty end
                           ]
                         })
@@ -172,6 +180,8 @@ steps:
           "if docker ps --format {{.Names}} | grep -qx \(.container); then docker exec \(.container) mariadb-dump -u \(.user) \(.db) 2>/dev/null | gzip > \(.container)-\($s).sql.gz && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
         elif .type == "sqlite" then
           "if docker ps --format {{.Names}} | grep -qx \(.container); then docker cp \(.container):\(.path) /var/backups/databases/\(.container)-\($s).sqlite 2>/dev/null && gzip -f /var/backups/databases/\(.container)-\($s).sqlite && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
+        elif .type == "surrealdb" then
+          "if docker ps --format {{.Names}} | grep -qx \(.container); then tar -czf \(.container)-\($s).tar.gz -C \(.data_path) . 2>/dev/null && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
         elif .type == "custom" then
           "if docker ps --format {{.Names}} | grep -qx \(.container); then docker exec \(.container) \(.dump_cmd) 2>/dev/null | gzip > \(.container)-\($s).dump.gz && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
         else "echo UNKNOWN_TYPE_\(.type)_\(.container)" end
@@ -217,6 +227,7 @@ steps:
                             | select(.value.backup.enabled == true)
                             | select($canon_to_alias[.value.vm] == $alias)
                             | (.key) as $svc
+                            | .value.data_path as $data_path
                             | .value.containers | to_entries[]
                             | select(.value.db_engine or .value.db_path)
                             | (.key) as $ckey
@@ -227,6 +238,8 @@ steps:
                                 {service: $svc, container: $c.container_name, container_key: $ckey, type: "mariadb", user: $c.db_user, db: $c.db_name}
                               elif $c.db_path then
                                 {service: $svc, container: $c.container_name, container_key: $ckey, type: "sqlite", path: $c.db_path}
+                              elif $c.db_engine == "surrealdb" then
+                                {service: $svc, container: $c.container_name, container_key: $ckey, type: "surrealdb", data_path: $data_path}
                               else empty end
                           ]
                         })
@@ -257,6 +270,8 @@ steps:
           "if docker ps --format {{.Names}} | grep -qx \(.container); then docker exec \(.container) mariadb-dump -u \(.user) \(.db) 2>/dev/null | gzip > \(.container)-\($s).sql.gz && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
         elif .type == "sqlite" then
           "if docker ps --format {{.Names}} | grep -qx \(.container); then docker cp \(.container):\(.path) /var/backups/databases/\(.container)-\($s).sqlite 2>/dev/null && gzip -f /var/backups/databases/\(.container)-\($s).sqlite && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
+        elif .type == "surrealdb" then
+          "if docker ps --format {{.Names}} | grep -qx \(.container); then tar -czf \(.container)-\($s).tar.gz -C \(.data_path) . 2>/dev/null && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
         elif .type == "custom" then
           "if docker ps --format {{.Names}} | grep -qx \(.container); then docker exec \(.container) \(.dump_cmd) 2>/dev/null | gzip > \(.container)-\($s).dump.gz && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
         else "echo UNKNOWN_TYPE_\(.type)_\(.container)" end
@@ -300,6 +315,7 @@ steps:
                             | select(.value.backup.enabled == true)
                             | select($canon_to_alias[.value.vm] == $alias)
                             | (.key) as $svc
+                            | .value.data_path as $data_path
                             | .value.containers | to_entries[]
                             | select(.value.db_engine or .value.db_path)
                             | (.key) as $ckey
@@ -310,6 +326,8 @@ steps:
                                 {service: $svc, container: $c.container_name, container_key: $ckey, type: "mariadb", user: $c.db_user, db: $c.db_name}
                               elif $c.db_path then
                                 {service: $svc, container: $c.container_name, container_key: $ckey, type: "sqlite", path: $c.db_path}
+                              elif $c.db_engine == "surrealdb" then
+                                {service: $svc, container: $c.container_name, container_key: $ckey, type: "surrealdb", data_path: $data_path}
                               else empty end
                           ]
                         })
@@ -340,6 +358,8 @@ steps:
           "if docker ps --format {{.Names}} | grep -qx \(.container); then docker exec \(.container) mariadb-dump -u \(.user) \(.db) 2>/dev/null | gzip > \(.container)-\($s).sql.gz && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
         elif .type == "sqlite" then
           "if docker ps --format {{.Names}} | grep -qx \(.container); then docker cp \(.container):\(.path) /var/backups/databases/\(.container)-\($s).sqlite 2>/dev/null && gzip -f /var/backups/databases/\(.container)-\($s).sqlite && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
+        elif .type == "surrealdb" then
+          "if docker ps --format {{.Names}} | grep -qx \(.container); then tar -czf \(.container)-\($s).tar.gz -C \(.data_path) . 2>/dev/null && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
         elif .type == "custom" then
           "if docker ps --format {{.Names}} | grep -qx \(.container); then docker exec \(.container) \(.dump_cmd) 2>/dev/null | gzip > \(.container)-\($s).dump.gz && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
         else "echo UNKNOWN_TYPE_\(.type)_\(.container)" end
@@ -389,6 +409,7 @@ steps:
                             | select(.value.backup.enabled == true)
                             | select($canon_to_alias[.value.vm] == $alias)
                             | (.key) as $svc
+                            | .value.data_path as $data_path
                             | .value.containers | to_entries[]
                             | select(.value.db_engine or .value.db_path)
                             | (.key) as $ckey
@@ -399,6 +420,8 @@ steps:
                                 {service: $svc, container: $c.container_name, container_key: $ckey, type: "mariadb", user: $c.db_user, db: $c.db_name}
                               elif $c.db_path then
                                 {service: $svc, container: $c.container_name, container_key: $ckey, type: "sqlite", path: $c.db_path}
+                              elif $c.db_engine == "surrealdb" then
+                                {service: $svc, container: $c.container_name, container_key: $ckey, type: "surrealdb", data_path: $data_path}
                               else empty end
                           ]
                         })
@@ -494,6 +517,7 @@ steps:
                             | select(.value.backup.enabled == true)
                             | select($canon_to_alias[.value.vm] == $alias)
                             | (.key) as $svc
+                            | .value.data_path as $data_path
                             | .value.containers | to_entries[]
                             | select(.value.db_engine or .value.db_path)
                             | (.key) as $ckey
@@ -504,6 +528,8 @@ steps:
                                 {service: $svc, container: $c.container_name, container_key: $ckey, type: "mariadb", user: $c.db_user, db: $c.db_name}
                               elif $c.db_path then
                                 {service: $svc, container: $c.container_name, container_key: $ckey, type: "sqlite", path: $c.db_path}
+                              elif $c.db_engine == "surrealdb" then
+                                {service: $svc, container: $c.container_name, container_key: $ckey, type: "surrealdb", data_path: $data_path}
                               else empty end
                           ]
                         })
