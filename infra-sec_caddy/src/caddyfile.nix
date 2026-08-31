@@ -1017,6 +1017,10 @@ ${bearer}
     "@MTA_MAX_AGE@"     = toString (mta.max_age or 604800);
   } (readTpl "90-mta-sts.caddy.tpl");
 
+  httpRedirectBlock = subst {
+    "@WG_BIND_IP@" = wgBindIp;
+  } (readTpl "91-http-redirect.caddy.tpl");
+
   # ── Catch-all ──
   catch = caddyRoutes.catch_all or {};
   catchPage = catch.page or "/srv/error.html";
@@ -1117,6 +1121,12 @@ ${lib.concatMapStringsSep "\n" mkS3Route (caddyRoutes.s3_routes or [])}
   # ════════════════════════════════════════════════════════════
 
 ${mtaStsBlock}
+
+  # ════════════════════════════════════════════════════════════
+  # HTTP :80 → HTTPS 308 redirect (mesh bind only)
+  # ════════════════════════════════════════════════════════════
+
+${httpRedirectBlock}
 
   # ════════════════════════════════════════════════════════════
   # CATCH-ALL — data-driven from caddyRoutes.catch_all
