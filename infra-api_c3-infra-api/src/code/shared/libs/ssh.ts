@@ -14,6 +14,9 @@ import { audit } from "./audit.js";
 const SSH_BASE_OPTS = (connectTimeout: number | string) => [
   "-o", "BatchMode=yes",
   "-o", "UserKnownHostsFile=/dev/null",
+  // ...which makes every host "new", so accept-new logs a Warning each time.
+  // ERROR keeps real failures (auth, timeout) and drops that noise.
+  "-o", "LogLevel=ERROR",
   "-o", `ConnectTimeout=${connectTimeout}`,
 ];
 
