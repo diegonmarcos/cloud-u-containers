@@ -1087,7 +1087,7 @@ export function registerMetaObs(server: McpServer): void {
           case "debug.vm_network": return jsonText(`Network: ${p.vm}`, vmNetwork(resolveVmId(p.vm)));
           case "debug.vm_top": return jsonText(`Top: ${p.vm}`, vmTop(resolveVmId(p.vm)));
           case "debug.vm_disk": return jsonText(`Disk usage: ${p.vm}`, vmDiskUsage(resolveVmId(p.vm)));
-          case "debug.vm_journal": return jsonText(`Journal: ${p.vm}`, vmJournal(resolveVmId(p.vm), p.lines as any, p.unit as any));
+          case "debug.vm_journal": return jsonText(`Journal: ${p.vm}`, vmJournal(resolveVmId(p.vm), p.lines, p.unit));
           case "debug.vm_status": return text(getVmStatus(p.vm));
           // ── tests & reports ──
           case "debug.test": return jsonText(`Test suite: ${p.suite}`, runTestSuite(p.suite, p.target));

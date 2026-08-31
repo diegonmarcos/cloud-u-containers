@@ -241,14 +241,17 @@ export function vmDiskUsage(vmNameOrAlias: string): { ok: boolean; output: strin
 
 export function vmJournal(
   vmNameOrAlias: string,
-  since = "1h",
   lines = 100,
+  unit?: string,
 ): { ok: boolean; output: string } {
   const vmId = resolveVmId(vmNameOrAlias);
   const safeLines = Math.max(1, Math.min(Math.floor(lines), 5000));
+  // Whitelist, not quoting: this string is interpolated into a shell command
+  // run over ssh, so a unit containing $ or ` would expand even inside quotes.
+  const unitArg = unit && /^[A-Za-z0-9@._\-]+$/.test(unit) ? ` -u ${unit}` : "";
   const result = sshExec(
     vmId,
-    `journalctl --since "${since} ago" --no-pager -n ${safeLines} 2>/dev/null || echo "(journalctl unavailable)"`,
+    `journalctl --no-pager -n ${safeLines}${unitArg} 2>/dev/null || echo "(journalctl unavailable)"`,
     15_000,
   );
   return { ok: result.ok, output: (result.stdout + result.stderr).trim() };

@@ -56,6 +56,9 @@ export async function sshExecAsync(
     "ssh",
     [
       "-o", "BatchMode=yes",
+      // /root/.ssh is a read-only bind mount — without this, accept-new warns
+      // on every connection and that stderr contaminates tool output.
+      "-o", "UserKnownHostsFile=/dev/null",
       "-o", "ConnectTimeout=10",
       alias, command,
     ],

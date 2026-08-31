@@ -189,7 +189,7 @@ export function registerObservabilityReadTools(server: McpServer) {
     },
     async ({ vm, lines, unit }) => {
       const vmId = resolveVmId(vm);
-      return jsonText(`Journal: ${vm}`, vmJournal(vmId, lines as any, unit as any));
+      return jsonText(`Journal: ${vm}`, vmJournal(vmId, lines, unit));
     }
   );
 
