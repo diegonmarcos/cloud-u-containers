@@ -1,6 +1,6 @@
 {
   "name": "kg-store",
-  "enabled": false,
+  "enabled": true,
   "description": "SurrealDB Hybrid Knowledge Graph - Infrastructure topology + vector search",
   "category": "data",
   "version": "0.1.0",
