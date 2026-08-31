@@ -16,6 +16,10 @@ in
       image          = binariesImage;
       container_name = app.container_name;
       network_mode   = "host";
+      # Always-on data store — override the fleet-wide restart:no default
+      # (compose-defaults.json) so a stop/reboot/crash brings it back instead
+      # of leaving the knowledge graph dark until someone notices.
+      restart        = "unless-stopped";
       # Run as root: the surrealdb image's default non-root user cannot create the
       # RocksDB dir in the root-owned `${data_path}:/data` host bind mount
       # ("PermissionDenied"). Single-tenant, 127.0.0.1-bound file store — same

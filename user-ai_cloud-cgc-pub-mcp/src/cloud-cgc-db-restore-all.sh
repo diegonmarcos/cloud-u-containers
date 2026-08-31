@@ -129,6 +129,18 @@
 #                         (OCTOCODE_SKIP_INDEX=1 reindex.sh) for the repos
 #                         this run staged — the fix for the pipeline split
 #                         where SurrealDB used to go stale by construction.
+#                         BOTH stores get refreshed, not just the one whose
+#                         volume this run swapped: cloud-cgc-pub-mcp (8002,
+#                         PUBLIC repos only) and cloud-cgc-pvt-mcp (8001, ALL
+#                         staged repos). See the kg-store block near the end
+#                         of the script for the busybox exec-env password
+#                         remap this needs — a plain `docker exec` does NOT
+#                         pick up the pub container's entrypoint-time
+#                         KG_STORE_PASS_PUB remap, so it must be redone here.
+#    CGC_PUB_CONTAINER,
+#    CGC_PVT_CONTAINER   optional container-name overrides for that kg-store
+#                         refresh (default: build.json .containers.app /
+#                         .containers.pvt .container_name).
 #
 #  Requires: docker, jq on PATH. GHCR auth (if any image is private) is the
 #  caller's responsibility, same as every other cgc-db consumer script here.
@@ -450,23 +462,87 @@ if [ -n "$CONTAINER" ]; then
   if docker restart "$CONTAINER" >/dev/null 2>&1; then
     echo "[cgc-db-restore-all] restarted $CONTAINER"
     # ── kg-store (SurrealDB) refresh — closes the split-pipeline gap ─────────
-    # $CONTAINER runs the same binaries image as the reindex/index compose
-    # profiles: python3 + node + octocode-export.py + kg-ingest.mjs baked in,
-    # KG_STORE_PASS via env_file, and it just came back up on the LanceDB
-    # volume swapped in above. OCTOCODE_SKIP_INDEX=1 skips octocode's own
-    # LLM indexing (GHA-x86-only, freeze-guarded off this box) and runs ONLY
-    # the cheap export→ingest mirror for the repos THIS run staged — so
-    # SurrealDB refreshes in lockstep with LanceDB instead of only on a
-    # manual `docker compose --profile reindex` nobody in CI ever runs.
-    # Best-effort: a failure here does not undo an otherwise-successful
-    # LanceDB restore.
+    # Both MCP containers run the SAME binaries image (python3 + node +
+    # octocode-export.py + kg-ingest.mjs baked in) and both just came back up
+    # on the LanceDB tree swapped in above, so both get the cheap
+    # OCTOCODE_SKIP_INDEX=1 export→ingest tail — not just $CONTAINER, the one
+    # this run happened to restart for the volume swap. Without this, only
+    # whichever store's password happened to already be correct for a plain
+    # `docker exec` ever received data (see the remap note below), which is
+    # exactly the "pvt gets data, pub stays empty" bug this closes.
+    #
+    # BUSYBOX EXEC-ENV PASSWORD REMAP: cloud-cgc-pub-mcp and cloud-cgc-pvt-mcp
+    # are the SAME image run twice. Each container's own entrypoint remaps its
+    # KG_STORE_PASS_PUB (pub) onto KG_STORE_PASS for the server PROCESS it
+    # starts — but that remap happens once, inside that entrypoint shell, and
+    # is invisible to a fresh `docker exec`, which only ever sees the
+    # container's ORIGINAL env_file. Both containers ship the SAME base
+    # KG_STORE_PASS (the pvt password), so an un-remapped `docker exec` into
+    # the pub container hits kg_store_pub (8002) with the pvt password →
+    # HTTP 401, silently swallowed by the best-effort warning below. The pvt
+    # container needs no remap: its base KG_STORE_PASS is already correct for
+    # kg_store_pvt (8001). The fix re-does the remap ourselves for the pub
+    # call only, evaluated INSIDE the container via `sh -c` so the real
+    # secret is read from the container's own env and never touches this
+    # script or its logs.
+    #
+    # PUBLIC/PRIVATE FILTER: kg_store_pub (feeds the public MCP) must never
+    # carry a private repo's graph — same invariant as the LanceDB volume
+    # split above. STAGED_REPOS is whatever THIS run actually staged (already
+    # private-filtered on the default path, or every repo under
+    # CGC_INCLUDE_PRIVATE=1); the pub tail additionally strips
+    # CGC_PRIVATE_REPOS/build.json private_repos from it so a pvt-mode run
+    # (CGC_INCLUDE_PRIVATE=1) can never leak a private repo into 8002.
+    # kg_store_pvt (full store) always gets STAGED_REPOS as-is.
     if [ -n "$STAGED_REPOS" ]; then
-      if docker exec -e OCTOCODE_REPOS="${STAGED_REPOS# }" -e OCTOCODE_SKIP_INDEX=1 \
-           "$CONTAINER" sh /app/reindex.sh; then
-        echo "[cgc-db-restore-all] kg-store refresh OK ($FOUND repo(s))"
-      else
-        echo "::warning::[cgc-db-restore-all] kg-store refresh failed (continuing — LanceDB restore already succeeded)"
+      _kbj="${BJ:-}"
+      if [ -z "$_kbj" ] || [ ! -f "$_kbj" ]; then
+        _kroot="${CLOUD_ROOT:-$(cd "$HERE/../../.." 2>/dev/null && pwd || echo "")}"
+        _kbj="${_kroot:+$_kroot/a_solutions/user-ai_cloud-cgc-pub-mcp/build.json}"
       fi
+      KG_PRIVATE_REPOS="${CGC_PRIVATE_REPOS:-}"
+      if [ -z "$KG_PRIVATE_REPOS" ] && [ -n "$_kbj" ] && [ -f "$_kbj" ]; then
+        KG_PRIVATE_REPOS=$(jq -r '.runtime.octocode.private_repos[]?' "$_kbj" 2>/dev/null)
+      fi
+      PUB_CONTAINER="${CGC_PUB_CONTAINER:-}"
+      [ -n "$PUB_CONTAINER" ] || [ -z "$_kbj" ] || [ ! -f "$_kbj" ] \
+        || PUB_CONTAINER=$(jq -r '.containers.app.container_name // empty' "$_kbj" 2>/dev/null)
+      PVT_CONTAINER="${CGC_PVT_CONTAINER:-}"
+      [ -n "$PVT_CONTAINER" ] || [ -z "$_kbj" ] || [ ! -f "$_kbj" ] \
+        || PVT_CONTAINER=$(jq -r '.containers.pvt.container_name // empty' "$_kbj" 2>/dev/null)
+
+      KG_PUBLIC_REPOS="$STAGED_REPOS"
+      if [ -n "$KG_PRIVATE_REPOS" ]; then
+        _kept=""
+        for _r in $STAGED_REPOS; do
+          _skip=0
+          for _p in $KG_PRIVATE_REPOS; do
+            [ "$_r" = "$_p" ] && { _skip=1; break; }
+          done
+          [ "$_skip" = 1 ] || _kept="$_kept $_r"
+        done
+        KG_PUBLIC_REPOS="${_kept# }"
+      fi
+
+      kg_refresh() { # $1 = container, $2 = repos, $3 = in-container wrapper cmd (or "sh /app/reindex.sh")
+        _c="$1"; _repos="$2"; _cmd="$3"
+        if [ -z "$_c" ]; then
+          echo "[cgc-db-restore-all] kg-store refresh skipped — container name unresolved"
+          return 0
+        fi
+        if [ -z "$_repos" ]; then
+          echo "[cgc-db-restore-all] kg-store refresh skipped for $_c — no eligible repos"
+          return 0
+        fi
+        if docker exec -e OCTOCODE_REPOS="$_repos" -e OCTOCODE_SKIP_INDEX=1 "$_c" sh -c "$_cmd"; then
+          echo "[cgc-db-restore-all] kg-store refresh OK ($_c)"
+        else
+          echo "::warning::[cgc-db-restore-all] kg-store refresh failed for $_c (continuing — LanceDB restore already succeeded)"
+        fi
+      }
+
+      kg_refresh "$PUB_CONTAINER" "$KG_PUBLIC_REPOS" 'KG_STORE_PASS="$KG_STORE_PASS_PUB" sh /app/reindex.sh'
+      kg_refresh "$PVT_CONTAINER" "${STAGED_REPOS# }" 'sh /app/reindex.sh'
     else
       echo "[cgc-db-restore-all] kg-store refresh skipped — no repos staged this run"
     fi
