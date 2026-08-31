@@ -66,6 +66,14 @@ RULE_COUNT_TOTAL="$(jq '.rules|length' "$GENERAL" "$PROFILE" | awk '{s+=$1} END{
 MADDY_RULE_COUNT="$(jq '.rules | length' "$TMP/maddy.json")"
 MADDY_DROPPED="$(jq '[.rules[].engines.maddy] | map(select(.=="drop")) | length' "$GENERAL" "$PROFILE" | awk '{s+=$1} END{print s}')"
 
+# The artifacts are COMMITTED, so nothing forces a regenerate when someone
+# edits a canonical. Without this, a rule change lands in git while the sieve
+# and both mail-rules.json files still describe the previous one -- and the
+# only symptom is mail filed by rules that are no longer in the repo.
+artifacts_current() { tsx "$DERIVER" --check >/dev/null 2>&1; }
+assert "committed artifacts match the canonicals (else: tsx _shared/lib/derive-mail-rules.ts)" \
+  artifacts_current
+
 assert "no duplicate rule ids in general+profile" \
   test "$(jq -r '.rules[].id' "$GENERAL" "$PROFILE" | sort | uniq -d | wc -l)" = 0
 
