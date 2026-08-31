@@ -164,7 +164,7 @@ async function triggerDagViaSsh(name: string): Promise<{ ok: boolean; dagRunId?:
     }
   } catch {}
 
-  const r = await execAsync(`ssh -o ConnectTimeout=5 -o BatchMode=yes ${sshAlias} 'docker exec dagu dagu start ${name}'`, 30000);
+  const r = await execAsync(`ssh -o ConnectTimeout=5 -o BatchMode=yes -o UserKnownHostsFile=/dev/null ${sshAlias} 'docker exec dagu dagu start ${name}'`, 30000);
   if (r.ok) {
     return { ok: true };
   }
