@@ -102,7 +102,13 @@ let
 
   # ── Auth snippets ──
   auth = caddyRoutes.auth or {};
-  autheliaUpstream   = caddyRoutes.auth_upstreams.authelia or "10.0.0.1:9091";
+  # Container IP, NOT the host-published 10.0.0.1:9091: dialing the published
+  # port from a container hairpins through docker-proxy, which HANGS on this
+  # host (15s stalls then context-canceled — took auth.diegonmarcos.com down
+  # 2026-08-31). Same pin + same reason as introspect-proxy's JWKS_URL; the
+  # address is pinned in infra-sec_authelia/src/compose.nix (auth-net .3) —
+  # keep the three in sync.
+  autheliaUpstream   = "172.18.0.3:9091";
   introspectUpstream = caddyRoutes.auth_upstreams.introspect_proxy or "10.0.0.1:4182";
 
   authelia = stripTrail (subst {
