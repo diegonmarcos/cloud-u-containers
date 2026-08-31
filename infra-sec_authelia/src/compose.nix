@@ -52,7 +52,12 @@ in
       env_file = [ ".secrets" ];
       command = "sh -c 'redis-server --port ${toString buildJson.ports.redis} --requirepass $$AUTHELIA_REDIS_PASSWORD --appendonly yes --appendfsync everysec --save 900 1 --save 300 10'";
       volumes = [ "authelia_redis_data:/data" ];
-      networks = [ "auth-net" ];
+      # Static IP pin, same treatment as authelia's above: the embedded-DNS
+      # service-name lookup ("redis") was observed timing out on this host
+      # (authelia FATAL "lookup redis: i/o timeout" 2026-08-31, and 6s
+      # per-request session stalls before that) — configuration.yml.tpl now
+      # dials this address directly, keeping DNS out of the auth hot path.
+      networks.auth-net.ipv4_address = "172.18.0.4";
       # Healthy ONLY when PING returns PONG — redis returns -LOADING (no PONG)
       # while replaying the AOF, so this gates authelia until the dataset is
       # fully loaded. grep -q PONG is required because redis-cli exits 0 even on
