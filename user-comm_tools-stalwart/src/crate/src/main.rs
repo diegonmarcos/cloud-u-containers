@@ -1,6 +1,6 @@
 //! JMAP-native email sorter for Stalwart — dynamic filter views.
 //!
-//! Routing is owned by the native Sieve (`_shared/lib/mail-rules.nix::toSieve`):
+//! Routing is owned by the native Sieve (`_shared/lib/derive-mail-rules.ts::toSieve`):
 //! each inbound email lands in INBOX (read) plus exactly one numeric `1*`-`9*`
 //! category folder as an UNREAD copy. This sorter does NOT route and does not
 //! set `$seen`.

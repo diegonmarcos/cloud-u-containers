@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ╔══════════════════════════════════════════════════════════════════╗
-# ║ mail-rules.nix test runner — golden-file + sanity assertions.    ║
+# ║ derive-mail-rules.ts test runner — golden-file + sanity checks.  ║
 # ║                                                                  ║
 # ║ Modes:                                                           ║
 # ║   ./run-tests.sh           — diff against golden/ (CI mode)     ║
@@ -15,25 +15,24 @@ CANON_DIR="$HERE/../../../user-comm_tools-stalwart/src"
 GENERAL="$CANON_DIR/mail-rules-general.json"
 PROFILE="$CANON_DIR/mail-rules-profile-diego.json"
 GOLDEN_DIR="$HERE/golden"
-GEN_SCRIPT="$HERE/generate-golden.nix"
+DERIVER="$HERE/../derive-mail-rules.ts"
 
 UPDATE=0
 [[ "${1:-}" == "--update" ]] && UPDATE=1
 
 [[ -f "$GENERAL" ]] || { echo "missing: $GENERAL" >&2; exit 1; }
 [[ -f "$PROFILE" ]] || { echo "missing: $PROFILE" >&2; exit 1; }
-command -v nix-instantiate >/dev/null || { echo "nix-instantiate required" >&2; exit 1; }
+command -v tsx             >/dev/null || { echo "tsx required"             >&2; exit 1; }
 command -v jq              >/dev/null || { echo "jq required"              >&2; exit 1; }
-
-OUT="$(nix-instantiate --eval --strict --json "$GEN_SCRIPT" \
-  --arg generalPath "$GENERAL" \
-  --arg profilePath "$PROFILE")"
 
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
-printf '%s' "$OUT" | jq -r '.sieve' > "$TMP/stalwart.sieve"
-printf '%s' "$OUT" | jq    '.maddy' > "$TMP/maddy.json"
+# The emitter writes both artifacts itself. This used to be
+# `nix-instantiate --eval --strict --json | jq -r .sieve`, which is also why
+# the old sieve golden carried a trailing blank line the real file never had:
+# jq -r appends a newline to a string that already ended in one.
+tsx "$DERIVER" --emit "$TMP"
 
 mkdir -p "$GOLDEN_DIR"
 

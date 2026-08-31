@@ -1,5 +1,5 @@
 //! Typed schema for `/data/mail-rules.json` (the Maddy subset rendered by
-//! `_shared/lib/mail-rules.nix::toMaddyJson` — same source of truth as
+//! `_shared/lib/derive-mail-rules.ts::toMaddyJson` — same source of truth as
 //! Stalwart's Sieve, filtered to `filters.views` where `axis == "sender"`).
 //!
 //! Only the atoms the F0 sender axis actually uses today are implemented:

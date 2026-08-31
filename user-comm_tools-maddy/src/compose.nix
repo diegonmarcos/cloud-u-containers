@@ -44,7 +44,7 @@ in
         # Delivery-time Sieve-subset filter. Maddy forks the script per incoming
         # message via imap_filter.command (see maddy.conf.tpl). mail-rules.json
         # is the canonical single source of truth (also drives Stalwart's Sieve
-        # via _shared/lib/mail-rules.nix; here we render the Maddy subset).
+        # via _shared/lib/derive-mail-rules.ts; here we mount the Maddy subset).
         "./assets/mail-rules.json:/data/mail-rules.json:ro"
         "./assets/mail-sieve-subset-delivery-time.sh:/usr/local/bin/mail-sieve-subset-delivery-time:ro"
         # Post-hoc maintenance script (operator-triggered via build.sh
