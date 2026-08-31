@@ -1,8 +1,16 @@
 #!/bin/bash
 # cloud-analytics-daily — build + send the Umami and Matomo daily reports.
 #
-#   build.sh build   generate dist/cloud_analytics_{umami,matomo}.{md,html}
-#   build.sh ship    build, then mail each report (reuses the ops sender)
+#   build.sh link            no-op — this crate has no cargo binary to symlink
+#   build.sh build|run|all   generate dist/cloud_analytics_{umami,matomo}.{md,html}
+#   build.sh ship            build, then mail each report (reuses the ops sender)
+#
+# link/run/all exist because reports/src/build.sh discovers EVERY cloud-*/ dir
+# with an executable build.sh and drives them through the _crate_engine.sh verb
+# contract: Phase 0b calls `link` on every crate, Phase 2 calls `run` on every
+# derive. This crate is shell-only (no Rust binary), but it must still answer
+# those verbs — otherwise its `usage:` branch exits 2 under the orchestrator's
+# `set -eu` and takes the whole daily run down with it.
 #
 # Two reports, not one: the engines are independent collectors and the whole
 # point of running both is being able to see them disagree. Merging them into a
@@ -36,7 +44,9 @@ gen() { # $1 engine label, $2 query script, $3 slug
 }
 
 case "${1:-build}" in
-  build)
+  link)
+    ;;
+  build|run|all)
     gen "Umami"  umami-query.sh  umami
     gen "Matomo" matomo-query.sh matomo
     ;;
@@ -50,5 +60,5 @@ case "${1:-build}" in
     done
     exit $RC
     ;;
-  *) echo "usage: build.sh {build|ship}" >&2; exit 2;;
+  *) echo "usage: build.sh {link|build|run|all|ship}" >&2; exit 2;;
 esac
