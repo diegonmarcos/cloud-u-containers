@@ -9,7 +9,12 @@
 # single document would hide exactly the discrepancy worth looking at.
 set -eu
 
-HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# $0, not ${BASH_SOURCE[0]}: the reports entrypoint invokes this with sh
+# (dash), where the bash array syntax is a parse error — "build.sh: 12: Bad
+# substitution", which killed both Cloud Health Reports runs (ARM + x86) and
+# only ever surfaced as a bare `usage:` line. $0 is correct in bash and dash
+# alike for a script that is executed rather than sourced.
+HERE="$(cd "$(dirname "$0")" && pwd)"
 DIST="${DIST_DIR:-$HERE/../../dist}"
 SENDER="$HERE/../cloud-health-full-daily/src/send.sh"
 DATE=$(date '+%Y-%m-%d')
