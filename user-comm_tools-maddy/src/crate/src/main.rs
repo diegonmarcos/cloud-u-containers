@@ -7,7 +7,7 @@
 //! for the incident that caused: a hung ssh call let two apply-rules
 //! processes run at once and livelock SQLite) AND the bash
 //! `cmd_apply_rules` in mail-sieve-subset-post-hoc.sh, which is now dead
-//! code kept only for reference during the transition (mail-rules.nix
+//! code kept only for reference during the transition (derive-mail-rules.ts
 //! target: remove once this has soaked).
 //!
 //! Every message the config's `filters.views` (axis="sender") predicates

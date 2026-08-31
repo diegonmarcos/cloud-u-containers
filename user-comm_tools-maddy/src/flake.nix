@@ -11,18 +11,14 @@
     container = builtins.fromJSON (builtins.readFile ./build-maddy.json);
 
     engine       = import ../../_shared/engine.nix;
-    mailRulesLib = import ../../_shared/lib/mail-rules.nix;
     lib          = nixpkgs.lib;
 
-    # Canonical mail rules — sole source of truth lives in Stalwart's src/;
-    # Maddy symlinks them in. Both services derive their runtime outputs
-    # from the same two JSONs via the shared _shared/lib/mail-rules.nix.
-    mailRules = mailRulesLib { inherit lib; };
-    merged    = mailRules.loadAndMerge {
-      generalPath = ./mail-rules-general.json;          # symlink → stalwart canonical
-      profilePath = ./mail-rules-profile-diego.json;    # symlink → stalwart canonical
-    };
-    maddyRulesJson = builtins.toJSON (mailRules.toMaddyJson merged);
+    # Mail rules are COMPILED, not computed here. _shared/lib/derive-mail-rules.ts
+    # reads the canonicals (which live in Stalwart's src/; the two JSONs beside
+    # this flake are symlinks back to them) and writes dist/assets/mail-rules.json
+    # — the Maddy subset. This flake only READS that file: to mount it, and to
+    # learn which folders exist. Was toMaddyJson + builtins.toJSON here.
+    maddyRules = builtins.fromJSON (builtins.readFile ../dist/assets/mail-rules.json);
 
     # F0 sender-classification folders (Fa..Fk, Fz) -- the ONLY category
     # folders Maddy routes into now (see toMaddyJson). Unlike Stalwart,
@@ -32,8 +28,9 @@
     # them silently no-ops. `maddy imap-mboxes create` is idempotent enough
     # for a boot-time init.sh (errors on a folder that already exists;
     # piped to /dev/null + `|| true` like every other create call here).
-    senderFolders = map (v: v.folder)
-      (lib.filter (v: (v.axis or null) == "sender") (merged.filters.views or []));
+    # Every folder the subset routes into. Same list as before: the emitter
+    # builds one rule per sender view, in view order.
+    senderFolders = map (r: r.folder) (maddyRules.rules or []);
 
     # base_domain derived from service domain: "mail.example.com" → "example.com"
     base_domain =
@@ -103,9 +100,6 @@
   in {
     packages = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
-      # Derived Maddy subset — consumed by mail-sieve-subset-delivery-time.sh at /data/mail-rules.json.
-      # Keeping filename stable means compose volume mounts need no change.
-      mailRulesDerived = pkgs.writeText "mail-rules.json" maddyRulesJson;
     in {
       default = engine {
         inherit pkgs buildJson container;
@@ -118,7 +112,7 @@
         #   mail-sieve-subset-delivery-time.sh — per-message at delivery (jq)
         #   mail-sieve-subset-post-hoc.sh      — batch maintenance (sqlite + jq)
         # Both consume /data/mail-rules.json (derived Maddy subset of canonical
-        # rules via _shared/lib/mail-rules.nix → toMaddyJson; same SoT also
+        # rules via _shared/lib/derive-mail-rules.ts (toMaddyJson); same SoT also
         # renders Stalwart's default.sieve).
         # The retired pre-SQL scripts live in src/z-archive/ for the transition
         # period — NOT bundled here, NOT mounted into the container, NOT
@@ -127,7 +121,10 @@
         extraAssets = [
           ./mail-sieve-subset-delivery-time.sh
           ./mail-sieve-subset-post-hoc.sh
-          { name = "mail-rules.json"; src = mailRulesDerived; }
+          # A file on disk, compiled by derive-mail-rules.ts and committed like
+          # the rest of dist/. Consumed by the subset scripts at
+          # /data/mail-rules.json; filename stable so mounts need no change.
+          { name = "mail-rules.json"; src = ../dist/assets/mail-rules.json; }
         ];
         composeSpec = import ./compose.nix { inherit buildJson container base_domain; };
         title = "Maddy Mail Server";

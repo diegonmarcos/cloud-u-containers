@@ -1,7 +1,7 @@
 {
   "account": "me@diegonmarcos.com",
   "delivery_strategy": "unified-inbox",
-  "generated_by": "_shared/lib/mail-rules.nix",
+  "generated_by": "_shared/lib/derive-mail-rules.ts",
   "inbox_copy_flags": [
     "\\Seen"
   ],

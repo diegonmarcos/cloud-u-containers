@@ -1,7 +1,7 @@
 //! Dynamic cross-cutting filter views — the `A*`-`F*` axes (size, time,
 //! read-state, attachments, priority, sender).
 //!
-//! Routing is owned entirely by the native Sieve (`_shared/lib/mail-rules.nix`
+//! Routing is owned entirely by the native Sieve (`_shared/lib/derive-mail-rules.ts`
 //! `::toSieve`): every inbound email lands in INBOX plus exactly one numeric
 //! `1*`-`9*` category folder. This module never routes and never touches
 //! keywords.
