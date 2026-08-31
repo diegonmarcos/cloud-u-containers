@@ -51,7 +51,7 @@ if [ -z "$CLIENT_SECRET" ]; then
 fi
 
 log "requesting client_credentials token from $TOKEN_URL (audience=$AUDIENCE)"
-RESP=$(curl -sf -X POST "$TOKEN_URL" \
+RESP=$(curl -sf --connect-timeout 8 --max-time 20 -X POST "$TOKEN_URL" \
     -u "$CLIENT_ID:$CLIENT_SECRET" \
     -d "grant_type=client_credentials" \
     -d "scope=authelia.bearer.authz" \
