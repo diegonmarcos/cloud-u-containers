@@ -510,6 +510,12 @@ if [ -n "$CONTAINER" ]; then
       PVT_CONTAINER="${CGC_PVT_CONTAINER:-}"
       [ -n "$PVT_CONTAINER" ] || [ -z "$_kbj" ] || [ ! -f "$_kbj" ] \
         || PVT_CONTAINER=$(jq -r '.containers.pvt.container_name // empty' "$_kbj" 2>/dev/null)
+      # Final fallback: on the BOX neither the CGC_*_CONTAINER env nor the build.json
+      # ($_kbj) is available, so derive both names from the already-resolved $CONTAINER
+      # (=MCP_CONTAINER, e.g. cloud-cgc-pub-mcp) by the pub<->pvt name swap. Without
+      # this the tail skipped ("container name unresolved") and NEITHER store refreshed.
+      [ -n "$PUB_CONTAINER" ] || PUB_CONTAINER=$(printf '%s' "$CONTAINER" | sed 's/-pvt-/-pub-/')
+      [ -n "$PVT_CONTAINER" ] || PVT_CONTAINER=$(printf '%s' "$CONTAINER" | sed 's/-pub-/-pvt-/')
 
       KG_PUBLIC_REPOS="$STAGED_REPOS"
       if [ -n "$KG_PRIVATE_REPOS" ]; then
