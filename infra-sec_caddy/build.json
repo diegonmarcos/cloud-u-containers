@@ -194,6 +194,8 @@
         "target_domain": "jmap.diegonmarcos.com",
         "upstream": "10.0.0.3:2443",
         "tls_skip_verify": true,
+        "_doc_rewrite_to": "Serve the session AT the discovery URL rather than making the client chase Stalwart's relative 307 (Location: /jmap/session). Legal per RFC 8620 and the original design, but a client that mishandles a RELATIVE Location never arrives: Cloud-Mail failed 2026-09-01 with 'EndpointNotFoundException: Unable to fetch session object(https://jmap.diegonmarcos.com/.well-known/jmap)' while curl -L on that exact URL returned a valid session in ~1.3s. Same upstream, same Authorization passthrough, same per-user session JSON — the /jmap/* sibling below stays for the API calls that follow. Fixes every JMAP client instead of patching one.",
+        "rewrite_to": "/jmap/session",
         "comment": "JMAP discovery on jmap vhost (public per RFC 8620)"
       },
       {
