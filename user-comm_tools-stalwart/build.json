@@ -76,6 +76,8 @@
         "path": "/.well-known/jmap",
         "target_domain": "diegonmarcos.com",
         "tls_skip_verify": true,
+        "_doc_rewrite_to": "Serve the session AT the discovery URL instead of making the client chase Stalwart's relative 307 (Location: /jmap/session). The redirect is legal and was the original design, but a client that mishandles a RELATIVE Location never arrives: Cloud-Mail failed 2026-09-01 with 'EndpointNotFoundException: Unable to fetch session object' while curl -L against the same URL returned a valid session in ~1.3s. Same upstream, same Authorization passthrough, same per-user session JSON — one less hop for every JMAP client, not a patch for one.",
+        "rewrite_to": "/jmap/session",
         "comment": "JMAP autoconfig — proxies to Stalwart (preserves per-user session)"
       },
       {

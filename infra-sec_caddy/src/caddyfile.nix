@@ -500,10 +500,20 @@ ${plainOut}${sniMuxBlock}
               tls_insecure_skip_verify
             }
           }'' else "        reverse_proxy ${wk.upstream}";
+      # Optional INTERNAL rewrite before proxying. Why this exists: Stalwart
+      # answers /.well-known/jmap with a 307 whose Location is RELATIVE
+      # (`/jmap/session`). That is legal — RFC 8620 lets the session resource
+      # redirect — but a client that mishandles relative Locations reports
+      # "EndpointNotFoundException: Unable to fetch session object" and the
+      # account simply never connects (Cloud-Mail, 2026-09-01). Rewriting here
+      # serves the session AT the discovery URL, so no client has to follow
+      # anything. Fixes every JMAP client at once instead of patching one.
+      rewriteLine = if (wk.rewrite_to or null) != null
+        then "        rewrite * ${wk.rewrite_to}\n" else "";
     in ''
       # ${wk.comment or wk.path} (well-known — public per spec)
       handle ${wk.path} {
-  ${proxyDirective}
+  ${rewriteLine}${proxyDirective}
       }'';
 
   mkGithubPagesRoute = route:
