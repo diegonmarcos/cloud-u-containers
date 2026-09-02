@@ -25,7 +25,22 @@ const SSH_TIMEOUT_MS = Number(process.env.SUPERAPP_SSH_TIMEOUT_MS ?? 30_000);
 
 /** Set from SuperApp → Configs → About. Absent is not fatal: /api/system/ping
  *  is open, so discovery still works and only the data routes answer 401. */
-const TOKEN = process.env.SUPERAPP_FLEET_TOKEN ?? "";
+/**
+ * An unexpanded ${VAR} counts as absent.
+ *
+ * ~/.mcp.json is rendered from a template whose placeholders the mcpSecrets
+ * activation fills from sops. A key that is missing there is left VERBATIM —
+ * so this arrives as the literal string "${SUPERAPP_FLEET_TOKEN}",
+ * which is truthy, passes any `unset` check, and gets sent as a Bearer token
+ * the phone rejects. Every data route then answers 401 with nothing anywhere
+ * saying why. Treat it as the miss it is.
+ */
+export function fleetToken(): string {
+  const raw = process.env.SUPERAPP_FLEET_TOKEN ?? "";
+  return /^\$\{[A-Za-z_][A-Za-z0-9_-]*\}$/.test(raw.trim()) ? "" : raw;
+}
+
+const TOKEN = fleetToken();
 
 export const PORT_DEVCONTROL = 38080;
 export const PORT_FIRST = 38090;
