@@ -13,6 +13,14 @@
     "display_name": "Cloud SuperApp MCP",
     "description": "Discovers every constellation app serving AppDebugServer on the phone (127.0.0.1:38080,38090-38139) and proxies its routes: logcat, crashes, docs, fleet wake, and any app-registered route via superapp_call. App aliases come from mcps-apps/<id>/, so cloud-mail resolves without asking the device.",
     "auth": "none",
-    "sdk": "@modelcontextprotocol/sdk@^1.12.0"
+    "sdk": "@modelcontextprotocol/sdk@^1.12.0",
+    "_doc_stdio": "How .mcp.json should launch this. Run through `sh -c` rather than naming npm directly so the ${VAR:-default} expansion is done by a shell we know does it — the same trick headersHelper already uses in that file. CLOUD_INFRA_DIR overrides the checkout location; the default is the one every other path convention here assumes.",
+    "stdio": {
+      "command": "sh",
+      "args": [
+        "-c",
+        "npm --prefix \"${CLOUD_INFRA_DIR:-$HOME/git/cloud-infra}/a_solutions/infra-api_cloud-superapp-mcp/cloud-superapp-mcp\" start"
+      ]
+    }
   }
 }
