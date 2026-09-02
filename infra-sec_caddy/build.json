@@ -105,6 +105,12 @@
         "window": "1m",
         "key": "{remote_host}",
         "zone": "mcp"
+      },
+      "jmap_rate_limit": {
+        "events": 600,
+        "window": "1m",
+        "key": "{remote_host}",
+        "zone": "jmap"
       }
     },
     "auth": {

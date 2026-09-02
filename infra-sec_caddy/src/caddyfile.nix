@@ -65,6 +65,7 @@ let
     } (readTpl "11-rate-limiting.caddy.tpl");
   rateLimiting = mkRateLimiting "rate_limiting" ss.rate_limit;
   rateLimitingMcp = mkRateLimiting "rate_limiting_mcp" ss.mcp_rate_limit;
+  rateLimitingJmap = mkRateLimiting "rate_limiting_jmap" ss.jmap_rate_limit;
 
   blockBots = let uas = lib.concatStringsSep "|" ss.bot_blocker.user_agents; in
     subst { "@BOT_UAS@" = uas; } (readTpl "12-block-bots.caddy.tpl");
@@ -93,6 +94,7 @@ let
 
   securitySnippet = readTpl "17-security-snippet.caddy.tpl";
   securityMcpSnippet = readTpl "18-security-mcp-snippet.caddy.tpl";
+  securityJmapSnippet = readTpl "19-security-jmap-snippet.caddy.tpl";
 
   # `sec` and `secNoLimit` are used inline as `import` lines inside site
   # blocks. Indentation is non-trivial here — we keep the original
@@ -327,7 +329,15 @@ ${plainOut}${sniMuxBlock}
       hasLandingPage = (route.landing_page or null) != null;
       hasBypassPaths = (route.bypass_paths or null) != null;
 
-      secLine = if hasMaxUpload then secNoLimit else sec;
+      # Per-route security bundle override (route.security_import, from the
+      # service build.json): lets a vhost swap the shared global rate-limit
+      # zone for its own without forking the rest of the (security) posture.
+      secImport = route.security_import or null;
+      secLine =
+        if secImport != null then
+          (if hasMaxUpload then "      import ${secImport}"
+           else "      import ${secImport}\n      import request_limits")
+        else if hasMaxUpload then secNoLimit else sec;
       uploadBlock = if hasMaxUpload then ''
 
       request_body {
@@ -1060,6 +1070,7 @@ ${odtAskBlock}
   ${securityHeaders}
   ${rateLimiting}
   ${rateLimitingMcp}
+  ${rateLimitingJmap}
   ${blockBots}
   ${blockScanners}
   ${requestLimits}
@@ -1067,6 +1078,7 @@ ${odtAskBlock}
   ${accessLog}
   ${securitySnippet}
   ${securityMcpSnippet}
+  ${securityJmapSnippet}
 
   # ════════════════════════════════════════════════════════════
   # SUBDOMAIN ROUTES (from routes[])
