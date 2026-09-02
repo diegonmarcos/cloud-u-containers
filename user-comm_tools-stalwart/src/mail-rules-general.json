@@ -106,7 +106,7 @@
   },
   "filters": {
     "_doc": "Dynamic cross-cutting filter views maintained by jmap-sorter each poll over emails in the numeric 1*-9* folders. Multi-mailbox membership only (no copies, no $seen changes); add+remove each poll so time/read windows stay current.",
-    "source_folder_regex": "^Inbox$",
+    "source_folder_regex": "^(Inbox$|[0-9])",
     "section_headers": ["A0 _ SIZE", "B0 _ TIME", "C0 _ STATE", "D0 _ ATTACH", "E0 _ PRIORITY", "F0 _ SENDER"],
     "_axis_doc": "Each view declares its axis and whether it is volatile. A volatile view depends on wall-clock time or read state and must be re-evaluated every poll; a static view is a property of the message itself (size, attachments) and is computed once. The size axis is a PARTITION: its buckets are half-open [lo,hi) and must tile the whole range, so every message lands in exactly one. That invariant is what lets the sorter use size-view membership as the sentinel for 'static views already computed' -- guarded by 9_others/test/test_mail_filter_views_partition.sh.",
     "views": [

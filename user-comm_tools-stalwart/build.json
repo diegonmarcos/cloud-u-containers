@@ -43,6 +43,9 @@
       "domain": "jmap.diegonmarcos.com",
       "auth": "none",
       "tls_skip_verify": true,
+      "_doc_security_import": "Dedicated rate-limit zone (security_jmap -> zone jmap, declared in infra-sec_caddy build.json security_snippets). A real JMAP sync is ~24+ Email/get calls plus query paging per pass; the shared global zone is 100/min/IP, so a sync eats 429s exactly like the MCP session-start starvation fixed in 12e9766e. max_upload 50MB matches Stalwart's advertised maxSizeUpload (the global request_limits caps bodies at 10MB, silently rejecting uploads the session JSON promises).",
+      "security_import": "security_jmap",
+      "max_upload": "50MB",
       "_doc_root_response_json_removed": "Initially tried serving a STATIC session JSON at jmap.diegonmarcos.com/ to bypass Stalwart's :2443 port leak in apiUrl/downloadUrl/etc. BROKE LTT.rs because the static JSON has empty accounts: {} — JMAP clients NEED the authenticated per-user response which only Stalwart can generate (it includes the user's account ID, capabilities per account, etc.). The :2443 leak is a real Stalwart limitation but reverting to runtime session is the lesser evil. Static-JSON approach is preserved in caddyfile.nix root_response_json schema for non-stateful endpoints (where applicable).",
       "_doc_l4_ports": "Stalwart serves JMAP via jmap.diegonmarcos.com (HTTPS reverse_proxy to :2443) and classical IMAPS/SMTPS via SNI on :443 → its own :2993/:2465 listeners. These two SNI routes used to be declared in user-comm_tools-maddy/build.json even though Stalwart terminates them; moved here so that retiring Maddy's directory cannot silently delete the live mail endpoints. Maddy keeps only :25.",
       "l4_ports": [
