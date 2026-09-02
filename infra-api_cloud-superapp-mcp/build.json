@@ -1,6 +1,6 @@
 {
   "name": "cloud-superapp-mcp",
-  "description": "MCP server — the Android constellation's on-device debug API (libs:devtools AppDebugServer) reached over ssh",
+  "description": "MCP + HTTP faces over the Android constellation's on-device debug API (libs:devtools AppDebugServer), reached over ssh. lib-api/lib-mcp shared, one module per app under mcps-apps/, one server process.",
   "category": "app",
   "build": {
     "headers_enforced": true
@@ -11,7 +11,7 @@
     "resources_count": 0,
     "prompts_count": 0,
     "display_name": "Cloud SuperApp MCP",
-    "description": "Discovers every constellation app serving AppDebugServer on the phone (127.0.0.1:38080,38090-38139) and proxies its routes: logcat, crashes, docs, fleet wake, and any app-registered route via superapp_call.",
+    "description": "Discovers every constellation app serving AppDebugServer on the phone (127.0.0.1:38080,38090-38139) and proxies its routes: logcat, crashes, docs, fleet wake, and any app-registered route via superapp_call. App aliases come from mcps-apps/<id>/, so cloud-mail resolves without asking the device.",
     "auth": "none",
     "sdk": "@modelcontextprotocol/sdk@^1.12.0"
   }

@@ -1,0 +1,14 @@
+{
+  "name": "cloud-superapp-api",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "HTTP face over the constellation's on-device debug API \u2014 same modules as the MCP",
+  "scripts": {
+    "start": "tsx src/index.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
