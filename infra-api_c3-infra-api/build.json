@@ -41,7 +41,9 @@
       "parent_domain": "api.diegonmarcos.com",
       "base_path": "/c3-infra-api",
       "public_paths": [
-        "/c3-infra-api/docs/json"
+        "/c3-infra-api/docs/json",
+        "/c3-infra-api/public/logs",
+        "/c3-infra-api/public/events/*"
       ]
     }
   },
