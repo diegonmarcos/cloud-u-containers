@@ -2362,6 +2362,26 @@ handle /c3-infra-api/docs/json {
           respond "Forbidden" 403
         }
 }
+handle /c3-infra-api/public/logs {
+  @wg remote_ip 10.0.0.0/24 fd0c:1d00::/64
+        handle @wg {
+          uri strip_prefix /c3-infra-api
+        reverse_proxy 10.0.0.6:8081
+        }
+        handle {
+          respond "Forbidden" 403
+        }
+}
+handle /c3-infra-api/public/events/* {
+  @wg remote_ip 10.0.0.0/24 fd0c:1d00::/64
+        handle @wg {
+          uri strip_prefix /c3-infra-api
+        reverse_proxy 10.0.0.6:8081
+        }
+        handle {
+          respond "Forbidden" 403
+        }
+}
 handle_path /c3-infra-api/* {
   @wg remote_ip 10.0.0.0/24 fd0c:1d00::/64
         handle @wg {
@@ -3630,8 +3650,21 @@ handle_path /cloud-cgc-pub-mcp/* {
           header_up Accept "application/json, text/event-stream"
         }
 }
+handle_path /cloud-cgc-pvt-mcp/* {
+  @wg remote_ip 10.0.0.0/24 fd0c:1d00::/64
+        handle @wg {
+          reverse_proxy 10.0.0.6:3107 {
+          flush_interval -1
+          header_up X-Real-IP {http.request.remote.host}
+          header_up Accept "application/json, text/event-stream"
+        }
+        }
+        handle {
+          respond "Forbidden" 403
+        }
+}
     handle {
-      respond "MCP Hub -- use /cloud-drive-mcp/mcp, /c3-infra-mcp/mcp, /mail-mcp/mcp, /mattermost-mcp/mcp, /c3-services-mcp/mcp, /g-personal/mcp, /g-workspace/mcp, /cloud-cgc-pub-mcp/mcp" 200
+      respond "MCP Hub -- use /cloud-drive-mcp/mcp, /c3-infra-mcp/mcp, /mail-mcp/mcp, /mattermost-mcp/mcp, /c3-services-mcp/mcp, /g-personal/mcp, /g-workspace/mcp, /cloud-cgc-pub-mcp/mcp, /cloud-cgc-pvt-mcp/mcp" 200
     }
       handle_errors {
       @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
