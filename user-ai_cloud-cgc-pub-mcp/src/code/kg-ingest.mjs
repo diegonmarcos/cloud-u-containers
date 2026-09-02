@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 // kg-ingest — load the infra knowledge-graph delta ({nodes[],edges[]}) into the
-// kg-store SurrealDB as idempotent SurrealQL (UPSERT nodes + RELATE edges, batched).
-// Called by reindex.sh after octocode builds the code graph, so the one-shot job
-// (re)builds BOTH graphs. Fully env-gated/data-driven — no-ops if kg-store is not
-// configured. Uses only Node built-ins.
+// kg-store SurrealDB as idempotent SurrealQL (UPSERT nodes + batched INSERT
+// RELATION edges). Called by reindex.sh after octocode builds the code graph, so
+// the one-shot job (re)builds BOTH graphs. Fully env-gated/data-driven — no-ops
+// if kg-store is not configured. Uses only Node built-ins.
 import { readFileSync, existsSync } from "node:fs";
+import { createHash } from "node:crypto";
 
 const URL_  = process.env.KG_STORE_URL;                       // http://127.0.0.1:8001
 const NS    = process.env.KG_STORE_NS  || "infra";
@@ -56,15 +57,31 @@ for (const n of nodes) {
   if (!n?.table || n?.id == null) continue;
   nodeStmts.push(`UPSERT ${thing(n.table, n.id)} CONTENT ${JSON.stringify(n.properties ?? {})} RETURN NONE;`);
 }
-// Edges → RELATE, sent ONE PER REQUEST (see flush note below): multiple RELATEs in
-// a single /sql request silently consolidate edges that share a vertex inside one
-// transaction (proven: unbatched 8000→8000; batched 90134→35978, 0 errors).
-let edgeOk = 0;
-const edgeStmts = [];
+// Edges → batched INSERT RELATION with explicit deterministic ids. RELATE was
+// proven to silently consolidate edges sharing a vertex when batched OR run
+// concurrently (90134→~36k, 0 errors), which forced one-RELATE-per-request
+// serial ingest — 523k edges ≈ 6h per restore. INSERT RELATION creates explicit
+// records: distinct ids can never consolidate. Proven live on the kg-store
+// SurrealDB (2026-09-02, isolated ns): one batched request with duplicate
+// from/to pairs preserves every edge, ->t-> traversal works, in.repo/out.repo
+// scoped DELETE works, and re-INSERTing an existing id is a silent no-op — so
+// deterministic ids also make edge ingest idempotent (RELATE minted random ids
+// and accumulated duplicates on any re-run without a repo-scoped delete).
+let edgeOk = 0, eSeq = 0;
+const edgesByTable = new Map();
 for (const e of edges) {
   const a = byKey.get(e.from), b = byKey.get(e.to);
   if (!a || !b || !e.table) continue;
-  edgeStmts.push(`RELATE (${thing(a.table, a.id)})->${e.table}->(${thing(b.table, b.id)}) RETURN NONE;`);
+  // Deterministic per-delta id: same delta → same ids (idempotent); the ordinal
+  // keeps genuine duplicate (from,table,to) triples as distinct edge records.
+  const id = createHash("sha1").update(`${e.from}|${e.table}|${e.to}|${eSeq++}`).digest("hex").slice(0, 24);
+  const p = e.properties ?? {};
+  const obj = `{id:${q(id)},in:${thing(a.table, a.id)},out:${thing(b.table, b.id)}` +
+    `,description:${JSON.stringify(p.description ?? null)}` +
+    `,confidence:${JSON.stringify(Number(p.confidence ?? 0))}` +
+    `,weight:${JSON.stringify(Number(p.weight ?? 0))}}`;
+  if (!edgesByTable.has(e.table)) edgesByTable.set(e.table, []);
+  edgesByTable.get(e.table).push(obj);
   edgeOk++;
 }
 console.error(`[kg-ingest] ${nodes.length} nodes + ${edgeOk}/${edges.length} edges → ${URL_} (ns=${NS} db=${DB})`);
@@ -132,27 +149,32 @@ for (const s of nodeStmts) {
 }
 await flush();
 
-// ── Edges: ONE RELATE per request, concurrency-limited. Multiple RELATEs in one
-// /sql request silently consolidate edges sharing a vertex within the transaction
-// (proven: unbatched 8000→8000; a single batched request 90134→35978, 0 errors).
-// Each RELATE in its own request = its own transaction = no consolidation. Conflicts
-// Concurrency MUST default to 1: SurrealDB consolidates RELATEs that touch a shared
-// vertex when they run in the same transaction OR concurrently (proven: seq climbs
-// 1:1 / preserves all; batched-single AND concurrent-10 both deterministically
-// collapse 90134→~36k with 0 errors). Override via KG_INGEST_CONCURRENCY only if a
-// lower edge fidelity is acceptable for speed. Slower but correct (full mirror).
-const CONC = parseInt(process.env.KG_INGEST_CONCURRENCY || "1", 10);
-let ei = 0, eDone = 0, edgeErrs = 0;
-const worker = async () => {
-  while (ei < edgeStmts.length) {
-    const s = edgeStmts[ei++];
-    let r = await sql(s).catch(() => ({ errs: 1, firstErr: "request failed" }));
-    if (r.errs) r = await sql(s).catch(() => ({ errs: 1 }));   // one retry on conflict
-    if (r.errs) { edgeErrs++; if (r.firstErr && !firstErr) firstErr = r.firstErr; }
-    if (++eDone % 2000 === 0) process.stderr.write(`\r[kg-ingest] edges ${eDone}/${edgeStmts.length} (${edgeErrs} failed)`);
+// ── Edges: relation tables must exist as TYPE RELATION for ->t-> traversal.
+// IF NOT EXISTS keeps tables already created by the old RELATE path untouched.
+let eDone = 0, edgeErrs = 0;
+if (edgesByTable.size) {
+  const defs = [...edgesByTable.keys()].map((t) => `DEFINE TABLE IF NOT EXISTS ${t} TYPE RELATION;`).join("\n");
+  const { errs, firstErr: fe } = await sql(defs);
+  if (errs) die(`DEFINE relation tables failed — first: ${fe}`);
+}
+for (const [t, objs] of edgesByTable) {
+  let ebuf = [], ebytes = 0;
+  const eflush = async () => {
+    if (!ebuf.length) return;
+    const stmt = `INSERT RELATION INTO ${t} [${ebuf.join(",")}] RETURN NONE;`;
+    let r = await sql(stmt).catch(() => ({ errs: 1, firstErr: "request failed" }));
+    if (r.errs) r = await sql(stmt).catch(() => ({ errs: 1, firstErr: "request failed" }));  // one retry
+    if (r.errs) { edgeErrs += ebuf.length; if (r.firstErr && !firstErr) firstErr = r.firstErr; }
+    eDone += ebuf.length; ebuf = []; ebytes = 0;
+    process.stderr.write(`\r[kg-ingest] edges ${eDone}/${edgeOk}${edgeErrs ? ` (${edgeErrs} failed)` : ""}`);
+  };
+  for (const o of objs) {
+    if (ebuf.length && ebytes + o.length + 1 > MAX_BYTES) await eflush();
+    ebuf.push(o); ebytes += o.length + 1;
+    if (ebuf.length >= BATCH) await eflush();
   }
-};
-await Promise.all(Array.from({ length: CONC }, () => worker()));
+  await eflush();
+}
 
 const totalErrs = nodeErrs + edgeErrs;
 if (totalErrs) console.error(`\n[kg-ingest] ⚠ ${totalErrs} statements FAILED (${nodeErrs} node, ${edgeErrs} edge) — first: ${firstErr}`);

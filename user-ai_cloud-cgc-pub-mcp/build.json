@@ -158,7 +158,8 @@
         "cloud-data",
         "front-data",
         "cloud-data-my-ai-memory",
-        "cloud-u-containers"
+        "cloud-u-containers",
+        "cloud-u-android"
       ],
       "_private_repos_comment": "Repos in index_repos whose GitHub source is PRIVATE. Their DBs must never land in the volume the PUBLIC MCP mounts. cloud-cgc-db-restore-all.sh filters these out unless CGC_INCLUDE_PRIVATE=1, which cloud-cgc-pvt-mcp will set together with its own CGC_DB_TARGET_VOLUME. Keep in sync with repo_map: the value is the local_name (the index_repos entry), not the GitHub remote name.",
       "private_repos": [
@@ -173,12 +174,11 @@
         "cloud-data": "cloud-data",
         "front-data": "front-data",
         "cloud-data-my-ai-memory": "cloud-data-my-ai-memory",
-        "cloud-u-containers": "cloud-u-containers"
+        "cloud-u-containers": "cloud-u-containers",
+        "cloud-u-android": "cloud-u-android"
       },
       "_graphrag_skip_comment": "Subset of index_repos (data-driven, no hardcoded names in the script) whose GraphRAG LLM relationship pass is skipped entirely — pure prose/text corpora have no code semantics to relate, so the pass is zero graph nodes for real per-node LLM cost. Structural/FastEmbed indexing (the semantic phase, USE_LLM=false) still runs normally; only the graphrag phase (USE_LLM=true) skips these repos. Honored by cloud-cgc-db-update.sh's per-repo loop.",
-      "graphrag_skip": [
-        "cloud-data-my-ai-memory"
-      ],
+      "graphrag_skip": [],
       "home": "/home/appuser",
       "_kg_store_comment": "TWO physically separate SurrealDB instances, one per MCP container — the public MCP must never be able to query private-repo data. kg_store_pub (127.0.0.1:8002, public repos only) feeds cloud-cgc-pub-mcp; kg_store_pvt (127.0.0.1:8001, full store) feeds cloud-cgc-pvt-mcp. reindex.sh ingests the infra graph delta into kg-store (SurrealDB) after building the code graph — unified 'build all graphs' job. Localhost host-network; ns/db/user data-driven; delta from the cgc bundle. KG_STORE_PASS / KG_STORE_PASS_PUB (SurrealDB root, one per instance) are wired as shared secrets; until then the ingest gracefully no-ops.",
       "kg_store_pvt": {

@@ -56,11 +56,17 @@ def find_project_dir(repo, commit):
     # is silently invisible here (find_project_dir just finds no matching dir).
     if not os.path.isdir(DBROOT):
         return None
-    cands = []
+    cands, broken = [], []
     for d in sorted(os.listdir(DBROOT)):
         sd = os.path.join(DBROOT, d, "storage")
         nodes_t = os.path.join(sd, "graphrag_nodes.lance")
         if not os.path.isdir(nodes_t):
+            # A project dir with storage but NO graphrag_nodes = graphrag ran but
+            # persisted nothing (octocode checkpoint silent-drop class). Surfacing
+            # these here turns "NO project dir — skip" from a misleading
+            # commit-drift smell into the actual diagnosis: needs force reindex.
+            if os.path.isdir(sd):
+                broken.append(d)
             continue
         meta = os.path.join(sd, "graphrag_git_metadata.lance")
         try:
@@ -80,7 +86,14 @@ def find_project_dir(repo, commit):
         hits = sum(1 for n in sample if n.get("path") and os.path.exists(os.path.join(repo_root, n["path"])))
         if hits > best_hits:
             best, best_hits = sd, hits
-    return best if best_hits >= 5 else None
+    if best_hits >= 5:
+        return best
+    print(f"[export] {repo}: no commit match among {len(cands)} project(s) with graphrag_nodes "
+          f"(best path-overlap {best_hits}/25 vs {repo_root}); "
+          f"{len(broken)} project dir(s) have storage but NO graphrag_nodes {broken[:4]} "
+          f"— if this repo's project is among them, graphrag persisted nothing: force reindex it",
+          file=sys.stderr)
+    return None
 
 def export(repo):
     try:
