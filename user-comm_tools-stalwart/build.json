@@ -52,8 +52,8 @@
         {
           "port": 443,
           "sni": "imap.diegonmarcos.com",
-          "upstream": "oci-mail:993",
-          "comment": "IMAPS via SNI on :443 -> MADDY :993, NOT Stalwart. IMAP and JMAP are deliberately SEPARATE stores: Maddy serves IMAP as INBOX + the 12 F* sender folders, Stalwart serves JMAP with the full 1*-9* + A*-F* structure. Pointing this at Stalwart :2993 collapsed that split -- IMAP clients got Stalwart's entire folder set, and it could not be hidden because Stalwart serves JMAP and IMAP from ONE mailbox store. Maddy presents the *.diegonmarcos.com wildcard cert on :993, so TLS passthrough verifies.",
+          "upstream": "oci-mail:2993",
+          "comment": "IMAPS via SNI on :443 -> STALWART :2993 (2026-09-02). Maddy :993 (go-imap v1) advertises no CONDSTORE/QRESYNC/UIDPLUS, which forces clients into a full flag rescan of every synced folder each poll -- measured on-device: 9355 UID FLAGS fetches per 15-min pass, all night, phone dead at 04:49. Stalwart :2993 advertises CONDSTORE+QRESYNC+UIDPLUS+IMAP4rev2. The earlier objection to :2993 (IMAP clients see Stalwart's ENTIRE 1*-9* + A*-F* tree because JMAP and IMAP share one store) is mitigated by the subscription policy in mail-rules-profile-diego.json folder_options: only INBOX + the F* sender folders are subscribed, and clients honouring LSUB/subscriptions see the intended menu. Maddy keeps :25 inbound and its store stays intact for rollback: revert this upstream to oci-mail:993.",
           "protocol": "tls"
         },
         {
