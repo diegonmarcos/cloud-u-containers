@@ -14,12 +14,12 @@
     "description": "Discovers every constellation app serving AppDebugServer on the phone (127.0.0.1:38080,38090-38139) and proxies its routes: logcat, crashes, docs, fleet wake, and any app-registered route via superapp_call. App aliases come from mcps-apps/<id>/, so cloud-mail resolves without asking the device.",
     "auth": "none",
     "sdk": "@modelcontextprotocol/sdk@^1.12.0",
-    "_doc_stdio": "How .mcp.json should launch this. Run through `sh -c` rather than naming npm directly so the ${VAR:-default} expansion is done by a shell we know does it — the same trick headersHelper already uses in that file. CLOUD_INFRA_DIR overrides the checkout location; the default is the one every other path convention here assumes.",
+    "_doc_stdio": "How .mcp.json should launch this. Through mcp-local-launch.sh, not `npm start`: the entry is cloud-superapp-mcp/src/index.ts but it imports ../../lib-mcp/src/, and Node walks up from the IMPORTING file — so a node_modules beside the entry alone leaves lib-mcp and every mcps-apps module unresolved (ERR_MODULE_NOT_FOUND on the SDK). The launcher links the solution root, which the walk reaches from all of them, and self-heals if it is missing or dangling. Run through `sh -c` so ${VAR:-default} is expanded by a shell we know does it — the same trick headersHelper already uses in that file. MCP_LOCAL_LAUNCH and CLOUD_INFRA_DIR override the two paths.",
     "stdio": {
       "command": "sh",
       "args": [
         "-c",
-        "npm --prefix \"${CLOUD_INFRA_DIR:-$HOME/git/cloud-infra}/a_solutions/infra-api_cloud-superapp-mcp/cloud-superapp-mcp\" start"
+        "\"${MCP_LOCAL_LAUNCH:-$HOME/.claude/mcp-local-launch.sh}\" \"${CLOUD_INFRA_DIR:-$HOME/git/cloud-infra}/a_solutions/infra-api_cloud-superapp-mcp/cloud-superapp-mcp/src/index.ts\""
       ]
     }
   }
