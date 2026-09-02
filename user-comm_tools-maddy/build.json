@@ -65,7 +65,7 @@
           "protocol": "tcp"
         }
       ],
-      "_doc_l4_ports": "Only :25 lives here — Maddy still answers plain SMTP. The imap./smtps. SNI routes on :443 moved to user-comm_tools-stalwart/build.json, which is what actually terminates them (:2993/:2465). A route is declared by the service that answers the bytes."
+      "_doc_l4_ports": "Only :25 lives here — Maddy still answers plain SMTP. The imap./smtps. SNI routes on :443 moved to user-comm_tools-stalwart/build.json, which is what actually terminates them (imaps -> Stalwart :2993 since 2026-09-02, smtps -> Stalwart :2465). A route is declared by the service that answers the bytes."
     },
     "app_hub": false,
     "mail_hub": {

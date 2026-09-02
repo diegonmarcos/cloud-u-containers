@@ -16,7 +16,31 @@
   # and supports wildcard certs for *.diegonmarcos.com. Token sourced
   # from .secrets (env_file in compose.nix). Phase 2a of public-surface
   # collapse plan (a0_tasks/TASK-net-20260508-01_collapse-public-to-443.md).
-  acme_dns cloudflare {env.CF_API_TOKEN}
+  # resolvers 1.1.1.1: same fix caddy-public got on 2026-06-23, ported here.
+  # This host's resolver is Hickory (10.0.0.1), which answers
+  # *.diegonmarcos.com → 10.0.0.1 and has NO view of the Cloudflare
+  # _acme-challenge TXT. Without it certmagic writes the TXT fine, then polls
+  # Hickory, never sees it, and issuance times out ("waiting for record to
+  # fully propagate"). caddy-public was patched then; gcp-proxy was not, so
+  # every vhost here without a per-site tls{} override never got a cert --
+  # mcp.diegonmarcos.com among them, which aborted TLS handshakes with an
+  # internal_error alert because Caddy had no certificate to present for that
+  # SNI. Only mta-sts and the *.diegonmarcos.com catch-all carried per-site
+  # overrides; fixing it globally makes those redundant rather than load-bearing.
+  # These are the mta-sts / catch-all per-site values promoted to the default,
+  # not a weaker global. Those two blocks are the ONLY vhosts here that kept
+  # their certs through the outage, so their settings are the ones with
+  # evidence behind them: a second resolver in case 1.1.1.1 is unreachable,
+  # and explicit propagation timing so the first poll does not race the TXT
+  # write it is polling for. Every vhost now inherits that by default; the
+  # per-site tls{} blocks in 90-mta-sts and 99-catch-all become redundant
+  # rather than load-bearing, and are left in place only so this change does
+  # not touch the two hosts that were already working.
+  acme_dns cloudflare {env.CF_API_TOKEN} {
+    resolvers 1.1.1.1 8.8.8.8
+    propagation_delay 30s
+    propagation_timeout 5m
+  }
   # caddy-l4 owns :443 (Phase 3): https_port 8443 keeps Caddy HTTPS off
   # the public socket so caddy-l4 SNI mux + fall-through can run.
   https_port 8443
@@ -74,7 +98,7 @@
         :443 {
 
           # ── SNI mux (issue #294 pattern, flat) ─────────────────────────
-          # IMAPS via SNI on :443 → Stalwart :2993 (Maddy's :993 is legacy) (SNI: imap.diegonmarcos.com)
+          # IMAPS via SNI on :443 -> STALWART :2993 (2026-09-02). Maddy :993 (go-imap v1) advertises no CONDSTORE/QRESYNC/UIDPLUS, which forces clients into a full flag rescan of every synced folder each poll -- measured on-device: 9355 UID FLAGS fetches per 15-min pass, all night, phone dead at 04:49. Stalwart :2993 advertises CONDSTORE+QRESYNC+UIDPLUS+IMAP4rev2. The earlier objection to :2993 (IMAP clients see Stalwart's ENTIRE 1*-9* + A*-F* tree because JMAP and IMAP share one store) is mitigated by the subscription policy in mail-rules-profile-diego.json folder_options: only INBOX + the F* sender folders are subscribed, and clients honouring LSUB/subscriptions see the intended menu. Maddy keeps :25 inbound and its store stays intact for rollback: revert this upstream to oci-mail:993. (SNI: imap.diegonmarcos.com)
           @sni_imap_diegonmarcos_com tls sni imap.diegonmarcos.com
           route @sni_imap_diegonmarcos_com {
             proxy {
@@ -147,6 +171,26 @@
     }
   }
 
+    (rate_limiting_mcp) {
+    rate_limit {
+      zone mcp {
+        key    {remote_host}
+        events 600
+        window 1m
+      }
+    }
+  }
+
+    (rate_limiting_jmap) {
+    rate_limit {
+      zone jmap {
+        key    {remote_host}
+        events 600
+        window 1m
+      }
+    }
+  }
+
     (block_bots) {
     @bad_bots header_regexp User-Agent "(?i)(sqlmap|nikto|masscan|nmap|zgrab|scrapy|dirbuster|gobuster|nuclei|wfuzz|havij|acunetix|nessus|openvas)"
     respond @bad_bots 403
@@ -186,41 +230,39 @@
     import access_log
   }
 
+    # Same posture as (security) minus the shared global rate-limit zone: a
+  # Claude session start initializes ~10 MCP servers in parallel (several
+  # POSTs each, plus SSE reconnects), which drains 100/min instantly and the
+  # client's own retries then keep the bucket empty -- servers "fail to
+  # connect" in a slow drip. MCP gets its own bucket so a session start can
+  # never starve the browser-facing sites, and vice versa.
+  (security_mcp) {
+    import security_headers
+    import block_bots
+    import block_scanners
+    import rate_limiting_mcp
+    import ip_block
+    import access_log
+  }
+
+    # Same posture as (security) with a dedicated rate-limit zone for the JMAP
+  # vhost. A syncing mail client legitimately bursts far past 100 req/min
+  # (Email/query paging + Email/get batches + per-op Email/set), and the
+  # shared global zone throttled it the same way it starved MCP session
+  # starts (see 12e9766e / (security_mcp)).
+  (security_jmap) {
+    import security_headers
+    import block_bots
+    import block_scanners
+    import rate_limiting_jmap
+    import ip_block
+    import access_log
+  }
+
 
   # ════════════════════════════════════════════════════════════
   # SUBDOMAIN ROUTES (from routes[])
   # ════════════════════════════════════════════════════════════
-
-  # Continuwuity Matrix homeserver (maintained conduwuit fork, Rust/RocksDB) — central hub for chat bridges. Federation enabled via .well-known delegation over :443.
-  matrix.diegonmarcos.com {
-  bind 0.0.0.0 10.0.0.1
-import security
-import request_limits
-
-
-
-
-    reverse_proxy 10.0.0.6:8008 {
-    header_up X-Real-IP {http.request.remote.host}
-  }
-      handle_errors {
-      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
-      handle @backend_error {
-        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
-        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
-        # plain `file_server` serves the error page with 200, a FALSE GREEN that
-        # hides genuinely-down services behind the edge. Serve the page but
-        # PRESERVE the real upstream status and tag it for probes.
-        header X-Edge-Fallback "1"
-        header X-Edge-Upstream-Status "{err.status_code}"
-        root * /srv
-        rewrite * /error.html
-        file_server {
-          status {err.status_code}
-        }
-      }
-    }
-  }
 
   # LanguageTool grammar/spell-check HTTP API — rules-only, no n-grams, WG-only sidecar on oci-apps
   languagetool.diegonmarcos.com {
@@ -270,7 +312,7 @@ respond @not_wg "Forbidden" 403
       }
     }
     handle {
-      forward_auth 10.0.0.1:9091 {
+      forward_auth 172.18.0.3:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
@@ -370,7 +412,7 @@ import request_limits
       }
     }
     handle {
-      forward_auth 10.0.0.1:9091 {
+      forward_auth 172.18.0.3:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
@@ -471,7 +513,7 @@ respond @not_wg "Forbidden" 403
       }
     }
     handle {
-      forward_auth 10.0.0.1:9091 {
+      forward_auth 172.18.0.3:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
@@ -604,7 +646,7 @@ respond @not_wg "Forbidden" 403
       }
     }
     handle {
-      forward_auth 10.0.0.1:9091 {
+      forward_auth 172.18.0.3:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
@@ -706,7 +748,7 @@ respond @not_wg "Forbidden" 403
       }
     }
     handle {
-      forward_auth 10.0.0.1:9091 {
+      forward_auth 172.18.0.3:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
@@ -765,9 +807,20 @@ respond @not_wg "Forbidden" 403
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
-@not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
+@not_wg {
+  not remote_ip 10.0.0.0/24 fd0c:1d00::/64
+  not path /.well-known/openid-configuration /api/oidc/token /jwks.json
+}
 respond @not_wg "Forbidden" 403
-
+handle /.well-known/openid-configuration {
+  reverse_proxy 172.18.0.3:9091
+}
+handle /api/oidc/token {
+  reverse_proxy 172.18.0.3:9091
+}
+handle /jwks.json {
+  reverse_proxy 172.18.0.3:9091
+}
 
 
     handle {
@@ -778,7 +831,7 @@ respond @not_wg "Forbidden" 403
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.0.0.1:9091 {
+      reverse_proxy 172.18.0.3:9091 {
         header_up X-Real-IP {http.request.remote.host}
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -808,11 +861,11 @@ respond @not_wg "Forbidden" 403
       }
     }
     handle {
-      forward_auth 10.0.0.1:9091 {
+      forward_auth 172.18.0.3:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.0.0.1:9091 {
+      reverse_proxy 172.18.0.3:9091 {
         header_up X-Real-IP {http.request.remote.host}
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -910,7 +963,7 @@ respond @not_wg "Forbidden" 403
       }
     }
     handle {
-      forward_auth 10.0.0.1:9091 {
+      forward_auth 172.18.0.3:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
@@ -969,7 +1022,10 @@ respond @not_wg "Forbidden" 403
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
-@not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
+@not_wg {
+  not remote_ip 10.0.0.0/24 fd0c:1d00::/64
+  not path /api/v4/*
+}
 respond @not_wg "Forbidden" 403
 handle /api/v4/* {
   reverse_proxy 10.0.0.6:8065
@@ -1014,7 +1070,7 @@ handle /api/v4/* {
       }
     }
     handle {
-      forward_auth 10.0.0.1:9091 {
+      forward_auth 172.18.0.3:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
@@ -1049,6 +1105,37 @@ handle /api/v4/* {
     }
 
 }
+      handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  # Continuwuity Matrix homeserver (maintained conduwuit fork, Rust/RocksDB) — central hub for chat bridges. Federation enabled via .well-known delegation over :443.
+  matrix.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
+import security
+import request_limits
+
+
+
+
+    reverse_proxy 10.0.0.6:8008 {
+    header_up X-Real-IP {http.request.remote.host}
+  }
       handle_errors {
       @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
       handle @backend_error {
@@ -1116,7 +1203,7 @@ respond @not_wg "Forbidden" 403
       }
     }
     handle {
-      forward_auth 10.0.0.1:9091 {
+      forward_auth 172.18.0.3:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
@@ -1218,7 +1305,7 @@ respond @not_wg "Forbidden" 403
       }
     }
     handle {
-      forward_auth 10.0.0.1:9091 {
+      forward_auth 172.18.0.3:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
@@ -1275,8 +1362,10 @@ respond @not_wg "Forbidden" 403
   # Stalwart Mail Server — JMAP webmail backend (jmap.diegonmarcos.com)
   jmap.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
-import security
-import request_limits
+      import security_jmap
+request_body {
+  max_size 50MB
+}
 @not_wg {
   not remote_ip 10.0.0.0/24 fd0c:1d00::/64
   not path /.well-known/jmap /jmap/* /
@@ -1286,6 +1375,7 @@ respond @not_wg "Forbidden" 403
 
     # JMAP discovery on jmap vhost (public per RFC 8620) (well-known — public per spec)
     handle /.well-known/jmap {
+        rewrite * /jmap/session
 reverse_proxy https://10.0.0.3:2443 {
   transport http {
     tls_insecure_skip_verify
@@ -1390,7 +1480,7 @@ reverse_proxy https://diegonmarcos.github.io {
       }
     }
     handle {
-      forward_auth 10.0.0.1:9091 {
+      forward_auth 172.18.0.3:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
@@ -1449,7 +1539,10 @@ reverse_proxy https://diegonmarcos.github.io {
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
-@not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
+@not_wg {
+  not remote_ip 10.0.0.0/24 fd0c:1d00::/64
+  not path /api/auth/spotify/callback /api/auth/youtube/callback
+}
 respond @not_wg "Forbidden" 403
 handle /api/auth/spotify/callback {
   reverse_proxy 10.0.0.6:8090
@@ -1497,7 +1590,7 @@ handle /api/auth/youtube/callback {
       }
     }
     handle {
-      forward_auth 10.0.0.1:9091 {
+      forward_auth 172.18.0.3:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
@@ -1599,7 +1692,7 @@ respond @not_wg "Forbidden" 403
       }
     }
     handle {
-      forward_auth 10.0.0.1:9091 {
+      forward_auth 172.18.0.3:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
@@ -1701,7 +1794,7 @@ respond @not_wg "Forbidden" 403
       }
     }
     handle {
-      forward_auth 10.0.0.1:9091 {
+      forward_auth 172.18.0.3:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
@@ -1803,7 +1896,7 @@ respond @not_wg "Forbidden" 403
       }
     }
     handle {
-      forward_auth 10.0.0.1:9091 {
+      forward_auth 172.18.0.3:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
@@ -1939,7 +2032,7 @@ respond @not_wg "Forbidden" 403
       }
     }
     handle {
-      forward_auth 10.0.0.1:9091 {
+      forward_auth 172.18.0.3:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
@@ -2078,6 +2171,7 @@ import request_limits
     }
     # JMAP autoconfig — proxies to Stalwart (preserves per-user session) (well-known — public per spec)
     handle /.well-known/jmap {
+        rewrite * /jmap/session
 reverse_proxy https://10.0.0.3:2443 {
   transport http {
     tls_insecure_skip_verify
@@ -2308,7 +2402,7 @@ handle_path /c3-infra-api/* {
       }
     }
     handle {
-      forward_auth 10.0.0.1:9091 {
+      forward_auth 172.18.0.3:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
@@ -2397,7 +2491,7 @@ handle_path /pub/* {
       }
     }
     handle {
-      forward_auth 10.0.0.1:9091 {
+      forward_auth 172.18.0.3:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
@@ -2473,7 +2567,7 @@ handle_path /c3-services-api/* {
       }
     }
     handle {
-      forward_auth 10.0.0.1:9091 {
+      forward_auth 172.18.0.3:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
@@ -2558,7 +2652,7 @@ handle_path /scrappers/* {
       }
     }
     handle {
-      forward_auth 10.0.0.1:9091 {
+      forward_auth 172.18.0.3:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
@@ -2634,7 +2728,7 @@ handle_path /fin-api/* {
       }
     }
     handle {
-      forward_auth 10.0.0.1:9091 {
+      forward_auth 172.18.0.3:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
@@ -2755,7 +2849,7 @@ handle_path /spec/* {
       }
     }
     handle {
-      forward_auth 10.0.0.1:9091 {
+      forward_auth 172.18.0.3:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
@@ -2835,7 +2929,7 @@ handle_path /probe/* {
       }
     }
     handle {
-      forward_auth 10.0.0.1:9091 {
+      forward_auth 172.18.0.3:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
@@ -2915,7 +3009,7 @@ handle_path /matomo/* {
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.0.0.6:8084 {
+      reverse_proxy 10.0.0.6:8080 {
         header_up X-Real-IP {http.request.remote.host}
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -2945,11 +3039,11 @@ handle_path /matomo/* {
       }
     }
     handle {
-      forward_auth 10.0.0.1:9091 {
+      forward_auth 172.18.0.3:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.0.0.6:8084 {
+      reverse_proxy 10.0.0.6:8080 {
         header_up X-Real-IP {http.request.remote.host}
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -3019,7 +3113,7 @@ handle_path /openobserve/* {
       }
     }
     handle {
-      forward_auth 10.0.0.1:9091 {
+      forward_auth 172.18.0.3:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
@@ -3063,7 +3157,7 @@ handle_path /umami/* {
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.0.0.6:3006 {
+      reverse_proxy 10.0.0.4:3006 {
         header_up X-Real-IP {http.request.remote.host}
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -3093,11 +3187,11 @@ handle_path /umami/* {
       }
     }
     handle {
-      forward_auth 10.0.0.1:9091 {
+      forward_auth 172.18.0.3:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.0.0.6:3006 {
+      reverse_proxy 10.0.0.4:3006 {
         header_up X-Real-IP {http.request.remote.host}
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -3194,7 +3288,7 @@ handle_path /etherpad/* {
       }
     }
     handle {
-      forward_auth 10.0.0.1:9091 {
+      forward_auth 172.18.0.3:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
@@ -3274,7 +3368,7 @@ handle_path /filebrowser/* {
       }
     }
     handle {
-      forward_auth 10.0.0.1:9091 {
+      forward_auth 172.18.0.3:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
@@ -3354,7 +3448,7 @@ handle_path /hedgedoc/* {
       }
     }
     handle {
-      forward_auth 10.0.0.1:9091 {
+      forward_auth 172.18.0.3:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
@@ -3423,8 +3517,21 @@ handle {
   # MCP -- Streamable HTTP endpoints for Claude Code MCP clients
   mcp.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
-import security
+import security_mcp
 import request_limits
+handle_path /cloud-drive-mcp/* {
+  @wg remote_ip 10.0.0.0/24 fd0c:1d00::/64
+        handle @wg {
+          reverse_proxy 10.0.0.6:3109 {
+          flush_interval -1
+          header_up X-Real-IP {http.request.remote.host}
+          header_up Accept "application/json, text/event-stream"
+        }
+        }
+        handle {
+          respond "Forbidden" 403
+        }
+}
 handle_path /c3-infra-mcp/* {
   @wg remote_ip 10.0.0.0/24 fd0c:1d00::/64
         handle @wg {
@@ -3442,6 +3549,32 @@ handle_path /c3-infra-mcp/* {
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
           reverse_proxy 10.0.0.6:3100 {
+          flush_interval -1
+          header_up X-Real-IP {http.request.remote.host}
+          header_up Accept "application/json, text/event-stream"
+        }
+        }
+        handle {
+          respond "Forbidden" 403
+        }
+}
+handle_path /mail-mcp/* {
+  @wg remote_ip 10.0.0.0/24 fd0c:1d00::/64
+        handle @wg {
+          reverse_proxy 10.0.0.6:3103 {
+          flush_interval -1
+          header_up X-Real-IP {http.request.remote.host}
+          header_up Accept "application/json, text/event-stream"
+        }
+        }
+        handle {
+          respond "Forbidden" 403
+        }
+}
+handle_path /mattermost-mcp/* {
+  @wg remote_ip 10.0.0.0/24 fd0c:1d00::/64
+        handle @wg {
+          reverse_proxy 10.0.0.6:3102 {
           flush_interval -1
           header_up X-Real-IP {http.request.remote.host}
           header_up Accept "application/json, text/event-stream"
@@ -3490,47 +3623,15 @@ handle_path /g-workspace/* {
           respond "Forbidden" 403
         }
 }
-handle_path /mail-mcp/* {
-  @wg remote_ip 10.0.0.0/24 fd0c:1d00::/64
-        handle @wg {
-          reverse_proxy 10.0.0.6:3103 {
+handle_path /cloud-cgc-pub-mcp/* {
+  reverse_proxy 10.0.0.6:3105 {
           flush_interval -1
           header_up X-Real-IP {http.request.remote.host}
           header_up Accept "application/json, text/event-stream"
-        }
-        }
-        handle {
-          respond "Forbidden" 403
-        }
-}
-handle_path /mattermost-mcp/* {
-  @wg remote_ip 10.0.0.0/24 fd0c:1d00::/64
-        handle @wg {
-          reverse_proxy 10.0.0.6:3102 {
-          flush_interval -1
-          header_up X-Real-IP {http.request.remote.host}
-          header_up Accept "application/json, text/event-stream"
-        }
-        }
-        handle {
-          respond "Forbidden" 403
-        }
-}
-handle_path /cloud-cgc-mcp/* {
-  @wg remote_ip 10.0.0.0/24 fd0c:1d00::/64
-        handle @wg {
-          reverse_proxy 10.0.0.6:3105 {
-          flush_interval -1
-          header_up X-Real-IP {http.request.remote.host}
-          header_up Accept "application/json, text/event-stream"
-        }
-        }
-        handle {
-          respond "Forbidden" 403
         }
 }
     handle {
-      respond "MCP Hub -- use /c3-infra-mcp/mcp, /c3-services-mcp/mcp, /g-personal/mcp, /g-workspace/mcp, /mail-mcp/mcp, /mattermost-mcp/mcp, /cloud-cgc-mcp/mcp" 200
+      respond "MCP Hub -- use /cloud-drive-mcp/mcp, /c3-infra-mcp/mcp, /mail-mcp/mcp, /mattermost-mcp/mcp, /c3-services-mcp/mcp, /g-personal/mcp, /g-workspace/mcp, /cloud-cgc-pub-mcp/mcp" 200
     }
       handle_errors {
       @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
@@ -3594,10 +3695,10 @@ import request_limits
 import security
 import request_limits
     @tracking {
-      path /matomo.js /matomo.php /piwik.js /piwik.php /collect.php /api.php /track.php /js/*
+      path /matomo/matomo.js /matomo/matomo.php /matomo/piwik.js /matomo/piwik.php /matomo/collect.php /matomo/api.php /matomo/track.php /matomo/js/*
     }
     handle @tracking {
-      reverse_proxy 10.0.0.6:8084
+      reverse_proxy 10.0.0.6:8080
     }
 
     @umami_public {
@@ -3605,7 +3706,7 @@ import request_limits
     }
     handle @umami_public {
       uri strip_prefix /umami
-      reverse_proxy 10.0.0.6:3006
+      reverse_proxy 10.0.0.4:3006
     }
     handle_path /umami/* {
       @umami_bearer header Authorization Bearer*
@@ -3615,14 +3716,14 @@ import request_limits
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-        reverse_proxy 10.0.0.6:3006
+        reverse_proxy 10.0.0.4:3006
       }
       handle {
-    forward_auth 10.0.0.1:9091 {
+    forward_auth 172.18.0.3:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-        reverse_proxy 10.0.0.6:3006
+        reverse_proxy 10.0.0.4:3006
       }
     }
     @umami_root path /umami
@@ -3637,7 +3738,7 @@ import request_limits
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.0.0.6:8084 {
+      reverse_proxy 10.0.0.6:8080 {
         header_up X-Real-IP {http.request.remote.host}
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -3667,11 +3768,11 @@ import request_limits
       }
     }
     handle {
-      forward_auth 10.0.0.1:9091 {
+      forward_auth 172.18.0.3:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.0.0.6:8084 {
+      reverse_proxy 10.0.0.6:8080 {
         header_up X-Real-IP {http.request.remote.host}
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -3730,7 +3831,7 @@ import request_limits
     @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
       respond @not_wg "Forbidden" 403
     handle /setup {
-    forward_auth 10.0.0.1:9091 {
+    forward_auth 172.18.0.3:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
@@ -3756,7 +3857,7 @@ import request_limits
       reverse_proxy 10.0.0.6:8090
     }
     handle {
-    forward_auth 10.0.0.1:9091 {
+    forward_auth 172.18.0.3:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
@@ -3801,7 +3902,7 @@ rewrite * /dashboard.html
 file_server
     }
     handle {
-    forward_auth 10.0.0.1:9091 {
+    forward_auth 172.18.0.3:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
@@ -3833,69 +3934,6 @@ file_server
   # INTERNAL ROUTES — portless *.app via HTTP:80 on WireGuard
   # ════════════════════════════════════════════════════════════
 
-  matrix-continuwuity.app {
-    # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
-    # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
-    # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
-    # forward target 127.0.0.1:8443 never reached — the whole .app/.db zone
-    # was unreachable. Removing the bind entirely (first attempt, 6e3b65364)
-    # was ALSO insufficient: Caddy's Caddyfile adapter groups servers by the
-    # LITERAL listen string, and "no bind" (implicit ":8443") produced a
-    # THIRD, still-different server (srv2) from the public routes' explicit
-    # "0.0.0.0:8443" — even though both cover the same sockets. Only an
-    # byte-identical bind directive guarantees one merged server. 2026-07-09.
-  bind 0.0.0.0 10.0.0.1
-    tls {
-      issuer internal {
-        ca mesh
-      }
-    }
-    reverse_proxy 10.0.0.6:8008 {
-        # Empty-body guard: an upstream that answers 200 with Content-Length 0
-        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
-        # handle_errors renders the diagnostic page instead of a silent blank.
-        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
-        #
-        # CRITICAL: once ANY named handle_response matcher exists on a
-        # reverse_proxy, Caddy defers writing the response entirely — a
-        # response that matches NO handle_response block writes NOTHING
-        # (not "pass through unmodified"). Confirmed via production incident
-        # 2026-07-09: this guard alone silently emptied every real response
-        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
-        # a worse outage than the bug it fixed. The bare fallback block below
-        # is MANDATORY and MUST come after @empty_ok — it copies through every
-        # response that isn't the empty-200 false-green.
-        @empty_ok {
-          status 200
-          header Content-Length 0
-        }
-        handle_response @empty_ok {
-          @get method GET
-          error @get 502
-        }
-        handle_response {
-          copy_response
-        }
-    }
-  handle_errors {
-      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
-      handle @backend_error {
-        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
-        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
-        # plain `file_server` serves the error page with 200, a FALSE GREEN that
-        # hides genuinely-down services behind the edge. Serve the page but
-        # PRESERVE the real upstream status and tag it for probes.
-        header X-Edge-Fallback "1"
-        header X-Edge-Upstream-Status "{err.status_code}"
-        root * /srv
-        rewrite * /error.html
-        file_server {
-          status {err.status_code}
-        }
-      }
-    }
-  }
-
   c3-infra-api.app {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
@@ -3914,69 +3952,6 @@ file_server
       }
     }
     reverse_proxy 10.0.0.6:8081 {
-        # Empty-body guard: an upstream that answers 200 with Content-Length 0
-        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
-        # handle_errors renders the diagnostic page instead of a silent blank.
-        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
-        #
-        # CRITICAL: once ANY named handle_response matcher exists on a
-        # reverse_proxy, Caddy defers writing the response entirely — a
-        # response that matches NO handle_response block writes NOTHING
-        # (not "pass through unmodified"). Confirmed via production incident
-        # 2026-07-09: this guard alone silently emptied every real response
-        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
-        # a worse outage than the bug it fixed. The bare fallback block below
-        # is MANDATORY and MUST come after @empty_ok — it copies through every
-        # response that isn't the empty-200 false-green.
-        @empty_ok {
-          status 200
-          header Content-Length 0
-        }
-        handle_response @empty_ok {
-          @get method GET
-          error @get 502
-        }
-        handle_response {
-          copy_response
-        }
-    }
-  handle_errors {
-      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
-      handle @backend_error {
-        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
-        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
-        # plain `file_server` serves the error page with 200, a FALSE GREEN that
-        # hides genuinely-down services behind the edge. Serve the page but
-        # PRESERVE the real upstream status and tag it for probes.
-        header X-Edge-Fallback "1"
-        header X-Edge-Upstream-Status "{err.status_code}"
-        root * /srv
-        rewrite * /error.html
-        file_server {
-          status {err.status_code}
-        }
-      }
-    }
-  }
-
-  c3-infra-mcp.app {
-    # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
-    # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
-    # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
-    # forward target 127.0.0.1:8443 never reached — the whole .app/.db zone
-    # was unreachable. Removing the bind entirely (first attempt, 6e3b65364)
-    # was ALSO insufficient: Caddy's Caddyfile adapter groups servers by the
-    # LITERAL listen string, and "no bind" (implicit ":8443") produced a
-    # THIRD, still-different server (srv2) from the public routes' explicit
-    # "0.0.0.0:8443" — even though both cover the same sockets. Only an
-    # byte-identical bind directive guarantees one merged server. 2026-07-09.
-  bind 0.0.0.0 10.0.0.1
-    tls {
-      issuer internal {
-        ca mesh
-      }
-    }
-    reverse_proxy 10.0.0.6:3100 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
@@ -4103,6 +4078,258 @@ file_server
       }
     }
     reverse_proxy 10.0.0.6:8082 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  drive-mcp.app {
+    # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
+    # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
+    # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
+    # forward target 127.0.0.1:8443 never reached — the whole .app/.db zone
+    # was unreachable. Removing the bind entirely (first attempt, 6e3b65364)
+    # was ALSO insufficient: Caddy's Caddyfile adapter groups servers by the
+    # LITERAL listen string, and "no bind" (implicit ":8443") produced a
+    # THIRD, still-different server (srv2) from the public routes' explicit
+    # "0.0.0.0:8443" — even though both cover the same sockets. Only an
+    # byte-identical bind directive guarantees one merged server. 2026-07-09.
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    reverse_proxy 10.0.0.6:3109 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  c3-infra-mcp.app {
+    # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
+    # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
+    # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
+    # forward target 127.0.0.1:8443 never reached — the whole .app/.db zone
+    # was unreachable. Removing the bind entirely (first attempt, 6e3b65364)
+    # was ALSO insufficient: Caddy's Caddyfile adapter groups servers by the
+    # LITERAL listen string, and "no bind" (implicit ":8443") produced a
+    # THIRD, still-different server (srv2) from the public routes' explicit
+    # "0.0.0.0:8443" — even though both cover the same sockets. Only an
+    # byte-identical bind directive guarantees one merged server. 2026-07-09.
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    reverse_proxy 10.0.0.6:3100 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  mail-mcp.app {
+    # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
+    # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
+    # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
+    # forward target 127.0.0.1:8443 never reached — the whole .app/.db zone
+    # was unreachable. Removing the bind entirely (first attempt, 6e3b65364)
+    # was ALSO insufficient: Caddy's Caddyfile adapter groups servers by the
+    # LITERAL listen string, and "no bind" (implicit ":8443") produced a
+    # THIRD, still-different server (srv2) from the public routes' explicit
+    # "0.0.0.0:8443" — even though both cover the same sockets. Only an
+    # byte-identical bind directive guarantees one merged server. 2026-07-09.
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    reverse_proxy 10.0.0.6:3103 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  mattermost-mcp.app {
+    # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
+    # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
+    # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
+    # forward target 127.0.0.1:8443 never reached — the whole .app/.db zone
+    # was unreachable. Removing the bind entirely (first attempt, 6e3b65364)
+    # was ALSO insufficient: Caddy's Caddyfile adapter groups servers by the
+    # LITERAL listen string, and "no bind" (implicit ":8443") produced a
+    # THIRD, still-different server (srv2) from the public routes' explicit
+    # "0.0.0.0:8443" — even though both cover the same sockets. Only an
+    # byte-identical bind directive guarantees one merged server. 2026-07-09.
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    reverse_proxy 10.0.0.6:3102 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
@@ -4292,132 +4519,6 @@ file_server
       }
     }
     reverse_proxy 10.0.0.6:3104 {
-        # Empty-body guard: an upstream that answers 200 with Content-Length 0
-        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
-        # handle_errors renders the diagnostic page instead of a silent blank.
-        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
-        #
-        # CRITICAL: once ANY named handle_response matcher exists on a
-        # reverse_proxy, Caddy defers writing the response entirely — a
-        # response that matches NO handle_response block writes NOTHING
-        # (not "pass through unmodified"). Confirmed via production incident
-        # 2026-07-09: this guard alone silently emptied every real response
-        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
-        # a worse outage than the bug it fixed. The bare fallback block below
-        # is MANDATORY and MUST come after @empty_ok — it copies through every
-        # response that isn't the empty-200 false-green.
-        @empty_ok {
-          status 200
-          header Content-Length 0
-        }
-        handle_response @empty_ok {
-          @get method GET
-          error @get 502
-        }
-        handle_response {
-          copy_response
-        }
-    }
-  handle_errors {
-      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
-      handle @backend_error {
-        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
-        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
-        # plain `file_server` serves the error page with 200, a FALSE GREEN that
-        # hides genuinely-down services behind the edge. Serve the page but
-        # PRESERVE the real upstream status and tag it for probes.
-        header X-Edge-Fallback "1"
-        header X-Edge-Upstream-Status "{err.status_code}"
-        root * /srv
-        rewrite * /error.html
-        file_server {
-          status {err.status_code}
-        }
-      }
-    }
-  }
-
-  mail-mcp.app {
-    # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
-    # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
-    # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
-    # forward target 127.0.0.1:8443 never reached — the whole .app/.db zone
-    # was unreachable. Removing the bind entirely (first attempt, 6e3b65364)
-    # was ALSO insufficient: Caddy's Caddyfile adapter groups servers by the
-    # LITERAL listen string, and "no bind" (implicit ":8443") produced a
-    # THIRD, still-different server (srv2) from the public routes' explicit
-    # "0.0.0.0:8443" — even though both cover the same sockets. Only an
-    # byte-identical bind directive guarantees one merged server. 2026-07-09.
-  bind 0.0.0.0 10.0.0.1
-    tls {
-      issuer internal {
-        ca mesh
-      }
-    }
-    reverse_proxy 10.0.0.6:3103 {
-        # Empty-body guard: an upstream that answers 200 with Content-Length 0
-        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
-        # handle_errors renders the diagnostic page instead of a silent blank.
-        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
-        #
-        # CRITICAL: once ANY named handle_response matcher exists on a
-        # reverse_proxy, Caddy defers writing the response entirely — a
-        # response that matches NO handle_response block writes NOTHING
-        # (not "pass through unmodified"). Confirmed via production incident
-        # 2026-07-09: this guard alone silently emptied every real response
-        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
-        # a worse outage than the bug it fixed. The bare fallback block below
-        # is MANDATORY and MUST come after @empty_ok — it copies through every
-        # response that isn't the empty-200 false-green.
-        @empty_ok {
-          status 200
-          header Content-Length 0
-        }
-        handle_response @empty_ok {
-          @get method GET
-          error @get 502
-        }
-        handle_response {
-          copy_response
-        }
-    }
-  handle_errors {
-      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
-      handle @backend_error {
-        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
-        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
-        # plain `file_server` serves the error page with 200, a FALSE GREEN that
-        # hides genuinely-down services behind the edge. Serve the page but
-        # PRESERVE the real upstream status and tag it for probes.
-        header X-Edge-Fallback "1"
-        header X-Edge-Upstream-Status "{err.status_code}"
-        root * /srv
-        rewrite * /error.html
-        file_server {
-          status {err.status_code}
-        }
-      }
-    }
-  }
-
-  mattermost-mcp.app {
-    # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
-    # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
-    # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
-    # forward target 127.0.0.1:8443 never reached — the whole .app/.db zone
-    # was unreachable. Removing the bind entirely (first attempt, 6e3b65364)
-    # was ALSO insufficient: Caddy's Caddyfile adapter groups servers by the
-    # LITERAL listen string, and "no bind" (implicit ":8443") produced a
-    # THIRD, still-different server (srv2) from the public routes' explicit
-    # "0.0.0.0:8443" — even though both cover the same sockets. Only an
-    # byte-identical bind directive guarantees one merged server. 2026-07-09.
-  bind 0.0.0.0 10.0.0.1
-    tls {
-      issuer internal {
-        ca mesh
-      }
-    }
-    reverse_proxy 10.0.0.6:3102 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
@@ -4858,7 +4959,7 @@ file_server
         ca mesh
       }
     }
-    reverse_proxy 10.0.0.6:8084 {
+    reverse_proxy 10.0.0.6:8080 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
@@ -5047,7 +5148,7 @@ file_server
         ca mesh
       }
     }
-    reverse_proxy 10.0.0.6:3006 {
+    reverse_proxy 10.0.0.4:3006 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
@@ -5110,7 +5211,7 @@ file_server
         ca mesh
       }
     }
-    reverse_proxy 10.0.0.1:9091 {
+    reverse_proxy 172.18.0.3:9091 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
@@ -5345,7 +5446,7 @@ file_server
     }
   }
 
-  cloud-cgc-mcp.app {
+  cloud-cgc-pub-mcp.app {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -5363,6 +5464,132 @@ file_server
       }
     }
     reverse_proxy 10.0.0.6:3105 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  kg-store.app {
+    # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
+    # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
+    # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
+    # forward target 127.0.0.1:8443 never reached — the whole .app/.db zone
+    # was unreachable. Removing the bind entirely (first attempt, 6e3b65364)
+    # was ALSO insufficient: Caddy's Caddyfile adapter groups servers by the
+    # LITERAL listen string, and "no bind" (implicit ":8443") produced a
+    # THIRD, still-different server (srv2) from the public routes' explicit
+    # "0.0.0.0:8443" — even though both cover the same sockets. Only an
+    # byte-identical bind directive guarantees one merged server. 2026-07-09.
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    reverse_proxy 10.0.0.6:8001 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  kg-store-pub.app {
+    # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
+    # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
+    # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
+    # forward target 127.0.0.1:8443 never reached — the whole .app/.db zone
+    # was unreachable. Removing the bind entirely (first attempt, 6e3b65364)
+    # was ALSO insufficient: Caddy's Caddyfile adapter groups servers by the
+    # LITERAL listen string, and "no bind" (implicit ":8443") produced a
+    # THIRD, still-different server (srv2) from the public routes' explicit
+    # "0.0.0.0:8443" — even though both cover the same sockets. Only an
+    # byte-identical bind directive guarantees one merged server. 2026-07-09.
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    reverse_proxy 10.0.0.6:8002 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
@@ -5426,6 +5653,69 @@ file_server
       }
     }
     reverse_proxy 10.0.0.6:8065 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  matrix-continuwuity.app {
+    # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
+    # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
+    # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
+    # forward target 127.0.0.1:8443 never reached — the whole .app/.db zone
+    # was unreachable. Removing the bind entirely (first attempt, 6e3b65364)
+    # was ALSO insufficient: Caddy's Caddyfile adapter groups servers by the
+    # LITERAL listen string, and "no bind" (implicit ":8443") produced a
+    # THIRD, still-different server (srv2) from the public routes' explicit
+    # "0.0.0.0:8443" — even though both cover the same sockets. Only an
+    # byte-identical bind directive guarantees one merged server. 2026-07-09.
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    reverse_proxy 10.0.0.6:8008 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
@@ -6610,62 +6900,6 @@ file_server
   # APP URL ALIASES — {container}-{protocol}-{port}.app canonical routes
   # ════════════════════════════════════════════════════════════
 
-  continuwuity-http-8008.app {
-    # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
-    # 2026-07-09.
-  bind 0.0.0.0 10.0.0.1
-    tls {
-      on_demand
-      issuer internal {
-        ca mesh
-      }
-    }
-    reverse_proxy 10.0.0.6:8008 {
-        # Empty-body guard: an upstream that answers 200 with Content-Length 0
-        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
-        # handle_errors renders the diagnostic page instead of a silent blank.
-        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
-        #
-        # CRITICAL: once ANY named handle_response matcher exists on a
-        # reverse_proxy, Caddy defers writing the response entirely — a
-        # response that matches NO handle_response block writes NOTHING
-        # (not "pass through unmodified"). Confirmed via production incident
-        # 2026-07-09: this guard alone silently emptied every real response
-        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
-        # a worse outage than the bug it fixed. The bare fallback block below
-        # is MANDATORY and MUST come after @empty_ok — it copies through every
-        # response that isn't the empty-200 false-green.
-        @empty_ok {
-          status 200
-          header Content-Length 0
-        }
-        handle_response @empty_ok {
-          @get method GET
-          error @get 502
-        }
-        handle_response {
-          copy_response
-        }
-    }
-  handle_errors {
-      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
-      handle @backend_error {
-        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
-        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
-        # plain `file_server` serves the error page with 200, a FALSE GREEN that
-        # hides genuinely-down services behind the edge. Serve the page but
-        # PRESERVE the real upstream status and tag it for probes.
-        header X-Edge-Fallback "1"
-        header X-Edge-Upstream-Status "{err.status_code}"
-        root * /srv
-        rewrite * /error.html
-        file_server {
-          status {err.status_code}
-        }
-      }
-    }
-  }
-
   c3-infra-api-http-8081.app {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
@@ -6677,62 +6911,6 @@ file_server
       }
     }
     reverse_proxy 10.0.0.6:8081 {
-        # Empty-body guard: an upstream that answers 200 with Content-Length 0
-        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
-        # handle_errors renders the diagnostic page instead of a silent blank.
-        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
-        #
-        # CRITICAL: once ANY named handle_response matcher exists on a
-        # reverse_proxy, Caddy defers writing the response entirely — a
-        # response that matches NO handle_response block writes NOTHING
-        # (not "pass through unmodified"). Confirmed via production incident
-        # 2026-07-09: this guard alone silently emptied every real response
-        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
-        # a worse outage than the bug it fixed. The bare fallback block below
-        # is MANDATORY and MUST come after @empty_ok — it copies through every
-        # response that isn't the empty-200 false-green.
-        @empty_ok {
-          status 200
-          header Content-Length 0
-        }
-        handle_response @empty_ok {
-          @get method GET
-          error @get 502
-        }
-        handle_response {
-          copy_response
-        }
-    }
-  handle_errors {
-      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
-      handle @backend_error {
-        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
-        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
-        # plain `file_server` serves the error page with 200, a FALSE GREEN that
-        # hides genuinely-down services behind the edge. Serve the page but
-        # PRESERVE the real upstream status and tag it for probes.
-        header X-Edge-Fallback "1"
-        header X-Edge-Upstream-Status "{err.status_code}"
-        root * /srv
-        rewrite * /error.html
-        file_server {
-          status {err.status_code}
-        }
-      }
-    }
-  }
-
-  c3-infra-mcp-http-3100.app {
-    # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
-    # 2026-07-09.
-  bind 0.0.0.0 10.0.0.1
-    tls {
-      on_demand
-      issuer internal {
-        ca mesh
-      }
-    }
-    reverse_proxy 10.0.0.6:3100 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
@@ -6890,7 +7068,231 @@ file_server
     }
   }
 
-  c3-services-mcp-http-3101.app {
+  cloud-drive-mcp-http-3109.app {
+    # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
+    # 2026-07-09.
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      on_demand
+      issuer internal {
+        ca mesh
+      }
+    }
+    reverse_proxy 10.0.0.6:3109 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud-infra-mcp-http-3100.app {
+    # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
+    # 2026-07-09.
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      on_demand
+      issuer internal {
+        ca mesh
+      }
+    }
+    reverse_proxy 10.0.0.6:3100 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud-mail-mcp-http-3103.app {
+    # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
+    # 2026-07-09.
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      on_demand
+      issuer internal {
+        ca mesh
+      }
+    }
+    reverse_proxy 10.0.0.6:3103 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud-mattermost-mcp-http-3102.app {
+    # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
+    # 2026-07-09.
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      on_demand
+      issuer internal {
+        ca mesh
+      }
+    }
+    reverse_proxy 10.0.0.6:3102 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud-services-mcp-http-3101.app {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -7013,118 +7415,6 @@ file_server
       }
     }
     reverse_proxy 10.0.0.6:3104 {
-        # Empty-body guard: an upstream that answers 200 with Content-Length 0
-        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
-        # handle_errors renders the diagnostic page instead of a silent blank.
-        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
-        #
-        # CRITICAL: once ANY named handle_response matcher exists on a
-        # reverse_proxy, Caddy defers writing the response entirely — a
-        # response that matches NO handle_response block writes NOTHING
-        # (not "pass through unmodified"). Confirmed via production incident
-        # 2026-07-09: this guard alone silently emptied every real response
-        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
-        # a worse outage than the bug it fixed. The bare fallback block below
-        # is MANDATORY and MUST come after @empty_ok — it copies through every
-        # response that isn't the empty-200 false-green.
-        @empty_ok {
-          status 200
-          header Content-Length 0
-        }
-        handle_response @empty_ok {
-          @get method GET
-          error @get 502
-        }
-        handle_response {
-          copy_response
-        }
-    }
-  handle_errors {
-      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
-      handle @backend_error {
-        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
-        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
-        # plain `file_server` serves the error page with 200, a FALSE GREEN that
-        # hides genuinely-down services behind the edge. Serve the page but
-        # PRESERVE the real upstream status and tag it for probes.
-        header X-Edge-Fallback "1"
-        header X-Edge-Upstream-Status "{err.status_code}"
-        root * /srv
-        rewrite * /error.html
-        file_server {
-          status {err.status_code}
-        }
-      }
-    }
-  }
-
-  mail-mcp-http-3103.app {
-    # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
-    # 2026-07-09.
-  bind 0.0.0.0 10.0.0.1
-    tls {
-      on_demand
-      issuer internal {
-        ca mesh
-      }
-    }
-    reverse_proxy 10.0.0.6:3103 {
-        # Empty-body guard: an upstream that answers 200 with Content-Length 0
-        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
-        # handle_errors renders the diagnostic page instead of a silent blank.
-        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
-        #
-        # CRITICAL: once ANY named handle_response matcher exists on a
-        # reverse_proxy, Caddy defers writing the response entirely — a
-        # response that matches NO handle_response block writes NOTHING
-        # (not "pass through unmodified"). Confirmed via production incident
-        # 2026-07-09: this guard alone silently emptied every real response
-        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
-        # a worse outage than the bug it fixed. The bare fallback block below
-        # is MANDATORY and MUST come after @empty_ok — it copies through every
-        # response that isn't the empty-200 false-green.
-        @empty_ok {
-          status 200
-          header Content-Length 0
-        }
-        handle_response @empty_ok {
-          @get method GET
-          error @get 502
-        }
-        handle_response {
-          copy_response
-        }
-    }
-  handle_errors {
-      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
-      handle @backend_error {
-        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
-        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
-        # plain `file_server` serves the error page with 200, a FALSE GREEN that
-        # hides genuinely-down services behind the edge. Serve the page but
-        # PRESERVE the real upstream status and tag it for probes.
-        header X-Edge-Fallback "1"
-        header X-Edge-Upstream-Status "{err.status_code}"
-        root * /srv
-        rewrite * /error.html
-        file_server {
-          status {err.status_code}
-        }
-      }
-    }
-  }
-
-  mattermost-mcp-http-3102.app {
-    # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
-    # 2026-07-09.
-  bind 0.0.0.0 10.0.0.1
-    tls {
-      on_demand
-      issuer internal {
-        ca mesh
-      }
-    }
-    reverse_proxy 10.0.0.6:3102 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
@@ -7450,7 +7740,7 @@ file_server
     }
   }
 
-  matomo-hybrid-http-8084.app {
+  matomo-hybrid-http-8080.app {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -7460,7 +7750,7 @@ file_server
         ca mesh
       }
     }
-    reverse_proxy 10.0.0.6:8084 {
+    reverse_proxy 10.0.0.6:8080 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
@@ -7628,7 +7918,7 @@ file_server
         ca mesh
       }
     }
-    reverse_proxy 10.0.0.6:3006 {
+    reverse_proxy 10.0.0.4:3006 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
@@ -7684,7 +7974,7 @@ file_server
         ca mesh
       }
     }
-    reverse_proxy 10.0.0.1:9091 {
+    reverse_proxy 172.18.0.3:9091 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
@@ -7898,7 +8188,7 @@ file_server
     }
   }
 
-  cloud-cgc-mcp-http-3105.app {
+  cloud-cgc-pub-mcp-http-3105.app {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -7909,6 +8199,118 @@ file_server
       }
     }
     reverse_proxy 10.0.0.6:3105 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  kg-store-http-8001.app {
+    # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
+    # 2026-07-09.
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      on_demand
+      issuer internal {
+        ca mesh
+      }
+    }
+    reverse_proxy 10.0.0.6:8001 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  kg-store-pub-http-8002.app {
+    # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
+    # 2026-07-09.
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      on_demand
+      issuer internal {
+        ca mesh
+      }
+    }
+    reverse_proxy 10.0.0.6:8002 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
@@ -7965,6 +8367,62 @@ file_server
       }
     }
     reverse_proxy 10.0.0.6:8065 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  continuwuity-http-8008.app {
+    # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
+    # 2026-07-09.
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      on_demand
+      issuer internal {
+        ca mesh
+      }
+    }
+    reverse_proxy 10.0.0.6:8008 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
@@ -8357,6 +8815,62 @@ file_server
       }
     }
     reverse_proxy 10.0.0.6:8090 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  news-gdelt-http-3019.app {
+    # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
+    # 2026-07-09.
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      on_demand
+      issuer internal {
+        ca mesh
+      }
+    }
+    reverse_proxy 10.0.0.6:3019 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
@@ -8976,19 +9490,6 @@ file_server
     respond "Portless worker/sidecar — no HTTP endpoint" 204
   }
 
-  news-gdelt-null.app {
-    # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
-    # 2026-07-09.
-  bind 0.0.0.0 10.0.0.1
-    tls {
-      on_demand
-      issuer internal {
-        ca mesh
-      }
-    }
-    respond "Portless worker/sidecar — no HTTP endpoint" 204
-  }
-
 
   # ════════════════════════════════════════════════════════════
   # DB ZONE — {container}-{engine}-{port}.db HTTPS catalog endpoints
@@ -9070,6 +9571,32 @@ file_server
       }
     }
     respond "DB catalog — container=authelia engine=sqlite port= upstream=(embedded) path=/data/db.sqlite3 vm=gcp-E2-f_0" 200
+  }
+
+  kg-store-surrealdb-8001.db {
+    # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
+    # 2026-07-09.
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      on_demand
+      issuer internal {
+        ca mesh
+      }
+    }
+    respond "DB catalog — container=kg-store engine=surrealdb port=8001 upstream=10.0.0.6:8001 path=- vm=oci-A1-f_0" 200
+  }
+
+  kg-store-pub-surrealdb-8002.db {
+    # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
+    # 2026-07-09.
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      on_demand
+      issuer internal {
+        ca mesh
+      }
+    }
+    respond "DB catalog — container=kg-store-pub engine=surrealdb port=8002 upstream=10.0.0.6:8002 path=- vm=oci-A1-f_0" 200
   }
 
   snappymail-files-null.db {
@@ -9255,6 +9782,30 @@ max_age: 604800
 " 200
     }
     respond 404
+  }
+
+
+  # ════════════════════════════════════════════════════════════
+  # HTTP :80 → HTTPS 308 redirect (mesh bind only)
+  # ════════════════════════════════════════════════════════════
+
+  # Plain HTTP :80 → HTTPS. The global block sets `auto_https
+  # disable_redirects`, so Caddy opens NO :80 listener on its own and every
+  # http:// client got "failed to connect" while :443 answered 200 — the
+  # Mattermost Android app probes http://chat.diegonmarcos.com before
+  # upgrading, so it could never reach the server. This is the only site
+  # here that is deliberately plain HTTP; the `http://` scheme keeps TLS
+  # (and any cert issuance) off it.
+  #
+  # Mesh-only bind, NOT the publicBindLine used by the :8443 vhosts: the hub
+  # is a private WireGuard node behind the single public edge, and the
+  # collapse-to-443 plan the globals implement keeps its public surface at
+  # one port. Redirecting on 10.0.0.1 serves mesh clients without opening a
+  # new public socket. Separate port, so none of the byte-identical-bind
+  # server-grouping rules that govern :8443 apply here.
+  http:// {
+    bind 10.0.0.1
+    redir https://{host}{uri} 308
   }
 
 
