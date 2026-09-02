@@ -25,7 +25,12 @@ in
       command = [
         "gunicorn"
         "--bind" "${buildJson.bind_host}:${toString buildJson.ports.app}"
-        "--workers" "1" "--threads" "1" "--timeout" "120"
+        # threads 1 -> 4: a single worker+thread meant ONE slow request (a cold
+        # JWKS validation on a thrashing box) blocked /health, so docker's probe
+        # timed out and re-fired every 30s, stacking hung python probes for half
+        # an hour and adding to the memory pressure. 4 threads keeps /health
+        # answerable while a real request is in flight.
+        "--workers" "1" "--threads" "4" "--timeout" "120"
         "main:app"
       ];
       environment = {
@@ -66,9 +71,10 @@ in
           "CMD" "python3" "-c"
           "import urllib.request; urllib.request.urlopen('http://${buildJson.bind_host}:${toString buildJson.ports.app}/health')"
         ];
-        interval = "30s";
-        timeout  = "10s";
-        retries  = 3;
+        interval     = "60s";
+        timeout      = "10s";
+        retries      = 3;
+        start_period = "40s";
       };
         # mem_limit/mem_reservation are optional in build.json (only
         # mem_reservation is declared fleet-wide today). Reading them
