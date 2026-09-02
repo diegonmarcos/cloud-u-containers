@@ -11,6 +11,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { registerTools } from "../../lib-mcp/src/tools.js";
 import { loadModules } from "../../lib-mcp/src/registry.js";
+import { fleetToken } from "../../lib-mcp/src/device.js";
 
 const server = new McpServer({ name: "cloud-superapp-mcp", version: "1.0.0" });
 
@@ -23,7 +24,7 @@ async function main() {
   const transport = new StdioServerTransport();
   log(`Starting cloud-superapp-mcp v1.0.0 (stdio, hosts=${process.env.SUPERAPP_HOSTS ?? "phone,phone-v6,phone-pub"})`);
   log(`${modules.length} app modules: ${modules.map((m) => m.id).join(", ")}`);
-  if (!process.env.SUPERAPP_FLEET_TOKEN) {
+  if (!fleetToken()) {
     log("SUPERAPP_FLEET_TOKEN unset — discovery works, data routes will answer 401 (SuperApp → Configs → About)");
   }
   await server.connect(transport);
