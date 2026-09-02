@@ -237,7 +237,13 @@
       "port_env": "MCP_HTTP_PORT",
       "dns": null,
       "public": false,
-      "proxy": null,
+      "_doc_proxy": "Was proxy:null -- but ~/.mcp.json has pointed every Claude session at mcp.diegonmarcos.com/cloud-cgc-pvt-mcp/mcp since the 2026-08-30 pub/pvt split, so the private store failed to attach in every session (the hub answered with its fallback banner). public:false keeps the derived route wg_only (mesh-gated, same posture as c3-infra-mcp), which is the correct exposure for the private store: reachable by the laptop's sessions, 403 for the internet.",
+      "proxy": {
+        "streaming": true,
+        "type": "path",
+        "parent_domain": "mcp.diegonmarcos.com",
+        "base_path": "/cloud-cgc-pvt-mcp"
+      },
       "healthcheck": "/mcp",
       "monitoring": null,
       "volumes": [
