@@ -74,17 +74,29 @@ export function registerKgStoreTools(server: McpServer): void {
     "Overview of the kg-store SurrealDB unified graph: row counts for every node + edge table (octocode code graph mirrored across all repos + infra topology).",
     {},
     async () => {
-      const tables = [...NODE_TABLES, ...EDGE_TABLES];
+      // Enumerate tables from INFO FOR DB, not a hardcoded list: octocode's
+      // GraphRAG relation tables (imports/calls/extends/references/…) are created
+      // dynamically from relation_type at ingest time, so a static list silently
+      // hid them — the overview showed "edges: 0" while the store held 500k+.
+      let tables: string[] = [];
+      try {
+        const info = JSON.parse(await surql("INFO FOR DB")) as Array<{ result?: { tables?: Record<string, string> } }>;
+        tables = Object.keys(info?.[0]?.result?.tables ?? {}).sort();
+      } catch { /* fall through to static list */ }
+      if (!tables.length) tables = [...NODE_TABLES, ...EDGE_TABLES];
       const q = tables.map((t) => `SELECT count() AS n FROM ${t} GROUP ALL;`).join("\n");
       const out = await surql(q);
       try {
         const arr = JSON.parse(out) as Array<{ result?: Array<{ n?: number }> }>;
-        const fmt = (names: string[], offset: number) =>
-          names.map((t, i) => `  ${t}: ${arr[offset + i]?.result?.[0]?.n ?? 0}`).join("\n");
+        const counts = new Map(tables.map((t, i) => [t, arr[i]?.result?.[0]?.n ?? 0]));
+        const nodeSet = new Set(NODE_TABLES);
+        const nodes = tables.filter((t) => nodeSet.has(t));
+        const edges = tables.filter((t) => !nodeSet.has(t));
+        const fmt = (names: string[]) => names.map((t) => `  ${t}: ${counts.get(t) ?? 0}`).join("\n");
         const text =
           "kg-store unified graph (SurrealDB " + NS + "/" + DB + ")\n" +
-          "── code graph (nodes) ──\n" + fmt(NODE_TABLES, 0) +
-          "\n── edges ──\n" + fmt(EDGE_TABLES, NODE_TABLES.length);
+          "── nodes ──\n" + fmt(nodes) +
+          "\n── edges / relations ──\n" + fmt(edges);
         return { content: [{ type: "text" as const, text }] };
       } catch {
         return { content: [{ type: "text" as const, text: out.slice(0, 6000) }] };
