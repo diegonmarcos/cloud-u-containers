@@ -40,6 +40,19 @@ in
       # down all auth + mail (2026-06-20). The redis healthcheck below only goes
       # healthy once PING returns PONG (redis withholds PONG during LOADING).
       depends_on.redis = { condition = "service_healthy"; };
+      # Override the image's built-in HEALTHCHECK: the upstream authelia image
+      # ships a `wget --spider .../api/health` probe on an aggressive interval,
+      # and on a thrashing box those wget probes stack (observed 55s+ elapsed
+      # each) instead of returning instantly. A 60s interval + start_period
+      # stops the pile-up without hiding a real outage.
+      healthcheck = {
+        test = [ "CMD" "wget" "--quiet" "--no-check-certificate" "--tries=1" "--spider"
+                 "http://localhost:9091/authelia/api/health" ];
+        interval     = "60s";
+        timeout      = "10s";
+        retries      = 3;
+        start_period = "40s";
+      };
       cap_add = [ "DAC_OVERRIDE" ];
       deploy.resources = {
         limits       = { memory = "128M"; cpus = "1.0"; };

@@ -23,7 +23,7 @@
     "native_build": {
       "type": "image-wrapper",
       "cmd": "pip install --no-cache-dir -r requirements.txt",
-      "entrypoint": "gunicorn --bind 127.0.0.1:4182 --workers 1 --threads 1 --timeout 120 main:app",
+      "entrypoint": "gunicorn --bind 127.0.0.1:4182 --workers 1 --threads 4 --timeout 120 main:app",
       "base_image": "python:3.11-slim",
       "app_dir": "code"
     }
