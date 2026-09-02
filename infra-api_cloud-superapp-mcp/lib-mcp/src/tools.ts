@@ -185,7 +185,17 @@ export function registerTools(server: McpServer, appModules: AppModule[] = []): 
     return a.pkg;
   }
 
-  function adbExec(cmd: string, timeoutSec = 30): Promise<string> {
+  // Self-healing exec: Shizuku is only ONE of the three channels. After a
+  // one-time Wireless-Debugging pairing (superapp_adb_pair), the embedded adb
+  // client can re-arm itself every boot via mDNS autoconnect — no Shizuku app
+  // involved, ever. When exec reports a dead channel, try that re-arm once
+  // and retry, so the privileged plane heals itself instead of failing until
+  // a human remembers the bootstrap.
+  const CHANNEL_DOWN_RE = /no (?:active )?(?:channel|shell)|not connected|channel unavailable|unauthorized channel|SHELL server/i;
+  async function adbExec(cmd: string, timeoutSec = 30): Promise<string> {
+    const first = await get(PORT_DEVCONTROL, "adb/exec", { cmd }, timeoutSec);
+    if (!CHANNEL_DOWN_RE.test(first)) return first;
+    await get(PORT_DEVCONTROL, "adb/autoconnect", {}, 30).catch(() => "");
     return get(PORT_DEVCONTROL, "adb/exec", { cmd }, timeoutSec);
   }
 
@@ -298,6 +308,25 @@ export function registerTools(server: McpServer, appModules: AppModule[] = []): 
         `f=/sdcard/Download/screencap-$(date +%Y%m%d-%H%M%S).png; screencap -p "$f" && echo "$f"`, 30);
       return text(out.trim());
     },
+  );
+
+  server.tool(
+    "superapp_adb_pair",
+    "ONE-TIME setup that makes the privileged plane Shizuku-INDEPENDENT forever: pair the superapp's embedded adb client with Android's Wireless Debugging. On the phone open Developer options → Wireless debugging → 'Pair device with pairing code' and pass the shown ip/port/code. Pairing persists; every later boot re-arms itself via superapp_adb_autoconnect (the privileged tools even do it implicitly).",
+    {
+      host: z.string().describe("IP shown in the pairing dialog (the phone's own wifi IP, e.g. 10.0.0.9)"),
+      port: z.number().int().describe("The PAIRING port from the dialog (not the connect port)"),
+      code: z.string().regex(/^\d{6}$/).describe("The 6-digit pairing code"),
+    },
+    async ({ host, port, code }) =>
+      text(await get(PORT_DEVCONTROL, "adb/pair", { host, port: String(port), code }, 45)),
+  );
+
+  server.tool(
+    "superapp_adb_autoconnect",
+    "Re-arm the embedded adb channel via mDNS discovery of the local Wireless-Debugging daemon. Needs a past superapp_adb_pair and Wireless debugging ON — then this replaces the Shizuku app entirely. The privileged tools call it implicitly when the channel looks down; use it directly to re-arm after a reboot.",
+    {},
+    async () => text(await get(PORT_DEVCONTROL, "adb/autoconnect", {}, 45)),
   );
 
   server.tool(
