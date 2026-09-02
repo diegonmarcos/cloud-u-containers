@@ -55,13 +55,16 @@ let
       "@HIDE_HEADERS@"      = lib.concatMapStringsSep "\n        " (x: "-${x}") (h.hide_headers or []);
     } (readTpl "10-security-headers.caddy.tpl");
 
-  rateLimiting = let r = ss.rate_limit; in
+  mkRateLimiting = name: r:
     subst {
+      "@RL_SNIPPET@" = name;
       "@RL_ZONE@"   = r.zone;
       "@RL_KEY@"    = r.key;
       "@RL_EVENTS@" = toString r.events;
       "@RL_WINDOW@" = r.window;
     } (readTpl "11-rate-limiting.caddy.tpl");
+  rateLimiting = mkRateLimiting "rate_limiting" ss.rate_limit;
+  rateLimitingMcp = mkRateLimiting "rate_limiting_mcp" ss.mcp_rate_limit;
 
   blockBots = let uas = lib.concatStringsSep "|" ss.bot_blocker.user_agents; in
     subst { "@BOT_UAS@" = uas; } (readTpl "12-block-bots.caddy.tpl");
@@ -89,6 +92,7 @@ let
     } (readTpl "16-access-log.caddy.tpl");
 
   securitySnippet = readTpl "17-security-snippet.caddy.tpl";
+  securityMcpSnippet = readTpl "18-security-mcp-snippet.caddy.tpl";
 
   # `sec` and `secNoLimit` are used inline as `import` lines inside site
   # blocks. Indentation is non-trivial here — we keep the original
@@ -99,6 +103,10 @@ let
 
   secNoLimit = ''
       import security'';
+
+  secMcp = ''
+      import security_mcp
+      import request_limits'';
 
   # ── Auth snippets ──
   auth = caddyRoutes.auth or {};
@@ -686,7 +694,7 @@ ${bearer}
     # ${group.comment or group.parent_domain}
     ${group.parent_domain} {
   ${publicBindLine}
-  ${sec}
+  ${secMcp}
   ${endpointBlocks}
       handle {
         respond "${fallbackMsg}" 200
@@ -1051,12 +1059,14 @@ ${odtAskBlock}
 
   ${securityHeaders}
   ${rateLimiting}
+  ${rateLimitingMcp}
   ${blockBots}
   ${blockScanners}
   ${requestLimits}
   ${ipBlock}
   ${accessLog}
   ${securitySnippet}
+  ${securityMcpSnippet}
 
   # ════════════════════════════════════════════════════════════
   # SUBDOMAIN ROUTES (from routes[])

@@ -1,4 +1,4 @@
-  (rate_limiting) {
+  (@RL_SNIPPET@) {
     rate_limit {
       zone @RL_ZONE@ {
         key    @RL_KEY@

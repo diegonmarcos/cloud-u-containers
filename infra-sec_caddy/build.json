@@ -27,9 +27,9 @@
       "admin_bind": "localhost:2019",
       "order": "respond before handle",
       "auto_https": "disable_redirects",
-      "_doc_wg_bind_ip": "Caddy's wg0 IP on gcp-proxy (10.0.0.1) — every public *.diegonmarcos.com site block dual-binds to (0.0.0.0, wg_bind_ip). Caddy lives on gcp-proxy (the public-facing VM); reverse-proxy upstreams to internal services traverse the wg0 mesh (10.0.0.x). Engine resolveVmIpForCaddy() still prefers wg-public IPs (10.1.0.x) when both endpoints are peers — gcp-proxy is a wg-public peer (10.1.0.2) so mail-side upstreams keep using wg-public transit.",
+      "_doc_wg_bind_ip": "Caddy's wg0 IP on gcp-proxy (10.0.0.1) \u2014 every public *.diegonmarcos.com site block dual-binds to (0.0.0.0, wg_bind_ip). Caddy lives on gcp-proxy (the public-facing VM); reverse-proxy upstreams to internal services traverse the wg0 mesh (10.0.0.x). Engine resolveVmIpForCaddy() still prefers wg-public IPs (10.1.0.x) when both endpoints are peers \u2014 gcp-proxy is a wg-public peer (10.1.0.2) so mail-side upstreams keep using wg-public transit.",
       "wg_bind_ip": "10.0.0.1",
-      "_doc_wg_cidrs": "Source CIDRs that count as \"on the mesh\" for every wg_only / bearer gate caddyfile.nix emits (@wg, @not_wg). Mirrors config.json wireguard.subnet + wireguard.subnet_v6. The wg0 mesh went dual-stack on 2026-07-26 but this gate stayed IPv4-only, so any client resolving the AAAA record (fd0c:1d00::1 — Hickory serves both, and clients prefer IPv6) arrived from fd0c:1d00::/64, missed the matcher and got 403. Keep both families listed or mesh-only routes break for IPv6-capable peers. Space-separated: Caddy remote_ip takes a CIDR list.",
+      "_doc_wg_cidrs": "Source CIDRs that count as \"on the mesh\" for every wg_only / bearer gate caddyfile.nix emits (@wg, @not_wg). Mirrors config.json wireguard.subnet + wireguard.subnet_v6. The wg0 mesh went dual-stack on 2026-07-26 but this gate stayed IPv4-only, so any client resolving the AAAA record (fd0c:1d00::1 \u2014 Hickory serves both, and clients prefer IPv6) arrived from fd0c:1d00::/64, missed the matcher and got 403. Keep both families listed or mesh-only routes break for IPv6-capable peers. Space-separated: Caddy remote_ip takes a CIDR list.",
       "wg_cidrs": "10.0.0.0/24 fd0c:1d00::/64"
     },
     "on_demand_tls": {
@@ -99,6 +99,12 @@
         "format": "json",
         "roll_size": "10mb",
         "roll_keep": 5
+      },
+      "mcp_rate_limit": {
+        "events": 600,
+        "window": "1m",
+        "key": "{remote_host}",
+        "zone": "mcp"
       }
     },
     "auth": {
@@ -179,9 +185,9 @@
       "page": "/srv/error.html"
     },
     "messages": {
-      "portless_placeholder": "Portless worker/sidecar — no HTTP endpoint",
-      "db_catalog_template": "DB catalog — container={container} engine={engine} port={port} upstream={upstream} path={path} vm={vm}",
-      "mcp_hub_fallback": "MCP Hub — use /g-workspace/mcp, /mail-mcp/mcp, /mattermost-mcp/mcp, /c3-infra-mcp/mcp, /c3-services-mcp/mcp, /cloud-cgc-pub-mcp/mcp",
+      "portless_placeholder": "Portless worker/sidecar \u2014 no HTTP endpoint",
+      "db_catalog_template": "DB catalog \u2014 container={container} engine={engine} port={port} upstream={upstream} path={path} vm={vm}",
+      "mcp_hub_fallback": "MCP Hub \u2014 use /g-workspace/mcp, /mail-mcp/mcp, /mattermost-mcp/mcp, /c3-infra-mcp/mcp, /c3-services-mcp/mcp, /cloud-cgc-pub-mcp/mcp",
       "app_hub_fallback": "Not Found"
     }
   },
@@ -194,7 +200,7 @@
         "target_domain": "jmap.diegonmarcos.com",
         "upstream": "10.0.0.3:2443",
         "tls_skip_verify": true,
-        "_doc_rewrite_to": "Serve the session AT the discovery URL rather than making the client chase Stalwart's relative 307 (Location: /jmap/session). Legal per RFC 8620 and the original design, but a client that mishandles a RELATIVE Location never arrives: Cloud-Mail failed 2026-09-01 with 'EndpointNotFoundException: Unable to fetch session object(https://jmap.diegonmarcos.com/.well-known/jmap)' while curl -L on that exact URL returned a valid session in ~1.3s. Same upstream, same Authorization passthrough, same per-user session JSON — the /jmap/* sibling below stays for the API calls that follow. Fixes every JMAP client instead of patching one.",
+        "_doc_rewrite_to": "Serve the session AT the discovery URL rather than making the client chase Stalwart's relative 307 (Location: /jmap/session). Legal per RFC 8620 and the original design, but a client that mishandles a RELATIVE Location never arrives: Cloud-Mail failed 2026-09-01 with 'EndpointNotFoundException: Unable to fetch session object(https://jmap.diegonmarcos.com/.well-known/jmap)' while curl -L on that exact URL returned a valid session in ~1.3s. Same upstream, same Authorization passthrough, same per-user session JSON \u2014 the /jmap/* sibling below stays for the API calls that follow. Fixes every JMAP client instead of patching one.",
         "rewrite_to": "/jmap/session",
         "comment": "JMAP discovery on jmap vhost (public per RFC 8620)"
       },
@@ -252,7 +258,7 @@
   "containers": {
     "app": {
       "container_name": "caddy",
-      "_image_doc": "PINNED to the last-known-good digest. caddy-l4:latest was rebuilt broken on 2026-06-19 (no caddy binary, CMD=/bin/sh) → gcp-proxy pulled it → :443 outage. Repin to :latest once infra-sec_caddy-l4-image is rebuilt + verified to contain caddy.",
+      "_image_doc": "PINNED to the last-known-good digest. caddy-l4:latest was rebuilt broken on 2026-06-19 (no caddy binary, CMD=/bin/sh) \u2192 gcp-proxy pulled it \u2192 :443 outage. Repin to :latest once infra-sec_caddy-l4-image is rebuilt + verified to contain caddy.",
       "image": "ghcr.io/diegonmarcos/caddy-l4@sha256:d8309fad8a32c393ddf7a258b8dbfc990ea928372284804a08bd071a13df6b7c",
       "port": 443,
       "extra_ports": [
@@ -260,13 +266,13 @@
           "port": 80,
           "protocol": "http",
           "monitor": false,
-          "_comment": "Caddy is TLS-only on :443 — no plain :80 listener. Suppress canonical URL probe."
+          "_comment": "Caddy is TLS-only on :443 \u2014 no plain :80 listener. Suppress canonical URL probe."
         },
         {
           "port": 2019,
           "protocol": "http",
           "monitor": false,
-          "_comment": "Admin API bound to localhost:2019 only — local-only by design."
+          "_comment": "Admin API bound to localhost:2019 only \u2014 local-only by design."
         }
       ],
       "port_env": null,
@@ -274,7 +280,7 @@
       "public": true,
       "proxy": {
         "type": "special",
-        "comment": "Caddy IS the reverse proxy — serves all domains"
+        "comment": "Caddy IS the reverse proxy \u2014 serves all domains"
       },
       "healthcheck": null,
       "monitoring": null,
