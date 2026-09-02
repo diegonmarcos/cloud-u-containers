@@ -6,28 +6,28 @@
   },
   "repo": "cloud",
   "counts": {
-    "files": 2547,
+    "files": 2557,
     "by_lang": {
       "nix": 447,
-      "sh": 371,
-      "ts": 325,
+      "sh": 377,
+      "ts": 327,
+      "js": 24,
       "py": 848,
-      "js": 23,
-      "rust": 533
+      "rust": 534
     },
     "by_role": {
-      "flake": 73,
-      "script": 111,
-      "shell": 255,
-      "module": 216,
+      "flake": 74,
+      "script": 112,
+      "shell": 260,
+      "module": 219,
       "engine": 1,
-      "nix-module": 309,
+      "nix-module": 307,
       "python": 843,
-      "compose": 65,
+      "compose": 66,
       "entrypoint": 24,
       "mcp-tool": 101,
       "workflow-dag": 2,
-      "rust-module": 528,
+      "rust-module": 529,
       "hook": 7,
       "file": 12
     }
@@ -91,6 +91,7 @@
         "build_base_tar()",
         "build_repo_tar()",
         "resolve_remote_name()",
+        "is_private_repo()",
         "resolve_repo_source_label()",
         "resolve_repo_desired_visibility()",
         "gate_repo_push()",
@@ -109,6 +110,7 @@
         "build_base_tar()",
         "build_repo_tar()",
         "resolve_remote_name()",
+        "is_private_repo()",
         "resolve_repo_source_label()",
         "resolve_repo_desired_visibility()",
         "gate_repo_push()",
@@ -128,14 +130,16 @@
         "need_bj()",
         "cleanup()",
         "stage_image()",
-        "count_project_dirs()"
+        "count_project_dirs()",
+        "kg_refresh()"
       ],
       "imports": [],
       "symbols": [
         "need_bj()",
         "cleanup()",
         "stage_image()",
-        "count_project_dirs()"
+        "count_project_dirs()",
+        "kg_refresh()"
       ]
     },
     {
@@ -459,10 +463,14 @@
       "lang": "sh",
       "role": "script",
       "exports": [
+        "_sync_published_port_dnat()",
+        "_assert_published_ports()",
         "step_health()"
       ],
       "imports": [],
       "symbols": [
+        "_sync_published_port_dnat()",
+        "_assert_published_ports()",
         "step_health()"
       ]
     },
@@ -1134,6 +1142,7 @@
         "build_base_tar()",
         "build_repo_tar()",
         "resolve_remote_name()",
+        "is_private_repo()",
         "resolve_repo_source_label()",
         "resolve_repo_desired_visibility()",
         "gate_repo_push()",
@@ -1152,6 +1161,7 @@
         "build_base_tar()",
         "build_repo_tar()",
         "resolve_remote_name()",
+        "is_private_repo()",
         "resolve_repo_source_label()",
         "resolve_repo_desired_visibility()",
         "gate_repo_push()",
@@ -1171,14 +1181,16 @@
         "need_bj()",
         "cleanup()",
         "stage_image()",
-        "count_project_dirs()"
+        "count_project_dirs()",
+        "kg_refresh()"
       ],
       "imports": [],
       "symbols": [
         "need_bj()",
         "cleanup()",
         "stage_image()",
-        "count_project_dirs()"
+        "count_project_dirs()",
+        "kg_refresh()"
       ]
     },
     {
@@ -1502,10 +1514,14 @@
       "lang": "sh",
       "role": "script",
       "exports": [
+        "_sync_published_port_dnat()",
+        "_assert_published_ports()",
         "step_health()"
       ],
       "imports": [],
       "symbols": [
+        "_sync_published_port_dnat()",
+        "_assert_published_ports()",
         "step_health()"
       ]
     },
@@ -2241,7 +2257,8 @@
       "exports": [],
       "imports": [
         "fs",
-        "path"
+        "path",
+        "./derive-mesh-snapshot.js"
       ],
       "symbols": [
         "targetDirFor(fileName: string)",
@@ -2265,6 +2282,7 @@
         "deriveHomeManager(c: any)",
         "deriveGhaConfig(c: any)",
         "deriveWireguardPeers(c: any)",
+        "deriveSuperappConfig(c: any)",
         "deriveFirewallRules(c: any)",
         "deriveMonitoringTargets(c: any)",
         "deriveBuildReports(c: any)",
@@ -2282,8 +2300,7 @@
         "deriveConfigs(c: any)",
         "deriveDeps(c: any)",
         "deriveServiceConnections(c: any)",
-        "deriveKgSchema(c: any)",
-        "deriveKgDelta(c: any)"
+        "deriveKgSchema(c: any)"
       ]
     },
     {
@@ -2353,7 +2370,9 @@
       "path": "1_cloud-configs/src/derive/derive-mesh-snapshot.ts",
       "lang": "ts",
       "role": "module",
-      "exports": [],
+      "exports": [
+        "build"
+      ],
       "imports": [
         "node:fs",
         "node:path"
@@ -2684,6 +2703,17 @@
         "path",
         "ajv",
         "ajv-formats"
+      ],
+      "symbols": []
+    },
+    {
+      "path": "1_cloud-configs/src/inputs/regen-superapp-wireguard-profiles.js",
+      "lang": "js",
+      "role": "module",
+      "exports": [],
+      "imports": [
+        "fs",
+        "path"
       ],
       "symbols": []
     },
@@ -4328,78 +4358,46 @@
       ]
     },
     {
-      "path": "a_solutions/_shared/lib/mail-rules.nix",
-      "lang": "nix",
-      "role": "nix-module",
+      "path": "a_solutions/_shared/lib/derive-mail-rules.ts",
+      "lang": "ts",
+      "role": "module",
       "exports": [
-        "lib"
-      ],
-      "imports": [
-        "../../_shared/lib/mail-rules.nix",
-        "../_shared/lib/mail-rules.nix"
-      ],
-      "symbols": [
-        "loadJson",
         "merge",
-        "schema_version",
-        "account",
-        "sieve_require",
-        "folders",
-        "folder_groups",
-        "folders_ui",
-        "routing_default",
-        "inbox_copy",
-        "cleanup",
-        "filters",
-        "folder_renames",
-        "folder_options",
-        "predicates",
-        "rules",
         "loadAndMerge",
-        "general",
-        "profile",
         "resolvePredicate",
-        "sieveList",
         "sieveAtom",
         "sieveTest",
         "sortByPriority",
-        "sorted",
-        "allFolderTargets",
-        "effectiveFlags",
-        "effectiveFolder",
-        "sieveTagBlock",
-        "flags",
-        "cond",
-        "lines",
-        "sieveRouteBlock",
-        "folder",
-        "tagLines",
-        "fileintoLine",
-        "seenLine",
-        "stopLine",
-        "body",
-        "isTagKind"
-      ]
-    },
-    {
-      "path": "a_solutions/_shared/lib/mail-rules.tests/generate-golden.nix",
-      "lang": "nix",
-      "role": "nix-module",
-      "exports": [
-        "generalPath",
-        "profilePath"
+        "toSieve",
+        "toMaddyJson",
+        "toLegacyJson"
       ],
       "imports": [
-        "../mail-rules.nix",
-        "mail-rules.nix"
+        "fs",
+        "path"
       ],
       "symbols": [
-        "pkgs",
-        "lib",
-        "mr",
-        "merged",
-        "sieve",
-        "maddy"
+        "stableStringify(value: Json)",
+        "prettyStringify(value: Json, indent = 0)",
+        "loadJson(p: string)",
+        "merge(general: Json, profile: Json | null)",
+        "loadAndMerge(generalPath: string, profilePath: string | null)",
+        "resolvePredicate(predicates: Record<string, Json>, pred: Json)",
+        "sieveList(vs: string[])",
+        "sieveAtom(account: string, p: Json)",
+        "sieveTest(account: string, p: Json)",
+        "sortByPriority(rules: Json[])",
+        "allFolderTargets(merged: Merged)",
+        "effectiveFlags(rule: Json)",
+        "effectiveFolder(folders: Record<string, string>, rule: Json)",
+        "sieveTagBlock(predicates: Record<string, Json>, account: string, rule: Json)",
+        "sieveRouteBlock(\n  predicates: Record<string, Json>, account: string,\n  folders: Record<string, string>, inboxSeen: boolean, rule: Json,\n)",
+        "toSieve(merged: Merged)",
+        "toMaddyJson(merged: Merged)",
+        "toLegacyJson(merged: Merged)",
+        "artifacts()",
+        "emitForTests(dir: string)",
+        "main()"
       ]
     },
     {
@@ -4408,12 +4406,14 @@
       "role": "shell",
       "exports": [
         "diff_file()",
-        "assert()"
+        "assert()",
+        "artifacts_current()"
       ],
       "imports": [],
       "symbols": [
         "diff_file()",
-        "assert()"
+        "assert()",
+        "artifacts_current()"
       ]
     },
     {
@@ -5081,9 +5081,13 @@
       "imports": [
         "fastify",
         "node:fs/promises",
-        "node:path"
+        "node:path",
+        "../../shared/libs/exec.js"
       ],
       "symbols": [
+        "withinRateLimit(app: string)",
+        "sanitiseIdent(raw: string)",
+        "notifyNtfy(app: string, kind: string, title?: string, message?: string)",
         "registerPublicLogsRoutes(app: FastifyInstance)"
       ]
     },
@@ -5547,7 +5551,7 @@
         "vmNetwork(vmNameOrAlias: string)",
         "vmTop(vmNameOrAlias: string)",
         "vmDiskUsage(vmNameOrAlias: string)",
-        "vmJournal(\n  vmNameOrAlias: string,\n  since = \"1h\",\n  lines = 100,\n)"
+        "vmJournal(\n  vmNameOrAlias: string,\n  lines = 100,\n  unit?: string,\n)"
       ]
     },
     {
@@ -6340,7 +6344,8 @@
         "./plugins/error-handler.js",
         "./routes/health.js",
         "./routes/analytics.js",
-        "./routes/mail.js"
+        "./routes/mail.js",
+        "./routes/superapp.js"
       ],
       "symbols": [
         "buildApp()"
@@ -6439,6 +6444,22 @@
         "extractAddress(body: Buffer, name: string)",
         "decodeBody(req: FastifyRequest)",
         "registerMail(app: FastifyInstance, cfg: AppConfig)"
+      ]
+    },
+    {
+      "path": "a_solutions/infra-api_c3-public-api/src/code/api/routes/superapp.ts",
+      "lang": "ts",
+      "role": "module",
+      "exports": [
+        "registerSuperapp"
+      ],
+      "imports": [
+        "fs",
+        "path",
+        "fastify"
+      ],
+      "symbols": [
+        "registerSuperapp(app: FastifyInstance)"
       ]
     },
     {
@@ -8105,7 +8126,7 @@
         "vmNetwork(vmNameOrAlias: string)",
         "vmTop(vmNameOrAlias: string)",
         "vmDiskUsage(vmNameOrAlias: string)",
-        "vmJournal(\n  vmNameOrAlias: string,\n  since = \"1h\",\n  lines = 100,\n)"
+        "vmJournal(\n  vmNameOrAlias: string,\n  lines = 100,\n  unit?: string,\n)"
       ]
     },
     {
@@ -14796,7 +14817,6 @@
         "timeout",
         "retries",
         "start_period",
-        "limits",
         "reservations",
         "dbgate_data"
       ]
@@ -14987,6 +15007,7 @@
         "svc",
         "app",
         "binariesImage",
+        "arch",
         "services",
         "matomo-hybrid",
         "image",
@@ -15000,7 +15021,6 @@
         "MATOMO_DATABASE_PASSWORD",
         "MATOMO_DATABASE_DBNAME",
         "MATOMO_API_TOKEN",
-        "limits",
         "reservations",
         "matomo_matomo_data",
         "matomo_matomo_db",
@@ -15658,6 +15678,58 @@
         "generate_manifest()",
         "test_dists()",
         "cmd_android()"
+      ]
+    },
+    {
+      "path": "a_solutions/infra-obs_reports/src/src/cloud-analytics-daily/build.sh",
+      "lang": "sh",
+      "role": "shell",
+      "exports": [
+        "gen()"
+      ],
+      "imports": [],
+      "symbols": [
+        "gen()"
+      ]
+    },
+    {
+      "path": "a_solutions/infra-obs_reports/src/src/cloud-analytics-daily/src/matomo-query.sh",
+      "lang": "sh",
+      "role": "shell",
+      "exports": [
+        "q()"
+      ],
+      "imports": [],
+      "symbols": [
+        "q()"
+      ]
+    },
+    {
+      "path": "a_solutions/infra-obs_reports/src/src/cloud-analytics-daily/src/render.sh",
+      "lang": "sh",
+      "role": "shell",
+      "exports": [
+        "hdr_for()",
+        "title_for()",
+        "esc()"
+      ],
+      "imports": [],
+      "symbols": [
+        "hdr_for()",
+        "title_for()",
+        "esc()"
+      ]
+    },
+    {
+      "path": "a_solutions/infra-obs_reports/src/src/cloud-analytics-daily/src/umami-query.sh",
+      "lang": "sh",
+      "role": "shell",
+      "exports": [
+        "remote()"
+      ],
+      "imports": [],
+      "symbols": [
+        "remote()"
       ]
     },
     {
@@ -18383,7 +18455,6 @@
         "timeout",
         "retries",
         "start_period",
-        "limits",
         "reservations",
         "POSTGRES_DB",
         "POSTGRES_USER",
@@ -18527,7 +18598,6 @@
         "limits",
         "reservations",
         "command",
-        "networks",
         "healthcheck",
         "test",
         "interval",
@@ -18536,6 +18606,7 @@
         "start_period",
         "authelia_data",
         "authelia_redis_data",
+        "networks",
         "auth-net",
         "driver"
       ]
@@ -18744,6 +18815,10 @@
         "accessLog",
         "securitySnippet",
         "sec",
+        "auth",
+        "introspectUpstream",
+        "bearer",
+        "wgCidrs",
         "eh",
         "codesExpr",
         "handleErrors",
@@ -18761,11 +18836,7 @@
         "ghPagesDomains",
         "wellKnownRoutes",
         "mkGithubProxy",
-        "mkWellKnownBlock",
-        "hasRedirect",
-        "hasTlsSkipVerify",
-        "mkGithubPagesRoute",
-        "groupDomains"
+        "mkWellKnownBlock"
       ]
     },
     {
@@ -18890,7 +18961,10 @@
         "wgCidrs",
         "ss",
         "securityHeaders",
+        "mkRateLimiting",
         "rateLimiting",
+        "rateLimitingMcp",
+        "rateLimitingJmap",
         "blockBots",
         "blockScanners",
         "requestLimits",
@@ -18899,8 +18973,11 @@
         "body",
         "accessLog",
         "securitySnippet",
+        "securityMcpSnippet",
+        "securityJmapSnippet",
         "sec",
         "secNoLimit",
+        "secMcp",
         "auth",
         "autheliaUpstream",
         "introspectUpstream",
@@ -18915,13 +18992,7 @@
         "emptyGuard",
         "mkProtected",
         "mkProtectedCustom",
-        "wgGateBody",
-        "wgSiteLine",
-        "mkGithubProxy",
-        "routeListenSpec",
-        "sniSlug",
-        "l4PlainTpl",
-        "l4SniTpl"
+        "wgGateBody"
       ]
     },
     {
@@ -19056,7 +19127,6 @@
         "timeout",
         "retries",
         "start_period",
-        "limits",
         "reservations",
         "crowdsec_config",
         "crowdsec_data"
@@ -35571,14 +35641,16 @@
         "need_bj()",
         "cleanup()",
         "stage_image()",
-        "count_project_dirs()"
+        "count_project_dirs()",
+        "kg_refresh()"
       ],
       "imports": [],
       "symbols": [
         "need_bj()",
         "cleanup()",
         "stage_image()",
-        "count_project_dirs()"
+        "count_project_dirs()",
+        "kg_refresh()"
       ]
     },
     {
@@ -35635,6 +35707,10 @@
       "exports": [],
       "imports": [
         "node:http",
+        "node:fs",
+        "node:path",
+        "node:child_process",
+        "node:util",
         "@modelcontextprotocol/sdk/server/mcp.js",
         "@modelcontextprotocol/sdk/server/stdio.js",
         "@modelcontextprotocol/sdk/server/streamableHttp.js",
@@ -35651,6 +35727,10 @@
       ],
       "symbols": [
         "createMcpServer()",
+        "checkKgStore()",
+        "checkCodegraphBundle()",
+        "checkOctocode()",
+        "buildHealthBody(toolCount: number, resourceCount: number)",
         "startStdio()",
         "startHttp()",
         "main()"
@@ -35662,7 +35742,8 @@
       "role": "file",
       "exports": [],
       "imports": [
-        "node:fs"
+        "node:fs",
+        "node:crypto"
       ],
       "symbols": []
     },
@@ -36091,7 +36172,7 @@
         "vmNetwork(vmNameOrAlias: string)",
         "vmTop(vmNameOrAlias: string)",
         "vmDiskUsage(vmNameOrAlias: string)",
-        "vmJournal(\n  vmNameOrAlias: string,\n  since = \"1h\",\n  lines = 100,\n)"
+        "vmJournal(\n  vmNameOrAlias: string,\n  lines = 100,\n  unit?: string,\n)"
       ]
     },
     {
@@ -36856,7 +36937,7 @@
         "loadExplicit(g: Graph, path: string, layer: string)",
         "loadSignatures(g: Graph, path: string)",
         "loadGraph()",
-        "resolveTarget(g: Graph, t: string)",
+        "resolveTarget(g: Graph, t: string, limit: number = SUBSTRING_MATCH_CEILING)",
         "registerCodegraphTools(server: McpServer)"
       ]
     },
@@ -36873,6 +36954,7 @@
       ],
       "symbols": [
         "surql(q: string)",
+        "isReadOnly(q: string)",
         "registerKgStoreTools(server: McpServer)"
       ]
     },
@@ -37283,7 +37365,7 @@
         "vmNetwork(vmNameOrAlias: string)",
         "vmTop(vmNameOrAlias: string)",
         "vmDiskUsage(vmNameOrAlias: string)",
-        "vmJournal(\n  vmNameOrAlias: string,\n  since = \"1h\",\n  lines = 100,\n)"
+        "vmJournal(\n  vmNameOrAlias: string,\n  lines = 100,\n  unit?: string,\n)"
       ]
     },
     {
@@ -37944,6 +38026,7 @@
         "perRepoImagePrefix",
         "perRepoTag",
         "perRepoBaseImage",
+        "ntfyUrl",
         "escapeDollars",
         "oct",
         "pvtName",
@@ -37973,8 +38056,7 @@
         "KG_STORE_NS",
         "KG_STORE_DB",
         "KG_STORE_USER",
-        "KG_DELTA",
-        "KG_GRAPHS_DIR"
+        "KG_DELTA"
       ]
     },
     {
@@ -38250,6 +38332,128 @@
       ]
     },
     {
+      "path": "a_solutions/user-ai_kg-store-pub/build.sh",
+      "lang": "sh",
+      "role": "shell",
+      "exports": [
+        "get_config()",
+        "get_config_array()",
+        "get_lifecycle()",
+        "detect_layout()",
+        "rewrite_compose_image_refs()",
+        "log()",
+        "log_warn()",
+        "log_error()",
+        "ssh_with_retry()",
+        "ssh_run_detached()",
+        "rsync_with_retry()",
+        "_ship_build_phase()"
+      ],
+      "imports": [],
+      "symbols": [
+        "get_config()",
+        "get_config_array()",
+        "get_lifecycle()",
+        "detect_layout()",
+        "rewrite_compose_image_refs()",
+        "log()",
+        "log_warn()",
+        "log_error()",
+        "ssh_with_retry()",
+        "ssh_run_detached()",
+        "rsync_with_retry()",
+        "_ship_build_phase()"
+      ]
+    },
+    {
+      "path": "a_solutions/user-ai_kg-store-pub/scripts/seed_from_config.sh",
+      "lang": "sh",
+      "role": "script",
+      "exports": [
+        "_resolve_topology()",
+        "log()",
+        "surreal_query()"
+      ],
+      "imports": [],
+      "symbols": [
+        "_resolve_topology()",
+        "log()",
+        "surreal_query()"
+      ]
+    },
+    {
+      "path": "a_solutions/user-ai_kg-store-pub/src/compose.nix",
+      "lang": "nix",
+      "role": "compose",
+      "exports": [
+        "buildJson",
+        "container",
+        "services"
+      ],
+      "imports": [],
+      "symbols": [
+        "app",
+        "port",
+        "binariesImage",
+        "services",
+        "surrealdb",
+        "image",
+        "container_name",
+        "network_mode",
+        "restart",
+        "user",
+        "env_file",
+        "command",
+        "volumes",
+        "healthcheck",
+        "test",
+        "interval",
+        "timeout",
+        "retries",
+        "start_period"
+      ]
+    },
+    {
+      "path": "a_solutions/user-ai_kg-store-pub/src/flake.nix",
+      "lang": "nix",
+      "role": "flake",
+      "exports": [
+        "description",
+        "wrap",
+        "nixpkgs"
+      ],
+      "imports": [
+        "../../_shared/engine.nix",
+        "./compose.nix",
+        "../_shared/engine.nix",
+        "compose.nix"
+      ],
+      "symbols": [
+        "description",
+        "outputs",
+        "forAllSystems",
+        "buildJson",
+        "container",
+        "kgSchema",
+        "embedder",
+        "vectorIndexesDdl",
+        "engine",
+        "packages",
+        "pkgs",
+        "default",
+        "srcDir",
+        "templates",
+        "name",
+        "vars",
+        "EMBEDDER_MODEL",
+        "EMBEDDER_DIM",
+        "EMBEDDER_ENABLED",
+        "VECTOR_INDEXES_DDL",
+        "composeSpec",
+        "title"
+      ]
+    },
+    {
       "path": "a_solutions/user-ai_kg-store/build.sh",
       "lang": "sh",
       "role": "shell",
@@ -38318,6 +38522,7 @@
         "image",
         "container_name",
         "network_mode",
+        "restart",
         "user",
         "env_file",
         "command",
@@ -55817,10 +56022,8 @@
       ],
       "imports": [
         "../../_shared/engine.nix",
-        "../../_shared/lib/mail-rules.nix",
         "./compose.nix",
         "../_shared/engine.nix",
-        "../_shared/lib/mail-rules.nix",
         "compose.nix"
       ],
       "symbols": [
@@ -55830,13 +56033,8 @@
         "buildJson",
         "container",
         "engine",
-        "mailRulesLib",
         "lib",
-        "mailRules",
-        "merged",
-        "generalPath",
-        "profilePath",
-        "maddyRulesJson",
+        "maddyRules",
         "senderFolders",
         "base_domain",
         "schemeFor",
@@ -55863,7 +56061,12 @@
         "FOLDER_CREATION_BLOCK",
         "packages",
         "pkgs",
-        "mailRulesDerived"
+        "default",
+        "srcDir",
+        "templates",
+        "extraAssets",
+        "composeSpec",
+        "title"
       ]
     },
     {
@@ -56002,6 +56205,7 @@
         "JMAP_URL",
         "RULES_PATH",
         "STARTUP_DELAY",
+        "POLL_INTERVAL",
         "stalwart_data"
       ]
     },
@@ -56010,6 +56214,7 @@
       "lang": "rust",
       "role": "rust-module",
       "exports": [
+        "headers_referenced",
         "email_matches",
         "maintain_filters"
       ],
@@ -56027,7 +56232,6 @@
       "symbols": [
         "from_email(em: &Email)",
         "from_domain(em: &Email)",
-        "headers_referenced(views: &[View])",
         "walk(node: &PredicateNode, out: &mut HashSet<String>)",
         "has_attachment(em: &Email)",
         "attachment_types(em: &Email)",
@@ -56066,6 +56270,7 @@
         "mailbox_get",
         "mailbox_set",
         "email_get",
+        "email_set_chunked",
         "email_set",
         "email_query_in",
         "Mailbox",
@@ -56093,6 +56298,7 @@
         "mailbox_get(&self)",
         "mailbox_set(\n        &self,\n        create: Option<Map<String, Value>>,\n        update: Option<Map<String, Value>>,\n        destroy: Option<Vec<String>>,\n        on_destroy_remove_emails: bool,\n    )",
         "email_get(&self, ids: &[String], properties: &[&str])",
+        "email_set_chunked(&self, updates: Map<String, Value>)",
         "email_set(&self, updates: Map<String, Value>)",
         "email_query_in(&self, mailbox_ids: &[String], limit: Option<usize>)"
       ]
@@ -56134,14 +56340,42 @@
       "imports": [
         "anyhow::",
         "std::time::",
-        "rules::Rules"
+        "rules::Rules",
+        "JMAP"
       ],
       "symbols": [
         "now_epoch()",
         "is_transport_error(err: &anyhow::Error)",
+        "take_reapply_request(client: &jmap::Client)",
         "one_poll(client: &jmap::Client, rules: &Rules)",
         "apply_renames_step(client: &jmap::Client, rules: &Rules)",
         "main()"
+      ]
+    },
+    {
+      "path": "a_solutions/user-comm_tools-stalwart/src/crate/src/routing.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "maintain_routing"
+      ],
+      "imports": [
+        "routing",
+        "anyhow::Result",
+        "serde_json::",
+        "std::collections::",
+        "crate::filters::",
+        "crate::jmap",
+        "crate::rules::Rules",
+        "super::"
+      ],
+      "symbols": [
+        "maintain_routing(\n    client: &jmap::Client,\n    rules: &Rules,\n    name_to_id: &HashMap<String, String>,\n    mailboxes: &[jmap::Mailbox],\n)",
+        "rules_with(routing: &str)",
+        "email(from: &str)",
+        "first_match_wins_in_list_order()",
+        "unmatched_yields_none()",
+        "outside_source_scope_is_never_routed()"
       ]
     },
     {
@@ -56158,14 +56392,15 @@
         "FolderGroup",
         "FolderRenames",
         "Filters",
+        "Route",
         "View",
         "Predicate",
         "PredicateNode"
       ],
       "imports": [
-        "routing",
         "serde::Deserialize",
         "std::collections::BTreeMap",
+        "this",
         "it",
         "pub"
       ],
@@ -56187,10 +56422,8 @@
       ],
       "imports": [
         "../../_shared/engine.nix",
-        "../../_shared/lib/mail-rules.nix",
         "./compose.nix",
         "../_shared/engine.nix",
-        "../_shared/lib/mail-rules.nix",
         "compose.nix"
       ],
       "symbols": [
@@ -56200,14 +56433,7 @@
         "buildJson",
         "container",
         "engine",
-        "mailRulesLib",
         "lib",
-        "mailRules",
-        "merged",
-        "generalPath",
-        "profilePath",
-        "sieveScript",
-        "legacyJson",
         "base_domain",
         "adminHash",
         "appPort",
@@ -56233,7 +56459,14 @@
         "leafFolders",
         "findParent",
         "leafPrefix",
-        "match"
+        "match",
+        "leafLines",
+        "parentLines",
+        "foldersLines",
+        "usersList",
+        "adminUser",
+        "adminEmail",
+        "adminPassEnv"
       ]
     },
     {
@@ -61981,6 +62214,7 @@
       "symbols": [
         "clamp",
         "safeRamMB",
+        "swappiness",
         "minFreeKB",
         "zramSizeMB",
         "zramSizeBytes",
@@ -61997,7 +62231,8 @@
         "MemoryHigh",
         "OOMScoreAdjust",
         "SUDO",
-        "SRC"
+        "SRC",
+        "live"
       ]
     },
     {
@@ -64274,6 +64509,7 @@
       "symbols": [
         "clamp",
         "safeRamMB",
+        "swappiness",
         "minFreeKB",
         "zramSizeMB",
         "zramSizeBytes",
@@ -64290,7 +64526,8 @@
         "MemoryHigh",
         "OOMScoreAdjust",
         "SUDO",
-        "SRC"
+        "SRC",
+        "live"
       ]
     },
     {
@@ -66482,6 +66719,7 @@
       "symbols": [
         "clamp",
         "safeRamMB",
+        "swappiness",
         "minFreeKB",
         "zramSizeMB",
         "zramSizeBytes",
@@ -66498,7 +66736,8 @@
         "MemoryHigh",
         "OOMScoreAdjust",
         "SUDO",
-        "SRC"
+        "SRC",
+        "live"
       ]
     },
     {
@@ -68694,6 +68933,7 @@
       "symbols": [
         "clamp",
         "safeRamMB",
+        "swappiness",
         "minFreeKB",
         "zramSizeMB",
         "zramSizeBytes",
@@ -68710,7 +68950,8 @@
         "MemoryHigh",
         "OOMScoreAdjust",
         "SUDO",
-        "SRC"
+        "SRC",
+        "live"
       ]
     },
     {
@@ -70905,6 +71146,7 @@
       "symbols": [
         "clamp",
         "safeRamMB",
+        "swappiness",
         "minFreeKB",
         "zramSizeMB",
         "zramSizeBytes",
@@ -70921,7 +71163,8 @@
         "MemoryHigh",
         "OOMScoreAdjust",
         "SUDO",
-        "SRC"
+        "SRC",
+        "live"
       ]
     },
     {
