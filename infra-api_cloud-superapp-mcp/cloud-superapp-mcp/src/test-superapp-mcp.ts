@@ -9,8 +9,8 @@
  */
 import { strict as assert } from "node:assert";
 import { execFileSync } from "node:child_process";
-import { PORT_DEVCONTROL, run, scan, sq } from "./device.js";
-import { ROUTE_RE, label, resolve } from "./tools.js";
+import { PORT_DEVCONTROL, run, scan, sq } from "../../lib-mcp/src/device.js";
+import { ROUTE_RE, label, resolve } from "../../lib-mcp/src/tools.js";
 
 let n = 0;
 const ok = (what: string) => {

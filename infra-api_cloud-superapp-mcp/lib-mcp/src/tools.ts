@@ -16,12 +16,22 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { App, PORT_DEVCONTROL, get, scan } from "./device.js";
+import type { AppModule } from "./registry.js";
 
 /** /api/<group>/<op>. No dots, no %, no scheme — a route name, not a URL. The
  *  value comes from the model, and device.ts escapes it into a shell script. */
 export const ROUTE_RE = /^\/?[A-Za-z0-9_-]+(\/[A-Za-z0-9_-]+)*\/?$/;
 
 let cache: App[] | null = null;
+let modules: AppModule[] = [];
+
+/** mcps-apps/<id>/ → applicationId. Lets a human say "cloud-mail" where the
+ *  device only knows com.diegonmarcos.comms.mail, and it works from the
+ *  module list alone — no round trip to a phone that may be asleep. */
+function aliasToPkg(q: string): string | null {
+  const m = modules.find((x) => x.id.toLowerCase() === q.toLowerCase());
+  return m && m.pkg ? m.pkg : null;
+}
 
 async function apps(refresh = false): Promise<App[]> {
   if (refresh || !cache) cache = await scan();
@@ -46,7 +56,7 @@ export function resolve(list: App[], query: string): App {
         "/api/system/ping. Is a constellation app running?",
     );
   }
-  const q = query.trim();
+  const q = aliasToPkg(query.trim()) ?? query.trim();
 
   if (/^\d+$/.test(q)) {
     const byPort = list.find((a) => a.port === Number(q));
@@ -69,7 +79,12 @@ export function resolve(list: App[], query: string): App {
 
 const text = (s: string) => ({ content: [{ type: "text" as const, text: s || "(empty response)" }] });
 
-export function registerTools(server: McpServer): void {
+export function registerTools(server: McpServer, appModules: AppModule[] = []): void {
+  modules = appModules;
+  // A module MAY add bespoke tools. None does today, on purpose — see
+  // AppModule.tools in registry.ts for why that restraint is the design.
+  for (const m of appModules) m.tools?.(server);
+
   server.tool(
     "superapp_apps",
     "List every constellation app currently serving the on-device debug API on the phone: applicationId, bound port, label, version and device. Start here — the other tools take one of these as `app`.",
