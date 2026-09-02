@@ -1,5 +1,5 @@
 /**
- * The six tools.
+ * The tools.
  *
  * Deliberately NOT one tool per app, and not tools generated from each app's
  * /api/docs. An MCP tool is {name, schema, call} — it needs no process of its
@@ -158,6 +158,160 @@ export function registerTools(server: McpServer, appModules: AppModule[] = []): 
         throw new Error(`bad route "${path}" — expected /api/<group>/<op>, letters, digits, _ and - only`);
       }
       return text(await get((resolve(await apps(), app)).port, path, params ?? {}, 30));
+    },
+  );
+
+  // ── Privileged plane — the superapp's adb/exec shell door (uid 2000) ──────
+  //
+  // One privileged door for the whole constellation, by design: the superapp's
+  // DevControlServer exposes `adb/exec` ("full adb-equivalent power") through
+  // whichever channel is armed — the Shizuku app, the embedded adb client, or
+  // the self-bootstrapped shell-domain server. These tools wrap it with typed
+  // arguments and a verb allowlist, so per-app FULL logcat, permission grants,
+  // force-stops, input injection and screenshots are single calls instead of
+  // hand-built shell strings. If every call fails with a channel error, run
+  // superapp_adb_status — the door needs its once-per-boot bootstrap.
+
+  const PKG_RE = /^[A-Za-z0-9_.]+$/;
+
+  /** applicationId for a query, without requiring the app to be alive —
+   *  privileged ops are most needed exactly when the target is down. */
+  async function pkgOf(query: string): Promise<string> {
+    const alias = aliasToPkg(query.trim());
+    if (alias) return alias;
+    if (PKG_RE.test(query) && query.includes(".")) return query;
+    const a = resolve(await apps(), query);
+    if (!a.pkg) throw new Error(`cannot resolve "${query}" to an applicationId`);
+    return a.pkg;
+  }
+
+  function adbExec(cmd: string, timeoutSec = 30): Promise<string> {
+    return get(PORT_DEVCONTROL, "adb/exec", { cmd }, timeoutSec);
+  }
+
+  // What the un-flagged shell tool may run. Read/diagnose/manage verbs only —
+  // raw `sh -c` power (rm, dd, reboot, redirects, pipelines) needs the
+  // explicit dangerously_raw flag so a confused caller cannot wreck a device
+  // as casually as it reads a log.
+  const SHELL_ALLOW = new Set([
+    "logcat", "pm", "am", "cmd", "dumpsys", "settings", "getprop", "setprop",
+    "input", "screencap", "appops", "svc", "pidof", "ps", "top", "ls", "cat",
+    "stat", "du", "df", "id", "uptime", "uname", "date", "wm", "ip", "netstat",
+    "getenforce", "monkey",
+  ]);
+
+  server.tool(
+    "superapp_shell",
+    "Run one command at SHELL privilege (uid 2000) on the phone through the superapp's adb/exec door — the Shizuku-class escape hatch. Allowlisted verbs only (logcat/pm/am/cmd/dumpsys/settings/input/…); compound shell syntax or other verbs need dangerously_raw:true. Returns raw stdout.",
+    {
+      cmd: z.string().min(1).max(2000).describe("The command, e.g. 'pm grant com.example android.permission.READ_LOGS'"),
+      timeout: z.number().int().min(5).max(120).optional().describe("Seconds (default 30)"),
+      dangerously_raw: z.boolean().optional().describe("Bypass the verb allowlist and compound-syntax guard. Only with clear user intent."),
+    },
+    async ({ cmd, timeout, dangerously_raw }) => {
+      if (!dangerously_raw) {
+        const verb = cmd.trim().split(/\s+/)[0]?.split("/").pop() ?? "";
+        if (!SHELL_ALLOW.has(verb))
+          throw new Error(`verb "${verb}" is not in the shell allowlist — pass dangerously_raw:true if this is deliberate`);
+        if (/[;&|<>`]|\$\(/.test(cmd))
+          throw new Error("compound shell syntax needs dangerously_raw:true");
+      }
+      return text(await adbExec(cmd, timeout ?? 30));
+    },
+  );
+
+  server.tool(
+    "superapp_logcat_full",
+    "SYSTEM logcat via the shell door — the whole device, or one app's slice by uid (works even for apps that serve no debug API, and reads what superapp_logcat cannot: other uids). This is the full-Shizuku view of the log.",
+    {
+      app: z.string().optional().describe("Limit to this app's uid (applicationId, alias, or substring). Omit for the whole system log."),
+      lines: z.number().int().min(1).max(20000).optional().describe("Lines (default 500)"),
+      filter: z.string().max(80).optional().describe("Only lines containing this string (plain grep -F)"),
+    },
+    async ({ app, lines, filter }) => {
+      const n = lines ?? 500;
+      let cmd: string;
+      if (app) {
+        const pkg = await pkgOf(app);
+        cmd = `u=$(cmd package list packages -U ${pkg} | head -1 | sed 's/.*uid://'); logcat -d -t ${n} --uid=$u`;
+      } else {
+        cmd = `logcat -d -t ${n}`;
+      }
+      if (filter) {
+        if (!/^[\w .,:/@()\[\]-]+$/.test(filter)) throw new Error("filter: plain text only");
+        cmd += ` | grep -F ${JSON.stringify(filter)}`;
+      }
+      return text(await adbExec(cmd, 60));
+    },
+  );
+
+  server.tool(
+    "superapp_grant",
+    "Grant or revoke an Android permission on any app at shell privilege — including development permissions normal apps cannot hold (e.g. android.permission.READ_LOGS).",
+    {
+      app: z.string().describe("applicationId, alias, or substring"),
+      permission: z.string().regex(/^[A-Za-z0-9_.]+$/).describe("e.g. android.permission.READ_LOGS"),
+      revoke: z.boolean().optional().describe("Revoke instead of grant"),
+    },
+    async ({ app, permission, revoke }) => {
+      const pkg = await pkgOf(app);
+      const out = await adbExec(`pm ${revoke ? "revoke" : "grant"} ${pkg} ${permission}`);
+      return text(out.trim() || `${revoke ? "revoked" : "granted"} ${permission} on ${pkg}`);
+    },
+  );
+
+  server.tool(
+    "superapp_force_stop",
+    "Force-stop an app (am force-stop at shell privilege). Its process dies and its scheduled jobs pause until something starts it again — pair with superapp_wake to bounce an app cleanly.",
+    { app: z.string().describe("applicationId, alias, or substring") },
+    async ({ app }) => {
+      const pkg = await pkgOf(app);
+      const out = await adbExec(`am force-stop ${pkg}`);
+      return text(out.trim() || `force-stopped ${pkg}`);
+    },
+  );
+
+  server.tool(
+    "superapp_input",
+    "Inject an input event at shell privilege: tap, swipe, keyevent or text. This is what pull-to-refresh-over-ssh needs and app-level APIs can never do.",
+    {
+      gesture: z.enum(["tap", "swipe", "keyevent", "text"]),
+      args: z.string().max(120).describe("tap: 'x y' · swipe: 'x1 y1 x2 y2 [ms]' · keyevent: 'KEYCODE_HOME' · text: the string"),
+    },
+    async ({ gesture, args }) => {
+      const ok =
+        gesture === "keyevent" ? /^[A-Z0-9_]+$/.test(args)
+        : gesture === "text" ? /^[\w .,:/@-]+$/.test(args)
+        : /^[0-9 ]+$/.test(args);
+      if (!ok) throw new Error(`args do not look like ${gesture} arguments`);
+      const out = await adbExec(`input ${gesture} ${args}`, 20);
+      return text(out.trim() || `sent ${gesture} ${args}`);
+    },
+  );
+
+  server.tool(
+    "superapp_screencap",
+    "Screenshot the device at shell privilege. Saves to /sdcard/Download/ and returns the path (pull it over ssh/scp).",
+    {},
+    async () => {
+      const out = await adbExec(
+        `f=/sdcard/Download/screencap-$(date +%Y%m%d-%H%M%S).png; screencap -p "$f" && echo "$f"`, 30);
+      return text(out.trim());
+    },
+  );
+
+  server.tool(
+    "superapp_adb_status",
+    "Health of the privileged channel behind superapp_shell (Shizuku / embedded adb / bootstrapped shell server), plus — when it is down — the once-per-boot bootstrap command to re-arm it.",
+    {},
+    async () => {
+      const status = await get(PORT_DEVCONTROL, "adb/status", {}, 15);
+      let hint = "";
+      try {
+        hint = "\n\nbootstrap (run once per boot if the channel is down):\n" +
+          (await get(PORT_DEVCONTROL, "adb/server-command", {}, 10));
+      } catch { /* status alone is fine */ }
+      return text(status + hint);
     },
   );
 }

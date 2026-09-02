@@ -13,6 +13,19 @@ cloud-superapp-mcp/ the MCP face  — stdio, loads every module
 cloud-superapp-api/ the HTTP face — same modules, loopback only
 ```
 
+## The privileged plane (Shizuku-class, through one door)
+
+The six unprivileged tools see one app each. Seven more wrap the superapp's
+`adb/exec` (uid-2000 shell via Shizuku / embedded adb / the bootstrapped
+shell-domain server): `superapp_shell` (verb-allowlisted; `dangerously_raw`
+for the rest), `superapp_logcat_full` (whole system, or any app by uid — the
+view Android hides from everyone else), `superapp_grant` (incl. development
+permissions like READ_LOGS), `superapp_force_stop`, `superapp_input`,
+`superapp_screencap`, `superapp_adb_status` (channel health + the
+once-per-boot bootstrap command). The channel must be re-armed after a
+reboot — `superapp_adb_status` prints the command; wiring it into the phone's
+boot automation is the standing TODO that would make this permanent.
+
 ## Where the API actually lives
 
 Not here. `ab_cloud-libs-shared/libs/devtools/AppDebugServer.kt` is the API:
