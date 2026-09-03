@@ -25,8 +25,8 @@
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
     "image": "cloud-webmail-binaries",
-    "dockerfile": "code/amd64/Dockerfile",
-    "arch": "amd64"
+    "dockerfile": "code/arm64/Dockerfile",
+    "arch": "arm64"
   },
   "proxy": {
     "primary": {
@@ -65,7 +65,7 @@
     "mem_reservation": "256M"
   },
   "_doc": {
-    "upstream": "root-fr/jmap-webmail @ v1.7.1 (commit d682f5fe238545f34c93947797ad8548ae4d55be), vendored + rebranded under src/code/amd64/webapp/. Built as ghcr.io/diegonmarcos/cloud-webmail-binaries by our CI (Type A, own Dockerfile). NOT their prebuilt image.",
+    "upstream": "root-fr/jmap-webmail @ v1.7.1 (commit d682f5fe238545f34c93947797ad8548ae4d55be), vendored + rebranded under src/code/arm64/webapp/. Built as ghcr.io/diegonmarcos/cloud-webmail-binaries by our CI (Type A, own Dockerfile). NOT their prebuilt image.",
     "container_port": "3000 (Next.js standalone; PORT/HOSTNAME env). healthcheck GET /api/health.",
     "runtime_env_non_secret": {
       "APP_NAME": "Cloud Webmail (UI title, set inline in compose)",

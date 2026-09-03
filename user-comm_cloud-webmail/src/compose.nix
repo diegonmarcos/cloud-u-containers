@@ -26,7 +26,7 @@ in
       network_mode = "host";
       environment = {
         # Runtime config (read at request time by /api/config — no rebuild
-        # needed to change these). See src/code/amd64/webapp/.env.example.
+        # needed to change these). See src/code/arm64/webapp/.env.example.
         APP_NAME = "Cloud Webmail";
         JMAP_SERVER_URL = "https://jmap.diegonmarcos.com";
         NODE_ENV = "production";
