@@ -10,7 +10,6 @@
     "include_cloud_data": "true",
     "headers_enforced": true
   },
-  "domain": "webmail.diegonmarcos.com",
   "deploy": {
     "host": "oci-mail",
     "remote_path": "/opt/containers/snappymail",
@@ -30,11 +29,7 @@
     "arch": "amd64"
   },
   "proxy": {
-    "_repromoted_2026-07-09": "webmail.diegonmarcos.com re-promoted to SnappyMail. It was demoted 2026-04-27 for a handoff to a successor webmail service that was never finished (no build.json/src), so no route was ever emitted and the domain orphaned to the Caddy catch-all (200 wormhole). SnappyMail is healthy on oci-mail; restored primary per the demote note.",
-    "primary": {
-      "domain": "webmail.diegonmarcos.com",
-      "auth": "two_factor"
-    }
+    "_retired_2026-09-03": "webmail.diegonmarcos.com handed off to cloud-webmail (root-fr/jmap-webmail rebrand, native JMAP); SnappyMail retired."
   },
   "containers": {
     "app": {
