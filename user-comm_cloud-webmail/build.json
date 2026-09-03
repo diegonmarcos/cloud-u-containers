@@ -12,7 +12,7 @@
     "headers_enforced": true
   },
   "deploy": {
-    "host": "oci-mail",
+    "host": "oci-apps",
     "remote_path": "/opt/containers/cloud-webmail",
     "excludes": [
       "data/**"
