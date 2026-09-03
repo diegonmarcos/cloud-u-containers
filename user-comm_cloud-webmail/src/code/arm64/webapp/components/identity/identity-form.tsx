@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import type { Identity, EmailAddress } from '@/lib/jmap/types';
 import { sanitizeSignatureHtml, sanitizeSignatureHtmlForDisplay } from '@/lib/email-sanitization';
 import { getEmailValidationError, validateEmailList } from '@/lib/validation';
+import { useSettingsStore } from '@/stores/settings-store';
 
 // Stalwarts JMAP Identity/set caps signature fields at 2047 UTF-8 bytes
 const SIGNATURE_MAX_BYTES = 2047;
@@ -40,6 +41,12 @@ interface IdentityFormData {
   bcc?: EmailAddress[] | null;
   textSignature?: string | null;
   htmlSignature?: string | null;
+  /**
+   * Client-side only (not a JMAP Identity property): the envelope MAIL FROM
+   * to use when sending from this identity, stored per-identity in
+   * settings-store's `identityReturnPaths`. Empty string clears it.
+   */
+  returnPath?: string;
 }
 
 interface IdentityFormProps {
@@ -68,6 +75,9 @@ export function IdentityForm({ identity, onSave, onCancel }: IdentityFormProps) 
   );
   const [bccInput, setBccInput] = useState(
     identity?.bcc?.map(a => a.email).join(', ') || ''
+  );
+  const [returnPathInput, setReturnPathInput] = useState(
+    identity ? (useSettingsStore.getState().identityReturnPaths[identity.id] || '') : ''
   );
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -109,6 +119,14 @@ export function IdentityForm({ identity, onSave, onCancel }: IdentityFormProps) 
       }
     }
 
+    // Return path (envelope MAIL FROM) is optional - only validate when set
+    if (returnPathInput.trim()) {
+      const returnPathError = getEmailValidationError(returnPathInput.trim());
+      if (returnPathError) {
+        newErrors.returnPath = returnPathError;
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -131,6 +149,7 @@ export function IdentityForm({ identity, onSave, onCancel }: IdentityFormProps) 
         htmlSignature: trimmedHtml ? sanitizeSignatureHtml(formData.htmlSignature!) : null,
         replyTo: parseEmailList(replyToInput) ?? null,
         bcc: parseEmailList(bccInput) ?? null,
+        returnPath: returnPathInput.trim(),
       };
 
       await onSave(sanitizedData);
@@ -262,6 +281,39 @@ export function IdentityForm({ identity, onSave, onCancel }: IdentityFormProps) 
             aria-atomic="true"
           >
             {errors.bcc}
+          </p>
+        )}
+      </div>
+
+      {/* Return Path (envelope MAIL FROM) */}
+      <div>
+        <label htmlFor="identity-return-path" className="block text-sm font-medium mb-1">
+          {t('return_path_label')}
+        </label>
+        <Input
+          id="identity-return-path"
+          type="email"
+          maxLength={254}
+          value={returnPathInput}
+          onChange={(e) => setReturnPathInput(e.target.value)}
+          placeholder={t('return_path_placeholder')}
+          disabled={isSubmitting}
+          className={errors.returnPath ? 'border-destructive' : ''}
+          aria-describedby={errors.returnPath ? 'return-path-error' : 'return-path-hint'}
+          aria-invalid={!!errors.returnPath}
+        />
+        <p id="return-path-hint" className="text-sm text-muted-foreground mt-1">
+          {t('return_path_hint')}
+        </p>
+        {errors.returnPath && (
+          <p
+            id="return-path-error"
+            className="text-sm text-destructive mt-1"
+            role="alert"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            {errors.returnPath}
           </p>
         )}
       </div>

@@ -38,6 +38,17 @@ interface IdentityFormData {
   bcc?: EmailAddress[] | null;
   textSignature?: string | null;
   htmlSignature?: string | null;
+  returnPath?: string;
+}
+
+/** Persist (or clear) the per-identity envelope MAIL FROM override. */
+function applyReturnPath(identityId: string, returnPath: string | undefined): void {
+  const trimmed = returnPath?.trim();
+  if (trimmed) {
+    useSettingsStore.getState().setIdentityReturnPath(identityId, trimmed);
+  } else {
+    useSettingsStore.getState().removeIdentityReturnPath(identityId);
+  }
 }
 
 interface IdentityManagerModalProps {
@@ -136,7 +147,7 @@ export function IdentityManagerModal({ isOpen, onClose }: IdentityManagerModalPr
     if (!client) return;
 
     try {
-      await client.createIdentity(
+      const created = await client.createIdentity(
         data.name,
         data.email,
         data.replyTo,
@@ -144,6 +155,7 @@ export function IdentityManagerModal({ isOpen, onClose }: IdentityManagerModalPr
         data.textSignature,
         data.htmlSignature
       );
+      applyReturnPath(created.id, data.returnPath);
 
       await refreshIdentities();
       setIsCreating(false);
@@ -166,6 +178,7 @@ export function IdentityManagerModal({ isOpen, onClose }: IdentityManagerModalPr
         textSignature: data.textSignature,
         htmlSignature: data.htmlSignature,
       });
+      applyReturnPath(identity.id, data.returnPath);
 
       await refreshIdentities();
       setEditingId(null);
@@ -196,6 +209,7 @@ export function IdentityManagerModal({ isOpen, onClose }: IdentityManagerModalPr
 
     try {
       await client.deleteIdentity(identity.id);
+      useSettingsStore.getState().removeIdentityReturnPath(identity.id);
       await refreshIdentities();
       toast.success(tNotif('identity_deleted'));
     } catch (error) {

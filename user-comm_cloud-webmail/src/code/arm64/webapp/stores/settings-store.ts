@@ -436,6 +436,13 @@ interface SettingsState {
   // per account because JMAP identity ids are account-scoped and would collide.
   preferredIdentityIds: Record<string, string>;
 
+  // Per-identity envelope MAIL FROM override, keyed by JMAP Identity id ->
+  // return-path email address. Lets several identities share one visible
+  // From address while routing outbound SMTP via different envelope senders
+  // (e.g. per-provider aliases). A missing entry = use the identity's own
+  // email as the envelope sender (unchanged JMAP §7.3 default).
+  identityReturnPaths: Record<string, string>;
+
   // Email Display
   disableThreading: boolean; // Show emails as individual messages instead of grouped by conversation
 
@@ -515,6 +522,10 @@ interface SettingsState {
   addTrustedSender: (email: string) => void;
   removeTrustedSender: (email: string) => void;
   isSenderTrusted: (email: string) => boolean;
+
+  // Per-identity return path (envelope MAIL FROM)
+  setIdentityReturnPath: (identityId: string, returnPath: string) => void;
+  removeIdentityReturnPath: (identityId: string) => void;
 
   // Keywords
   addKeyword: (keyword: KeywordDefinition) => void;
@@ -641,6 +652,7 @@ const DEFAULT_SETTINGS = {
 
   allMailFolderIds: {} as Record<string, string[]>,
   preferredIdentityIds: {} as Record<string, string>,
+  identityReturnPaths: {} as Record<string, string>,
 
   enableCrossUnreadView: false,
   enableCrossStarredView: false,
@@ -839,6 +851,7 @@ export const useSettingsStore = create<SettingsState>()(
           unifiedCrossAccount: state.unifiedCrossAccount,
           allMailFolderIds: state.allMailFolderIds,
           preferredIdentityIds: state.preferredIdentityIds,
+          identityReturnPaths: state.identityReturnPaths,
           enableCrossUnreadView: state.enableCrossUnreadView,
           enableCrossStarredView: state.enableCrossStarredView,
           enableCrossAllView: state.enableCrossAllView,
@@ -918,6 +931,11 @@ export const useSettingsStore = create<SettingsState>()(
               if (key === 'preferredIdentityIds' && !isPlainRecord(settings[key])) {
                 return;
               }
+              // Per-identity map (identityId -> return-path email); ignore any
+              // non-record value rather than corrupting the map.
+              if (key === 'identityReturnPaths' && !isPlainRecord(settings[key])) {
+                return;
+              }
               // The list order is sent to the server as a sort array, so an
               // unknown criterion from a newer/older client must never get
               // through (an unsupportedSort refusal empties the folder).
@@ -939,7 +957,7 @@ export const useSettingsStore = create<SettingsState>()(
               // the map and the composer picks another account's default sender
               // (login-order dependent). File imports (no serverAccountId)
               // still replace wholesale.
-              if (opts?.serverAccountId && (key === 'preferredIdentityIds' || key === 'allMailFolderIds')) {
+              if (opts?.serverAccountId && (key === 'preferredIdentityIds' || key === 'allMailFolderIds' || key === 'identityReturnPaths')) {
                 const existing = (get() as unknown as Record<string, unknown>)[key];
                 const merged: Record<string, unknown> = isPlainRecord(existing) ? { ...existing } : {};
                 const incoming = settings[key] as Record<string, unknown>;
@@ -1032,6 +1050,16 @@ export const useSettingsStore = create<SettingsState>()(
         const angleMatch = trimmed.match(/^(.+?)\s*<([^>]+)>$/);
         const emailAddress = (angleMatch ? angleMatch[2] : trimmed).toLowerCase().trim();
         return get().trustedSenders.includes(emailAddress);
+      },
+
+      // Per-identity return path methods
+      setIdentityReturnPath: (identityId: string, returnPath: string) => {
+        set({ identityReturnPaths: { ...get().identityReturnPaths, [identityId]: returnPath } });
+      },
+
+      removeIdentityReturnPath: (identityId: string) => {
+        const { [identityId]: _, ...rest } = get().identityReturnPaths;
+        set({ identityReturnPaths: rest });
       },
 
       // Keyword methods
@@ -1180,6 +1208,9 @@ export const useSettingsStore = create<SettingsState>()(
             if (!isPlainRecord(state.preferredIdentityIds)) {
               state.preferredIdentityIds = {};
             }
+            if (!isPlainRecord(state.identityReturnPaths)) {
+              state.identityReturnPaths = {};
+            }
             state.messageListOrder = sanitizeSortLevels(state.messageListOrder);
             if (state.messageListOrderScope !== 'inbox' && state.messageListOrderScope !== 'all') {
               state.messageListOrderScope = 'inbox';
@@ -1256,6 +1287,11 @@ export function migrateSettings(persisted: unknown, version: number): SettingsSt
         // already received it via main's v6 bump keep their populated map.
         if (version < 6 || !isPlainRecord(state.preferredIdentityIds)) {
           state.preferredIdentityIds = {};
+        }
+        // Per-identity return-path map (envelope MAIL FROM override). New
+        // field, so any persisted state predates it - coerce to an empty map.
+        if (!isPlainRecord(state.identityReturnPaths)) {
+          state.identityReturnPaths = {};
         }
         return state as unknown as SettingsState;
 }

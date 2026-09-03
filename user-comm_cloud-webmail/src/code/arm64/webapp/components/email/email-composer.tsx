@@ -2119,7 +2119,15 @@ export function EmailComposer({
     const fromName = overrideActive
       ? (fromOverrideName.trim() || undefined)
       : (currentIdentity?.name || undefined);
-    const envelopeMailFrom = overrideActive ? identityFromEmail : undefined;
+    // Per-identity envelope MAIL FROM override (settings-store.identityReturnPaths):
+    // lets several identities share the same visible From while routing
+    // outbound SMTP via different envelope senders. A From override always
+    // wins (its own envelope-vs-header split above); otherwise use the
+    // selected identity's configured return path, if any.
+    const identityReturnPath = currentIdentity?.id
+      ? useSettingsStore.getState().identityReturnPaths[currentIdentity.id]
+      : undefined;
+    const envelopeMailFrom = overrideActive ? identityFromEmail : (identityReturnPath || undefined);
 
     // Body is already HTML from the rich text editor (or plain text in plain
     // text mode). Where the signature is already part of it (compose mode,
