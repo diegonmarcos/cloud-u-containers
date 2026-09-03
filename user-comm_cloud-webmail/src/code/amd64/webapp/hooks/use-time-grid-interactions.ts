@@ -1,0 +1,354 @@
+import { useState, useCallback, useRef, type PointerEvent, type DragEvent } from "react";
+import { format } from "date-fns";
+import { useAuthStore } from "@/stores/auth-store";
+import { useCalendarStore } from "@/stores/calendar-store";
+import { toast } from "@/stores/toast-store";
+import { debug } from "@/lib/debug";
+import type { Calendar } from "@/lib/jmap/types";
+
+interface DragCreateState {
+  dayKey: string;
+  startMinutes: number;
+  endMinutes: number;
+}
+
+interface ResizeState {
+  eventId: string;
+  heightPx: number;
+  durationMinutes: number;
+}
+
+export interface QuickCreateState {
+  dayKey: string;
+  day: Date;
+  hour: number;
+  top: number;
+}
+
+interface DropTargetState {
+  dayKey: string;
+  minutes: number;
+}
+
+interface UseTimeGridInteractionsOptions {
+  hourHeight: number;
+  calendars: Calendar[];
+  onCreateRange: (startDate: Date, endDate?: Date) => void;
+  errorMessages: {
+    resize: string;
+    move: string;
+    created: string;
+    error: string;
+  };
+}
+
+export function useTimeGridInteractions({
+  hourHeight,
+  calendars,
+  onCreateRange,
+  errorMessages,
+}: UseTimeGridInteractionsOptions) {
+  const snapToMinutes = useCallback((clientY: number, containerTop: number): number => {
+    const raw = ((clientY - containerTop) / hourHeight) * 60;
+    return Math.max(0, Math.min(1440, Math.round(raw / 15) * 15));
+  }, [hourHeight]);
+
+  const wasDragging = useRef(false);
+
+  // --- Drag-to-create ---
+  const dragRef = useRef<{
+    dayKey: string;
+    dayDate: Date;
+    startMinutes: number;
+    pointerId: number;
+    startY: number;
+    captured: boolean;
+  } | null>(null);
+
+  const [dragCreate, setDragCreate] = useState<DragCreateState | null>(null);
+
+  const handleGridPointerDown = useCallback((
+    e: PointerEvent<HTMLDivElement>,
+    dayKey: string,
+    dayDate: Date,
+  ) => {
+    if (e.button !== 0) return;
+    if ((e.target as HTMLElement).closest("[data-calendar-event], [data-resize-handle]")) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const minutes = snapToMinutes(e.clientY, rect.top);
+
+    dragRef.current = {
+      dayKey, dayDate, startMinutes: minutes,
+      pointerId: e.pointerId, startY: e.clientY, captured: false,
+    };
+  }, [snapToMinutes]);
+
+  const handleGridPointerMove = useCallback((e: PointerEvent<HTMLDivElement>) => {
+    if (!dragRef.current) return;
+
+    if (!dragRef.current.captured) {
+      if (Math.abs(e.clientY - dragRef.current.startY) < 5) return;
+      dragRef.current.captured = true;
+      e.currentTarget.setPointerCapture(dragRef.current.pointerId);
+    }
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const currentMinutes = snapToMinutes(e.clientY, rect.top);
+    const start = Math.min(dragRef.current.startMinutes, currentMinutes);
+    const end = Math.max(dragRef.current.startMinutes, currentMinutes);
+
+    setDragCreate(end > start ? { dayKey: dragRef.current.dayKey, startMinutes: start, endMinutes: end } : null);
+  }, [snapToMinutes]);
+
+  const handleGridPointerUp = useCallback((e: PointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    dragRef.current = null;
+    setDragCreate(null);
+
+    if (!drag || !drag.captured) return;
+
+    wasDragging.current = true;
+    requestAnimationFrame(() => { wasDragging.current = false; });
+
+    try { e.currentTarget.releasePointerCapture(drag.pointerId); } catch { /* may already be released */ }
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const endMinutes = snapToMinutes(e.clientY, rect.top);
+    const start = Math.min(drag.startMinutes, endMinutes);
+    const end = Math.max(drag.startMinutes, endMinutes);
+
+    if (end - start < 15) return;
+
+    const startDate = new Date(drag.dayDate);
+    startDate.setHours(Math.floor(start / 60), start % 60, 0, 0);
+    const endDate = new Date(drag.dayDate);
+    endDate.setHours(Math.floor(end / 60), end % 60, 0, 0);
+    onCreateRange(startDate, endDate);
+  }, [snapToMinutes, onCreateRange]);
+
+  // --- Resize ---
+  const resizeRef = useRef<{
+    eventId: string;
+    startY: number;
+    originalDurationMinutes: number;
+    originalHeightPx: number;
+    pointerId: number;
+  } | null>(null);
+
+  const [resizeVisual, setResizeVisual] = useState<ResizeState | null>(null);
+
+  const handleResizePointerDown = useCallback((
+    eventId: string,
+    originalDurationMinutes: number,
+    e: PointerEvent,
+  ) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    const originalHeightPx = Math.max(20, (originalDurationMinutes / 60) * hourHeight);
+    resizeRef.current = {
+      eventId,
+      startY: e.clientY,
+      originalDurationMinutes,
+      originalHeightPx,
+      pointerId: e.pointerId,
+    };
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  }, [hourHeight]);
+
+  const handleResizePointerMove = useCallback((e: PointerEvent) => {
+    if (!resizeRef.current) return;
+
+    const deltaY = e.clientY - resizeRef.current.startY;
+    const newHeightPx = Math.max(hourHeight / 4, resizeRef.current.originalHeightPx + deltaY);
+    const newDurationMinutes = Math.max(15, Math.round((newHeightPx / hourHeight) * 60 / 15) * 15);
+    const snappedHeight = (newDurationMinutes / 60) * hourHeight;
+
+    setResizeVisual({ eventId: resizeRef.current.eventId, heightPx: snappedHeight, durationMinutes: newDurationMinutes });
+  }, [hourHeight]);
+
+  const handleResizePointerUp = useCallback(async (e: PointerEvent) => {
+    const resize = resizeRef.current;
+    resizeRef.current = null;
+
+    if (!resize) return;
+
+    wasDragging.current = true;
+    requestAnimationFrame(() => { wasDragging.current = false; });
+
+    try { (e.target as HTMLElement).releasePointerCapture(resize.pointerId); } catch { /* may already be released */ }
+
+    const deltaY = e.clientY - resize.startY;
+    const newHeightPx = Math.max(hourHeight / 4, resize.originalHeightPx + deltaY);
+    const newDurationMinutes = Math.max(15, Math.round((newHeightPx / hourHeight) * 60 / 15) * 15);
+
+    if (newDurationMinutes === resize.originalDurationMinutes) {
+      setResizeVisual(null);
+      return;
+    }
+
+    const hours = Math.floor(newDurationMinutes / 60);
+    const mins = newDurationMinutes % 60;
+    let dur = "PT";
+    if (hours > 0) dur += `${hours}H`;
+    if (mins > 0) dur += `${mins}M`;
+    if (dur === "PT") dur = "PT0M";
+
+    const client = useAuthStore.getState().client;
+    if (!client) {
+      setResizeVisual(null);
+      toast.error(errorMessages.resize);
+      return;
+    }
+
+    try {
+      const event = useCalendarStore.getState().events.find(ev => ev.id === resize.eventId);
+      const hasParticipants = event?.participants && Object.keys(event.participants).length > 0;
+      await useCalendarStore.getState().updateEvent(client, resize.eventId, { duration: dur }, hasParticipants || undefined);
+    } catch (error) {
+      debug.error("Failed to resize event:", resize.eventId, error);
+      toast.error(errorMessages.resize);
+    } finally {
+      setResizeVisual(null);
+    }
+  }, [hourHeight, errorMessages.resize]);
+
+  // --- Click / Double-click / Quick-create ---
+  const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [quickCreate, setQuickCreate] = useState<QuickCreateState | null>(null);
+
+  const handleSlotClick = useCallback((day: Date, hour: number) => {
+    if (wasDragging.current) return;
+    if (clickTimerRef.current) {
+      clearTimeout(clickTimerRef.current);
+      clickTimerRef.current = null;
+      return;
+    }
+    clickTimerRef.current = setTimeout(() => {
+      clickTimerRef.current = null;
+      const d = new Date(day);
+      d.setHours(hour, 0, 0, 0);
+      onCreateRange(d);
+    }, 250);
+  }, [onCreateRange]);
+
+  const handleSlotDoubleClick = useCallback((day: Date, hour: number) => {
+    if (wasDragging.current) return;
+    if (clickTimerRef.current) {
+      clearTimeout(clickTimerRef.current);
+      clickTimerRef.current = null;
+    }
+    const key = format(day, "yyyy-MM-dd");
+    setQuickCreate({ dayKey: key, day, hour, top: hour * hourHeight });
+  }, [hourHeight]);
+
+  const handleQuickCreateSubmit = useCallback(async (title: string) => {
+    if (!quickCreate) return;
+    const client = useAuthStore.getState().client;
+    if (!client) {
+      setQuickCreate(null);
+      toast.error(errorMessages.error);
+      return;
+    }
+    try {
+      const startDate = new Date(quickCreate.day);
+      startDate.setHours(quickCreate.hour, 0, 0, 0);
+      const startStr = format(startDate, "yyyy-MM-dd'T'HH:mm:ss");
+      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const defaultCal = calendars.find(c => c.isDefault) || calendars[0];
+      const created = await useCalendarStore.getState().createEvent(client, {
+        title,
+        start: startStr,
+        duration: "PT1H",
+        timeZone,
+        calendarIds: defaultCal ? { [defaultCal.id]: true } : {},
+        status: "confirmed",
+        freeBusyStatus: "busy",
+        privacy: "public",
+      });
+      setQuickCreate(null);
+      if (created) toast.success(errorMessages.created);
+      else toast.error(errorMessages.error);
+    } catch (error) {
+      debug.error("Failed to quick-create event:", error);
+      setQuickCreate(null);
+      toast.error(errorMessages.error);
+    }
+  }, [quickCreate, calendars, errorMessages.created, errorMessages.error]);
+
+  const handleQuickCreateCancel = useCallback(() => {
+    setQuickCreate(null);
+  }, []);
+
+  // --- DnD drop ---
+  const [dropTarget, setDropTarget] = useState<DropTargetState | null>(null);
+
+  const snapDragMinutes = useCallback((e: DragEvent<HTMLDivElement>): number => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const y = e.clientY - rect.top;
+    const raw = (y / hourHeight) * 60;
+    return Math.max(0, Math.min(1425, Math.round(raw / 15) * 15));
+  }, [hourHeight]);
+
+  const handleColumnDragOver = useCallback((e: DragEvent<HTMLDivElement>, dayKey: string) => {
+    if (!e.dataTransfer.types.includes("application/x-calendar-event")) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    const minutes = snapDragMinutes(e);
+    setDropTarget((prev) =>
+      prev?.dayKey === dayKey && prev?.minutes === minutes ? prev : { dayKey, minutes }
+    );
+  }, [snapDragMinutes]);
+
+  const handleColumnDragLeave = useCallback((e: DragEvent<HTMLDivElement>) => {
+    const related = e.relatedTarget as Node | null;
+    if (!e.currentTarget.contains(related)) setDropTarget(null);
+  }, []);
+
+  const handleColumnDrop = useCallback(async (e: DragEvent<HTMLDivElement>, day: Date) => {
+    e.preventDefault();
+    setDropTarget(null);
+    const json = e.dataTransfer.getData("application/x-calendar-event");
+    if (!json) return;
+    try {
+      const data = JSON.parse(json);
+      const minutes = snapDragMinutes(e);
+      const newStart = new Date(day);
+      newStart.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
+      const newStartISO = format(newStart, "yyyy-MM-dd'T'HH:mm:ss");
+      if (newStartISO === data.originalStart) return;
+      const client = useAuthStore.getState().client;
+      if (!client) {
+        toast.error(errorMessages.move);
+        return;
+      }
+      const event = useCalendarStore.getState().events.find(ev => ev.id === data.eventId);
+      const hasParticipants = event?.participants && Object.keys(event.participants).length > 0;
+      await useCalendarStore.getState().updateEvent(client, data.eventId, { start: newStartISO }, hasParticipants || undefined);
+    } catch {
+      toast.error(errorMessages.move);
+    }
+  }, [snapDragMinutes, errorMessages.move]);
+
+  return {
+    dragCreate,
+    handleGridPointerDown,
+    handleGridPointerMove,
+    handleGridPointerUp,
+    resizeVisual,
+    handleResizePointerDown,
+    handleResizePointerMove,
+    handleResizePointerUp,
+    wasDragging,
+    quickCreate,
+    handleSlotClick,
+    handleSlotDoubleClick,
+    handleQuickCreateSubmit,
+    handleQuickCreateCancel,
+    dropTarget,
+    handleColumnDragOver,
+    handleColumnDragLeave,
+    handleColumnDrop,
+  };
+}

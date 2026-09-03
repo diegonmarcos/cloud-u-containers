@@ -1,0 +1,81 @@
+{
+  "name": "cloud-webmail",
+  "description": "Cloud Webmail — native-JMAP webmail client for Stalwart (webmail.diegonmarcos.com); OUR rebrand+build of root-fr/jmap-webmail v1.7.1. Replaces SnappyMail.",
+  "dns": "webmail.diegonmarcos.com",
+  "domain": "webmail.diegonmarcos.com",
+  "ports": {
+    "app": 3000
+  },
+  "category": "app",
+  "build": {
+    "include_cloud_data": "true",
+    "headers_enforced": true
+  },
+  "deploy": {
+    "host": "oci-mail",
+    "remote_path": "/opt/containers/cloud-webmail",
+    "excludes": [
+      "data/**"
+    ],
+    "compose_flags": "--build"
+  },
+  "compose": {
+    "custom": true
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "cloud-webmail-binaries",
+    "dockerfile": "code/amd64/Dockerfile",
+    "arch": "amd64"
+  },
+  "proxy": {
+    "primary": {
+      "domain": "webmail.diegonmarcos.com",
+      "auth": "two_factor"
+    }
+  },
+  "containers": {
+    "app": {
+      "container_name": "cloud-webmail",
+      "image": "ghcr.io/diegonmarcos/cloud-webmail-binaries:latest",
+      "port": 3000,
+      "port_env": "PORT",
+      "dns": "webmail.diegonmarcos.com",
+      "public": true,
+      "proxy": {
+        "primary": {
+          "domain": "webmail.diegonmarcos.com",
+          "auth": "two_factor"
+        }
+      },
+      "healthcheck": "/api/health",
+      "monitoring": null,
+      "volumes": [],
+      "env_file": false,
+      "depends_on": [],
+      "resources": {
+        "mem_reservation": "256M"
+      },
+      "read_only": false,
+      "protocol": "http",
+      "embedded_dbs": []
+    }
+  },
+  "resources": {
+    "mem_reservation": "256M"
+  },
+  "_doc": {
+    "upstream": "root-fr/jmap-webmail @ v1.7.1 (commit d682f5fe238545f34c93947797ad8548ae4d55be), vendored + rebranded under src/code/amd64/webapp/. Built as ghcr.io/diegonmarcos/cloud-webmail-binaries by our CI (Type A, own Dockerfile). NOT their prebuilt image.",
+    "container_port": "3000 (Next.js standalone; PORT/HOSTNAME env). healthcheck GET /api/health.",
+    "runtime_env_non_secret": {
+      "APP_NAME": "Cloud Webmail (UI title, set inline in compose)",
+      "JMAP_SERVER_URL": "https://jmap.diegonmarcos.com (Stalwart native JMAP, 443)",
+      "LOG_FORMAT": "json",
+      "LOG_LEVEL": "info"
+    },
+    "auth": "SHIPPING with password/basic auth against Stalwart JMAP (OAUTH_ENABLED unset). Behind Authelia two_factor at the proxy edge. OIDC-PKCE is a documented follow-up — see _oidc_followup.",
+    "secrets_followup": "SESSION_SECRET (openssl rand -base64 32) enables 'remember me'; OPTIONAL, function works without it. To wire: parent creates src/secrets.yaml (sops/age) with SESSION_SECRET — the engine then auto-adds env_file:[.secrets] + mounts. Until then remember-me is disabled. See src/secrets.schema.md.",
+    "_oidc_followup": "To upgrade to Authelia SSO: (1) register a PUBLIC PKCE client in a_solutions/infra-sec_authelia/src/oidc-clients.json { client_id:'cloud-webmail', client_name:'Cloud Webmail', public:true, authorization_policy:'two_factor', redirect_uris:['https://webmail.diegonmarcos.com/en/auth/callback'], scopes:['openid','profile','email'], response_types:['code'], grant_types:['authorization_code'], token_endpoint_auth_method:'none', require_pkce:true, pkce_challenge_method:'S256' }; (2) set env OAUTH_ENABLED=true, OAUTH_CLIENT_ID=cloud-webmail, OAUTH_ISSUER_URL=https://auth.diegonmarcos.com. CAVEAT: root-fr discovers OAuth from OAUTH_ISSUER_URL but the JMAP server (Stalwart) must ACCEPT those tokens — Stalwart<->Authelia OIDC federation must be configured first, otherwise login token exchange fails. That is why v1 ships password auth.",
+    "container_arg": "flake.nix passes container={} inline (engine only reads container.container.image, unused for Type A) — so NO src/build-cloud-webmail.json symlink is created and the flake evals standalone; derive need not pre-generate it for this service."
+  }
+}
