@@ -22,10 +22,12 @@
   "compose": {
     "custom": true
   },
+  "_upstream_image_doc": "Type-A vendored-Dockerfile build. Top-level upstream_image makes the ship engine (cloud-ship-container-step-build-docker.sh) select BUILD_CONTEXT=dist/code/<arch> and build our own multi-stage src/code/arm64/Dockerfile (staged there by engine.nix via nativeBuild.dockerfile). It is NOT a FROM-override — the real multi-stage Dockerfile (node:24-alpine builder → runner) is preserved. Pairs with docker.dockerfile='Dockerfile' (the flat name engine.nix emits into dist/code/<arch>/), NOT a nested path: BUILD_CONTEXT is already dist/code/<arch>, so a nested 'code/arm64/Dockerfile' resolved to dist/code/arm64/code/arm64/Dockerfile → missing → step_docker fell through to a configs-only push (binaries image never built).",
+  "upstream_image": "node:24-alpine",
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
     "image": "cloud-webmail-binaries",
-    "dockerfile": "code/arm64/Dockerfile",
+    "dockerfile": "Dockerfile",
     "arch": "arm64"
   },
   "proxy": {
