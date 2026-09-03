@@ -22,12 +22,12 @@
         srcDir = ./.;
         templates = [];
         # Type A — we own the build. Engine vendors this Dockerfile verbatim
-        # into dist/code/amd64/Dockerfile and copies ./code/amd64/webapp (the
+        # into dist/code/arm64/Dockerfile and copies ./code/arm64/webapp (the
         # rebranded root-fr/jmap-webmail source) into the build context so the
         # multi-stage Next.js build has its sources.
         nativeBuild = {
-          dockerfile = ./code/amd64/Dockerfile;
-          extraFiles = [ ./code/amd64/webapp ];
+          dockerfile = ./code/arm64/Dockerfile;
+          extraFiles = [ ./code/arm64/webapp ];
         };
         composeSpec = import ./compose.nix { inherit buildJson; container = {}; };
         title = "Cloud Webmail";

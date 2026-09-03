@@ -2,7 +2,7 @@
 # Multi-stage build of the VENDORED, rebranded root-fr/jmap-webmail source
 # (v1.7.1, commit d682f5fe238545f34c93947797ad8548ae4d55be) that lives in
 # ./webapp/ (engine copies it into the build context via nativeBuild.extraFiles).
-# Build context = dist/code/amd64/, so all COPY paths are relative to webapp/.
+# Build context = dist/code/arm64/, so all COPY paths are relative to webapp/.
 FROM node:24-alpine AS builder
 WORKDIR /app
 COPY webapp/package.json webapp/package-lock.json ./

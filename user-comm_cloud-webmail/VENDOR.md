@@ -11,8 +11,8 @@ image and this is NOT a GitHub fork.
 | Upstream | `github.com/root-fr/jmap-webmail` |
 | Pinned tag | `v1.7.1` |
 | Pinned commit | `d682f5fe238545f34c93947797ad8548ae4d55be` |
-| License | MIT (see `src/code/amd64/webapp/LICENSE`) |
-| Vendored at | `src/code/amd64/webapp/` |
+| License | MIT (see `src/code/arm64/webapp/LICENSE`) |
+| Vendored at | `src/code/arm64/webapp/` |
 | Our image | `ghcr.io/diegonmarcos/cloud-webmail-binaries:latest` (Type A) |
 
 ## Rebrand applied (cosmetic + naming only — client logic untouched)
@@ -30,7 +30,7 @@ image and this is NOT a GitHub fork.
 ## Refreshing the vendor
 
 Re-clone upstream at the new tag, re-apply the two edits above, replace
-`src/code/amd64/webapp/`, update the commit sha here and in `build.json._doc`,
+`src/code/arm64/webapp/`, update the commit sha here and in `build.json._doc`,
 then re-ship. Pruned from the snapshot (not needed to build): upstream
 `Dockerfile`, `docker-compose.yml`, `.dockerignore`, `.gitignore`, and the
 `README/ROADMAP/CONTRIBUTING/CHANGELOG` docs. `LICENSE` is kept (MIT).
