@@ -44,6 +44,7 @@ const PRESETS: Record<string, Record<string, string[]>> = {
     "tf-drift": ["__terraform__", "plan", "-detailed-exitcode"],
     "tf-state": ["__terraform__", "state", "list"],
     "tf-output": ["__terraform__", "output", "-json"],
+    "gpu-quota": ["__gpu_quota__"],
   },
   oci: {
     "instances": ["compute", "instance", "list", "--compartment-id", "${OCI_COMPARTMENT_ID}", "--output", "table", "--query", "data[*].{Name:\"display-name\",State:\"lifecycle-state\",Shape:shape,AD:\"availability-domain\"}"],
@@ -149,6 +150,95 @@ async function runCloudflareApi(path: string, jqFilter?: string): Promise<string
 // GENERIC HANDLER
 // ──────────────────────────────────────────────────────────────────────────────
 
+// Correct shell-like tokenizer for raw CLI arg strings (obs.debug.vps_* "raw
+// args" path — presets never go through this). The previous implementation
+// (`command.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g)` then a blanket
+// `.replace(/^["']|["']$/g, "")` on each captured token) strips quote
+// characters ONLY from the very start/end of a token, not wherever they
+// actually open/close — so `--format="value(quotas.filter('X').limit)"`
+// (a real gcloud filter expression: outer double-quotes around a format
+// string, an inner single-quoted filter() argument) has its OPENING `"`
+// preserved (it sits after `--format=`, not at token-start) while its
+// CLOSING `"` gets stripped (it IS the token's last char) — the result is a
+// dangling open quote, which gcloud rejects with "Unterminated [\"] quote".
+// Since this proxy execs argv directly (no shell in between — see runCli /
+// execAsync), no shell ever gets a chance to consume the outer quotes either,
+// so they must be stripped HERE, correctly, character by character, exactly
+// like a POSIX shell's word-splitting: unquoted whitespace splits tokens,
+// a quote character (' or ") starts a literal run that ends at its own kind
+// of matching quote (contents, including the OTHER quote character, kept
+// verbatim), and quote markers are removed from the token but nothing inside
+// them is otherwise touched. No backslash-escape handling — gcloud filter/
+// format expressions never need it, and it is out of scope for this proxy.
+function tokenizeShellLike(command: string): string[] {
+  const tokens: string[] = [];
+  let cur = "";
+  let inToken = false;
+  let quote: '"' | "'" | null = null;
+  for (let i = 0; i < command.length; i++) {
+    const ch = command[i];
+    if (quote) {
+      if (ch === quote) {
+        quote = null;
+      } else {
+        cur += ch;
+      }
+      continue;
+    }
+    if (ch === '"' || ch === "'") {
+      quote = ch;
+      inToken = true;
+      continue;
+    }
+    if (/\s/.test(ch)) {
+      if (inToken) {
+        tokens.push(cur);
+        cur = "";
+        inToken = false;
+      }
+      continue;
+    }
+    cur += ch;
+    inToken = true;
+  }
+  if (inToken) tokens.push(cur);
+  return tokens.length > 0 ? tokens : [command];
+}
+
+// gcloud "gpu-quota" preset — a per-region NVIDIA_*_GPUS quota table
+// (limit vs current usage), across every region the project has access to.
+// `gcloud compute regions list` already returns each region's FULL quotas
+// array (compute regions describe does too, one region at a time — list is
+// one call for all of them), just hidden behind --format=table by the other
+// presets here; this pulls --format=json and reduces it server-side instead
+// of leaving the caller to hand-write a `--format=value(quotas.filter(...))`
+// expression through the raw-args path (exactly the expression that exposed
+// the tokenizer bug above, 2026-09-03, hunting GPU zonal stockouts across
+// regions for the cgc GPU-embed VM). GPU-only + zero-limit regions dropped —
+// a wall of 40 regions with limit 0 buries the ones that matter.
+async function gpuQuotaReport(): Promise<string> {
+  const r = await execAsync("gcloud", ["compute", "regions", "list", "--format=json"], { timeout: 30_000 });
+  if (!r.ok) return `EXIT ${r.exitCode}\n${r.stderr.trim()}`;
+  let regions: Array<{ name: string; quotas?: Array<{ metric: string; limit: number; usage: number }> }>;
+  try {
+    regions = JSON.parse(r.stdout);
+  } catch {
+    return `Failed to parse gcloud JSON output:\n${r.stdout.slice(0, 500)}`;
+  }
+  const rows: string[] = [];
+  for (const region of regions) {
+    const gpuQuotas = (region.quotas ?? []).filter(
+      (q) => /^(PREEMPTIBLE_)?NVIDIA_/.test(q.metric) && !q.metric.includes("_VWS_") && q.limit > 0
+    );
+    if (gpuQuotas.length === 0) continue;
+    for (const q of gpuQuotas) {
+      rows.push(`${region.name.padEnd(16)} ${q.metric.padEnd(28)} limit=${q.limit} usage=${q.usage}`);
+    }
+  }
+  if (rows.length === 0) return "No region reports a nonzero NVIDIA_*_GPUS quota.";
+  return `GPU quota by region (limit > 0 only; PREEMPTIBLE_CPUS may still be 0 project-wide — check separately):\n${"─".repeat(70)}\n${rows.join("\n")}`;
+}
+
 async function handleVpsCommand(provider: string, command: string): Promise<string> {
   const presets = PRESETS[provider];
   const sections: string[] = [];
@@ -186,6 +276,11 @@ async function handleVpsCommand(provider: string, command: string): Promise<stri
       return runGhcr(args[1], command);
     }
 
+    // GPU quota report (gcloud only)
+    if (args[0] === "__gpu_quota__") {
+      return gpuQuotaReport();
+    }
+
     // Expand env vars in args
     const expandedArgs = args.map((a) =>
       a.replace(/\$\{(\w+)\}/g, (_, v) => process.env[v] ?? "")
@@ -198,8 +293,7 @@ async function handleVpsCommand(provider: string, command: string): Promise<stri
   }
 
   // Raw command — split by spaces (respecting quotes)
-  const rawArgs = command.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g) ?? [command];
-  const cleanArgs = rawArgs.map((a) => a.replace(/^["']|["']$/g, ""));
+  const cleanArgs = tokenizeShellLike(command);
 
   sections.push(`${provider.toUpperCase()} → ${command}`);
   sections.push("─".repeat(50));
