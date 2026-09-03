@@ -2973,7 +2973,13 @@ export function MailApp({ linkSegments }: MailAppProps = {}) {
       : primaryIdentity;
     const headerFromEmail = resolved?.overrideEmail || sendingIdentity?.email;
     const headerFromName = resolved?.overrideName || sendingIdentity?.name || undefined;
-    const envelopeMailFrom = resolved?.overrideEmail ? sendingIdentity?.email : undefined;
+    // Per-identity envelope MAIL FROM override (settings-store.identityReturnPaths),
+    // same precedence as the full composer: an explicit From override wins,
+    // otherwise fall back to the sending identity's configured return path.
+    const identityReturnPath = sendingIdentity?.id
+      ? useSettingsStore.getState().identityReturnPaths[sendingIdentity.id]
+      : undefined;
+    const envelopeMailFrom = resolved?.overrideEmail ? sendingIdentity?.email : (identityReturnPath || undefined);
 
     // Append signature from the sending identity (fall back to primary
     // when the reply-from lives on the same identity but a different alias).

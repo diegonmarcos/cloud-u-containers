@@ -81,10 +81,14 @@ existing = (mr[0][1].get("list") if mr else []) or []
 by_name = {x.get("name"): x.get("id") for x in existing if x.get("name")}
 
 default_route_name = None
+sender_routes = []          # [(envelope_sender_address, route_name), ...]
 exit_code = 0
 for route in routes:
     name = route["name"]
-    user = read_secret(route.get("auth_username_env"))
+    # Username may be a literal (`auth_username`, e.g. a plain mailbox address —
+    # not sensitive) or read from a secret file (`auth_username_env`). The
+    # password is always a secret.
+    user = route.get("auth_username") or read_secret(route.get("auth_username_env"))
     pw   = read_secret(route.get("auth_secret_env"))
     payload = {
         "@type": "Relay",
@@ -122,6 +126,14 @@ for route in routes:
 
     if route.get("default_outbound"):
         default_route_name = name
+    # Per-sender leg: this route is selected when the envelope MAIL FROM equals
+    # `sender_match`. Lets several identities that share the same header From
+    # (e.g. me@) route to different relays by their envelope sender
+    # (me+maddy@ -> maddy-relay, me+gmail@ -> google-relay). cloud-webmail sets
+    # the envelope via the per-identity return-path; FairEmail uses distinct
+    # SMTP servers directly and does not rely on this.
+    if route.get("sender_match"):
+        sender_routes.append((route["sender_match"], name))
 
 # Wire MtaOutboundStrategy.route → relay everything via <default-route-name>
 # EXCEPT local-domain mail, which must still hit Stalwart's own "local"
@@ -135,7 +147,7 @@ for route in routes:
 # Singletons have a fixed id of literally "singleton" (Id::singleton() ==
 # 20080258862541, base32-encoded via the custom alphabet — see
 # crates/types/src/id.rs::as_string). Update by that id directly.
-if default_route_name:
+if default_route_name or sender_routes:
     SINGLETON_ID = "singleton"
     # Stalwart serializes its `List<T>` properties as index-keyed maps,
     # NOT JSON arrays. Confirmed by GET on the singleton:
@@ -144,15 +156,28 @@ if default_route_name:
     #   invalidPatch — Invalid value for object property — [route/match]
     # The schema lists the type as `list of x:ExpressionMatch` but the
     # JSON wire format is map<stringIndex, ExpressionMatch>.
+    #
+    # Arm 0 keeps local-domain mail on Stalwart's own "local" route (never
+    # relay internal mail out). Arms 1..N are the per-sender legs, evaluated in
+    # order; each routes an envelope MAIL FROM to its relay. Anything that
+    # matches no arm falls through to `else` = the default_outbound route (oci)
+    # — so a wrong/normalized sender is a safe degrade to the primary relay, not
+    # a bounce. `sender` is the envelope MAIL FROM (mirrors the built-in
+    # `rcpt_domain`); if a Stalwart version exposes it under another name the
+    # arm simply never fires and mail still leaves via oci.
+    match = {"0": {"if": "is_local_domain(rcpt_domain)", "then": "'local'"}}
+    for i, (snd, rname) in enumerate(sender_routes, start=1):
+        match[str(i)] = {"if": "sender == '" + snd + "'", "then": "'" + rname + "'"}
     strat_route = {
-        "match": {"0": {"if": "is_local_domain(rcpt_domain)", "then": "'local'"}},
-        "else": "'" + default_route_name + "'",
+        "match": match,
+        "else": "'" + (default_route_name or "local") + "'",
     }
     rr = jmap([["x:MtaOutboundStrategy/set",
         {"accountId": acct, "update": {SINGLETON_ID: {"route": strat_route}}}, "0"]])
     u = (rr.get("methodResponses") or [[None,{}]])[0][1]
     if u.get("updated"):
-        print(f"  MtaOutboundStrategy.route: local→'local', else→'{default_route_name}'")
+        legs = "".join(f", {s}→'{n}'" for s, n in sender_routes)
+        print(f"  MtaOutboundStrategy.route: local→'local'{legs}, else→'{default_route_name or 'local'}'")
     else:
         print(f"  FAIL update strategy: {u.get('notUpdated') or rr}")
         exit_code = 1
