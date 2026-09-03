@@ -459,7 +459,16 @@ fi
 CONTAINER="${MCP_CONTAINER:-}"
 NTFY="${NTFY_URL:-}"
 if [ -n "$CONTAINER" ]; then
-  if docker restart "$CONTAINER" >/dev/null 2>&1; then
+  # Bring the MCP back up on the swapped volume, then VERIFY it is actually
+  # running before trusting it. `docker restart` only works on a container that
+  # still EXISTS; if a concurrent op removed it (observed 2026-09-03: restart
+  # failed, container gone, and because the kg-store refresh below was gated on
+  # THIS restart's exit, the SurrealDB ingest was skipped — 8001/8002 kept STALE
+  # data while the run went green and the MCP stayed DOWN). So: restart, else
+  # start, then gate the refresh on the container being RUNNING — not on which
+  # command brought it up.
+  docker restart "$CONTAINER" >/dev/null 2>&1 || docker start "$CONTAINER" >/dev/null 2>&1 || true
+  if [ "$(docker inspect -f '{{.State.Running}}' "$CONTAINER" 2>/dev/null)" = "true" ]; then
     echo "[cgc-db-restore-all] restarted $CONTAINER"
     # ── kg-store (SurrealDB) refresh — closes the split-pipeline gap ─────────
     # Both MCP containers run the SAME binaries image (python3 + node +
@@ -553,7 +562,8 @@ if [ -n "$CONTAINER" ]; then
       echo "[cgc-db-restore-all] kg-store refresh skipped — no repos staged this run"
     fi
   else
-    echo "[cgc-db-restore-all] WARN restart $CONTAINER failed"
+    echo "::error::[cgc-db-restore-all] $CONTAINER is DOWN after the swap (restart AND start both failed — likely removed by a concurrent op). The kg-store SurrealDB was NOT refreshed, so 8001/8002 hold STALE data. Recover: from /opt/containers/cloud-cgc-pub-mcp/compose run 'docker compose --env-file .secrets up -d cloud-cgc-pub-mcp cloud-cgc-pvt-mcp', then re-run the per-container OCTOCODE_SKIP_INDEX=1 reindex.sh tail."
+    RESTORE_MCP_FAILED=1
   fi
 fi
 if [ -n "$NTFY" ]; then
@@ -566,3 +576,6 @@ if [ -n "$NTFY" ]; then
   curl -sf -d "$_msg" -H "Title: cgc-db restore-all" -H "Tags: arrow_down,white_check_mark" "$NTFY/ops" >/dev/null 2>&1 || true
 fi
 echo "[cgc-db-restore-all] RESTORE COMPLETE"
+# A down MCP + un-refreshed store is a FAILED restore, not a warning — exit
+# non-zero so the pipeline goes RED instead of reporting success over stale data.
+[ "${RESTORE_MCP_FAILED:-0}" = 1 ] && { echo "::error::[cgc-db-restore-all] restore FAILED — MCP down and kg-store not refreshed (see recovery above)"; exit 1; }
