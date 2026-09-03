@@ -159,7 +159,12 @@
         "front-data",
         "cloud-data-my-ai-memory",
         "cloud-u-containers",
-        "cloud-u-android"
+        "cloud-u-android-matrix",
+        "cloud-u-android-chat",
+        "cloud-u-android-mail",
+        "cloud-u-android-vault",
+        "cloud-u-android-libs",
+        "cloud-u-android-apps"
       ],
       "_private_repos_comment": "Repos in index_repos whose GitHub source is PRIVATE. Their DBs must never land in the volume the PUBLIC MCP mounts. cloud-cgc-db-restore-all.sh filters these out unless CGC_INCLUDE_PRIVATE=1, which cloud-cgc-pvt-mcp will set together with its own CGC_DB_TARGET_VOLUME. Keep in sync with repo_map: the value is the local_name (the index_repos entry), not the GitHub remote name.",
       "private_repos": [
@@ -175,7 +180,21 @@
         "front-data": "front-data",
         "cloud-data-my-ai-memory": "cloud-data-my-ai-memory",
         "cloud-u-containers": "cloud-u-containers",
-        "cloud-u-android": "cloud-u-android"
+        "cloud-u-android-matrix": "cloud-u-android",
+        "cloud-u-android-chat": "cloud-u-android",
+        "cloud-u-android-mail": "cloud-u-android",
+        "cloud-u-android-vault": "cloud-u-android",
+        "cloud-u-android-libs": "cloud-u-android",
+        "cloud-u-android-apps": "cloud-u-android"
+      },
+      "_repo_subpaths_comment": "BREAKDOWN of an over-large repo into sub-repos that each fit under the octocode per-slice ceiling. cloud-u-android is ~27k files ≈ 12-15h of graphrag — far past GitHub's 6h hosted-runner kill — so a single slice always times out with 0 graph nodes and never advances. Sliced by top-level subpath into independent index units, each its OWN octocode project (path-keyed via --no-git on its sparse checkout), so a finished slice STAYS finished and android reaches full coverage over a few nightly runs instead of dying whole every time. clone = the repo_map remote to sparse-checkout from; include = subpaths to check out; exclude = catch-all (everything NOT claimed by the other slices) so new top-level dirs land here automatically. Honored by cloud-cgc-db-update.sh ensure_repos (sparse checkout) + the index call (--no-git for path-keyed distinct projects off one origin).",
+      "repo_subpaths": {
+        "cloud-u-android-matrix": { "clone": "cloud-u-android", "include": ["ac_cloud-matrix"] },
+        "cloud-u-android-chat": { "clone": "cloud-u-android", "include": ["ac_cloud-chat"] },
+        "cloud-u-android-mail": { "clone": "cloud-u-android", "include": ["ac_cloud-mail"] },
+        "cloud-u-android-vault": { "clone": "cloud-u-android", "include": ["ac_cloud-vault"] },
+        "cloud-u-android-libs": { "clone": "cloud-u-android", "include": ["ab_cloud-libs-shared"] },
+        "cloud-u-android-apps": { "clone": "cloud-u-android", "exclude": ["ac_cloud-matrix", "ac_cloud-chat", "ac_cloud-mail", "ac_cloud-vault", "ab_cloud-libs-shared"] }
       },
       "_graphrag_skip_comment": "Subset of index_repos (data-driven, no hardcoded names in the script) whose GraphRAG LLM relationship pass is skipped entirely — pure prose/text corpora have no code semantics to relate, so the pass is zero graph nodes for real per-node LLM cost. Structural/FastEmbed indexing (the semantic phase, USE_LLM=false) still runs normally; only the graphrag phase (USE_LLM=true) skips these repos. Honored by cloud-cgc-db-update.sh's per-repo loop.",
       "graphrag_skip": [],
