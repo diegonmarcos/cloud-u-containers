@@ -4,8 +4,10 @@ import {
   sortThreadGroups,
   getThreadParticipants,
   mergeThreadEmails,
-  getEmailColorTag,
-  getThreadColorTag,
+  getEmailTagId,
+  getEmailTagIds,
+  getThreadTagId,
+  getThreadTagIds,
 } from '../thread-utils';
 import type { Email, ThreadGroup } from '../jmap/types';
 
@@ -89,23 +91,20 @@ describe('groupEmailsByThread', () => {
     expect(groupEmailsByThread(emails)[0].hasAttachment).toBe(true);
   });
 
-  it('keeps threads from different accounts separate when threadId strings collide', () => {
+  it('detects hasAnswered when an email has $answered', () => {
     const emails = [
-      makeEmail({ id: 'e1', threadId: 'T1', receivedAt: '2024-01-16T10:00:00Z' }),
-      makeEmail({ id: 'e2', threadId: 'T1', accountId: 'acc-b', receivedAt: '2024-01-15T10:00:00Z' }),
-      makeEmail({ id: 'e3', threadId: 'T1', accountId: 'acc-b', receivedAt: '2024-01-14T10:00:00Z' }),
+      makeEmail({ id: 'e1', keywords: { $seen: true } }),
+      makeEmail({ id: 'e2', keywords: { $seen: true, $answered: true } }),
     ];
-    const groups = groupEmailsByThread(emails);
-    expect(groups).toHaveLength(2);
+    expect(groupEmailsByThread(emails)[0].hasAnswered).toBe(true);
+  });
 
-    const primaryGroup = groups.find(g => g.latestEmail.accountId === undefined)!;
-    expect(primaryGroup.emailCount).toBe(1);
-    expect(primaryGroup.emails.map(e => e.id)).toEqual(['e1']);
-
-    const sharedGroup = groups.find(g => g.latestEmail.accountId === 'acc-b')!;
-    expect(sharedGroup.emailCount).toBe(2);
-    expect(sharedGroup.emails.map(e => e.id)).toEqual(['e2', 'e3']);
-    expect(sharedGroup.threadId).toBe('T1');
+  it('detects hasForwarded when an email has $forwarded', () => {
+    const emails = [
+      makeEmail({ id: 'e1', keywords: { $seen: true } }),
+      makeEmail({ id: 'e2', keywords: { $seen: true, $forwarded: true } }),
+    ];
+    expect(groupEmailsByThread(emails)[0].hasForwarded).toBe(true);
   });
 
   it('returns empty array for empty input', () => {
@@ -119,32 +118,76 @@ describe('groupEmailsByThread', () => {
 });
 
 describe('sortThreadGroups', () => {
+  const makeGroup = (threadId: string, receivedAt: string, hasPinned = false): ThreadGroup => ({
+    threadId,
+    emails: [makeEmail({ receivedAt })],
+    latestEmail: makeEmail({ receivedAt }),
+    participantNames: ['A'],
+    hasUnread: false,
+    hasStarred: false,
+    hasPinned,
+    hasAttachment: false,
+    hasAnswered: false,
+    hasForwarded: false,
+    emailCount: 1,
+  });
+
   it('sorts groups by latestEmail.receivedAt descending', () => {
-    const groups: ThreadGroup[] = [
-      {
-        threadId: 'old',
-        emails: [makeEmail({ receivedAt: '2024-01-01T00:00:00Z' })],
-        latestEmail: makeEmail({ receivedAt: '2024-01-01T00:00:00Z' }),
-        participantNames: ['A'],
-        hasUnread: false,
-        hasStarred: false,
-        hasAttachment: false,
-        emailCount: 1,
-      },
-      {
-        threadId: 'new',
-        emails: [makeEmail({ receivedAt: '2024-06-01T00:00:00Z' })],
-        latestEmail: makeEmail({ receivedAt: '2024-06-01T00:00:00Z' }),
-        participantNames: ['B'],
-        hasUnread: false,
-        hasStarred: false,
-        hasAttachment: false,
-        emailCount: 1,
-      },
+    const groups = [
+      makeGroup('old', '2024-01-01T00:00:00Z'),
+      makeGroup('new', '2024-06-01T00:00:00Z'),
     ];
     const sorted = sortThreadGroups(groups);
     expect(sorted[0].threadId).toBe('new');
     expect(sorted[1].threadId).toBe('old');
+  });
+
+  it('keeps pinned threads on top regardless of date', () => {
+    const groups = [
+      makeGroup('newest', '2024-06-01T00:00:00Z'),
+      makeGroup('old-pinned', '2024-01-01T00:00:00Z', true),
+      makeGroup('mid', '2024-03-01T00:00:00Z'),
+    ];
+    const sorted = sortThreadGroups(groups);
+    expect(sorted.map(g => g.threadId)).toEqual(['old-pinned', 'newest', 'mid']);
+  });
+
+  it('mirrors a configured list order instead of re-sorting by date (#718)', () => {
+    // makeEmail defaults to $seen, so the unread group needs bare keywords.
+    const unreadOld = { ...makeGroup('unread-old', '2024-01-01T00:00:00Z'), hasUnread: true };
+    unreadOld.emails = [makeEmail({ id: 'u', receivedAt: '2024-01-01T00:00:00Z', keywords: {} })];
+    const readNew = makeGroup('read-new', '2024-06-01T00:00:00Z');
+    const sorted = sortThreadGroups([readNew, unreadOld], [{ criterion: 'unread', direction: 'desc' }]);
+    expect(sorted.map(g => g.threadId)).toEqual(['unread-old', 'read-new']);
+  });
+
+  it('places a thread where its best-ranked email sorts, not its latest', () => {
+    // An old unread reply keeps the thread in the unread block even though
+    // the newest email in it has been read.
+    const mixed = makeGroup('mixed', '2024-06-01T00:00:00Z');
+    mixed.emails = [
+      makeEmail({ id: 'newest-read', receivedAt: '2024-06-01T00:00:00Z', keywords: { $seen: true } }),
+      makeEmail({ id: 'old-unread', receivedAt: '2024-02-01T00:00:00Z', keywords: {} }),
+    ];
+    const readNewer = makeGroup('read-newer', '2024-07-01T00:00:00Z');
+    const sorted = sortThreadGroups([readNewer, mixed], [{ criterion: 'unread', direction: 'desc' }]);
+    expect(sorted.map(g => g.threadId)).toEqual(['mixed', 'read-newer']);
+  });
+
+  it('keeps pinned threads on top of a configured order', () => {
+    const pinnedRead = makeGroup('pinned-read', '2024-01-01T00:00:00Z', true);
+    const unread = makeGroup('unread', '2024-06-01T00:00:00Z');
+    unread.emails = [makeEmail({ id: 'u', receivedAt: '2024-06-01T00:00:00Z', keywords: {} })];
+    const sorted = sortThreadGroups([unread, pinnedRead], [{ criterion: 'unread', direction: 'desc' }]);
+    expect(sorted.map(g => g.threadId)).toEqual(['pinned-read', 'unread']);
+  });
+
+  it('detects hasPinned from the $pinned keyword', () => {
+    const emails = [
+      makeEmail({ id: 'e1', keywords: { $seen: true } }),
+      makeEmail({ id: 'e2', keywords: { $seen: true, '$pinned': true } }),
+    ];
+    expect(groupEmailsByThread(emails)[0].hasPinned).toBe(true);
   });
 });
 
@@ -187,7 +230,10 @@ describe('mergeThreadEmails', () => {
       participantNames: ['Alice'],
       hasUnread: false,
       hasStarred: false,
+      hasPinned: false,
       hasAttachment: false,
+      hasAnswered: false,
+      hasForwarded: false,
       emailCount: 2,
     };
     const fetched = [
@@ -207,7 +253,10 @@ describe('mergeThreadEmails', () => {
       participantNames: ['Alice'],
       hasUnread: false,
       hasStarred: false,
+      hasPinned: false,
       hasAttachment: false,
+      hasAnswered: false,
+      hasForwarded: false,
       emailCount: 1,
     };
     const fetched = [
@@ -228,27 +277,71 @@ describe('mergeThreadEmails', () => {
   });
 });
 
-describe('getEmailColorTag', () => {
-  it('returns color from $color: keyword', () => {
-    expect(getEmailColorTag({ '$color:red': true, $seen: true })).toBe('red');
+describe('getEmailTagIds', () => {
+  it('gathers every tag set on the message', () => {
+    expect(getEmailTagIds({ '$label:red': true, '$label:work': true, $seen: true }))
+      .toEqual(['red', 'work']);
   });
 
-  it('returns null when no color keyword', () => {
-    expect(getEmailColorTag({ $seen: true, $flagged: true })).toBeNull();
+  it('reads the legacy prefix alongside the current one', () => {
+    expect(getEmailTagIds({ '$label:red': true, '$color:blue': true })).toEqual(['red', 'blue']);
   });
 
-  it('returns null for undefined keywords', () => {
-    expect(getEmailColorTag(undefined)).toBeNull();
+  it('reports a tag written under both prefixes once', () => {
+    expect(getEmailTagIds({ '$label:red': true, '$color:red': true })).toEqual(['red']);
+  });
+
+  it('ignores keywords set to false', () => {
+    expect(getEmailTagIds({ '$label:red': false, '$label:work': true })).toEqual(['work']);
+  });
+
+  it('is empty for an untagged message or none at all', () => {
+    expect(getEmailTagIds({ $seen: true })).toEqual([]);
+    expect(getEmailTagIds(undefined)).toEqual([]);
   });
 });
 
-describe('getThreadColorTag', () => {
+describe('getEmailTagId', () => {
+  it('returns label from $label: keyword', () => {
+    expect(getEmailTagId({ '$label:red': true, $seen: true })).toBe('red');
+  });
+
+  it('returns label from legacy $color: keyword', () => {
+    expect(getEmailTagId({ '$color:red': true, $seen: true })).toBe('red');
+  });
+
+  it('returns null when no color keyword', () => {
+    expect(getEmailTagId({ $seen: true, $flagged: true })).toBeNull();
+  });
+
+  it('returns null for undefined keywords', () => {
+    expect(getEmailTagId(undefined)).toBeNull();
+  });
+
+  it('ignores keywords set to false', () => {
+    expect(getEmailTagId({ '$label:red': false } as unknown as Record<string, boolean>)).toBeNull();
+  });
+
+  it('prefers $label: over $color: when both exist', () => {
+    expect(getEmailTagId({ '$label:blue': true, '$color:red': true })).toBe('blue');
+  });
+
+  it('handles custom keyword ids', () => {
+    expect(getEmailTagId({ '$label:my-custom-tag': true })).toBe('my-custom-tag');
+  });
+
+  it('returns null for empty keywords object', () => {
+    expect(getEmailTagId({})).toBeNull();
+  });
+});
+
+describe('getThreadTagId', () => {
   it('returns first color found across thread emails', () => {
     const emails = [
       makeEmail({ id: 'e1', keywords: { $seen: true } }),
-      makeEmail({ id: 'e2', keywords: { '$color:blue': true } }),
+      makeEmail({ id: 'e2', keywords: { '$label:blue': true } }),
     ];
-    expect(getThreadColorTag(emails)).toBe('blue');
+    expect(getThreadTagId(emails)).toBe('blue');
   });
 
   it('returns null when no emails have color tags', () => {
@@ -256,6 +349,57 @@ describe('getThreadColorTag', () => {
       makeEmail({ id: 'e1', keywords: { $seen: true } }),
       makeEmail({ id: 'e2', keywords: { $flagged: true } }),
     ];
-    expect(getThreadColorTag(emails)).toBeNull();
+    expect(getThreadTagId(emails)).toBeNull();
+  });
+
+  it('returns first tag from earliest tagged email', () => {
+    const emails = [
+      makeEmail({ id: 'e1', keywords: { '$label:red': true } }),
+      makeEmail({ id: 'e2', keywords: { '$label:blue': true } }),
+    ];
+    expect(getThreadTagId(emails)).toBe('red');
+  });
+
+  it('returns legacy tag from thread emails', () => {
+    const emails = [
+      makeEmail({ id: 'e1', keywords: { $seen: true } }),
+      makeEmail({ id: 'e2', keywords: { '$color:green': true } }),
+    ];
+    expect(getThreadTagId(emails)).toBe('green');
+  });
+
+  it('returns null for empty email array', () => {
+    expect(getThreadTagId([])).toBeNull();
+  });
+});
+
+describe('getThreadTagIds', () => {
+  it('gathers the tags of every message in the thread', () => {
+    const emails = [
+      makeEmail({ id: 'e1', keywords: { '$label:red': true } }),
+      makeEmail({ id: 'e2', keywords: { '$label:blue': true, '$label:green': true } }),
+    ];
+    expect(getThreadTagIds(emails).sort()).toEqual(['blue', 'green', 'red']);
+  });
+
+  it('reports a tag shared by several messages once', () => {
+    const emails = [
+      makeEmail({ id: 'e1', keywords: { '$label:red': true } }),
+      makeEmail({ id: 'e2', keywords: { '$label:red': true } }),
+    ];
+    expect(getThreadTagIds(emails)).toEqual(['red']);
+  });
+
+  it('reads the legacy prefix alongside the current one', () => {
+    const emails = [
+      makeEmail({ id: 'e1', keywords: { '$color:green': true } }),
+      makeEmail({ id: 'e2', keywords: { '$label:red': true } }),
+    ];
+    expect(getThreadTagIds(emails).sort()).toEqual(['green', 'red']);
+  });
+
+  it('is empty for an untagged or empty thread', () => {
+    expect(getThreadTagIds([makeEmail({ id: 'e1', keywords: { $seen: true } })])).toEqual([]);
+    expect(getThreadTagIds([])).toEqual([]);
   });
 });

@@ -3,15 +3,24 @@
 import { useTranslations } from 'next-intl';
 import { useCalendarStore, CalendarViewMode } from '@/stores/calendar-store';
 import { useSettingsStore } from '@/stores/settings-store';
-import { SettingsSection, SettingItem, Select, RadioGroup, ToggleSwitch } from './settings-section';
+import { usePolicyStore } from '@/stores/policy-store';
+import { SettingsSection, SettingItem, Select, ToggleSwitch } from './settings-section';
 
 export function CalendarSettings() {
   const t = useTranslations('calendar.settings');
   const tViews = useTranslations('calendar.views');
-  const tDays = useTranslations('calendar.days');
 
   const { viewMode, setViewMode } = useCalendarStore();
-  const { timeFormat, firstDayOfWeek, calendarNotificationsEnabled, calendarNotificationSound, updateSetting } = useSettingsStore();
+  const {
+    showTimeInMonthView,
+    showWeekNumbers,
+    enableCalendarTasks,
+    showTasksOnCalendar,
+    showBirthdayCalendar,
+    calendarHoverPreview,
+    updateSetting,
+  } = useSettingsStore();
+  const { isFeatureEnabled } = usePolicyStore();
 
   return (
     <SettingsSection title={t('title')}>
@@ -28,48 +37,78 @@ export function CalendarSettings() {
         />
       </SettingItem>
 
-      <SettingItem label={t('week_starts_on')}>
+      <SettingItem
+        label={t('show_time_in_month_view')}
+        description={t('show_time_in_month_view_desc')}
+      >
+        <ToggleSwitch
+          checked={showTimeInMonthView}
+          onChange={(checked) => updateSetting('showTimeInMonthView', checked)}
+        />
+      </SettingItem>
+
+      <SettingItem
+        label={t('show_week_numbers')}
+        description={t('show_week_numbers_desc')}
+      >
+        <ToggleSwitch
+          checked={showWeekNumbers}
+          onChange={(checked) => updateSetting('showWeekNumbers', checked)}
+        />
+      </SettingItem>
+
+      <SettingItem
+        label={t('hover_preview')}
+        description={t('hover_preview_desc')}
+      >
         <Select
-          value={firstDayOfWeek.toString()}
-          onChange={(value) => updateSetting('firstDayOfWeek', parseInt(value) as 0 | 1)}
+          value={calendarHoverPreview}
+          onChange={(value) => updateSetting('calendarHoverPreview', value as 'off' | 'instant' | 'delay-500ms' | 'delay-1s' | 'delay-2s')}
           options={[
-            { value: '1', label: tDays('monday') },
-            { value: '0', label: tDays('sunday') },
-          ]}
-        />
-      </SettingItem>
-
-      <SettingItem label={t('time_format')}>
-        <RadioGroup
-          value={timeFormat}
-          onChange={(value) => updateSetting('timeFormat', value as '12h' | '24h')}
-          options={[
-            { value: '12h', label: t('time_format_12h') },
-            { value: '24h', label: t('time_format_24h') },
+            { value: 'instant', label: t('hover_preview_instant') },
+            { value: 'delay-500ms', label: t('hover_preview_delay_500ms') },
+            { value: 'delay-1s', label: t('hover_preview_delay_1s') },
+            { value: 'delay-2s', label: t('hover_preview_delay_2s') },
+            { value: 'off', label: t('hover_preview_off') },
           ]}
         />
       </SettingItem>
 
       <SettingItem
-        label={t('notifications_enabled')}
-        description={t('notifications_enabled_desc')}
+        label={t('show_birthday_calendar')}
+        description={t('show_birthday_calendar_desc')}
       >
         <ToggleSwitch
-          checked={calendarNotificationsEnabled}
-          onChange={(checked) => updateSetting('calendarNotificationsEnabled', checked)}
+          checked={showBirthdayCalendar}
+          onChange={(checked) => updateSetting('showBirthdayCalendar', checked)}
         />
       </SettingItem>
 
+      {isFeatureEnabled('calendarTasksEnabled') && (
+      <>
       <SettingItem
-        label={t('notification_sound')}
-        description={t('notification_sound_desc')}
+        label={t('enable_tasks')}
+        description={t('enable_tasks_desc')}
       >
         <ToggleSwitch
-          checked={calendarNotificationSound}
-          onChange={(checked) => updateSetting('calendarNotificationSound', checked)}
-          disabled={!calendarNotificationsEnabled}
+          checked={enableCalendarTasks}
+          onChange={(checked) => updateSetting('enableCalendarTasks', checked)}
         />
       </SettingItem>
+
+      {enableCalendarTasks && (
+        <SettingItem
+          label={t('show_tasks_on_calendar')}
+          description={t('show_tasks_on_calendar_desc')}
+        >
+          <ToggleSwitch
+            checked={showTasksOnCalendar}
+            onChange={(checked) => updateSetting('showTasksOnCalendar', checked)}
+          />
+        </SettingItem>
+      )}
+      </>
+      )}
 
     </SettingsSection>
   );

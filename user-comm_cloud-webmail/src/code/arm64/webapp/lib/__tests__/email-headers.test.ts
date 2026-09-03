@@ -2,9 +2,12 @@ import { describe, it, expect } from 'vitest';
 import {
   parseAuthenticationResults,
   parseSpamScore,
+  parseReceivedHeaders,
+  formatBytes,
   getSecurityStatus,
   parseSpamLLM,
   extractListHeaders,
+  isAuthenticationSpoofed,
 } from '../email-headers';
 
 describe('parseAuthenticationResults', () => {
@@ -50,6 +53,95 @@ describe('parseAuthenticationResults', () => {
     const result = parseAuthenticationResults('spf=softfail smtp.mailfrom=example.com');
     expect(result.spf?.result).toBe('softfail');
   });
+
+  it('surfaces the most severe result when multiple SPF identities exist', () => {
+    // HELO temperror, MAIL FROM fail — the harder fail must be the headline.
+    const header =
+      'mx.example.com; spf=temperror (mx: dns timeout) smtp.helo=mail.spoof.com; spf=fail (mx: not authorized) smtp.mailfrom=victim.com';
+    const result = parseAuthenticationResults(header);
+    expect(result.spf?.result).toBe('fail');
+    expect(result.spf?.domain).toBe('victim.com');
+  });
+
+  it('exposes all SPF results when more than one identity is evaluated', () => {
+    const header =
+      'spf=temperror smtp.helo=mail.spoof.com; spf=fail smtp.mailfrom=victim.com';
+    const result = parseAuthenticationResults(header);
+    expect(result.spf?.all).toEqual([
+      { result: 'temperror', identity: 'helo', domain: 'mail.spoof.com' },
+      { result: 'fail', identity: 'mailfrom', domain: 'victim.com' },
+    ]);
+  });
+
+  it('does not set `all` for a single SPF result', () => {
+    const result = parseAuthenticationResults('spf=pass smtp.mailfrom=example.com');
+    expect(result.spf?.all).toBeUndefined();
+  });
+
+  it('prefers the MAIL FROM identity when severities tie', () => {
+    const header = 'spf=pass smtp.helo=mail.example.com; spf=pass smtp.mailfrom=example.com';
+    const result = parseAuthenticationResults(header);
+    expect(result.spf?.domain).toBe('example.com');
+  });
+
+  it('does not let a HELO `none` downgrade a MAIL FROM `pass` (#650)', () => {
+    const header =
+      'mail.haxalot.com; spf=none (mail.haxalot.com: no SPF records found for postmaster@out-23.smtp.github.com) smtp.helo=out-23.smtp.github.com; spf=pass (mail.haxalot.com: domain of noreply@github.com designates 192.30.252.206 as permitted sender) smtp.mailfrom=noreply@github.com';
+    const result = parseAuthenticationResults(header);
+    expect(result.spf?.result).toBe('pass');
+    expect(result.spf?.domain).toBe('noreply@github.com');
+    expect(result.spf?.all).toHaveLength(2);
+  });
+
+  it('does not let a HELO `neutral` downgrade a MAIL FROM `pass`', () => {
+    const header = 'spf=neutral smtp.helo=mail.example.com; spf=pass smtp.mailfrom=example.com';
+    const result = parseAuthenticationResults(header);
+    expect(result.spf?.result).toBe('pass');
+  });
+
+  it('still escalates a HELO hard fail over a MAIL FROM pass', () => {
+    const header = 'spf=fail smtp.helo=mail.spoof.com; spf=pass smtp.mailfrom=example.com';
+    const result = parseAuthenticationResults(header);
+    expect(result.spf?.result).toBe('fail');
+    expect(result.spf?.domain).toBe('mail.spoof.com');
+  });
+
+  it('keeps MAIL FROM `none` as the headline even when HELO passes', () => {
+    const header = 'spf=pass smtp.helo=mail.example.com; spf=none smtp.mailfrom=example.com';
+    const result = parseAuthenticationResults(header);
+    expect(result.spf?.result).toBe('none');
+    expect(result.spf?.domain).toBe('example.com');
+  });
+});
+
+describe('isAuthenticationSpoofed', () => {
+  it('returns false when no auth results are present', () => {
+    expect(isAuthenticationSpoofed(undefined)).toBe(false);
+    expect(isAuthenticationSpoofed({})).toBe(false);
+  });
+
+  it('flags a DMARC fail as spoofed', () => {
+    expect(isAuthenticationSpoofed({ dmarc: { result: 'fail' } })).toBe(true);
+  });
+
+  it('flags a hard SPF fail without a passing DKIM as spoofed', () => {
+    expect(isAuthenticationSpoofed({ spf: { result: 'fail' } })).toBe(true);
+    expect(
+      isAuthenticationSpoofed({ spf: { result: 'fail' }, dkim: { result: 'fail' } })
+    ).toBe(true);
+  });
+
+  it('does not flag an SPF fail rescued by a passing DKIM', () => {
+    expect(
+      isAuthenticationSpoofed({ spf: { result: 'fail' }, dkim: { result: 'pass' } })
+    ).toBe(false);
+  });
+
+  it('does not flag passing or ambiguous results', () => {
+    expect(isAuthenticationSpoofed({ spf: { result: 'pass' }, dmarc: { result: 'pass' } })).toBe(false);
+    expect(isAuthenticationSpoofed({ spf: { result: 'softfail' } })).toBe(false);
+    expect(isAuthenticationSpoofed({ spf: { result: 'temperror' } })).toBe(false);
+  });
 });
 
 describe('parseSpamScore', () => {
@@ -74,6 +166,56 @@ describe('parseSpamScore', () => {
   });
 });
 
+describe('parseReceivedHeaders', () => {
+  it('parses a single received header', () => {
+    const headers = ['from mail.example.com by mx.example.com with SMTP id abc123; Mon, 15 Jan 2024 10:00:00 +0000'];
+    const result = parseReceivedHeaders(headers);
+    expect(result).toHaveLength(1);
+    expect(result[0].from).toBe('mail.example.com');
+    expect(result[0].by).toBe('mx.example.com');
+    expect(result[0].protocol).toBe('SMTP');
+    expect(result[0].id).toBe('abc123');
+    expect(result[0].timestamp).toBe('Mon, 15 Jan 2024 10:00:00 +0000');
+  });
+
+  it('handles missing fields gracefully', () => {
+    const result = parseReceivedHeaders(['from sender.example.com']);
+    expect(result).toHaveLength(1);
+    expect(result[0].from).toBe('sender.example.com');
+    expect(result[0].by).toBe('unknown');
+  });
+
+  it('returns empty array for empty input', () => {
+    expect(parseReceivedHeaders([])).toEqual([]);
+  });
+
+  it('skips headers with no from or by', () => {
+    expect(parseReceivedHeaders(['random text without routing info'])).toEqual([]);
+  });
+});
+
+describe('formatBytes', () => {
+  it('formats 0 bytes', () => {
+    expect(formatBytes(0)).toBe('0 B');
+  });
+
+  it('formats bytes', () => {
+    expect(formatBytes(512)).toBe('512.0 B');
+  });
+
+  it('formats kilobytes', () => {
+    expect(formatBytes(1024)).toBe('1.0 KB');
+  });
+
+  it('formats megabytes', () => {
+    expect(formatBytes(1048576)).toBe('1.0 MB');
+  });
+
+  it('formats gigabytes', () => {
+    expect(formatBytes(1073741824)).toBe('1.0 GB');
+  });
+});
+
 describe('getSecurityStatus', () => {
   it('returns green for pass', () => {
     const status = getSecurityStatus('pass');
@@ -94,10 +236,10 @@ describe('getSecurityStatus', () => {
     expect(status.color).toContain('red');
   });
 
-  it('returns amber for softfail', () => {
+  it('returns a warning color for softfail', () => {
     const status = getSecurityStatus('softfail');
     expect(status.icon).toBe('alert');
-    expect(status.color).toContain('amber');
+    expect(status.color).toContain('warning');
   });
 
   it('returns amber for neutral and temperror', () => {

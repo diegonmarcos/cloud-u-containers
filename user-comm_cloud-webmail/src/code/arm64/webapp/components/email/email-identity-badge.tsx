@@ -5,6 +5,8 @@ import { Mail, Tag } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Email, Identity } from '@/lib/jmap/types';
 import { parseSubAddress } from '@/lib/sub-addressing';
+import { isAuthenticationSpoofed } from '@/lib/email-headers';
+import { useSettingsStore } from '@/stores/settings-store';
 
 interface EmailIdentityBadgeProps {
   email: Email;
@@ -20,24 +22,32 @@ export function EmailIdentityBadge({
   className,
 }: EmailIdentityBadgeProps) {
   const t = useTranslations('identities.badge');
+  const subAddressDelimiter = useSettingsStore((state) => state.subAddressDelimiter);
 
   const fromAddress = email.from?.[0]?.email;
   if (!fromAddress) return null;
 
   // Parse the from address to check for sub-addressing
-  const parsedFrom = parseSubAddress(fromAddress);
+  const parsedFrom = parseSubAddress(fromAddress, subAddressDelimiter);
 
-  // Find matching identity (email sent BY the user)
-  const matchingIdentity = identities.find(
-    (identity) => identity.email === fromAddress || identity.email === `${parsedFrom.baseUser}@${parsedFrom.domain}`
-  );
+  // Find matching identity (email sent BY the user). When the message is
+  // likely spoofed, the From address can't be trusted, so we ignore any
+  // identity match — otherwise a forged From matching one of the user's own
+  // addresses would render a misleading "via <identity>" badge that implies
+  // legitimacy.
+  const spoofed = isAuthenticationSpoofed(email.authenticationResults);
+  const matchingIdentity = spoofed
+    ? undefined
+    : identities.find(
+        (identity) => identity.email === fromAddress || identity.email === `${parsedFrom.baseUser}@${parsedFrom.domain}`
+      );
 
   // Check if email was sent TO a sub-address (received email)
   let receivedToTag: string | null = null;
   if (!matchingIdentity) {
     // Check all TO addresses for sub-address tags matching user's identities
     for (const recipient of email.to || []) {
-      const parsedTo = parseSubAddress(recipient.email);
+      const parsedTo = parseSubAddress(recipient.email, subAddressDelimiter);
       if (parsedTo.tag) {
         // Check if this base email matches any of the user's identities
         const matchingToIdentity = identities.find(
@@ -70,7 +80,7 @@ export function EmailIdentityBadge({
           title={t('sub_address_tag', { tag: displayTag })}
         >
           <Tag className="w-3 h-3" />
-          <span className="font-mono">+{displayTag}</span>
+          <span className="font-mono">{subAddressDelimiter}{displayTag}</span>
         </div>
       );
     }
@@ -114,7 +124,7 @@ export function EmailIdentityBadge({
           aria-label={t('sub_address_tag', { tag: displayTag })}
         >
           <Tag className="w-3 h-3" />
-          <span className="font-mono">{t('subaddress_tag', { tag: displayTag })}</span>
+          <span className="font-mono">{subAddressDelimiter}{displayTag}</span>
         </div>
       )}
 

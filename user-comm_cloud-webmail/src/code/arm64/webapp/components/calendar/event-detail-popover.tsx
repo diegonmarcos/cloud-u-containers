@@ -1,24 +1,26 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo, useCallback, useLayoutEffect } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
 import {
   X, Clock, MapPin, Video, Users, Repeat, Bell, AlignLeft,
   Pencil, Trash2, Copy, Send, Check,
 } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { format, isSameDay } from "date-fns";
+import { cn } from "@/lib/utils";
 import type { CalendarEvent, Calendar, CalendarParticipant } from "@/lib/jmap/types";
 import { parseDuration, getEventColor } from "./event-card";
+import { getEventDisplayEndDate, getEventEndDate, getEventStartDate } from "@/lib/calendar-utils";
+import { buildRecurrenceSummary } from "./recurrence-editor";
 import {
-  isOrganizer,
   getUserParticipantId,
   getUserStatus,
   getParticipantList,
 } from "@/lib/calendar-participants";
+import { getEventEditability } from "@/lib/calendar-editability";
+import { useFormatEventDate } from "@/hooks/use-format-event-date";
 
 interface EventDetailPopoverProps {
   event: CalendarEvent;
@@ -30,8 +32,12 @@ interface EventDetailPopoverProps {
   onClose: () => void;
   onSaveNote: (note: string) => void;
   onRsvp?: (status: CalendarParticipant["participationStatus"]) => void;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
   currentUserEmails?: string[];
+  isSubscriptionCalendar?: (calendarId: string) => boolean;
   timeFormat?: "12h" | "24h";
+  isMobile?: boolean;
 }
 
 const POPOVER_WIDTH = 360;
@@ -85,7 +91,7 @@ function formatDurationDisplay(minutes: number): string {
 function getAlertLabel(event: CalendarEvent, t: ReturnType<typeof useTranslations>): string | null {
   if (!event.alerts) return null;
   const first = Object.values(event.alerts)[0];
-  if (!first || first.trigger["@type"] !== "OffsetTrigger") return null;
+  if (!first || !first.trigger || first.trigger["@type"] !== "OffsetTrigger") return null;
   const offset = first.trigger.offset;
   if (offset === "PT0S") return t("alerts.at_time");
   const minMatch = offset.match(/-?PT?(\d+)M$/);
@@ -97,16 +103,9 @@ function getAlertLabel(event: CalendarEvent, t: ReturnType<typeof useTranslation
   return null;
 }
 
-function getRecurrenceLabel(event: CalendarEvent, t: ReturnType<typeof useTranslations>): string | null {
+function getRecurrenceLabel(event: CalendarEvent, t: ReturnType<typeof useTranslations>, locale: string): string | null {
   if (!event.recurrenceRules?.length) return null;
-  const freq = event.recurrenceRules[0].frequency;
-  const labels: Record<string, string> = {
-    daily: t("recurrence.daily"),
-    weekly: t("recurrence.weekly"),
-    monthly: t("recurrence.monthly"),
-    yearly: t("recurrence.yearly"),
-  };
-  return labels[freq] || null;
+  return buildRecurrenceSummary(event.recurrenceRules[0], t, locale);
 }
 
 export function EventDetailPopover({
@@ -119,23 +118,30 @@ export function EventDetailPopover({
   onClose,
   onSaveNote,
   onRsvp,
+  onMouseEnter,
+  onMouseLeave,
   currentUserEmails = [],
+  isSubscriptionCalendar,
   timeFormat = "24h",
+  isMobile,
 }: EventDetailPopoverProps) {
   const t = useTranslations("calendar");
+  const locale = useLocale();
   const popoverRef = useRef<HTMLDivElement>(null);
   const noteInputRef = useRef<HTMLTextAreaElement>(null);
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
   const [ready, setReady] = useState(false);
   const [noteText, setNoteText] = useState("");
   const [noteExpanded, setNoteExpanded] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isSavingNote, setIsSavingNote] = useState(false);
-  const { dialogProps: confirmDialogProps, confirm } = useConfirmDialog();
 
   const color = getEventColor(event, calendar);
-  const startDate = parseISO(event.start);
+  const startDate = getEventStartDate(event);
   const durationMinutes = parseDuration(event.duration);
-  const endDate = new Date(startDate.getTime() + durationMinutes * 60000);
+  const endDate = getEventEndDate(event);
+  const displayEndDate = getEventDisplayEndDate(event);
+  const isMultiDay = !isSameDay(startDate, displayEndDate);
 
   const locationName = useMemo(() => {
     if (!event.locations) return null;
@@ -149,18 +155,20 @@ export function EventDetailPopover({
   }, [event.virtualLocations]);
 
   const participants = useMemo(() => getParticipantList(event), [event]);
-  const recurrenceLabel = useMemo(() => getRecurrenceLabel(event, t), [event, t]);
+  const recurrenceLabel = useMemo(() => getRecurrenceLabel(event, t, locale), [event, t, locale]);
   const alertLabel = useMemo(() => getAlertLabel(event, t), [event, t]);
 
-  const userIsOrganizer = useMemo(() => {
-    if (!event.participants) return true;
-    return isOrganizer(event, currentUserEmails);
-  }, [event, currentUserEmails]);
-
-  const isAttendeeMode = useMemo(() => {
-    if (!event.participants) return false;
-    return !event.isOrigin && !userIsOrganizer;
-  }, [event, userIsOrganizer]);
+  // Gate affordances on calendar rights, not identity (see calendar-editability).
+  const editability = useMemo(() => {
+    const calendarsById = new Map(calendar ? [[calendar.id, calendar]] : []);
+    return getEventEditability(event, {
+      calendarsById,
+      userCalendarAddresses: currentUserEmails,
+      isSubscriptionCalendar: isSubscriptionCalendar ?? (() => false),
+    });
+  }, [event, calendar, currentUserEmails, isSubscriptionCalendar]);
+  const canEditBody = editability === "editable";
+  const rsvpMode = editability === "rsvp-only";
 
   const userParticipantId = useMemo(
     () => getUserParticipantId(event, currentUserEmails),
@@ -182,43 +190,40 @@ export function EventDetailPopover({
     const height = popoverRef.current.offsetHeight;
     setPosition(computePosition(anchorRect, height));
     if (!ready) requestAnimationFrame(() => setReady(true));
-  }, [anchorRect, noteExpanded, ready]);
+  }, [anchorRect, noteExpanded, showDeleteConfirm, ready]);
 
   useEffect(() => {
-    if (confirmDialogProps.isOpen) return;
-
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
-      if (e.key === "e" && !noteExpanded) {
+      const target = e.target as HTMLElement;
+      const tag = target?.tagName?.toLowerCase();
+      if (tag === "input" || tag === "textarea" || tag === "select") return;
+      if (target?.getAttribute("contenteditable") === "true") return;
+      if (e.key === "e" && !noteExpanded && canEditBody) {
         e.preventDefault();
         onEdit();
       }
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [confirmDialogProps.isOpen, onClose, onEdit, noteExpanded]);
+  }, [onClose, onEdit, noteExpanded, canEditBody]);
 
   useEffect(() => {
-    if (confirmDialogProps.isOpen) return;
-
     const handleClickOutside = (e: MouseEvent) => {
       if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
         onClose();
       }
     };
-    const handleScroll = () => onClose();
 
     const timer = setTimeout(() => {
       document.addEventListener("mousedown", handleClickOutside);
-      document.addEventListener("scroll", handleScroll, true);
     }, 0);
 
     return () => {
       clearTimeout(timer);
       document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("scroll", handleScroll, true);
     };
-  }, [confirmDialogProps.isOpen, onClose]);
+  }, [onClose]);
 
   const handleSaveNote = useCallback(async () => {
     const trimmed = noteText.trim();
@@ -248,100 +253,132 @@ export function EventDetailPopover({
     [handleSaveNote]
   );
 
-  const handleDeleteClick = useCallback(async () => {
-    const deleteMessage = participants.length > 0
-      ? `${t("form.delete_confirm")} ${t("participants.cancel_notification")}`
-      : t("form.delete_confirm");
-
-    const confirmed = await confirm({
-      title: t("detail.delete_confirm"),
-      message: deleteMessage,
-      confirmText: t("events.delete"),
-      cancelText: t("form.cancel"),
-      variant: "destructive",
-    });
-
-    if (!confirmed) return;
-
-    onDelete();
-    onClose();
-  }, [confirm, onClose, onDelete, participants, t]);
-
   const hasParticipants = participants.length > 0;
 
+  const formatEventDate = useFormatEventDate();
+
   const popover = (
-    <>
-      <div
-        ref={popoverRef}
-        role="dialog"
-        aria-label={event.title || t("events.no_title")}
-        className="fixed z-[60] bg-background border border-border rounded-lg shadow-xl overflow-hidden transition-[opacity,transform] duration-150 ease-out"
-        style={{
-          width: POPOVER_WIDTH,
-          maxHeight: MAX_HEIGHT,
-          top: position?.top ?? -9999,
-          left: position?.left ?? -9999,
-          opacity: ready ? 1 : 0,
-          transform: ready ? "scale(1)" : "scale(0.95)",
-          visibility: position ? "visible" : "hidden",
-        }}
-      >
-        {/* Color accent bar */}
-        <div className="h-1 w-full" style={{ backgroundColor: color }} />
+    <div
+      ref={popoverRef}
+      role="dialog"
+      aria-label={event.title || t("events.no_title")}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      className={cn(
+        "fixed z-[60] bg-background border border-border shadow-xl overflow-hidden transition-[opacity,transform] duration-150 ease-out",
+        isMobile
+          ? "inset-0 rounded-none flex flex-col"
+          : "rounded-lg"
+      )}
+      style={isMobile ? {
+        opacity: 1,
+        transform: "none",
+      } : {
+        width: POPOVER_WIDTH,
+        maxHeight: MAX_HEIGHT,
+        top: position?.top ?? -9999,
+        left: position?.left ?? -9999,
+        opacity: ready ? 1 : 0,
+        transform: ready ? "scale(1)" : "scale(0.95)",
+        visibility: position ? "visible" : "hidden",
+      }}
+    >
+      {/* Color accent bar */}
+      <div className="h-1 w-full" style={{ backgroundColor: color }} />
 
-        {/* Header */}
-        <div className="flex items-start justify-between gap-2 px-4 pt-3 pb-1">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <span
-                className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                style={{ backgroundColor: color }}
-              />
-              <h3 className="text-base font-semibold truncate text-foreground">
-                {event.title || t("events.no_title")}
-              </h3>
-            </div>
-            {calendar && (
-              <p className="text-xs text-muted-foreground mt-0.5 pl-[18px]">
-                {calendar.name}
-                {event.status === "tentative" && (
-                  <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
-                    {t("detail.tentative")}
-                  </span>
-                )}
-                {event.status === "cancelled" && (
-                  <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 line-through">
-                    {t("detail.cancelled")}
-                  </span>
-                )}
-              </p>
-            )}
+      {/* Header */}
+      <div className="flex items-start justify-between gap-2 px-4 pt-3 pb-1">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span
+              className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+              style={{ backgroundColor: color }}
+            />
+            <h3 className={cn(
+              "text-base font-semibold truncate text-foreground",
+              event.status === "cancelled" && "line-through text-muted-foreground"
+            )}>
+              {event.title || t("events.no_title")}
+            </h3>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1 rounded hover:bg-muted transition-colors flex-shrink-0 mt-0.5"
-            aria-label={t("form.cancel")}
-          >
-            <X className="w-4 h-4 text-muted-foreground" />
-          </button>
+          {calendar && (
+            <p className="text-xs text-muted-foreground mt-0.5 ps-[18px]">
+              {calendar.name}
+              {event.status === "tentative" && (
+                <span className="ms-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-warning/15 text-warning">
+                  {t("detail.tentative")}
+                </span>
+              )}
+              {event.status === "cancelled" && (
+                <span className="ms-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 line-through">
+                  {t("detail.cancelled")}
+                </span>
+              )}
+            </p>
+          )}
         </div>
+        <button
+          onClick={onClose}
+          className="p-1.5 rounded-md hover:bg-muted transition-colors duration-150 flex-shrink-0 mt-0.5 text-muted-foreground hover:text-foreground"
+          aria-label={t("form.cancel")}
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
 
-        {/* Content */}
-        <div className="px-4 py-2 space-y-2.5 overflow-y-auto" style={{ maxHeight: MAX_HEIGHT - 140 }}>
+      {/* Content */}
+      <div className={cn(
+        "px-4 py-2 space-y-2.5 overflow-y-auto",
+        isMobile ? "flex-1" : ""
+      )} style={isMobile ? undefined : { maxHeight: MAX_HEIGHT - 140 }}>
         {/* Date & Time */}
         <div className="flex items-start gap-2.5">
           <Clock className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
           <div className="text-sm">
-            <span className="font-medium text-foreground">
-              {format(startDate, "EEE, MMM d, yyyy")}
-            </span>
-            {event.showWithoutTime ? (
-              <span className="text-muted-foreground ml-1.5">{t("events.all_day")}</span>
+            {isMultiDay ? (
+              event.showWithoutTime ? (
+                <>
+                  <div className="font-medium text-foreground">
+                    {formatEventDate(startDate)} –
+                  </div>
+                  <div className="font-medium text-foreground">
+                    {formatEventDate(displayEndDate)}
+                  </div>
+                  <div className="text-muted-foreground">{t("events.all_day")}</div>
+                </>
+              ) : (
+                <>
+                  <div className="font-medium text-foreground">
+                    {formatEventDate(startDate)}
+                    <span className="ms-1.5 font-normal text-muted-foreground">
+                      {formatTime(startDate)}
+                    </span>
+                  </div>
+                  <div className="font-medium text-foreground">
+                    {formatEventDate(endDate)}
+                    <span className="ms-1.5 font-normal text-muted-foreground">
+                      {formatTime(endDate)}
+                    </span>
+                  </div>
+                  <div className="text-muted-foreground text-xs">
+                    ({formatDurationDisplay(durationMinutes)})
+                  </div>
+                </>
+              )
             ) : (
-              <div className="text-muted-foreground">
-                {formatTime(startDate)} – {formatTime(endDate)}
-                <span className="ml-1.5 text-xs">({formatDurationDisplay(durationMinutes)})</span>
-              </div>
+              <>
+                <span className="font-medium text-foreground">
+                  {formatEventDate(startDate)}
+                </span>
+                {event.showWithoutTime ? (
+                  <span className="text-muted-foreground ms-1.5">{t("events.all_day")}</span>
+                ) : (
+                  <div className="text-muted-foreground">
+                    {formatTime(startDate)} – {formatTime(endDate)}
+                    <span className="ms-1.5 text-xs">({formatDurationDisplay(durationMinutes)})</span>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -404,7 +441,7 @@ export function EventDetailPopover({
                     <span className="truncate text-foreground">
                       {p.name || p.email}
                       {p.isOrganizer && (
-                        <span className="text-muted-foreground ml-1">
+                        <span className="text-muted-foreground ms-1">
                           ({t("participants.organizer").toLowerCase()})
                         </span>
                       )}
@@ -447,11 +484,11 @@ export function EventDetailPopover({
             </p>
           </div>
         )}
-        </div>
+      </div>
 
-        {/* Quick Note */}
-        {!isAttendeeMode && (
-          <div className="px-4 py-2 border-t border-border">
+      {/* Quick Note */}
+      {canEditBody && (
+        <div className="px-4 py-2 border-t border-border">
           {noteExpanded ? (
             <div className="space-y-2">
               <textarea
@@ -482,7 +519,7 @@ export function EventDetailPopover({
                   disabled={!noteText.trim() || isSavingNote}
                   className="h-7 text-xs"
                 >
-                  <Send className="w-3 h-3 mr-1" />
+                  <Send className="w-3 h-3 me-1" />
                   {t("detail.save_note")}
                 </Button>
               </div>
@@ -496,12 +533,12 @@ export function EventDetailPopover({
               {t("detail.add_note")}
             </button>
           )}
-          </div>
-        )}
+        </div>
+      )}
 
-        {/* RSVP Bar (for attendees) */}
-        {isAttendeeMode && onRsvp && userParticipantId && (
-          <div className="px-4 py-3 border-t border-border">
+      {/* RSVP Bar (for attendees) */}
+      {rsvpMode && onRsvp && userParticipantId && (
+        <div className="px-4 py-3 border-t border-border">
           <p className="text-xs font-medium text-muted-foreground mb-2">
             {t("participants.rsvp_label")}
           </p>
@@ -512,11 +549,11 @@ export function EventDetailPopover({
               onClick={() => onRsvp("accepted")}
               className={
                 userCurrentStatus === "accepted"
-                  ? "bg-green-600 hover:bg-green-700 text-white dark:bg-green-500 dark:hover:bg-green-600"
-                  : "text-green-600 dark:text-green-400 border-green-300 dark:border-green-700 hover:bg-green-50 dark:hover:bg-green-950"
+                  ? "bg-success hover:bg-success/80 text-success-foreground"
+                  : "text-success border-success/30 hover:bg-success/10"
               }
             >
-              {userCurrentStatus === "accepted" && <Check className="w-3.5 h-3.5 mr-1" />}
+              {userCurrentStatus === "accepted" && <Check className="w-3.5 h-3.5 me-1" />}
               {t("participants.accepted")}
             </Button>
             <Button
@@ -525,11 +562,11 @@ export function EventDetailPopover({
               onClick={() => onRsvp("tentative")}
               className={
                 userCurrentStatus === "tentative"
-                  ? "bg-amber-600 hover:bg-amber-700 text-white dark:bg-amber-500 dark:hover:bg-amber-600"
-                  : "border border-amber-500 text-amber-600 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950"
+                  ? "bg-warning hover:bg-warning/80 text-warning-foreground"
+                  : "border border-warning/30 text-warning hover:bg-warning/10"
               }
             >
-              {userCurrentStatus === "tentative" && <Check className="w-3.5 h-3.5 mr-1" />}
+              {userCurrentStatus === "tentative" && <Check className="w-3.5 h-3.5 me-1" />}
               {t("participants.tentative")}
             </Button>
             <Button
@@ -538,48 +575,75 @@ export function EventDetailPopover({
               onClick={() => onRsvp("declined")}
               className={
                 userCurrentStatus === "declined"
-                  ? "bg-red-600 hover:bg-red-700 text-white dark:bg-red-500 dark:hover:bg-red-600"
-                  : "text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950"
+                  ? "bg-destructive hover:bg-destructive/80 text-destructive-foreground"
+                  : "text-destructive hover:bg-destructive/10"
               }
             >
-              {userCurrentStatus === "declined" && <Check className="w-3.5 h-3.5 mr-1" />}
+              {userCurrentStatus === "declined" && <Check className="w-3.5 h-3.5 me-1" />}
               {t("participants.declined")}
             </Button>
           </div>
-          </div>
-        )}
-
-        {/* Action Bar */}
-        <div className="px-4 py-2.5 border-t border-border flex items-center gap-1.5">
-          <Button variant="default" size="sm" onClick={onEdit} className="h-7 text-xs">
-            <Pencil className="w-3.5 h-3.5 mr-1" />
-            {t("events.edit")}
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onDuplicate}
-            className="h-7 text-xs"
-            title={t("events.duplicate")}
-          >
-            <Copy className="w-3.5 h-3.5 mr-1" />
-            {t("events.duplicate")}
-          </Button>
-          <div className="flex-1" />
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleDeleteClick}
-            className="h-7 text-xs text-red-600 dark:text-red-400"
-            title={t("events.delete")}
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </Button>
         </div>
-      </div>
+      )}
 
-      <ConfirmDialog {...confirmDialogProps} />
-    </>
+      {/* Action Bar */}
+      <div className="px-4 py-2.5 border-t border-border flex items-center gap-1.5">
+        {showDeleteConfirm ? (
+          <div className="flex items-center gap-2 w-full">
+            <span className="text-sm text-destructive flex-1">
+              {t("form.delete_confirm")}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onDelete}
+              className="text-red-600 dark:text-red-400 border-red-300 dark:border-red-700 h-7 text-xs"
+            >
+              {t("events.delete")}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowDeleteConfirm(false)}
+              className="h-7 text-xs"
+            >
+              {t("form.cancel")}
+            </Button>
+          </div>
+        ) : (
+          <>
+            {canEditBody && (
+              <Button variant="default" size="sm" onClick={onEdit} className="h-7 text-xs">
+                <Pencil className="w-3.5 h-3.5 me-1" />
+                {t("events.edit")}
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onDuplicate}
+              className="h-7 text-xs"
+              title={t("events.duplicate")}
+            >
+              <Copy className="w-3.5 h-3.5 me-1" />
+              {t("events.duplicate")}
+            </Button>
+            <div className="flex-1" />
+            {canEditBody && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowDeleteConfirm(true)}
+                className="h-7 text-xs text-red-600 dark:text-red-400"
+                title={t("events.delete")}
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
+            )}
+          </>
+        )}
+      </div>
+    </div>
   );
 
   return createPortal(popover, document.body);
@@ -593,9 +657,9 @@ function ParticipantStatusBadge({
   t: ReturnType<typeof useTranslations>;
 }) {
   const colors: Record<string, string> = {
-    accepted: "text-green-600 dark:text-green-400",
-    declined: "text-red-600 dark:text-red-400",
-    tentative: "text-amber-600 dark:text-amber-400",
+    accepted: "text-success",
+    declined: "text-destructive",
+    tentative: "text-warning",
     "needs-action": "text-muted-foreground",
   };
   const labels: Record<string, string> = {

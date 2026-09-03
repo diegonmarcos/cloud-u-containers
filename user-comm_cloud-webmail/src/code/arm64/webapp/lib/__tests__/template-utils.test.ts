@@ -10,6 +10,8 @@ import {
   filterTemplates,
   exportTemplates,
   importTemplates,
+  spliceTemplateAboveSignature,
+  composeBodyHasUserContent,
 } from '../template-utils';
 import type { EmailTemplate } from '../template-types';
 
@@ -19,6 +21,7 @@ function makeTemplate(overrides: Partial<EmailTemplate> = {}): EmailTemplate {
     name: 'Test Template',
     subject: '',
     body: '',
+    isHTML: false,
     category: '',
     isFavorite: false,
     createdAt: '2026-01-01T00:00:00Z',
@@ -331,5 +334,77 @@ describe('filterTemplates', () => {
 
   it('returns empty array for no matches', () => {
     expect(filterTemplates(templates, 'xyz')).toHaveLength(0);
+  });
+});
+
+describe('spliceTemplateAboveSignature', () => {
+  const template = '<p>Template body</p>';
+
+  it('keeps the signature block below the template (separator marker)', () => {
+    const prev = '<p></p><p data-signature-block="separator">-- </p><div>My signature</div><p data-signature-block="end"></p>';
+    expect(spliceTemplateAboveSignature(prev, template)).toBe(
+      '<p>Template body</p><p data-signature-block="separator">-- </p><div>My signature</div><p data-signature-block="end"></p>'
+    );
+  });
+
+  it('keeps the signature block below the template (start marker, no separator)', () => {
+    const prev = '<p>old draft text</p><p data-signature-block="start"></p><div>My signature</div><p data-signature-block="end"></p>';
+    expect(spliceTemplateAboveSignature(prev, template)).toBe(
+      '<p>Template body</p><p data-signature-block="start"></p><div>My signature</div><p data-signature-block="end"></p>'
+    );
+  });
+
+  it('replaces the whole body when there is no signature block', () => {
+    expect(spliceTemplateAboveSignature('<p>old draft text</p>', template)).toBe(template);
+  });
+
+  it('keeps everything from the start marker onward when the end marker is missing', () => {
+    const prev = '<p>old</p><p data-signature-block="separator">-- </p><div>My signature</div>';
+    expect(spliceTemplateAboveSignature(prev, template)).toBe(
+      '<p>Template body</p><p data-signature-block="separator">-- </p><div>My signature</div>'
+    );
+  });
+
+  it('discards user edits above the signature', () => {
+    const prev = '<p>half-written draft</p><p data-signature-block="separator">-- </p><div>Sig</div><p data-signature-block="end"></p>';
+    const result = spliceTemplateAboveSignature(prev, template);
+    expect(result).not.toContain('half-written draft');
+    expect(result).toContain('Sig');
+  });
+});
+
+describe('composeBodyHasUserContent', () => {
+  const signature = '<p data-signature-block="separator">-- </p><div>My signature</div><p data-signature-block="end"></p>';
+
+  it('is false for a fresh compose body (empty paragraph + signature)', () => {
+    expect(composeBodyHasUserContent(`<p></p>${signature}`)).toBe(false);
+  });
+
+  it('is false for an empty body', () => {
+    expect(composeBodyHasUserContent('')).toBe(false);
+    expect(composeBodyHasUserContent('<p></p>')).toBe(false);
+  });
+
+  it('is true once the user typed above the signature (#540)', () => {
+    expect(composeBodyHasUserContent(`<p>Hello Mr.</p>${signature}`)).toBe(true);
+  });
+
+  it('is true for a body without a signature block', () => {
+    expect(composeBodyHasUserContent('<p>Hello Mr.</p>')).toBe(true);
+  });
+
+  it('ignores signature text so a signature-only body stays untouched', () => {
+    expect(composeBodyHasUserContent(`<p></p>${signature}`)).toBe(false);
+    expect(composeBodyHasUserContent(`<p><br></p>${signature}`)).toBe(false);
+  });
+
+  it('counts text-free content such as a pasted image', () => {
+    expect(composeBodyHasUserContent(`<p><img src="cid:1"></p>${signature}`)).toBe(true);
+  });
+
+  it('handles a signature range without an end marker', () => {
+    const openEnded = '<p data-signature-block="start"></p><div>My signature</div>';
+    expect(composeBodyHasUserContent(`<p></p>${openEnded}`)).toBe(false);
+    expect(composeBodyHasUserContent(`<p>Hello Mr.</p>${openEnded}`)).toBe(true);
   });
 });

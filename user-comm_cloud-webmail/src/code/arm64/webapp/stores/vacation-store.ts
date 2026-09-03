@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { JMAPClient } from '@/lib/jmap/client';
+import type { IJMAPClient } from '@/lib/jmap/client-interface';
 
 interface VacationStore {
   isEnabled: boolean;
@@ -13,15 +13,15 @@ interface VacationStore {
   error: string | null;
   isSupported: boolean;
 
-  fetchVacationResponse: (client: JMAPClient) => Promise<void>;
-  updateVacationResponse: (client: JMAPClient, updates: {
+  fetchVacationResponse: (client: IJMAPClient, accountId?: string) => Promise<void>;
+  updateVacationResponse: (client: IJMAPClient, updates: {
     isEnabled?: boolean;
     fromDate?: string | null;
     toDate?: string | null;
     subject?: string;
     textBody?: string;
     htmlBody?: string | null;
-  }) => Promise<void>;
+  }, accountId?: string) => Promise<void>;
   setSupported: (supported: boolean) => void;
   clearState: () => void;
 }
@@ -38,10 +38,10 @@ export const useVacationStore = create<VacationStore>()((set) => ({
   error: null,
   isSupported: false,
 
-  fetchVacationResponse: async (client) => {
+  fetchVacationResponse: async (client, accountId) => {
     set({ isLoading: true, error: null });
     try {
-      const vacation = await client.getVacationResponse();
+      const vacation = await client.getVacationResponse(accountId);
       set({
         isEnabled: vacation.isEnabled,
         fromDate: vacation.fromDate,
@@ -59,10 +59,10 @@ export const useVacationStore = create<VacationStore>()((set) => ({
     }
   },
 
-  updateVacationResponse: async (client, updates) => {
+  updateVacationResponse: async (client, updates, accountId) => {
     set({ isSaving: true, error: null });
     try {
-      await client.setVacationResponse(updates);
+      await client.setVacationResponse(updates, accountId);
       set((state) => ({
         ...state,
         ...updates,

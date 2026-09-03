@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { createPortal } from "react-dom";
+import { useState, useEffect, useMemo, Fragment, ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
+import { PluginSlot } from "@/components/plugins/plugin-slot";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Inbox,
   Send,
@@ -13,191 +12,465 @@ import {
   Star,
   Trash2,
   Archive,
-  PenSquare,
-  Search,
-  Menu,
-  LogOut,
+  Ban,
+  ChevronsLeft,
+  ChevronsRight,
   ChevronRight,
   ChevronDown,
   Folder,
   FolderOpen,
-  Users,
   User,
+  Users,
   Palmtree,
-  SlidersHorizontal,
   Settings,
   X,
+  RotateCcw,
   Tag,
-  Plus,
-  FolderPlus,
-  Edit3,
-  FolderInput,
+  FlaskConical,
+  PlayCircle,
+  Loader2,
+  AlertTriangle,
+  NotebookPen,
+  CalendarClock,
+  BellOff,
   Mails,
+  MailOpen,
+  MoreHorizontal,
 } from "lucide-react";
-import { cn, buildMailboxTree, flattenMailboxTree, MailboxNode, formatFileSize } from "@/lib/utils";
+import { cn, buildMailboxTree, MailboxNode } from "@/lib/utils";
+import { localizeMailboxName } from "@/lib/mailbox-label";
+import {
+  buildKeywordTree,
+  countKeywordNodes,
+  filterKeywordTree,
+  hasChildKeywords,
+  type KeywordNode,
+} from "@/lib/keyword-nesting";
+import { useShortenedText } from "@/hooks/use-shortened-text";
+import { useKeywordFormat } from "@/hooks/use-keyword-format";
+import { isEditableEventTarget } from "@/lib/keyboard";
 import { Mailbox } from "@/lib/jmap/types";
+import { useContextMenu } from "@/hooks/use-context-menu";
+import { MailboxContextMenu, type MailboxContextTarget } from "./mailbox-context-menu";
+import { useAccountStore } from '@/stores/account-store';
+import { UNIFIED_MAILBOX_IDS, CROSS_VIEW_IDS } from '@/lib/jmap/types';
+import type { UnifiedMailboxRole } from '@/lib/jmap/types';
 import { useDragDropContext } from "@/contexts/drag-drop-context";
 import { useMailboxDrop } from "@/hooks/use-mailbox-drop";
-import { useEmailStore } from "@/stores/email-store";
+import { MAILBOX_DRAG_MIME } from "@/components/pro/pro-shell-drop";
+import { useTagDrop } from "@/hooks/use-tag-drop";
+import { useUIStore } from "@/stores/ui-store";
 import { useAuthStore } from "@/stores/auth-store";
-import { activeFilterCount, UNIFIED_INBOX_ID } from "@/lib/jmap/search-utils";
-import { useSettingsStore } from "@/stores/settings-store";
 import { useVacationStore } from "@/stores/vacation-store";
-import { useResizeHandle } from "@/hooks/use-resize-handle";
+import { useSettingsStore, getKeywordVisibility } from "@/stores/settings-store";
+import { useEmailStore } from "@/stores/email-store";
 import { toast } from "@/stores/toast-store";
 import { debug } from "@/lib/debug";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { AccountSwitcher } from "./account-switcher";
+import { useIsEmbedded } from "@/hooks/use-is-embedded";
+import { buildSettingsPath, SCHEDULED_MAILBOX_ID, scopedScheduledMailboxId } from "@/lib/deep-links";
+import { useTour } from "@/components/tour/tour-provider";
 
 interface SidebarProps {
   mailboxes: Mailbox[];
   selectedMailbox?: string;
+  selectedKeyword?: string | null;
   onMailboxSelect?: (mailboxId: string) => void;
+  onTagSelect?: (keywordId: string | null) => void;
   onCompose?: () => void;
-  onLogout?: () => void;
   onSidebarClose?: () => void;
-  onSearch?: (query: string) => void;
-  onClearSearch?: () => void;
-  activeSearchQuery?: string;
-  quota?: { used: number; total: number } | null;
-  isPushConnected?: boolean;
+  onUnreadFilterClick?: (mailboxId: string) => void;
+  onMarkFolderRead?: (mailboxId: string) => void;
+  onMarkFolderTreeRead?: (mailboxId: string) => void;
+  onMarkAllFoldersRead?: () => void;
+  onEmptyFolder?: (mailboxId: string) => void;
+  onCreateSubfolder?: (parentId: string) => void;
+  onCreateFolder?: (accountId?: string) => void;
+  onRenameFolder?: (mailboxId: string) => void;
+  onDeleteFolder?: (mailboxId: string) => void;
+  onImportEmail?: (mailboxId: string) => void;
+  onRefreshMailboxes?: () => void;
+  scheduledTotal?: number;
+  /** Pending scheduled-send counts per JMAP account, for shared-account rows. */
+  scheduledTotalByAccount?: Record<string, number>;
+  /** JMAP account the scheduled view is currently narrowed to, if any. The
+   *  store keeps one virtual scheduled mailbox id, so the active shared row is
+   *  identified by this scope rather than by selectedMailbox alone. */
+  scheduledAccountScope?: string | null;
+  showScheduledMailbox?: boolean;
+  /** True when the unified view spans multiple login accounts (cross-account).
+   *  Drives the section header: "All accounts" when true, else "Unified Mailbox". */
+  crossAccountActive?: boolean;
+  /** Gated All mail / Unread / Starred entries in the "Unified Mailbox" section. */
+  showCrossUnread?: boolean;
+  showCrossStarred?: boolean;
+  showCrossAll?: boolean;
+  /** Unread total across all cross-view folders (badge for unread/all). */
+  crossUnreadCount?: number;
   className?: string;
+  /**
+   * Multi-account (Pro) mode props. When `multiAccountMode` is true, the
+   * sidebar renders a per-connected-account group instead of a single
+   * folders section - Thunderbird-style. `accountMailboxes` provides the
+   * mailbox list for non-active accounts (the active account still flows
+   * through the `mailboxes` prop). `viewingAccountId` highlights which
+   * account's folder is currently selected (null = active account).
+   * `onAccountMailboxSelect` fires with the owning accountId when the user
+   * picks a folder; callers translate that into `selectAccountMailbox`.
+   */
+  multiAccountMode?: boolean;
+  accountMailboxes?: Record<string, Mailbox[]>;
+  viewingAccountId?: string | null;
+  onAccountMailboxSelect?: (accountId: string | null, mailboxId: string) => void;
 }
 
-const getIconForMailbox = (role?: string, name?: string, hasChildren?: boolean, isExpanded?: boolean, isShared?: boolean, id?: string) => {
+const ROW_PX_BASE = 8;
+const CHEVRON_SLOT = 20;
+const INDENT_STEP = 12;
+
+const getIconForMailbox = (role?: string, name?: string, hasChildren?: boolean, isExpanded?: boolean, _isShared?: boolean, id?: string) => {
   const lowerName = name?.toLowerCase() || "";
 
-  if (id === UNIFIED_INBOX_ID) {
-    return Mails;
-  }
-
-  if (id === 'shared-folders-root') {
-    return isExpanded ? FolderOpen : Users;
-  }
-
   if (id?.startsWith('shared-account-')) {
-    return isExpanded ? FolderOpen : User;
-  }
-
-  if (isShared && hasChildren && !id?.startsWith('shared-')) {
-    return isExpanded ? FolderOpen : Folder;
-  }
-
-  if (hasChildren) {
-    return isExpanded ? FolderOpen : Folder;
+    return User;
   }
 
   if (role === "inbox" || lowerName.includes("inbox")) return Inbox;
   if (role === "sent" || lowerName.includes("sent")) return Send;
   if (role === "drafts" || lowerName.includes("draft")) return File;
-  if (role === "trash" || lowerName.includes("trash")) return Trash2;
+  if (role === "trash" || lowerName.includes("trash") || lowerName.includes("deleted")) return Trash2;
+  if (role === "junk" || role === "spam" || lowerName.includes("junk") || lowerName.includes("spam")) return Ban;
   if (role === "archive" || lowerName.includes("archive")) return Archive;
+  if (role === "shared" || lowerName.includes("shared")) return Users;
+  if (role === "important" || lowerName.includes("important")) return AlertTriangle;
+  if (role === "memos" || lowerName.includes("memo")) return NotebookPen;
+  if (role === "scheduled" || lowerName.includes("scheduled")) return CalendarClock;
+  if (role === "snoozed" || lowerName.includes("snoozed")) return BellOff;
   if (lowerName.includes("star") || lowerName.includes("flag")) return Star;
-  return Inbox;
+
+  if (hasChildren) {
+    return isExpanded ? FolderOpen : Folder;
+  }
+
+  return Folder;
 };
 
-function InlineInput({
-  defaultValue = "",
-  placeholder,
-  hintText,
-  borderColor = "border-green-500",
-  onSubmit,
-  onCancel,
-  depth = 0,
+const ROLE_ICON_COLOR: Record<string, string> = {
+  inbox: "text-blue-600/80 dark:text-blue-400/80",
+  sent: "text-emerald-600/80 dark:text-emerald-400/80",
+  drafts: "text-violet-600/80 dark:text-violet-400/80",
+  trash: "text-muted-foreground",
+  junk: "text-red-600/80 dark:text-red-400/80",
+  archive: "text-amber-600/80 dark:text-amber-400/80",
+  shared: "text-cyan-600/80 dark:text-cyan-400/80",
+  important: "text-orange-600/80 dark:text-orange-400/80",
+  memos: "text-yellow-600/80 dark:text-yellow-400/80",
+  scheduled: "text-sky-600/80 dark:text-sky-400/80",
+  snoozed: "text-slate-500/80 dark:text-slate-400/80",
+};
+
+function resolveRoleKey(role?: string, name?: string): string | undefined {
+  const lowerName = name?.toLowerCase() || "";
+  if (role === "inbox" || lowerName.includes("inbox")) return "inbox";
+  if (role === "sent" || lowerName.includes("sent")) return "sent";
+  if (role === "drafts" || lowerName.includes("draft")) return "drafts";
+  if (role === "trash" || lowerName.includes("trash") || lowerName.includes("deleted")) return "trash";
+  if (role === "junk" || role === "spam" || lowerName.includes("junk") || lowerName.includes("spam")) return "junk";
+  if (role === "archive" || lowerName.includes("archive")) return "archive";
+  if (role === "shared" || lowerName.includes("shared")) return "shared";
+  if (role === "important" || lowerName.includes("important")) return "important";
+  if (role === "memos" || lowerName.includes("memo")) return "memos";
+  if (role === "scheduled" || lowerName.includes("scheduled")) return "scheduled";
+  if (role === "snoozed" || lowerName.includes("snoozed")) return "snoozed";
+  return undefined;
+}
+
+function getIconClass(isSelected: boolean, isVirtual: boolean, colorful: boolean, roleKey?: string) {
+  const base = "w-4 h-4 flex-shrink-0 transition-colors";
+  if (isVirtual) return cn(base, "text-muted-foreground");
+  if (colorful && roleKey && ROLE_ICON_COLOR[roleKey]) {
+    return cn(base, ROLE_ICON_COLOR[roleKey]);
+  }
+  return cn(base, isSelected ? "text-foreground" : "text-foreground/80");
+}
+
+function SidebarRowCounts({
+  unread,
+  total,
+  onUnreadClick,
 }: {
-  defaultValue?: string;
-  placeholder?: string;
-  hintText: string;
-  borderColor?: string;
-  onSubmit: (value: string) => void;
-  onCancel: () => void;
-  depth?: number;
+  unread?: number;
+  total?: number;
+  isSelected: boolean;
+  onUnreadClick?: () => void;
 }) {
-  const [value, setValue] = useState(defaultValue);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const cancelledRef = useRef(false);
+  const showFolderTotalCount = useSettingsStore(s => s.showFolderTotalCount);
+  const unreadCount = unread ?? 0;
+  const totalCount = showFolderTotalCount ? (total ?? 0) : 0;
 
-  useEffect(() => {
-    inputRef.current?.focus();
-    inputRef.current?.select();
-  }, []);
+  if (unreadCount === 0 && totalCount === 0) return null;
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      onSubmit(value);
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      cancelledRef.current = true;
-      onCancel();
-    }
-  };
+  const unreadClass = "text-xs font-semibold tabular-nums text-foreground";
+  const totalClass = "text-xs tabular-nums text-muted-foreground";
+
+  const unreadNode = unreadCount > 0 ? (
+    onUnreadClick ? (
+      <span
+        role="button"
+        tabIndex={0}
+        onClick={(e) => {
+          e.stopPropagation();
+          onUnreadClick();
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            e.stopPropagation();
+            onUnreadClick();
+          }
+        }}
+        className={cn(unreadClass, "cursor-pointer hover:underline")}
+        title={`${unreadCount} unread`}
+      >
+        {unreadCount}
+      </span>
+    ) : (
+      <span className={unreadClass}>{unreadCount}</span>
+    )
+  ) : null;
 
   return (
-    <div style={{ paddingLeft: `${depth * 16 + 24}px` }} className="px-2 py-1">
-      <div className="flex items-center gap-1">
-        <Folder className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-        <input
-          ref={inputRef}
-          type="text"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onBlur={() => { if (!cancelledRef.current) onCancel(); }}
-          placeholder={placeholder}
-          maxLength={200}
-          className={cn(
-            "flex-1 bg-background text-foreground text-sm px-1.5 py-0.5 rounded border-2 outline-none",
-            borderColor
+    <span
+      className="ms-2 flex-shrink-0 flex items-baseline gap-1"
+      title={totalCount > 0 ? `${unreadCount} unread / ${totalCount} total` : `${unreadCount} unread`}
+      data-testid="folder-counts"
+      data-unread={unreadCount}
+      data-total={totalCount}
+    >
+      {unreadNode}
+      {unreadCount > 0 && totalCount > 0 && (
+        <span className="text-xs text-muted-foreground/60">/</span>
+      )}
+      {totalCount > 0 && <span className={totalClass}>{totalCount}</span>}
+    </span>
+  );
+}
+
+interface SidebarRowProps {
+  icon: ReactNode;
+  label: string;
+  /** Progressively shorter renderings of `label`, longest first. The widest one
+   *  that fits the row is shown; without this the full label is used. */
+  labelCandidates?: string[];
+  depth?: number;
+  isSelected?: boolean;
+  isVirtual?: boolean;
+  unread?: number;
+  total?: number;
+  onClick?: () => void;
+  hasChildren?: boolean;
+  isExpanded?: boolean;
+  onExpandToggle?: () => void;
+  onUnreadClick?: () => void;
+  isCollapsed: boolean;
+  dropHandlers?: Record<string, unknown>;
+  isValidDropTarget?: boolean;
+  isInvalidDropTarget?: boolean;
+  onContextMenu?: (e: React.MouseEvent) => void;
+  /** Stable identifiers for integration tests (not user-visible). */
+  testRole?: string | null;
+  testName?: string;
+  testMailboxId?: string;
+  testShared?: boolean;
+}
+
+function SidebarRow({
+  icon,
+  label,
+  labelCandidates,
+  depth = 0,
+  isSelected = false,
+  isVirtual = false,
+  unread,
+  total,
+  onClick,
+  hasChildren = false,
+  isExpanded = false,
+  onExpandToggle,
+  onUnreadClick,
+  isCollapsed,
+  dropHandlers,
+  isValidDropTarget,
+  isInvalidDropTarget,
+  onContextMenu,
+  testRole,
+  testName,
+  testMailboxId,
+  testShared,
+}: SidebarRowProps) {
+  const t = useTranslations('sidebar');
+  const leftPad = isCollapsed ? 0 : ROW_PX_BASE + depth * INDENT_STEP;
+  const [labelRef, shortenedLabel] = useShortenedText(labelCandidates ?? [label]);
+
+  return (
+    <div
+      {...(dropHandlers || {})}
+      onContextMenu={onContextMenu}
+      data-testid="folder-row"
+      data-folder-role={testRole ?? undefined}
+      data-folder-name={testName ?? undefined}
+      data-mailbox-id={testMailboxId ?? undefined}
+      data-shared={testShared ? 'true' : undefined}
+      data-selected={isSelected ? 'true' : undefined}
+      style={{ paddingBlock: 'var(--density-sidebar-py)' }}
+      className={cn(
+        "group w-full flex items-center max-lg:min-h-[44px] text-sm transition-colors duration-150",
+        isCollapsed ? "justify-center px-1" : "pe-2",
+        isVirtual
+          ? "text-muted-foreground"
+          : isSelected
+            ? "bg-accent text-accent-foreground font-semibold border-s-2 border-primary"
+            : "hover:bg-muted/50 text-foreground border-s-2 border-transparent",
+        isValidDropTarget && "bg-primary/20 ring-2 ring-primary ring-inset",
+        isInvalidDropTarget && "bg-destructive/10 ring-2 ring-destructive/30 ring-inset opacity-50"
+      )}
+    >
+      {!isCollapsed && (
+        <div
+          className="flex items-center flex-shrink-0"
+          style={{ paddingLeft: leftPad }}
+        >
+          {hasChildren && onExpandToggle ? (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onExpandToggle();
+              }}
+              data-testid="folder-expand-toggle"
+              className="flex items-center justify-center rounded hover:bg-muted active:bg-accent transition-colors"
+              style={{ width: CHEVRON_SLOT, height: CHEVRON_SLOT }}
+              title={isExpanded ? t('collapse_tooltip') : t('expand_tooltip')}
+            >
+              {isExpanded ? (
+                <ChevronDown className="w-3 h-3 text-muted-foreground" />
+              ) : (
+                <ChevronRight className="w-3 h-3 text-muted-foreground" />
+              )}
+            </button>
+          ) : (
+            <div style={{ width: CHEVRON_SLOT }} aria-hidden />
           )}
-        />
-        <button
-          onMouseDown={(e) => { e.preventDefault(); onSubmit(value); }}
-          className="text-green-500 hover:text-green-400 p-0.5"
-          aria-label="Confirm"
-        >
-          <span className="text-sm">&#10003;</span>
-        </button>
-        <button
-          onMouseDown={(e) => { e.preventDefault(); onCancel(); }}
-          className="text-red-500 hover:text-red-400 p-0.5"
-          aria-label="Cancel"
-        >
-          <span className="text-sm">&#10005;</span>
-        </button>
-      </div>
-      <div className="text-xs text-muted-foreground mt-0.5 ml-6">{hintText}</div>
+        </div>
+      )}
+
+      <button
+        onClick={() => !isVirtual && onClick?.()}
+        disabled={isVirtual}
+        className={cn(
+          "flex items-center gap-2 min-w-0 transition-colors",
+          isCollapsed ? "justify-center" : "flex-1 text-start",
+          isVirtual && "cursor-default select-none"
+        )}
+        title={isCollapsed ? label : undefined}
+      >
+        <span className="flex items-center justify-center flex-shrink-0 w-4 h-4">
+          {icon}
+        </span>
+        {!isCollapsed && (
+          <>
+            <span ref={labelRef} className="flex-1 truncate">{shortenedLabel}</span>
+            <SidebarRowCounts
+              unread={unread}
+              total={total}
+              isSelected={isSelected}
+              onUnreadClick={onUnreadClick}
+            />
+          </>
+        )}
+      </button>
     </div>
   );
 }
 
-function RenameInput({ defaultValue, onSubmit, onCancel }: {
-  defaultValue: string;
-  onSubmit: (value: string) => void;
-  onCancel: () => void;
+function SidebarSectionHeader({
+  label,
+  expanded,
+  onToggle,
+  onSettings,
+  settingsTitle,
+  isCollapsed,
+  first,
+  icon,
+  sub,
+  testId,
+  onContextMenu,
+}: {
+  label: string;
+  expanded: boolean;
+  onToggle: () => void;
+  onSettings?: () => void;
+  settingsTitle?: string;
+  isCollapsed: boolean;
+  first?: boolean;
+  icon?: ReactNode;
+  sub?: boolean;
+  testId?: string;
+  onContextMenu?: (event: React.MouseEvent) => void;
 }) {
-  const cancelledRef = useRef(false);
+  if (isCollapsed) {
+    return first ? null : <div className="h-px bg-border/50 mx-2 my-2" aria-hidden />;
+  }
+
+  const paddingY = sub ? "pt-2" : first ? "pt-3" : "pt-5";
+  const paddingX = sub ? "px-4" : "px-3";
+  const textClass = sub
+    ? "text-xs font-semibold text-muted-foreground truncate"
+    : "text-sm font-semibold text-foreground truncate";
+
   return (
-    <input
-      autoFocus
-      type="text"
-      defaultValue={defaultValue}
-      maxLength={200}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          onSubmit((e.target as HTMLInputElement).value);
-        } else if (e.key === 'Escape') {
-          e.preventDefault();
-          cancelledRef.current = true;
-          onCancel();
-        }
-      }}
-      onBlur={(e) => {
-        if (!cancelledRef.current) onSubmit(e.target.value);
-      }}
-      onClick={(e) => e.stopPropagation()}
-      className="flex-1 bg-background text-foreground text-sm px-1.5 py-0.5 rounded border-2 border-primary outline-none min-w-0"
-    />
+    <button
+      onClick={onToggle}
+      onContextMenu={onContextMenu}
+      data-testid={testId}
+      data-section-name={label}
+      data-expanded={expanded ? 'true' : 'false'}
+      className={cn(
+        "group w-full flex items-center pb-1 select-none rounded-sm hover:bg-muted/40 transition-colors",
+        paddingX,
+        paddingY
+      )}
+    >
+      {expanded ? (
+        <ChevronDown className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+      ) : (
+        <ChevronRight className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+      )}
+      {icon && <span className="ms-1.5 flex-shrink-0">{icon}</span>}
+      <span className={cn(textClass, icon ? "ms-1.5" : "ms-1.5")}>
+        {label}
+      </span>
+      {onSettings && (
+        <span
+          role="button"
+          tabIndex={0}
+          onClick={(e) => {
+            e.stopPropagation();
+            onSettings();
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              e.stopPropagation();
+              onSettings();
+            }
+          }}
+          className="ms-auto p-1 rounded text-muted-foreground/70 hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+          title={settingsTitle}
+        >
+          <Settings className="w-3.5 h-3.5" />
+        </span>
+      )}
+    </button>
   );
 }
 
@@ -207,43 +480,55 @@ function MailboxTreeItem({
   expandedFolders,
   onMailboxSelect,
   onToggleExpand,
-  onMailboxContextMenu,
   isCollapsed,
-  renamingMailboxId,
-  onRenameSubmit,
-  onRenameCancel,
-  onStartRename,
-  creatingSubfolder,
-  onCreateSubmit,
-  onCreateCancel,
+  onUnreadFilterClick,
+  colorful,
+  onContextMenu,
+  dragAccountId = null,
 }: {
   node: MailboxNode;
   selectedMailbox: string;
   expandedFolders: Set<string>;
   onMailboxSelect?: (id: string) => void;
   onToggleExpand: (id: string) => void;
-  onMailboxContextMenu?: (e: React.MouseEvent, mailbox: Mailbox) => void;
   isCollapsed: boolean;
-  renamingMailboxId: string | null;
-  onRenameSubmit: (value: string) => void;
-  onRenameCancel: () => void;
-  onStartRename: (id: string) => void;
-  creatingSubfolder: { parentId: string } | null;
-  onCreateSubmit: (value: string) => void;
-  onCreateCancel: () => void;
+  onUnreadFilterClick?: (mailboxId: string) => void;
+  colorful: boolean;
+  onContextMenu?: (e: React.MouseEvent, node: MailboxNode) => void;
+  /** Connected-account id this folder is listed under; null = active account.
+   *  Travels in the folder-drag payload so a folder tab fetches through the
+   *  right client. */
+  dragAccountId?: string | null;
 }) {
-  const t = useTranslations('sidebar');
-  const tFolder = useTranslations('sidebar.folder_management');
   const tNotifications = useTranslations('notifications');
+  const tSidebar = useTranslations('sidebar');
   const hasChildren = node.children.length > 0;
   const isExpanded = expandedFolders.has(node.id);
   const Icon = getIconForMailbox(node.role, node.name, hasChildren, isExpanded, node.isShared, node.id);
-  const indentPixels = node.depth * 16;
   const isVirtualNode = node.id.startsWith('shared-');
-  const isRenaming = renamingMailboxId === node.id;
-  const isCreatingChild = creatingSubfolder?.parentId === node.id;
+  const isSelected = selectedMailbox === node.id;
+  const roleKey = resolveRoleKey(node.role, node.name);
+  const label = localizeMailboxName(node.role, node.name, (k) => tSidebar(`mailboxes.${k}`));
 
-  const { isDragging: globalDragging, startMailboxDrag, endDrag: globalEndDrag, dragType, draggedMailboxId } = useDragDropContext();
+  const isEmbedded = useIsEmbedded();
+  // Pro shell only: folder rows are drag sources so a folder can be dropped
+  // onto a tab strip / pane and open as its own tab. Native HTML5 DnD - the
+  // Pro shell's drop targets live outside any dnd-kit context.
+  const folderDragHandlers: Record<string, unknown> | undefined =
+    isEmbedded && !isVirtualNode
+      ? {
+          draggable: true,
+          onDragStart: (e: React.DragEvent) => {
+            e.dataTransfer.setData(
+              MAILBOX_DRAG_MIME,
+              JSON.stringify({ mailboxId: node.id, name: label, accountId: dragAccountId }),
+            );
+            e.dataTransfer.effectAllowed = 'copy';
+          },
+        }
+      : undefined;
+
+  const { isDragging: globalDragging } = useDragDropContext();
   const { dropHandlers, isValidDropTarget, isInvalidDropTarget } = useMailboxDrop({
     mailbox: node,
     onSuccess: (count, mailboxName) => {
@@ -264,177 +549,233 @@ function MailboxTreeItem({
     },
   });
 
-  const canDrag = !isVirtualNode && !node.isShared && !node.id.startsWith('shared-') &&
-    !node.id.startsWith('temp-') && node.myRights?.mayRename;
+  return (
+    <>
+      <SidebarRow
+        icon={<Icon className={getIconClass(isSelected, isVirtualNode, colorful, roleKey)} />}
+        label={label}
+        testRole={node.role}
+        testName={node.name}
+        testMailboxId={node.id}
+        testShared={node.isShared}
+        depth={node.depth}
+        isSelected={isSelected}
+        isVirtual={isVirtualNode}
+        unread={node.unreadEmails}
+        total={node.totalEmails}
+        onClick={() => onMailboxSelect?.(node.id)}
+        hasChildren={hasChildren}
+        isExpanded={isExpanded}
+        onExpandToggle={() => onToggleExpand(node.id)}
+        onUnreadClick={() => onUnreadFilterClick?.(node.id)}
+        isCollapsed={isCollapsed}
+        dropHandlers={
+          folderDragHandlers || globalDragging
+            ? {
+                ...(folderDragHandlers ?? {}),
+                ...(globalDragging ? (dropHandlers as Record<string, unknown>) : {}),
+              }
+            : undefined
+        }
+        isValidDropTarget={isValidDropTarget}
+        isInvalidDropTarget={isInvalidDropTarget}
+        onContextMenu={onContextMenu && !isVirtualNode ? (e) => onContextMenu(e, node) : undefined}
+      />
 
-  const handleFolderDragStart = useCallback((e: React.DragEvent) => {
-    if (!canDrag) {
-      e.preventDefault();
-      return;
-    }
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("application/x-mailbox-id", node.id);
-    e.dataTransfer.setData("text/plain", node.name);
+      {hasChildren && isExpanded && !isCollapsed && node.children.map((child) => (
+        <MailboxTreeItem
+          key={child.id}
+          node={child}
+          selectedMailbox={selectedMailbox}
+          expandedFolders={expandedFolders}
+          onMailboxSelect={onMailboxSelect}
+          onToggleExpand={onToggleExpand}
+          isCollapsed={isCollapsed}
+          onUnreadFilterClick={onUnreadFilterClick}
+          colorful={colorful}
+          onContextMenu={onContextMenu}
+          dragAccountId={dragAccountId}
+        />
+      ))}
+    </>
+  );
+}
 
-    const preview = document.createElement("div");
-    preview.style.cssText = `
-      position: fixed; top: -9999px; left: 0; padding: 6px 12px;
-      background-color: var(--color-primary, #3b82f6); color: white;
-      border-radius: 6px; font-size: 13px; font-weight: 500; white-space: nowrap;
-    `;
-    preview.textContent = node.name;
-    document.body.appendChild(preview);
-    e.dataTransfer.setDragImage(preview, 0, 0);
-    requestAnimationFrame(() => preview.remove());
+function ShowAllTagsRow({
+  hiddenCount,
+  showAll,
+  onToggle,
+  isCollapsed,
+}: {
+  hiddenCount: number;
+  showAll: boolean;
+  onToggle: () => void;
+  isCollapsed: boolean;
+}) {
+  const t = useTranslations('sidebar');
 
-    startMailboxDrag(node.id);
-  }, [canDrag, node.id, node.name, startMailboxDrag]);
+  return (
+    <SidebarRow
+      icon={<MoreHorizontal className="w-4 h-4 text-muted-foreground" />}
+      label={showAll ? t('show_fewer_tags') : t('show_all_tags', { count: hiddenCount })}
+      depth={0}
+      onClick={onToggle}
+      isCollapsed={isCollapsed}
+    />
+  );
+}
 
-  const handleFolderDragEnd = useCallback(() => {
-    globalEndDrag();
-  }, [globalEndDrag]);
+function TagItem({
+  node,
+  selectedKeyword,
+  expandedTags,
+  isCollapsed,
+  onTagSelect,
+  onToggleExpand,
+  tagCounts,
+  colorful,
+}: {
+  node: KeywordNode;
+  selectedKeyword: string | null;
+  expandedTags: Set<string>;
+  isCollapsed: boolean;
+  onTagSelect?: (keywordId: string | null) => void;
+  onToggleExpand: (keywordId: string) => void;
+  tagCounts: Record<string, { total: number; unread: number }>;
+  colorful: boolean;
+}) {
+  const t = useTranslations('notifications');
+  const { tagNameCandidates, tagColor } = useKeywordFormat();
+  const palette = tagColor(node.id);
+  const hasChildren = node.children.length > 0;
+  const isExpanded = expandedTags.has(node.id);
+  const isSelected = selectedKeyword === node.id;
+  // Nested rows are placed by their indentation, so they show their own name.
+  // A root spells out its path, which matters when an intermediate tag is
+  // missing from this client's settings and the row would otherwise read as a
+  // bare leaf name.
+  const labelCandidates = node.depth === 0 ? tagNameCandidates(node.id) : [node.label];
+  const label = labelCandidates[0];
+  // Toasts have the room for the whole thing, and no indentation to lean on,
+  // so they always spell out the full path - otherwise two leaves with the
+  // same name in different branches (e.g. "Personal/Receipts" and
+  // "Work/Receipts") would read as the same tag.
+  const fullLabel = tagNameCandidates(node.id)[0];
+  const { isDragging: globalDragging } = useDragDropContext();
+  const { dropHandlers, isValidDropTarget } = useTagDrop({
+    tagId: node.id,
+    onSuccess: (count) => {
+      if (count === 1) {
+        toast.success(t('email_tagged'), fullLabel);
+      } else {
+        toast.success(t('emails_tagged', { count }), fullLabel);
+      }
+    },
+    onError: () => {
+      toast.error(t('tag_failed'), fullLabel);
+    },
+  });
+
+  const tagIcon = colorful ? (
+    <Tag className={cn("w-4 h-4 flex-shrink-0", palette.icon)} fill="currentColor" />
+  ) : (
+    <span className={cn("w-3 h-3 rounded-full", palette.dot)} />
+  );
 
   return (
     <>
-      <div
-        {...(globalDragging ? dropHandlers : {})}
-        onContextMenu={(e) => onMailboxContextMenu?.(e, node)}
-        draggable={canDrag}
-        onDragStart={handleFolderDragStart}
-        onDragEnd={handleFolderDragEnd}
-        className={cn(
-          "group w-full flex items-center px-2 py-1 lg:py-1 max-lg:py-3 max-lg:min-h-[44px] text-sm transition-all duration-200",
-          isVirtualNode
-            ? "text-muted-foreground"
-            : selectedMailbox === node.id
-              ? "bg-accent text-accent-foreground"
-              : "hover:bg-muted text-foreground",
-          node.depth === 0 && !isVirtualNode && "font-medium",
-          isValidDropTarget && "bg-primary/20 ring-2 ring-primary ring-inset",
-          isInvalidDropTarget && "bg-destructive/10 ring-2 ring-destructive/30 ring-inset opacity-50",
-          globalDragging && dragType === 'mailbox' && draggedMailboxId === node.id && "opacity-40"
-        )}
-      >
-        {hasChildren && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleExpand(node.id);
-            }}
-            className={cn(
-              "p-0.5 rounded mr-1 transition-all duration-200",
-              "hover:bg-muted active:bg-accent"
-            )}
-            style={{ marginLeft: indentPixels }}
-            title={isExpanded ? t('collapse_tooltip') : t('expand_tooltip')}
-          >
-            {isExpanded ? (
-              <ChevronDown className="w-3 h-3 text-muted-foreground" />
-            ) : (
-              <ChevronRight className="w-3 h-3 text-muted-foreground" />
-            )}
-          </button>
-        )}
+      <SidebarRow
+        icon={tagIcon}
+        label={label}
+        labelCandidates={labelCandidates}
+        depth={node.depth}
+        isSelected={isSelected}
+        unread={tagCounts[node.id]?.unread ?? 0}
+        total={tagCounts[node.id]?.total ?? 0}
+        onClick={() => onTagSelect?.(isSelected ? null : node.id)}
+        hasChildren={hasChildren}
+        isExpanded={isExpanded}
+        onExpandToggle={() => onToggleExpand(node.id)}
+        isCollapsed={isCollapsed}
+        dropHandlers={globalDragging ? (dropHandlers as Record<string, unknown>) : undefined}
+        isValidDropTarget={isValidDropTarget}
+      />
 
+      {hasChildren && isExpanded && !isCollapsed && node.children.map((child) => (
+        <TagItem
+          key={child.id}
+          node={child}
+          selectedKeyword={selectedKeyword}
+          expandedTags={expandedTags}
+          isCollapsed={isCollapsed}
+          onTagSelect={onTagSelect}
+          onToggleExpand={onToggleExpand}
+          tagCounts={tagCounts}
+          colorful={colorful}
+        />
+      ))}
+    </>
+  );
+}
+
+function DemoBanner() {
+  const t = useTranslations('sidebar');
+  const { isDemoMode, loginDemo } = useAuthStore();
+  const { startTour, resetTourCompletion } = useTour();
+  const router = useRouter();
+  const [isResetting, setIsResetting] = useState(false);
+
+  if (!isDemoMode) return null;
+
+  const handleReset = async () => {
+    setIsResetting(true);
+    router.push('/');
+    await loginDemo();
+    setIsResetting(false);
+  };
+
+  const handleStartTour = () => {
+    resetTourCompletion();
+    router.push('/');
+    setTimeout(() => startTour(), 100);
+  };
+
+  return (
+    <div
+      data-tour="demo-banner"
+      className={cn(
+        "flex flex-col gap-1.5 w-full px-3 py-2 text-xs",
+        "bg-primary/10 dark:bg-primary/10 text-primary",
+      )}
+    >
+      <div className="flex items-center gap-2">
+        <FlaskConical className="w-3.5 h-3.5 flex-shrink-0" />
+        <span className="truncate font-medium">{t("demo_banner")}</span>
+      </div>
+      <div className="flex items-center gap-1.5">
         <button
-          onClick={() => !isVirtualNode && !node.id.startsWith('temp-') && onMailboxSelect?.(node.id)}
-          disabled={isVirtualNode || node.id.startsWith('temp-')}
-          className={cn(
-            "flex-1 flex items-center text-left py-1 lg:py-1 max-lg:py-2 px-1 rounded",
-            "transition-colors duration-150",
-            isVirtualNode && "cursor-default select-none"
-          )}
-          style={{
-            paddingLeft: hasChildren ? '4px' : `${indentPixels + 24}px`
-          }}
-          title={isCollapsed ? node.name : undefined}
+          onClick={handleStartTour}
+          className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 hover:bg-primary/20 transition-colors"
+          title={t("demo_tour")}
         >
-          <Icon className={cn(
-            "w-4 h-4 mr-2 flex-shrink-0 transition-colors",
-            hasChildren && isExpanded && "text-primary",
-            selectedMailbox === node.id && "text-accent-foreground",
-            !hasChildren && node.depth > 0 && "text-muted-foreground",
-            node.isShared && "text-blue-500"
-          )} />
-          {!isCollapsed && (
-            <>
-              {isRenaming ? (
-                <RenameInput
-                  defaultValue={node.name}
-                  onSubmit={onRenameSubmit}
-                  onCancel={onRenameCancel}
-                />
-              ) : (
-                <span
-                  className="flex-1 truncate"
-                  onDoubleClick={(e) => {
-                    if (!node.role && !node.isShared && !isVirtualNode && node.id !== UNIFIED_INBOX_ID) {
-                      e.stopPropagation();
-                      onStartRename(node.id);
-                    }
-                  }}
-                >
-                  {node.name}
-                </span>
-              )}
-              {!isRenaming && node.unreadEmails > 0 && (
-                <span className={cn(
-                  "text-xs rounded-full px-2 py-0.5 ml-2 font-medium",
-                  selectedMailbox === node.id
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-foreground text-background"
-                )}>
-                  {node.unreadEmails}
-                </span>
-              )}
-            </>
+          <PlayCircle className="w-3 h-3" />
+          {t("demo_tour")}
+        </button>
+        <button
+          onClick={handleReset}
+          disabled={isResetting}
+          className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 hover:bg-primary/20 transition-colors disabled:opacity-50"
+          title={t("demo_reset")}
+        >
+          {isResetting ? (
+            <Loader2 className="w-3 h-3 animate-spin" />
+          ) : (
+            <RotateCcw className="w-3 h-3" />
           )}
+          {t("demo_reset")}
         </button>
       </div>
-
-      {hasChildren && isExpanded && !isCollapsed && (
-        <div className="relative">
-          {node.children.map((child) => (
-            <MailboxTreeItem
-              key={child.id}
-              node={child}
-              selectedMailbox={selectedMailbox}
-              expandedFolders={expandedFolders}
-              onMailboxSelect={onMailboxSelect}
-              onToggleExpand={onToggleExpand}
-              onMailboxContextMenu={onMailboxContextMenu}
-              isCollapsed={isCollapsed}
-              renamingMailboxId={renamingMailboxId}
-              onRenameSubmit={onRenameSubmit}
-              onRenameCancel={onRenameCancel}
-              onStartRename={onStartRename}
-              creatingSubfolder={creatingSubfolder}
-              onCreateSubmit={onCreateSubmit}
-              onCreateCancel={onCreateCancel}
-            />
-          ))}
-          {isCreatingChild && (
-            <InlineInput
-              placeholder={tFolder('folder_name_placeholder')}
-              hintText={tFolder('enter_to_create')}
-              onSubmit={onCreateSubmit}
-              onCancel={onCreateCancel}
-              depth={node.depth + 1}
-            />
-          )}
-        </div>
-      )}
-
-      {!hasChildren && isCreatingChild && !isCollapsed && (
-        <InlineInput
-          placeholder={tFolder('folder_name_placeholder')}
-          hintText={tFolder('enter_to_create')}
-          onSubmit={onCreateSubmit}
-          onCancel={onCreateCancel}
-          depth={node.depth + 1}
-        />
-      )}
-    </>
+    </div>
   );
 }
 
@@ -456,314 +797,116 @@ function VacationBanner() {
     >
       <Palmtree className="w-3.5 h-3.5 flex-shrink-0" />
       <span className="truncate font-medium">{t("vacation_active")}</span>
-      <Settings className="w-3 h-3 ml-auto flex-shrink-0 opacity-60" />
+      <Settings className="w-3 h-3 ms-auto flex-shrink-0 opacity-60" />
     </button>
-  );
-}
-
-function AdvancedSearchToggle() {
-  const tSearch = useTranslations("advanced_search");
-  const { searchFilters, isAdvancedSearchOpen, toggleAdvancedSearch } = useEmailStore();
-  const filterCount = activeFilterCount(searchFilters);
-
-  return (
-    <button
-      type="button"
-      onClick={toggleAdvancedSearch}
-      className={cn(
-        "relative flex-shrink-0 p-2 rounded-md transition-colors",
-        isAdvancedSearchOpen || filterCount > 0
-          ? "bg-primary/10 text-primary"
-          : "text-muted-foreground hover:text-foreground hover:bg-muted"
-      )}
-      title={tSearch("toggle_filters")}
-    >
-      <SlidersHorizontal className="w-4 h-4" />
-      {filterCount > 0 && (
-        <span className="absolute -top-1 -right-1 flex items-center justify-center w-4 h-4 text-[10px] font-bold rounded-full bg-primary text-primary-foreground">
-          {filterCount}
-        </span>
-      )}
-    </button>
-  );
-}
-
-const tagDotColors: Record<string, string> = {
-  red: "bg-red-500",
-  orange: "bg-orange-500",
-  yellow: "bg-yellow-500",
-  green: "bg-green-500",
-  blue: "bg-blue-500",
-  purple: "bg-purple-500",
-  pink: "bg-pink-500",
-};
-
-function TagsSection({
-  isCollapsed,
-  onSearch,
-}: {
-  isCollapsed: boolean;
-  onSearch?: (query: string) => void;
-}) {
-  const t = useTranslations("sidebar");
-  const { tagCounts } = useEmailStore();
-  const [expanded, setExpanded] = useState(true);
-
-  const tags = Object.entries(tagCounts);
-  if (tags.length === 0 || isCollapsed) return null;
-
-  return (
-    <div className="border-t border-border">
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="flex items-center w-full px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:bg-muted transition-colors"
-      >
-        <Tag className="w-3 h-3 mr-2" />
-        <span className="flex-1 text-left">{t("tags.title")}</span>
-        {expanded ? (
-          <ChevronDown className="w-3 h-3" />
-        ) : (
-          <ChevronRight className="w-3 h-3" />
-        )}
-      </button>
-      {expanded && (
-        <div className="py-1">
-          {tags.map(([color, count]) => (
-            <button
-              key={color}
-              onClick={() => onSearch?.(`keyword:$color:${color}`)}
-              className="flex items-center w-full px-4 py-1.5 text-sm hover:bg-muted transition-colors text-foreground"
-            >
-              <span
-                className={cn(
-                  "w-2.5 h-2.5 rounded-full mr-2.5 flex-shrink-0",
-                  tagDotColors[color] || "bg-gray-500"
-                )}
-              />
-              <span className="flex-1 text-left capitalize">{color}</span>
-              <span className="text-xs text-muted-foreground tabular-nums">
-                {count}
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function EmptyFolderConfirmDialog({
-  mailbox,
-  onConfirm,
-  onCancel,
-}: {
-  mailbox: { name: string; totalEmails: number };
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
-  const t = useTranslations("sidebar");
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div
-        className="absolute inset-0 bg-black/50"
-        onClick={onCancel}
-        onKeyDown={(e) => e.key === "Escape" && onCancel()}
-      />
-      <div className="relative bg-background rounded-lg shadow-xl p-6 max-w-sm mx-4 border border-border">
-        <h3 className="text-lg font-semibold mb-2">{t("empty_folder.title")}</h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          {t("empty_folder.confirm", {
-            count: mailbox.totalEmails,
-            folder: mailbox.name,
-          })}
-        </p>
-        <div className="flex justify-end gap-2">
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 text-sm rounded-md border border-border hover:bg-muted transition-colors"
-          >
-            {t("empty_folder.cancel")}
-          </button>
-          <button
-            onClick={onConfirm}
-            className="px-4 py-2 text-sm rounded-md bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
-          >
-            {t("empty_folder.title")}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function StorageQuota({ quota, isCollapsed }: { quota: { used: number; total: number } | null; isCollapsed: boolean }) {
-  const t = useTranslations('sidebar');
-
-  if (!quota || quota.total <= 0) return null;
-
-  const usagePercent = Math.min((quota.used / quota.total) * 100, 100);
-  const barColor = usagePercent > 90
-    ? "bg-red-500 dark:bg-red-400"
-    : usagePercent > 70
-      ? "bg-amber-500 dark:bg-amber-400"
-      : "bg-green-500 dark:bg-green-400";
-
-  if (isCollapsed) {
-    return (
-      <div className="px-2 py-2" title={`${formatFileSize(quota.used)} / ${formatFileSize(quota.total)}`}>
-        <div className="w-full bg-muted rounded-full h-1">
-          <div className={cn(barColor, "h-1 rounded-full transition-all")} style={{ width: `${usagePercent}%` }} />
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="px-3 py-2">
-      <div className="flex items-center justify-between text-xs">
-        <span className="text-muted-foreground">{t("storage")}</span>
-        <span className="text-foreground tabular-nums">
-          {formatFileSize(quota.used)} / {formatFileSize(quota.total)}
-        </span>
-      </div>
-      <div className="mt-1 w-full bg-muted rounded-full h-1">
-        <div className={cn(barColor, "h-1 rounded-full transition-all")} style={{ width: `${usagePercent}%` }} />
-      </div>
-    </div>
-  );
-}
-
-function MoveToSubmenu({
-  mailbox,
-  allMailboxes,
-  onMove,
-}: {
-  mailbox: Mailbox;
-  allMailboxes: Mailbox[];
-  onMove: (targetId: string | null) => void;
-  onClose: () => void;
-}) {
-  const tFolder = useTranslations('sidebar.folder_management');
-  const [showSubmenu, setShowSubmenu] = useState(false);
-
-  const isDescendant = (parentId: string, checkId: string): boolean => {
-    const children = allMailboxes.filter(mb => mb.parentId === parentId);
-    return children.some(c => c.id === checkId || isDescendant(c.id, checkId));
-  };
-
-  const tree = buildMailboxTree(allMailboxes);
-  const flatTree = flattenMailboxTree(tree);
-  const validTargets = flatTree.filter(mb => {
-    if (mb.id === mailbox.id) return false;
-    if (mb.isShared || mb.id.startsWith('shared-')) return false;
-    if (!mb.myRights?.mayCreateChild) return false;
-    if (isDescendant(mailbox.id, mb.id)) return false;
-    return true;
-  });
-
-  const canMoveToRoot = !!mailbox.parentId;
-
-  return (
-    <div
-      className="relative"
-      onMouseEnter={() => setShowSubmenu(true)}
-      onMouseLeave={() => setShowSubmenu(false)}
-    >
-      <div className="flex items-center w-full px-3 py-2 text-sm hover:bg-muted transition-colors cursor-pointer">
-        <FolderInput className="w-4 h-4 mr-2" />
-        {tFolder("move_to")}
-        <ChevronRight className="w-3 h-3 ml-auto" />
-      </div>
-
-      {showSubmenu && (
-        <div className="absolute left-full top-0 bg-background border border-border rounded-md shadow-lg py-1 min-w-[180px] max-h-[300px] overflow-y-auto z-50">
-          {canMoveToRoot && (
-            <>
-              <button
-                onClick={() => onMove(null)}
-                className="flex items-center w-full px-3 py-1.5 text-sm hover:bg-muted transition-colors font-medium"
-              >
-                <Folder className="w-3.5 h-3.5 mr-2 flex-shrink-0 text-muted-foreground" />
-                {tFolder("move_to_top_level")}
-              </button>
-              <div className="h-px bg-border mx-2 my-1" />
-            </>
-          )}
-          {validTargets.length === 0 && !canMoveToRoot ? (
-            <div className="px-3 py-2 text-sm text-muted-foreground">
-              {tFolder("no_available_targets")}
-            </div>
-          ) : (
-            validTargets.map((target) => (
-              <button
-                key={target.id}
-                onClick={() => onMove(target.id)}
-                className="flex items-center w-full px-3 py-1.5 text-sm hover:bg-muted transition-colors"
-                style={{ paddingLeft: `${12 + target.depth * 12}px` }}
-              >
-                <Folder className="w-3.5 h-3.5 mr-2 flex-shrink-0 text-muted-foreground" />
-                <span className="truncate">{target.name}</span>
-              </button>
-            ))
-          )}
-        </div>
-      )}
-    </div>
   );
 }
 
 export function Sidebar({
   mailboxes = [],
   selectedMailbox = "",
+  selectedKeyword = null,
   onMailboxSelect,
-  onCompose,
-  onLogout,
+  onTagSelect,
+  onCompose: _onCompose,
   onSidebarClose,
-  onSearch,
-  onClearSearch,
-  activeSearchQuery = "",
-  quota,
-  isPushConnected = false,
+  onUnreadFilterClick,
+  onMarkFolderRead,
+  onMarkFolderTreeRead,
+  onMarkAllFoldersRead,
+  onEmptyFolder,
+  onCreateSubfolder,
+  onCreateFolder,
+  onRenameFolder,
+  onDeleteFolder,
+  onImportEmail,
+  onRefreshMailboxes,
+  scheduledTotal = 0,
+  scheduledTotalByAccount,
+  scheduledAccountScope = null,
+  showScheduledMailbox = false,
+  crossAccountActive = false,
+  showCrossUnread = false,
+  showCrossStarred = false,
+  showCrossAll = false,
+  crossUnreadCount = 0,
   className,
+  multiAccountMode = false,
+  accountMailboxes,
+  viewingAccountId = null,
+  onAccountMailboxSelect,
 }: SidebarProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const router = useRouter();
+  const { sidebarCollapsed: isCollapsed, toggleSidebarCollapsed } = useUIStore();
+  const { primaryIdentity: _primaryIdentity, activeAccountId } = useAuthStore();
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; mailbox: Mailbox } | null>(null);
-  const contextMenuRef = useRef<HTMLDivElement>(null);
-  const [emptyFolderTarget, setEmptyFolderTarget] = useState<Mailbox | null>(null);
-  const [renamingMailboxId, setRenamingMailboxId] = useState<string | null>(null);
-  const [creatingSubfolder, setCreatingSubfolder] = useState<{ parentId: string } | null>(null);
-  const [creatingTopLevel, setCreatingTopLevel] = useState(false);
-  const [deleteFolderTarget, setDeleteFolderTarget] = useState<Mailbox | null>(null);
-  const sidebarRef = useRef<HTMLDivElement>(null);
-  const t = useTranslations('sidebar');
-  const tFolder = useTranslations('sidebar.folder_management');
-  const { dragType, endDrag: globalEndDrag } = useDragDropContext();
-  const { client } = useAuthStore();
-  const { emptyFolder, createMailbox, renameMailbox, moveMailbox, deleteMailbox } = useEmailStore();
-  const { sidebarWidth, updateSetting, showUnifiedInbox, unifiedInboxExcludedAccounts } = useSettingsStore();
-
-  const handleSidebarResize = useCallback((width: number) => {
-    document.documentElement.style.setProperty('--sidebar-width', `${width}px`);
-  }, []);
-
-  const handleSidebarResizeEnd = useCallback((width: number) => {
-    updateSetting('sidebarWidth', width);
-  }, [updateSetting]);
-
-  const resizeHandle = useResizeHandle({
-    min: 180,
-    max: 400,
-    initial: sidebarWidth,
-    onResize: handleSidebarResize,
-    onResizeEnd: handleSidebarResizeEnd,
+  const [expandedTags, setExpandedTags] = useState<Set<string>>(new Set());
+  const [showAllTags, setShowAllTags] = useState(false);
+  const [foldersExpanded, setFoldersExpanded] = useState(() => {
+    try {
+      const stored = localStorage.getItem('sidebarFoldersExpanded');
+      return stored !== null ? JSON.parse(stored) : true;
+    } catch { return true; }
   });
-
-  useEffect(() => {
-    setSearchQuery(activeSearchQuery);
-  }, [activeSearchQuery]);
+  const [tagsExpanded, setTagsExpanded] = useState(() => {
+    try {
+      const stored = localStorage.getItem('sidebarTagsExpanded');
+      return stored !== null ? JSON.parse(stored) : true;
+    } catch { return true; }
+  });
+  const [unifiedExpanded, setUnifiedExpanded] = useState(() => {
+    try {
+      const stored = localStorage.getItem('sidebarUnifiedExpanded');
+      return stored !== null ? JSON.parse(stored) : true;
+    } catch { return true; }
+  });
+  const [sharedExpanded, setSharedExpanded] = useState(() => {
+    try {
+      const stored = localStorage.getItem('sidebarSharedExpanded');
+      return stored !== null ? JSON.parse(stored) : false;
+    } catch { return false; }
+  });
+  const [expandedSharedAccounts, setExpandedSharedAccounts] = useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem('sidebarExpandedSharedAccounts');
+      return stored !== null ? new Set(JSON.parse(stored) as string[]) : new Set();
+    } catch { return new Set(); }
+  });
+  // Per-connected-account collapse state for Pro / Thunderbird-style mode.
+  // Stored as the set of accountIds the user has explicitly collapsed -
+  // anything not in the set is treated as expanded. Inverting the storage
+  // model lets new accounts default to expanded automatically.
+  const [collapsedAccountGroups, setCollapsedAccountGroups] = useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem('sidebarCollapsedAccountGroups');
+      if (stored !== null) return new Set(JSON.parse(stored) as string[]);
+    } catch { /* fall through */ }
+    return new Set();
+  });
+  const emailKeywords = useSettingsStore(s => s.emailKeywords);
+  const nestedTags = useSettingsStore(s => s.nestedTags);
+  const isEmbedded = useIsEmbedded();
+  // The Pro shell owns the global chrome (rail + tab bar), so the sidebar's
+  // own AccountSwitcher would be a redundant second account UI in the same
+  // pane.
+  const hideAccountSwitcher = useSettingsStore(s => s.hideAccountSwitcher) || isEmbedded;
+  const enableUnifiedMailbox = useSettingsStore(s => s.enableUnifiedMailbox);
+  const includeGroupInUnified = useSettingsStore(s => s.includeGroupInUnified);
+  const colorfulSidebarIcons = useSettingsStore(s => s.colorfulSidebarIcons);
+  const tagCounts = useEmailStore(s => s.tagCounts);
+  const accounts = useAccountStore(s => s.accounts);
+  const connectedAccounts = accounts.filter(a => a.isConnected);
+  const hasGroupInboxes = useMemo(() => mailboxes.some(m => m.isShared), [mailboxes]);
+  // Pro shell treats the unified mailbox as a core part of the multi-account
+  // UI, so it ignores the user-facing `enableUnifiedMailbox` toggle. With a
+  // single account we still surface unified when the user has opted into
+  // merging group/shared inboxes — otherwise the counts would just duplicate
+  // the one inbox.
+  const showUnified =
+    (multiAccountMode || enableUnifiedMailbox) &&
+    (connectedAccounts.length > 1 || (includeGroupInUnified && hasGroupInboxes));
+  const { unifiedCounts } = useEmailStore();
+  const t = useTranslations('sidebar');
 
   useEffect(() => {
     const stored = localStorage.getItem('expandedMailboxes');
@@ -776,10 +919,17 @@ export function Sidebar({
       }
     } else {
       const tree = buildMailboxTree(mailboxes);
-      const defaultExpanded = tree
-        .filter(node => node.children.length > 0)
-        .map(node => node.id);
-      setExpandedFolders(new Set(defaultExpanded));
+      const collectExpandable = (nodes: MailboxNode[]): string[] => {
+        const ids: string[] = [];
+        for (const node of nodes) {
+          if (node.children.length > 0) {
+            ids.push(node.id);
+            ids.push(...collectExpandable(node.children));
+          }
+        }
+        return ids;
+      };
+      setExpandedFolders(new Set(collectExpandable(tree)));
     }
   }, [mailboxes]);
 
@@ -798,114 +948,139 @@ export function Sidebar({
     });
   };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim() && onSearch) {
-      onSearch(searchQuery);
+  useEffect(() => {
+    const stored = localStorage.getItem('expandedTags');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        setExpandedTags(new Set(parsed));
+      } catch (e) {
+        debug.error('Failed to parse expanded tags:', e);
+      }
+    } else {
+      setExpandedTags(
+        new Set(emailKeywords.filter((kw) => hasChildKeywords(kw.id, emailKeywords)).map((kw) => kw.id))
+      );
+    }
+  }, [emailKeywords]);
+
+  const handleToggleTagExpand = (keywordId: string) => {
+    setExpandedTags((prev) => {
+      const next = new Set(prev);
+      if (next.has(keywordId)) {
+        next.delete(keywordId);
+      } else {
+        next.add(keywordId);
+      }
+      try {
+        localStorage.setItem('expandedTags', JSON.stringify(Array.from(next)));
+      } catch { /* storage full or unavailable */ }
+      return next;
+    });
+  };
+
+  // When the app renders its own virtual "Scheduled" folder (for delayed
+  // sends, driven by EmailSubmission), hide the server-provided scheduled
+  // mailbox (e.g. Stalwart's auto-created Scheduled folder, role === 'scheduled')
+  // so it does not appear twice. (#495)
+  const isServerScheduledNode = (n: MailboxNode) => showScheduledMailbox && n.role === 'scheduled';
+
+  const mailboxTree = buildMailboxTree(mailboxes);
+  const ownTree = mailboxTree.filter(n => !n.id.startsWith('shared-account-') && !isServerScheduledNode(n));
+  const sharedAccounts = mailboxTree.filter(n => n.id.startsWith('shared-account-'));
+
+  // With nesting off every tag is its own root, so the same rows render through
+  // one path whether or not the ids describe a hierarchy.
+  const tagTree: KeywordNode[] = nestedTags
+    ? buildKeywordTree(emailKeywords)
+    : emailKeywords.map((kw) => ({ ...kw, children: [], depth: 0 }));
+
+  // Counts arrive from a separate JMAP round trip, one batch per group of tags;
+  // a tag with no count yet is treated as visible rather than blanking it and
+  // filling it back in. A tag the server answered for with zero unread hides,
+  // which is the point of the setting.
+  const isTagVisible = (node: KeywordNode) => {
+    if (showAllTags || node.id === selectedKeyword) return true;
+    const visibility = getKeywordVisibility(node);
+    if (visibility === 'hide') return false;
+    if (visibility === 'unread') {
+      const count = tagCounts[node.id];
+      return !count || count.unread > 0;
+    }
+    return true;
+  };
+  const visibleTagTree = filterKeywordTree(tagTree, isTagVisible);
+  const hiddenTagCount = emailKeywords.length - countKeywordNodes(visibleTagTree);
+
+  // Multi-account mode (Pro shell): render every connected account as its
+  // own collapsible group. The active account's tree comes from the
+  // `mailboxes` prop (which is the live email-store value); other accounts
+  // come from the per-account cache populated by useProMultiAccountMailboxes.
+  const useMultiAccount = multiAccountMode && connectedAccounts.length > 1;
+  const accountGroups = useMultiAccount
+    ? connectedAccounts.map((account) => {
+        const isActive = account.id === activeAccountId;
+        const accountMailboxList = isActive
+          ? mailboxes
+          : (accountMailboxes?.[account.id] ?? []);
+        const tree = buildMailboxTree(accountMailboxList).filter(
+          (n) => !n.id.startsWith('shared-account-') && !(isActive && isServerScheduledNode(n))
+        );
+        return { account, isActive, tree };
+      })
+    : [];
+
+  // Scheduled row. Without an account it is the combined view (the user's own
+  // tree); with one it scopes the list to that shared account's scheduled mail,
+  // which lives in the shared JMAP account rather than the primary one (#874).
+  const renderScheduledRow = (key: string, account?: { accountId?: string; depth?: number }) => {
+    if (!showScheduledMailbox) return null;
+    const accountId = account?.accountId;
+    const mailboxId = accountId ? scopedScheduledMailboxId(accountId) : SCHEDULED_MAILBOX_ID;
+    const count = accountId
+      ? (scheduledTotalByAccount?.[accountId] ?? 0)
+      : scheduledTotal;
+    // selectedMailbox is always the plain virtual id, so the *scope* decides
+    // which of these rows is the active one.
+    const isScheduledSelected = selectedMailbox === SCHEDULED_MAILBOX_ID
+      && (scheduledAccountScope ?? null) === (accountId ?? null);
+    return (
+      <SidebarRow
+        key={key}
+        icon={<CalendarClock className="w-4 h-4 flex-shrink-0 text-sky-600 dark:text-sky-400" />}
+        label={t('scheduled')}
+        depth={account?.depth ?? 0}
+        isSelected={!selectedKeyword && isScheduledSelected}
+        total={count}
+        onClick={() => onMailboxSelect?.(mailboxId)}
+        isCollapsed={isCollapsed}
+        testRole="scheduled"
+        testName="scheduled"
+        testMailboxId={mailboxId}
+      />
+    );
+  };
+
+  const getUnifiedIcon = (role: UnifiedMailboxRole) => {
+    switch (role) {
+      case 'inbox': return Inbox;
+      case 'sent': return Send;
+      case 'drafts': return File;
+      case 'trash': return Trash2;
+      case 'archive': return Archive;
+      case 'junk': return Ban;
+      default: return Folder;
     }
   };
 
-  const handleMailboxContextMenu = useCallback((e: React.MouseEvent, mailbox: Mailbox) => {
-    if (mailbox.id === UNIFIED_INBOX_ID || mailbox.isShared || mailbox.id.startsWith('shared-')) return;
-    e.preventDefault();
-    setContextMenu({ x: e.clientX, y: e.clientY, mailbox });
-  }, []);
-
-  const handleCreateFolder = useCallback(async (name: string, parentId?: string) => {
-    const trimmed = name.trim();
-    if (!trimmed) {
-      toast.error(tFolder('folder_name_empty_error'));
-      return;
-    }
-    if (trimmed.includes('/')) {
-      toast.error(tFolder('folder_name_slash_error'));
-      return;
-    }
-    if (!client) return;
-    setCreatingSubfolder(null);
-    setCreatingTopLevel(false);
-    try {
-      await createMailbox(client, trimmed, parentId);
-      toast.success(tFolder('folder_created', { name: trimmed }));
-      if (parentId) {
-        setExpandedFolders(prev => {
-          const next = new Set(prev);
-          next.add(parentId);
-          return next;
-        });
-      }
-    } catch {
-      toast.error(tFolder('create_error'));
-    }
-  }, [client, createMailbox, tFolder]);
-
-  const handleRenameFolder = useCallback(async (newName: string) => {
-    const trimmed = newName.trim();
-    if (!renamingMailboxId || !client) {
-      setRenamingMailboxId(null);
-      return;
-    }
-    const mailbox = mailboxes.find(mb => mb.id === renamingMailboxId);
-    if (!trimmed || trimmed === mailbox?.name) {
-      setRenamingMailboxId(null);
-      return;
-    }
-    if (trimmed.includes('/')) {
-      toast.error(tFolder('folder_name_slash_error'));
-      setRenamingMailboxId(null);
-      return;
-    }
-    const targetId = renamingMailboxId;
-    setRenamingMailboxId(null);
-    try {
-      await renameMailbox(client, targetId, trimmed);
-      toast.success(tFolder('folder_renamed', { name: trimmed }));
-    } catch {
-      toast.error(tFolder('rename_error'));
-    }
-  }, [renamingMailboxId, client, mailboxes, renameMailbox, tFolder]);
-
-  const handleDeleteFolder = useCallback(async () => {
-    if (!deleteFolderTarget || !client) return;
-    const folderName = deleteFolderTarget.name;
-    const targetId = deleteFolderTarget.id;
-    setDeleteFolderTarget(null);
-    try {
-      await deleteMailbox(client, targetId);
-      toast.success(tFolder('folder_deleted', { name: folderName }));
-    } catch {
-      toast.error(tFolder('delete_error'));
-    }
-  }, [deleteFolderTarget, client, deleteMailbox, tFolder]);
-
-  const handleEmptyFolder = useCallback(async () => {
-    if (!emptyFolderTarget || !client) return;
-    const folderName = emptyFolderTarget.name;
-    const totalCount = emptyFolderTarget.totalEmails || 0;
-    const targetId = emptyFolderTarget.id;
-    setEmptyFolderTarget(null);
-
-    toast.info(t("empty_folder.title"), t("empty_folder.progress", { deleted: 0, total: totalCount }));
-
-    try {
-      await emptyFolder(client, targetId);
-      toast.success(t("empty_folder.title"), t("empty_folder.success"));
-    } catch (error) {
-      const match = error instanceof Error && error.message.match(/Deleted (\d+) of (\d+)/);
-      const deleted = match ? parseInt(match[1], 10) : 0;
-      toast.error(t("empty_folder.title"), t("empty_folder.error", { deleted, total: totalCount, folder: folderName }));
-    }
-  }, [emptyFolderTarget, client, emptyFolder, t]);
-
-  const mailboxTree = buildMailboxTree(
-    mailboxes,
-    showUnifiedInbox
-      ? { name: t("all_inboxes"), excludedAccountIds: unifiedInboxExcludedAccounts }
-      : undefined
-  );
-
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't hijack Arrow keys while the user is typing. This is a global
+      // window listener, so without this guard typing in a new email (the
+      // contentEditable composer, the subject field, search, etc.) toggled the
+      // selected mailbox's subfolders open/closed on ArrowLeft/ArrowRight.
+      // composedPath-based so it also sees the QuotedHtml shadow island (#654).
+      if (isEditableEventTarget(e)) return;
       if (!selectedMailbox || isCollapsed) return;
 
       const findNode = (nodes: MailboxNode[]): MailboxNode | null => {
@@ -935,390 +1110,405 @@ export function Sidebar({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedMailbox, isCollapsed, expandedFolders, mailboxTree]);
 
-  useEffect(() => {
-    const handleF2 = (e: KeyboardEvent) => {
-      if (e.key !== 'F2' || !selectedMailbox) return;
-      if (!sidebarRef.current?.contains(document.activeElement) && document.activeElement !== document.body) return;
-      const mailbox = mailboxes.find(mb => mb.id === selectedMailbox);
-      if (!mailbox || mailbox.role || mailbox.isShared || mailbox.id.startsWith('shared-')) return;
-      e.preventDefault();
-      setRenamingMailboxId(selectedMailbox);
-    };
+  const toggleUnified = () => {
+    setUnifiedExpanded((prev: boolean) => {
+      const next = !prev;
+      try { localStorage.setItem('sidebarUnifiedExpanded', JSON.stringify(next)); } catch { /* */ }
+      return next;
+    });
+  };
+  const toggleFolders = () => {
+    setFoldersExpanded((prev: boolean) => {
+      const next = !prev;
+      try { localStorage.setItem('sidebarFoldersExpanded', JSON.stringify(next)); } catch { /* */ }
+      return next;
+    });
+  };
+  const toggleTags = () => {
+    setTagsExpanded((prev: boolean) => {
+      const next = !prev;
+      try { localStorage.setItem('sidebarTagsExpanded', JSON.stringify(next)); } catch { /* */ }
+      return next;
+    });
+  };
+  const toggleShared = () => {
+    setSharedExpanded((prev: boolean) => {
+      const next = !prev;
+      try { localStorage.setItem('sidebarSharedExpanded', JSON.stringify(next)); } catch { /* */ }
+      return next;
+    });
+  };
+  const toggleSharedAccount = (id: string) => {
+    setExpandedSharedAccounts((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      try { localStorage.setItem('sidebarExpandedSharedAccounts', JSON.stringify(Array.from(next))); } catch { /* */ }
+      return next;
+    });
+  };
+  const toggleAccountGroup = (id: string) => {
+    setCollapsedAccountGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      try { localStorage.setItem('sidebarCollapsedAccountGroups', JSON.stringify(Array.from(next))); } catch { /* */ }
+      return next;
+    });
+  };
 
-    window.addEventListener('keydown', handleF2);
-    return () => window.removeEventListener('keydown', handleF2);
-  }, [selectedMailbox, mailboxes]);
+  // The tab now travels in the URL (#733) rather than through sessionStorage,
+  // so a gear click is a link the user can also bookmark or share. It still
+  // steers only this one open - the persisted default is written on tab click.
+  const openFolderSettings = () => { router.push(buildSettingsPath('folders')); };
+  const openKeywordSettings = () => { router.push(buildSettingsPath('keywords')); };
+
+  const {
+    contextMenu: mailboxContextMenu,
+    openContextMenu: openMailboxContextMenu,
+    closeContextMenu: closeMailboxContextMenu,
+    menuRef: mailboxMenuRef,
+  } = useContextMenu<MailboxContextTarget>();
+
+  const handleMailboxContextMenu = (e: React.MouseEvent, node: MailboxNode) => {
+    const mailbox = mailboxes.find(mb => mb.id === node.id);
+    if (!mailbox) return;
+    openMailboxContextMenu(e, { kind: "mailbox", mailbox, hasChildren: node.children.length > 0 });
+  };
+
+  const handleFoldersHeaderContextMenu = (e: React.MouseEvent) => {
+    openMailboxContextMenu(e, { kind: "folders-section" });
+  };
+
+  // `buildMailboxTree()` groups shared mailboxes that carry no accountId under
+  // the placeholder id "unknown" (lib/utils.ts). Such a node cannot be a valid
+  // JMAP mutation target, so it gets no folder-creation menu at all rather than
+  // a menu that would create the folder in a non-existent account.
+  const sharedAccountMenuId = (accountId?: string) =>
+    accountId && accountId !== "unknown" ? accountId : undefined;
+
+  const handleSharedAccountContextMenu = (e: React.MouseEvent, accountId: string) => {
+    openMailboxContextMenu(e, { kind: "folders-section", accountId });
+  };
 
   return (
     <div
-      ref={sidebarRef}
       className={cn(
-        "relative flex flex-col h-full border-r transition-all duration-300 overflow-hidden",
+        "relative flex flex-col h-full border-e transition-all duration-300 overflow-hidden",
         "bg-secondary border-border",
         "max-lg:w-full",
-        isCollapsed && "lg:w-16",
+        isCollapsed ? "lg:w-12" : "lg:w-full",
         className
       )}
-      style={!isCollapsed ? { width: `var(--sidebar-width, ${sidebarWidth}px)` } : undefined}
     >
-      {/* Header */}
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onSidebarClose}
-          className="lg:hidden h-11 w-11 flex-shrink-0"
-          aria-label={t("close")}
-        >
-          <X className="w-5 h-5" />
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="hidden lg:flex"
-        >
-          <Menu className="w-5 h-5" />
-        </Button>
-
-        {!isCollapsed && (
-          <>
-            <Button onClick={onCompose} className="flex-1" title={t("compose_hint")}>
-              <PenSquare className="w-4 h-4 mr-2" />
-              {t("compose")}
-            </Button>
+      {/* Header - hidden in the Pro shell, which owns its own chrome and
+          would otherwise render an empty strip (no collapse, no switcher). */}
+      {!isEmbedded && (
+        // Border lives on the wrapper (outside the h-14 box) so the bar's total
+        // height matches the search/reply toolbars, which border-b their wrapper too.
+        <div className="border-b border-border">
+          <div className={cn("flex items-center h-14", isCollapsed ? "justify-center px-2" : "gap-1 px-2")}>
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setCreatingTopLevel(true)}
-              title={tFolder("new_folder")}
-              className="flex-shrink-0"
+              onClick={onSidebarClose}
+              className="lg:hidden h-9 w-9 flex-shrink-0"
+              aria-label={t("close")}
             >
-              <Plus className="w-4 h-4" />
+              <X className="w-5 h-5" />
             </Button>
-          </>
-        )}
-      </div>
 
-      {/* Vacation Banner */}
-      {!isCollapsed && <VacationBanner />}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleSidebarCollapsed}
+              className="hidden lg:flex h-8 w-8 flex-shrink-0"
+              title={isCollapsed ? t("expand_tooltip") : t("collapse_tooltip")}
+            >
+              {isCollapsed ? <ChevronsRight className="w-4 h-4" /> : <ChevronsLeft className="w-4 h-4" />}
+            </Button>
 
-      {/* Search + Advanced Filter Toggle */}
-      {!isCollapsed && (
-        <div className="px-4 py-3">
-          <div className="flex items-center gap-1.5">
-            <form onSubmit={handleSearch} className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder={t("search_placeholder_hint")}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className={cn("pl-9", searchQuery && "pr-8")}
-                data-search-input
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearchQuery("");
-                    onClearSearch?.();
-                  }}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label={t('clear_search')}
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </form>
-            <AdvancedSearchToggle />
+            {!isCollapsed && !hideAccountSwitcher && (
+              <AccountSwitcher variant="expanded" className="flex-1" />
+            )}
           </div>
         </div>
       )}
 
+      {!isCollapsed && <DemoBanner />}
+      {!isCollapsed && <VacationBanner />}
+
       {/* Mailbox List */}
-      <div
-        className="flex-1 overflow-y-auto"
-        onDragOver={(e) => {
-          if (dragType === 'mailbox') {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = "move";
-          }
-        }}
-        onDrop={async (e) => {
-          if (dragType !== 'mailbox') return;
-          e.preventDefault();
-          const mailboxId = e.dataTransfer.getData("application/x-mailbox-id");
-          if (!mailboxId || !client) return;
-
-          const mb = mailboxes.find(m => m.id === mailboxId);
-          if (mb && mb.parentId) {
-            try {
-              await moveMailbox(client, mailboxId, null);
-              toast.success(tFolder('folder_moved_to_root'));
-            } catch {
-              toast.error(tFolder('move_error'));
-            }
-          }
-          globalEndDrag();
-        }}
-      >
-        <div className="py-1">
-          {mailboxes.length === 0 ? (
-            <div className="px-4 py-2 text-sm text-muted-foreground">
-              {!isCollapsed && t("loading_mailboxes")}
-            </div>
-          ) : (
-            <>
-              {mailboxTree.map((node) => (
-                <MailboxTreeItem
-                  key={node.id}
-                  node={node}
-                  selectedMailbox={selectedMailbox}
-                  expandedFolders={expandedFolders}
-                  onMailboxSelect={onMailboxSelect}
-                  onToggleExpand={handleToggleExpand}
-                  onMailboxContextMenu={handleMailboxContextMenu}
-                  isCollapsed={isCollapsed}
-                  renamingMailboxId={renamingMailboxId}
-                  onRenameSubmit={handleRenameFolder}
-                  onRenameCancel={() => setRenamingMailboxId(null)}
-                  onStartRename={(id) => setRenamingMailboxId(id)}
-                  creatingSubfolder={creatingSubfolder}
-                  onCreateSubmit={(name) => handleCreateFolder(name, creatingSubfolder?.parentId)}
-                  onCreateCancel={() => setCreatingSubfolder(null)}
-                />
-              ))}
-              {creatingTopLevel && !isCollapsed && (
-                <InlineInput
-                  placeholder={tFolder('folder_name_placeholder')}
-                  hintText={tFolder('enter_to_create')}
-                  onSubmit={(name) => handleCreateFolder(name)}
-                  onCancel={() => setCreatingTopLevel(false)}
-                  depth={0}
-                />
-              )}
-            </>
-          )}
-        </div>
-
-        {/* Tags Section */}
-        <TagsSection isCollapsed={isCollapsed} onSearch={onSearch} />
-      </div>
-
-      {/* Mailbox Context Menu (portal to escape sidebar overflow) */}
-      {contextMenu && createPortal(
-        <>
-          <div
-            className="fixed inset-0 z-40"
-            onClick={() => setContextMenu(null)}
-            onContextMenu={(e) => { e.preventDefault(); setContextMenu(null); }}
-          />
-          <div
-            ref={contextMenuRef}
-            className="fixed z-50 bg-background border border-border rounded-md shadow-lg py-1 min-w-[160px]"
-            style={{
-              left: Math.min(contextMenu.x, window.innerWidth - 220),
-              top: Math.min(contextMenu.y, window.innerHeight - 300),
-            }}
-          >
-            {/* New subfolder */}
-            {contextMenu.mailbox.myRights?.mayCreateChild && (
-              <button
-                onClick={() => {
-                  setCreatingSubfolder({ parentId: contextMenu.mailbox.id });
-                  setExpandedFolders(prev => {
-                    const next = new Set(prev);
-                    next.add(contextMenu.mailbox.id);
-                    return next;
-                  });
-                  setContextMenu(null);
-                }}
-                className="flex items-center w-full px-3 py-2 text-sm hover:bg-muted transition-colors"
-              >
-                <FolderPlus className="w-4 h-4 mr-2" />
-                {tFolder("new_subfolder")}
-              </button>
-            )}
-
-            {/* Rename */}
-            {!contextMenu.mailbox.role && (
-              <button
-                onClick={() => {
-                  setRenamingMailboxId(contextMenu.mailbox.id);
-                  setContextMenu(null);
-                }}
-                className="flex items-center w-full px-3 py-2 text-sm hover:bg-muted transition-colors"
-              >
-                <Edit3 className="w-4 h-4 mr-2" />
-                {tFolder("rename")}
-              </button>
-            )}
-
-            {/* Move to */}
-            {!contextMenu.mailbox.role && (
-              <MoveToSubmenu
-                mailbox={contextMenu.mailbox}
-                allMailboxes={mailboxes}
-                onMove={async (targetId) => {
-                  if (!client) return;
-                  try {
-                    if (targetId === null) {
-                      await moveMailbox(client, contextMenu.mailbox.id, null);
-                      toast.success(tFolder('folder_moved_to_root'));
-                    } else {
-                      const target = mailboxes.find(mb => mb.id === targetId);
-                      await moveMailbox(client, contextMenu.mailbox.id, targetId);
-                      toast.success(tFolder('folder_moved', { destination: target?.name || '' }));
-                    }
-                  } catch {
-                    toast.error(tFolder('move_error'));
-                  }
-                  setContextMenu(null);
-                }}
-                onClose={() => setContextMenu(null)}
-              />
-            )}
-
-            {/* Empty folder (trash/junk only) */}
-            {(contextMenu.mailbox.role === "trash" || contextMenu.mailbox.role === "junk") &&
-              contextMenu.mailbox.totalEmails && contextMenu.mailbox.totalEmails > 0 && (
-              <button
-                onClick={() => {
-                  setEmptyFolderTarget(contextMenu.mailbox);
-                  setContextMenu(null);
-                }}
-                className="flex items-center w-full px-3 py-2 text-sm text-destructive hover:bg-muted transition-colors"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                {t("empty_folder.title")}
-              </button>
-            )}
-
-            {/* Delete folder */}
-            {!contextMenu.mailbox.role && (
+      <div className="flex-1 overflow-y-auto" data-tour="sidebar">
+        {(showUnified || showCrossUnread || showCrossStarred || showCrossAll) && (
+          <div>
+            <SidebarSectionHeader
+              label={t(crossAccountActive ? "all_accounts" : "unified_mailbox")}
+              expanded={unifiedExpanded}
+              onToggle={toggleUnified}
+              isCollapsed={isCollapsed}
+              first
+            />
+            {((unifiedExpanded && !isCollapsed) || isCollapsed) && (
               <>
-                <div className="h-px bg-border mx-2 my-1" />
-                <button
-                  onClick={() => {
-                    setDeleteFolderTarget(contextMenu.mailbox);
-                    setContextMenu(null);
-                  }}
-                  className="flex items-center w-full px-3 py-2 text-sm text-destructive hover:bg-muted transition-colors"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  {tFolder("delete_folder")}
-                </button>
+                {showUnified && unifiedCounts.map((count) => {
+                  const unifiedId = UNIFIED_MAILBOX_IDS[count.role];
+                  const Icon = getUnifiedIcon(count.role);
+                  const isSelected = !selectedKeyword && selectedMailbox === unifiedId;
+                  return (
+                    <SidebarRow
+                      key={unifiedId}
+                      icon={<Icon className={getIconClass(isSelected, false, colorfulSidebarIcons, count.role)} />}
+                      label={t(`unified_${count.role}`)}
+                      testRole={count.role}
+                      testName={`unified-${count.role}`}
+                      testMailboxId={unifiedId}
+                      depth={0}
+                      isSelected={isSelected}
+                      unread={count.unreadEmails}
+                      total={count.totalEmails}
+                      onClick={() => onMailboxSelect?.(unifiedId)}
+                      isCollapsed={isCollapsed}
+                    />
+                  );
+                })}
+                {[
+                  { show: showCrossUnread, id: CROSS_VIEW_IDS.unread, Icon: MailOpen, label: t('unified_all_unread'), unread: crossUnreadCount },
+                  { show: showCrossStarred, id: CROSS_VIEW_IDS.starred, Icon: Star, label: t('unified_all_starred'), unread: undefined as number | undefined },
+                  { show: showCrossAll, id: CROSS_VIEW_IDS.all, Icon: Mails, label: t('unified_all_mail'), unread: crossUnreadCount },
+                ].map(({ show, id, Icon, label, unread }) => {
+                  if (!show) return null;
+                  const isSelected = !selectedKeyword && selectedMailbox === id;
+                  return (
+                    <SidebarRow
+                      key={id}
+                      icon={<Icon className={getIconClass(isSelected, false, colorfulSidebarIcons)} />}
+                      label={label}
+                      testName={id}
+                      testMailboxId={id}
+                      depth={0}
+                      isSelected={isSelected}
+                      unread={unread}
+                      onClick={() => onMailboxSelect?.(id)}
+                      isCollapsed={isCollapsed}
+                    />
+                  );
+                })}
               </>
             )}
           </div>
-        </>,
-        document.body
-      )}
+        )}
 
-      {/* Empty Folder Confirmation Dialog */}
-      {emptyFolderTarget && (
-        <EmptyFolderConfirmDialog
-          mailbox={{
-            name: emptyFolderTarget.name,
-            totalEmails: emptyFolderTarget.totalEmails || 0,
-          }}
-          onConfirm={handleEmptyFolder}
-          onCancel={() => setEmptyFolderTarget(null)}
-        />
-      )}
-
-      {/* Delete Folder Confirmation Dialog (portal to escape sidebar overflow) */}
-      {deleteFolderTarget && createPortal((() => {
-        const descendantCount = mailboxes.filter(mb => {
-          const isDesc = (parentId: string, checkId: string): boolean => {
-            if (parentId === checkId) return true;
-            const children = mailboxes.filter(m => m.parentId === parentId);
-            return children.some(c => isDesc(c.id, checkId));
-          };
-          return mb.id !== deleteFolderTarget.id && isDesc(deleteFolderTarget.id, mb.id);
-        }).length;
-        const emailCount = deleteFolderTarget.totalEmails || 0;
-        const message = emailCount > 0 || descendantCount > 0
-          ? tFolder('delete_confirm_with_contents', { emails: emailCount, subfolders: descendantCount })
-          : tFolder('delete_confirm_empty');
-
-        return (
-          <ConfirmDialog
-            isOpen={true}
-            onClose={() => setDeleteFolderTarget(null)}
-            onConfirm={handleDeleteFolder}
-            title={tFolder('delete_confirm_title', { name: deleteFolderTarget.name })}
-            message={message}
-            confirmText={tFolder('delete_folder')}
-            variant="destructive"
-          />
-        );
-      })(), document.body)}
-
-      {/* Footer: Storage Quota + Sign Out + Push Status */}
-      <div className="border-t border-border">
-        <StorageQuota quota={quota ?? null} isCollapsed={isCollapsed} />
-
-        <div className={cn(
-          "flex items-center border-t border-border",
-          isCollapsed ? "justify-center py-2" : "justify-between px-3 py-2"
-        )}>
-          {onLogout && (
-            <button
-              onClick={onLogout}
-              className={cn(
-                "flex items-center gap-2 rounded-md transition-colors text-sm text-muted-foreground hover:text-foreground hover:bg-muted",
-                isCollapsed ? "p-2" : "px-2 py-1.5"
-              )}
-              title={t("sign_out")}
-            >
-              <LogOut className="w-4 h-4" />
-              {!isCollapsed && t("sign_out")}
-            </button>
-          )}
-
-          {!isCollapsed && (
-            <span
-              className="relative group"
-              title={isPushConnected ? t("push_connected") : t("push_disconnected")}
-            >
-              <span
-                className={cn(
-                  "inline-block w-1.5 h-1.5 rounded-full transition-all duration-300",
-                  isPushConnected ? "bg-green-500" : "bg-muted-foreground/40"
+        {useMultiAccount ? (
+          accountGroups.map(({ account, isActive, tree }) => {
+            const expanded = !collapsedAccountGroups.has(account.id);
+            const isViewing = isActive ? viewingAccountId === null : viewingAccountId === account.id;
+            return (
+              <div key={account.id} onContextMenu={isActive ? handleFoldersHeaderContextMenu : undefined}>
+                <SidebarSectionHeader
+                  label={account.label || account.email || account.username}
+                  expanded={expanded}
+                  onToggle={() => toggleAccountGroup(account.id)}
+                  onSettings={isActive ? openFolderSettings : undefined}
+                  settingsTitle={isActive ? t('settings') : undefined}
+                  isCollapsed={isCollapsed}
+                  first={!showUnified && account.id === connectedAccounts[0]?.id}
+                  icon={<User className="w-3.5 h-3.5 text-muted-foreground" />}
+                />
+                {((expanded && !isCollapsed) || isCollapsed) && (
+                  <>
+                    {tree.length === 0 ? (
+                      <div className="px-4 py-2 text-sm text-muted-foreground">
+                        {!isCollapsed && t("loading_mailboxes")}
+                      </div>
+                    ) : (
+                      <>
+                        {tree.map((node) => (
+                          <Fragment key={node.id}>
+                            <MailboxTreeItem
+                              node={node}
+                              selectedMailbox={selectedKeyword || !isViewing ? "" : selectedMailbox}
+                              expandedFolders={expandedFolders}
+                              onMailboxSelect={(mailboxId) =>
+                                onAccountMailboxSelect?.(isActive ? null : account.id, mailboxId)
+                              }
+                              onToggleExpand={handleToggleExpand}
+                              isCollapsed={isCollapsed}
+                              onUnreadFilterClick={isActive ? onUnreadFilterClick : undefined}
+                              colorful={colorfulSidebarIcons}
+                              onContextMenu={isActive ? handleMailboxContextMenu : undefined}
+                              dragAccountId={isActive ? null : account.id}
+                            />
+                            {isActive && node.role === 'drafts' && renderScheduledRow(`scheduled-${account.id}`)}
+                          </Fragment>
+                        ))}
+                        {isActive && !tree.some((node) => node.role === 'drafts') && renderScheduledRow(`scheduled-${account.id}`)}
+                      </>
+                    )}
+                  </>
                 )}
-              />
-              <span className={cn(
-                "absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1",
-                "bg-popover text-popover-foreground text-xs rounded shadow-lg",
-                "whitespace-nowrap opacity-0 group-hover:opacity-100",
-                "pointer-events-none transition-opacity duration-200 z-50"
-              )}>
-                {isPushConnected ? t("push_connected") : t("push_disconnected")}
-              </span>
-            </span>
-          )}
-        </div>
+              </div>
+            );
+          })
+        ) : (
+          <div onContextMenu={handleFoldersHeaderContextMenu}>
+            <SidebarSectionHeader
+              label={t("folders")}
+              expanded={foldersExpanded}
+              onToggle={toggleFolders}
+              onSettings={openFolderSettings}
+              settingsTitle={t('settings')}
+              isCollapsed={isCollapsed}
+              first={!showUnified}
+            />
+            {((foldersExpanded && !isCollapsed) || isCollapsed) && (
+              <>
+                {mailboxes.length === 0 ? (
+                  <div className="px-4 py-2 text-sm text-muted-foreground">
+                    {!isCollapsed && t("loading_mailboxes")}
+                  </div>
+                ) : (
+                  <>
+                    {ownTree.map((node) => (
+                      <Fragment key={node.id}>
+                        <MailboxTreeItem
+                          node={node}
+                          selectedMailbox={selectedKeyword ? "" : selectedMailbox}
+                          expandedFolders={expandedFolders}
+                          onMailboxSelect={onMailboxSelect}
+                          onToggleExpand={handleToggleExpand}
+                          isCollapsed={isCollapsed}
+                          onUnreadFilterClick={onUnreadFilterClick}
+                          colorful={colorfulSidebarIcons}
+                          onContextMenu={handleMailboxContextMenu}
+                        />
+                        {node.role === 'drafts' && renderScheduledRow('scheduled')}
+                      </Fragment>
+                    ))}
+                    {!ownTree.some((node) => node.role === 'drafts') && renderScheduledRow('scheduled')}
+                  </>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
+        {!useMultiAccount && sharedAccounts.length > 0 && (
+          <div>
+            <SidebarSectionHeader
+              label={t("shared")}
+              expanded={sharedExpanded}
+              onToggle={toggleShared}
+              isCollapsed={isCollapsed}
+              testId="section-shared"
+            />
+            {((sharedExpanded && !isCollapsed) || isCollapsed) && (
+              <>
+                {sharedAccounts.map((account) => {
+                  const accountExpanded = expandedSharedAccounts.has(account.id);
+                  const menuAccountId = sharedAccountMenuId(account.accountId);
+                  return (
+                    <div key={account.id}>
+                      <SidebarSectionHeader
+                        label={account.name}
+                        expanded={accountExpanded}
+                        onToggle={() => toggleSharedAccount(account.id)}
+                        isCollapsed={isCollapsed}
+                        sub
+                        icon={<User className="w-3.5 h-3.5 text-muted-foreground" />}
+                        testId="section-shared-account"
+                        onContextMenu={menuAccountId
+                          ? (e) => handleSharedAccountContextMenu(e, menuAccountId)
+                          : undefined}
+                      />
+                      {accountExpanded && !isCollapsed && (
+                        <>
+                          {account.children.map((child) => (
+                            <Fragment key={child.id}>
+                              <MailboxTreeItem
+                                node={child}
+                                selectedMailbox={selectedKeyword ? "" : selectedMailbox}
+                                expandedFolders={expandedFolders}
+                                onMailboxSelect={onMailboxSelect}
+                                onToggleExpand={handleToggleExpand}
+                                isCollapsed={isCollapsed}
+                                onUnreadFilterClick={onUnreadFilterClick}
+                                colorful={colorfulSidebarIcons}
+                                onContextMenu={handleMailboxContextMenu}
+                              />
+                              {child.role === 'drafts' && menuAccountId
+                                && renderScheduledRow(`${account.id}-scheduled`, { accountId: menuAccountId })}
+                            </Fragment>
+                          ))}
+                          {menuAccountId && !account.children.some((child) => child.role === 'drafts')
+                            && renderScheduledRow(`${account.id}-scheduled`, { accountId: menuAccountId })}
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+              </>
+            )}
+          </div>
+        )}
+
+        {emailKeywords.length > 0 && (
+          <div data-tour="keyword-tags">
+            <SidebarSectionHeader
+              label={t("tags")}
+              expanded={tagsExpanded}
+              onToggle={toggleTags}
+              onSettings={openKeywordSettings}
+              settingsTitle={t('settings')}
+              isCollapsed={isCollapsed}
+            />
+            {((tagsExpanded && !isCollapsed) || isCollapsed) && (
+              <>
+                {visibleTagTree.map((node) => (
+                  <TagItem
+                    key={node.id}
+                    node={node}
+                    selectedKeyword={selectedKeyword}
+                    expandedTags={expandedTags}
+                    isCollapsed={isCollapsed}
+                    onTagSelect={onTagSelect}
+                    onToggleExpand={handleToggleTagExpand}
+                    tagCounts={tagCounts}
+                    colorful={colorfulSidebarIcons}
+                  />
+                ))}
+                {(hiddenTagCount > 0 || showAllTags) && (
+                  <ShowAllTagsRow
+                    hiddenCount={hiddenTagCount}
+                    showAll={showAllTags}
+                    onToggle={() => setShowAllTags((prev) => !prev)}
+                    isCollapsed={isCollapsed}
+                  />
+                )}
+              </>
+            )}
+          </div>
+        )}
+
+        {!isCollapsed && <PluginSlot name="sidebar-widget" className="border-t border-border" />}
       </div>
 
-      {/* Resize Handle */}
-      {!isCollapsed && (
-        <div
-          className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hidden lg:block hover:bg-primary/20 active:bg-primary/30 transition-colors z-10"
-          onMouseDown={resizeHandle.handleMouseDown}
-          onTouchStart={resizeHandle.handleTouchStart}
-          onKeyDown={resizeHandle.handleKeyDown}
-          role="separator"
-          aria-orientation="vertical"
-          aria-label="Resize sidebar"
-          aria-valuemin={180}
-          aria-valuemax={400}
-          aria-valuenow={sidebarWidth}
-          tabIndex={0}
-        />
-      )}
+      <MailboxContextMenu
+        target={mailboxContextMenu.data}
+        position={mailboxContextMenu.position}
+        isOpen={mailboxContextMenu.isOpen}
+        onClose={closeMailboxContextMenu}
+        menuRef={mailboxMenuRef}
+        mailboxes={mailboxes}
+        onMarkFolderRead={onMarkFolderRead}
+        onMarkFolderTreeRead={onMarkFolderTreeRead}
+        onMarkAllFoldersRead={onMarkAllFoldersRead}
+        onEmptyFolder={onEmptyFolder}
+        onCreateSubfolder={onCreateSubfolder}
+        onCreateFolder={onCreateFolder}
+        onRenameFolder={onRenameFolder}
+        onDeleteFolder={onDeleteFolder}
+        onImportEmail={onImportEmail}
+        onRefresh={onRefreshMailboxes}
+      />
     </div>
   );
 }

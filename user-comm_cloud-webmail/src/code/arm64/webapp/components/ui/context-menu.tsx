@@ -1,10 +1,9 @@
 "use client";
 
-import { forwardRef, useState, useRef, useEffect } from "react";
+import { forwardRef, useState, useRef, useEffect, useLayoutEffect } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import { ChevronRight } from "lucide-react";
-import { useMenuKeyboard } from "@/hooks/use-menu-keyboard";
 
 interface Position {
   x: number;
@@ -18,33 +17,75 @@ interface ContextMenuProps {
   children: React.ReactNode;
 }
 
+const VIEWPORT_MARGIN = 10;
+
 export const ContextMenu = forwardRef<HTMLDivElement, ContextMenuProps>(
-  ({ isOpen, position, onClose, children }, ref) => {
+  ({ isOpen, position, onClose: _onClose, children }, ref) => {
     const [mounted, setMounted] = useState(false);
-    const innerRef = useRef<HTMLDivElement>(null);
+    const [adjustedPosition, setAdjustedPosition] = useState<Position | null>(null);
+    const localRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
       setMounted(true);
     }, []);
 
-    useMenuKeyboard({ isOpen: isOpen && mounted, containerRef: innerRef, onClose });
+    // Measure the rendered menu and clamp it inside the viewport before the
+    // browser paints. We hide the element until this runs so the user never
+    // sees the menu jump from an unclamped position to a clamped one.
+    // `mounted` must be a dependency: on the very first open the menu isn't
+    // in the DOM yet (mounted is still false), so this effect has to re-run
+    // after the mount flip or the menu stays visibility:hidden.
+    useLayoutEffect(() => {
+      if (!isOpen) {
+        setAdjustedPosition(null);
+        return;
+      }
+      const node = localRef.current;
+      if (!node) return;
+
+      const rect = node.getBoundingClientRect();
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+
+      let x = position.x;
+      let y = position.y;
+
+      if (x + rect.width > vw - VIEWPORT_MARGIN) {
+        x = vw - rect.width - VIEWPORT_MARGIN;
+      }
+      if (y + rect.height > vh - VIEWPORT_MARGIN) {
+        y = vh - rect.height - VIEWPORT_MARGIN;
+      }
+      x = Math.max(VIEWPORT_MARGIN, x);
+      y = Math.max(VIEWPORT_MARGIN, y);
+
+      setAdjustedPosition({ x, y });
+    }, [isOpen, mounted, position.x, position.y]);
+
+    const setRefs = (node: HTMLDivElement | null) => {
+      localRef.current = node;
+      if (typeof ref === "function") {
+        ref(node);
+      } else if (ref) {
+        ref.current = node;
+      }
+    };
 
     if (!mounted || !isOpen) return null;
 
+    const renderPosition = adjustedPosition ?? position;
+    const isPositioned = adjustedPosition !== null;
+
     return createPortal(
       <div
-        ref={(node) => {
-          innerRef.current = node;
-          if (typeof ref === "function") ref(node);
-          else if (ref) ref.current = node;
-        }}
+        ref={setRefs}
         className={cn(
-          "fixed z-50 min-w-[200px] bg-background rounded-md shadow-lg border border-border",
-          "animate-in fade-in-0 zoom-in-95 duration-100"
+          "fixed z-50 min-w-[200px] bg-background rounded-md shadow-lg border border-border"
         )}
         style={{
-          left: position.x,
-          top: position.y,
+          left: renderPosition.x,
+          top: renderPosition.y,
+          visibility: isPositioned ? "visible" : "hidden",
         }}
         role="menu"
         aria-orientation="vertical"
@@ -67,7 +108,8 @@ interface ContextMenuItemProps {
   disabled?: boolean;
   destructive?: boolean;
   shortcut?: string;
-  style?: React.CSSProperties;
+  /** Stable hook for integration tests (not user-visible). */
+  testId?: string;
 }
 
 export function ContextMenuItem({
@@ -77,16 +119,16 @@ export function ContextMenuItem({
   disabled = false,
   destructive = false,
   shortcut,
-  style,
+  testId,
 }: ContextMenuItemProps) {
   return (
     <button
       role="menuitem"
+      data-testid={testId}
       disabled={disabled}
-      style={style}
       className={cn(
-        "w-full px-3 py-2 text-sm text-left flex items-center gap-2",
-        "transition-colors duration-100",
+        "w-full px-3 py-1.5 text-sm text-start flex items-center gap-2",
+        "transition-colors duration-150",
         "focus:outline-none focus:bg-muted",
         disabled && "opacity-50 cursor-not-allowed",
         !disabled && "hover:bg-muted cursor-pointer",
@@ -101,7 +143,7 @@ export function ContextMenuItem({
       {Icon && <Icon className="w-4 h-4 flex-shrink-0" />}
       <span className="flex-1">{label}</span>
       {shortcut && (
-        <span className="text-xs text-muted-foreground ml-auto">{shortcut}</span>
+        <span className="text-xs text-muted-foreground ms-auto">{shortcut}</span>
       )}
     </button>
   );
@@ -115,35 +157,52 @@ interface ContextMenuSubMenuProps {
   icon?: React.ComponentType<{ className?: string }>;
   label: string;
   children: React.ReactNode;
+  /** Stable hook for integration tests (not user-visible). */
+  testId?: string;
 }
 
 export function ContextMenuSubMenu({
   icon: Icon,
   label,
   children,
+  testId,
 }: ContextMenuSubMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [subMenuPosition, setSubMenuPosition] = useState<"right" | "left">("right");
-  const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const [subMenuPos, setSubMenuPos] = useState<Position | null>(null);
   const itemRef = useRef<HTMLDivElement>(null);
   const subMenuRef = useRef<HTMLDivElement>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    setIsTouchDevice(window.matchMedia('(pointer: coarse)').matches);
-  }, []);
-
-  useEffect(() => {
-    if (isOpen && itemRef.current) {
-      const rect = itemRef.current.getBoundingClientRect();
-      const viewportWidth = window.innerWidth;
-
-      if (rect.right + 200 > viewportWidth - 10) {
-        setSubMenuPosition("left");
-      } else {
-        setSubMenuPosition("right");
-      }
+  useLayoutEffect(() => {
+    if (!isOpen) {
+      setSubMenuPos(null);
+      return;
     }
+    const itemEl = itemRef.current;
+    const subEl = subMenuRef.current;
+    if (!itemEl || !subEl) return;
+
+    const itemRect = itemEl.getBoundingClientRect();
+    const subRect = subEl.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    let left: number;
+    if (itemRect.right + subRect.width <= vw - VIEWPORT_MARGIN) {
+      left = itemRect.right;
+    } else if (itemRect.left - subRect.width >= VIEWPORT_MARGIN) {
+      left = itemRect.left - subRect.width;
+    } else {
+      left = Math.max(VIEWPORT_MARGIN, vw - subRect.width - VIEWPORT_MARGIN);
+    }
+
+    let top = itemRect.top;
+    if (top + subRect.height > vh - VIEWPORT_MARGIN) {
+      top = vh - subRect.height - VIEWPORT_MARGIN;
+    }
+    top = Math.max(VIEWPORT_MARGIN, top);
+
+    setSubMenuPos({ x: left, y: top });
   }, [isOpen]);
 
   useEffect(() => {
@@ -151,7 +210,6 @@ export function ContextMenuSubMenu({
   }, []);
 
   const handleMouseEnter = () => {
-    if (isTouchDevice) return;
     if (closeTimerRef.current) {
       clearTimeout(closeTimerRef.current);
       closeTimerRef.current = null;
@@ -160,16 +218,9 @@ export function ContextMenuSubMenu({
   };
 
   const handleMouseLeave = () => {
-    if (isTouchDevice) return;
     closeTimerRef.current = setTimeout(() => {
       setIsOpen(false);
     }, 150);
-  };
-
-  const handleClick = () => {
-    if (isTouchDevice) {
-      setIsOpen(prev => !prev);
-    }
   };
 
   return (
@@ -181,25 +232,14 @@ export function ContextMenuSubMenu({
     >
       <div
         className={cn(
-          "w-full px-3 py-2 text-sm flex items-center gap-2",
-          "transition-colors duration-100 cursor-pointer",
-          "hover:bg-muted focus:outline-none focus:bg-muted"
+          "w-full px-3 py-1.5 text-sm flex items-center gap-2",
+          "transition-colors duration-150 cursor-pointer",
+          "hover:bg-muted"
         )}
         role="menuitem"
-        tabIndex={0}
         aria-haspopup="true"
         aria-expanded={isOpen}
-        onClick={handleClick}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " " || e.key === "ArrowRight") {
-            e.preventDefault();
-            e.stopPropagation();
-            setIsOpen(true);
-          } else if (e.key === "ArrowLeft") {
-            e.stopPropagation();
-            setIsOpen(false);
-          }
-        }}
+        data-testid={testId}
       >
         {Icon && <Icon className="w-4 h-4 flex-shrink-0" />}
         <span className="flex-1">{label}</span>
@@ -209,14 +249,15 @@ export function ContextMenuSubMenu({
       {isOpen && (
         <div
           ref={subMenuRef}
-          className={cn(
-            "absolute top-0 min-w-[180px] bg-background rounded-md shadow-lg border border-border",
-            "animate-in fade-in-0 zoom-in-95 duration-100",
-            subMenuPosition === "right" ? "left-full" : "right-full"
-          )}
+          className="fixed z-50 min-w-[180px] bg-background rounded-md shadow-lg border border-border"
+          style={{
+            left: subMenuPos?.x ?? 0,
+            top: subMenuPos?.y ?? 0,
+            visibility: subMenuPos ? "visible" : "hidden",
+          }}
           role="menu"
         >
-          <div className="py-1 max-h-[300px] overflow-y-auto">
+          <div className="py-1 max-h-[min(300px,calc(100vh-40px))] overflow-y-auto">
             {children}
           </div>
         </div>

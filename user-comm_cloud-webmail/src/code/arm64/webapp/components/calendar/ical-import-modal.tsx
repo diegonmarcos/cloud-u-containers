@@ -3,30 +3,36 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import { X, Upload, Check, Loader2, RefreshCw } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { X, Upload, Check, Loader2, RefreshCw, Globe } from "lucide-react";
+import { format } from "date-fns";
 import type { CalendarEvent, Calendar } from "@/lib/jmap/types";
-import type { JMAPClient } from "@/lib/jmap/client";
+import type { IJMAPClient } from '@/lib/jmap/client-interface';
+import { getEventStartDate } from "@/lib/calendar-utils";
 import { useCalendarStore } from "@/stores/calendar-store";
+import { useSettingsStore } from "@/stores/settings-store";
 import { toast } from "@/stores/toast-store";
+import { apiFetch } from "@/lib/browser-navigation";
 
 interface ICalImportModalProps {
   calendars: Calendar[];
-  client: JMAPClient;
+  client: IJMAPClient;
   onClose: () => void;
+  initialUrl?: string;
 }
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ACCEPTED_EXTENSIONS = [".ics", ".ical"];
 
 type ImportStep = "select" | "preview" | "importing";
+type ImportMode = "file" | "url";
 
-export function ICalImportModal({ calendars, client, onClose }: ICalImportModalProps) {
+export function ICalImportModal({ calendars, client, onClose, initialUrl }: ICalImportModalProps) {
   const t = useTranslations("calendar.import");
   const tCal = useTranslations("calendar");
   const tCommon = useTranslations("common");
   const tForm = useTranslations("calendar.form");
   const importEvents = useCalendarStore((s) => s.importEvents);
+  const timeFormat = useSettingsStore((s) => s.timeFormat);
 
   const [step, setStep] = useState<ImportStep>("select");
   const [parsedEvents, setParsedEvents] = useState<Partial<CalendarEvent>[]>([]);
@@ -38,6 +44,9 @@ export function ICalImportModal({ calendars, client, onClose }: ICalImportModalP
   const [isParsing, setIsParsing] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [importMode, setImportMode] = useState<ImportMode>(initialUrl ? "url" : "file");
+  const [urlInput, setUrlInput] = useState(initialUrl || "");
+  const [isFetchingUrl, setIsFetchingUrl] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -103,6 +112,57 @@ export function ICalImportModal({ calendars, client, onClose }: ICalImportModalP
     if (file) handleFile(file);
   }, [handleFile]);
 
+  const handleUrlFetch = useCallback(async () => {
+    const trimmed = urlInput.trim();
+    if (!trimmed) return;
+
+    try {
+      new URL(trimmed);
+    } catch {
+      setError(t("invalid_url"));
+      return;
+    }
+
+    setError(null);
+    setIsFetchingUrl(true);
+    setIsParsing(true);
+
+    try {
+      const response = await apiFetch("/api/fetch-ical", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: trimmed }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || t("url_fetch_failed"));
+      }
+
+      const blob = await response.blob();
+      const file = new File([blob], "calendar.ics", { type: "text/calendar" });
+      const uploaded = await client.uploadBlob(file);
+      const accountId = client.getCalendarsAccountId();
+      const events = await client.parseCalendarEvents(accountId, uploaded.blobId);
+
+      if (events.length === 0) {
+        setError(t("no_events"));
+        setIsFetchingUrl(false);
+        setIsParsing(false);
+        return;
+      }
+
+      setParsedEvents(events);
+      setSelectedIndices(new Set(events.map((_, i) => i)));
+      setStep("preview");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("url_fetch_failed"));
+    } finally {
+      setIsFetchingUrl(false);
+      setIsParsing(false);
+    }
+  }, [urlInput, client, t]);
+
   const toggleEvent = useCallback((index: number) => {
     setSelectedIndices((prev) => {
       const next = new Set(prev);
@@ -138,10 +198,11 @@ export function ICalImportModal({ calendars, client, onClose }: ICalImportModalP
   const formatEventDate = (event: Partial<CalendarEvent>): string => {
     if (!event.start) return "";
     try {
-      const date = parseISO(event.start);
+      const date = getEventStartDate(event as CalendarEvent);
+      const timeFmt = timeFormat === "12h" ? "h:mm a" : "HH:mm";
       return event.showWithoutTime
         ? format(date, "MMM d, yyyy")
-        : format(date, "MMM d, yyyy HH:mm");
+        : format(date, `MMM d, yyyy ${timeFmt}`);
     } catch {
       return event.start;
     }
@@ -181,50 +242,106 @@ export function ICalImportModal({ calendars, client, onClose }: ICalImportModalP
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden="true" />
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-[1px]" onClick={onClose} aria-hidden="true" />
       <div
         ref={modalRef}
         role="dialog"
         aria-modal="true"
         aria-label={t("title")}
-        className="relative bg-background border border-border rounded-lg shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto"
+        className="relative bg-background border border-border rounded-lg shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200"
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <h2 className="text-lg font-semibold">{t("title")}</h2>
           <button
             onClick={onClose}
-            className="p-1 rounded hover:bg-muted transition-colors"
+            className="p-1.5 rounded-md hover:bg-muted transition-colors duration-150 text-muted-foreground hover:text-foreground"
             aria-label={tCommon("close")}
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="px-5 py-4 space-y-4">
+        <div className="px-6 py-4 space-y-4">
           {step === "select" && !isParsing && (
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              className={`flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-8 cursor-pointer transition-colors ${
-                isDragging
-                  ? "border-primary bg-primary/5"
-                  : "border-border hover:border-primary/50 hover:bg-muted/50"
-              }`}
-            >
-              <Upload className="w-8 h-8 text-muted-foreground mb-3" />
-              <p className="text-sm font-medium">{t("select_file")}</p>
-              <p className="text-xs text-muted-foreground mt-1">{t("drop_file")}</p>
-              <p className="text-xs text-muted-foreground mt-2">{t("supported_formats")}</p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".ics,.ical"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-            </div>
+            <>
+              <div className="flex border-b border-border mb-4">
+                <button
+                  onClick={() => { setImportMode("file"); setError(null); }}
+                  className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                    importMode === "file"
+                      ? "border-primary text-primary"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Upload className="w-4 h-4" />
+                  {t("tab_file")}
+                </button>
+                <button
+                  onClick={() => { setImportMode("url"); setError(null); }}
+                  className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                    importMode === "url"
+                      ? "border-primary text-primary"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Globe className="w-4 h-4" />
+                  {t("tab_url")}
+                </button>
+              </div>
+
+              {importMode === "file" && (
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  className={`flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-8 cursor-pointer transition-colors ${
+                    isDragging
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/50 hover:bg-muted/50"
+                  }`}
+                >
+                  <Upload className="w-8 h-8 text-muted-foreground mb-3" />
+                  <p className="text-sm font-medium">{t("select_file")}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t("drop_file")}</p>
+                  <p className="text-xs text-muted-foreground mt-2">{t("supported_formats")}</p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".ics,.ical"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                </div>
+              )}
+
+              {importMode === "url" && (
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">{t("url_description")}</p>
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      value={urlInput}
+                      onChange={(e) => setUrlInput(e.target.value)}
+                      placeholder={t("url_placeholder")}
+                      className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                      onKeyDown={(e) => { if (e.key === "Enter") handleUrlFetch(); }}
+                    />
+                    <Button
+                      onClick={handleUrlFetch}
+                      disabled={!urlInput.trim() || isFetchingUrl}
+                    >
+                      {isFetchingUrl ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        t("fetch")
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{t("url_hint")}</p>
+                </div>
+              )}
+            </>
           )}
 
           {isParsing && (
@@ -235,7 +352,7 @@ export function ICalImportModal({ calendars, client, onClose }: ICalImportModalP
           )}
 
           {error && (
-            <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 rounded-md px-3 py-2">
+            <div className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2">
               {error}
             </div>
           )}
@@ -318,7 +435,7 @@ export function ICalImportModal({ calendars, client, onClose }: ICalImportModalP
         </div>
 
         {step !== "importing" && (
-          <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-border">
+          <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-border">
             <Button variant="outline" onClick={onClose}>
               {tForm("cancel")}
             </Button>
@@ -327,7 +444,7 @@ export function ICalImportModal({ calendars, client, onClose }: ICalImportModalP
                 onClick={handleImport}
                 disabled={selectedIndices.size === 0}
               >
-                <Check className="w-4 h-4 mr-1" />
+                <Check className="w-4 h-4 me-1" />
                 {t("import_button")} ({selectedIndices.size})
               </Button>
             )}

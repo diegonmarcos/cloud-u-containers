@@ -1,5 +1,5 @@
 {
-  description = "Cloud Webmail — native-JMAP webmail client for Stalwart (Type A own image, rebrand of root-fr/jmap-webmail)";
+  description = "Cloud Webmail — Stalwart-native JMAP webmail (Type A own image, build of bulwarkmail/webmail)";
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
 
@@ -23,7 +23,7 @@
         templates = [];
         # Type A — we own the build. Engine vendors this Dockerfile verbatim
         # into dist/code/arm64/Dockerfile and copies ./code/arm64/webapp (the
-        # rebranded root-fr/jmap-webmail source) into the build context so the
+        # vendored bulwarkmail/webmail source) into the build context so the
         # multi-stage Next.js build has its sources.
         nativeBuild = {
           dockerfile = ./code/arm64/Dockerfile;

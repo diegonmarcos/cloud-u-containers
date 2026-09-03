@@ -48,7 +48,7 @@ export function PlaceholderFillModal({
   }, [template.body, values]);
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4 animate-in fade-in duration-150">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-[1px] flex items-center justify-center z-[60] p-4 animate-in fade-in duration-150">
       <div
         ref={modalRef}
         role="dialog"
@@ -66,7 +66,7 @@ export function PlaceholderFillModal({
           </h2>
           <button
             onClick={onClose}
-            className="p-2 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+            className="p-1.5 rounded-md hover:bg-muted transition-colors duration-150 text-muted-foreground hover:text-foreground"
           >
             <X className="w-5 h-5" />
           </button>
@@ -94,7 +94,7 @@ export function PlaceholderFillModal({
             <div className="mt-4 pt-4 border-t border-border">
               <p className="text-xs font-medium text-muted-foreground mb-2">{t('preview')}</p>
               <div className="text-sm text-foreground whitespace-pre-wrap p-3 rounded-md bg-muted/50 border border-border max-h-32 overflow-y-auto">
-                {preview}
+                {template.isHTML ? <div dangerouslySetInnerHTML={{ __html: preview }}></div> : preview}
               </div>
             </div>
           )}

@@ -1,215 +1,363 @@
 import { describe, it, expect } from 'vitest';
 import {
-  buildQueryRequest,
-  resolveScopeTargets,
-  UNIFIED_INBOX_ID,
-  type EmailQuery,
-  type EmailPage,
+  toWildcardQuery,
+  buildJMAPFilter,
+  isFilterEmpty,
+  activeFilterCount,
+  DEFAULT_SEARCH_FILTERS,
 } from '../jmap/search-utils';
-import type { Mailbox } from '../jmap/types';
+import type { SearchFilters } from '../jmap/search-utils';
 
-const baseSort = { by: 'receivedAt' as const, ascending: false };
-const firstPage: EmailPage = { limit: 50 };
-const noRoles = {};
+// ---------------------------------------------------------------------------
+// toWildcardQuery
+// ---------------------------------------------------------------------------
+describe('toWildcardQuery', () => {
+  it('appends * to a single word', () => {
+    expect(toWildcardQuery('pri')).toBe('pri*');
+  });
 
-describe('buildQueryRequest', () => {
-  describe('folder scope', () => {
-    it('sets inMailbox from the mailboxId with no text', () => {
-      const q: EmailQuery = { scope: { kind: 'folder', mailboxId: 'mb1' }, sort: baseSort };
-      const r = buildQueryRequest(q, firstPage, noRoles);
-      expect(r.filter).toEqual({ inMailbox: 'mb1' });
+  it('appends * to every word in a multi-word query', () => {
+    expect(toWildcardQuery('hello world')).toBe('hello* world*');
+  });
+
+  it('handles single-character queries', () => {
+    expect(toWildcardQuery('a')).toBe('a*');
+  });
+
+  it('handles two-character queries', () => {
+    expect(toWildcardQuery('pr')).toBe('pr*');
+  });
+
+  it('handles long words', () => {
+    expect(toWildcardQuery('internationalization')).toBe('internationalization*');
+  });
+
+  it('does not double-append * if already present', () => {
+    expect(toWildcardQuery('hello*')).toBe('hello*');
+    expect(toWildcardQuery('hello* world')).toBe('hello* world*');
+  });
+
+  it('preserves quoted phrases ending with "', () => {
+    expect(toWildcardQuery('"hello world"')).toBe('"hello* world"');
+  });
+
+  it('trims leading/trailing whitespace', () => {
+    expect(toWildcardQuery('  hello  ')).toBe('hello*');
+  });
+
+  it('collapses multiple spaces between words', () => {
+    expect(toWildcardQuery('hello    world')).toBe('hello* world*');
+  });
+
+  it('returns empty string for empty input', () => {
+    expect(toWildcardQuery('')).toBe('');
+  });
+
+  it('returns empty string for whitespace-only input', () => {
+    expect(toWildcardQuery('   ')).toBe('');
+  });
+
+  it('handles mixed words with and without wildcards', () => {
+    expect(toWildcardQuery('foo* bar baz*')).toBe('foo* bar* baz*');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// buildJMAPFilter
+// ---------------------------------------------------------------------------
+describe('buildJMAPFilter', () => {
+  const emptyFilters: SearchFilters = { ...DEFAULT_SEARCH_FILTERS };
+
+  // -- text query ----------------------------------------------------------
+  describe('text query', () => {
+    it('builds a text filter with wildcard from textQuery alone', () => {
+      const result = buildJMAPFilter('pri', emptyFilters);
+      expect(result).toEqual({ text: 'pri*' });
     });
 
-    it('AND-combines text with inMailbox', () => {
-      const q: EmailQuery = { text: 'hello', scope: { kind: 'folder', mailboxId: 'mb1' }, sort: baseSort };
-      const r = buildQueryRequest(q, firstPage, noRoles);
-      expect(r.filter).toEqual({
-        operator: 'AND',
-        conditions: [{ text: 'hello' }, { inMailbox: 'mb1' }],
-      });
+    it('wildcards each word in multi-word text query', () => {
+      const result = buildJMAPFilter('hello world', emptyFilters);
+      expect(result).toEqual({ text: 'hello* world*' });
     });
 
-    it('never adds a trash/junk NOT clause even when role ids are known', () => {
-      const q: EmailQuery = { text: 'hi', scope: { kind: 'folder', mailboxId: 'mb1' }, sort: baseSort };
-      const r = buildQueryRequest(q, firstPage, { trashId: 't', junkId: 'j' });
-      expect(JSON.stringify(r.filter)).not.toContain('NOT');
+    it('returns empty object when no query and no filters', () => {
+      const result = buildJMAPFilter('', emptyFilters);
+      expect(result).toEqual({});
     });
   });
 
-  describe('global scope', () => {
-    it('excludes trash and junk via NOT when includeTrashJunk is false', () => {
-      const q: EmailQuery = { text: 'hi', scope: { kind: 'all', includeTrashJunk: false }, sort: baseSort };
-      const r = buildQueryRequest(q, firstPage, { trashId: 't', junkId: 'j' });
-      expect(r.filter).toEqual({
+  // -- individual field filters -------------------------------------------
+  describe('individual field filters', () => {
+    it('builds a from filter (no wildcard)', () => {
+      const filters: SearchFilters = { ...emptyFilters, from: 'alice' };
+      const result = buildJMAPFilter('', filters);
+      expect(result).toEqual({ from: 'alice' });
+    });
+
+    it('builds a to filter (no wildcard)', () => {
+      const filters: SearchFilters = { ...emptyFilters, to: 'bob@example.com' };
+      const result = buildJMAPFilter('', filters);
+      expect(result).toEqual({ to: 'bob@example.com' });
+    });
+
+    it('builds a subject filter (no wildcard)', () => {
+      const filters: SearchFilters = { ...emptyFilters, subject: 'meeting' };
+      const result = buildJMAPFilter('', filters);
+      expect(result).toEqual({ subject: 'meeting' });
+    });
+
+    it('builds a body filter (no wildcard)', () => {
+      const filters: SearchFilters = { ...emptyFilters, body: 'payment' };
+      const result = buildJMAPFilter('', filters);
+      expect(result).toEqual({ body: 'payment' });
+    });
+  });
+
+  // -- boolean / keyword filters ------------------------------------------
+  describe('boolean and keyword filters', () => {
+    it('adds hasAttachment: true', () => {
+      const filters: SearchFilters = { ...emptyFilters, hasAttachment: true };
+      const result = buildJMAPFilter('', filters);
+      expect(result).toEqual({ hasAttachment: true });
+    });
+
+    it('adds hasAttachment: false', () => {
+      const filters: SearchFilters = { ...emptyFilters, hasAttachment: false };
+      const result = buildJMAPFilter('', filters);
+      expect(result).toEqual({ hasAttachment: false });
+    });
+
+    it('adds notKeyword $seen for isUnread=true', () => {
+      const filters: SearchFilters = { ...emptyFilters, isUnread: true };
+      const result = buildJMAPFilter('', filters);
+      expect(result).toEqual({ notKeyword: '$seen' });
+    });
+
+    it('adds hasKeyword $seen for isUnread=false', () => {
+      const filters: SearchFilters = { ...emptyFilters, isUnread: false };
+      const result = buildJMAPFilter('', filters);
+      expect(result).toEqual({ hasKeyword: '$seen' });
+    });
+
+    it('adds hasKeyword $flagged for isStarred=true', () => {
+      const filters: SearchFilters = { ...emptyFilters, isStarred: true };
+      const result = buildJMAPFilter('', filters);
+      expect(result).toEqual({ hasKeyword: '$flagged' });
+    });
+
+    it('adds notKeyword $flagged for isStarred=false', () => {
+      const filters: SearchFilters = { ...emptyFilters, isStarred: false };
+      const result = buildJMAPFilter('', filters);
+      expect(result).toEqual({ notKeyword: '$flagged' });
+    });
+  });
+
+  // -- date filters -------------------------------------------------------
+  describe('date filters', () => {
+    it('adds after condition for dateAfter', () => {
+      const filters: SearchFilters = { ...emptyFilters, dateAfter: '2024-06-01' };
+      const result = buildJMAPFilter('', filters);
+      expect(result).toHaveProperty('after');
+      expect(new Date(result.after as string).toISOString()).toContain('2024-06-01');
+    });
+
+    it('adds before condition for dateBefore (end of day)', () => {
+      const filters: SearchFilters = { ...emptyFilters, dateBefore: '2024-12-31' };
+      const result = buildJMAPFilter('', filters);
+      expect(result).toHaveProperty('before');
+      const d = new Date(result.before as string);
+      expect(d.getHours()).toBe(23);
+      expect(d.getMinutes()).toBe(59);
+    });
+
+    it('ignores invalid dateAfter', () => {
+      const filters: SearchFilters = { ...emptyFilters, dateAfter: 'not-a-date' };
+      const result = buildJMAPFilter('', filters);
+      expect(result).toEqual({});
+    });
+
+    it('ignores invalid dateBefore', () => {
+      const filters: SearchFilters = { ...emptyFilters, dateBefore: 'nope' };
+      const result = buildJMAPFilter('', filters);
+      expect(result).toEqual({});
+    });
+  });
+
+  // -- mailbox filter ------------------------------------------------------
+  describe('mailbox filter', () => {
+    it('returns inMailbox filter when only mailboxId provided', () => {
+      const result = buildJMAPFilter('', emptyFilters, 'inbox-1');
+      expect(result).toEqual({ inMailbox: 'inbox-1' });
+    });
+
+    it('wraps in AND when mailboxId combined with text query', () => {
+      const result = buildJMAPFilter('pri', emptyFilters, 'inbox-1');
+      expect(result).toEqual({
         operator: 'AND',
         conditions: [
-          { text: 'hi' },
-          { operator: 'NOT', conditions: [{ inMailbox: 't' }, { inMailbox: 'j' }] },
+          { text: 'pri*' },
+          { inMailbox: 'inbox-1' },
+        ],
+      });
+    });
+  });
+
+  // -- combinations --------------------------------------------------------
+  describe('combined filters', () => {
+    it('ANDs text query with from filter', () => {
+      const filters: SearchFilters = { ...emptyFilters, from: 'alice' };
+      const result = buildJMAPFilter('urgent', filters);
+      expect(result).toEqual({
+        operator: 'AND',
+        conditions: [
+          { text: 'urgent*' },
+          { from: 'alice' },
         ],
       });
     });
 
-    it('omits the NOT clause entirely when includeTrashJunk is true', () => {
-      const q: EmailQuery = { text: 'hi', scope: { kind: 'all', includeTrashJunk: true }, sort: baseSort };
-      const r = buildQueryRequest(q, firstPage, { trashId: 't', junkId: 'j' });
-      expect(r.filter).toEqual({ text: 'hi' });
-    });
-
-    it('drops only the missing role from the NOT clause (junk id absent)', () => {
-      const q: EmailQuery = { text: 'hi', scope: { kind: 'all', includeTrashJunk: false }, sort: baseSort };
-      const r = buildQueryRequest(q, firstPage, { trashId: 't' });
-      expect(r.filter).toEqual({
+    it('ANDs text query, from, subject, hasAttachment, and mailbox', () => {
+      const filters: SearchFilters = {
+        ...emptyFilters,
+        from: 'ceo@corp.com',
+        subject: 'quarterly',
+        hasAttachment: true,
+      };
+      const result = buildJMAPFilter('report', filters, 'mb-42');
+      expect(result).toEqual({
         operator: 'AND',
-        conditions: [{ text: 'hi' }, { operator: 'NOT', conditions: [{ inMailbox: 't' }] }],
+        conditions: [
+          { text: 'report*' },
+          { from: 'ceo@corp.com' },
+          { subject: 'quarterly' },
+          { hasAttachment: true },
+          { inMailbox: 'mb-42' },
+        ],
       });
     });
 
-    it('omits the NOT clause when both role ids are missing', () => {
-      const q: EmailQuery = { text: 'hi', scope: { kind: 'all', includeTrashJunk: false }, sort: baseSort };
-      const r = buildQueryRequest(q, firstPage, noRoles);
-      expect(r.filter).toEqual({ text: 'hi' });
-    });
-
-    it('collapses an empty base to the bare NOT clause', () => {
-      const q: EmailQuery = { scope: { kind: 'all', includeTrashJunk: false }, sort: baseSort };
-      const r = buildQueryRequest(q, firstPage, { trashId: 't', junkId: 'j' });
-      expect(r.filter).toEqual({
-        operator: 'NOT',
-        conditions: [{ inMailbox: 't' }, { inMailbox: 'j' }],
-      });
-    });
-  });
-
-  describe('sort mapping (RFC 8621)', () => {
-    it.each([
-      ['receivedAt', true],
-      ['receivedAt', false],
-      ['from', true],
-      ['subject', false],
-      ['size', true],
-    ] as const)('maps %s ascending=%s', (by, ascending) => {
-      const q: EmailQuery = { scope: { kind: 'folder', mailboxId: 'mb1' }, sort: { by, ascending } };
-      const r = buildQueryRequest(q, firstPage, noRoles);
-      expect(r.sort).toEqual([{ property: by, isAscending: ascending }]);
-    });
-  });
-
-  describe('paging', () => {
-    it('first page: position 0, no anchor, calculateTotal true', () => {
-      const q: EmailQuery = { scope: { kind: 'folder', mailboxId: 'mb1' }, sort: baseSort };
-      const r = buildQueryRequest(q, { limit: 50 }, noRoles);
-      expect(r.position).toBe(0);
-      expect(r.anchor).toBeUndefined();
-      expect(r.anchorOffset).toBeUndefined();
-      expect(r.calculateTotal).toBe(true);
-      expect(r.limit).toBe(50);
-    });
-
-    it('anchored page: anchor set, anchorOffset defaults to 1, no position, calculateTotal false', () => {
-      const q: EmailQuery = { scope: { kind: 'folder', mailboxId: 'mb1' }, sort: baseSort };
-      const r = buildQueryRequest(q, { limit: 25, anchor: 'e99' }, noRoles);
-      expect(r.anchor).toBe('e99');
-      expect(r.anchorOffset).toBe(1);
-      expect(r.position).toBeUndefined();
-      expect(r.calculateTotal).toBe(false);
-      expect(r.limit).toBe(25);
-    });
-
-    it('anchored page respects an explicit anchorOffset', () => {
-      const q: EmailQuery = { scope: { kind: 'folder', mailboxId: 'mb1' }, sort: baseSort };
-      const r = buildQueryRequest(q, { limit: 25, anchor: 'e99', anchorOffset: 0 }, noRoles);
-      expect(r.anchorOffset).toBe(0);
+    it('ANDs all possible filters at once', () => {
+      const filters: SearchFilters = {
+        from: 'alice',
+        to: 'bob',
+        subject: 'invoice',
+        body: 'payment',
+        hasAttachment: true,
+        dateAfter: '2024-01-01',
+        dateBefore: '2024-12-31',
+        isUnread: true,
+        isStarred: true,
+      };
+      const result = buildJMAPFilter('money', filters, 'mb-1') as {
+        operator: string;
+        conditions: Record<string, unknown>[];
+      };
+      expect(result.operator).toBe('AND');
+      expect(result.conditions).toContainEqual({ text: 'money*' });
+      expect(result.conditions).toContainEqual({ from: 'alice' });
+      expect(result.conditions).toContainEqual({ to: 'bob' });
+      expect(result.conditions).toContainEqual({ subject: 'invoice' });
+      expect(result.conditions).toContainEqual({ body: 'payment' });
+      expect(result.conditions).toContainEqual({ hasAttachment: true });
+      expect(result.conditions).toContainEqual({ notKeyword: '$seen' });
+      expect(result.conditions).toContainEqual({ hasKeyword: '$flagged' });
+      expect(result.conditions).toContainEqual({ inMailbox: 'mb-1' });
+      // dateAfter and dateBefore produce after/before ISO strings
+      expect(result.conditions.some(c => 'after' in c)).toBe(true);
+      expect(result.conditions.some(c => 'before' in c)).toBe(true);
     });
   });
 });
 
-describe('UNIFIED_INBOX_ID', () => {
-  it('is the unified:inbox sentinel', () => {
-    expect(UNIFIED_INBOX_ID).toBe('unified:inbox');
+// ---------------------------------------------------------------------------
+// isFilterEmpty
+// ---------------------------------------------------------------------------
+describe('isFilterEmpty', () => {
+  it('returns true for default filters', () => {
+    expect(isFilterEmpty(DEFAULT_SEARCH_FILTERS)).toBe(true);
+  });
+
+  it('returns false when from is set', () => {
+    expect(isFilterEmpty({ ...DEFAULT_SEARCH_FILTERS, from: 'alice' })).toBe(false);
+  });
+
+  it('returns false when to is set', () => {
+    expect(isFilterEmpty({ ...DEFAULT_SEARCH_FILTERS, to: 'bob' })).toBe(false);
+  });
+
+  it('returns false when subject is set', () => {
+    expect(isFilterEmpty({ ...DEFAULT_SEARCH_FILTERS, subject: 'hello' })).toBe(false);
+  });
+
+  it('returns false when body is set', () => {
+    expect(isFilterEmpty({ ...DEFAULT_SEARCH_FILTERS, body: 'world' })).toBe(false);
+  });
+
+  it('returns false when hasAttachment is true', () => {
+    expect(isFilterEmpty({ ...DEFAULT_SEARCH_FILTERS, hasAttachment: true })).toBe(false);
+  });
+
+  it('returns false when hasAttachment is false', () => {
+    expect(isFilterEmpty({ ...DEFAULT_SEARCH_FILTERS, hasAttachment: false })).toBe(false);
+  });
+
+  it('returns false when dateAfter is set', () => {
+    expect(isFilterEmpty({ ...DEFAULT_SEARCH_FILTERS, dateAfter: '2024-01-01' })).toBe(false);
+  });
+
+  it('returns false when dateBefore is set', () => {
+    expect(isFilterEmpty({ ...DEFAULT_SEARCH_FILTERS, dateBefore: '2024-12-31' })).toBe(false);
+  });
+
+  it('returns false when isUnread is set', () => {
+    expect(isFilterEmpty({ ...DEFAULT_SEARCH_FILTERS, isUnread: true })).toBe(false);
+  });
+
+  it('returns false when isStarred is set', () => {
+    expect(isFilterEmpty({ ...DEFAULT_SEARCH_FILTERS, isStarred: false })).toBe(false);
   });
 });
 
-function mkMailbox(o: Partial<Mailbox>): Mailbox {
-  return { id: '', name: '', sortOrder: 1 as const, ...o } as Mailbox;
-}
-
-const multiAccountMailboxes: Mailbox[] = [
-  mkMailbox({ id: 'inbox-a', role: 'inbox', accountId: 'acc-a' }),
-  mkMailbox({ id: 'archive-a', role: 'archive', accountId: 'acc-a' }),
-  mkMailbox({ id: 'acc-b:inbox-b', originalId: 'inbox-b', role: 'inbox', isShared: true, accountId: 'acc-b' }),
-  mkMailbox({ id: 'acc-c:inbox-c', originalId: 'inbox-c', role: 'inbox', isShared: true, accountId: 'acc-c' }),
-];
-
-describe('resolveScopeTargets', () => {
-  it('returns null for folder scope (keeps the single-account path)', () => {
-    const targets = resolveScopeTargets(
-      { kind: 'folder', mailboxId: 'inbox-a' },
-      multiAccountMailboxes,
-      []
-    );
-    expect(targets).toBeNull();
+// ---------------------------------------------------------------------------
+// activeFilterCount
+// ---------------------------------------------------------------------------
+describe('activeFilterCount', () => {
+  it('returns 0 for default filters', () => {
+    expect(activeFilterCount(DEFAULT_SEARCH_FILTERS)).toBe(0);
   });
 
-  it("unified: targets each included account's inbox with un-namespaced mailbox ids", () => {
-    const targets = resolveScopeTargets({ kind: 'unified' }, multiAccountMailboxes, []);
-    expect(targets).toEqual([
-      { accountId: 'acc-a', mailboxId: 'inbox-a' },
-      { accountId: 'acc-b', mailboxId: 'inbox-b' },
-      { accountId: 'acc-c', mailboxId: 'inbox-c' },
-    ]);
+  it('counts each active text field', () => {
+    expect(activeFilterCount({ ...DEFAULT_SEARCH_FILTERS, from: 'a', to: 'b' })).toBe(2);
   });
 
-  it('unified: omits excluded accounts', () => {
-    const targets = resolveScopeTargets({ kind: 'unified' }, multiAccountMailboxes, ['acc-b']);
-    expect(targets).toEqual([
-      { accountId: 'acc-a', mailboxId: 'inbox-a' },
-      { accountId: 'acc-c', mailboxId: 'inbox-c' },
-    ]);
+  it('counts boolean filters', () => {
+    expect(activeFilterCount({
+      ...DEFAULT_SEARCH_FILTERS,
+      hasAttachment: true,
+      isUnread: false,
+      isStarred: true,
+    })).toBe(3);
   });
 
-  it('unified: a stale exclude entry for a removed account changes nothing', () => {
-    const targets = resolveScopeTargets({ kind: 'unified' }, multiAccountMailboxes, ['acc-gone']);
-    expect(targets).toEqual([
-      { accountId: 'acc-a', mailboxId: 'inbox-a' },
-      { accountId: 'acc-b', mailboxId: 'inbox-b' },
-      { accountId: 'acc-c', mailboxId: 'inbox-c' },
-    ]);
+  it('counts date filters', () => {
+    expect(activeFilterCount({
+      ...DEFAULT_SEARCH_FILTERS,
+      dateAfter: '2024-01-01',
+      dateBefore: '2024-12-31',
+    })).toBe(2);
   });
 
-  it('unified: skips inbox mailboxes that carry no accountId', () => {
-    const withLegacy = [mkMailbox({ id: 'inbox-x', role: 'inbox' }), ...multiAccountMailboxes];
-    const targets = resolveScopeTargets({ kind: 'unified' }, withLegacy, []);
-    expect(targets).toEqual([
-      { accountId: 'acc-a', mailboxId: 'inbox-a' },
-      { accountId: 'acc-b', mailboxId: 'inbox-b' },
-      { accountId: 'acc-c', mailboxId: 'inbox-c' },
-    ]);
-  });
-
-  it('all (Everywhere): one whole-account target per session account, ignoring the exclude list', () => {
-    const targets = resolveScopeTargets(
-      { kind: 'all', includeTrashJunk: false },
-      multiAccountMailboxes,
-      ['acc-b']
-    );
-    expect(targets).toEqual([
-      { accountId: 'acc-a' },
-      { accountId: 'acc-b' },
-      { accountId: 'acc-c' },
-    ]);
-  });
-});
-
-describe('buildQueryRequest with unified scope', () => {
-  it('yields an account-agnostic filter: no inMailbox, no trash/junk NOT clause', () => {
-    const q: EmailQuery = { text: 'hi', scope: { kind: 'unified' }, sort: baseSort };
-    const r = buildQueryRequest(q, firstPage, { trashId: 't', junkId: 'j' });
-    expect(r.filter).toEqual({ text: 'hi' });
-  });
-
-  it('yields an empty filter with no text or filters', () => {
-    const q: EmailQuery = { scope: { kind: 'unified' }, sort: baseSort };
-    const r = buildQueryRequest(q, firstPage, { trashId: 't', junkId: 'j' });
-    expect(r.filter).toEqual({});
+  it('counts all 9 filters when all active', () => {
+    expect(activeFilterCount({
+      from: 'a',
+      to: 'b',
+      subject: 'c',
+      body: 'd',
+      hasAttachment: true,
+      dateAfter: '2024-01-01',
+      dateBefore: '2024-12-31',
+      isUnread: true,
+      isStarred: true,
+    })).toBe(9);
   });
 });

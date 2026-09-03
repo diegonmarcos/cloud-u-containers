@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useTranslations } from "next-intl";
-import { useFocusTrap } from "@/hooks/use-focus-trap";
-import { X, ShieldCheck, Search, Trash2, Plus } from "lucide-react";
+import { X, ShieldCheck, Search, Trash2, Plus, Loader2 } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { useSettingsStore } from "@/stores/settings-store";
+import { useContactStore } from "@/stores/contact-store";
+import { useAuthStore } from "@/stores/auth-store";
 import { cn } from "@/lib/utils";
 
 interface TrustedSendersModalProps {
@@ -15,36 +16,66 @@ interface TrustedSendersModalProps {
 
 export function TrustedSendersModal({ isOpen, onClose }: TrustedSendersModalProps) {
   const t = useTranslations("settings.email_behavior.trusted_senders");
+  const modalRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { trustedSenders, addTrustedSender, removeTrustedSender } = useSettingsStore();
+  const { trustedSenders, addTrustedSender, removeTrustedSender, trustedSendersAddressBook } = useSettingsStore();
+  const {
+    trustedSenderEmails,
+    trustedSendersLoaded,
+    trustedSendersLoading,
+    loadTrustedSendersBook,
+    addToTrustedSendersBook,
+    removeFromTrustedSendersBook,
+  } = useContactStore();
+  const { client } = useAuthStore();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [isAdding, setIsAdding] = useState(false);
   const [newEmail, setNewEmail] = useState("");
   const [emailError, setEmailError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // When address book mode is on, load the book on first open
+  useEffect(() => {
+    if (isOpen && trustedSendersAddressBook && client && !trustedSendersLoaded) {
+      loadTrustedSendersBook(client);
+    }
+  }, [isOpen, trustedSendersAddressBook, client, trustedSendersLoaded, loadTrustedSendersBook]);
+
+  // The active list depends on mode
+  const activeSenders = trustedSendersAddressBook ? trustedSenderEmails : trustedSenders;
+  const isLoading = trustedSendersAddressBook && (!trustedSendersLoaded || trustedSendersLoading);
 
   // Filter senders based on search query
   const filteredSenders = useMemo(() => {
-    if (!searchQuery.trim()) return trustedSenders;
+    if (!searchQuery.trim()) return activeSenders;
     const query = searchQuery.toLowerCase();
-    return trustedSenders.filter((email) => email.toLowerCase().includes(query));
-  }, [trustedSenders, searchQuery]);
+    return activeSenders.filter((email) => email.toLowerCase().includes(query));
+  }, [activeSenders, searchQuery]);
 
   // Show search only when 5+ senders
-  const showSearch = trustedSenders.length >= 5;
+  const showSearch = activeSenders.length >= 5;
 
-  const handleEscape = useCallback(() => {
-    if (isAdding) {
-      setIsAdding(false);
-      setNewEmail("");
-      setEmailError("");
-    } else {
-      onClose();
+  // Close on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (isAdding) {
+          setIsAdding(false);
+          setNewEmail("");
+          setEmailError("");
+        } else {
+          onClose();
+        }
+      }
+    };
+
+    if (isOpen) {
+      window.addEventListener("keydown", handleKeyDown);
+      return () => window.removeEventListener("keydown", handleKeyDown);
     }
-  }, [isAdding, onClose]);
-
-  const modalRef = useFocusTrap({ isActive: isOpen, onEscape: handleEscape });
+  }, [isOpen, isAdding, onClose]);
 
   // Close on click outside
   useEffect(() => {
@@ -58,7 +89,7 @@ export function TrustedSendersModal({ isOpen, onClose }: TrustedSendersModalProp
       document.addEventListener("mousedown", handleClickOutside);
       return () => document.removeEventListener("mousedown", handleClickOutside);
     }
-  }, [isOpen, onClose, modalRef]);
+  }, [isOpen, onClose]);
 
   // Focus input when adding mode is enabled
   useEffect(() => {
@@ -82,7 +113,7 @@ export function TrustedSendersModal({ isOpen, onClose }: TrustedSendersModalProp
     return emailRegex.test(email);
   };
 
-  const handleAddSender = () => {
+  const handleAddSender = async () => {
     const trimmedEmail = newEmail.trim().toLowerCase();
 
     if (!trimmedEmail) {
@@ -95,15 +126,34 @@ export function TrustedSendersModal({ isOpen, onClose }: TrustedSendersModalProp
       return;
     }
 
-    if (trustedSenders.includes(trimmedEmail)) {
+    if (activeSenders.includes(trimmedEmail)) {
       setEmailError(t("already_added"));
       return;
     }
 
-    addTrustedSender(trimmedEmail);
-    setNewEmail("");
-    setIsAdding(false);
-    setEmailError("");
+    setIsSubmitting(true);
+    try {
+      if (trustedSendersAddressBook && client) {
+        await addToTrustedSendersBook(client, trimmedEmail);
+      } else {
+        addTrustedSender(trimmedEmail);
+      }
+      setNewEmail("");
+      setIsAdding(false);
+      setEmailError("");
+    } catch {
+      setEmailError(t("save_error"));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleRemoveSender = async (email: string) => {
+    if (trustedSendersAddressBook && client) {
+      await removeFromTrustedSendersBook(client, email);
+    } else {
+      removeTrustedSender(email);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -115,7 +165,7 @@ export function TrustedSendersModal({ isOpen, onClose }: TrustedSendersModalProp
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-in fade-in duration-150">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-[1px] flex items-center justify-center z-50 p-4 animate-in fade-in duration-150">
       <div
         ref={modalRef}
         role="dialog"
@@ -138,7 +188,7 @@ export function TrustedSendersModal({ isOpen, onClose }: TrustedSendersModalProp
           <button
             onClick={onClose}
             aria-label={t("close")}
-            className="p-2 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+            className="p-1.5 rounded-md hover:bg-muted transition-colors duration-150 text-muted-foreground hover:text-foreground"
           >
             <X className="w-5 h-5" />
           </button>
@@ -154,7 +204,7 @@ export function TrustedSendersModal({ isOpen, onClose }: TrustedSendersModalProp
                 placeholder={t("search_placeholder")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-sm bg-muted border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full ps-9 pe-3 py-2 text-sm bg-muted border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>
           </div>
@@ -162,7 +212,11 @@ export function TrustedSendersModal({ isOpen, onClose }: TrustedSendersModalProp
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
-          {trustedSenders.length === 0 ? (
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : activeSenders.length === 0 ? (
             /* Empty State */
             <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
               <ShieldCheck className="w-12 h-12 text-muted-foreground/50 mb-4" />
@@ -201,7 +255,7 @@ export function TrustedSendersModal({ isOpen, onClose }: TrustedSendersModalProp
                     {email}
                   </span>
                   <button
-                    onClick={() => removeTrustedSender(email)}
+                    onClick={() => handleRemoveSender(email)}
                     className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
                     aria-label={`${t("remove")} ${email}`}
                   >
@@ -214,7 +268,7 @@ export function TrustedSendersModal({ isOpen, onClose }: TrustedSendersModalProp
         </div>
 
         {/* Footer - Add sender */}
-        {trustedSenders.length > 0 && (
+        {!isLoading && activeSenders.length > 0 && (
           <div className="px-6 py-4 border-t border-border flex-shrink-0">
             {isAdding ? (
               <div className="space-y-2">
@@ -236,9 +290,10 @@ export function TrustedSendersModal({ isOpen, onClose }: TrustedSendersModalProp
                   />
                   <button
                     onClick={handleAddSender}
-                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors text-sm font-medium"
+                    disabled={isSubmitting}
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors text-sm font-medium disabled:opacity-50"
                   >
-                    {t("add_button")}
+                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : t("add_button")}
                   </button>
                 </div>
                 {emailError && (

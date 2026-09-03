@@ -2,13 +2,16 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
+import { parseISO } from 'date-fns';
 import { useAuthStore } from '@/stores/auth-store';
 import { useCalendarStore } from '@/stores/calendar-store';
 import { useSettingsStore } from '@/stores/settings-store';
+import { useTaskStore } from '@/stores/task-store';
 import { useCalendarNotificationStore } from '@/stores/calendar-notification-store';
 import { useToastStore } from '@/stores/toast-store';
-import { getPendingAlerts, buildAlertKey } from '@/lib/calendar-alerts';
+import { getPendingAlerts, getPendingTaskAlerts, buildAlertKey } from '@/lib/calendar-alerts';
 import { playNotificationSound } from '@/lib/notification-sound';
+import { getPathPrefix } from '@/lib/browser-navigation';
 import type { CalendarEvent } from '@/lib/jmap/types';
 
 const CHECK_INTERVAL_MS = 60 * 1000;
@@ -18,7 +21,8 @@ const PROACTIVE_THROTTLE_MS = CHECK_INTERVAL_MS * 5;
 export function useCalendarAlerts() {
   const { isAuthenticated, client } = useAuthStore();
   const { events, calendars, supportsCalendar } = useCalendarStore();
-  const { calendarNotificationsEnabled, calendarNotificationSound } = useSettingsStore();
+  const { calendarNotificationsEnabled, calendarNotificationSound, enableCalendarTasks, notificationSoundChoice } = useSettingsStore();
+  const { tasks: storeTasks } = useTaskStore();
   const { acknowledgedAlerts, acknowledgeAlert, cleanupStaleAlerts } = useCalendarNotificationStore();
   const addToast = useToastStore((s) => s.addToast);
   const t = useTranslations('calendar.notifications');
@@ -45,10 +49,10 @@ export function useCalendarAlerts() {
         acknowledgeAlert(key, alert.fireTimeMs);
 
         if (calendarNotificationSound) {
-          playNotificationSound();
+          playNotificationSound(notificationSoundChoice);
         }
 
-        const diffMs = new Date(alert.event.utcStart || alert.event.start).getTime() - now;
+        const diffMs = (alert.event.utcStart ? new Date(alert.event.utcStart).getTime() : parseISO(alert.event.start).getTime()) - now;
         const diffMin = Math.round(diffMs / 60000);
 
         const timeLabel = diffMin <= 0
@@ -65,17 +69,47 @@ export function useCalendarAlerts() {
           message,
           duration: 15000,
           onClick: () => {
-            window.location.href = `/${locale}/calendar`;
+            window.location.href = `${getPathPrefix(locale)}/${locale}/calendar`;
           },
         });
+      }
+
+      // Task alerts
+      if (enableCalendarTasks && storeTasks.length > 0) {
+        const pendingTaskAlerts = getPendingTaskAlerts(storeTasks, calendars, acknowledgedKeys, now);
+        for (const taskAlert of pendingTaskAlerts) {
+          const key = buildAlertKey(taskAlert.taskId, taskAlert.alertId, taskAlert.fireTimeMs);
+          if (shownKeysRef.current.has(key)) continue;
+
+          shownKeysRef.current.add(key);
+          acknowledgeAlert(key, taskAlert.fireTimeMs);
+
+          if (calendarNotificationSound) {
+            playNotificationSound(notificationSoundChoice);
+          }
+
+          const taskMsg = taskAlert.calendarName
+            ? `${t('task_due')} · ${taskAlert.calendarName}`
+            : t('task_due');
+
+          addToast({
+            type: 'info',
+            title: taskAlert.task.title || t('alert_title'),
+            message: taskMsg,
+            duration: 15000,
+            onClick: () => {
+              window.location.href = `${getPathPrefix(locale)}/${locale}/calendar`;
+            },
+          });
+        }
       }
     } catch {
       // Silently ignore alert evaluation errors
     }
   }, [
-    calendarNotificationsEnabled, calendarNotificationSound,
+    calendarNotificationsEnabled, calendarNotificationSound, notificationSoundChoice,
     isAuthenticated, events, calendars, acknowledgedAlerts,
-    acknowledgeAlert, addToast, t, locale,
+    acknowledgeAlert, addToast, t, locale, enableCalendarTasks, storeTasks,
   ]);
 
   const proactiveFetch = useCallback(async () => {
@@ -103,7 +137,7 @@ export function useCalendarAlerts() {
 
     const timer = setTimeout(() => checkAlerts(), 500);
     return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-run when auth or notification setting changes, not when callback refs update
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, calendarNotificationsEnabled]);
 
   useEffect(() => {

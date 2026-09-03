@@ -1,90 +1,40 @@
 import type { Email, ThreadGroup } from "./jmap/types";
-
-/**
- * Identity key for a row in a possibly-merged list. JMAP ids are unique only
- * within an account (RFC 8620), so selection sets, caches, and dedup in
- * multi-account views must key by account + id or colliding ids from two
- * accounts collapse into one entry. The brand makes a bare email id fail to
- * compile where a scoped key is required.
- */
-export type RowKey = string & { readonly __rowKey: unique symbol };
-
-export function accountScopedKey(accountId: string | undefined, id: string): RowKey {
-  return `${accountId ?? ""}\u0000${id}` as RowKey;
-}
-
-/** Identity key of a concrete row. */
-export function emailRowKey(email: Email): RowKey {
-  return accountScopedKey(email.accountId, email.id);
-}
-
-/** Row identity in a possibly-merged list: same JMAP id AND same account stamp. */
-export function sameRow(e: Email, emailId: string, accountId: string | undefined): boolean {
-  return e.id === emailId && e.accountId === accountId;
-}
-
-export function isSameRow(a: Email, b: Email): boolean {
-  return sameRow(a, b.id, b.accountId);
-}
-
-/**
- * Owning account of a row: the account stamp wins (set at fetch time for
- * every non-primary row), else a shared selected mailbox names the account,
- * else primary (undefined).
- */
-export function owningAccountId(
-  email: Email | undefined,
-  mailboxes: { id: string; isShared?: boolean; accountId?: string }[],
-  selectedMailboxId: string,
-): string | undefined {
-  if (email?.accountId) return email.accountId;
-  const mailbox = mailboxes.find(mb => mb.id === selectedMailboxId);
-  return mailbox?.isShared ? mailbox.accountId : undefined;
-}
-
-/**
- * Finds the row the caller acted on by exact account-stamp match. Every
- * non-primary row is stamped at fetch time (namespaceMailboxIds), primary
- * rows never are, so undefined selects the primary row and a defined stamp
- * selects its account's row. There is deliberately no bare-id fallback: a
- * caller that lost the stamp gets a no-op, never another account's row.
- */
-export function findEmailRow(emails: Email[], emailId: string, accountId: string | undefined): Email | undefined {
-  return emails.find(e => e.id === emailId && e.accountId === accountId);
-}
-
-/** Same contract as findEmailRow, keyed by threadId. */
-export function findThreadRow(emails: Email[], threadId: string, accountId: string | undefined): Email | undefined {
-  return emails.find(e => e.threadId === threadId && e.accountId === accountId);
-}
+import { compareEmails, type SortLevel } from "./message-list-order";
 
 /**
  * Groups emails by their threadId and creates ThreadGroup objects for UI display.
  * Single-email threads are still returned as ThreadGroups with emailCount=1.
+ * When disableThreading is true, each email is placed into its own group using
+ * its message ID as the key, so the list shows individual messages.
+ *
+ * @param threadEmailCounts - Optional map of threadId → total email count across
+ *   all folders (from Thread/get). When provided, emailCount reflects the full
+ *   thread size rather than just the emails in the current folder.
  */
-export function groupEmailsByThread(emails: Email[]): ThreadGroup[] {
+export function groupEmailsByThread(
+  emails: Email[],
+  disableThreading = false,
+  threadEmailCounts?: Map<string, number>,
+): ThreadGroup[] {
   if (!emails || emails.length === 0) {
     return [];
   }
 
-  // Group by accountId + threadId: JMAP thread ids are account-local, so in a
-  // merged multi-account list the same threadId string can name unrelated
-  // conversations in different accounts.
+  // Group emails by threadId (or by message ID when threading is disabled)
   const threadMap = new Map<string, Email[]>();
 
   for (const email of emails) {
-    const key = accountScopedKey(email.accountId, email.threadId);
-    if (!threadMap.has(key)) {
-      threadMap.set(key, []);
+    const threadId = disableThreading ? email.id : email.threadId;
+    if (!threadMap.has(threadId)) {
+      threadMap.set(threadId, []);
     }
-    threadMap.get(key)!.push(email);
+    threadMap.get(threadId)!.push(email);
   }
 
   // Convert to ThreadGroup array
   const threadGroups: ThreadGroup[] = [];
 
-  for (const threadEmails of threadMap.values()) {
-    const threadId = threadEmails[0].threadId;
+  for (const [threadId, threadEmails] of threadMap) {
     // Sort emails by receivedAt descending (newest first)
     const sortedEmails = [...threadEmails].sort(
       (a, b) => new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime()
@@ -95,10 +45,13 @@ export function groupEmailsByThread(emails: Email[]): ThreadGroup[] {
     // Collect unique participant names from all emails in thread
     const participantNames = getThreadParticipants(sortedEmails);
 
-    // Check for unread, starred, and attachments
+    // Check for unread, starred, pinned, and attachments
     const hasUnread = sortedEmails.some(e => !e.keywords?.$seen);
     const hasStarred = sortedEmails.some(e => e.keywords?.$flagged);
+    const hasPinned = sortedEmails.some(e => e.keywords?.['$pinned']);
     const hasAttachment = sortedEmails.some(e => e.hasAttachment);
+    const hasAnswered = sortedEmails.some(e => e.keywords?.$answered);
+    const hasForwarded = sortedEmails.some(e => e.keywords?.$forwarded);
 
     threadGroups.push({
       threadId,
@@ -107,8 +60,11 @@ export function groupEmailsByThread(emails: Email[]): ThreadGroup[] {
       participantNames,
       hasUnread,
       hasStarred,
+      hasPinned,
       hasAttachment,
-      emailCount: sortedEmails.length,
+      hasAnswered,
+      hasForwarded,
+      emailCount: threadEmailCounts?.get(threadId) ?? sortedEmails.length,
     });
   }
 
@@ -116,11 +72,26 @@ export function groupEmailsByThread(emails: Email[]): ThreadGroup[] {
 }
 
 /**
- * Sorts thread groups by their latest email's receivedAt date (newest first).
+ * Sorts thread groups to mirror the order the email list was fetched in.
+ * Threads containing a pinned email ($pinned keyword) stay on top, mirroring
+ * the server-side pinned-first sort of the email list. Below that, each thread
+ * takes the position of whichever of its emails sorts first under `order`
+ * (RFC 8621 §4.4.3 thread collapsing semantics) - with the default order that
+ * is the latest email's receivedAt date, newest first.
  */
-export function sortThreadGroups(groups: ThreadGroup[]): ThreadGroup[] {
+export function sortThreadGroups(groups: ThreadGroup[], order: SortLevel[] = []): ThreadGroup[] {
+  const compare = compareEmails(order);
+  const representative = new Map<ThreadGroup, Email>();
+  for (const group of groups) {
+    representative.set(
+      group,
+      group.emails.reduce((best, email) => (compare(email, best) < 0 ? email : best), group.emails[0] ?? group.latestEmail),
+    );
+  }
   return [...groups].sort(
-    (a, b) => new Date(b.latestEmail.receivedAt).getTime() - new Date(a.latestEmail.receivedAt).getTime()
+    (a, b) =>
+      (b.hasPinned ? 1 : 0) - (a.hasPinned ? 1 : 0) ||
+      compare(representative.get(a)!, representative.get(b)!)
   );
 }
 
@@ -183,7 +154,10 @@ export function mergeThreadEmails(
   const participantNames = getThreadParticipants(mergedEmails);
   const hasUnread = mergedEmails.some(e => !e.keywords?.$seen);
   const hasStarred = mergedEmails.some(e => e.keywords?.$flagged);
+  const hasPinned = mergedEmails.some(e => e.keywords?.['$pinned']);
   const hasAttachment = mergedEmails.some(e => e.hasAttachment);
+  const hasAnswered = mergedEmails.some(e => e.keywords?.$answered);
+  const hasForwarded = mergedEmails.some(e => e.keywords?.$forwarded);
 
   return {
     threadId: existingGroup.threadId,
@@ -192,33 +166,73 @@ export function mergeThreadEmails(
     participantNames,
     hasUnread,
     hasStarred,
+    hasPinned,
     hasAttachment,
+    hasAnswered,
+    hasForwarded,
     emailCount: mergedEmails.length,
   };
 }
 
-/**
- * Gets color tag from email keywords (if any).
- */
-export function getEmailColorTag(keywords: Record<string, boolean> | undefined): string | null {
-  if (!keywords) return null;
+/** Active prefix for new keyword tags written to JMAP */
+export const KEYWORD_PREFIX = "$label:";
+/** Legacy prefix still recognised when reading */
+export const KEYWORD_PREFIX_LEGACY = "$color:";
 
+/**
+ * Gets every tag id set on a message.
+ * Reads both the current $label: prefix and the legacy $color: prefix.
+ * A tag written under both spellings is one tag, so it is returned once.
+ */
+export function getEmailTagIds(keywords: Record<string, boolean> | undefined): string[] {
+  if (!keywords) return [];
+  const tags = new Set<string>();
   for (const key of Object.keys(keywords)) {
-    if (key.startsWith("$color:") && keywords[key] === true) {
-      return key.replace("$color:", "");
+    if ((key.startsWith(KEYWORD_PREFIX) || key.startsWith(KEYWORD_PREFIX_LEGACY)) && keywords[key] === true) {
+      tags.add(
+        key.startsWith(KEYWORD_PREFIX)
+          ? key.slice(KEYWORD_PREFIX.length)
+          : key.slice(KEYWORD_PREFIX_LEGACY.length)
+      );
     }
   }
+  return [...tags];
+}
 
+/**
+ * Gets the first tag id set on a message, if any.
+ * Reads both the current $label: prefix and the legacy $color: prefix.
+ * @deprecated Use getEmailTagIds for multi-tag support.
+ */
+export function getEmailTagId(keywords: Record<string, boolean> | undefined): string | null {
+  const tags = getEmailTagIds(keywords);
+  return tags.length > 0 ? tags[0] : null;
+}
+
+/**
+ * The first tag id found anywhere in a thread, if any.
+ */
+export function getThreadTagId(emails: Email[]): string | null {
+  for (const email of emails) {
+    const color = getEmailTagId(email.keywords);
+    if (color) return color;
+  }
   return null;
 }
 
 /**
- * Checks if a thread has any color tag (returns first found).
+ * Every tag anywhere in a thread, deduplicated.
+ *
+ * A collapsed thread row stands in for all its messages, so it has to account
+ * for all their tags - showing only the first message's would hide the rest
+ * with nothing to indicate they exist.
  */
-export function getThreadColorTag(emails: Email[]): string | null {
+export function getThreadTagIds(emails: Email[]): string[] {
+  const tags = new Set<string>();
   for (const email of emails) {
-    const color = getEmailColorTag(email.keywords);
-    if (color) return color;
+    for (const tag of getEmailTagIds(email.keywords)) {
+      tags.add(tag);
+    }
   }
-  return null;
+  return [...tags];
 }

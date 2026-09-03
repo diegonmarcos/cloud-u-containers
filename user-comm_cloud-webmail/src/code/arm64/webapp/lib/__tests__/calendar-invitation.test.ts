@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
   findCalendarAttachment,
+  getInvitationActorSummary,
   getInvitationMethod,
+  getInvitationTrustAssessment,
   formatEventSummary,
   findParticipantByEmail,
 } from '../calendar-invitation';
@@ -25,6 +27,7 @@ function makeParticipant(overrides: Partial<CalendarParticipant> = {}): Calendar
     '@type': 'Participant',
     name: 'Test',
     email: 'test@example.com',
+    calendarAddress: null,
     description: null,
     sendTo: null,
     kind: 'individual',
@@ -107,6 +110,16 @@ describe('findCalendarAttachment', () => {
     expect(findCalendarAttachment(email)).toBeNull();
   });
 
+  it('finds attachment when text/calendar includes MIME parameters', () => {
+    const email = makeEmail({
+      attachments: [
+        { partId: '1', blobId: 'b6', size: 500, type: 'text/calendar; method=REQUEST; charset=UTF-8' },
+      ],
+      hasAttachment: true,
+    });
+    expect(findCalendarAttachment(email)?.blobId).toBe('b6');
+  });
+
   it('detects text/calendar in textBody parts', () => {
     const email = makeEmail({
       textBody: [
@@ -116,6 +129,24 @@ describe('findCalendarAttachment', () => {
     const result = findCalendarAttachment(email);
     expect(result).toBeTruthy();
     expect(result!.blobId).toBe('tb1');
+  });
+
+  it('detects nested text/calendar body parts inside multipart structures', () => {
+    const email = makeEmail({
+      textBody: [
+        {
+          partId: 'root',
+          blobId: 'rootBlob',
+          size: 100,
+          type: 'multipart/alternative',
+          subParts: [
+            { partId: 'plain', blobId: 'plainBlob', size: 50, type: 'text/plain' },
+            { partId: 'ical', blobId: 'tbNested', size: 300, type: 'text/calendar; method=REQUEST; charset=UTF-8' },
+          ],
+        },
+      ],
+    });
+    expect(findCalendarAttachment(email)?.blobId).toBe('tbNested');
   });
 
   it('prioritizes attachments over textBody', () => {
@@ -135,6 +166,46 @@ describe('findCalendarAttachment', () => {
 describe('getInvitationMethod', () => {
   it('detects cancel when status is cancelled', () => {
     expect(getInvitationMethod({ status: 'cancelled' })).toBe('cancel');
+  });
+
+  it('detects request from MIME Content-Type method parameter', () => {
+    const event: Partial<CalendarEvent> = {};
+    const email = makeEmail({
+      headers: {
+        'Content-Type': 'text/calendar; method=REQUEST; charset=UTF-8',
+      },
+    });
+    expect(getInvitationMethod(event, { email })).toBe('request');
+  });
+
+  it('detects reply from attachment MIME method parameter', () => {
+    const event: Partial<CalendarEvent> = {
+      participants: {
+        att: makeParticipant({ participationStatus: 'accepted' }),
+      },
+    };
+    expect(getInvitationMethod(event, {
+      attachment: { type: 'text/calendar; method=REPLY; charset=UTF-8' },
+    })).toBe('reply');
+  });
+
+  it('detects publish, add, refresh, counter, and declinecounter from MIME parameters', () => {
+    const event: Partial<CalendarEvent> = {};
+    expect(getInvitationMethod(event, { attachment: { type: 'text/calendar; method=PUBLISH' } })).toBe('publish');
+    expect(getInvitationMethod(event, { attachment: { type: 'text/calendar; method=ADD' } })).toBe('add');
+    expect(getInvitationMethod(event, { attachment: { type: 'text/calendar; method=REFRESH' } })).toBe('refresh');
+    expect(getInvitationMethod(event, { attachment: { type: 'text/calendar; method=COUNTER' } })).toBe('counter');
+    expect(getInvitationMethod(event, { attachment: { type: 'text/calendar; method=DECLINECOUNTER' } })).toBe('declinecounter');
+  });
+
+  it('does not treat text/calendar without method as iMIP metadata', () => {
+    const event: Partial<CalendarEvent> = {};
+    const email = makeEmail({
+      headers: {
+        'Content-Type': 'text/calendar; charset=UTF-8',
+      },
+    });
+    expect(getInvitationMethod(event, { email })).toBe('unknown');
   });
 
   it('detects request when participants have organizer role', () => {
@@ -167,6 +238,59 @@ describe('getInvitationMethod', () => {
       },
     };
     expect(getInvitationMethod(event)).toBe('unknown');
+  });
+
+  it('infers reply when attendee status is present without an organizer', () => {
+    const event: Partial<CalendarEvent> = {
+      participants: {
+        att: makeParticipant({ roles: { attendee: true }, participationStatus: 'accepted' }),
+      },
+    };
+    expect(getInvitationMethod(event)).toBe('reply');
+  });
+});
+
+describe('getInvitationActorSummary', () => {
+  it('picks the attendee as actor for reply-like methods', () => {
+    const event: Partial<CalendarEvent> = {
+      participants: {
+        org: makeParticipant({ roles: { owner: true }, email: 'organizer@example.com', name: 'Organizer' }),
+        att: makeParticipant({
+          roles: { attendee: true },
+          email: 'alice@example.com',
+          name: 'Alice',
+          participationStatus: 'accepted',
+          participationComment: 'Works for me',
+        }),
+      },
+    };
+
+    expect(getInvitationActorSummary(event, 'reply')).toMatchObject({
+      role: 'attendee',
+      name: 'Alice',
+      participationStatus: 'accepted',
+      participationComment: 'Works for me',
+    });
+  });
+
+  it('picks the organizer as actor for declinecounter', () => {
+    const event: Partial<CalendarEvent> = {
+      participants: {
+        org: makeParticipant({ roles: { owner: true }, email: 'organizer@example.com', name: 'Organizer' }),
+        att: makeParticipant({
+          roles: { attendee: true },
+          email: 'alice@example.com',
+          name: 'Alice',
+          participationStatus: 'tentative',
+        }),
+      },
+    };
+
+    expect(getInvitationActorSummary(event, 'declinecounter')).toMatchObject({
+      role: 'organizer',
+      name: 'Organizer',
+      email: 'organizer@example.com',
+    });
   });
 });
 
@@ -211,10 +335,7 @@ describe('formatEventSummary', () => {
       duration: 'PT1H30M',
     });
     expect(summary.start).toBe('2026-02-17T10:00:00');
-    expect(summary.end).toBeTruthy();
-    const endDate = new Date(summary.end!);
-    expect(endDate.getHours()).toBe(new Date('2026-02-17T10:00:00').getHours() + 1);
-    expect(endDate.getMinutes()).toBe(new Date('2026-02-17T10:00:00').getMinutes() + 30);
+    expect(summary.end).toBe('2026-02-17T11:30:00');
   });
 
   it('uses utcStart and utcEnd when available', () => {
@@ -225,6 +346,134 @@ describe('formatEventSummary', () => {
     });
     expect(summary.start).toBe('2026-02-17T15:00:00Z');
     expect(summary.end).toBe('2026-02-17T16:00:00Z');
+    expect(summary.isAllDay).toBe(false);
+  });
+
+  it('prefers local start over utcStart for all-day events', () => {
+    const summary = formatEventSummary({
+      utcStart: '2026-03-16T00:00:00Z',
+      utcEnd: '2026-03-17T00:00:00Z',
+      start: '2026-03-16T00:00:00',
+      showWithoutTime: true,
+    });
+    expect(summary.start).toBe('2026-03-16T00:00:00');
+    expect(summary.end).toBe('2026-03-17T00:00:00Z');
+    expect(summary.isAllDay).toBe(true);
+  });
+
+  it('computes all-day end in local format when utcEnd is missing', () => {
+    const summary = formatEventSummary({
+      start: '2026-03-16T00:00:00',
+      duration: 'P1D',
+      showWithoutTime: true,
+    });
+    expect(summary.start).toBe('2026-03-16T00:00:00');
+    expect(summary.end).toBe('2026-03-17T00:00:00');
+    expect(summary.isAllDay).toBe(true);
+  });
+
+  it('infers all-day summaries from midnight-to-midnight events without the flag', () => {
+    const summary = formatEventSummary({
+      start: '2026-03-16T00:00:00',
+      duration: 'PT24H',
+    });
+    expect(summary.start).toBe('2026-03-16T00:00:00');
+    expect(summary.end).toBe('2026-03-17T00:00:00');
+    expect(summary.isAllDay).toBe(true);
+  });
+
+  it('returns local format end for timed events with local start', () => {
+    const summary = formatEventSummary({
+      start: '2026-02-17T10:00:00',
+      duration: 'PT1H30M',
+    });
+    expect(summary.end).toBe('2026-02-17T11:30:00');
+  });
+});
+
+describe('getInvitationTrustAssessment', () => {
+  it('warns when mail authentication fails', () => {
+    const event: Partial<CalendarEvent> = {
+      participants: {
+        org: makeParticipant({ roles: { owner: true }, email: 'organizer@example.com' }),
+      },
+    };
+
+    const result = getInvitationTrustAssessment(event, makeEmail({
+      from: [{ email: 'organizer@example.com' }],
+      authenticationResults: {
+        dmarc: { result: 'fail', domain: 'example.com', policy: 'reject' },
+      },
+    }), 'request');
+
+    expect(result.level).toBe('warning');
+    expect(result.reason).toBe('authentication_failed');
+  });
+
+  it('warns when sender and organizer differ without verified authentication', () => {
+    const event: Partial<CalendarEvent> = {
+      participants: {
+        org: makeParticipant({ roles: { owner: true }, email: 'organizer@example.com' }),
+      },
+    };
+
+    const result = getInvitationTrustAssessment(event, makeEmail({
+      from: [{ email: 'calendar-bot@example.net' }],
+    }), 'request');
+
+    expect(result.level).toBe('warning');
+    expect(result.reason).toBe('sender_mismatch_unverified');
+  });
+
+  it('shows caution when sender and organizer differ but authentication passed', () => {
+    const event: Partial<CalendarEvent> = {
+      participants: {
+        org: makeParticipant({ roles: { owner: true }, email: 'organizer@example.com' }),
+      },
+    };
+
+    const result = getInvitationTrustAssessment(event, makeEmail({
+      from: [{ email: 'assistant@example.com' }],
+      authenticationResults: {
+        dkim: { result: 'pass', domain: 'example.com', selector: 'mail' },
+      },
+    }), 'request');
+
+    expect(result.level).toBe('caution');
+    expect(result.reason).toBe('sender_mismatch');
+  });
+
+  it('shows caution when an invitation has no verified authentication', () => {
+    const event: Partial<CalendarEvent> = {
+      participants: {
+        org: makeParticipant({ roles: { owner: true }, email: 'organizer@example.com' }),
+      },
+    };
+
+    const result = getInvitationTrustAssessment(event, makeEmail({
+      from: [{ email: 'organizer@example.com' }],
+    }), 'request');
+
+    expect(result.level).toBe('caution');
+    expect(result.reason).toBe('authentication_missing');
+  });
+
+  it('returns trusted when sender matches organizer and authentication passed', () => {
+    const event: Partial<CalendarEvent> = {
+      participants: {
+        org: makeParticipant({ roles: { owner: true }, email: 'organizer@example.com' }),
+      },
+    };
+
+    const result = getInvitationTrustAssessment(event, makeEmail({
+      from: [{ email: 'organizer@example.com' }],
+      authenticationResults: {
+        spf: { result: 'pass', domain: 'example.com', ip: '203.0.113.5' },
+      },
+    }), 'request');
+
+    expect(result.level).toBe('trusted');
+    expect(result.reason).toBeNull();
   });
 });
 

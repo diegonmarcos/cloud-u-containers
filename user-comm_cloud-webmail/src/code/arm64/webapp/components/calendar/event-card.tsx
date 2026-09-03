@@ -1,20 +1,29 @@
 "use client";
 
-import { useCallback, useState, type DragEvent } from "react";
+import { useCallback, useState, type CSSProperties, type DragEvent } from "react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import type { CalendarEvent, Calendar } from "@/lib/jmap/types";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
 import { Users } from "lucide-react";
 import { getParticipantCount } from "@/lib/calendar-participants";
+import { getEventEndDate, getEventStartDate } from "@/lib/calendar-utils";
+import { useSettingsStore } from "@/stores/settings-store";
 
 interface EventCardProps {
   event: CalendarEvent;
   calendar?: Calendar;
-  variant: "chip" | "block";
+  variant: "chip" | "block" | "span";
   onClick?: (anchorRect: DOMRect) => void;
+  onMouseEnter?: (anchorRect: DOMRect) => void;
+  onMouseLeave?: () => void;
+  onContextMenu?: (e: React.MouseEvent, event: CalendarEvent) => void;
   isSelected?: boolean;
   draggable?: boolean;
+  continuesBefore?: boolean;
+  continuesAfter?: boolean;
+  className?: string;
+  style?: CSSProperties;
 }
 
 function sanitizeColor(color: string | null | undefined, fallback = "#3b82f6"): string {
@@ -25,6 +34,11 @@ function sanitizeColor(color: string | null | undefined, fallback = "#3b82f6"): 
 }
 
 function getEventColor(event: CalendarEvent, calendar?: Calendar): string {
+  // A local color override on a shared calendar wins over per-event colors,
+  // so the whole shared calendar paints uniformly in the viewer's chosen hue.
+  if (calendar?.colorIsLocalOverride && calendar.color) {
+    return sanitizeColor(calendar.color);
+  }
   return sanitizeColor(event.color, sanitizeColor(calendar?.color));
 }
 
@@ -57,17 +71,27 @@ function createEventDragPreview(title: string, timeRange: string, color: string)
   return el;
 }
 
-export function EventCard({ event, calendar, variant, onClick, isSelected, draggable: isDraggable }: EventCardProps) {
+export function EventCard({ event, calendar, variant, onClick, onMouseEnter, onMouseLeave, onContextMenu, isSelected, draggable: isDraggable, continuesAfter = false, className, style }: EventCardProps) {
   const t = useTranslations("calendar");
   const [isBeingDragged, setIsBeingDragged] = useState(false);
   const color = getEventColor(event, calendar);
-  const startDate = parseISO(event.start);
+  const startDate = getEventStartDate(event);
+  const timeFormat = useSettingsStore((state) => state.timeFormat);
+  const showTimeInMonthView = useSettingsStore((state) => state.showTimeInMonthView);
+  const timeFmt = timeFormat === "12h" ? "h:mm a" : "HH:mm";
 
   const calendarName = calendar?.name || "";
   const durationMinutes = parseDuration(event.duration);
-  const endTime = new Date(startDate.getTime() + durationMinutes * 60000);
-  const timeString = `${format(startDate, "HH:mm")} – ${format(endTime, "HH:mm")}`;
-  const ariaLabel = `${event.title || t("events.no_title")}, ${timeString}${calendarName ? `, ${calendarName}` : ""}`;
+  const endTime = getEventEndDate(event);
+  const safeFormat = (d: Date, fmt: string) => {
+    if (isNaN(d.getTime())) return "--:--";
+    try { return format(d, fmt); } catch { return "--:--"; }
+  };
+  const timeString = `${safeFormat(startDate, timeFmt)} – ${safeFormat(endTime, timeFmt)}`;
+  // iTIP CANCEL marks the attendee's copy with status "cancelled" instead of
+  // deleting it (#572) - render it struck through and dimmed.
+  const isCancelled = event.status === "cancelled";
+  const ariaLabel = `${event.title || t("events.no_title")}, ${timeString}${calendarName ? `, ${calendarName}` : ""}${isCancelled ? `, ${t("detail.cancelled")}` : ""}`;
 
   const handleDragStart = useCallback((e: DragEvent) => {
     e.stopPropagation();
@@ -98,26 +122,64 @@ export function EventCard({ event, calendar, variant, onClick, isSelected, dragg
     "aria-roledescription": "draggable event",
   } : {};
 
+  const handleContextMenu = onContextMenu ? (e: React.MouseEvent) => onContextMenu(e, event) : undefined;
+
   if (variant === "chip") {
     return (
       <button
         onClick={(e) => { e.stopPropagation(); onClick?.(e.currentTarget.getBoundingClientRect()); }}
+        onMouseEnter={(e) => onMouseEnter?.(e.currentTarget.getBoundingClientRect())}
+        onMouseLeave={() => onMouseLeave?.()}
+        onContextMenu={handleContextMenu}
         aria-label={ariaLabel}
         {...dragProps}
         className={cn(
-          "flex items-center gap-1 w-full text-left text-xs px-1 py-0.5 rounded truncate",
+          "flex items-center gap-1 w-full text-start text-xs px-1 py-0.5 rounded truncate",
           "min-h-[44px] sm:min-h-0",
           "hover:opacity-80 transition-opacity",
           isSelected && "ring-2 ring-primary",
-          isBeingDragged && "opacity-50"
+          isBeingDragged && "opacity-50",
+          isCancelled && !isBeingDragged && "opacity-60",
+          className
         )}
-        style={{ backgroundColor: `${color}20`, color }}
+        style={{ backgroundColor: `${color}20`, color, ...style }}
       >
         <span
           className="w-1.5 h-1.5 rounded-full flex-shrink-0"
           style={{ backgroundColor: color }}
         />
-        <span className="truncate">{event.title || t("events.no_title")}</span>
+        <span className={cn("truncate", isCancelled && "line-through")}>{event.title || t("events.no_title")}</span>
+      </button>
+    );
+  }
+
+  if (variant === "span") {
+    return (
+      <button
+        onClick={(e) => { e.stopPropagation(); onClick?.(e.currentTarget.getBoundingClientRect()); }}
+        onMouseEnter={(e) => onMouseEnter?.(e.currentTarget.getBoundingClientRect())}
+        onMouseLeave={() => onMouseLeave?.()}
+        onContextMenu={handleContextMenu}
+        aria-label={ariaLabel}
+        {...dragProps}
+        className={cn(
+          "w-full h-full text-start rounded-r px-1.5 py-0.5 text-xs overflow-hidden",
+          "hover:opacity-90 transition-opacity cursor-pointer",
+          continuesAfter && "rounded-r-sm",
+          continuesAfter && "pe-2",
+          isSelected && "ring-2 ring-primary",
+          isBeingDragged && "opacity-50",
+          isCancelled && !isBeingDragged && "opacity-60",
+          className
+        )}
+        style={{ backgroundColor: `${color}24`, borderLeft: `3px solid ${color}`, color, ...style }}
+      >
+        <div className="flex items-center gap-1 min-w-0">
+          {showTimeInMonthView && !event.showWithoutTime && (
+            <span className="flex-shrink-0 opacity-80">{format(startDate, timeFmt)}</span>
+          )}
+          <span className={cn("truncate font-medium", isCancelled && "line-through")}>{event.title || t("events.no_title")}</span>
+        </div>
       </button>
     );
   }
@@ -125,18 +187,23 @@ export function EventCard({ event, calendar, variant, onClick, isSelected, dragg
   return (
     <button
       onClick={(e) => { e.stopPropagation(); onClick?.(e.currentTarget.getBoundingClientRect()); }}
+      onMouseEnter={(e) => onMouseEnter?.(e.currentTarget.getBoundingClientRect())}
+      onMouseLeave={() => onMouseLeave?.()}
+      onContextMenu={handleContextMenu}
       aria-label={ariaLabel}
       {...dragProps}
       data-calendar-event
       className={cn(
-        "w-full h-full text-left rounded px-1.5 py-0.5 text-xs overflow-hidden",
+        "w-full h-full text-start rounded-r px-1.5 py-0.5 text-xs overflow-hidden",
         "hover:opacity-90 transition-opacity cursor-pointer",
         isSelected && "ring-2 ring-primary",
-        isBeingDragged && "opacity-50"
+        isBeingDragged && "opacity-50",
+        isCancelled && !isBeingDragged && "opacity-60",
+        className
       )}
-      style={{ backgroundColor: `${color}30`, borderLeft: `3px solid ${color}`, color }}
+      style={{ backgroundColor: `${color}30`, borderLeft: `3px solid ${color}`, color, ...style }}
     >
-      <div className="font-medium truncate">{event.title || t("events.no_title")}</div>
+      <div className={cn("font-medium truncate", isCancelled && "line-through")}>{event.title || t("events.no_title")}</div>
       {!event.showWithoutTime && (
         <div className="opacity-80 text-[10px]">
           {timeString}

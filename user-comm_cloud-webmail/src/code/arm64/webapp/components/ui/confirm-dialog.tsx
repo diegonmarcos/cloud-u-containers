@@ -4,7 +4,8 @@ import { useEffect, useId } from "react";
 import { useFocusTrap } from "@/hooks/use-focus-trap";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Trash2, X } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -55,22 +56,15 @@ export function ConfirmDialog({
   const resolvedCancelText = cancelText || t("cancel");
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-[2px] flex items-center justify-center z-[60] p-4 animate-in fade-in duration-150">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-[1px] flex items-center justify-center z-[60] p-4 animate-in fade-in duration-150">
       <div
         ref={dialogRef}
         role="alertdialog"
         aria-modal="true"
         aria-labelledby={`${id}-title`}
         aria-describedby={`${id}-message`}
-        className="relative bg-background border border-border rounded-lg shadow-xl w-full max-w-md animate-in zoom-in-95 duration-200"
+        className="bg-background border border-border rounded-lg shadow-xl w-full max-w-md animate-in zoom-in-95 duration-200"
       >
-        <button
-          onClick={onClose}
-          className="absolute top-3 right-3 p-1 rounded hover:bg-muted transition-colors flex-shrink-0"
-          aria-label={resolvedCancelText}
-        >
-          <X className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
-        </button>
         <div className="p-6">
           <div className="flex items-start gap-4">
             {variant === "destructive" && (
@@ -108,8 +102,10 @@ export function ConfirmDialog({
                 onClose();
               }
             }}
+            className={cn(
+              variant === "destructive" && "shadow-sm"
+            )}
           >
-            {variant === "destructive" && <Trash2 className="w-4 h-4 mr-2" />}
             {resolvedConfirmText}
           </Button>
         </div>

@@ -1,12 +1,14 @@
 "use client";
 
-import { useMemo } from "react";
-import { useTranslations, useFormatter } from "next-intl";
-import { format, parseISO, isToday, isTomorrow } from "date-fns";
-import { Calendar as CalendarIcon, MapPin, Users } from "lucide-react";
+import { useMemo, useRef, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
+import { useDisplayDateFormatter } from "@/hooks/use-display-date-formatter";
+import { format, isTomorrow, startOfDay } from "date-fns";
+import { MapPin, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { parseDuration, getEventColor } from "./event-card";
-import { getEventEndDate } from "@/lib/calendar-utils";
+import { getEventColor } from "./event-card";
+import { getEventDayBounds, getEventEndDate, getEventStartDate, getPrimaryCalendarId } from "@/lib/calendar-utils";
+import { displayNow, isDisplayToday } from "@/lib/timezone";
 import { getParticipantCount } from "@/lib/calendar-participants";
 import type { CalendarEvent, Calendar } from "@/lib/jmap/types";
 
@@ -15,6 +17,9 @@ interface CalendarAgendaViewProps {
   events: CalendarEvent[];
   calendars: Calendar[];
   onSelectEvent: (event: CalendarEvent, anchorRect: DOMRect) => void;
+  onHoverEvent?: (event: CalendarEvent, anchorRect: DOMRect) => void;
+  onHoverLeave?: () => void;
+  onContextMenuEvent?: (e: React.MouseEvent, event: CalendarEvent) => void;
   timeFormat?: "12h" | "24h";
 }
 
@@ -25,13 +30,19 @@ interface DayGroup {
 }
 
 export function CalendarAgendaView({
+  selectedDate,
   events,
   calendars,
   onSelectEvent,
+  onHoverEvent,
+  onHoverLeave,
+  onContextMenuEvent,
   timeFormat = "24h",
 }: CalendarAgendaViewProps) {
   const t = useTranslations("calendar");
-  const intlFormatter = useFormatter();
+  // Grid days / event dates are display dates (local fields = wall-clock in
+  // the user's zone); the app-wide formatter would shift them again (#755).
+  const intlFormatter = useDisplayDateFormatter();
 
   const calendarMap = useMemo(() => {
     const map = new Map<string, Calendar>();
@@ -39,9 +50,12 @@ export function CalendarAgendaView({
     return map;
   }, [calendars]);
 
+  const todayRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
   const grouped = useMemo(() => {
     const sorted = [...events].sort((a, b) =>
-      new Date(a.start).getTime() - new Date(b.start).getTime()
+      getEventStartDate(a).getTime() - getEventStartDate(b).getTime()
     );
 
     const groups: DayGroup[] = [];
@@ -49,45 +63,56 @@ export function CalendarAgendaView({
 
     sorted.forEach((ev) => {
       try {
-        const start = new Date(ev.start);
-        const end = getEventEndDate(ev);
-        const startKey = format(start, "yyyy-MM-dd");
-        const endKey = format(end, "yyyy-MM-dd");
-
-        if (startKey === endKey || ev.showWithoutTime) {
-          let group = groupMap.get(startKey);
+        const { startDay, endDay } = getEventDayBounds(ev);
+        const cursor = new Date(startDay);
+        while (cursor <= endDay) {
+          const key = format(cursor, "yyyy-MM-dd");
+          let group = groupMap.get(key);
           if (!group) {
-            group = { date: start, dateKey: startKey, events: [] };
-            groupMap.set(startKey, group);
+            group = { date: new Date(cursor), dateKey: key, events: [] };
+            groupMap.set(key, group);
             groups.push(group);
           }
           group.events.push(ev);
-        } else {
-          const cursor = new Date(start);
-          cursor.setHours(0, 0, 0, 0);
-          const endDay = new Date(end);
-          endDay.setHours(0, 0, 0, 0);
-          while (cursor <= endDay) {
-            const key = format(cursor, "yyyy-MM-dd");
-            let group = groupMap.get(key);
-            if (!group) {
-              group = { date: new Date(cursor), dateKey: key, events: [] };
-              groupMap.set(key, group);
-              groups.push(group);
-            }
-            group.events.push(ev);
-            cursor.setDate(cursor.getDate() + 1);
-          }
+          cursor.setDate(cursor.getDate() + 1);
         }
       } catch { /* skip invalid dates */ }
     });
+
+    // Always include today's date in the groups so the view has a "Today" anchor
+    const todayKey = format(displayNow(), "yyyy-MM-dd");
+    if (!groupMap.has(todayKey)) {
+      const todayGroup = { date: startOfDay(displayNow()), dateKey: todayKey, events: [] as CalendarEvent[] };
+      groupMap.set(todayKey, todayGroup);
+      groups.push(todayGroup);
+    }
 
     groups.sort((a, b) => a.date.getTime() - b.date.getTime());
     return groups;
   }, [events]);
 
+  // Auto-scroll to today's section on mount and when selectedDate changes to today
+  const scrollToToday = useCallback(() => {
+    if (todayRef.current) {
+      todayRef.current.scrollIntoView({ block: "start" });
+    }
+  }, []);
+
+  useEffect(() => {
+    // Scroll to today on mount
+    const frame = requestAnimationFrame(scrollToToday);
+    return () => cancelAnimationFrame(frame);
+  }, [scrollToToday]);
+
+  useEffect(() => {
+    // Scroll to today when selectedDate changes to today
+    if (isDisplayToday(selectedDate)) {
+      scrollToToday();
+    }
+  }, [selectedDate, scrollToToday]);
+
   const formatDateHeader = (date: Date): string => {
-    if (isToday(date)) return t("events.today_header");
+    if (isDisplayToday(date)) return t("events.today_header");
     if (isTomorrow(date)) return t("events.tomorrow_header");
     return intlFormatter.dateTime(date, { weekday: "long", month: "long", day: "numeric" });
   };
@@ -99,39 +124,37 @@ export function CalendarAgendaView({
     return format(date, "HH:mm");
   };
 
-  if (grouped.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center flex-1 text-muted-foreground">
-        <CalendarIcon className="w-12 h-12 mb-3 opacity-30" />
-        <p className="text-sm">{t("events.no_events")}</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div className="flex-1 overflow-y-auto" ref={scrollContainerRef}>
       {grouped.map((group) => (
-        <div key={group.dateKey}>
+        <div key={group.dateKey} ref={isDisplayToday(group.date) ? todayRef : undefined}>
           <div className="sticky top-0 bg-muted/80 backdrop-blur-sm px-4 py-2 border-b border-border">
             <span className={cn(
               "text-sm font-medium",
-              isToday(group.date) && "text-primary"
+              isDisplayToday(group.date) && "text-primary"
             )}>
               {formatDateHeader(group.date)}
             </span>
-            <span className="text-xs text-muted-foreground ml-2">
+            <span className="text-xs text-muted-foreground ms-2">
               {intlFormatter.dateTime(group.date, { month: "short", day: "numeric", year: "numeric" })}
             </span>
           </div>
 
+          {group.events.length === 0 ? (
+            <div className="px-4 py-6 text-center text-sm text-muted-foreground">
+              {t("events.no_events")}
+            </div>
+          ) : (
           <div className="divide-y divide-border">
             {group.events.map((ev) => {
-              const calId = Object.keys(ev.calendarIds)[0];
-              const calendar = calendarMap.get(calId);
+              const calId = getPrimaryCalendarId(ev);
+              const calendar = calId ? calendarMap.get(calId) : undefined;
               const color = getEventColor(ev, calendar);
-              const start = parseISO(ev.start);
-              const durMin = parseDuration(ev.duration);
-              const end = new Date(start.getTime() + durMin * 60000);
+              const start = getEventStartDate(ev);
+              const end = getEventEndDate(ev);
+              // iTIP CANCEL marks the attendee's copy with status "cancelled"
+              // instead of deleting it (#572).
+              const isCancelled = ev.status === "cancelled";
               const locationName = ev.locations
                 ? Object.values(ev.locations)[0]?.name
                 : null;
@@ -140,7 +163,14 @@ export function CalendarAgendaView({
                 <button
                   key={ev.id}
                   onClick={(e) => onSelectEvent(ev, e.currentTarget.getBoundingClientRect())}
-                  className="w-full flex items-start gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-left"
+                  onMouseEnter={(e) => onHoverEvent?.(ev, e.currentTarget.getBoundingClientRect())}
+                  onMouseLeave={() => onHoverLeave?.()}
+                  onContextMenu={onContextMenuEvent ? (e) => onContextMenuEvent(e, ev) : undefined}
+                  className={cn(
+                    "w-full flex items-start px-4 hover:bg-muted/50 transition-colors text-start",
+                    isCancelled && "opacity-60"
+                  )}
+                  style={{ gap: 'var(--density-item-gap)', paddingBlock: 'var(--density-item-py)' }}
                 >
                   <div className="flex flex-col items-center pt-0.5 min-w-[60px]">
                     {ev.showWithoutTime ? (
@@ -161,7 +191,7 @@ export function CalendarAgendaView({
                   />
 
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium truncate">
+                    <div className={cn("text-sm font-medium truncate", isCancelled && "line-through")}>
                       {ev.title || t("events.no_title")}
                     </div>
                     {locationName && (
@@ -186,6 +216,7 @@ export function CalendarAgendaView({
               );
             })}
           </div>
+          )}
         </div>
       ))}
     </div>

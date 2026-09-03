@@ -5,6 +5,7 @@ import { X, Keyboard } from "lucide-react";
 import { KEYBOARD_SHORTCUTS } from "@/hooks/use-keyboard-shortcuts";
 import { cn } from "@/lib/utils";
 import { useFocusTrap } from "@/hooks/use-focus-trap";
+import { useTour } from "@/components/tour/tour-provider";
 
 interface KeyboardShortcutsModalProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ interface KeyboardShortcutsModalProps {
 
 export function KeyboardShortcutsModal({ isOpen, onClose }: KeyboardShortcutsModalProps) {
   const t = useTranslations();
+  const { startTour } = useTour();
 
   const modalRef = useFocusTrap({
     isActive: isOpen,
@@ -24,7 +26,7 @@ export function KeyboardShortcutsModal({ isOpen, onClose }: KeyboardShortcutsMod
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-in fade-in duration-150"
+      className="fixed inset-0 bg-black/50 backdrop-blur-[1px] flex items-center justify-center z-50 p-4 animate-in fade-in duration-150"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
@@ -48,7 +50,7 @@ export function KeyboardShortcutsModal({ isOpen, onClose }: KeyboardShortcutsMod
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+            className="p-1.5 rounded-md hover:bg-muted transition-colors duration-150 text-muted-foreground hover:text-foreground"
             aria-label={t("common.close")}
           >
             <X className="w-5 h-5" />
@@ -144,6 +146,14 @@ export function KeyboardShortcutsModal({ isOpen, onClose }: KeyboardShortcutsMod
             <p className="text-sm text-muted-foreground text-center">
               {t("shortcuts.tip")}
             </p>
+            <p className="text-sm text-center mt-2">
+              <button
+                onClick={() => { onClose(); startTour(); }}
+                className="text-primary hover:text-primary/80 underline underline-offset-2 transition-colors"
+              >
+                {t("tour.take_a_tour")}
+              </button>
+            </p>
           </div>
         </div>
       </div>
@@ -164,7 +174,7 @@ function ShortcutRow({
   return (
     <div className="flex items-center justify-between py-1.5">
       <span className="text-sm text-muted-foreground">{description}</span>
-      <div className="flex items-center gap-1.5 ml-4">
+      <div className="flex items-center gap-1.5 ms-4">
         {keys.map((key, index) => (
           <span key={index}>
             {index > 0 && <span className="text-muted-foreground/50 mx-1 text-xs">or</span>}
