@@ -40,6 +40,7 @@ function makeEvent(overrides: Partial<CalendarEvent> = {}): CalendarEvent {
     categories: null,
     locale: null,
     replyTo: null,
+    organizerCalendarAddress: null,
     participants: null,
     mayInviteSelf: false,
     mayInviteOthers: false,
@@ -81,7 +82,7 @@ function makeCalendar(overrides: Partial<Calendar> = {}): Calendar {
       mayWriteOwn: true,
       mayUpdatePrivate: true,
       mayRSVP: true,
-      mayAdmin: false,
+      mayShare: false,
       mayDelete: false,
     },
     ...overrides,
@@ -298,6 +299,19 @@ describe('getPendingAlerts', () => {
     const now = fiveMinBefore + 1000;
     const key = buildAlertKey('evt-1', 'a1', fiveMinBefore);
     const result = getPendingAlerts([event], calendars, new Set([key]), now);
+    expect(result).toHaveLength(0);
+  });
+
+  it('skips alerts for cancelled events', () => {
+    // iTIP CANCEL marks the attendee's copy with status "cancelled" instead
+    // of deleting it (#572) - its reminders must not fire.
+    const event = makeEvent({
+      status: 'cancelled',
+      alerts: { 'a1': makeAlert() },
+    });
+    const calendars = [makeCalendar()];
+    const now = fiveMinBefore + 1000;
+    const result = getPendingAlerts([event], calendars, new Set(), now);
     expect(result).toHaveLength(0);
   });
 

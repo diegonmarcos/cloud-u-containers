@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Identity } from '@/lib/jmap/types';
-import type { JMAPClient } from '@/lib/jmap/client';
 
 // Constants for sub-addressing limits
 const MAX_RECENT_TAGS = 10;
@@ -15,10 +14,8 @@ interface SubAddressState {
 interface IdentityStore {
   // Identity state (from server)
   identities: Identity[];
-  // Per-account buckets; identitiesByAccount[primaryAccountId] mirrors `identities`
-  identitiesByAccount: Record<string, Identity[]>;
-  primaryAccountId: string | null;
   selectedIdentityId: string | null;
+  preferredPrimaryId: string | null;
   isLoading: boolean;
   error: string | null;
 
@@ -31,10 +28,10 @@ interface IdentityStore {
   updateIdentityLocal: (identityId: string, updates: Partial<Identity>) => void;
   removeIdentity: (identityId: string) => void;
   selectIdentity: (identityId: string | null) => void;
+  setPreferredPrimary: (identityId: string | null) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   clearIdentities: () => void;
-  loadAccountIdentities: (client: JMAPClient) => Promise<void>;
 
   // Sub-addressing actions
   addRecentTag: (tag: string) => void;
@@ -47,9 +44,8 @@ export const useIdentityStore = create<IdentityStore>()(
   persist(
     (set, get) => ({
       identities: [],
-      identitiesByAccount: {},
-      primaryAccountId: null,
       selectedIdentityId: null,
+      preferredPrimaryId: null,
       isLoading: false,
       error: null,
       subAddress: {
@@ -78,36 +74,17 @@ export const useIdentityStore = create<IdentityStore>()(
 
       selectIdentity: (identityId) => set({ selectedIdentityId: identityId }),
 
+      setPreferredPrimary: (identityId) => set({ preferredPrimaryId: identityId }),
+
       setLoading: (loading) => set({ isLoading: loading }),
 
       setError: (error) => set({ error }),
 
       clearIdentities: () => set({
         identities: [],
-        identitiesByAccount: {},
-        primaryAccountId: null,
         selectedIdentityId: null,
         error: null,
       }),
-
-      loadAccountIdentities: async (client) => {
-        const primaryAccountId = client.getPrimaryAccountId();
-        const otherAccountIds = client.getAccountIds().filter((id) => id !== primaryAccountId);
-        const results = await Promise.all(
-          otherAccountIds.map(async (accountId) =>
-            [accountId, await client.getIdentities(accountId)] as const
-          )
-        );
-        set((state) => {
-          const identitiesByAccount: Record<string, Identity[]> = {
-            [primaryAccountId]: state.identities,
-          };
-          for (const [accountId, list] of results) {
-            if (list.length > 0) identitiesByAccount[accountId] = list;
-          }
-          return { primaryAccountId, identitiesByAccount };
-        });
-      },
 
       addRecentTag: (tag) => set((state) => {
         const recent = [tag, ...state.subAddress.recentTags.filter(t => t !== tag)];
@@ -146,9 +123,17 @@ export const useIdentityStore = create<IdentityStore>()(
     }),
     {
       name: 'identity-storage',
-      // Only persist sub-addressing data, not identities (they're server-side)
+      // Only persist sub-addressing data, not identities (they're server-side).
+      // The default sender identity (`preferredPrimaryId`) is the per-account
+      // value for the *active* account; it is kept here purely as a local
+      // fallback so the choice survives a reload when settings sync is off.
+      // The durable, cross-device, exportable source of truth is the synced
+      // settings store, keyed per account (`preferredIdentityIds`), which is
+      // re-applied via applyPreferredIdentity() once server settings load and
+      // overrides this value per account (issue #507).
       partialize: (state) => ({
-        subAddress: state.subAddress
+        subAddress: state.subAddress,
+        preferredPrimaryId: state.preferredPrimaryId,
       }),
     }
   )

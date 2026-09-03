@@ -1,16 +1,18 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { Button } from "@/components/ui/button";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
-import { X, Trash2, Check, Users, CalendarDays, Copy } from "lucide-react";
-import { format, parseISO, addHours, addDays } from "date-fns";
-import type { CalendarEvent, Calendar, CalendarParticipant } from "@/lib/jmap/types";
-import { parseDuration } from "./event-card";
-import { ParticipantInput } from "./participant-input";
-import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
+import { X, Trash2, Check, Users, CalendarDays, Copy, Pencil, Clock, MapPin, Video, Repeat, Bell, AlignLeft, Plus } from "lucide-react";
+import { format, parseISO, addHours, addDays, isSameDay } from "date-fns";
+import type { CalendarEvent, Calendar, CalendarParticipant, CalendarEventAlert, CalendarRecurrenceRule } from "@/lib/jmap/types";
+import { RecurrenceEditor, buildRecurrenceSummary, isSimpleRecurrenceRule } from "./recurrence-editor";
+import { parseDuration, getEventColor } from "./event-card";
+import { buildAllDayDuration, getEventDisplayEndDate, getEventEndDate, getEventStartDate, getPrimaryCalendarId } from "@/lib/calendar-utils";
+import { displayNow, getEffectiveTimeZone } from "@/lib/timezone";
+import { createRecurrenceRule } from "@/lib/recurrence-rule";
+import { ParticipantInput, type ParticipantInputHandle } from "./participant-input";
 import {
   isOrganizer,
   getUserParticipantId,
@@ -19,18 +21,52 @@ import {
   getStatusCounts,
   buildParticipantMap,
 } from "@/lib/calendar-participants";
+import { getEventEditability, canCreateEventsIn } from "@/lib/calendar-editability";
+import { PluginSlot } from "@/components/plugins/plugin-slot";
+import { useSettingsStore } from "@/stores/settings-store";
+import { generateUUID } from "@/lib/utils";
+import { useFormatEventDate } from "@/hooks/use-format-event-date";
+import { useIsPaneScoped } from "@/hooks/use-pane-context";
+import { calendarHooks } from "@/lib/plugin-hooks";
+import type { ConflictWarning } from "@/lib/plugin-types";
+
+export interface PendingEventPreview {
+  start: Date;
+  end: Date;
+  title: string;
+  allDay: boolean;
+  calendarId: string;
+}
 
 interface EventModalProps {
   event?: CalendarEvent | null;
   calendars: Calendar[];
   defaultDate?: Date;
   defaultEndDate?: Date;
-  onSave: (data: Partial<CalendarEvent>, sendSchedulingMessages?: boolean) => void;
+  defaultAllDay?: boolean;
+  defaultCalendarId?: string;
+  onSave: (data: Partial<CalendarEvent>, sendSchedulingMessages?: boolean) => void | Promise<void>;
   onDelete?: (id: string, sendSchedulingMessages?: boolean) => void;
   onDuplicate?: (data: Partial<CalendarEvent>) => void;
   onRsvp?: (eventId: string, participantId: string, status: CalendarParticipant['participationStatus']) => void;
   onClose: () => void;
+  onPreviewChange?: (preview: PendingEventPreview | null) => void;
   currentUserEmails?: string[];
+  isSubscriptionCalendar?: (calendarId: string) => boolean;
+  isMobile?: boolean;
+}
+
+/**
+ * When an event's start is edited, the end moves with it to keep the SAME
+ * duration (oldEnd - oldStart), so the appointment's length is preserved.
+ * Returns the new end, or null for invalid or already-negative-duration input.
+ * Pure, for testing.
+ */
+export function shiftedEnd(oldStart: Date, oldEnd: Date, newStart: Date): Date | null {
+  if (isNaN(oldStart.getTime()) || isNaN(oldEnd.getTime()) || isNaN(newStart.getTime())) return null;
+  const durationMs = oldEnd.getTime() - oldStart.getTime();
+  if (durationMs < 0) return null;
+  return new Date(newStart.getTime() + durationMs);
 }
 
 function formatDateInput(d: Date): string {
@@ -49,25 +85,100 @@ function buildDuration(startDate: Date, endDate: Date): string {
   const minutes = totalMinutes % 60;
   let dur = "P";
   if (days > 0) dur += `${days}D`;
-  dur += "T";
-  if (hours > 0) dur += `${hours}H`;
-  if (minutes > 0) dur += `${minutes}M`;
-  if (dur === "PT") dur = "PT0M";
+  if (hours > 0 || minutes > 0) {
+    dur += "T";
+    if (hours > 0) dur += `${hours}H`;
+    if (minutes > 0) dur += `${minutes}M`;
+  }
+  if (dur === "P") dur = "PT0M";
   return dur;
 }
 
-type RecurrenceOption = "none" | "daily" | "weekly" | "monthly" | "yearly";
-type AlertOption = "none" | "at_time" | "5" | "15" | "30" | "60" | "1440";
+type RecurrenceOption = "none" | "daily" | "weekly" | "monthly" | "yearly" | "custom";
 
-// Build an RFC5545-style UID (`id@domain`) using organizer email domain when available.
-function generateUid(seedEmail?: string): string {
-  const domainFromEmail = seedEmail?.includes("@") ? seedEmail.split("@")[1] : "";
-  const host = (typeof window !== "undefined" && window.location.hostname) ? window.location.hostname : "";
-  const domain = domainFromEmail || host || "localhost";
-  const id = typeof crypto !== "undefined" && "randomUUID" in crypto
-    ? crypto.randomUUID()
-    : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-  return `${id}@${domain}`;
+type AlertUnit = "at_time" | "minutes" | "hours" | "days" | "weeks";
+
+interface AlertRow {
+  id: string;
+  value: number;
+  unit: AlertUnit;
+}
+
+let alertRowSeq = 0;
+function newAlertRow(value: number, unit: AlertUnit): AlertRow {
+  alertRowSeq += 1;
+  return { id: `r${alertRowSeq}`, value, unit };
+}
+
+function alertRowToOffset(row: AlertRow): string | null {
+  if (row.unit === "at_time") return "PT0S";
+  const v = Math.max(0, Math.floor(row.value));
+  if (!Number.isFinite(v) || v <= 0) return null;
+  switch (row.unit) {
+    case "minutes": return `-PT${v}M`;
+    case "hours": return `-PT${v}H`;
+    case "days": return `-P${v}D`;
+    case "weeks": return `-P${v}W`;
+  }
+}
+
+function offsetToAlertRow(offset: string): AlertRow | null {
+  if (offset === "PT0S" || offset === "P0D" || offset === "PT0M") {
+    return newAlertRow(0, "at_time");
+  }
+  let m = offset.match(/^-?P(\d+)W$/);
+  if (m) return newAlertRow(parseInt(m[1], 10), "weeks");
+  m = offset.match(/^-?P(\d+)D$/);
+  if (m) return newAlertRow(parseInt(m[1], 10), "days");
+  m = offset.match(/^-?PT(\d+)H$/);
+  if (m) return newAlertRow(parseInt(m[1], 10), "hours");
+  m = offset.match(/^-?PT(\d+)M$/);
+  if (m) {
+    const mins = parseInt(m[1], 10);
+    if (mins > 0 && mins % 1440 === 0) return newAlertRow(mins / 1440, "days");
+    if (mins > 0 && mins % 60 === 0) return newAlertRow(mins / 60, "hours");
+    return newAlertRow(mins, "minutes");
+  }
+  return null;
+}
+
+function formatAlertRowLabel(
+  row: { value: number; unit: AlertUnit },
+  t: ReturnType<typeof useTranslations>
+): string {
+  if (row.unit === "at_time") return t("alerts.at_time");
+  switch (row.unit) {
+    case "minutes": return t("alerts.minutes_before", { count: row.value });
+    case "hours": return t("alerts.hours_before", { count: row.value });
+    case "days": return t("alerts.days_before", { count: row.value });
+    case "weeks": return t("alerts.weeks_before", { count: row.value });
+  }
+}
+
+function formatDurationDisplay(minutes: number): string {
+  if (minutes < 60) return `${minutes}min`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (m === 0) return `${h}h`;
+  return `${h}h${m}min`;
+}
+
+function getAlertLabel(event: CalendarEvent, t: ReturnType<typeof useTranslations>): string | null {
+  if (!event.alerts) return null;
+  const labels: string[] = [];
+  for (const alert of Object.values(event.alerts)) {
+    if (alert.trigger["@type"] !== "OffsetTrigger") continue;
+    const row = offsetToAlertRow(alert.trigger.offset);
+    if (!row) continue;
+    labels.push(formatAlertRowLabel(row, t));
+  }
+  if (labels.length === 0) return null;
+  return labels.join(", ");
+}
+
+function getRecurrenceLabel(event: CalendarEvent, t: ReturnType<typeof useTranslations>, locale: string): string | null {
+  if (!event.recurrenceRules?.length) return null;
+  return buildRecurrenceSummary(event.recurrenceRules[0], t, locale);
 }
 
 export function EventModal({
@@ -75,16 +186,33 @@ export function EventModal({
   calendars,
   defaultDate,
   defaultEndDate,
+  defaultAllDay,
+  defaultCalendarId,
   onSave,
   onDelete,
   onDuplicate,
   onRsvp,
   onClose,
+  onPreviewChange,
   currentUserEmails = [],
+  isSubscriptionCalendar,
+  isMobile = false,
 }: EventModalProps) {
   const t = useTranslations("calendar");
+  const locale = useLocale();
+  const timeFormat = useSettingsStore((s) => s.timeFormat);
+  const timeDisplayFmt = timeFormat === "12h" ? "h:mm a" : "HH:mm";
+  // Inside a Pro pane the "mobile" layout must cover the pane, not the
+  // viewport - a `fixed inset-0` editor from a split pane would take over
+  // the whole app. The absolute variant anchors to the pane's tab-body
+  // wrapper (the nearest positioned ancestor), covering exactly the pane.
+  const isPaneScoped = useIsPaneScoped();
+  const mobileRootClass = isPaneScoped
+    ? "absolute inset-0 z-40 flex flex-col bg-background"
+    : "fixed inset-0 z-50 flex flex-col bg-background";
   const isEdit = !!event;
-  const { dialogProps: confirmDialogProps, confirm } = useConfirmDialog();
+  const formatEventDate = useFormatEventDate();
+  const [mode, setMode] = useState<"view" | "edit">(isEdit ? "view" : "edit");
 
   const userIsOrganizer = useMemo(() => {
     if (!event) return true;
@@ -92,10 +220,18 @@ export function EventModal({
     return isOrganizer(event, currentUserEmails);
   }, [event, currentUserEmails]);
 
-  const isAttendeeMode = useMemo(() => {
-    if (!event || !event.participants) return false;
-    return !event.isOrigin && !userIsOrganizer;
-  }, [event, userIsOrganizer]);
+  // Gate affordances on calendar rights, not identity (see calendar-editability).
+  const editability = useMemo(() => {
+    if (!event) return "editable" as const;
+    const calendarsById = new Map(calendars.map((c) => [c.id, c]));
+    return getEventEditability(event, {
+      calendarsById,
+      userCalendarAddresses: currentUserEmails,
+      isSubscriptionCalendar: isSubscriptionCalendar ?? (() => false),
+    });
+  }, [event, calendars, currentUserEmails, isSubscriptionCalendar]);
+  const canEditBody = editability === "editable";
+  const rsvpMode = editability === "rsvp-only";
 
   const userParticipantId = useMemo(() => {
     if (!event) return null;
@@ -119,24 +255,25 @@ export function EventModal({
   }, [event, existingParticipants]);
 
   const getInitialStart = (): Date => {
-    if (event?.start) return parseISO(event.start);
+    if (event?.start) return getEventStartDate(event);
     if (defaultDate) {
       const d = new Date(defaultDate);
       if (defaultEndDate) return d;
-      const now = new Date();
+      const now = displayNow();
       d.setHours(now.getHours() + 1, 0, 0, 0);
       return d;
     }
-    const d = new Date();
+    const d = displayNow();
     d.setHours(d.getHours() + 1, 0, 0, 0);
     return d;
   };
 
   const getInitialEnd = (): Date => {
     if (event?.start) {
-      const s = parseISO(event.start);
-      const dur = parseDuration(event.duration);
-      return new Date(s.getTime() + dur * 60000);
+      if (event.showWithoutTime) {
+        return getEventDisplayEndDate(event);
+      }
+      return getEventEndDate(event);
     }
     if (defaultEndDate) return new Date(defaultEndDate);
     return addHours(getInitialStart(), 1);
@@ -147,44 +284,167 @@ export function EventModal({
   const [location, setLocation] = useState(
     event?.locations ? Object.values(event.locations)[0]?.name || "" : ""
   );
+  const [virtualLocation, setVirtualLocation] = useState(
+    event?.virtualLocations ? Object.values(event.virtualLocations)[0]?.uri || "" : ""
+  );
   const [startDate, setStartDate] = useState(formatDateInput(getInitialStart()));
   const [startTime, setStartTime] = useState(formatTimeInput(getInitialStart()));
   const [endDate, setEndDate] = useState(formatDateInput(getInitialEnd()));
   const [endTime, setEndTime] = useState(formatTimeInput(getInitialEnd()));
-  const [allDay, setAllDay] = useState(event?.showWithoutTime || false);
+  const [allDay, setAllDay] = useState(event?.showWithoutTime || defaultAllDay || false);
+
+  // Editing the start shifts the end with it, preserving the event's current
+  // length (end - start) - so moving the start never leaves the end before it
+  // and never silently changes the duration.
+  const shiftEndKeepingDuration = (nextStartDate: string, nextStartTime: string) => {
+    const oldStart = new Date(`${startDate}T${allDay ? "00:00" : (startTime || "00:00")}:00`);
+    const oldEnd = new Date(`${endDate}T${allDay ? "00:00" : (endTime || "00:00")}:00`);
+    const newStart = new Date(`${nextStartDate}T${allDay ? "00:00" : (nextStartTime || "00:00")}:00`);
+    const nextEnd = shiftedEnd(oldStart, oldEnd, newStart);
+    if (!nextEnd) return;
+    setEndDate(formatDateInput(nextEnd));
+    if (!allDay) setEndTime(formatTimeInput(nextEnd));
+  };
+  const handleStartDateChange = (v: string) => { setStartDate(v); shiftEndKeepingDuration(v, startTime); };
+  const handleStartTimeChange = (v: string) => { setStartTime(v); shiftEndKeepingDuration(startDate, v); };
   const [calendarId, setCalendarId] = useState<string>(() => {
-    if (event?.calendarIds) return Object.keys(event.calendarIds)[0] || calendars[0]?.id || "";
+    if (event?.calendarIds) return getPrimaryCalendarId(event) || calendars[0]?.id || "";
+    if (defaultCalendarId && calendars.some(c => c.id === defaultCalendarId)) return defaultCalendarId;
     const defaultCal = calendars.find(c => c.isDefault);
-    return defaultCal?.id || calendars[0]?.id || "";
+    // Never default new events into a subscription / read-only calendar (#762).
+    return defaultCal?.id
+      || calendars.find(c => canCreateEventsIn(c, isSubscriptionCalendar))?.id
+      || calendars[0]?.id || "";
   });
+
+  // Calendars offered as create/move targets: writable, non-subscription, plus
+  // the event's current calendar so an in-place edit never blanks the select.
+  const selectableCalendars = useMemo(
+    () => calendars.filter(c => canCreateEventsIn(c, isSubscriptionCalendar) || c.id === calendarId),
+    [calendars, isSubscriptionCalendar, calendarId]
+  );
   const [recurrence, setRecurrence] = useState<RecurrenceOption>(() => {
     if (!event?.recurrenceRules?.length) return "none";
-    return event.recurrenceRules[0].frequency as RecurrenceOption;
+    const rule = event.recurrenceRules[0];
+    return isSimpleRecurrenceRule(rule) ? (rule.frequency as RecurrenceOption) : "custom";
   });
-  const [alert, setAlert] = useState<AlertOption>(() => {
-    if (!event?.alerts) return "none";
-    const first = Object.values(event.alerts)[0];
-    if (!first) return "none";
-    if (first.trigger["@type"] === "OffsetTrigger") {
-      const offset = first.trigger.offset;
-      if (offset === "PT0S") return "at_time";
-      const minMatch = offset.match(/-?PT?(\d+)M$/);
-      if (minMatch) return minMatch[1] as AlertOption;
-      const hourMatch = offset.match(/-?PT?(\d+)H$/);
-      if (hourMatch) return String(parseInt(hourMatch[1]) * 60) as AlertOption;
-      const dayMatch = offset.match(/-?P(\d+)D/);
-      if (dayMatch) return String(parseInt(dayMatch[1]) * 1440) as AlertOption;
+  const [customRule, setCustomRule] = useState<CalendarRecurrenceRule | null>(() => {
+    if (!event?.recurrenceRules?.length) return null;
+    const rule = event.recurrenceRules[0];
+    return isSimpleRecurrenceRule(rule) ? null : rule;
+  });
+  const [showRecurrenceEditor, setShowRecurrenceEditor] = useState(false);
+  // Dropdown value to restore when the custom editor is cancelled without a saved rule.
+  const recurrenceBeforeCustomRef = useRef<RecurrenceOption>("none");
+
+  const handleRecurrenceEditorSave = useCallback((rule: CalendarRecurrenceRule) => {
+    setCustomRule(rule);
+    setRecurrence("custom");
+    setShowRecurrenceEditor(false);
+  }, []);
+
+  const handleRecurrenceEditorCancel = useCallback(() => {
+    setShowRecurrenceEditor(false);
+    if (!customRule) {
+      setRecurrence(recurrenceBeforeCustomRef.current);
     }
-    return "none";
+  }, [customRule]);
+
+  const customRuleSummary = useMemo(
+    () => (customRule ? buildRecurrenceSummary(customRule, t, locale) : null),
+    [customRule, t, locale]
+  );
+  const preservedAlertsRef = useRef<Record<string, CalendarEventAlert>>({});
+  const [alertRows, setAlertRows] = useState<AlertRow[]>(() => {
+    if (!event?.alerts) return [];
+    const rows: AlertRow[] = [];
+    for (const [id, alert] of Object.entries(event.alerts)) {
+      // Preserve alerts we can't represent in this UI (absolute triggers,
+      // email actions, offsets with non-canonical shapes) so they survive a save.
+      if (alert.trigger["@type"] !== "OffsetTrigger" || alert.action !== "display") {
+        preservedAlertsRef.current[id] = alert;
+        continue;
+      }
+      const row = offsetToAlertRow(alert.trigger.offset);
+      if (!row) {
+        preservedAlertsRef.current[id] = alert;
+        continue;
+      }
+      rows.push(row);
+    }
+    return rows;
   });
+
+  const addAlertRow = useCallback(() => {
+    setAlertRows((prev) => [...prev, newAlertRow(10, "minutes")]);
+  }, []);
+  const updateAlertRow = useCallback((id: string, patch: Partial<Omit<AlertRow, "id">>) => {
+    setAlertRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+  }, []);
+  const removeAlertRow = useCallback((id: string) => {
+    setAlertRows((prev) => prev.filter((r) => r.id !== id));
+  }, []);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
   const [attendees, setAttendees] = useState<{ name: string; email: string }[]>(() => {
     if (!event?.participants) return [];
-    const ownEmails = new Set(currentUserEmails.map(e => e.toLowerCase()));
+    // Never seed the invite list with the organizer or with a repeated address:
+    // handleSave writes the organizer separately, so either would round-trip
+    // into a duplicate entry every time the event is saved (#731).
+    const excluded = new Set<string>();
+    if (userIsOrganizer && currentUserEmails[0]) {
+      excluded.add(currentUserEmails[0].toLowerCase());
+    }
     return existingParticipants
-      .filter(p => !p.isOrganizer && p.email && !ownEmails.has(p.email.toLowerCase()))
-      .map(p => ({ name: p.name, email: p.email }));
+      .filter(p => !p.isOrganizer)
+      .reduce<{ name: string; email: string }[]>((acc, p) => {
+        const key = p.email.trim().toLowerCase();
+        if (!key || excluded.has(key)) return acc;
+        excluded.add(key);
+        acc.push({ name: p.name, email: p.email.trim() });
+        return acc;
+      }, []);
   });
   const [sendInvitations, setSendInvitations] = useState(true);
+  const participantInputRef = useRef<ParticipantInputHandle>(null);
+
+  // Plugin transform: collect conflict warnings for the current event form.
+  // Re-runs (debounced) whenever fields that affect scheduling change.
+  const [pluginConflictWarnings, setPluginConflictWarnings] = useState<ConflictWarning[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      const startStr = allDay ? `${startDate}T00:00:00` : `${startDate}T${startTime}:00`;
+      const endStr = allDay ? `${endDate}T23:59:59` : `${endDate}T${endTime}:00`;
+      const warnings = await calendarHooks.onCheckEventConflicts.transform([] as ConflictWarning[], {
+        event: {
+          title,
+          description,
+          start: startStr,
+          end: endStr,
+          isAllDay: allDay,
+          location,
+          virtualLocation,
+          calendarId,
+        },
+      });
+      if (!cancelled) setPluginConflictWarnings(warnings);
+    }, 250);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [title, description, startDate, startTime, endDate, endTime, allDay, location, virtualLocation, calendarId]);
+
+  // Report live preview to parent for grid outline
+  useEffect(() => {
+    if (!onPreviewChange || isEdit) return;
+    const startStr = allDay ? `${startDate}T00:00:00` : `${startDate}T${startTime}:00`;
+    const endStr = allDay ? `${endDate}T23:59:59` : `${endDate}T${endTime}:00`;
+    const s = new Date(startStr);
+    const e = new Date(endStr);
+    if (isNaN(s.getTime()) || isNaN(e.getTime())) return;
+    onPreviewChange({ start: s, end: e, title: title || "(No title)", allDay, calendarId });
+    return () => onPreviewChange(null);
+  }, [startDate, startTime, endDate, endTime, allDay, title, calendarId, isEdit, onPreviewChange]);
 
   const statusCounts = useMemo(() => {
     if (!event?.participants) return null;
@@ -192,48 +452,53 @@ export function EventModal({
   }, [event]);
 
   const handleAddAttendee = useCallback((p: { name: string; email: string }) => {
-    const email = p.email.trim().toLowerCase();
-    if (!email) return;
-    if (currentUserEmails.some(e => e.toLowerCase() === email)) return;
     setAttendees(prev => [...prev, p]);
-  }, [currentUserEmails]);
+  }, []);
 
   const handleRemoveAttendee = useCallback((email: string) => {
     setAttendees(prev => prev.filter(a => a.email.toLowerCase() !== email.toLowerCase()));
   }, []);
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     const trimmedTitle = title.trim();
-    if (!trimmedTitle) return;
+    if (!trimmedTitle || isSaving) return;
     if (trimmedTitle.length > 500 || description.trim().length > 10000 || location.trim().length > 500) return;
+
+    const pendingAttendee = participantInputRef.current?.flush() ?? null;
+    const effectiveAttendees = pendingAttendee ? [...attendees, pendingAttendee] : attendees;
 
     const startStr = allDay
       ? `${startDate}T00:00:00`
       : `${startDate}T${startTime}:00`;
-    const endStr = allDay
-      ? `${endDate}T23:59:59`
-      : `${endDate}T${endTime}:00`;
 
-    const start = new Date(startStr);
-    let end = new Date(endStr);
+    const start = allDay ? parseISO(startStr) : new Date(startStr);
+    let duration: string;
 
-    if (end <= start) {
-      end = new Date(start.getTime() + 3600000);
+    if (allDay) {
+      let inclusiveEnd = new Date(`${endDate}T00:00:00`);
+      if (inclusiveEnd < start) {
+        inclusiveEnd = new Date(start);
+      }
+      duration = buildAllDayDuration(start, inclusiveEnd);
+    } else {
+      const endStr = `${endDate}T${endTime}:00`;
+      let end = new Date(endStr);
+      if (end <= start) {
+        end = new Date(start.getTime() + 3600000);
+      }
+      duration = buildDuration(start, end);
     }
 
-    const duration = allDay
-      ? `P${Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86400000))}D`
-      : buildDuration(start, end);
-
-    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    // The form's wall-clock fields are in the user's effective zone (the
+    // grid and prefill are display dates), so label them with that zone.
+    const timeZone = getEffectiveTimeZone();
 
     const data: Partial<CalendarEvent> = {
-      "@type": "Event",
       title: trimmedTitle,
       description: description.trim(),
       start: startStr,
       duration,
-      timeZone,
+      timeZone: allDay ? null : timeZone,
       showWithoutTime: allDay,
       calendarIds: { [calendarId]: true },
       status: "confirmed",
@@ -241,9 +506,8 @@ export function EventModal({
       privacy: "public",
     };
 
-    if (!event?.uid) {
-      const seed = currentUserEmails[0] || existingParticipants.find(p => p.isOrganizer)?.email;
-      data.uid = generateUid(seed);
+    if (!event) {
+      data.uid = generateUUID();
     }
 
     if (location.trim()) {
@@ -263,75 +527,78 @@ export function EventModal({
       data.locations = null;
     }
 
-    if (recurrence !== "none") {
-      data.recurrenceRules = [{
-        "@type": "RecurrenceRule",
-        frequency: recurrence,
-        interval: 1,
-        rscale: "gregorian",
-        skip: "omit",
-        firstDayOfWeek: "mo",
-        byDay: null,
-        byMonthDay: null,
-        byMonth: null,
-        byYearDay: null,
-        byWeekNo: null,
-        byHour: null,
-        byMinute: null,
-        bySecond: null,
-        bySetPosition: null,
-        count: null,
-        until: null,
-      }];
+    if (virtualLocation.trim()) {
+      data.virtualLocations = {
+        vl1: {
+          "@type": "VirtualLocation",
+          name: null,
+          description: null,
+          uri: virtualLocation.trim(),
+          features: null,
+        },
+      };
+    } else if (event && event.virtualLocations && Object.keys(event.virtualLocations).length > 0) {
+      data.virtualLocations = null;
+    }
+
+    if (recurrence === "custom" && customRule) {
+      data.recurrenceRules = [customRule];
+    } else if (recurrence !== "none" && recurrence !== "custom") {
+      data.recurrenceRules = [createRecurrenceRule(recurrence)];
     } else if (event && event.recurrenceRules?.length) {
       data.recurrenceRules = null;
       if (event.recurrenceOverrides) data.recurrenceOverrides = null;
       if (event.excludedRecurrenceRules) data.excludedRecurrenceRules = null;
     }
 
-    if (alert !== "none") {
-      const offset = alert === "at_time" ? "PT0S" : `-PT${alert}M`;
-      data.alerts = {
-        alert1: {
-          "@type": "Alert",
-          trigger: { "@type": "OffsetTrigger", offset, relativeTo: "start" },
-          action: "display",
-          acknowledged: null,
-          relatedTo: null,
-        },
+    const builtAlerts: Record<string, CalendarEventAlert> = { ...preservedAlertsRef.current };
+    let alertIdx = 0;
+    for (const row of alertRows) {
+      const offset = alertRowToOffset(row);
+      if (offset === null) continue;
+      let key = `alert${++alertIdx}`;
+      while (key in builtAlerts) key = `alert${++alertIdx}`;
+      builtAlerts[key] = {
+        "@type": "Alert",
+        trigger: { "@type": "OffsetTrigger", offset, relativeTo: "start" },
+        action: "display",
+        acknowledged: null,
+        relatedTo: null,
       };
+    }
+    if (Object.keys(builtAlerts).length > 0) {
+      data.alerts = builtAlerts;
     } else if (event && event.alerts && Object.keys(event.alerts).length > 0) {
       data.alerts = null;
     }
 
-    const ownEmails = new Set(currentUserEmails.map(e => e.toLowerCase()));
-    const existingOrganizer = existingParticipants.find(p => p.isOrganizer);
-    const organizerEmail = (currentUserEmails[0] || existingOrganizer?.email || "").toLowerCase();
-    const invitees = attendees.filter((a) => {
-      const email = a.email?.toLowerCase();
-      if (!email) return false;
-      if (ownEmails.has(email)) return false;
-      if (organizerEmail && email === organizerEmail) return false;
-      return true;
-    });
-
-    if (invitees.length > 0) {
-      const organizerName = existingOrganizer?.name || "";
-      const organizerCalendarAddress = organizerEmail ? `mailto:${organizerEmail}` : null;
-
+    if (effectiveAttendees.length > 0 && currentUserEmails.length > 0) {
+      const organizerEmail = currentUserEmails[0];
+      const organizerName = existingParticipants.find(p => p.isOrganizer)?.name || "";
       data.participants = buildParticipantMap(
-        organizerEmail ? { name: organizerName, email: organizerEmail } : null,
-        invitees
+        { name: organizerName, email: organizerEmail },
+        effectiveAttendees
       ) as Record<string, CalendarParticipant>;
-      data.organizerCalendarAddress = organizerCalendarAddress;
-    } else if (attendees.length === 0 && event?.participants) {
+      // Stalwart (calcard) derives the iCalendar ORGANIZER property solely from
+      // organizerCalendarAddress; without it no ORGANIZER is emitted and iTIP
+      // scheduling is silently skipped (NoSchedulingInfo), so no invites are sent.
+      // The RFC 8984 replyTo property is retired in jscalendarbis and ignored.
+      data.organizerCalendarAddress = `mailto:${organizerEmail}`;
+    } else if (effectiveAttendees.length === 0 && event?.participants) {
       data.participants = null;
+      // Also clear the retired replyTo that older releases (<= 1.7.6) wrote.
+      data.replyTo = null;
       data.organizerCalendarAddress = null;
     }
 
-    const shouldSendScheduling = invitees.length > 0 && sendInvitations;
-    onSave(data, shouldSendScheduling);
-  }, [title, description, location, startDate, startTime, endDate, endTime, allDay, calendarId, recurrence, alert, attendees, sendInvitations, currentUserEmails, existingParticipants, event, onSave]);
+    const shouldSendScheduling = effectiveAttendees.length > 0 && sendInvitations;
+    setIsSaving(true);
+    try {
+      await onSave(data, shouldSendScheduling);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [title, description, location, virtualLocation, startDate, startTime, endDate, endTime, allDay, calendarId, recurrence, customRule, alertRows, attendees, sendInvitations, currentUserEmails, existingParticipants, event, onSave, isSaving]);
 
   const handleRsvp = useCallback((status: CalendarParticipant['participationStatus']) => {
     if (!event || !userParticipantId || !onRsvp) return;
@@ -341,12 +608,14 @@ export function EventModal({
 
   const handleDuplicate = useCallback(() => {
     if (!event || !onDuplicate) return;
-    const start = parseISO(event.start);
+    const start = getEventStartDate(event);
     const newStart = addDays(start, 1);
+    const newUid = generateUUID();
     const data: Partial<CalendarEvent> = {
+      uid: newUid,
       title: event.title,
       description: event.description,
-      start: format(newStart, "yyyy-MM-dd'T'HH:mm:ss"),
+      start: event.showWithoutTime ? format(newStart, "yyyy-MM-dd") : format(newStart, "yyyy-MM-dd'T'HH:mm:ss"),
       duration: event.duration,
       timeZone: event.timeZone,
       showWithoutTime: event.showWithoutTime,
@@ -356,47 +625,32 @@ export function EventModal({
       privacy: event.privacy,
     };
     if (event.locations) data.locations = structuredClone(event.locations);
+    if (event.virtualLocations) data.virtualLocations = structuredClone(event.virtualLocations);
     if (event.recurrenceRules) data.recurrenceRules = structuredClone(event.recurrenceRules);
     if (event.alerts) data.alerts = structuredClone(event.alerts);
     if (event.participants) data.participants = structuredClone(event.participants);
     onDuplicate(data);
   }, [event, onDuplicate]);
 
-  const hasParticipants = attendees.length > 0 || (event?.participants && Object.keys(event.participants).length > 0);
-
-  const handleDelete = useCallback(async () => {
-    if (!event || !onDelete) return;
-    const deleteMessage = hasParticipants
-      ? `${t("form.delete_confirm")} ${t("participants.cancel_notification")}`
-      : t("form.delete_confirm");
-
-    const confirmed = await confirm({
-      title: t("detail.delete_confirm"),
-      message: deleteMessage,
-      confirmText: t("events.delete"),
-      cancelText: t("form.cancel"),
-      variant: "destructive",
-    });
-
-    if (!confirmed) return;
-
-    onDelete(event.id, hasParticipants || undefined);
-    onClose();
-  }, [confirm, event, hasParticipants, onClose, onDelete, t]);
-
   const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        if (mode === "edit" && isEdit) {
+          setMode("view");
+        } else {
+          onClose();
+        }
+      }
       if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
         e.preventDefault();
-        if (!isAttendeeMode) handleSave();
+        if (canEditBody) handleSave();
       }
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [onClose, handleSave, isAttendeeMode]);
+  }, [onClose, handleSave, canEditBody, mode, isEdit]);
 
   useEffect(() => {
     const modal = modalRef.current;
@@ -422,25 +676,25 @@ export function EventModal({
     return () => modal.removeEventListener("keydown", handler);
   }, []);
 
-  if (isAttendeeMode && event) {
-    const startD = parseISO(event.start);
-    const durMin = parseDuration(event.duration);
-    const endD = new Date(startD.getTime() + durMin * 60000);
+  const hasParticipants = attendees.length > 0 || (event?.participants && Object.keys(event.participants).length > 0);
+
+  if (rsvpMode && event) {
+    const startD = getEventStartDate(event);
+    const endD = getEventEndDate(event);
     const locationName = event.locations ? Object.values(event.locations)[0]?.name : null;
     const participants = getParticipantList(event);
 
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center">
-        <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden="true" />
-        <div ref={modalRef} role="dialog" aria-modal="true" aria-label={event.title || t("events.no_title")} className="relative bg-background border border-border rounded-lg shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-            <h2 className="text-lg font-semibold truncate">{event.title || t("events.no_title")}</h2>
-            <button onClick={onClose} className="p-1 rounded hover:bg-muted transition-colors flex-shrink-0 mt-0.5" aria-label={t("form.cancel")}>
-              <X className="w-4 h-4 text-muted-foreground" />
-            </button>
-          </div>
+      <div ref={modalRef} role="dialog" aria-modal={isMobile || undefined} aria-label={event.title || t("events.no_title")} className={isMobile ? mobileRootClass : "flex flex-col h-full bg-background"}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border flex-shrink-0">
+          <h2 className="text-lg font-semibold truncate">{event.title || t("events.no_title")}</h2>
+          <button onClick={onClose} className="p-1.5 rounded-md hover:bg-muted transition-colors duration-150 text-muted-foreground hover:text-foreground" aria-label={t("form.cancel")}>
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
-          <div className="px-5 py-4 space-y-3">
+        <div className="flex-1 overflow-y-auto">
+          <div className="px-6 py-4 space-y-3">
             <div className="flex items-start gap-3 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/50 px-4 py-3">
               <CalendarDays className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
               <div className="text-sm">
@@ -453,14 +707,42 @@ export function EventModal({
               </div>
             </div>
 
-            <div className="text-sm">
-              <span className="font-medium">{format(startD, "EEE, MMM d, yyyy")}</span>
-              {!event.showWithoutTime && (
-                <span className="text-muted-foreground ml-2">
-                  {format(startD, "HH:mm")} – {format(endD, "HH:mm")}
-                </span>
-              )}
-            </div>
+            {(() => {
+              const displayEnd = getEventDisplayEndDate(event);
+              const multiDay = !isSameDay(startD, displayEnd);
+              if (multiDay && event.showWithoutTime) {
+                return (
+                  <div className="text-sm">
+                    <div className="font-medium">{formatEventDate(startD)} –</div>
+                    <div className="font-medium">{formatEventDate(displayEnd)}</div>
+                  </div>
+                );
+              }
+              if (multiDay) {
+                return (
+                  <div className="text-sm">
+                    <div>
+                      <span className="font-medium">{formatEventDate(startD)}</span>
+                      <span className="text-muted-foreground ms-2">{format(startD, timeDisplayFmt)}</span>
+                    </div>
+                    <div>
+                      <span className="font-medium">{formatEventDate(endD)}</span>
+                      <span className="text-muted-foreground ms-2">{format(endD, timeDisplayFmt)}</span>
+                    </div>
+                  </div>
+                );
+              }
+              return (
+                <div className="text-sm">
+                  <span className="font-medium">{formatEventDate(startD)}</span>
+                  {!event.showWithoutTime && (
+                    <span className="text-muted-foreground ms-2">
+                      {format(startD, timeDisplayFmt)} – {format(endD, timeDisplayFmt)}
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
 
             {event.description && (
               <p className="text-sm text-muted-foreground">{event.description}</p>
@@ -476,7 +758,7 @@ export function EventModal({
                   <Users className="w-4 h-4" />
                   {t("participants.title")}
                 </div>
-                <div className="space-y-1 pl-5">
+                <div className="space-y-1 ps-5">
                   {participants.map(p => (
                     <div key={p.id} className="flex items-center justify-between text-sm">
                       <span className="truncate">{p.name || p.email}</span>
@@ -487,45 +769,45 @@ export function EventModal({
               </div>
             )}
           </div>
+        </div>
 
-          <div className="px-5 py-4 border-t border-border">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">{t("participants.rsvp_label")}</span>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant={userCurrentStatus === "accepted" ? "default" : "outline"}
-                  onClick={() => handleRsvp("accepted")}
-                  className={userCurrentStatus === "accepted"
-                    ? "bg-green-600 hover:bg-green-700 text-white dark:bg-green-500 dark:hover:bg-green-600"
-                    : "text-green-600 dark:text-green-400 border-green-300 dark:border-green-700 hover:bg-green-50 dark:hover:bg-green-950"}
-                >
-                  {userCurrentStatus === "accepted" && <Check className="w-4 h-4 mr-1" />}
-                  {t("participants.accepted")}
-                </Button>
-                <Button
-                  size="sm"
-                  variant={userCurrentStatus === "tentative" ? "default" : "outline"}
-                  onClick={() => handleRsvp("tentative")}
-                  className={userCurrentStatus === "tentative"
-                    ? "bg-amber-600 hover:bg-amber-700 text-white dark:bg-amber-500 dark:hover:bg-amber-600"
-                    : "border border-amber-500 text-amber-600 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950"}
-                >
-                  {userCurrentStatus === "tentative" && <Check className="w-4 h-4 mr-1" />}
-                  {t("participants.tentative")}
-                </Button>
-                <Button
-                  size="sm"
-                  variant={userCurrentStatus === "declined" ? "default" : "ghost"}
-                  onClick={() => handleRsvp("declined")}
-                  className={userCurrentStatus === "declined"
-                    ? "bg-red-600 hover:bg-red-700 text-white dark:bg-red-500 dark:hover:bg-red-600"
-                    : "text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950"}
-                >
-                  {userCurrentStatus === "declined" && <Check className="w-4 h-4 mr-1" />}
-                  {t("participants.declined")}
-                </Button>
-              </div>
+        <div className="px-6 py-4 border-t border-border flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">{t("participants.rsvp_label")}</span>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant={userCurrentStatus === "accepted" ? "default" : "outline"}
+                onClick={() => handleRsvp("accepted")}
+                className={userCurrentStatus === "accepted"
+                  ? "bg-success hover:bg-success/80 text-success-foreground"
+                  : "text-success border-success/30 hover:bg-success/10"}
+              >
+                {userCurrentStatus === "accepted" && <Check className="w-4 h-4 me-1" />}
+                {t("participants.accepted")}
+              </Button>
+              <Button
+                size="sm"
+                variant={userCurrentStatus === "tentative" ? "default" : "outline"}
+                onClick={() => handleRsvp("tentative")}
+                className={userCurrentStatus === "tentative"
+                  ? "bg-warning hover:bg-warning/80 text-warning-foreground"
+                  : "border border-warning/30 text-warning hover:bg-warning/10"}
+              >
+                {userCurrentStatus === "tentative" && <Check className="w-4 h-4 me-1" />}
+                {t("participants.tentative")}
+              </Button>
+              <Button
+                size="sm"
+                variant={userCurrentStatus === "declined" ? "default" : "ghost"}
+                onClick={() => handleRsvp("declined")}
+                className={userCurrentStatus === "declined"
+                  ? "bg-destructive hover:bg-destructive/80 text-destructive-foreground"
+                  : "text-destructive hover:bg-destructive/10"}
+              >
+                {userCurrentStatus === "declined" && <Check className="w-4 h-4 me-1" />}
+                {t("participants.declined")}
+              </Button>
             </div>
           </div>
         </div>
@@ -533,20 +815,226 @@ export function EventModal({
     );
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden="true" />
-      <div ref={modalRef} role="dialog" aria-modal="true" aria-label={isEdit ? t("events.edit") : t("events.create")} className="relative bg-background border border-border rounded-lg shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-          <h2 className="text-lg font-semibold">
-            {isEdit ? t("events.edit") : t("events.create")}
-          </h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-muted transition-colors flex-shrink-0 mt-0.5" aria-label={t("form.cancel")}>
-            <X className="w-4 h-4 text-muted-foreground" />
+  // View mode: read-only display of event details with Edit button
+  if (mode === "view" && event) {
+    const startD = getEventStartDate(event);
+    const durMin = parseDuration(event.duration);
+    const endD = getEventEndDate(event);
+    const locationName = event.locations ? Object.values(event.locations)[0]?.name || null : null;
+    const virtualLoc = event.virtualLocations ? Object.values(event.virtualLocations)[0]?.uri || null : null;
+    const viewParticipants = getParticipantList(event);
+    const recurrenceLabel = getRecurrenceLabel(event, t, locale);
+    const alertLabel = getAlertLabel(event, t);
+    const eventCalendar = calendars.find(c => event.calendarIds[c.id]);
+    const color = getEventColor(event, eventCalendar);
+
+    return (
+      <div ref={modalRef} role="dialog" aria-modal={isMobile || undefined} aria-label={event.title || t("events.no_title")} className={isMobile ? mobileRootClass : "flex flex-col h-full bg-background"}>
+        {/* Color accent bar */}
+        <div className="h-1 w-full flex-shrink-0" style={{ backgroundColor: color }} />
+
+        {/* Header */}
+        <div className="flex items-start justify-between gap-2 px-6 py-4 border-b border-border flex-shrink-0">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+              <h2 className="text-lg font-semibold truncate">{event.title || t("events.no_title")}</h2>
+            </div>
+            {eventCalendar && (
+              <p className="text-xs text-muted-foreground mt-0.5 ps-[18px]">{eventCalendar.name}</p>
+            )}
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-md hover:bg-muted transition-colors duration-150 flex-shrink-0 mt-0.5 text-muted-foreground hover:text-foreground" aria-label={t("form.cancel")}>
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="px-5 py-4 space-y-4">
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="px-6 py-4 space-y-3">
+            {/* Date & Time */}
+            <div className="flex items-start gap-2.5">
+              <Clock className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+              <div className="text-sm">
+                {(() => {
+                  const displayEnd = getEventDisplayEndDate(event);
+                  const multiDay = !isSameDay(startD, displayEnd);
+                  if (multiDay && event.showWithoutTime) {
+                    return (
+                      <>
+                        <div className="font-medium text-foreground">{formatEventDate(startD)} –</div>
+                        <div className="font-medium text-foreground">{formatEventDate(displayEnd)}</div>
+                        <div className="text-muted-foreground">{t("events.all_day")}</div>
+                      </>
+                    );
+                  }
+                  if (multiDay) {
+                    return (
+                      <>
+                        <div className="font-medium text-foreground">
+                          {formatEventDate(startD)}
+                          <span className="ms-1.5 font-normal text-muted-foreground">
+                            {format(startD, timeDisplayFmt)}
+                          </span>
+                        </div>
+                        <div className="font-medium text-foreground">
+                          {formatEventDate(endD)}
+                          <span className="ms-1.5 font-normal text-muted-foreground">
+                            {format(endD, timeDisplayFmt)}
+                          </span>
+                        </div>
+                        <div className="text-muted-foreground text-xs">
+                          ({formatDurationDisplay(durMin)})
+                        </div>
+                      </>
+                    );
+                  }
+                  return (
+                    <>
+                      <span className="font-medium text-foreground">
+                        {formatEventDate(startD)}
+                      </span>
+                      {event.showWithoutTime ? (
+                        <span className="text-muted-foreground ms-1.5">{t("events.all_day")}</span>
+                      ) : (
+                        <div className="text-muted-foreground">
+                          {format(startD, timeDisplayFmt)} – {format(endD, timeDisplayFmt)}
+                          <span className="ms-1.5 text-xs">({formatDurationDisplay(durMin)})</span>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
+            </div>
+
+            {/* Location */}
+            {locationName && (
+              <div className="flex items-start gap-2.5">
+                <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                {/^https?:\/\//i.test(locationName) ? (
+                  <a href={locationName} target="_blank" rel="noreferrer" className="text-sm text-primary hover:underline truncate" title={locationName}>
+                    {(() => { try { return new URL(locationName).hostname; } catch { return locationName; } })()}
+                  </a>
+                ) : (
+                  <span className="text-sm text-foreground">{locationName}</span>
+                )}
+              </div>
+            )}
+
+            {/* Virtual Location */}
+            {virtualLoc && (
+              <div className="flex items-start gap-2.5">
+                <Video className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                <a href={virtualLoc} target="_blank" rel="noreferrer" className="text-sm text-primary hover:underline truncate" title={virtualLoc}>
+                  {(() => { try { return new URL(virtualLoc).hostname; } catch { return virtualLoc; } })()}
+                </a>
+              </div>
+            )}
+
+            {/* Participants */}
+            {viewParticipants.length > 0 && (
+              <div className="flex items-start gap-2.5">
+                <Users className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                <div className="text-sm min-w-0">
+                  <span className="text-muted-foreground">
+                    {t("participants.count", { count: viewParticipants.length })}
+                  </span>
+                  <div className="mt-1 space-y-0.5">
+                    {viewParticipants.map((p) => (
+                      <div key={p.id} className="flex items-center justify-between gap-2 text-xs">
+                        <span className="truncate text-foreground">
+                          {p.name || p.email}
+                          {p.isOrganizer && (
+                            <span className="text-muted-foreground ms-1">({t("participants.organizer").toLowerCase()})</span>
+                          )}
+                        </span>
+                        <StatusBadge status={p.status} isOrganizer={p.isOrganizer} t={t} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Recurrence */}
+            {recurrenceLabel && (
+              <div className="flex items-start gap-2.5">
+                <Repeat className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                <span className="text-sm text-foreground">{recurrenceLabel}</span>
+              </div>
+            )}
+
+            {/* Reminder */}
+            {alertLabel && (
+              <div className="flex items-start gap-2.5">
+                <Bell className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                <span className="text-sm text-foreground">{alertLabel}</span>
+              </div>
+            )}
+
+            {/* Description */}
+            {event.description && (
+              <div className="flex items-start gap-2.5">
+                <AlignLeft className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                <p className="text-sm text-muted-foreground whitespace-pre-line">{event.description}</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Action Bar */}
+        <div className="px-6 py-3 border-t border-border flex-shrink-0 flex items-center justify-between">
+          <div className="flex items-center gap-1">
+            {onDelete && canEditBody && (
+              showDeleteConfirm ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-destructive">{t("form.delete_confirm")}</span>
+                  <Button variant="outline" size="sm" onClick={() => { onDelete(event.id, hasParticipants || undefined); onClose(); }} className="text-destructive border-destructive/30">
+                    {t("events.delete")}
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => setShowDeleteConfirm(false)}>
+                    {t("form.cancel")}
+                  </Button>
+                </div>
+              ) : (
+                <Button variant="ghost" size="sm" onClick={() => setShowDeleteConfirm(true)} className="text-destructive">
+                  <Trash2 className="w-4 h-4 me-1" />
+                  {t("events.delete")}
+                </Button>
+              )
+            )}
+            {onDuplicate && !showDeleteConfirm && (
+              <Button variant="ghost" size="sm" onClick={handleDuplicate} aria-label={t("events.duplicate")}>
+                <Copy className="w-4 h-4 me-1" />
+                {t("events.duplicate")}
+              </Button>
+            )}
+          </div>
+          {!showDeleteConfirm && canEditBody && (
+            <Button onClick={() => setMode("edit")}>
+              <Pencil className="w-4 h-4 me-1" />
+              {t("events.edit")}
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div ref={modalRef} role="dialog" aria-modal={isMobile || undefined} aria-label={isEdit ? t("events.edit") : t("events.create")} data-tour="event-modal" className={isMobile ? mobileRootClass : "flex flex-col h-full bg-background"}>
+      <div className="flex items-center justify-between px-6 py-4 border-b border-border flex-shrink-0">
+        <h2 className="text-lg font-semibold">
+          {isEdit ? t("events.edit") : t("events.create")}
+        </h2>
+        <button onClick={onClose} className="p-1.5 rounded-md hover:bg-muted transition-colors duration-150 text-muted-foreground hover:text-foreground" aria-label={t("form.cancel")}>
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto">
+        <div className="px-6 py-4 space-y-4">
           <div>
             <label className="text-sm font-medium mb-1 block">{t("form.title")}</label>
             <Input
@@ -583,11 +1071,45 @@ export function EventModal({
           <div>
             <label className="text-sm font-medium mb-1 block">
               <span className="flex items-center gap-1.5">
+                <Video className="w-4 h-4" />
+                {t("form.meeting_link")}
+              </span>
+            </label>
+            <Input
+              type="url"
+              value={virtualLocation}
+              onChange={(e) => setVirtualLocation(e.target.value)}
+              placeholder="https://meet.example.com/..."
+              maxLength={2000}
+            />
+            <PluginSlot
+              name="calendar-event-actions"
+              className="mt-2 flex flex-wrap gap-2"
+              extraProps={{
+                eventData: {
+                  title,
+                  description,
+                  start: startDate + 'T' + startTime,
+                  end: endDate + 'T' + endTime,
+                  isAllDay: allDay,
+                  location,
+                  virtualLocation,
+                  calendarId,
+                },
+                setVirtualLocation,
+              }}
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium mb-1 block">
+              <span className="flex items-center gap-1.5">
                 <Users className="w-4 h-4" />
                 {t("participants.title")}
               </span>
             </label>
             <ParticipantInput
+              ref={participantInputRef}
               participants={attendees}
               onAdd={handleAddAttendee}
               onRemove={handleRemoveAttendee}
@@ -619,7 +1141,7 @@ export function EventModal({
               <input
                 type="date"
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={(e) => handleStartDateChange(e.target.value)}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
@@ -629,7 +1151,7 @@ export function EventModal({
                 <input
                   type="time"
                   value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
+                  onChange={(e) => handleStartTimeChange(e.target.value)}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
@@ -656,7 +1178,27 @@ export function EventModal({
             )}
           </div>
 
-          {calendars.length > 1 && (
+          {pluginConflictWarnings.length > 0 && (
+            <div className="space-y-1.5">
+              {pluginConflictWarnings.map(w => (
+                <div
+                  key={w.key}
+                  className={
+                    w.severity === 'error'
+                      ? 'text-sm rounded-md border border-destructive/50 bg-destructive/10 text-destructive px-3 py-2'
+                      : w.severity === 'info'
+                        ? 'text-sm rounded-md border border-border bg-muted/40 text-muted-foreground px-3 py-2'
+                        : 'text-sm rounded-md border border-yellow-500/50 bg-yellow-500/10 text-yellow-700 dark:text-yellow-300 px-3 py-2'
+                  }
+                  title={w.message}
+                >
+                  {w.message}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {selectableCalendars.length > 1 && (
             <div>
               <label className="text-sm font-medium mb-1 block">{t("form.calendar_select")}</label>
               <select
@@ -664,7 +1206,7 @@ export function EventModal({
                 onChange={(e) => setCalendarId(e.target.value)}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               >
-                {calendars.map((cal) => (
+                {selectableCalendars.map((cal) => (
                   <option key={cal.id} value={cal.id}>
                     {cal.name}
                   </option>
@@ -673,37 +1215,115 @@ export function EventModal({
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <label className="text-sm font-medium mb-1 block">{t("recurrence.title")}</label>
+          <div>
+            <label className="text-sm font-medium mb-1 block">{t("recurrence.title")}</label>
+            <div className="flex items-center gap-2">
               <select
                 value={recurrence}
-                onChange={(e) => setRecurrence(e.target.value as RecurrenceOption)}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                onChange={(e) => {
+                  const value = e.target.value as RecurrenceOption;
+                  if (value === "custom") {
+                    recurrenceBeforeCustomRef.current = recurrence;
+                    setRecurrence("custom");
+                    setShowRecurrenceEditor(true);
+                  } else {
+                    setRecurrence(value);
+                    setShowRecurrenceEditor(false);
+                  }
+                }}
+                className="flex-1 min-w-0 rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 <option value="none">{t("recurrence.none")}</option>
                 <option value="daily">{t("recurrence.daily")}</option>
                 <option value="weekly">{t("recurrence.weekly")}</option>
                 <option value="monthly">{t("recurrence.monthly")}</option>
                 <option value="yearly">{t("recurrence.yearly")}</option>
+                <option value="custom">{customRuleSummary || t("recurrence.custom")}</option>
               </select>
+              {recurrence === "custom" && !showRecurrenceEditor && (
+                <button
+                  type="button"
+                  onClick={() => setShowRecurrenceEditor(true)}
+                  className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  aria-label={t("recurrence.edit_custom")}
+                >
+                  <Pencil className="w-4 h-4" />
+                </button>
+              )}
             </div>
-            <div>
-              <label className="text-sm font-medium mb-1 block">{t("alerts.title")}</label>
-              <select
-                value={alert}
-                onChange={(e) => setAlert(e.target.value as AlertOption)}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                <option value="none">{t("alerts.none")}</option>
-                <option value="at_time">{t("alerts.at_time")}</option>
-                <option value="5">{t("alerts.minutes_before", { count: 5 })}</option>
-                <option value="15">{t("alerts.minutes_before", { count: 15 })}</option>
-                <option value="30">{t("alerts.minutes_before", { count: 30 })}</option>
-                <option value="60">{t("alerts.hours_before", { count: 1 })}</option>
-                <option value="1440">{t("alerts.days_before", { count: 1 })}</option>
-              </select>
-            </div>
+            {showRecurrenceEditor && (
+              <RecurrenceEditor
+                rule={customRule}
+                eventStart={(() => {
+                  const d = new Date(`${startDate}T${allDay ? "00:00" : (startTime || "00:00")}:00`);
+                  return isNaN(d.getTime()) ? displayNow() : d;
+                })()}
+                onSave={handleRecurrenceEditorSave}
+                onCancel={handleRecurrenceEditorCancel}
+              />
+            )}
+          </div>
+
+          <div>
+            <label className="text-sm font-medium mb-1 block">{t("alerts.title")}</label>
+            {alertRows.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t("alerts.none")}</p>
+            ) : (
+              <div className="space-y-2">
+                {alertRows.map((row) => (
+                  <div key={row.id} className="flex items-center gap-2">
+                    {row.unit !== "at_time" && (
+                      <Input
+                        type="number"
+                        min={1}
+                        max={999}
+                        value={row.value}
+                        onChange={(e) => {
+                          const n = parseInt(e.target.value, 10);
+                          updateAlertRow(row.id, { value: Number.isFinite(n) ? Math.max(1, n) : 1 });
+                        }}
+                        className="w-20"
+                        aria-label={t("alerts.amount")}
+                      />
+                    )}
+                    <select
+                      value={row.unit}
+                      onChange={(e) => {
+                        const unit = e.target.value as AlertUnit;
+                        updateAlertRow(row.id, {
+                          unit,
+                          value: unit === "at_time" ? 0 : (row.value || 1),
+                        });
+                      }}
+                      className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                      aria-label={t("alerts.unit")}
+                    >
+                      <option value="at_time">{t("alerts.at_time")}</option>
+                      <option value="minutes">{t("alerts.unit_minutes_before")}</option>
+                      <option value="hours">{t("alerts.unit_hours_before")}</option>
+                      <option value="days">{t("alerts.unit_days_before")}</option>
+                      <option value="weeks">{t("alerts.unit_weeks_before")}</option>
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => removeAlertRow(row.id)}
+                      className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                      aria-label={t("alerts.remove")}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={addAlertRow}
+              className="mt-2 inline-flex items-center gap-1 text-sm text-primary hover:underline"
+            >
+              <Plus className="w-4 h-4" />
+              {t("alerts.add")}
+            </button>
           </div>
 
           {attendees.length > 0 && (
@@ -721,45 +1341,85 @@ export function EventModal({
             </div>
           )}
         </div>
-
-        <div className="flex items-center justify-between px-5 py-4 border-t border-border">
-          <div className="flex items-center gap-1">
-            {isEdit && onDelete && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleDelete}
-                className="text-red-600 dark:text-red-400"
-              >
-                <Trash2 className="w-4 h-4 mr-1" />
-                {t("events.delete")}
-              </Button>
-            )}
-            {isEdit && onDuplicate && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleDuplicate}
-                aria-label={t("events.duplicate")}
-              >
-                <Copy className="w-4 h-4 mr-1" />
-                {t("events.duplicate")}
-              </Button>
-            )}
-          </div>
-
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={onClose}>
-              {t("form.cancel")}
-            </Button>
-            <Button onClick={handleSave} disabled={!title.trim()}>
-              {t("form.save")}
-            </Button>
-          </div>
-        </div>
       </div>
 
-      <ConfirmDialog {...confirmDialogProps} />
+      <div className="flex items-center justify-between px-6 py-4 border-t border-border flex-shrink-0 flex-wrap gap-y-2">
+        <div className="flex items-center gap-1 w-full">
+          {isEdit && onDelete && (
+            showDeleteConfirm ? (
+              <div className="flex items-center gap-2 flex-wrap">
+                <div>
+                  <span className="text-sm text-red-600 dark:text-red-400">
+                    {t("form.delete_confirm")}
+                  </span>
+                  {hasParticipants && (
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {t("participants.cancel_notification")}
+                    </p>
+                  )}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => { onDelete(event!.id, hasParticipants || undefined); onClose(); }}
+                  className="text-red-600 dark:text-red-400 border-red-300 dark:border-red-700 w-full"
+                >
+                  {t("events.delete")}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="w-full"
+                >
+                  {t("form.cancel")}
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowDeleteConfirm(true)}
+                className="text-red-600 dark:text-red-400 w-full"
+              >
+                <Trash2 className="w-4 h-4 me-1" />
+                {t("events.delete")}
+              </Button>
+            )
+          )}
+          {isEdit && onDuplicate && !showDeleteConfirm && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleDuplicate}
+              aria-label={t("events.duplicate")}
+              className="w-full"
+            >
+              <Copy className="w-4 h-4 me-1" />
+              {t("events.duplicate")}
+            </Button>
+          )}
+        </div>
+
+        {!showDeleteConfirm && (
+        <div className="flex gap-2 w-full">
+          <Button
+            variant="outline"
+            onClick={isEdit ? () => setMode("view") : onClose}
+            className="w-full"
+          >
+            {t("form.cancel")}
+          </Button>
+          <Button
+            onClick={handleSave}
+            disabled={!title.trim() || isSaving}
+            className="w-full"
+          >
+            {t("form.save")}
+          </Button>
+        </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -773,9 +1433,9 @@ function StatusBadge({ status, isOrganizer, t }: {
     return <span className="text-xs text-primary">{t("participants.organizer")}</span>;
   }
   const colors: Record<string, string> = {
-    accepted: "text-green-600 dark:text-green-400",
-    declined: "text-red-600 dark:text-red-400",
-    tentative: "text-amber-600 dark:text-amber-400",
+    accepted: "text-success",
+    declined: "text-destructive",
+    tentative: "text-warning",
     "needs-action": "text-muted-foreground",
   };
   const labels: Record<string, string> = {

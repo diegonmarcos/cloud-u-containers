@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, forwardRef, useImperativeHandle } from "react";
 import { useTranslations } from "next-intl";
 import { X } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Avatar } from "@/components/ui/avatar";
 import { useContactStore } from "@/stores/contact-store";
 
 interface Participant {
@@ -18,9 +19,13 @@ interface ParticipantInputProps {
   disabled?: boolean;
 }
 
+export interface ParticipantInputHandle {
+  flush: () => Participant | null;
+}
+
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export function ParticipantInput({ participants, onAdd, onRemove, disabled }: ParticipantInputProps) {
+export const ParticipantInput = forwardRef<ParticipantInputHandle, ParticipantInputProps>(function ParticipantInput({ participants, onAdd, onRemove, disabled }, ref) {
   const t = useTranslations("calendar.participants");
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<Participant[]>([]);
@@ -86,8 +91,26 @@ export function ParticipantInput({ participants, onAdd, onRemove, disabled }: Pa
   }, [showSuggestions, activeIndex, suggestions, query, addParticipant]);
 
   const handleBlur = useCallback(() => {
+    const trimmed = query.trim();
+    if (trimmed && EMAIL_REGEX.test(trimmed)) {
+      addParticipant({ name: "", email: trimmed });
+    }
     setTimeout(() => setShowSuggestions(false), 200);
-  }, []);
+  }, [query, addParticipant]);
+
+  useImperativeHandle(ref, () => ({
+    flush: () => {
+      const trimmed = query.trim();
+      if (!trimmed || !EMAIL_REGEX.test(trimmed)) return null;
+      if (participants.some(e => e.email.toLowerCase() === trimmed.toLowerCase())) return null;
+      const p = { name: "", email: trimmed };
+      onAdd(p);
+      setQuery("");
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return p;
+    },
+  }), [query, participants, onAdd]);
 
   return (
     <div className="space-y-2">
@@ -122,14 +145,17 @@ export function ParticipantInput({ participants, onAdd, onRemove, disabled }: Pa
                 role="option"
                 aria-selected={i === activeIndex}
                 onMouseDown={(e) => { e.preventDefault(); addParticipant(s); }}
-                className={`px-3 py-2 text-sm cursor-pointer transition-colors ${
+                className={`px-3 py-2 text-sm cursor-pointer transition-colors flex items-center gap-2 ${
                   i === activeIndex ? "bg-accent text-accent-foreground" : "hover:bg-muted"
                 }`}
               >
-                <div className="font-medium truncate">{s.name || s.email}</div>
-                {s.name && (
-                  <div className="text-xs text-muted-foreground truncate">{s.email}</div>
-                )}
+                <Avatar name={s.name} email={s.email} size="sm" className="shrink-0 w-7 h-7 text-[10px]" />
+                <div className="min-w-0">
+                  <div className="font-medium truncate">{s.name || s.email}</div>
+                  {s.name && (
+                    <div className="text-xs text-muted-foreground truncate">{s.email}</div>
+                  )}
+                </div>
               </li>
             ))}
           </ul>
@@ -138,12 +164,27 @@ export function ParticipantInput({ participants, onAdd, onRemove, disabled }: Pa
 
       {participants.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
-          {participants.map((p) => (
+          {participants.map((p, i) => (
             <span
-              key={p.email}
+              key={`${p.email}-${i}`}
               className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full bg-muted text-foreground max-w-[200px]"
             >
-              <span className="truncate">{p.name || p.email}</span>
+              {!disabled ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onRemove(p.email);
+                    setQuery(p.email);
+                    setTimeout(() => inputRef.current?.focus(), 0);
+                  }}
+                  className="truncate hover:underline focus:outline-none focus:underline cursor-text"
+                  aria-label={`${t("edit")} ${p.name || p.email}`}
+                >
+                  {p.name || p.email}
+                </button>
+              ) : (
+                <span className="truncate">{p.name || p.email}</span>
+              )}
               {!disabled && (
                 <button
                   type="button"
@@ -160,4 +201,4 @@ export function ParticipantInput({ participants, onAdd, onRemove, disabled }: Pa
       )}
     </div>
   );
-}
+});

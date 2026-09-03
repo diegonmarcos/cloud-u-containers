@@ -16,7 +16,9 @@ import type {
   FilterActionType,
 } from "@/lib/jmap/sieve-types";
 import type { Mailbox } from "@/lib/jmap/types";
-import { buildMailboxTree, flattenMailboxTree, getMailboxFullPath } from "@/lib/utils";
+import { buildMailboxTree, flattenMailboxTree, type MailboxNode, generateUUID } from "@/lib/utils";
+import { useSettingsStore } from "@/stores/settings-store";
+import { useKeywordFormat } from "@/hooks/use-keyword-format";
 
 interface FilterRuleModalProps {
   rule?: FilterRule;
@@ -26,7 +28,7 @@ interface FilterRuleModalProps {
 }
 
 const ALL_FIELDS: FilterConditionField[] = [
-  "from", "to", "cc", "subject", "header", "size", "body",
+  "from", "to", "cc", "subject", "header", "size", "body", "attachment",
 ];
 
 const TEXT_COMPARATORS: FilterComparator[] = [
@@ -34,6 +36,14 @@ const TEXT_COMPARATORS: FilterComparator[] = [
 ];
 
 const SIZE_COMPARATORS: FilterComparator[] = ["greater_than", "less_than"];
+
+const ATTACHMENT_COMPARATORS: FilterComparator[] = ["has_any", "has_type"];
+
+function comparatorsFor(field: FilterConditionField): FilterComparator[] {
+  if (field === "size") return SIZE_COMPARATORS;
+  if (field === "attachment") return ATTACHMENT_COMPARATORS;
+  return TEXT_COMPARATORS;
+}
 
 const ALL_ACTION_TYPES: FilterActionType[] = [
   "move", "copy", "forward", "mark_read", "star", "add_label", "discard", "reject", "keep", "stop",
@@ -44,6 +54,27 @@ const ACTIONS_WITH_MAILBOX = new Set<FilterActionType>(["move", "copy"]);
 
 function makeEmptyCondition(): FilterCondition {
   return { field: "from", comparator: "contains", value: "" };
+}
+
+// Multi-value handling: conditions are stored as string | string[]. The UI
+// presents them as a single comma-separated text input — the user types
+// "a, b, c" and the saved value becomes ["a","b","c"]. Single entries stay
+// strings so existing single-value rules don't change shape.
+function valueToInputString(v: string | string[]): string {
+  if (Array.isArray(v)) return v.join(", ");
+  return v;
+}
+
+function inputStringToValue(s: string): string | string[] {
+  const parts = s.split(",").map((p) => p.trim()).filter((p) => p.length > 0);
+  if (parts.length === 0) return "";
+  if (parts.length === 1) return parts[0];
+  return parts;
+}
+
+function isConditionValueEmpty(v: string | string[]): boolean {
+  if (Array.isArray(v)) return v.length === 0 || v.every((x) => !x.trim());
+  return !v.trim();
 }
 
 function makeEmptyAction(): FilterAction {
@@ -58,6 +89,8 @@ export function FilterRuleModal({
 }: FilterRuleModalProps) {
   const t = useTranslations("settings.filters");
   const isEdit = !!rule;
+  const emailKeywords = useSettingsStore((state) => state.emailKeywords);
+  const { tagName } = useKeywordFormat();
 
   const [name, setName] = useState(rule?.name || "");
   const [matchType, setMatchType] = useState<"all" | "any">(rule?.matchType || "all");
@@ -71,10 +104,22 @@ export function FilterRuleModal({
 
   const modalRef = useFocusTrap({ isActive: true, onEscape: onClose });
 
-  const hierarchicalMailboxes = useMemo(
-    () => flattenMailboxTree(buildMailboxTree(mailboxes.filter((mb) => !mb.isShared))),
-    [mailboxes]
-  );
+  const { hierarchicalMailboxes, mailboxPathMap } = useMemo(() => {
+    const tree = buildMailboxTree(mailboxes.filter((mb) => !mb.isShared));
+    const pathMap = new Map<string, string>();
+    const buildPaths = (nodes: MailboxNode[], parentPath = "") => {
+      for (const node of nodes) {
+        // Sieve fileinto expects the IMAP-canonical "INBOX" for the inbox,
+        // not the localized JMAP display name (e.g. "Entrada" in pt-BR).
+        const segment = node.role === "inbox" ? "INBOX" : node.name;
+        const fullPath = parentPath ? `${parentPath}/${segment}` : segment;
+        pathMap.set(node.id, fullPath);
+        if (node.children.length > 0) buildPaths(node.children, fullPath);
+      }
+    };
+    buildPaths(tree);
+    return { hierarchicalMailboxes: flattenMailboxTree(tree), mailboxPathMap: pathMap };
+  }, [mailboxes]);
 
   const handleSave = useCallback(() => {
     const trimmedName = name.trim();
@@ -83,9 +128,23 @@ export function FilterRuleModal({
       return;
     }
 
-    const validConditions = conditions.filter(
-      (c) => c.value.trim()
-    );
+    // While editing, condition.value is always the raw string typed into the
+    // input (commas not yet split). Convert to array form here on save so a
+    // user typing "a, b, c" actually persists as ["a","b","c"]. This is the
+    // moment we know editing is finished - splitting earlier would eat any
+    // comma the user just typed mid-edit.
+    const validConditions = conditions
+      .filter((c) => {
+        if (c.field === "attachment" && c.comparator === "has_any") return true;
+        return !isConditionValueEmpty(c.value);
+      })
+      .map((c) => {
+        if (c.field === "attachment" && c.comparator === "has_any") return c;
+        if (c.field === "size") return c; // numeric, single-value only
+        if (typeof c.value !== "string") return c; // already structured
+        const parsed = inputStringToValue(c.value);
+        return { ...c, value: parsed };
+      });
     if (validConditions.length === 0) {
       toast.error(t("validation_empty_conditions"));
       return;
@@ -100,7 +159,7 @@ export function FilterRuleModal({
     }
 
     onSave({
-      id: rule?.id || crypto.randomUUID(),
+      id: rule?.id || generateUUID(),
       name: trimmedName,
       enabled: rule?.enabled ?? true,
       matchType,
@@ -115,14 +174,26 @@ export function FilterRuleModal({
       prev.map((c, i) => {
         if (i !== index) return c;
         const updated = { ...c, ...updates };
-        if (updates.field === "size" && !SIZE_COMPARATORS.includes(c.comparator)) {
-          updated.comparator = "greater_than";
-        }
-        if (updates.field && updates.field !== "size" && SIZE_COMPARATORS.includes(c.comparator)) {
-          updated.comparator = "contains";
+        // Reconcile the comparator when the field changes so we never end up
+        // with e.g. (field=attachment, comparator=contains) — invalid for the
+        // Sieve generator. Each field has its own valid comparator set.
+        if (updates.field && updates.field !== c.field) {
+          const allowed = comparatorsFor(updates.field);
+          if (!allowed.includes(c.comparator)) {
+            updated.comparator = allowed[0];
+          }
         }
         if (updates.field && updates.field !== "header") {
           delete updated.headerName;
+        }
+        // has_any takes no value; clear it so we don't leak old text into
+        // the generated Sieve.
+        if (updated.field === "attachment" && updated.comparator === "has_any") {
+          updated.value = "";
+        }
+        // Size is numeric, single value only - collapse any list to scalar.
+        if (updated.field === "size" && Array.isArray(updated.value)) {
+          updated.value = updated.value[0] ?? "";
         }
         return updated;
       })
@@ -143,7 +214,8 @@ export function FilterRuleModal({
           delete updated.value;
         }
         if (updates.type && ACTIONS_WITH_MAILBOX.has(updates.type) && !updated.value) {
-          updated.value = mailboxes[0]?.name || "";
+          const firstMb = hierarchicalMailboxes[0];
+          updated.value = firstMb ? (mailboxPathMap.get(firstMb.id) || firstMb.name) : "";
         }
         return updated;
       })
@@ -156,32 +228,32 @@ export function FilterRuleModal({
   };
 
   const selectClass =
-    "px-2 py-1.5 text-sm rounded bg-muted border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer";
+    "px-2.5 py-1.5 text-sm rounded-md bg-muted border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-colors duration-150 cursor-pointer hover:border-muted-foreground";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden="true" />
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-[1px]" onClick={onClose} aria-hidden="true" />
       <div
         ref={modalRef}
         role="dialog"
         aria-modal="true"
         aria-label={isEdit ? t("edit_rule") : t("new_rule")}
-        className="relative bg-background border border-border rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto"
+        className="relative bg-background border border-border rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200"
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <h2 className="text-lg font-semibold text-foreground">
             {isEdit ? t("edit_rule") : t("new_rule")}
           </h2>
           <button
             onClick={onClose}
-            className="p-1 rounded hover:bg-muted transition-colors"
+            className="p-1.5 rounded-md hover:bg-muted transition-colors duration-150 text-muted-foreground hover:text-foreground"
             aria-label={t("cancel")}
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="px-5 py-4 space-y-6">
+        <div className="px-6 py-4 space-y-6">
           <div>
             <label className="text-sm font-medium mb-1 block text-foreground">
               {t("rule_name")}
@@ -203,9 +275,9 @@ export function FilterRuleModal({
               <button
                 type="button"
                 onClick={() => setMatchType("all")}
-                className={`px-3 py-1.5 text-xs rounded transition-colors ${
+                className={`px-3 py-1.5 text-xs rounded-md transition-colors duration-150 ${
                   matchType === "all"
-                    ? "bg-primary text-primary-foreground"
+                    ? "bg-primary text-primary-foreground font-medium"
                     : "bg-muted hover:bg-accent text-foreground"
                 }`}
               >
@@ -214,9 +286,9 @@ export function FilterRuleModal({
               <button
                 type="button"
                 onClick={() => setMatchType("any")}
-                className={`px-3 py-1.5 text-xs rounded transition-colors ${
+                className={`px-3 py-1.5 text-xs rounded-md transition-colors duration-150 ${
                   matchType === "any"
-                    ? "bg-primary text-primary-foreground"
+                    ? "bg-primary text-primary-foreground font-medium"
                     : "bg-muted hover:bg-accent text-foreground"
                 }`}
               >
@@ -266,30 +338,64 @@ export function FilterRuleModal({
                     className={selectClass}
                     aria-label={t("comparators.contains")}
                   >
-                    {(condition.field === "size" ? SIZE_COMPARATORS : TEXT_COMPARATORS).map(
-                      (c) => (
-                        <option key={c} value={c}>
-                          {t(`comparators.${c}`)}
-                        </option>
-                      )
-                    )}
+                    {comparatorsFor(condition.field).map((c) => (
+                      <option key={c} value={c}>
+                        {t(`comparators.${c}`)}
+                      </option>
+                    ))}
                   </select>
 
-                  <Input
-                    value={condition.value}
-                    onChange={(e) => updateCondition(index, { value: e.target.value })}
-                    placeholder={
-                      condition.field === "size" ? t("size_placeholder") : t("header_placeholder")
-                    }
-                    className="flex-1 min-w-[120px]"
-                    type={condition.field === "size" ? "number" : "text"}
-                  />
+                  {/* has_any takes no value; render a stub so the row layout
+                      stays consistent but no input is editable. */}
+                  {condition.field === "attachment" && condition.comparator === "has_any" ? (
+                    <div className="flex-1 min-w-[120px]" />
+                  ) : (
+                    <Input
+                      value={valueToInputString(condition.value)}
+                      onChange={(e) =>
+                        // Store the raw input string while typing. Splitting
+                        // commas into an array on every keystroke would eat
+                        // the comma the moment it's typed.
+                        updateCondition(index, { value: e.target.value })
+                      }
+                      onBlur={(e) => {
+                        // On blur: normalise comma-separated input into an
+                        // array (or single string when only one item). Size
+                        // stays numeric/single-value; attachment-has_any has
+                        // no value at all.
+                        if (condition.field === "size") return;
+                        if (
+                          condition.field === "attachment" &&
+                          condition.comparator === "has_any"
+                        )
+                          return;
+                        const parsed = inputStringToValue(e.target.value);
+                        // Only update if the normalised shape actually
+                        // differs - avoids triggering a no-op re-render and
+                        // resetting the user's cursor on every blur.
+                        if (
+                          JSON.stringify(parsed) !== JSON.stringify(condition.value)
+                        ) {
+                          updateCondition(index, { value: parsed });
+                        }
+                      }}
+                      placeholder={
+                        condition.field === "size"
+                          ? t("size_placeholder")
+                          : condition.field === "attachment"
+                            ? t("attachment_type_placeholder")
+                            : t("value_placeholder_multi")
+                      }
+                      className="flex-1 min-w-[120px]"
+                      type={condition.field === "size" ? "number" : "text"}
+                    />
+                  )}
 
                   <button
                     type="button"
                     onClick={() => removeCondition(index)}
                     disabled={conditions.length <= 1}
-                    className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-red-600 dark:hover:text-red-400 transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                    className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-destructive transition-colors disabled:opacity-30 disabled:pointer-events-none"
                     aria-label={t("delete_rule")}
                   >
                     <Trash2 className="w-4 h-4" />
@@ -338,7 +444,7 @@ export function FilterRuleModal({
                     >
                       <option value="">{t("move_to_folder")}</option>
                       {hierarchicalMailboxes.map((mb) => (
-                        <option key={mb.id} value={getMailboxFullPath(mailboxes, mb.id)}>
+                        <option key={mb.id} value={mailboxPathMap.get(mb.id) || mb.name}>
                           {"\u00A0".repeat(mb.depth * 3)}{mb.name}
                         </option>
                       ))}
@@ -365,19 +471,24 @@ export function FilterRuleModal({
                   )}
 
                   {action.type === "add_label" && (
-                    <Input
+                    <select
                       value={action.value || ""}
                       onChange={(e) => updateAction(index, { value: e.target.value })}
-                      placeholder={t("label_placeholder")}
-                      className="flex-1 min-w-[140px]"
-                    />
+                      className={`${selectClass} flex-1 min-w-[140px]`}
+                      aria-label={t("label_placeholder")}
+                    >
+                      <option value="">{t("label_placeholder")}</option>
+                      {emailKeywords.map((kw) => (
+                        <option key={kw.id} value={kw.id}>{tagName(kw.id)}</option>
+                      ))}
+                    </select>
                   )}
 
                   <button
                     type="button"
                     onClick={() => removeAction(index)}
                     disabled={actions.length <= 1}
-                    className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-red-600 dark:hover:text-red-400 transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                    className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-destructive transition-colors disabled:opacity-30 disabled:pointer-events-none"
                     aria-label={t("delete_rule")}
                   >
                     <Trash2 className="w-4 h-4" />
@@ -409,7 +520,7 @@ export function FilterRuleModal({
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-border">
+        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-border">
           <Button variant="outline" onClick={onClose}>
             {t("cancel")}
           </Button>

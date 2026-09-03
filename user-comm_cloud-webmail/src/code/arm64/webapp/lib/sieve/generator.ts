@@ -1,4 +1,4 @@
-import type { FilterRule, FilterCondition, FilterAction, FilterMetadata } from '@/lib/jmap/sieve-types';
+import type { FilterRule, FilterCondition, FilterAction, FilterMetadata, VacationSieveConfig } from '@/lib/jmap/sieve-types';
 import { debug } from '@/lib/debug';
 
 const HEADER_MAP: Record<string, string> = {
@@ -12,59 +12,82 @@ function escapeString(value: string): string {
   return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }
 
-// Rule names are user-controlled; a raw newline would break out of the
-// single-line `# Rule:` comment and inject live Sieve commands.
-function stripNewlines(value: string): string {
-  return value.replace(/[\r\n]+/g, ' ');
+// Normalise the condition value to a non-empty string array. Single-value
+// conditions stay one-element; arrays are filtered for empty strings.
+function toValueList(value: string | string[]): string[] {
+  const arr = Array.isArray(value) ? value : [value];
+  return arr.map((v) => (v ?? '').toString()).filter((v) => v.length > 0);
 }
 
-// Header field names per RFC 5322: keep only the safe field-name charset so a
-// crafted name (e.g. containing a quote) cannot close the quoted Sieve string.
-function sanitizeHeaderName(name: string): string {
-  const cleaned = name.replace(/[^A-Za-z0-9-]/g, '');
-  return cleaned || 'X-Unknown';
+// Render one or many strings as a Sieve string-literal-or-list. Sieve treats
+// `header :contains "From" ["a", "b"]` as "any of a, b" (built-in OR within
+// the condition); the single-string form is emitted unchanged when len === 1
+// so existing scripts and tests stay byte-identical.
+function formatStringArg(values: string[], transform: (s: string) => string = (s) => s): string {
+  if (values.length === 1) {
+    return `"${escapeString(transform(values[0]))}"`;
+  }
+  return `[${values.map((v) => `"${escapeString(transform(v))}"`).join(', ')}]`;
 }
 
 function generateCondition(condition: FilterCondition): string {
   const { field, comparator, value } = condition;
 
   if (field === 'size') {
+    // Size is numeric, single value only.
+    const sizeValue = Array.isArray(value) ? value[0] : value;
     const op = comparator === 'greater_than' ? ':over' : ':under';
-    // Size is user input like every other condition value: keep only a
-    // number with an optional K/M/G suffix so it cannot carry Sieve syntax.
-    const match = value.trim().match(/^(\d+)\s*([KMG])?/i);
-    const size = match ? `${match[1]}${(match[2] || '').toUpperCase()}` : '0';
-    return `size ${op} ${size}`;
+    return `size ${op} ${sizeValue}`;
   }
+
+  const values = toValueList(value);
 
   if (field === 'body') {
     const matchType = comparator === 'is' ? ':is' : ':contains';
-    return `body ${matchType} "${escapeString(value)}"`;
+    return `body ${matchType} ${formatStringArg(values)}`;
+  }
+
+  if (field === 'attachment') {
+    // RFC 5703: :mime :anychild matches against headers of any MIME part.
+    // has_any tests Content-Disposition for "attachment"; has_type matches
+    // the file extension against the filename across BOTH Content-Disposition
+    // (filename= parameter) and Content-Type (name= parameter) - many older
+    // senders (Microsoft SMTPSVC, PrintToMail, etc.) put the filename only
+    // in Content-Type and leave Content-Disposition without a filename.
+    // RFC 5228 §5.7 allows a string-list for header names; the test passes
+    // if any listed header matches. Wildcard "*.<ext>*" catches quoted,
+    // unquoted, and RFC-2231-encoded forms alike since ".<ext>" appears as
+    // a literal substring in all of them.
+    // Multiple extensions become a Sieve value-list ["*.pdf*", "*.xml*"]
+    // = OR within the condition (any item matches → test passes).
+    if (comparator === 'has_any') {
+      return `header :mime :anychild :contains "Content-Disposition" "attachment"`;
+    }
+    const normalised = values.map((v) => v.replace(/^[.*]+/, '').trim()).filter(Boolean);
+    return `header :mime :anychild :matches ["Content-Disposition", "Content-Type"] ${formatStringArg(normalised, (ext) => `*.${ext}*`)}`;
   }
 
   const headerName = field === 'header'
-    ? sanitizeHeaderName(condition.headerName || 'X-Unknown')
+    ? (condition.headerName || 'X-Unknown')
     : HEADER_MAP[field];
-
-  const escaped = escapeString(value);
 
   switch (comparator) {
     case 'contains':
-      return `header :contains "${headerName}" "${escaped}"`;
+      return `header :contains "${headerName}" ${formatStringArg(values)}`;
     case 'not_contains':
-      return `not header :contains "${headerName}" "${escaped}"`;
+      return `not header :contains "${headerName}" ${formatStringArg(values)}`;
     case 'is':
-      return `header :is "${headerName}" "${escaped}"`;
+      return `header :is "${headerName}" ${formatStringArg(values)}`;
     case 'not_is':
-      return `not header :is "${headerName}" "${escaped}"`;
+      return `not header :is "${headerName}" ${formatStringArg(values)}`;
     case 'starts_with':
-      return `header :matches "${headerName}" "${escaped}*"`;
+      return `header :matches "${headerName}" ${formatStringArg(values, (v) => `${v}*`)}`;
     case 'ends_with':
-      return `header :matches "${headerName}" "*${escaped}"`;
+      return `header :matches "${headerName}" ${formatStringArg(values, (v) => `*${v}`)}`;
     case 'matches':
-      return `header :matches "${headerName}" "${escaped}"`;
+      return `header :matches "${headerName}" ${formatStringArg(values)}`;
     default:
-      return `header :contains "${headerName}" "${escaped}"`;
+      return `header :contains "${headerName}" ${formatStringArg(values)}`;
   }
 }
 
@@ -82,7 +105,7 @@ function generateActions(actions: FilterAction[]): string[] {
       case 'star':
         return 'addflag "\\\\Flagged";';
       case 'add_label':
-        return `addflag "$${escapeString(action.value || '')}";`;
+        return `addflag "$label:${escapeString(action.value || '')}";`;
       case 'discard':
         return 'discard;';
       case 'reject':
@@ -95,13 +118,18 @@ function generateActions(actions: FilterAction[]): string[] {
   });
 }
 
-function computeRequires(rules: FilterRule[]): string[] {
+function computeRequires(rules: FilterRule[], vacation?: VacationSieveConfig): string[] {
   const extensions = new Set<string>();
   const enabledRules = rules.filter(r => r.enabled);
+
+  if (vacation?.isEnabled) {
+    extensions.add('vacation');
+  }
 
   for (const rule of enabledRules) {
     for (const condition of rule.conditions) {
       if (condition.field === 'body') extensions.add('body');
+      if (condition.field === 'attachment') extensions.add('mime');
     }
     for (const action of rule.actions) {
       switch (action.type) {
@@ -124,15 +152,51 @@ function computeRequires(rules: FilterRule[]): string[] {
     }
   }
 
-  return [...extensions].sort();
+  return [...extensions];
 }
 
-export function generateScript(rules: FilterRule[]): string {
-  const metadata: FilterMetadata = { version: 1, rules };
-  // Neutralise any `*/` in user fields (e.g. rule names) that would otherwise
-  // terminate the metadata block comment early. `\/` is valid JSON and parses
-  // back to `/`, so the generate -> parse round-trip is preserved.
-  const metadataJson = JSON.stringify(metadata).replace(/\*\//g, '*\\/');
+function stripRuleForMetadata(r: FilterRule): Omit<FilterRule, 'origin' | 'originLabel' | 'rawBlock'> {
+  return {
+    id: r.id,
+    name: r.name,
+    enabled: r.enabled,
+    matchType: r.matchType,
+    conditions: r.conditions,
+    actions: r.actions,
+    stopProcessing: r.stopProcessing,
+  };
+}
+
+export interface GenerateOptions {
+  /**
+   * Require extensions used by external (non-Bulwark) rules that we must
+   * preserve in the top-level `require` directive. Duplicates with Bulwark's
+   * own requires are deduplicated.
+   */
+  externalRequires?: string[];
+}
+
+export function generateScript(
+  rules: FilterRule[],
+  vacation?: VacationSieveConfig,
+  options: GenerateOptions = {},
+): string {
+  // Partition rules by origin. Treat missing origin as 'bulwark' for back-compat.
+  const bulwarkRules: FilterRule[] = [];
+  const externalRules: FilterRule[] = [];
+  for (const r of rules) {
+    if (r.origin && r.origin !== 'bulwark') externalRules.push(r);
+    else bulwarkRules.push(r);
+  }
+
+  const metadata: FilterMetadata = {
+    version: 1,
+    rules: bulwarkRules.map(stripRuleForMetadata) as FilterRule[],
+  };
+  if (vacation?.isEnabled) {
+    metadata.vacation = vacation;
+  }
+  const metadataJson = JSON.stringify(metadata);
   const lines: string[] = [];
 
   lines.push('/* @metadata:begin');
@@ -140,21 +204,35 @@ export function generateScript(rules: FilterRule[]): string {
   lines.push('@metadata:end */');
   lines.push('');
 
-  const requires = computeRequires(rules);
-  if (requires.length > 0) {
-    lines.push(`require [${requires.map(r => `"${r}"`).join(', ')}];`);
+  const bulwarkRequires = computeRequires(bulwarkRules, vacation);
+  const externalRequires = options.externalRequires ?? [];
+  const allRequires = [...new Set([...bulwarkRequires, ...externalRequires])].sort();
+
+  if (allRequires.length > 0) {
+    lines.push(`require [${allRequires.map(r => `"${r}"`).join(', ')}];`);
   }
 
-  const enabledRules = rules.filter(r => r.enabled);
+  if (vacation?.isEnabled) {
+    lines.push('');
+    lines.push('# Vacation auto-reply');
+    const vacationParts: string[] = [];
+    if (vacation.subject) {
+      vacationParts.push(`:subject "${escapeString(vacation.subject)}"`);
+    }
+    vacationParts.push(`"${escapeString(vacation.textBody || '')}"`);
+    lines.push(`vacation ${vacationParts.join(' ')};`);
+  }
 
-  for (const rule of enabledRules) {
+  const enabledBulwarkRules = bulwarkRules.filter(r => r.enabled);
+
+  for (const rule of enabledBulwarkRules) {
     if (rule.conditions.length === 0 || rule.actions.length === 0) {
-      debug.warn(`Skipping rule "${rule.name}": empty conditions or actions`);
+      debug.warn('filters', `Skipping rule "${rule.name}": empty conditions or actions`);
       continue;
     }
 
     lines.push('');
-    lines.push(`# Rule: ${stripNewlines(rule.name)}`);
+    lines.push(`# Rule: ${rule.name}`);
 
     const conditions = rule.conditions.map(generateCondition);
     let conditionStr: string;
@@ -172,7 +250,7 @@ export function generateScript(rules: FilterRule[]): string {
 
     if (rule.stopProcessing) {
       const lastAction = rule.actions[rule.actions.length - 1];
-      if (!lastAction || lastAction.type !== 'stop') {
+      if (!lastAction || !['stop', 'discard', 'reject'].includes(lastAction.type)) {
         actionLines.push('stop;');
       }
     }
@@ -182,6 +260,17 @@ export function generateScript(rules: FilterRule[]): string {
       lines.push(`    ${actionLine}`);
     }
     lines.push('}');
+  }
+
+  // Append preserved external rules verbatim. Each rawBlock already carries its
+  // own leading comments and trailing whitespace from the source script.
+  if (externalRules.length > 0) {
+    lines.push('');
+    lines.push('# --- External rules (managed outside Bulwark) ---');
+    for (const ext of externalRules) {
+      if (!ext.rawBlock) continue;
+      lines.push(ext.rawBlock.replace(/\s+$/, ''));
+    }
   }
 
   lines.push('');

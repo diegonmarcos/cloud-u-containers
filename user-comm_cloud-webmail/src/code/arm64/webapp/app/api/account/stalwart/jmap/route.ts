@@ -1,0 +1,77 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
+import { getStalwartCredentials } from '@/lib/stalwart/credentials';
+import { JmapRedirectError, fetchJmapSession, postJmap, rebaseApiUrl } from '@/lib/stalwart/jmap-api';
+
+/**
+ * POST /api/account/stalwart/jmap
+ *
+ * Passthrough to Stalwart's JMAP endpoint using the stored basic-auth
+ * context so the browser does not need access to the user's credentials.
+ *
+ * Body: standard JMAP request `{ using: string[], methodCalls: [...] }`
+ *
+ * In Stalwart 0.16 all management operations (password change, app
+ * passwords, API keys, account settings, etc.) are exposed as JMAP
+ * methods under the `x:` namespace on the same endpoint.
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const creds = await getStalwartCredentials(request);
+    if (!creds) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+
+    const body = await request.text();
+
+    const directUrl = `${creds.serverUrl}/jmap/`;
+    let response = await postJmap(directUrl, creds.authHeader, body);
+
+    if (response.status === 404) {
+      // `${serverUrl}/jmap/` is not the API endpoint on this deployment
+      // (path prefix, non-Stalwart URL layout). Resolve the session's
+      // advertised apiUrl on the same host and retry once.
+      const session = await fetchJmapSession(creds.serverUrl, creds.authHeader);
+      const apiUrl = rebaseApiUrl(session, creds.serverUrl);
+      if (apiUrl && apiUrl !== directUrl) {
+        response = await postJmap(apiUrl, creds.authHeader, body);
+      }
+    }
+
+    if (!response.ok) {
+      logger.warn('Stalwart JMAP passthrough upstream error', {
+        status: response.status,
+        serverUrl: creds.serverUrl,
+      });
+    }
+
+    const responseText = await response.text();
+    return new NextResponse(responseText, {
+      status: response.status,
+      headers: { 'Content-Type': response.headers.get('Content-Type') || 'application/json' },
+    });
+  } catch (error) {
+    if (error instanceof JmapRedirectError) {
+      logger.error('Stalwart JMAP passthrough redirect error', { error: error.message });
+      return NextResponse.json({ error: error.message }, { status: 502 });
+    }
+    // `fetch failed` from undici is too generic to debug — the real reason
+    // (ENOTFOUND, ECONNREFUSED, self-signed TLS, …) lives on `error.cause`.
+    const err = error as Error & { cause?: { code?: string; message?: string } };
+    logger.error('Stalwart JMAP passthrough error', {
+      error: err?.message ?? 'Unknown',
+      causeCode: err?.cause?.code,
+      causeMessage: err?.cause?.message,
+    });
+    // The server this process failed to reach is the user's own mail server,
+    // so the reason is worth surfacing: an opaque 500 leaves operators with
+    // nothing to act on.
+    if (err?.cause?.code) {
+      return NextResponse.json(
+        { error: `Cannot reach the JMAP server (${err.cause.code})` },
+        { status: 502 },
+      );
+    }
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

@@ -59,7 +59,8 @@ export function ContactImportDialog({
         if (!dupes.has(idx)) initialSelected.add(idx);
       });
       setSelected(initialSelected);
-    } catch {
+    } catch (error) {
+      console.error('Failed to parse vCard:', error);
       setError(t("import.parse_error"));
     }
   }, [existingContacts, t]);
@@ -90,7 +91,8 @@ export function ContactImportDialog({
     try {
       const count = await onImport(toImport);
       setResult(count);
-    } catch {
+    } catch (error) {
+      console.error('Failed to import contacts:', error);
       setError(t("import.failed"));
     } finally {
       setIsImporting(false);
@@ -185,7 +187,7 @@ export function ContactImportDialog({
                     type="button"
                     onClick={() => toggleSelect(idx)}
                     className={cn(
-                      "w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted",
+                      "w-full flex items-center gap-3 px-3 py-2.5 text-start transition-colors hover:bg-muted",
                       isSelected && "bg-primary/5"
                     )}
                   >
@@ -197,13 +199,13 @@ export function ContactImportDialog({
                     </div>
                     <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium truncate">{cName || cEmail || "—"}</div>
+                      <div className="text-sm font-medium truncate">{cName || cEmail || "-"}</div>
                       {cEmail && cName && (
                         <div className="text-xs text-muted-foreground truncate">{cEmail}</div>
                       )}
                     </div>
                     {isDupe && (
-                      <span className="text-xs px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-400 flex-shrink-0">
+                      <span className="text-xs px-1.5 py-0.5 rounded bg-warning/15 text-warning flex-shrink-0">
                         {t("import.duplicate")}
                       </span>
                     )}

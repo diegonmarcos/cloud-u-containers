@@ -73,34 +73,34 @@ export function SieveEditorModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden="true" />
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-[1px]" onClick={onClose} aria-hidden="true" />
       <div
         ref={modalRef}
         role="dialog"
         aria-modal="true"
         aria-label={t("title")}
-        className="relative bg-background border border-border rounded-lg shadow-xl w-full max-w-4xl mx-4 max-h-[90vh] flex flex-col"
+        className="relative bg-background border border-border rounded-lg shadow-xl w-full max-w-4xl mx-4 max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200"
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <h2 className="text-lg font-semibold text-foreground">{t("title")}</h2>
           <button
             onClick={onClose}
-            className="p-1 rounded hover:bg-muted transition-colors"
+            className="p-1.5 rounded-md hover:bg-muted transition-colors duration-150 text-muted-foreground hover:text-foreground"
             aria-label={t("cancel")}
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="px-5 py-4 flex-1 overflow-hidden flex flex-col space-y-4">
-          <div className="flex items-start gap-2 p-3 rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-sm text-amber-700 dark:text-amber-400">
+        <div className="px-6 py-4 flex-1 overflow-hidden flex flex-col space-y-4">
+          <div className="flex items-start gap-2 p-3 rounded-md bg-warning/10 border border-warning/20 text-sm text-warning">
             <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
             <p>{t("warning")}</p>
           </div>
 
           <div className="flex-1 min-h-0 flex border border-border rounded-md overflow-hidden">
             <div
-              className="w-10 flex-shrink-0 bg-muted border-r border-border py-2 text-right pr-2 select-none overflow-hidden"
+              className="w-10 flex-shrink-0 bg-muted border-e border-border py-2 text-end pe-2 select-none overflow-hidden"
               aria-hidden="true"
             >
               {Array.from({ length: lineCount }, (_, i) => (
@@ -131,8 +131,8 @@ export function SieveEditorModal({
             <div
               className={`flex items-start gap-2 p-3 rounded-md text-sm ${
                 validationResult.isValid
-                  ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400"
-                  : "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400"
+                  ? "bg-success/10 border border-success/20 text-success"
+                  : "bg-destructive/10 border border-destructive/20 text-destructive"
               }`}
             >
               {validationResult.isValid ? (
@@ -157,14 +157,14 @@ export function SieveEditorModal({
           )}
 
           {showSaveWarning && (
-            <div className="flex items-start gap-2 p-3 rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-sm text-amber-700 dark:text-amber-400">
+            <div className="flex items-start gap-2 p-3 rounded-md bg-warning/10 border border-warning/20 text-sm text-warning">
               <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
               <p>{t("save_warning")}</p>
             </div>
           )}
         </div>
 
-        <div className="flex items-center justify-between px-5 py-4 border-t border-border">
+        <div className="flex items-center justify-between px-6 py-4 border-t border-border">
           <Button
             variant="outline"
             onClick={handleValidate}
@@ -172,7 +172,7 @@ export function SieveEditorModal({
           >
             {isValidating ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader2 className="w-4 h-4 me-2 animate-spin" />
                 {t("validating")}
               </>
             ) : (

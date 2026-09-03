@@ -1,67 +1,73 @@
-import { useRef, useCallback } from 'react';
+"use client";
 
-interface UseLongPressOptions {
-  delay?: number;
-  onLongPress: (e: React.TouchEvent) => void;
-  moveThreshold?: number;
-}
+import { useCallback, useRef, useState } from "react";
 
-export function useLongPress({ delay = 300, onLongPress, moveThreshold = 10 }: UseLongPressOptions) {
+const LONG_PRESS_DURATION = 500;
+const MOVE_THRESHOLD = 10;
+
+export function useLongPress(
+  onLongPress: (position: { clientX: number; clientY: number }) => void,
+  enabled: boolean = true
+) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const startPos = useRef<{ x: number; y: number } | null>(null);
-  const targetRef = useRef<HTMLElement | null>(null);
-  const triggered = useRef(false);
+  const startPosRef = useRef<{ x: number; y: number } | null>(null);
+  const firedRef = useRef(false);
+  const [isPressed, setIsPressed] = useState(false);
 
-  const clear = useCallback(() => {
+  const cancel = useCallback(() => {
     if (timerRef.current) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
-    if (targetRef.current) {
-      targetRef.current.style.transform = '';
-      targetRef.current = null;
-    }
-    triggered.current = false;
+    startPosRef.current = null;
+    setIsPressed(false);
   }, []);
 
-  const onTouchStart = useCallback((e: React.TouchEvent) => {
-    const touch = e.touches[0];
-    startPos.current = { x: touch.clientX, y: touch.clientY };
-    targetRef.current = e.currentTarget as HTMLElement;
-    triggered.current = false;
+  const onTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      if (!enabled) return;
+      const touch = e.touches[0];
+      startPosRef.current = { x: touch.clientX, y: touch.clientY };
+      firedRef.current = false;
+      setIsPressed(true);
 
-    timerRef.current = setTimeout(() => {
-      triggered.current = true;
-      if (targetRef.current) {
-        targetRef.current.style.transform = '';
+      timerRef.current = setTimeout(() => {
+        firedRef.current = true;
+        setIsPressed(false);
+        onLongPress({ clientX: touch.clientX, clientY: touch.clientY });
+      }, LONG_PRESS_DURATION);
+    },
+    [enabled, onLongPress]
+  );
+
+  const onTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      if (!startPosRef.current || !timerRef.current) return;
+      const touch = e.touches[0];
+      const dx = Math.abs(touch.clientX - startPosRef.current.x);
+      const dy = Math.abs(touch.clientY - startPosRef.current.y);
+      if (dx > MOVE_THRESHOLD || dy > MOVE_THRESHOLD) {
+        cancel();
       }
-      if (navigator.vibrate) {
-        navigator.vibrate(10);
+    },
+    [cancel]
+  );
+
+  const onTouchEnd = useCallback(
+    (e: React.TouchEvent) => {
+      if (firedRef.current) {
+        e.preventDefault();
       }
-      onLongPress(e);
-    }, delay);
+      cancel();
+      firedRef.current = false;
+    },
+    [cancel]
+  );
 
-    if (targetRef.current) {
-      targetRef.current.style.transform = 'scale(0.98)';
-    }
-  }, [delay, onLongPress]);
+  const onTouchCancel = useCallback(() => {
+    cancel();
+    firedRef.current = false;
+  }, [cancel]);
 
-  const onTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!startPos.current) return;
-    const touch = e.touches[0];
-    const dx = Math.abs(touch.clientX - startPos.current.x);
-    const dy = Math.abs(touch.clientY - startPos.current.y);
-    if (dx > moveThreshold || dy > moveThreshold) {
-      clear();
-    }
-  }, [moveThreshold, clear]);
-
-  const onTouchEnd = useCallback((e: React.TouchEvent) => {
-    if (triggered.current) {
-      e.preventDefault();
-    }
-    clear();
-  }, [clear]);
-
-  return { onTouchStart, onTouchMove, onTouchEnd };
+  return { onTouchStart, onTouchEnd, onTouchMove, onTouchCancel, isPressed };
 }

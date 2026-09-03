@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { isValidUnsubscribeUrl } from '@/lib/validation';
+import { isValidUnsubscribeUrl, parseMailtoUrl } from '@/lib/validation';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { useIsDesktop } from '@/hooks/use-media-query';
 
 interface UnsubscribeBannerProps {
   listUnsubscribe: {
@@ -12,12 +14,17 @@ interface UnsubscribeBannerProps {
     preferred?: 'http' | 'mailto';
   };
   senderEmail: string;
+  // Sends the unsubscribe message through the app's own account. This is a
+  // webmail client - handing a mailto: URL to the OS mail handler goes
+  // nowhere for most users.
+  onSendMailtoUnsubscribe: (fields: { to: string[]; subject?: string; body?: string }) => Promise<void>;
   onDismiss: () => void;
 }
 
 export function UnsubscribeBanner({
   listUnsubscribe,
   senderEmail: _senderEmail,
+  onSendMailtoUnsubscribe,
   onDismiss
 }: UnsubscribeBannerProps) {
   const t = useTranslations();
@@ -25,11 +32,30 @@ export function UnsubscribeBanner({
   const [processing, setProcessing] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState(false);
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const isDesktop = useIsDesktop();
 
   const unsubMethod = listUnsubscribe.preferred;
   const unsubUrl = unsubMethod === 'http'
     ? listUnsubscribe.http
     : listUnsubscribe.mailto;
+
+  useEffect(() => {
+    if (!showConfirm) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+        setShowConfirm(false);
+      }
+    };
+    // Use setTimeout to avoid the opening click triggering immediate close
+    const timer = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+    }, 0);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showConfirm]);
 
   if (!unsubUrl || !unsubMethod) {
     return null;
@@ -39,6 +65,7 @@ export function UnsubscribeBanner({
     if (!isValidUnsubscribeUrl(unsubUrl)) {
       setError(true);
       setProcessing(false);
+      setShowConfirm(false);
       return;
     }
 
@@ -49,86 +76,120 @@ export function UnsubscribeBanner({
         window.open(unsubUrl, '_blank', 'noopener,noreferrer');
         setSuccess(true);
         setProcessing(false);
+        setShowConfirm(false);
         setTimeout(onDismiss, 3000);
       } else {
-        const link = document.createElement('a');
-        link.href = unsubUrl;
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        // Send the unsubscribe message ourselves and only report success
+        // once the server accepted it. The previous hidden-link click handed
+        // the mailto: to the OS mail handler and claimed success even though
+        // nothing was ever sent.
+        const fields = parseMailtoUrl(unsubUrl);
+        if (!fields) {
+          setError(true);
+          setProcessing(false);
+          setShowConfirm(false);
+          return;
+        }
+        await onSendMailtoUnsubscribe(fields);
 
         setSuccess(true);
         setProcessing(false);
+        setShowConfirm(false);
         setTimeout(onDismiss, 3000);
       }
-    } catch {
+    } catch (err) {
+      console.error('Unsubscribe error:', err);
       setError(true);
       setProcessing(false);
+      setShowConfirm(false);
     }
   };
 
   if (success) {
     return (
-      <div className="flex items-center gap-2">
-        <CheckCircle className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
-        <span className="text-sm text-muted-foreground">
+      <span className="inline-flex items-center gap-1 ms-1">
+        <CheckCircle className="w-3 h-3 text-green-600 dark:text-green-400" />
+        <span className="text-xs text-green-600 dark:text-green-400">
           {t(unsubMethod === 'http'
             ? 'email_viewer.unsubscribe_banner.success_http'
             : 'email_viewer.unsubscribe_banner.success_mailto'
           )}
         </span>
-      </div>
+      </span>
     );
   }
 
   if (error) {
     return (
-      <div className="flex items-center gap-2 flex-wrap">
-        <AlertCircle className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
-        <span className="text-sm text-red-600 dark:text-red-400">
-          {t('email_viewer.unsubscribe_banner.error')}
-        </span>
+      <span className="inline-flex items-center gap-1 ms-1">
+        <AlertCircle className="w-3 h-3 text-red-500 dark:text-red-400" />
         <button
           onClick={onDismiss}
-          className="text-sm text-muted-foreground hover:text-foreground bg-transparent hover:bg-transparent transition-colors min-h-[44px] md:min-h-0"
+          className="text-xs text-red-500 dark:text-red-400 hover:underline bg-transparent p-0 min-h-0"
         >
-          {t('email_viewer.unsubscribe_banner.dismiss')}
+          {t('email_viewer.unsubscribe_banner.error')}
         </button>
-      </div>
+      </span>
     );
   }
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
-      {showConfirm ? (
-        <>
-          <span className="text-sm text-muted-foreground">
-            {t('email_viewer.unsubscribe_banner.confirm_title')}
-          </span>
-          <button
-            onClick={handleUnsubscribe}
-            disabled={processing}
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground bg-transparent hover:bg-transparent transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] md:min-h-0"
-          >
-            {processing && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-            {t('email_viewer.unsubscribe_banner.confirm_button')}
-          </button>
-          <button
-            onClick={() => setShowConfirm(false)}
-            className="text-sm text-muted-foreground hover:text-foreground bg-transparent hover:bg-transparent transition-colors min-h-[44px] md:min-h-0"
-          >
-            {t('email_viewer.unsubscribe_banner.cancel')}
-          </button>
-        </>
-      ) : (
+    <>
+      <span className="relative inline-flex items-center">
+        <span className="text-muted-foreground/40 mx-1">·</span>
         <button
           onClick={() => setShowConfirm(true)}
-          className="text-sm text-muted-foreground hover:text-foreground bg-transparent hover:bg-transparent transition-colors min-h-[44px] md:min-h-0"
+          className="text-xs text-blue-600 dark:text-blue-400 hover:underline bg-transparent p-0 min-h-0 leading-normal"
         >
           {t('email_viewer.unsubscribe_banner.button')}
         </button>
+        {/* Desktop popover */}
+        {showConfirm && isDesktop && (
+          <div
+            ref={popoverRef}
+            className="absolute top-full start-0 mt-1 z-50 bg-background border border-border rounded-lg shadow-lg p-3 min-w-[220px]"
+          >
+            <p className="text-sm text-foreground mb-2">
+              {t('email_viewer.unsubscribe_banner.confirm_title')}
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleUnsubscribe}
+                disabled={processing}
+                className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-md bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {processing && <Loader2 className="w-3 h-3 animate-spin" />}
+                {t('email_viewer.unsubscribe_banner.confirm_button')}
+              </button>
+              <button
+                onClick={() => setShowConfirm(false)}
+                className="text-xs px-3 py-1.5 rounded-md text-muted-foreground hover:bg-muted transition-colors"
+              >
+                {t('email_viewer.unsubscribe_banner.cancel')}
+              </button>
+            </div>
+          </div>
+        )}
+      </span>
+      {/* Mobile/tablet: proper confirm dialog */}
+      {!isDesktop && (
+        <ConfirmDialog
+          isOpen={showConfirm}
+          onClose={() => setShowConfirm(false)}
+          onConfirm={() => {
+            setShowConfirm(false);
+            handleUnsubscribe();
+          }}
+          title={t('email_viewer.unsubscribe_banner.confirm_title')}
+          message={t(unsubMethod === 'http'
+            ? 'email_viewer.unsubscribe_banner.confirm_message_http'
+            : 'email_viewer.unsubscribe_banner.confirm_message_mailto'
+          )}
+          confirmText={t('email_viewer.unsubscribe_banner.confirm_button')}
+          cancelText={t('email_viewer.unsubscribe_banner.cancel')}
+          variant="destructive"
+        />
       )}
-    </div>
+    </>
   );
 }

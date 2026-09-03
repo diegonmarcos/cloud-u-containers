@@ -9,6 +9,7 @@ import {
   ContextMenuSubMenu,
   ContextMenuHeader,
 } from "@/components/ui/context-menu";
+import { PluginSlot } from "@/components/plugins/plugin-slot";
 import {
   Reply,
   ReplyAll,
@@ -16,19 +17,30 @@ import {
   Mail,
   MailOpen,
   Star,
+  Pin,
+  PinOff,
   Trash2,
   Archive,
   FolderInput,
-  Palette,
-  X,
+  Tag,
   Inbox,
   Send,
   File,
   Folder,
   ShieldAlert,
   ShieldCheck,
+  EditIcon,
+  CalendarClock,
+  Paperclip,
+  Link as LinkIcon,
+  MessagesSquare,
 } from "lucide-react";
-import { cn, buildMailboxTree, flattenMailboxTree } from "@/lib/utils";
+import { buildMailPath } from "@/lib/deep-links";
+import { useCopyLink } from "@/hooks/use-copy-link";
+import { buildMailboxTree, MailboxNode } from "@/lib/utils";
+import { localizeMailboxName } from "@/lib/mailbox-label";
+import { getEmailTagIds } from "@/lib/thread-utils";
+import { TagPicker } from "./tag-picker";
 
 interface Position {
   x: number;
@@ -50,17 +62,23 @@ interface EmailContextMenuProps {
   onReply?: () => void;
   onReplyAll?: () => void;
   onForward?: () => void;
+  onForwardAsAttachment?: () => void;
   onMarkAsRead?: (read: boolean) => void;
   onToggleStar?: () => void;
+  onTogglePinned?: () => void;
   onDelete?: () => void;
   onArchive?: () => void;
-  onSetColorTag?: (color: string | null) => void;
+  onSetTag?: (tagId: string | null) => void;
   onMoveToMailbox?: (mailboxId: string) => void;
   onMarkAsSpam?: () => void;
   onUndoSpam?: () => void;
+  onEditDraft?: () => void;
+  onCancelScheduledForEdit?: () => void;
+  onRescheduleScheduled?: () => void;
   // Batch actions
   onBatchMarkAsRead?: (read: boolean) => void;
   onBatchDelete?: () => void;
+  onBatchArchive?: () => void;
   onBatchMoveToMailbox?: (mailboxId: string) => void;
   onBatchMarkAsSpam?: () => void;
   onBatchUndoSpam?: () => void;
@@ -84,17 +102,6 @@ const getMailboxIcon = (role?: string) => {
   }
 };
 
-// Get current color from email keywords
-const getCurrentColor = (keywords: Record<string, boolean> | undefined) => {
-  if (!keywords) return null;
-  for (const key of Object.keys(keywords)) {
-    if (key.startsWith("$color:") && keywords[key] === true) {
-      return key.replace("$color:", "");
-    }
-  }
-  return null;
-};
-
 export function EmailContextMenu({
   email,
   position,
@@ -109,46 +116,69 @@ export function EmailContextMenu({
   onReply,
   onReplyAll,
   onForward,
+  onForwardAsAttachment,
   onMarkAsRead,
   onToggleStar,
+  onTogglePinned,
   onDelete,
   onArchive,
-  onSetColorTag,
+  onSetTag,
   onMoveToMailbox,
   onMarkAsSpam,
   onUndoSpam,
   onBatchMarkAsRead,
   onBatchDelete,
+  onBatchArchive,
   onBatchMoveToMailbox,
   onBatchMarkAsSpam,
   onBatchUndoSpam,
+  onEditDraft,
+  onCancelScheduledForEdit,
+  onRescheduleScheduled,
 }: EmailContextMenuProps) {
   const t = useTranslations("context_menu");
-  const tColor = useTranslations("email_viewer.color_tag");
+  const tSidebar = useTranslations("sidebar");
+  const tEmailViewer = useTranslations("email_viewer");
+  const tDeepLink = useTranslations("deep_link");
+  const copyLink = useCopyLink();
   const isUnread = !email.keywords?.$seen;
   const isStarred = email.keywords?.$flagged;
-  const currentColor = getCurrentColor(email.keywords);
+  const isPinned = email.keywords?.['$pinned'] === true;
+  const isDraft = email.keywords?.['$draft'] === true;
+  const currentTagIds = getEmailTagIds(email.keywords);
   const showBatchActions = isMultiSelect && selectedCount > 1;
   const isInJunkFolder = currentMailboxRole === 'junk';
+  // Marking your own outgoing mail as spam makes no sense - hide the action
+  // in Sent, Drafts and Scheduled.
+  const spamApplicable = !['sent', 'drafts', 'scheduled'].includes(currentMailboxRole || '');
+  const isScheduled = email.isScheduled === true;
+  const canCancelScheduled = isScheduled && email.scheduledUndoStatus === 'pending';
 
-  // Color options for email tags (using translations)
-  const colorOptions = [
-    { name: tColor("red"), value: "red", color: "bg-red-500" },
-    { name: tColor("orange"), value: "orange", color: "bg-orange-500" },
-    { name: tColor("yellow"), value: "yellow", color: "bg-yellow-500" },
-    { name: tColor("green"), value: "green", color: "bg-green-500" },
-    { name: tColor("blue"), value: "blue", color: "bg-blue-500" },
-    { name: tColor("purple"), value: "purple", color: "bg-purple-500" },
-    { name: tColor("pink"), value: "pink", color: "bg-pink-500" },
-  ];
-
-  const moveTargets = flattenMailboxTree(buildMailboxTree(mailboxes)).filter(
-    (m) =>
-      m.id !== selectedMailbox &&
-      m.role !== "drafts" &&
-      !m.id.startsWith("shared-") &&
-      m.myRights?.mayAddItems
+  // Build mailbox tree for move-to submenu with proper hierarchy
+  const moveTargetIds = new Set(
+    mailboxes
+      .filter(
+        (m) =>
+          m.id !== selectedMailbox &&
+          m.role !== "drafts" &&
+          !m.id.startsWith("shared-") &&
+          m.myRights?.mayAddItems
+      )
+      .map((m) => m.id)
   );
+  const mailboxTree = buildMailboxTree(mailboxes);
+
+  // Filter tree to only include branches that contain valid move targets
+  const filterTree = (nodes: MailboxNode[]): MailboxNode[] => {
+    return nodes.reduce<MailboxNode[]>((acc, node) => {
+      const filteredChildren = filterTree(node.children);
+      if (moveTargetIds.has(node.id) || filteredChildren.length > 0) {
+        acc.push({ ...node, children: filteredChildren });
+      }
+      return acc;
+    }, []);
+  };
+  const moveTree = filterTree(mailboxTree);
 
   const handleAction = (action: () => void) => {
     action();
@@ -169,8 +199,42 @@ export function EmailContextMenu({
         </ContextMenuHeader>
       )}
 
+      {isScheduled && !showBatchActions && canCancelScheduled && (
+        <>
+          <ContextMenuItem
+            icon={CalendarClock}
+            label={t("reschedule_send")}
+            onClick={() => handleAction(onRescheduleScheduled!)}
+            disabled={!onRescheduleScheduled}
+          />
+          <ContextMenuItem
+            icon={EditIcon}
+            label={email.isSmimeScheduled ? t("cancel_and_compose_again") : t("cancel_and_edit")}
+            onClick={() => handleAction(onCancelScheduledForEdit!)}
+            disabled={!onCancelScheduledForEdit}
+          />
+        </>
+      )}
+
+      {canCancelScheduled && <ContextMenuSeparator />}
+
+      {!isScheduled && (
+        <>
+
+      {/* Edit Draft - only for single draft emails */}
+      {!isScheduled && !showBatchActions && isDraft && onEditDraft && (
+        <>
+          <ContextMenuItem
+            icon={EditIcon}
+            label={t("edit_draft")}
+            onClick={() => handleAction(onEditDraft)}
+          />
+          <ContextMenuSeparator />
+        </>
+      )}
+
       {/* Single email actions - Reply, Reply All, Forward */}
-      {!showBatchActions && (
+      {!isScheduled && !showBatchActions && (
         <>
           <ContextMenuItem
             icon={Reply}
@@ -190,22 +254,107 @@ export function EmailContextMenu({
             onClick={() => handleAction(onForward!)}
             disabled={!onForward}
           />
+          <ContextMenuItem
+            icon={Paperclip}
+            label={tEmailViewer("forward_as_attachment")}
+            onClick={() => handleAction(onForwardAsAttachment!)}
+            disabled={!onForwardAsAttachment || !email.blobId}
+          />
           <ContextMenuSeparator />
         </>
       )}
 
-      {/* Mark as read/unread */}
+      {/* Permalinks (#733). The conversation entry only appears when the
+          message actually belongs to a thread worth linking to. */}
+      {!showBatchActions && (
+        <>
+          <ContextMenuItem
+            icon={LinkIcon}
+            label={tDeepLink("copy_message")}
+            onClick={() => handleAction(() => {
+              void copyLink(buildMailPath({ mailboxId: null, emailId: email.id, threadId: null }));
+            })}
+          />
+          {email.threadId && (
+            <ContextMenuItem
+              icon={MessagesSquare}
+              label={tDeepLink("copy_conversation")}
+              onClick={() => handleAction(() => {
+                void copyLink(buildMailPath({ mailboxId: null, emailId: null, threadId: email.threadId! }));
+              })}
+            />
+          )}
+          <ContextMenuSeparator />
+        </>
+      )}
+
+      {/* Archive */}
       <ContextMenuItem
-        icon={isUnread ? MailOpen : Mail}
-        label={isUnread ? t("mark_read") : t("mark_unread")}
+        icon={Archive}
+        label={t("archive")}
         onClick={() =>
-          handleAction(() =>
-            showBatchActions
-              ? onBatchMarkAsRead?.(isUnread)
-              : onMarkAsRead?.(isUnread)
-          )
+          handleAction(showBatchActions ? onBatchArchive! : onArchive!)
         }
+        disabled={showBatchActions ? !onBatchArchive : !onArchive}
       />
+
+      {/* Delete */}
+      <ContextMenuItem
+        icon={Trash2}
+        label={t("delete")}
+        testId="ctx-delete"
+        onClick={() =>
+          handleAction(showBatchActions ? onBatchDelete! : onDelete!)
+        }
+        disabled={showBatchActions ? !onBatchDelete : !onDelete}
+        destructive
+      />
+
+      <ContextMenuSeparator />
+
+      {/* Move to submenu */}
+      {moveTree.length > 0 && (
+        <ContextMenuSubMenu icon={FolderInput} label={t("move_to")} testId="ctx-move-to">
+          {(() => {
+            const renderNodes = (nodes: MailboxNode[]) => {
+              return nodes.map((node) => {
+                const Icon = getMailboxIcon(node.role);
+                const isTarget = moveTargetIds.has(node.id);
+                const nodeLabel = localizeMailboxName(node.role, node.name, (k) => tSidebar(`mailboxes.${k}`));
+                return (
+                  <div key={node.id}>
+                    {isTarget ? (
+                      <ContextMenuItem
+                        icon={Icon}
+                        label={nodeLabel}
+                        testId={`move-to:${node.id}`}
+                        onClick={() =>
+                          handleAction(() =>
+                            showBatchActions
+                              ? onBatchMoveToMailbox?.(node.id)
+                              : onMoveToMailbox?.(node.id)
+                          )
+                        }
+                      />
+                    ) : (
+                      <div className="px-3 py-1.5 text-sm flex items-center gap-2 text-muted-foreground">
+                        <Icon className="w-4 h-4 flex-shrink-0" />
+                        <span>{nodeLabel}</span>
+                      </div>
+                    )}
+                    {node.children.length > 0 && (
+                      <div className="ps-4">
+                        {renderNodes(node.children)}
+                      </div>
+                    )}
+                  </div>
+                );
+              });
+            };
+            return renderNodes(moveTree);
+          })()}
+        </ContextMenuSubMenu>
+      )}
 
       {/* Star/Unstar - only for single email */}
       {!showBatchActions && (
@@ -214,130 +363,72 @@ export function EmailContextMenu({
           label={isStarred ? t("unstar") : t("star")}
           onClick={() => handleAction(onToggleStar!)}
           disabled={!onToggleStar}
+          testId={isStarred ? "ctx-unstar" : "ctx-star"}
         />
       )}
 
-      <ContextMenuSeparator />
+      {/* Pin/Unpin - only for single email; pinned mails float to the top of the list */}
+      {!showBatchActions && onTogglePinned && (
+        <ContextMenuItem
+          icon={isPinned ? PinOff : Pin}
+          label={isPinned ? t("unpin") : t("pin")}
+          onClick={() => handleAction(onTogglePinned)}
+        />
+      )}
 
-      {/* Move to submenu */}
-      {moveTargets.length > 0 && (
-        <ContextMenuSubMenu icon={FolderInput} label={t("move_to")}>
-          {moveTargets.map((mailbox) => {
-            const Icon = getMailboxIcon(mailbox.role);
-            return (
-              <ContextMenuItem
-                key={mailbox.id}
-                icon={Icon}
-                label={mailbox.name}
-                style={mailbox.depth > 0 ? { paddingLeft: `${12 + mailbox.depth * 12}px` } : undefined}
-                onClick={() =>
-                  handleAction(() =>
-                    showBatchActions
-                      ? onBatchMoveToMailbox?.(mailbox.id)
-                      : onMoveToMailbox?.(mailbox.id)
-                  )
-                }
-              />
-            );
-          })}
+      {/* Set tag submenu - only for single email */}
+      {!showBatchActions && (
+        <ContextMenuSubMenu icon={Tag} label={t("tag")}>
+          <div className="w-56 max-w-[18rem]">
+            <TagPicker
+              selectedIds={currentTagIds}
+              onToggle={(tagId) => onSetTag?.(tagId)}
+            />
+          </div>
         </ContextMenuSubMenu>
       )}
 
-      {/* Archive */}
-      <ContextMenuItem
-        icon={Archive}
-        label={t("archive")}
-        onClick={() => handleAction(onArchive!)}
-        disabled={!onArchive}
-      />
+      {/* Spam - contextual based on folder; pointless on own outgoing mail */}
+      {spamApplicable && (
+        <>
+          <ContextMenuSeparator />
+
+          <ContextMenuItem
+            icon={isInJunkFolder ? ShieldCheck : ShieldAlert}
+            label={isInJunkFolder ? t("not_spam") : t("mark_as_spam")}
+            testId={isInJunkFolder ? "ctx-not-spam" : "ctx-spam"}
+            onClick={() =>
+              handleAction(
+                showBatchActions
+                  ? (isInJunkFolder ? onBatchUndoSpam! : onBatchMarkAsSpam!)
+                  : (isInJunkFolder ? onUndoSpam! : onMarkAsSpam!)
+              )
+            }
+            disabled={showBatchActions ? (isInJunkFolder ? !onBatchUndoSpam : !onBatchMarkAsSpam) : (isInJunkFolder ? !onUndoSpam : !onMarkAsSpam)}
+            destructive={!isInJunkFolder}
+          />
+        </>
+      )}
 
       <ContextMenuSeparator />
 
-      {/* Spam - contextual based on folder */}
+      {/* Mark as read/unread */}
       <ContextMenuItem
-        icon={isInJunkFolder ? ShieldCheck : ShieldAlert}
-        label={isInJunkFolder ? t("not_spam") : t("mark_as_spam")}
+        icon={isUnread ? MailOpen : Mail}
+        label={isUnread ? t("mark_read") : t("mark_unread")}
+        testId={isUnread ? "ctx-mark-read" : "ctx-mark-unread"}
         onClick={() =>
-          handleAction(
+          handleAction(() =>
             showBatchActions
-              ? (isInJunkFolder ? onBatchUndoSpam! : onBatchMarkAsSpam!)
-              : (isInJunkFolder ? onUndoSpam! : onMarkAsSpam!)
+              ? onBatchMarkAsRead?.(isUnread)
+              : onMarkAsRead?.(isUnread)
           )
         }
-        disabled={showBatchActions ? (isInJunkFolder ? !onBatchUndoSpam : !onBatchMarkAsSpam) : (isInJunkFolder ? !onUndoSpam : !onMarkAsSpam)}
-        destructive={!isInJunkFolder}
       />
-
-      <ContextMenuSeparator />
-
-      {/* Set color submenu - only for single email */}
-      {!showBatchActions && (
-        <ContextMenuSubMenu icon={Palette} label={t("color_tag")}>
-          <div
-            className="px-3 py-2 flex flex-wrap gap-2"
-            role="group"
-            aria-label={t("color_tag")}
-            onKeyDown={(e) => {
-              const buttons = Array.from(
-                e.currentTarget.querySelectorAll<HTMLButtonElement>("button")
-              );
-              const idx = buttons.indexOf(e.target as HTMLButtonElement);
-              if (idx < 0) return;
-              let next = -1;
-              if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-                next = (idx + 1) % buttons.length;
-              } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-                next = (idx - 1 + buttons.length) % buttons.length;
-              }
-              if (next >= 0) {
-                e.preventDefault();
-                buttons[next].focus();
-              }
-            }}
-          >
-            {colorOptions.map((option, i) => (
-              <button
-                key={option.value}
-                tabIndex={i === 0 ? 0 : -1}
-                onClick={() =>
-                  handleAction(() => onSetColorTag?.(option.value))
-                }
-                className={cn(
-                  "w-8 h-8 rounded-full hover:scale-110 transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                  option.color,
-                  currentColor === option.value &&
-                    "ring-2 ring-offset-2 ring-offset-background ring-foreground"
-                )}
-                title={option.name}
-                aria-label={option.name}
-              />
-            ))}
-          </div>
-          {currentColor && (
-            <>
-              <ContextMenuSeparator />
-              <ContextMenuItem
-                icon={X}
-                label={t("remove_color")}
-                onClick={() => handleAction(() => onSetColorTag?.(null))}
-              />
-            </>
-          )}
-        </ContextMenuSubMenu>
+        </>
       )}
 
-      <ContextMenuSeparator />
-
-      {/* Delete */}
-      <ContextMenuItem
-        icon={Trash2}
-        label={t("delete")}
-        onClick={() =>
-          handleAction(showBatchActions ? onBatchDelete! : onDelete!)
-        }
-        disabled={showBatchActions ? !onBatchDelete : !onDelete}
-        destructive
-      />
+      <PluginSlot name="context-menu-email" />
     </ContextMenu>
   );
 }

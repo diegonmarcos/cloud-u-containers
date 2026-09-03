@@ -45,7 +45,7 @@ export function ContactGroupList({
     <div className={cn("flex flex-col", className)}>
       <div className="px-4 py-2 border-b border-border">
         <Button size="sm" variant="outline" onClick={onCreateGroup} className="w-full">
-          <Plus className="w-4 h-4 mr-1" />
+          <Plus className="w-4 h-4 me-1" />
           {t("groups.create")}
         </Button>
       </div>
@@ -69,10 +69,11 @@ export function ContactGroupList({
                   key={group.id}
                   onClick={() => onSelectGroup(group.id)}
                   className={cn(
-                    "w-full flex items-center gap-3 px-4 py-3 text-left transition-colors",
+                    "w-full flex items-center px-4 text-start transition-colors",
                     "hover:bg-muted",
                     group.id === selectedGroupId && "bg-accent text-accent-foreground"
                   )}
+                  style={{ gap: 'var(--density-item-gap)', paddingBlock: 'var(--density-item-py)' }}
                 >
                   <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                     <Users className="w-4 h-4 text-primary" />

@@ -2,25 +2,42 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
-import { X, Mail, Pencil, Trash2, Plus, AlertTriangle } from 'lucide-react';
+import { X, Mail, Pencil, Trash2, Plus, AlertTriangle, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { IdentityForm } from './identity-form';
 import { useIdentityStore } from '@/stores/identity-store';
 import { useAuthStore } from '@/stores/auth-store';
+import { useAccountStore } from '@/stores/account-store';
+import { useSettingsStore } from '@/stores/settings-store';
+
+function useSyncIdentities() {
+  const syncIdentities = useAuthStore((state) => state.syncIdentities);
+  return syncIdentities;
+}
+
+function useRefreshIdentities() {
+  return useAuthStore((state) => state.refreshIdentities);
+}
 import type { Identity, EmailAddress } from '@/lib/jmap/types';
 import { toast } from '@/stores/toast-store';
 import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { useConfirmDialog } from '@/hooks/use-confirm-dialog';
 
+function emailMatchesUsername(email: string, username: string): boolean {
+  if (email === username) return true;
+  if (!username.includes('@') && email.split('@')[0] === username) return true;
+  return false;
+}
+
 interface IdentityFormData {
   name: string;
   email: string;
-  replyTo?: EmailAddress[];
-  bcc?: EmailAddress[];
-  textSignature?: string;
-  htmlSignature?: string;
+  replyTo?: EmailAddress[] | null;
+  bcc?: EmailAddress[] | null;
+  textSignature?: string | null;
+  htmlSignature?: string | null;
 }
 
 interface IdentityManagerModalProps {
@@ -33,12 +50,58 @@ export function IdentityManagerModal({ isOpen, onClose }: IdentityManagerModalPr
   const tNotif = useTranslations('notifications');
 
   const client = useAuthStore((state) => state.client);
-  const { identities, addIdentity, updateIdentityLocal, removeIdentity } = useIdentityStore();
+  const identities = useIdentityStore((state) => state.identities);
+  const _preferredPrimaryId = useIdentityStore((state) => state.preferredPrimaryId);
+  const setPreferredPrimary = useIdentityStore((state) => state.setPreferredPrimary);
+  const syncIdentities = useSyncIdentities();
+
+  const refreshIdentitiesFromServer = useRefreshIdentities();
+
+  // Refresh identities from server whenever the modal is opened
+  useEffect(() => {
+    if (isOpen) {
+      refreshIdentitiesFromServer();
+    }
+  }, [isOpen, refreshIdentitiesFromServer]);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const { dialogProps: confirmDialogProps, confirm: confirmDialog } = useConfirmDialog();
+
+  // Re-fetch all identities from server and update stores
+  const refreshIdentities = useCallback(async () => {
+    if (!client) return;
+    try {
+      const serverIdentities = await client.getIdentities();
+      const username = useAuthStore.getState().username;
+      const preferredPrimaryId = useIdentityStore.getState().preferredPrimaryId;
+      const sorted = [...serverIdentities].sort((a, b) => {
+        const aMatch = emailMatchesUsername(a.email, username || '');
+        const bMatch = emailMatchesUsername(b.email, username || '');
+        if (aMatch && !bMatch) return -1;
+        if (!aMatch && bMatch) return 1;
+        if (aMatch && bMatch) {
+          if (!a.mayDelete && b.mayDelete) return -1;
+          if (a.mayDelete && !b.mayDelete) return 1;
+        }
+        return 0;
+      });
+      // Move preferred primary to front if set
+      if (preferredPrimaryId) {
+        const idx = sorted.findIndex((id) => id.id === preferredPrimaryId);
+        if (idx > 0) {
+          const [preferred] = sorted.splice(idx, 1);
+          sorted.unshift(preferred);
+        }
+      }
+      useIdentityStore.getState().setIdentities(sorted);
+      syncIdentities();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to refresh identities';
+      toast.error(message);
+    }
+  }, [client, syncIdentities]);
 
   // Focus trap with Escape handling
   const modalRef = useFocusTrap({
@@ -54,9 +117,10 @@ export function IdentityManagerModal({ isOpen, onClose }: IdentityManagerModalPr
     restoreFocus: true,
   });
 
-  // Close on click outside
+  // Close on click outside (but not when ConfirmDialog is open)
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
+      if (confirmDialogProps.isOpen) return;
       if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
         onClose();
       }
@@ -66,13 +130,13 @@ export function IdentityManagerModal({ isOpen, onClose }: IdentityManagerModalPr
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [isOpen, onClose, modalRef]);
+  }, [isOpen, onClose, modalRef, confirmDialogProps.isOpen]);
 
   const handleCreate = useCallback(async (data: IdentityFormData) => {
     if (!client) return;
 
     try {
-      const newIdentity = await client.createIdentity(
+      await client.createIdentity(
         data.name,
         data.email,
         data.replyTo,
@@ -81,7 +145,7 @@ export function IdentityManagerModal({ isOpen, onClose }: IdentityManagerModalPr
         data.htmlSignature
       );
 
-      addIdentity(newIdentity);
+      await refreshIdentities();
       setIsCreating(false);
       toast.success(tNotif('identity_created'));
     } catch (error) {
@@ -89,7 +153,7 @@ export function IdentityManagerModal({ isOpen, onClose }: IdentityManagerModalPr
       toast.error(tNotif('identity_create_failed', { error: message }));
       throw error;
     }
-  }, [client, addIdentity, t, tNotif]);
+  }, [client, refreshIdentities, t, tNotif]);
 
   const handleUpdate = useCallback(async (identity: Identity, data: IdentityFormData) => {
     if (!client) return;
@@ -103,7 +167,7 @@ export function IdentityManagerModal({ isOpen, onClose }: IdentityManagerModalPr
         htmlSignature: data.htmlSignature,
       });
 
-      updateIdentityLocal(identity.id, data);
+      await refreshIdentities();
       setEditingId(null);
       toast.success(tNotif('identity_updated'));
     } catch (error) {
@@ -111,7 +175,7 @@ export function IdentityManagerModal({ isOpen, onClose }: IdentityManagerModalPr
       toast.error(tNotif('identity_update_failed', { error: message }));
       throw error;
     }
-  }, [client, updateIdentityLocal, t, tNotif]);
+  }, [client, refreshIdentities, t, tNotif]);
 
   const handleDelete = useCallback(async (identity: Identity) => {
     if (!client) return;
@@ -132,7 +196,7 @@ export function IdentityManagerModal({ isOpen, onClose }: IdentityManagerModalPr
 
     try {
       await client.deleteIdentity(identity.id);
-      removeIdentity(identity.id);
+      await refreshIdentities();
       toast.success(tNotif('identity_deleted'));
     } catch (error) {
       const message = error instanceof Error ? error.message : t('validation_errors.unknown_error');
@@ -140,12 +204,33 @@ export function IdentityManagerModal({ isOpen, onClose }: IdentityManagerModalPr
     } finally {
       setDeletingId(null);
     }
-  }, [client, removeIdentity, t, tNotif, confirmDialog]);
+  }, [client, refreshIdentities, t, tNotif, confirmDialog]);
+
+  const handleSetPrimary = useCallback((identity: Identity) => {
+    setPreferredPrimary(identity.id);
+    // Persist the choice per account in the synced settings store so it
+    // survives clearing site data, follows the user across devices, and shows
+    // up in exported settings (issue #507). JMAP identity ids are account-
+    // scoped, so the default is keyed by the active account.
+    const activeAccountId = useAccountStore.getState().activeAccountId;
+    if (activeAccountId) {
+      const current = useSettingsStore.getState().preferredIdentityIds;
+      useSettingsStore.getState().updateSetting('preferredIdentityIds', {
+        ...current,
+        [activeAccountId]: identity.id,
+      });
+    }
+    // Re-sort: move the preferred identity to the front
+    const reordered = [identity, ...identities.filter((id) => id.id !== identity.id)];
+    useIdentityStore.getState().setIdentities(reordered);
+    syncIdentities();
+    toast.success(tNotif('identity_set_primary'));
+  }, [identities, setPreferredPrimary, syncIdentities, tNotif]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-in fade-in duration-150">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-[1px] flex items-center justify-center z-50 p-4 animate-in fade-in duration-150">
       <div
         ref={modalRef}
         role="dialog"
@@ -167,7 +252,7 @@ export function IdentityManagerModal({ isOpen, onClose }: IdentityManagerModalPr
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+            className="p-1.5 rounded-md hover:bg-muted transition-colors duration-150 text-muted-foreground hover:text-foreground"
           >
             <X className="w-5 h-5" />
           </button>
@@ -192,7 +277,7 @@ export function IdentityManagerModal({ isOpen, onClose }: IdentityManagerModalPr
               onClick={() => setIsCreating(true)}
               className="mb-6 w-full sm:w-auto"
             >
-              <Plus className="w-4 h-4 mr-2" />
+              <Plus className="w-4 h-4 me-2" />
               {t('create_new')}
             </Button>
           )}
@@ -255,6 +340,17 @@ export function IdentityManagerModal({ isOpen, onClose }: IdentityManagerModalPr
 
                       {/* Actions */}
                       <div className="flex items-center gap-2">
+                        {identities[0]?.id !== identity.id && identities.length > 1 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleSetPrimary(identity)}
+                            disabled={!!editingId || isCreating}
+                            title={t('set_as_primary')}
+                          >
+                            <Star className="w-4 h-4" />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="sm"

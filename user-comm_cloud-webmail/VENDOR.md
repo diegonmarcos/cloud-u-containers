@@ -1,36 +1,69 @@
 # Vendored upstream — Cloud Webmail
 
-`Cloud Webmail` is a **full cosmetic rebrand** of the open-source JMAP webmail
-client **[root-fr/jmap-webmail](https://github.com/root-fr/jmap-webmail)**
-(Next.js 16, native JMAP, built for Stalwart). We clone, rebrand, and build it
-as **our own image** in **our own pipeline** — we do NOT use their prebuilt
-image and this is NOT a GitHub fork.
+`Cloud Webmail` is **[Bulwark](https://github.com/bulwarkmail/webmail)** — a
+Stalwart-native JMAP webmail (Next.js 16 + React 19) with true
+multi-account / multi-server support. We clone the pinned upstream tag and
+build it as **our own image** in **our own pipeline** — we do NOT use their
+prebuilt ghcr image and this is NOT a GitHub fork.
 
 | | |
 |---|---|
-| Upstream | `github.com/root-fr/jmap-webmail` |
-| Pinned tag | `v1.7.1` |
-| Pinned commit | `d682f5fe238545f34c93947797ad8548ae4d55be` |
-| License | MIT (see `src/code/arm64/webapp/LICENSE`) |
+| Upstream | `github.com/bulwarkmail/webmail` |
+| Pinned tag | `1.9.2` |
+| Pinned commit | `2f1192bb3285dea2c8b8ece461d52967fe0e6706` |
+| License | AGPL-3.0-only (see `src/code/arm64/webapp/LICENSE` + `NOTICE`) |
 | Vendored at | `src/code/arm64/webapp/` |
 | Our image | `ghcr.io/diegonmarcos/cloud-webmail-binaries:latest` (Type A) |
 
-## Rebrand applied (cosmetic + naming only — client logic untouched)
+## Branding / config (env only — source unmodified)
 
-- `webapp/package.json` → `name: "cloud-webmail"`, description reworded.
-- `webapp/app/layout.tsx` → `metadata.title: "Cloud Webmail"` (+ description).
-- UI app name → env `APP_NAME="Cloud Webmail"` (root-fr reads this at request
-  time via `/api/config`; the login page, header, etc. all render it).
-- Favicon `webapp/app/icon.svg` is a neutral Lucide mail glyph (MIT) — kept
-  as the placeholder mark; does not impersonate any brand.
-  <!-- ponytail: swap webapp/app/icon.svg for a bespoke Cloud Webmail logo later -->
-- Only other upstream-brand strings (`root.cloud`) live in `__tests__/*` fixtures
-  (not shipped) and were left as-is.
+The upstream source is vendored **verbatim** (no code edits). All naming and
+behaviour are set at runtime through env in `src/compose.nix`, which Bulwark
+reads (see `webapp/.env.example`):
+
+- `APP_NAME="Cloud Webmail"`, `APP_SHORT_NAME`, `APP_DESCRIPTION`
+- `JMAP_SERVER_URL=https://jmap.diegonmarcos.com` (default Stalwart server)
+- `ALLOW_CUSTOM_JMAP_ENDPOINT=true` (multi-account/multi-server login field)
+- `STALWART_FEATURES=true` (password change + Sieve filters)
+- `SESSION_SECRET_FILE=/run/secrets/SESSION_SECRET` (sops secret — see
+  `src/secrets.schema.md`)
+
+## Multi-account / multi-server
+
+Bulwark is multi-account-native. `ALLOW_CUSTOM_JMAP_ENDPOINT=true` adds a "JMAP
+Server" field to the login form so users can connect to any JMAP server beyond
+the default `JMAP_SERVER_URL` (`.env.example`: "Allow users to specify a custom
+JMAP server URL on the login form … Users can connect to any JMAP-compatible
+server"). External servers must include this origin in their CORS
+`Access-Control-Allow-Origin`. For a curated list, `JMAP_SERVERS` (JSON array)
+is the alternative, configurable from the admin dashboard.
 
 ## Refreshing the vendor
 
-Re-clone upstream at the new tag, re-apply the two edits above, replace
-`src/code/arm64/webapp/`, update the commit sha here and in `build.json._doc`,
-then re-ship. Pruned from the snapshot (not needed to build): upstream
-`Dockerfile`, `docker-compose.yml`, `.dockerignore`, `.gitignore`, and the
-`README/ROADMAP/CONTRIBUTING/CHANGELOG` docs. `LICENSE` is kept (MIT).
+Anonymous clone at the new tag, replace `src/code/arm64/webapp/` wholesale,
+update the tag + commit here and in `build.json._doc.upstream` + the Dockerfile
+comment/`ARG GIT_COMMIT`/label, then re-ship:
+
+```bash
+git -c http.extraheader= clone https://github.com/bulwarkmail/webmail.git
+cd webmail && git checkout <tag>
+```
+
+Pruned from the snapshot (not needed to build): upstream `Dockerfile`,
+`docker-compose.yml`, `.dockerignore`, `.gitignore`, `.github/`, `.husky/`,
+`e2e/`, `integration/`, `screenshots/`, playwright/vitest configs, `setup.sh`,
+`.env.dev.example`, and `README/CHANGELOG/CONTRIBUTING/FEATURES` docs. **Kept**
+`LICENSE` + `NOTICE` (AGPL-3.0 + MIT fork-lineage attribution — required),
+`.env.example`, `VERSION` (read by `next.config.ts`), and all build sources.
+
+## Build notes (Bulwark / Next 16)
+
+- `output: "standalone"` (confirmed in `webapp/next.config.ts`).
+- Bulwark's `package.json` build script uses `--turbopack`, but its own
+  Dockerfile pins **`npx next build --webpack`** for the production image — our
+  Dockerfile matches (`--webpack`).
+- `.git` is not vendored, so `next.config.ts`'s `git rev-parse` fallback can't
+  run; the Dockerfile passes `ARG GIT_COMMIT=2f1192b` for the About screen.
+- Runner stage creates `/app/data/{settings,admin,admin-state,telemetry}` owned
+  by the `nextjs` user (matching upstream) so settings-sync/admin writes work
+  without a mounted volume.

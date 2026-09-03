@@ -23,33 +23,63 @@ const _emptyContact: ContactCard = {
 };
 
 describe('ContactListItem', () => {
+  const baseProps = {
+    isSelected: false,
+    isChecked: false,
+    hasSelection: false,
+    density: 'regular' as const,
+    onClick: vi.fn(),
+    onCheckboxClick: vi.fn(),
+    selectedContactIds: new Set<string>(),
+  };
+
   it('renders contact name and email', () => {
-    render(<ContactListItem contact={contact} isSelected={false} onClick={vi.fn()} />);
+    render(<ContactListItem contact={contact} {...baseProps} />);
     expect(screen.getByText('Alice Smith')).toBeInTheDocument();
     expect(screen.getByText('alice@example.com')).toBeInTheDocument();
   });
 
-  it('renders organization', () => {
-    render(<ContactListItem contact={contact} isSelected={false} onClick={vi.fn()} />);
+  it('renders organization in comfortable density', () => {
+    render(<ContactListItem contact={contact} {...baseProps} density="comfortable" />);
     expect(screen.getByText('Acme Corp')).toBeInTheDocument();
   });
 
+  it('hides organization in regular density', () => {
+    render(<ContactListItem contact={contact} {...baseProps} density="regular" />);
+    expect(screen.queryByText('Acme Corp')).not.toBeInTheDocument();
+  });
+
   it('applies selected styling', () => {
-    const { container } = render(<ContactListItem contact={contact} isSelected={true} onClick={vi.fn()} />);
-    const button = container.querySelector('button');
-    expect(button?.className).toContain('bg-accent');
+    const { container } = render(<ContactListItem contact={contact} {...baseProps} isSelected={true} />);
+    const div = container.firstElementChild;
+    expect(div?.className).toContain('bg-selection');
   });
 
   it('shows email as display name when no name exists', () => {
-    render(<ContactListItem contact={noNameContact} isSelected={false} onClick={vi.fn()} />);
+    render(<ContactListItem contact={noNameContact} {...baseProps} />);
     const matches = screen.getAllByText('nobody@example.com');
     expect(matches.length).toBeGreaterThanOrEqual(1);
   });
 
   it('calls onClick when clicked', () => {
     const onClick = vi.fn();
-    render(<ContactListItem contact={contact} isSelected={false} onClick={onClick} />);
+    render(<ContactListItem contact={contact} {...baseProps} onClick={onClick} />);
     fireEvent.click(screen.getByText('Alice Smith'));
     expect(onClick).toHaveBeenCalledOnce();
+  });
+
+  it('does not show checkbox when hasSelection is false', () => {
+    const { container } = render(<ContactListItem contact={contact} {...baseProps} hasSelection={false} />);
+    expect(container.querySelector('button')).not.toBeInTheDocument();
+  });
+
+  it('shows checkbox when hasSelection is true', () => {
+    const { container } = render(<ContactListItem contact={contact} {...baseProps} hasSelection={true} />);
+    expect(container.querySelector('button')).toBeInTheDocument();
+  });
+
+  it('hides avatar in extra-compact density', () => {
+    const { container } = render(<ContactListItem contact={contact} {...baseProps} density="extra-compact" />);
+    expect(container.querySelector('[data-testid="avatar"]') || container.querySelector('.rounded-full')).toBeNull();
   });
 });

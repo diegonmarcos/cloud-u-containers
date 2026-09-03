@@ -1,183 +1,528 @@
 "use client";
 
-import React from "react";
-import { formatDate, getAccountDisplayName } from "@/lib/utils";
+import React, { useCallback } from "react";
+import { formatDate, formatDateTime, stripInvisibleLeading } from "@/lib/utils";
 import { Email, ThreadGroup } from "@/lib/jmap/types";
 import { cn } from "@/lib/utils";
-import { Avatar } from "@/components/ui/avatar";
-import { Paperclip, Star, Circle, ChevronRight, ChevronDown, Loader2, MessageSquare, CheckSquare, Square } from "lucide-react";
+import { SelectableAvatar } from "@/components/email/selectable-avatar";
+import { Paperclip, Star, Pin, Circle, ChevronRight, ChevronDown, Loader2, MessageSquare, CheckSquare, Square, Reply, Forward, CalendarClock, Folder, Archive, Trash2, MailOpen, ShieldAlert } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useSettingsStore } from "@/stores/settings-store";
 import { useUIStore } from "@/stores/ui-store";
 import { useEmailStore } from "@/stores/email-store";
-import { getThreadColorTag } from "@/lib/thread-utils";
+import { useAccountStore } from "@/stores/account-store";
+import { getThreadTagIds, getEmailTagIds } from "@/lib/thread-utils";
+import { useKeywordFormat } from "@/hooks/use-keyword-format";
+import { useTagDisplay } from "@/hooks/use-tag-display";
+import { TagBadge, TAG_GROUP_CLASS, TAG_LOZENGE_CLASS } from "./tag-badge";
+import { useEmailDrag } from "@/hooks/use-email-drag";
+import { useLongPress } from "@/hooks/use-long-press";
+import { useSwipeActions } from "@/hooks/use-swipe-actions";
+import type { SwipeAction } from "@/stores/settings-store";
 import { ThreadEmailItem } from "./thread-email-item";
+import { EmailHoverActions } from "./email-hover-actions";
 import { useTranslations } from "next-intl";
+
+/**
+ * Small chip showing the originating folder of a message, rendered in the
+ * aggregate "All …" views (All Mail / unified / cross-account) where rows come
+ * from different folders. `email.sourceFolder` is stamped at fetch time.
+ */
+function SourceFolderTag({ name }: { name: string }) {
+  return (
+    <span
+      className="inline-flex max-w-[8rem] shrink-0 items-center gap-1 truncate rounded-full border border-border bg-muted/40 px-1.5 py-0.5 text-[11px] text-muted-foreground"
+      title={name}
+    >
+      <Folder className="h-3 w-3 shrink-0" />
+      <span className="truncate">{name}</span>
+    </span>
+  );
+}
+
+/**
+ * How many messages a collapsed thread stands for.
+ *
+ * Built from the tag lozenge so it lines up with the tags it sits next to: the
+ * same shape, and the same group spacing.
+ */
+function ThreadCountPill({ count, hasUnread, title }: { count: number; hasUnread: boolean; title: string }) {
+  return (
+    <span
+      className={cn(
+        TAG_LOZENGE_CLASS,
+        "gap-0.5",
+        hasUnread ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+      )}
+      title={title}
+    >
+      <MessageSquare className="w-3 h-3" />
+      {count}
+    </span>
+  );
+}
 
 interface ThreadListItemProps {
   thread: ThreadGroup;
   isExpanded: boolean;
   selectedEmailId?: string;
-  selectedEmailAccountId?: string;
   isLoading?: boolean;
   expandedEmails?: Email[];
   onToggleExpand: () => void;
+  onCollapseAllThreads?: () => void;
   onEmailSelect: (email: Email) => void;
+  onEmailDoubleClick?: (email: Email) => void;
   onContextMenu?: (e: React.MouseEvent, email: Email) => void;
   onOpenConversation?: (thread: ThreadGroup) => void;
-  isChecked: boolean;
-  onCheckboxClick: (e: React.MouseEvent) => void;
-}
-
-const colorTags = {
-  red: "bg-red-50 dark:bg-red-950/30",
-  orange: "bg-orange-50 dark:bg-orange-950/30",
-  yellow: "bg-yellow-50 dark:bg-yellow-950/30",
-  green: "bg-green-50 dark:bg-green-950/30",
-  blue: "bg-blue-50 dark:bg-blue-950/30",
-  purple: "bg-purple-50 dark:bg-purple-950/30",
-  pink: "bg-pink-50 dark:bg-pink-950/30",
-} as const;
-
-function RowBadge({ name, testId }: { name: string; testId: string }) {
-  return (
-    <span
-      data-testid={testId}
-      className="px-1.5 py-0.5 text-xs bg-muted text-foreground rounded font-medium truncate max-w-[8rem]"
-    >
-      {name}
-    </span>
-  );
+  onToggleStar?: (email: Email) => void;
+  onMarkAsRead?: (email: Email, read: boolean) => void;
+  onDelete?: (email: Email) => void;
+  onArchive?: (email: Email) => void;
+  onSetTag?: (emailId: string, tagId: string | null) => void;
+  onMarkAsSpam?: (email: Email) => void;
+  onUndoSpam?: (email: Email) => void;
 }
 
 interface SingleEmailItemProps {
   email: Email;
   selected: boolean;
   onClick: () => void;
+  onDoubleClick?: () => void;
   onContextMenu?: (e: React.MouseEvent, email: Email) => void;
   showPreview: boolean;
-  colorTag: string | null;
-  isChecked: boolean;
-  onCheckboxClick: (e: React.MouseEvent) => void;
-  folderBadgeName: string | null;
-  accountChipName: string | null;
+  rowTint: string | null;
+  onToggleStar?: () => void;
+  onMarkAsRead?: (read: boolean) => void;
+  onDelete?: () => void;
+  onArchive?: () => void;
+  onSetTag?: (tagId: string | null) => void;
+  onMarkAsSpam?: () => void;
+  onUndoSpam?: () => void;
 }
 
+// Visual + behaviour metadata for each mobile swipe action. Keyed by the
+// SwipeAction values that map to a row callback ('none' is handled inline).
+const SWIPE_ACTION_META: Record<Exclude<SwipeAction, 'none'>, { icon: LucideIcon; bg: string }> = {
+  archive: { icon: Archive, bg: 'bg-emerald-600' },
+  delete: { icon: Trash2, bg: 'bg-red-600' },
+  markRead: { icon: MailOpen, bg: 'bg-sky-600' },
+  star: { icon: Star, bg: 'bg-amber-500' },
+  spam: { icon: ShieldAlert, bg: 'bg-orange-600' },
+};
+
 const SingleEmailItem = React.forwardRef<HTMLDivElement, SingleEmailItemProps>(
-  function SingleEmailItem({ email, selected, onClick, onContextMenu, showPreview, colorTag, isChecked, onCheckboxClick, folderBadgeName, accountChipName }, ref) {
+  function SingleEmailItem({ email, selected, onClick, onDoubleClick, onContextMenu, showPreview, rowTint, onToggleStar, onMarkAsRead, onDelete, onArchive, onSetTag, onMarkAsSpam, onUndoSpam }, ref) {
+    const t = useTranslations('email_viewer');
+    const tBatch = useTranslations('email_list.batch_actions');
     const isUnread = !email.keywords?.$seen;
     const isStarred = email.keywords?.$flagged;
-    const sender = email.from?.[0];
+    const isPinned = email.keywords?.['$pinned'] === true;
+    const isAnswered = email.keywords?.$answered;
+    const isForwarded = email.keywords?.$forwarded;
+    const { selectedMailbox, mailboxes, selectedEmailIds, toggleEmailSelection, selectRangeEmails, clearSelection, isUnifiedView, unifiedRole } = useEmailStore();
+    // In Sent/Drafts folders, show recipient instead of sender (which is always
+    // "me"). In aggregate role-views the selected mailbox is virtual → fall back
+    // to the unified role so junk-contextual UI and avatar hiding work.
+    const currentMailboxRole = mailboxes.find(mb => mb.id === selectedMailbox)?.role
+      ?? (isUnifiedView ? (unifiedRole ?? undefined) : undefined);
+    const showRecipient = currentMailboxRole === 'sent' || currentMailboxRole === 'drafts';
+    const sender = showRecipient ? (email.to?.[0] ?? email.from?.[0]) : email.from?.[0];
+    const { sortTagIds, tagColor } = useKeywordFormat();
+    const { variant: tagVariant, placement: tagPlacement } = useTagDisplay();
+    const tintListRowsByTag = useSettingsStore((state) => state.tintListRowsByTag);
+    const density = useSettingsStore((state) => state.density);
+    const mailLayout = useSettingsStore((state) => state.mailLayout);
+    const timeFormat = useSettingsStore((state) => state.timeFormat);
+    const showAvatarsInJunk = useSettingsStore((state) => state.showAvatarsInJunk);
+    const hideJunkAvatarImages = currentMailboxRole === 'junk' && !showAvatarsInJunk;
+    // Show the originating folder in the aggregate "All …" views.
+    const showSourceFolder = isUnifiedView && !!email.sourceFolder;
+    const getAccountById = useAccountStore((state) => state.getAccountById);
+    const accountColor = email.accountId ? getAccountById(email.accountId)?.avatarColor : undefined;
+    const isChecked = selectedEmailIds.has(email.id);
+    const isMobile = useUIStore((state) => state.isMobile);
+    // The horizontal one-line "focus" layout doesn't fit on narrow screens; fall back to multi-line on mobile.
+    const isFocusedMailLayout = mailLayout === 'focus' && !isMobile;
+    const trimmedPreview = stripInvisibleLeading(email.preview ?? '');
+    const inlinePreview = showPreview && trimmedPreview ? ` ${trimmedPreview}` : '';
+    const scheduledSendLabel = email.isScheduled && email.scheduledSendAt
+      ? formatDateTime(email.scheduledSendAt, timeFormat)
+      : null;
+
+    const tagIds = sortTagIds(getEmailTagIds(email.keywords));
+    const resolvedRowTint = !tintListRowsByTag ? null : (rowTint ?? (tagIds[0] ? tagColor(tagIds[0]).rowTint : null));
+
+    const { dragHandlers, isDragging } = useEmailDrag({
+      email,
+      sourceMailboxId: selectedMailbox,
+    });
+
+    const { onTouchStart, onTouchEnd, onTouchMove, onTouchCancel, isPressed } = useLongPress(
+      useCallback((pos) => {
+        onContextMenu?.(
+          { preventDefault: () => {}, stopPropagation: () => {}, clientX: pos.clientX, clientY: pos.clientY } as React.MouseEvent,
+          email
+        );
+      }, [onContextMenu, email]),
+      isMobile
+    );
+    const longPressHandlers = { onTouchStart, onTouchEnd, onTouchMove, onTouchCancel };
+
+    // Mobile swipe actions (Gmail-style): drag a row left/right to fire the
+    // configured action. Desktop keeps hover actions + context menu.
+    const swipeRightAction = useSettingsStore((state) => state.swipeRightAction);
+    const swipeLeftAction = useSettingsStore((state) => state.swipeLeftAction);
+    const runSwipeAction = useCallback((action: SwipeAction) => {
+      switch (action) {
+        case 'archive': onArchive?.(); break;
+        case 'delete': onDelete?.(); break;
+        case 'markRead': onMarkAsRead?.(isUnread); break; // unread -> read, read -> unread
+        case 'star': onToggleStar?.(); break;
+        case 'spam': onMarkAsSpam?.(); break;
+        default: break;
+      }
+    }, [onArchive, onDelete, onMarkAsRead, onToggleStar, onMarkAsSpam, isUnread]);
+    const isActionable = (action: SwipeAction): boolean => {
+      switch (action) {
+        case 'archive': return !!onArchive;
+        case 'delete': return !!onDelete;
+        case 'markRead': return !!onMarkAsRead;
+        case 'star': return !!onToggleStar;
+        case 'spam': return !!onMarkAsSpam;
+        default: return false;
+      }
+    };
+    const hasRight = isActionable(swipeRightAction);
+    const hasLeft = isActionable(swipeLeftAction);
+    const swipeEnabled = isMobile && (hasLeft || hasRight);
+    const { swipeHandlers, offsetX, side: swipeSide, willCommit, consumeTap } = useSwipeActions({
+      enabled: swipeEnabled,
+      hasLeft,
+      hasRight,
+      onCommit: (s) => runSwipeAction(s === 'right' ? swipeRightAction : swipeLeftAction),
+    });
+    const swipeActiveAction = swipeSide === 'right' ? swipeRightAction : swipeSide === 'left' ? swipeLeftAction : 'none';
+    const swipeMeta = swipeActiveAction !== 'none' ? SWIPE_ACTION_META[swipeActiveAction] : null;
+    const touchHandlers = swipeEnabled
+      ? {
+          onTouchStart: (e: React.TouchEvent) => { longPressHandlers.onTouchStart(e); swipeHandlers.onTouchStart(e); },
+          onTouchMove: (e: React.TouchEvent) => { longPressHandlers.onTouchMove(e); swipeHandlers.onTouchMove(e); },
+          onTouchEnd: (e: React.TouchEvent) => { longPressHandlers.onTouchEnd(e); swipeHandlers.onTouchEnd(); },
+          onTouchCancel: () => { longPressHandlers.onTouchCancel(); swipeHandlers.onTouchCancel(); },
+        }
+      : longPressHandlers;
+
+    const handleCheckboxClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (e.shiftKey) {
+        selectRangeEmails(email.id);
+      } else {
+        toggleEmailSelection(email.id);
+      }
+    };
 
     const handleContextMenu = (e: React.MouseEvent) => {
       onContextMenu?.(e, email);
     };
 
+    const handleClick = (e: React.MouseEvent) => {
+      if (swipeEnabled && consumeTap()) { return; }
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        toggleEmailSelection(email.id);
+      } else if (e.shiftKey) {
+        e.preventDefault();
+        selectRangeEmails(email.id);
+      } else {
+        if (selectedEmailIds.size > 0) clearSelection();
+        onClick();
+      }
+    };
+
     return (
       <div
         ref={ref}
+        {...dragHandlers}
+        {...touchHandlers}
+        data-testid="email-list-item"
+        data-email-id={email.id}
+        data-subject={email.subject || ''}
+        data-unread={isUnread ? 'true' : 'false'}
+        data-starred={email.keywords?.$flagged ? 'true' : 'false'}
         className={cn(
-          "relative group cursor-pointer transition-all duration-200 border-b border-border",
-          colorTag ? colorTag : (
+          "relative group cursor-pointer select-none transition-shadow duration-200 border-b border-border overflow-hidden",
+          resolvedRowTint ? resolvedRowTint : (
             selected
               ? "bg-accent"
               : "bg-background"
           ),
-          selected && !colorTag && "shadow-sm",
-          !colorTag && !selected && "hover:bg-muted hover:shadow-sm",
-          colorTag && "hover:brightness-95 dark:hover:brightness-110",
-          isUnread && !colorTag && "bg-accent/30",
-          isChecked && "ring-2 ring-primary/20 bg-accent/40"
+          selected && !resolvedRowTint && "shadow-sm",
+          !resolvedRowTint && !selected && !isChecked && "hover:bg-muted hover:shadow-sm",
+          !resolvedRowTint && (selected || isChecked) && "hover:bg-accent hover:shadow-sm",
+          resolvedRowTint && "hover:brightness-95 dark:hover:brightness-110",
+          isUnread && !resolvedRowTint && "bg-accent/30",
+          isChecked && "ring-2 ring-primary/20",
+          isChecked && !resolvedRowTint && "bg-accent/40",
+          isDragging && "opacity-50 scale-[0.98] ring-2 ring-primary/30",
+          isPressed && "scale-[0.98] ring-2 ring-primary/30",
+          isPressed && !resolvedRowTint && "bg-muted"
         )}
-        onClick={onClick}
+        onClick={handleClick}
+        onDoubleClick={(e) => {
+          if (e.ctrlKey || e.metaKey || e.shiftKey) return;
+          if (!onDoubleClick) return;
+          e.preventDefault();
+          onDoubleClick();
+        }}
         onContextMenu={handleContextMenu}
-        style={{ minHeight: 'var(--list-item-height)' }}
+        style={{ minHeight: isFocusedMailLayout ? undefined : 'var(--list-item-height)', touchAction: swipeEnabled ? 'pan-y' : undefined }}
       >
-        <div className="flex items-start gap-3 px-4" style={{
-          paddingTop: 'calc((var(--list-item-height) - 40px) / 2)',
-          paddingBottom: 'calc((var(--list-item-height) - 40px) / 2)'
-        }}>
-          <button
-            onClick={onCheckboxClick}
-            className={cn(
-              "p-1 rounded mt-2 flex-shrink-0 transition-all duration-200",
-              "hover:bg-muted/50 hover:scale-110",
-              "active:scale-95",
-              isChecked && "text-primary"
-            )}
+        {swipeEnabled && swipeMeta && (
+          // Decorative reveal on the physically exposed edge. That edge
+          // follows the (physical) translate direction, not text direction,
+          // so force LTR to keep justify-start/-end as physical left/right
+          // (otherwise the icon flips to the wrong side under RTL).
+          <div
+            aria-hidden
+            dir="ltr"
+            className={cn('absolute inset-0 z-0 flex items-center px-5 text-white', swipeMeta.bg, swipeSide === 'right' ? 'justify-start' : 'justify-end')}
           >
-            {isChecked ? (
-              <CheckSquare className="w-4 h-4 animate-in zoom-in-50 duration-200" />
-            ) : (
-              <Square className="w-4 h-4 text-muted-foreground opacity-60 hover:opacity-100 transition-opacity" />
-            )}
-          </button>
+            <swipeMeta.icon className={cn('h-5 w-5 transition-transform', willCommit ? 'scale-110' : 'scale-90 opacity-80')} />
+          </div>
+        )}
+        <div
+          className={cn('px-3', isFocusedMailLayout ? 'flex items-center' : 'flex items-start', swipeEnabled && 'relative z-10 bg-inherit')}
+          style={{ gap: 'var(--density-item-gap)', paddingBlock: 'var(--density-item-py)', transform: swipeEnabled && offsetX ? `translateX(${offsetX}px)` : undefined, transition: swipeEnabled && offsetX === 0 ? 'transform 200ms ease-out' : undefined }}
+        >
+          {/* Checkbox - only visible when in selection mode */}
+          {selectedEmailIds.size > 0 && (
+            <button
+              onClick={handleCheckboxClick}
+              className={cn(
+                "p-3 lg:p-1 rounded flex-shrink-0 transition-all duration-200",
+                !isFocusedMailLayout && 'mt-2',
+                "hover:bg-muted/50 hover:scale-110",
+                "active:scale-95",
+                "animate-in fade-in zoom-in-95 duration-150",
+                isChecked && "text-primary"
+              )}
+            >
+              {isChecked ? (
+                <CheckSquare className="w-4 h-4 animate-in zoom-in-50 duration-200" />
+              ) : (
+                <Square className="w-4 h-4 text-muted-foreground opacity-60 hover:opacity-100 transition-opacity" />
+              )}
+            </button>
+          )}
 
           {isUnread && (
-            <div className="absolute left-1 top-1/2 -translate-y-1/2">
-              <Circle className="w-2 h-2 fill-blue-600 text-blue-600 dark:fill-blue-400 dark:text-blue-400" />
+            <div className="absolute start-0.5 top-1/2 -translate-y-1/2">
+              <Circle className="w-2 h-2 fill-unread text-unread" />
             </div>
           )}
 
-          <Avatar
-            name={sender?.name}
-            email={sender?.email}
-            size="md"
-            className="mt-1 flex-shrink-0 shadow-sm"
-          />
+          {density !== 'extra-compact' && (
+            <SelectableAvatar
+              name={sender?.name}
+              email={sender?.email}
+              size={isFocusedMailLayout ? "sm" : "md"}
+              className="flex-shrink-0 shadow-sm"
+              disableImages={hideJunkAvatarImages}
+              checked={isChecked}
+              onToggle={() => toggleEmailSelection(email.id)}
+              selectLabel={tBatch('select')}
+            />
+          )}
 
           <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between gap-2 mb-1">
-              <div className="flex items-center gap-2 min-w-0 flex-1">
-                <span className={cn(
-                  "truncate text-sm",
-                  isUnread
-                    ? "font-bold text-foreground"
-                    : "font-medium text-muted-foreground"
-                )}>
-                  {sender?.name || sender?.email || "Unknown"}
-                </span>
-                <div className="flex items-center gap-1.5">
-                  {isStarred && (
-                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+            {isFocusedMailLayout ? (
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  {isUnifiedView && email.accountId && accountColor && (
+                    <span
+                      className="w-2 h-2 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: accountColor }}
+                      title={email.accountLabel}
+                    />
                   )}
-                  {accountChipName && <RowBadge name={accountChipName} testId="account-chip" />}
-                  {folderBadgeName && <RowBadge name={folderBadgeName} testId="folder-badge" />}
-                  {email.hasAttachment && (
-                    <Paperclip className="w-3.5 h-3.5 text-muted-foreground" />
+                  <span className={cn(
+                    'w-32 shrink-0 truncate text-sm lg:w-40',
+                    isUnread ? 'font-semibold text-foreground' : 'font-medium text-foreground/80'
+                  )}>
+                    {sender?.name || sender?.email || 'Unknown'}
+                  </span>
+                  <div className="flex min-w-0 flex-1 items-center gap-2 text-sm">
+                    {tagIds.length > 0 && (
+                      <span className={TAG_GROUP_CLASS}>
+                        {tagIds.map((id) => (
+                          <TagBadge key={id} tagId={id} variant={tagVariant} />
+                        ))}
+                      </span>
+                    )}
+                    <span className={cn(
+                      'min-w-0 truncate',
+                      isUnread ? 'font-semibold text-foreground' : 'text-foreground/90'
+                    )}>
+                      {email.subject || '(no subject)'}
+                    </span>
+                    {inlinePreview && (
+                      <span className="min-w-0 shrink-[9999] truncate text-muted-foreground">{inlinePreview}</span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2.5 shrink-0">
+                  {isPinned && <Pin className="w-3.5 h-3.5 text-primary" />}
+                  {isStarred && <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />}
+                  {isAnswered && !isForwarded && <Reply className="w-3.5 h-3.5 text-muted-foreground" />}
+                  {isForwarded && !isAnswered && <Forward className="w-3.5 h-3.5 text-muted-foreground" />}
+                  {isAnswered && isForwarded && (
+                    <>
+                      <Reply className="w-3.5 h-3.5 text-muted-foreground" />
+                      <Forward className="w-3.5 h-3.5 text-muted-foreground" />
+                    </>
+                  )}
+                  {email.hasAttachment && <Paperclip className="w-3.5 h-3.5 text-muted-foreground" />}
+                  {showSourceFolder && <SourceFolderTag name={email.sourceFolder!} />}
+                  {scheduledSendLabel ? (
+                    <span
+                      className="inline-flex max-w-[11rem] shrink-0 items-center gap-1 truncate rounded-full border border-sky-500/20 bg-sky-500/10 px-2 py-0.5 text-xs font-medium tabular-nums text-sky-700 dark:text-sky-300"
+                      title={scheduledSendLabel}
+                    >
+                      <CalendarClock className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{scheduledSendLabel}</span>
+                    </span>
+                  ) : (
+                    <span className={cn(
+                      'text-xs tabular-nums',
+                      isUnread ? 'text-foreground font-semibold' : 'text-muted-foreground'
+                    )}>
+                      {formatDate(email.receivedAt)}
+                    </span>
                   )}
                 </div>
               </div>
-              <span className={cn(
-                "text-xs flex-shrink-0 tabular-nums",
-                isUnread
-                  ? "text-foreground font-semibold"
-                  : "text-muted-foreground"
-              )}>
-                {formatDate(email.receivedAt)}
-              </span>
-            </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    {isUnifiedView && email.accountId && accountColor && (
+                      <span
+                        className="w-2 h-2 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: accountColor }}
+                        title={email.accountLabel}
+                      />
+                    )}
+                    <span className={cn(
+                      "truncate text-sm",
+                      isUnread
+                        ? "font-bold text-foreground"
+                        : "font-medium text-muted-foreground"
+                    )}>
+                      {sender?.name || sender?.email || "Unknown"}
+                    </span>
+                    {tagPlacement === 'sender' && tagIds.length > 0 && (
+                      <span className={TAG_GROUP_CLASS}>
+                        {tagIds.map((id) => (
+                          <TagBadge key={id} tagId={id} variant={tagVariant} />
+                        ))}
+                      </span>
+                  )}
+                    <div className="flex items-center gap-1.5">
+                      {isPinned && (
+                        <Pin className="w-3.5 h-3.5 text-primary" />
+                      )}
+                      {isStarred && (
+                        <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                      )}
+                      {isAnswered && !isForwarded && (
+                        <Reply className="w-3.5 h-3.5 text-muted-foreground" />
+                      )}
+                      {isForwarded && !isAnswered && (
+                        <Forward className="w-3.5 h-3.5 text-muted-foreground" />
+                      )}
+                      {isAnswered && isForwarded && (
+                        <>
+                          <Reply className="w-3.5 h-3.5 text-muted-foreground" />
+                          <Forward className="w-3.5 h-3.5 text-muted-foreground" />
+                        </>
+                      )}
+                      {email.hasAttachment && (
+                        <Paperclip className="w-3.5 h-3.5 text-muted-foreground" />
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    {showSourceFolder && <SourceFolderTag name={email.sourceFolder!} />}
+                    {scheduledSendLabel ? (
+                      <span
+                        className="inline-flex max-w-[11rem] shrink-0 items-center gap-1 truncate rounded-full border border-sky-500/20 bg-sky-500/10 px-2 py-0.5 text-[11px] font-medium tabular-nums text-sky-700 dark:text-sky-300"
+                        title={scheduledSendLabel}
+                      >
+                        <CalendarClock className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{scheduledSendLabel}</span>
+                      </span>
+                    ) : (
+                      <span className={cn(
+                        "text-xs tabular-nums",
+                        isUnread
+                          ? "text-foreground font-semibold"
+                          : "text-muted-foreground"
+                      )}>
+                        {formatDate(email.receivedAt)}
+                      </span>
+                    )}
+                  </div>
+                </div>
 
-            <div className={cn(
-              "mb-1 line-clamp-1 text-sm",
-              isUnread
-                ? "font-semibold text-foreground"
-                : "font-normal text-foreground/90"
-            )}>
-              {email.subject || "(no subject)"}
-            </div>
+                <div className="mb-1 flex min-w-0 items-center gap-1.5">
+                  {tagPlacement === 'subject' && tagIds.length > 0 && (
+                      <span className={TAG_GROUP_CLASS}>
+                        {tagIds.map((id) => (
+                          <TagBadge key={id} tagId={id} variant={tagVariant} />
+                        ))}
+                      </span>
+                  )}
+                  <span className={cn(
+                    "min-w-0 flex-1 truncate text-sm",
+                    isUnread
+                      ? "font-semibold text-foreground"
+                      : "font-normal text-foreground/90"
+                  )}>
+                    {email.subject || "(no subject)"}
+                  </span>
+                </div>
 
-            {showPreview && (
-              <p className={cn(
-                "text-sm leading-relaxed line-clamp-2",
-                isUnread
-                  ? "text-muted-foreground"
-                  : "text-muted-foreground/80"
-              )}>
-                {email.preview || "No preview available"}
-              </p>
+                {showPreview && density !== 'extra-compact' && density !== 'compact' && (
+                  <p className={cn(
+                    "text-sm leading-relaxed line-clamp-2",
+                    isUnread
+                      ? "text-muted-foreground"
+                      : "text-muted-foreground/80"
+                  )}>
+                    {trimmedPreview || t('no_preview_available')}
+                  </p>
+                )}
+              </>
             )}
           </div>
         </div>
+
+        {/* Hover Quick Actions */}
+        {!email.isScheduled && (
+          <EmailHoverActions
+            email={email}
+            backgroundClassName={resolvedRowTint ? resolvedRowTint : ((selected || isChecked) ? "bg-accent" : "bg-muted")}
+            onToggleStar={onToggleStar}
+            onMarkAsRead={onMarkAsRead}
+            onDelete={onDelete}
+            onArchive={onArchive}
+            onSetTag={onSetTag}
+            onMarkAsSpam={onMarkAsSpam}
+            onUndoSpam={onUndoSpam}
+            isInJunk={currentMailboxRole === 'junk'}
+            spamApplicable={!['sent', 'drafts', 'scheduled'].includes(currentMailboxRole || '')}
+          />
+        )}
       </div>
     );
   }
@@ -188,60 +533,147 @@ export const ThreadListItem = React.forwardRef<HTMLDivElement, ThreadListItemPro
     thread,
     isExpanded,
     selectedEmailId,
-    selectedEmailAccountId,
     isLoading = false,
     expandedEmails,
     onToggleExpand,
+    onCollapseAllThreads,
     onEmailSelect,
+    onEmailDoubleClick,
     onContextMenu,
     onOpenConversation,
-    isChecked,
-    onCheckboxClick,
+    onToggleStar,
+    onMarkAsRead,
+    onDelete,
+    onArchive,
+    onSetTag,
+    onMarkAsSpam,
+    onUndoSpam,
   }, ref) {
     const t = useTranslations('threads');
+    const tEmailViewer = useTranslations('email_viewer');
+    const tBatch = useTranslations('email_list.batch_actions');
     const showPreview = useSettingsStore((state) => state.showPreview);
+    const density = useSettingsStore((state) => state.density);
+    const mailLayout = useSettingsStore((state) => state.mailLayout);
+    const timeFormat = useSettingsStore((state) => state.timeFormat);
+    const showAvatarsInJunk = useSettingsStore((state) => state.showAvatarsInJunk);
     const isMobile = useUIStore((state) => state.isMobile);
-    const { currentQuery, mailboxes } = useEmailStore();
-    const { latestEmail, participantNames, hasUnread, hasStarred, hasAttachment, emailCount } = thread;
-    // Only surface the folder badge when browsing across all folders, where a
-    // row's mailbox isn't implied by the current view.
-    const folderBadgeName: string | null =
-      currentQuery.scope.kind === "all"
-        ? mailboxes.find((mb) => latestEmail.mailboxIds?.[mb.id])?.name ?? null
-        : null;
-    // Non-primary rows carry an account chip; unmarked rows = own mail.
-    const accountChipName = getAccountDisplayName(mailboxes, latestEmail.accountId);
+    const { latestEmail, participantNames, hasUnread, hasStarred, hasPinned, hasAttachment, hasAnswered, hasForwarded, emailCount } = thread;
+    // The horizontal one-line "focus" layout doesn't fit on narrow screens; fall back to multi-line on mobile.
+    const isFocusedMailLayout = mailLayout === 'focus' && !isMobile;
+    const trimmedPreview = stripInvisibleLeading(latestEmail.preview ?? '');
+    const inlinePreview = showPreview && trimmedPreview ? ` ${trimmedPreview}` : '';
+    const scheduledSendLabel = latestEmail.isScheduled && latestEmail.scheduledSendAt
+      ? formatDateTime(latestEmail.scheduledSendAt, timeFormat)
+      : null;
 
-    const threadColor = getThreadColorTag(thread.emails);
-    const colorTag = threadColor ? colorTags[threadColor as keyof typeof colorTags] : null;
+    const { selectedMailbox, mailboxes, selectedEmailIds, toggleEmailSelection, selectRangeEmails, clearSelection, isUnifiedView, unifiedRole } = useEmailStore();
+    const showSourceFolder = isUnifiedView && !!latestEmail.sourceFolder;
+    const getAccountById = useAccountStore((state) => state.getAccountById);
+    const threadAccountColor = latestEmail.accountId ? getAccountById(latestEmail.accountId)?.avatarColor : undefined;
+    // In Sent/Drafts folders, show recipient instead of sender (which is always
+    // "me"). Aggregate role-views use a virtual selected mailbox → fall back to
+    // the unified role so junk-contextual UI and avatar hiding work.
+    const currentMailboxRole = mailboxes.find(mb => mb.id === selectedMailbox)?.role
+      ?? (isUnifiedView ? (unifiedRole ?? undefined) : undefined);
+    const showRecipient = currentMailboxRole === 'sent' || currentMailboxRole === 'drafts';
+    const displayNames = showRecipient
+      ? Array.from(new Set(
+          thread.emails.flatMap(e => (e.to ?? []).map(r => r.name || r.email.split('@')[0]))
+        )).slice(0, 4)
+      : participantNames;
+    const avatarPerson = showRecipient ? latestEmail.to?.[0] : latestEmail.from?.[0];
+    const hideJunkAvatarImages = currentMailboxRole === 'junk' && !showAvatarsInJunk;
 
-    // Ids are account-local: the open email only highlights rows of its own
-    // account, or a colliding id from another account lights up too.
-    const selectedAccountMatches = selectedEmailAccountId === latestEmail.accountId;
-    const isSelected = selectedAccountMatches && (selectedEmailId === latestEmail.id ||
-      thread.emails.some(e => e.id === selectedEmailId));
+    const { dragHandlers, isDragging: isThreadDragging } = useEmailDrag({
+      email: latestEmail,
+      sourceMailboxId: selectedMailbox,
+      threadEmails: thread.emails,
+    });
+
+    const { onTouchStart: threadOnTouchStart, onTouchEnd: threadOnTouchEnd, onTouchMove: threadOnTouchMove, onTouchCancel: threadOnTouchCancel, isPressed: isThreadPressed } = useLongPress(
+      useCallback((pos) => {
+        onContextMenu?.(
+          { preventDefault: () => {}, stopPropagation: () => {}, clientX: pos.clientX, clientY: pos.clientY } as React.MouseEvent,
+          latestEmail
+        );
+      }, [onContextMenu, latestEmail]),
+      isMobile
+    );
+    const threadLongPressHandlers = { onTouchStart: threadOnTouchStart, onTouchEnd: threadOnTouchEnd, onTouchMove: threadOnTouchMove, onTouchCancel: threadOnTouchCancel };
+
+    const { sortTagIds, tagColor } = useKeywordFormat();
+    const { variant: tagVariant, placement: tagPlacement } = useTagDisplay();
+    const tintListRowsByTag = useSettingsStore((state) => state.tintListRowsByTag);
+    // A collapsed row speaks for every message under it, so it carries their tags too.
+    const tagIds = sortTagIds(getThreadTagIds(thread.emails));
+    const rowTint = (tintListRowsByTag && tagIds[0]) ? tagColor(tagIds[0]).rowTint : null;
+
+    const isSelected = selectedEmailId === latestEmail.id ||
+      thread.emails.some(e => e.id === selectedEmailId);
+
+    const isChecked = thread.emails.some(e => selectedEmailIds.has(e.id));
 
     if (emailCount === 1) {
       return (
         <SingleEmailItem
           ref={ref}
           email={latestEmail}
-          selected={selectedAccountMatches && selectedEmailId === latestEmail.id}
+          selected={selectedEmailId === latestEmail.id}
           onClick={() => onEmailSelect(latestEmail)}
+          onDoubleClick={onEmailDoubleClick ? () => onEmailDoubleClick(latestEmail) : undefined}
           onContextMenu={onContextMenu}
           showPreview={showPreview}
-          colorTag={colorTag}
-          isChecked={isChecked}
-          onCheckboxClick={onCheckboxClick}
-          folderBadgeName={folderBadgeName}
-          accountChipName={accountChipName}
+          rowTint={rowTint}
+          onToggleStar={onToggleStar ? () => onToggleStar(latestEmail) : undefined}
+          onMarkAsRead={onMarkAsRead ? (read) => onMarkAsRead(latestEmail, read) : undefined}
+          onDelete={onDelete ? () => onDelete(latestEmail) : undefined}
+          onArchive={onArchive ? () => onArchive(latestEmail) : undefined}
+          onSetTag={onSetTag ? (color) => onSetTag(latestEmail.id, color) : undefined}
+          onMarkAsSpam={onMarkAsSpam ? () => onMarkAsSpam(latestEmail) : undefined}
+          onUndoSpam={onUndoSpam ? () => onUndoSpam(latestEmail) : undefined}
         />
       );
     }
 
     const emailsToShow = expandedEmails || thread.emails;
 
+    // Toggle selection for all emails in this thread.
+    const toggleThreadSelection = () => {
+      const allSelected = thread.emails.every(em => selectedEmailIds.has(em.id));
+      const newSelection = new Set(selectedEmailIds);
+      thread.emails.forEach(em => {
+        if (allSelected) {
+          newSelection.delete(em.id);
+        } else {
+          newSelection.add(em.id);
+        }
+      });
+      useEmailStore.setState({ selectedEmailIds: newSelection, lastSelectedEmailId: latestEmail.id });
+    };
+
+    const handleThreadCheckboxClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (e.shiftKey) {
+        selectRangeEmails(latestEmail.id);
+        return;
+      }
+      toggleThreadSelection();
+    };
+
     const handleHeaderClick = (e: React.MouseEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        // Ctrl+Click: toggle selection for all thread emails
+        thread.emails.forEach(em => toggleEmailSelection(em.id));
+        return;
+      }
+      if (e.shiftKey) {
+        e.preventDefault();
+        selectRangeEmails(latestEmail.id);
+        return;
+      }
+
       if (isMobile && onOpenConversation) {
         onOpenConversation(thread);
         return;
@@ -251,7 +683,9 @@ export const ThreadListItem = React.forwardRef<HTMLDivElement, ThreadListItemPro
       if (target.closest('[data-expand-toggle]')) {
         onToggleExpand();
       } else {
+        if (selectedEmailIds.size > 0) clearSelection();
         if (!isExpanded) {
+          onCollapseAllThreads?.();
           onToggleExpand();
         }
         onEmailSelect(latestEmail);
@@ -263,37 +697,52 @@ export const ThreadListItem = React.forwardRef<HTMLDivElement, ThreadListItemPro
     };
 
     return (
-      <div ref={ref} className="border-b border-border">
+      <div ref={ref} className={cn("border-b border-border", isThreadDragging && "opacity-50 scale-[0.98] ring-2 ring-primary/30")}>
         <div
+          {...dragHandlers}
+          {...threadLongPressHandlers}
           className={cn(
-            "relative group cursor-pointer transition-all duration-200",
-            colorTag ? colorTag : (
+            "relative group cursor-pointer select-none transition-shadow duration-200 overflow-hidden",
+            rowTint ? rowTint : (
               isSelected
                 ? "bg-accent"
                 : "bg-background"
             ),
-            isSelected && !colorTag && "shadow-sm",
-            !colorTag && !isSelected && "hover:bg-muted hover:shadow-sm",
-            colorTag && "hover:brightness-95 dark:hover:brightness-110",
-            hasUnread && !colorTag && !isSelected && "bg-accent/30",
+            isSelected && !rowTint && "shadow-sm",
+            !rowTint && !isSelected && !isChecked && "hover:bg-muted hover:shadow-sm",
+            !rowTint && (isSelected || isChecked) && "hover:bg-accent hover:shadow-sm",
+            rowTint && "hover:brightness-95 dark:hover:brightness-110",
+            hasUnread && !rowTint && !isSelected && "bg-accent/30",
             isExpanded && "border-b border-border/50",
-            isChecked && "ring-2 ring-primary/20 bg-accent/40"
+            isChecked && "ring-2 ring-primary/20",
+            isChecked && !rowTint && "bg-accent/40",
+            isThreadPressed && "scale-[0.98] ring-2 ring-primary/30",
+            isThreadPressed && !rowTint && "bg-muted"
           )}
           onClick={handleHeaderClick}
+          onDoubleClick={(e) => {
+            if (e.ctrlKey || e.metaKey || e.shiftKey) return;
+            if (!onEmailDoubleClick) return;
+            e.preventDefault();
+            onEmailDoubleClick(latestEmail);
+          }}
           onContextMenu={handleContextMenu}
-          style={{ minHeight: 'var(--list-item-height)' }}
+          style={{ minHeight: isFocusedMailLayout ? undefined : 'var(--list-item-height)' }}
         >
-          <div className="flex items-start gap-3 px-4" style={{
-            paddingTop: 'calc((var(--list-item-height) - 40px) / 2)',
-            paddingBottom: 'calc((var(--list-item-height) - 40px) / 2)'
-          }}>
-            {!isMobile && (
+          <div
+            className={cn('px-3', isFocusedMailLayout ? 'flex items-center' : 'flex items-start')}
+            style={{ gap: 'var(--density-item-gap)', paddingBlock: 'var(--density-item-py)' }}
+          >
+            {/* Checkbox for thread selection - only visible when in selection mode */}
+            {selectedEmailIds.size > 0 && (
               <button
-                onClick={onCheckboxClick}
+                onClick={handleThreadCheckboxClick}
                 className={cn(
-                  "p-1 rounded mt-2 flex-shrink-0 transition-all duration-200",
+                  "p-3 lg:p-1 rounded flex-shrink-0 transition-all duration-200",
+                  !isFocusedMailLayout && 'mt-2',
                   "hover:bg-muted/50 hover:scale-110",
                   "active:scale-95",
+                  "animate-in fade-in zoom-in-95 duration-150",
                   isChecked && "text-primary"
                 )}
               >
@@ -305,117 +754,259 @@ export const ThreadListItem = React.forwardRef<HTMLDivElement, ThreadListItemPro
               </button>
             )}
 
-            {!isMobile && (
-              <button
-                data-expand-toggle
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onToggleExpand();
-                }}
-                className={cn(
-                  "p-1 rounded mt-2 flex-shrink-0 transition-all duration-200",
-                  "hover:bg-muted/50 hover:scale-110",
-                  "active:scale-95",
-                  "text-muted-foreground hover:text-foreground"
-                )}
-                aria-expanded={isExpanded}
-                aria-label={t('toggle_thread')}
-              >
-                {isLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : isExpanded ? (
-                  <ChevronDown className="w-4 h-4" />
-                ) : (
-                  <ChevronRight className="w-4 h-4" />
-                )}
-              </button>
-            )}
-
             {hasUnread && (
-              <div className="absolute left-1 top-1/2 -translate-y-1/2">
-                <Circle className="w-2 h-2 fill-blue-600 text-blue-600 dark:fill-blue-400 dark:text-blue-400" />
+              <div className="absolute start-0.5 top-1/2 -translate-y-1/2">
+                <Circle className="w-2 h-2 fill-unread text-unread" />
               </div>
             )}
 
-            <Avatar
-              name={latestEmail.from?.[0]?.name}
-              email={latestEmail.from?.[0]?.email}
-              size="md"
-              className="mt-1 flex-shrink-0 shadow-sm"
-            />
+            {density !== 'extra-compact' && (
+              <div className="relative flex-shrink-0">
+                <SelectableAvatar
+                  name={avatarPerson?.name}
+                  email={avatarPerson?.email}
+                  size={isFocusedMailLayout ? "sm" : "md"}
+                  className="shadow-sm"
+                  disableImages={hideJunkAvatarImages}
+                  checked={isChecked}
+                  onToggle={toggleThreadSelection}
+                  selectLabel={tBatch('select')}
+                />
+                {!isMobile && (
+                  <button
+                    data-expand-toggle
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggleExpand();
+                    }}
+                    className={cn(
+                      "absolute -bottom-2.5 left-1/2 -translate-x-1/2 p-0.5 rounded-full",
+                      "transition-all duration-200",
+                      "hover:bg-muted/50 hover:scale-110",
+                      "active:scale-95",
+                      "text-muted-foreground hover:text-foreground",
+                      "bg-background border border-border"
+                    )}
+                    aria-expanded={isExpanded}
+                    aria-label={t('toggle_thread')}
+                  >
+                    {isLoading ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : isExpanded ? (
+                      <ChevronDown className="w-3 h-3" />
+                    ) : (
+                      <ChevronRight className="w-3 h-3" />
+                    )}
+                  </button>
+                )}
+              </div>
+            )}
 
             <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between gap-2 mb-1">
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <span className={cn(
-                    "truncate text-sm",
-                    hasUnread
-                      ? "font-bold text-foreground"
-                      : "font-medium text-muted-foreground"
-                  )}>
-                    {participantNames.join(", ")}
-                  </span>
-                  <span
-                    className={cn(
-                      "flex-shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 text-xs rounded-full font-medium",
-                      hasUnread
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground"
+              {isFocusedMailLayout ? (
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
+                    {isUnifiedView && latestEmail.accountId && threadAccountColor && (
+                      <span
+                        className="w-2 h-2 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: threadAccountColor }}
+                        title={latestEmail.accountLabel}
+                      />
                     )}
-                    title={t('messages_tooltip', { count: emailCount })}
-                  >
-                    <MessageSquare className="w-3 h-3" />
-                    {emailCount}
-                  </span>
-                  <div className="flex items-center gap-1.5">
-                    {hasStarred && (
-                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                    <span className={cn(
+                      // Matches SingleEmailItem: the sender column sets where
+                      // every row's tags and subject begin, so the two have to
+                      // agree or thread rows sit 1rem further right.
+                      'w-32 shrink-0 truncate text-sm lg:w-40',
+                      hasUnread ? 'font-semibold text-foreground' : 'font-medium text-foreground/80'
+                    )}>
+                      {displayNames.join(', ')}
+                    </span>
+                    <div className="flex min-w-0 flex-1 items-center gap-2 text-sm">
+                      <span className={TAG_GROUP_CLASS}>
+                        <ThreadCountPill
+                          count={emailCount}
+                          hasUnread={hasUnread}
+                          title={t('messages_tooltip', { count: emailCount })}
+                        />
+                        {tagIds.map((id) => (
+                          <TagBadge key={id} tagId={id} variant={tagVariant} />
+                        ))}
+                      </span>
+                      <span className={cn(
+                        'min-w-0 truncate',
+                        hasUnread ? 'font-semibold text-foreground' : 'text-foreground/90'
+                      )}>
+                        {latestEmail.subject || '(no subject)'}
+                      </span>
+                      {inlinePreview && (
+                        <span className="min-w-0 shrink-[9999] truncate text-muted-foreground">{inlinePreview}</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2.5 shrink-0">
+                    {hasPinned && <Pin className="w-3.5 h-3.5 text-primary" />}
+                    {hasStarred && <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />}
+                    {hasAnswered && !hasForwarded && <Reply className="w-3.5 h-3.5 text-muted-foreground" />}
+                    {hasForwarded && !hasAnswered && <Forward className="w-3.5 h-3.5 text-muted-foreground" />}
+                    {hasAnswered && hasForwarded && (
+                      <>
+                        <Reply className="w-3.5 h-3.5 text-muted-foreground" />
+                        <Forward className="w-3.5 h-3.5 text-muted-foreground" />
+                      </>
                     )}
-                    {accountChipName && <RowBadge name={accountChipName} testId="account-chip" />}
-                    {folderBadgeName && <RowBadge name={folderBadgeName} testId="folder-badge" />}
-                    {hasAttachment && (
-                      <Paperclip className="w-3.5 h-3.5 text-muted-foreground" />
+                    {hasAttachment && <Paperclip className="w-3.5 h-3.5 text-muted-foreground" />}
+                    {showSourceFolder && <SourceFolderTag name={latestEmail.sourceFolder!} />}
+                    {scheduledSendLabel ? (
+                      <span
+                        className="inline-flex max-w-[11rem] shrink-0 items-center gap-1 truncate rounded-full border border-sky-500/20 bg-sky-500/10 px-2 py-0.5 text-xs font-medium tabular-nums text-sky-700 dark:text-sky-300"
+                        title={scheduledSendLabel}
+                      >
+                        <CalendarClock className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{scheduledSendLabel}</span>
+                      </span>
+                    ) : (
+                      <span className={cn(
+                        'text-xs tabular-nums',
+                        hasUnread ? 'text-foreground font-semibold' : 'text-muted-foreground'
+                      )}>
+                        {formatDate(latestEmail.receivedAt)}
+                      </span>
                     )}
                   </div>
                 </div>
-                <span className={cn(
-                  "text-xs flex-shrink-0 tabular-nums",
-                  hasUnread
-                    ? "text-foreground font-semibold"
-                    : "text-muted-foreground"
-                )}>
-                  {formatDate(latestEmail.receivedAt)}
-                </span>
-              </div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      {isUnifiedView && latestEmail.accountId && threadAccountColor && (
+                        <span
+                          className="w-2 h-2 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: threadAccountColor }}
+                          title={latestEmail.accountLabel}
+                        />
+                      )}
+                      <span className={cn(
+                        "truncate text-sm",
+                        hasUnread
+                          ? "font-bold text-foreground"
+                          : "font-medium text-muted-foreground"
+                      )}>
+                        {displayNames.join(", ")}
+                      </span>
+                      <span className={TAG_GROUP_CLASS}>
+                        <ThreadCountPill
+                          count={emailCount}
+                          hasUnread={hasUnread}
+                          title={t('messages_tooltip', { count: emailCount })}
+                        />
+                        {tagPlacement === 'sender' && tagIds.map((id) => (
+                          <TagBadge key={id} tagId={id} variant={tagVariant} />
+                        ))}
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        {hasPinned && (
+                          <Pin className="w-3.5 h-3.5 text-primary" />
+                        )}
+                        {hasStarred && (
+                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                        )}
+                        {hasAnswered && !hasForwarded && (
+                          <Reply className="w-3.5 h-3.5 text-muted-foreground" />
+                        )}
+                        {hasForwarded && !hasAnswered && (
+                          <Forward className="w-3.5 h-3.5 text-muted-foreground" />
+                        )}
+                        {hasAnswered && hasForwarded && (
+                          <>
+                            <Reply className="w-3.5 h-3.5 text-muted-foreground" />
+                            <Forward className="w-3.5 h-3.5 text-muted-foreground" />
+                          </>
+                        )}
+                        {hasAttachment && (
+                          <Paperclip className="w-3.5 h-3.5 text-muted-foreground" />
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      {showSourceFolder && <SourceFolderTag name={latestEmail.sourceFolder!} />}
+                      {scheduledSendLabel ? (
+                        <span
+                          className="inline-flex max-w-[11rem] shrink-0 items-center gap-1 truncate rounded-full border border-sky-500/20 bg-sky-500/10 px-2 py-0.5 text-[11px] font-medium tabular-nums text-sky-700 dark:text-sky-300"
+                          title={scheduledSendLabel}
+                        >
+                          <CalendarClock className="h-3 w-3 shrink-0" />
+                          <span className="truncate">{scheduledSendLabel}</span>
+                        </span>
+                      ) : (
+                        <span className={cn(
+                          "text-xs tabular-nums",
+                          hasUnread
+                            ? "text-foreground font-semibold"
+                            : "text-muted-foreground"
+                        )}>
+                          {formatDate(latestEmail.receivedAt)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
 
-              <div className={cn(
-                "mb-1 line-clamp-1 text-sm",
-                hasUnread
-                  ? "font-semibold text-foreground"
-                  : "font-normal text-foreground/90"
-              )}>
-                {latestEmail.subject || "(no subject)"}
-              </div>
+                  <div className="mb-1 flex min-w-0 items-center gap-1.5">
+                    {tagPlacement === 'subject' && tagIds.length > 0 && (
+                        <span className={TAG_GROUP_CLASS}>
+                          {tagIds.map((id) => (
+                            <TagBadge key={id} tagId={id} variant={tagVariant} />
+                          ))}
+                        </span>
+                    )}
+                    <span className={cn(
+                      "min-w-0 flex-1 truncate text-sm",
+                      hasUnread
+                        ? "font-semibold text-foreground"
+                        : "font-normal text-foreground/90"
+                    )}>
+                      {latestEmail.subject || "(no subject)"}
+                    </span>
+                  </div>
 
-              {showPreview && (
-                <p className={cn(
-                  "text-sm leading-relaxed line-clamp-2",
-                  hasUnread
-                    ? "text-muted-foreground"
-                    : "text-muted-foreground/80"
-                )}>
-                  {latestEmail.preview || "No preview available"}
-                </p>
+                  {showPreview && density !== 'extra-compact' && density !== 'compact' && (
+                    <p className={cn(
+                      "text-sm leading-relaxed line-clamp-2",
+                      hasUnread
+                        ? "text-muted-foreground"
+                        : "text-muted-foreground/80"
+                    )}>
+                      {trimmedPreview || tEmailViewer('no_preview_available')}
+                    </p>
+                  )}
+                </>
               )}
             </div>
           </div>
+
+          {/* Hover Quick Actions for thread header */}
+          {!latestEmail.isScheduled && (
+            <EmailHoverActions
+              email={latestEmail}
+              backgroundClassName={rowTint ? rowTint : ((isSelected || isChecked) ? "bg-accent" : "bg-muted")}
+              onToggleStar={onToggleStar ? () => onToggleStar(latestEmail) : undefined}
+              onMarkAsRead={onMarkAsRead ? (read) => onMarkAsRead(latestEmail, read) : undefined}
+              onDelete={onDelete ? () => onDelete(latestEmail) : undefined}
+              onArchive={onArchive ? () => onArchive(latestEmail) : undefined}
+              onSetTag={onSetTag ? (color) => onSetTag(latestEmail.id, color) : undefined}
+              onMarkAsSpam={onMarkAsSpam ? () => onMarkAsSpam(latestEmail) : undefined}
+              onUndoSpam={onUndoSpam ? () => onUndoSpam(latestEmail) : undefined}
+              isInJunk={currentMailboxRole === 'junk'}
+              spamApplicable={!['sent', 'drafts', 'scheduled'].includes(currentMailboxRole || '')}
+            />
+          )}
         </div>
 
         {isExpanded && !isMobile && (
           <div className="bg-muted/20 animate-in slide-in-from-top-2 duration-200">
             {isLoading ? (
               <div className="py-4 flex items-center justify-center text-sm text-muted-foreground">
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                <Loader2 className="w-4 h-4 animate-spin me-2" />
                 {t('loading')}
               </div>
             ) : (
@@ -423,9 +1014,10 @@ export const ThreadListItem = React.forwardRef<HTMLDivElement, ThreadListItemPro
                 <ThreadEmailItem
                   key={email.id}
                   email={email}
-                  selected={selectedAccountMatches && email.id === selectedEmailId}
+                  selected={email.id === selectedEmailId}
                   isLast={index === emailsToShow.length - 1}
                   onClick={() => onEmailSelect(email)}
+                  onDoubleClick={onEmailDoubleClick ? () => onEmailDoubleClick(email) : undefined}
                   onContextMenu={onContextMenu}
                 />
               ))

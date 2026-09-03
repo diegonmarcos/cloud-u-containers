@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import DOMPurify from "dompurify";
 import { Email, ThreadGroup } from "@/lib/jmap/types";
-import { hasRichFormatting, needsIframeRendering, buildEmailSanitizeConfig, collapseBlockedImageContainers, plainTextToSafeHtml } from "@/lib/email-sanitization";
-import { SandboxedEmailFrame } from "./sandboxed-email-frame";
+import { EMAIL_SANITIZE_CONFIG, collapseBlockedImageContainers, plainTextToSafeHtml, restrictDataUriResourcesOnNode, sanitizePlainTextRenderedHtml } from "@/lib/email-sanitization";
+import { hasMeaningfulHtmlBody } from "@/lib/signature-utils";
+import { collapsePlainTextQuotes, setupQuoteCollapse } from "@/lib/quote-collapse";
 import { transformInlineStyles, transformColorForDarkMode, transformBgColorForDarkMode } from "@/lib/color-transform";
 import { useThemeStore } from "@/stores/theme-store";
 import { Avatar } from "@/components/ui/avatar";
@@ -27,10 +28,13 @@ import {
   FileAudio,
   FileArchive,
   File,
+  Eye,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useSettingsStore } from "@/stores/settings-store";
+import { useContactStore } from "@/stores/contact-store";
 import { useAuthStore } from "@/stores/auth-store";
+import { isFilePreviewable } from "@/lib/file-preview";
 
 interface ThreadConversationViewProps {
   thread: ThreadGroup;
@@ -82,6 +86,10 @@ export function ThreadConversationView({
   const externalContentPolicy = useSettingsStore((state) => state.externalContentPolicy);
   const addTrustedSender = useSettingsStore((state) => state.addTrustedSender);
   const isSenderTrusted = useSettingsStore((state) => state.isSenderTrusted);
+  const trustedSendersAddressBook = useSettingsStore((state) => state.trustedSendersAddressBook);
+  const isTrustedAddressBookSender = useContactStore((state) => state.isTrustedAddressBookSender);
+  const addToTrustedSendersBook = useContactStore((state) => state.addToTrustedSendersBook);
+  const { client } = useAuthStore();
 
   // Track which emails are expanded (most recent by default)
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -140,15 +148,15 @@ export function ThreadConversationView({
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 sticky top-0 z-10">
+      <div className="flex items-center px-4 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 sticky top-0 z-10" style={{ gap: 'var(--density-item-gap)', paddingBlock: 'var(--density-header-py)' }}>
         <button
           onClick={onBack}
-          className="p-2 -ml-2 rounded-full hover:bg-muted transition-colors"
+          className="p-2 -ms-2 rounded-full hover:bg-muted transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div className="flex-1 min-w-0">
-          <h1 className="font-semibold text-foreground truncate">
+          <h1 className="font-semibold text-foreground break-words">
             {thread.latestEmail.subject || t("email_viewer.no_subject")}
           </h1>
           <p className="text-sm text-muted-foreground">
@@ -159,10 +167,12 @@ export function ThreadConversationView({
 
       {/* Email Cards */}
       <div className="flex-1 overflow-y-auto">
-        <div className="p-4 space-y-3">
+        <div className="space-y-3" style={{ padding: 'var(--density-card-p)' }}>
           {emails.map((email, index) => {
             const senderEmail = email.from?.[0]?.email?.toLowerCase();
-            const senderIsTrusted = senderEmail ? isSenderTrusted(senderEmail) : false;
+            const senderIsTrusted = senderEmail
+              ? isSenderTrusted(senderEmail) || (trustedSendersAddressBook && isTrustedAddressBookSender(senderEmail))
+              : false;
             return (
               <EmailCard
                 key={email.id}
@@ -173,7 +183,11 @@ export function ThreadConversationView({
                 onToggleExpanded={() => toggleExpanded(email.id)}
                 onAllowExternal={() => toggleAllowExternal(email.id)}
                 onTrustSender={senderEmail ? () => {
-                  addTrustedSender(senderEmail);
+                  if (trustedSendersAddressBook && client) {
+                    addToTrustedSendersBook(client, senderEmail).catch(console.error);
+                  } else {
+                    addTrustedSender(senderEmail);
+                  }
                   toggleAllowExternal(email.id);
                 } : undefined}
                 onReply={onReply ? () => onReply(email) : undefined}
@@ -222,70 +236,17 @@ function EmailCard({
 }: EmailCardProps) {
   const t = useTranslations();
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
+  const density = useSettingsStore((state) => state.density);
+  const mailAttachmentAction = useSettingsStore((state) => state.mailAttachmentAction);
+  const hideInlineImageAttachments = useSettingsStore((state) => state.hideInlineImageAttachments);
+  const emailAlwaysLightMode = useSettingsStore((state) => state.emailAlwaysLightMode);
+  const plainTextFont = useSettingsStore((state) => state.plainTextFont);
   const sender = email.from?.[0];
   const isUnread = !email.keywords?.$seen;
   const isStarred = email.keywords?.$flagged;
   const [hasBlockedContent, setHasBlockedContent] = useState(false);
+  const [cidBlobUrls, setCidBlobUrls] = useState<Record<string, string>>({});
   const { client } = useAuthStore();
-
-  // Gmail tags attachments with a Content-ID even when the body never
-  // references them, so "has a cid" is not the same as "is inline". Only
-  // treat an attachment as inline when its cid is actually cited via
-  // cid:... in the HTML body.
-  const referencedCids = useMemo(() => {
-    const cids = new Set<string>();
-    if (!email?.htmlBody || !email.bodyValues) return cids;
-    for (const part of email.htmlBody) {
-      const html = part.partId ? email.bodyValues[part.partId]?.value : undefined;
-      if (!html) continue;
-      const matches = html.matchAll(/cid:([^"'\s>)]+)/gi);
-      for (const m of matches) cids.add(m[1]);
-    }
-    return cids;
-  }, [email?.htmlBody, email?.bodyValues]);
-
-  const isInlineAttachment = useCallback(
-    (att: { cid?: string; blobId?: string }) =>
-      !!(att.cid && att.blobId && referencedCids.has(att.cid)),
-    [referencedCids]
-  );
-
-  const [cidUrls, setCidUrls] = useState<Map<string, string>>(new Map());
-  useEffect(() => {
-    if (!email?.attachments || !client) {
-      setCidUrls(new Map());
-      return;
-    }
-    const inlineAtts = email.attachments.filter(isInlineAttachment);
-    if (inlineAtts.length === 0) {
-      setCidUrls(new Map());
-      return;
-    }
-    let cancelled = false;
-    const objectUrls: string[] = [];
-    Promise.all(
-      inlineAtts.map(async (att) => {
-        try {
-          const objectUrl = await client.fetchBlobAsObjectUrl(att.blobId, att.name, att.type);
-          objectUrls.push(objectUrl);
-          return [att.cid!, objectUrl] as const;
-        } catch {
-          return null;
-        }
-      })
-    ).then((results) => {
-      if (cancelled) return;
-      const map = new Map<string, string>();
-      for (const r of results) {
-        if (r) map.set(r[0], r[1]);
-      }
-      setCidUrls(map);
-    });
-    return () => {
-      cancelled = true;
-      objectUrls.forEach(url => URL.revokeObjectURL(url));
-    };
-  }, [email?.id, email?.attachments, client, isInlineAttachment]);
 
   // Mark as read when email is expanded
   useEffect(() => {
@@ -315,6 +276,51 @@ function EmailCard({
     return () => clearTimeout(timeout);
   }, [isExpanded, email.id, email.keywords?.$seen, onMarkAsRead]);
 
+  // Fetch inline CID images with authentication to prevent browser auth dialogs
+  useEffect(() => {
+    if (!client || !email?.attachments) {
+      setCidBlobUrls({});
+      return;
+    }
+
+    const cidAttachments = email.attachments.filter(att => att.cid && att.blobId);
+    if (cidAttachments.length === 0) {
+      setCidBlobUrls({});
+      return;
+    }
+
+    let cancelled = false;
+    const objectUrls: string[] = [];
+
+    async function fetchCidBlobs() {
+      const urls: Record<string, string> = {};
+      await Promise.all(cidAttachments.map(async (att) => {
+        const cidValue = att.cid!.replace(/^<|>$/g, '');
+        try {
+          const objectUrl = await client!.fetchBlobAsObjectUrl(att.blobId, att.name || 'inline', att.type);
+          if (!cancelled) {
+            urls[cidValue] = objectUrl;
+            objectUrls.push(objectUrl);
+          } else {
+            URL.revokeObjectURL(objectUrl);
+          }
+        } catch {
+          // Failed to fetch inline image, will show placeholder
+        }
+      }));
+      if (!cancelled) {
+        setCidBlobUrls(urls);
+      }
+    }
+
+    fetchCidBlobs();
+
+    return () => {
+      cancelled = true;
+      objectUrls.forEach(url => URL.revokeObjectURL(url));
+    };
+  }, [client, email?.id, email?.attachments]);
+
   // Sanitize and prepare email HTML content
   const emailContent = useMemo(() => {
     if (!email) return { html: "", isHtml: false };
@@ -325,18 +331,42 @@ function EmailCard({
 
       if (email.htmlBody?.[0]?.partId && email.bodyValues[email.htmlBody[0].partId]) {
         htmlContent = email.bodyValues[email.htmlBody[0].partId].value;
-
-        // Use safe parsing instead of innerHTML to detect rich formatting
-        useHtmlVersion = hasRichFormatting(htmlContent);
+        // Prefer textBody when HTML is auto-generated minimal wrapper (no rich formatting).
+        // Server-generated HTML from text/plain emails often lacks <br> tags, collapsing newlines.
+        // Per RFC 8621, an HTML-only email exposes the same partId in both htmlBody and textBody -
+        // in that case there is no real plain-text alternative, so always render the HTML.
+        const textPartId = email.textBody?.[0]?.partId;
+        const htmlPartId = email.htmlBody[0].partId;
+        const hasDistinctTextBody = !!textPartId && textPartId !== htmlPartId && !!email.bodyValues[textPartId];
+        if (hasDistinctTextBody && htmlContent) {
+          useHtmlVersion = hasMeaningfulHtmlBody(htmlContent);
+        } else {
+          useHtmlVersion = !!htmlContent;
+        }
       }
 
       if (useHtmlVersion && htmlContent) {
+        // Replace cid: references with authenticated blob URLs (fetched via useEffect)
+        // This prevents browser auth dialogs that occur when loading raw JMAP download URLs
+        if (email.attachments) {
+          htmlContent = htmlContent.replace(
+            /\bcid:([^"'\s)]+)/gi,
+            (_match, cidRef) => {
+              return cidBlobUrls[cidRef] || 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+            }
+          );
+        }
+
         let blockedExternalContent = false;
 
-        const sanitizeConfig = buildEmailSanitizeConfig(!allowExternal);
+        // Use shared sanitization config as base (more secure)
+        const sanitizeConfig = { ...EMAIL_SANITIZE_CONFIG };
 
         DOMPurify.addHook('afterSanitizeAttributes', (node) => {
           const htmlNode = node as HTMLElement;
+
+          // Re-apply the data:-URI allowlist DOMPurify skips on media tags.
+          restrictDataUriResourcesOnNode(node);
 
           if (!allowExternal) {
             if (node.tagName === 'IMG') {
@@ -363,7 +393,7 @@ function EmailCard({
             node.setAttribute('rel', 'noopener noreferrer');
           }
 
-          if (resolvedTheme === 'dark') {
+          if (resolvedTheme === 'dark' && !emailAlwaysLightMode) {
             if (htmlNode.style) {
               const originalStyles = htmlNode.style.cssText;
               const transformedStyles = transformInlineStyles(originalStyles, 'dark');
@@ -393,22 +423,18 @@ function EmailCard({
           finalHtml = collapseBlockedImageContainers(sanitized);
         }
 
-        // Replace cid: references with pre-fetched object URLs
-        if (cidUrls.size > 0) {
-          finalHtml = finalHtml.replace(/src="cid:([^"]+)"/gi, (match, cid) => {
-            const url = cidUrls.get(cid);
-            return url ? `src="${url}"` : match;
-          });
-        }
-
-        return { html: finalHtml, isHtml: true, useIframe: needsIframeRendering(htmlContent) };
+        return { html: finalHtml, isHtml: true };
       }
 
       // Plain text fallback
       if (email.textBody?.[0]?.partId && email.bodyValues[email.textBody[0].partId]) {
         const text = email.bodyValues[email.textBody[0].partId].value;
         return {
-          html: plainTextToSafeHtml(text, { linkClassName: 'text-primary hover:underline' }),
+          // Trailing ">"-quoted block collapses behind a <details> toggle (#480).
+          html: collapsePlainTextQuotes(plainTextToSafeHtml(text, 'text-primary hover:underline'), {
+            show: t('email_viewer.show_quoted_text'),
+            hide: t('email_viewer.hide_quoted_text'),
+          }),
           isHtml: false,
         };
       }
@@ -416,32 +442,89 @@ function EmailCard({
 
     // Fallback to preview
     if (email.preview) {
-      return { html: email.preview.replace(/\n/g, '<br>'), isHtml: false };
+      const previewHtml = email.preview
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+      return { html: previewHtml, isHtml: false };
     }
 
     return { html: "", isHtml: false };
-  }, [email, allowExternal, resolvedTheme, cidUrls]);
+  }, [email, allowExternal, resolvedTheme, emailAlwaysLightMode, cidBlobUrls, t]);
+
+  // Render the sanitized HTML body inside a sandboxed iframe so a malicious
+  // (or accidentally-bypassed) email cannot inject styles/scripts/forms into
+  // the host page. CSP <meta> is defense-in-depth in case the sanitizer ever
+  // emits a <script> tag through a parser quirk.
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const emailIframeSrcDoc = useMemo(() => {
+    if (!emailContent.isHtml || !emailContent.html) return '';
+    const csp = "default-src 'none'; img-src data: blob: http: https:; style-src 'unsafe-inline'; font-src data: http: https:; media-src data: blob: http: https:; base-uri 'none'; form-action 'none'; frame-src 'none'";
+    return `<!DOCTYPE html><html><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="${csp}">
+<style>
+  html, body { overflow: hidden; }
+  body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; line-height: 1.6; color: #1a1a1a; background: #ffffff; word-wrap: break-word; overflow-wrap: break-word; }
+  img { max-width: 100% !important; height: auto !important; }
+  a { color: #1a73e8; }
+  table { max-width: 100% !important; table-layout: auto; overflow-wrap: break-word; }
+  td, th { word-break: break-word; padding: 0.5rem; }
+  pre { white-space: pre-wrap; word-wrap: break-word; }
+</style></head><body>${emailContent.html}</body></html>`;
+  }, [emailContent.isHtml, emailContent.html]);
+
+  const handleIframeLoad = useCallback(() => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+    try {
+      const doc = iframe.contentDocument;
+      if (!doc?.body) return;
+      // Collapse the quoted original of a reply behind a "•••" toggle (#480),
+      // before the first resize so the height reflects the collapsed body.
+      setupQuoteCollapse(doc, {
+        show: t('email_viewer.show_quoted_text'),
+        hide: t('email_viewer.hide_quoted_text'),
+      });
+      const resize = () => {
+        iframe.style.height = doc.documentElement.scrollHeight + 'px';
+      };
+      resize();
+      const ro = new ResizeObserver(resize);
+      ro.observe(doc.body);
+      doc.querySelectorAll('a').forEach((a) => {
+        a.setAttribute('target', '_blank');
+        a.setAttribute('rel', 'noopener noreferrer');
+      });
+    } catch {
+      // contentDocument may be inaccessible under stricter sandboxes; ignore.
+    }
+  }, [t]);
 
   return (
     <div className={cn(
       "rounded-lg border border-border overflow-hidden transition-all duration-200",
       isExpanded ? "bg-background shadow-sm" : "bg-muted/30",
-      isUnread && !isExpanded && "border-l-2 border-l-primary"
+      isUnread && !isExpanded && "border-s-2 border-l-primary"
     )}>
       {/* Card Header - Always visible */}
       <button
         onClick={onToggleExpanded}
         className={cn(
-          "w-full flex items-start gap-3 p-4 text-left transition-colors",
+          "w-full flex items-start text-start transition-colors",
           !isExpanded && "hover:bg-muted/50"
         )}
+        style={{ gap: 'var(--density-item-gap)', padding: 'var(--density-card-p)' }}
       >
-        <Avatar
-          name={sender?.name}
-          email={sender?.email}
-          size="md"
-          className="flex-shrink-0"
-        />
+        {density !== 'extra-compact' && (
+          <Avatar
+            name={sender?.name}
+            email={sender?.email}
+            size="md"
+            className="flex-shrink-0"
+          />
+        )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
             <span className={cn(
@@ -460,9 +543,9 @@ function EmailCard({
           <div className="text-sm text-muted-foreground">
             {formatDate(email.receivedAt)}
           </div>
-          {!isExpanded && (
+          {!isExpanded && density !== 'extra-compact' && (
             <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-              {email.preview || "No preview available"}
+              {email.preview || t('email_viewer.no_preview_available')}
             </p>
           )}
         </div>
@@ -512,29 +595,46 @@ function EmailCard({
           )}
 
           {/* Email Body */}
-          <div className="px-4 py-4">
-            {emailContent.isHtml && emailContent.useIframe ? (
-              <SandboxedEmailFrame html={emailContent.html} className="w-full" />
+          <div style={{ padding: 'var(--density-card-p)' }}>
+            {emailContent.isHtml ? (
+              <iframe
+                ref={iframeRef}
+                srcDoc={emailIframeSrcDoc}
+                sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+                title="Email content"
+                className="w-full border-0 block"
+                scrolling="no"
+                style={{ minHeight: '60px' }}
+                onLoad={handleIframeLoad}
+              />
             ) : (
               <div
                 className={cn(
-                  "prose prose-sm max-w-none dark:prose-invert",
+                  "prose prose-sm max-w-none",
+                  !emailAlwaysLightMode && "dark:prose-invert",
                   "prose-p:my-2 prose-headings:my-3",
                   "prose-a:text-primary prose-a:no-underline hover:prose-a:underline",
                   "[&_table]:border-collapse [&_td]:p-2 [&_th]:p-2",
                   "[&_img]:max-w-full [&_img]:h-auto"
                 )}
-                dangerouslySetInnerHTML={{ __html: emailContent.html }}
+                style={{ whiteSpace: 'pre-wrap', ...(plainTextFont === 'mono' && { fontFamily: 'ui-monospace, "SF Mono", Consolas, monospace' }), fontSize: '13px' }}
+                dangerouslySetInnerHTML={{ __html: sanitizePlainTextRenderedHtml(emailContent.html) }}
               />
             )}
           </div>
 
-          {/* Attachments (excluding inline images that the body actually cites via cid:) */}
-          {email.attachments && email.attachments.filter(a => !isInlineAttachment(a)).length > 0 && (
+          {/* Attachments */}
+          {(() => {
+            const visibleAttachments = (email.attachments ?? []).filter(
+              att => !(hideInlineImageAttachments && att.cid && att.disposition === 'inline' && (att.type || '').startsWith('image/'))
+            );
+            return visibleAttachments.length > 0 && (
             <div className="px-4 pb-4">
               <div className="flex flex-wrap gap-2">
-                {email.attachments.filter(a => !isInlineAttachment(a)).map((attachment, idx) => {
+                {visibleAttachments.map((attachment, idx) => {
                   const Icon = getFileIcon(attachment.name, attachment.type);
+                  const isPreviewable = isFilePreviewable(attachment.name, attachment.type);
+                  const opensPreview = isPreviewable && mailAttachmentAction === 'preview';
                   return (
                     <button
                       key={idx}
@@ -542,6 +642,7 @@ function EmailCard({
                         e.stopPropagation();
                         onDownloadAttachment?.(attachment.blobId, attachment.name || 'attachment', attachment.type);
                       }}
+                      title={opensPreview ? t('files.preview') : t('email_viewer.download')}
                       className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-sm"
                     >
                       <Icon className="w-4 h-4 text-muted-foreground" />
@@ -549,13 +650,18 @@ function EmailCard({
                       <span className="text-muted-foreground text-xs">
                         {formatFileSize(attachment.size)}
                       </span>
-                      <Download className="w-4 h-4 text-muted-foreground" />
+                      {opensPreview ? (
+                        <Eye className="w-4 h-4 text-muted-foreground" />
+                      ) : (
+                        <Download className="w-4 h-4 text-muted-foreground" />
+                      )}
                     </button>
                   );
                 })}
               </div>
             </div>
-          )}
+            );
+          })()}
 
           {/* Action Buttons */}
           <div className="px-4 pb-4 flex gap-2">
@@ -569,7 +675,7 @@ function EmailCard({
                 }}
                 className="flex-1"
               >
-                <Reply className="w-4 h-4 mr-2" />
+                <Reply className="w-4 h-4 me-2" />
                 {t("email_viewer.reply")}
               </Button>
             )}
@@ -583,7 +689,7 @@ function EmailCard({
                 }}
                 className="flex-1"
               >
-                <ReplyAll className="w-4 h-4 mr-2" />
+                <ReplyAll className="w-4 h-4 me-2" />
                 {t("email_viewer.reply_all")}
               </Button>
             )}
@@ -597,7 +703,7 @@ function EmailCard({
                 }}
                 className="flex-1"
               >
-                <Forward className="w-4 h-4 mr-2" />
+                <Forward className="w-4 h-4 me-2" />
                 {t("email_viewer.forward")}
               </Button>
             )}

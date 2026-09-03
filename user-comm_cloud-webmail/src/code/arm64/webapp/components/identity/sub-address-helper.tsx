@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useIdentityStore } from '@/stores/identity-store';
+import { useSettingsStore } from '@/stores/settings-store';
 import {
   generateSubAddress,
   extractDomain,
@@ -35,6 +36,7 @@ export function SubAddressHelper({
   const popoverRef = useRef<HTMLDivElement>(null);
 
   const { subAddress, addRecentTag, addTagSuggestion } = useIdentityStore();
+  const subAddressDelimiter = useSettingsStore((state) => state.subAddressDelimiter);
 
   // Get suggestions based on recipient (memoized for performance)
   const suggestions = useMemo(() => {
@@ -47,7 +49,7 @@ export function SubAddressHelper({
   }, [recipientEmails]);
 
   // Generate preview
-  const preview = tag ? generateSubAddress(baseEmail, tag) : baseEmail;
+  const preview = tag ? generateSubAddress(baseEmail, tag, subAddressDelimiter) : baseEmail;
 
   // Close popover when clicking outside
   useEffect(() => {
@@ -126,7 +128,7 @@ export function SubAddressHelper({
         title={t('button_tooltip')}
         className="h-8 px-2"
       >
-        <Plus className="w-4 h-4 mr-1" />
+        <Plus className="w-4 h-4 me-1" />
         <Tag className="w-4 h-4" />
       </Button>
 
@@ -135,7 +137,7 @@ export function SubAddressHelper({
         <div
           ref={popoverRef}
           className={cn(
-            'absolute top-full left-0 mt-1 z-50',
+            'absolute top-full end-0 mt-1 z-50',
             'bg-background border border-border rounded-lg shadow-lg',
             'w-80 p-4 animate-in fade-in zoom-in-95 duration-150'
           )}
@@ -226,7 +228,7 @@ export function SubAddressHelper({
 
           {/* Help Text */}
           <div className="mb-3 text-xs text-muted-foreground">
-            {t('help_text')}
+            {t('help_text', { delimiter: subAddressDelimiter })}
           </div>
 
           {/* Use Address Button */}

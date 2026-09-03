@@ -9,8 +9,12 @@ import { SieveEditorModal } from "@/components/filters/sieve-editor-modal";
 import { useFilterStore } from "@/stores/filter-store";
 import { useAuthStore } from "@/stores/auth-store";
 import { useEmailStore } from "@/stores/email-store";
+import { useSettingsStore } from "@/stores/settings-store";
 import { toast } from "@/stores/toast-store";
 import type { FilterRule } from "@/lib/jmap/sieve-types";
+import type { Mailbox } from "@/lib/jmap/types";
+import { useVacationStore } from "@/stores/vacation-store";
+import { useManagedAccountStore } from "@/stores/managed-account-store";
 import {
   Plus,
   GripVertical,
@@ -20,36 +24,134 @@ import {
   Loader2,
   Filter,
   RotateCcw,
+  PalmtreeIcon,
+  Lock,
 } from "lucide-react";
+
+function isReadonlyRule(r: FilterRule): boolean {
+  return r.origin === "external" || r.origin === "opaque";
+}
 
 function RuleSummary({ rule }: { rule: FilterRule }) {
   const t = useTranslations("settings.filters");
 
-  const conditionSummary = rule.conditions
-    .slice(0, 2)
-    .map((c) => {
-      const field = t(`condition_fields.${c.field}`);
-      const comparator = t(`comparators.${c.comparator}`);
-      return `${field} ${comparator} "${c.value}"`;
-    })
-    .join(rule.matchType === "all" ? ` ${t("and")} ` : ` ${t("or")} `);
+  const conditions = rule.conditions.slice(0, 2).map((c) => {
+    const field = t(`condition_fields.${c.field}`);
+    const comparator = t(`comparators.${c.comparator}`);
+    // has_any is a no-value test ("attachment is present"); appending
+    // `""` would look broken in the summary line.
+    if (c.field === "attachment" && c.comparator === "has_any") {
+      return `${field} ${comparator}`;
+    }
+    // Multi-value conditions render as "a" / "b" / "c" with the locale's
+    // OR-glue between items so the line still reads as natural language.
+    const valueStr = Array.isArray(c.value)
+      ? c.value.map((v) => `"${v}"`).join(` ${t("or")} `)
+      : `"${c.value}"`;
+    return `${field} ${comparator} ${valueStr}`;
+  });
+
+  const joiner = rule.matchType === "all" ? t("and") : t("or");
 
   const extra = rule.conditions.length > 2
     ? ` (+${rule.conditions.length - 2})`
     : "";
 
-  const actionSummary = rule.actions
-    .slice(0, 2)
-    .map((a) => {
-      const action = t(`action_types.${a.type}`);
-      return a.value ? `${action} "${a.value}"` : action;
-    })
-    .join(", ");
+  const actions = rule.actions.slice(0, 2).map((a) => {
+    const action = t(`action_types.${a.type}`);
+    return a.value ? `${action} "${a.value}"` : action;
+  });
 
   return (
-    <span className="text-xs text-muted-foreground truncate">
-      {conditionSummary}{extra} → {actionSummary}
-    </span>
+    <div className="text-xs text-muted-foreground break-words">
+      <span className="inline">
+        {conditions.map((cond, i) => (
+          <span key={i}>
+            {i > 0 && <span className="italic opacity-70"> {joiner} </span>}
+            {cond}
+          </span>
+        ))}
+        {extra}
+      </span>
+      <span className="mx-1 opacity-50">→</span>
+      <span className="inline">
+        {actions.map((act, i) => (
+          <span key={i}>
+            {i > 0 && ", "}
+            {act}
+          </span>
+        ))}
+      </span>
+    </div>
+  );
+}
+
+function VisualRuleSummary({ rule }: { rule: FilterRule }) {
+  const t = useTranslations("settings.filters");
+
+  const joiner = rule.matchType === "all" ? t("and") : t("or");
+  const matchLabel = rule.matchType === "all" ? t("match_all_conditions") : t("match_any_condition");
+
+  return (
+    <div className="mt-1.5 space-y-1 text-xs">
+      <div className="flex items-baseline gap-1.5 flex-wrap">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-blue-500 dark:text-blue-400">
+          {t("if")}
+        </span>
+        {rule.conditions.map((c, i) => {
+          const field = t(`condition_fields.${c.field}`);
+          const comparator = t(`comparators.${c.comparator}`);
+          return (
+            <span key={i} className="contents">
+              {i > 0 && (
+                <span className="text-[10px] text-muted-foreground/70 italic">{joiner}</span>
+              )}
+              <span className="inline-flex items-baseline gap-1 px-1.5 py-px rounded-sm bg-muted/60 text-foreground">
+                <span className="font-medium text-blue-600 dark:text-blue-400">{field}</span>
+                <span className="text-muted-foreground">{comparator}</span>
+                {!(c.field === "attachment" && c.comparator === "has_any") && (
+                  <span className="text-foreground">
+                    {Array.isArray(c.value)
+                      ? c.value.map((v, k) => (
+                          <span key={k}>
+                            {k > 0 && (
+                              <span className="text-muted-foreground/70 italic mx-0.5">
+                                {t("or")}
+                              </span>
+                            )}
+                            “{v}”
+                          </span>
+                        ))
+                      : <>“{c.value}”</>}
+                  </span>
+                )}
+              </span>
+            </span>
+          );
+        })}
+        <span className="text-[10px] text-muted-foreground/60 italic">({matchLabel})</span>
+      </div>
+
+      <div className="flex items-baseline gap-1.5 flex-wrap">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-emerald-500 dark:text-emerald-400">
+          {t("then")}
+        </span>
+        {rule.actions.map((a, i) => {
+          const action = t(`action_types.${a.type}`);
+          return (
+            <span key={i} className="contents">
+              {i > 0 && (
+                <span className="text-muted-foreground/50">›</span>
+              )}
+              <span className="inline-flex items-baseline gap-1 px-1.5 py-px rounded-sm bg-muted/60 text-foreground">
+                <span className="font-medium text-emerald-600 dark:text-emerald-400">{action}</span>
+                {a.value && <span className="text-muted-foreground">“{a.value}”</span>}
+              </span>
+            </span>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -57,7 +159,10 @@ export function FilterSettings() {
   const t = useTranslations("settings.filters");
   const tNotifications = useTranslations("notifications");
   const { client } = useAuthStore();
-  const mailboxes = useEmailStore((s) => s.mailboxes);
+  const storeMailboxes = useEmailStore((s) => s.mailboxes);
+  const fetchMailboxes = useEmailStore((s) => s.fetchMailboxes);
+  const expandedFilterView = useSettingsStore((s) => s.expandedFilterView);
+  const updateSetting = useSettingsStore((s) => s.updateSetting);
 
   const {
     rules,
@@ -67,7 +172,8 @@ export function FilterSettings() {
     isSupported,
     isOpaque,
     rawScript,
-    fetchFilters,
+    vacationSettings,
+    selectAccount,
     saveFilters,
     addRule,
     updateRule,
@@ -79,6 +185,58 @@ export function FilterSettings() {
     validateScript,
   } = useFilterStore();
 
+  // Scoped to a shared/group account when the settings panel is managing one.
+  const managedAccountId = useManagedAccountStore((s) => s.managedAccountId);
+  const isPrimaryAccount = !managedAccountId;
+
+  // Folders offered as "move to" targets in the rule editor must belong to the
+  // account whose filters we're editing. For a shared account, fetch that
+  // account's mailboxes (the email store only holds the active account's). They
+  // are this account's own folders within its Sieve context, so present them as
+  // non-shared — otherwise the rule modal filters them out (it drops isShared
+  // mailboxes, which are normally other accounts' folders merged into the view).
+  const [scopedMailboxes, setScopedMailboxes] = useState<Mailbox[]>([]);
+  useEffect(() => {
+    if (!client || !managedAccountId) {
+      setScopedMailboxes([]);
+      return;
+    }
+    let cancelled = false;
+    void client
+      .getMailboxes(managedAccountId)
+      .then((mbs) => {
+        if (!cancelled) setScopedMailboxes(mbs.map((mb) => ({ ...mb, isShared: false })));
+      })
+      .catch(() => {
+        if (!cancelled) setScopedMailboxes([]);
+      });
+    return () => { cancelled = true; };
+  }, [client, managedAccountId]);
+
+  // The "move to" folder list for the primary account comes from the email
+  // store, which is normally populated when the mail view mounts. When the app
+  // is opened or refreshed directly on Settings (the mail view never mounted),
+  // that store is empty, leaving the rule editor's folder dropdown blank. Fetch
+  // mailboxes on demand here so Filters never depends on having visited Inbox
+  // first. fetchMailboxes guards against transient empty results and selecting
+  // an inbox, so it's safe to call independently; a ref keeps it to one attempt
+  // per client.
+  const primaryFetchClientRef = useRef<typeof client | null>(null);
+  useEffect(() => {
+    if (managedAccountId || !client || storeMailboxes.length > 0) return;
+    if (primaryFetchClientRef.current === client) return;
+    primaryFetchClientRef.current = client;
+    void fetchMailboxes(client);
+  }, [client, managedAccountId, storeMailboxes.length, fetchMailboxes]);
+
+  const mailboxes = managedAccountId ? scopedMailboxes : storeMailboxes;
+
+  const vacationStoreEnabled = useVacationStore((s) => s.isEnabled);
+  // Vacation uses a separate per-(primary)-account mechanism (RFC 9661), so the
+  // "vacation active" banner only applies when editing the personal account.
+  const vacationEnabled =
+    isPrimaryAccount && (vacationStoreEnabled || vacationSettings?.isEnabled);
+
   const [editingRule, setEditingRule] = useState<FilterRule | undefined>();
   const [showRuleModal, setShowRuleModal] = useState(false);
   const [showSieveEditor, setShowSieveEditor] = useState(false);
@@ -89,9 +247,12 @@ export function FilterSettings() {
 
   useEffect(() => {
     if (client && isSupported) {
-      void fetchFilters(client);
+      // Always pass a concrete account id (managed shared account, or the
+      // primary Sieve account) so switching never falls back to a stale
+      // previously-selected account.
+      void selectAccount(client, managedAccountId ?? client.getSieveAccountId());
     }
-  }, [client, isSupported, fetchFilters]);
+  }, [client, isSupported, managedAccountId, selectAccount]);
 
   const handleToggle = useCallback(
     async (ruleId: string) => {
@@ -319,7 +480,33 @@ export function FilterSettings() {
           </div>
         )}
 
-        {!isOpaque && rules.length === 0 && (
+        {!isOpaque && vacationEnabled && (
+          <button
+            type="button"
+            onClick={() => {
+              try { localStorage.setItem('settings-active-tab', 'vacation'); } catch { /* ignore */ }
+              window.dispatchEvent(new CustomEvent('settings-tab-change', { detail: 'vacation' }));
+            }}
+            className="flex items-center gap-3 w-full p-3 rounded-md border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors text-start"
+          >
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/40">
+              <PalmtreeIcon className="w-4 h-4 text-green-600 dark:text-green-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-green-700 dark:text-green-400">
+                {t("vacation_active")}
+              </p>
+              <p className="text-xs text-green-600/70 dark:text-green-400/70">
+                {t("vacation_active_description")}
+              </p>
+            </div>
+            <span className="text-xs text-green-600 dark:text-green-400 font-medium">
+              {t("vacation_configure")} &rarr;
+            </span>
+          </button>
+        )}
+
+        {!isOpaque && rules.length === 0 && !vacationEnabled && (
           <div className="flex flex-col items-center py-8 text-muted-foreground">
             <Filter className="w-10 h-10 mb-3 opacity-40" />
             <p className="text-sm">{t("no_rules")}</p>
@@ -328,84 +515,137 @@ export function FilterSettings() {
 
         {!isOpaque && rules.length > 0 && (
           <div className="space-y-1" role="list" aria-label={t("rule_list")}>
-            {rules.map((rule, index) => (
-              <div
-                key={rule.id}
-                role="listitem"
-                draggable
-                onDragStart={(e) => handleDragStart(e, index)}
-                onDragOver={(e) => handleDragOver(e, index)}
-                onDrop={(e) => handleDrop(e, index)}
-                onDragEnd={handleDragEnd}
-                className={`flex items-center gap-3 p-3 rounded-md border transition-colors ${
-                  dragOverIndex === index
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:bg-muted/50"
-                } ${!rule.enabled ? "opacity-60" : ""}`}
-              >
+            {rules.map((rule, index) => {
+              const readonly = isReadonlyRule(rule);
+
+              if (readonly) {
+                const label = rule.originLabel || t("origin_external");
+                const tooltip = t("managed_by_tooltip", { source: label });
+                const hasStructuredSummary =
+                  rule.origin === "external" &&
+                  rule.conditions.length > 0 &&
+                  rule.actions.length > 0;
+                return (
+                  <div
+                    key={rule.id}
+                    role="listitem"
+                    className="flex items-start gap-3 p-3 rounded-md border border-border"
+                    title={tooltip}
+                  >
+                    <div className="pt-0.5 text-muted-foreground" aria-label={tooltip}>
+                      <Lock className="w-4 h-4" />
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {rule.name}
+                        </p>
+                        <span className="inline-flex items-baseline px-1.5 py-px rounded-sm bg-muted/60 text-muted-foreground text-[10px]">
+                          {label}
+                        </span>
+                      </div>
+                      {hasStructuredSummary ? (
+                        expandedFilterView ? (
+                          <VisualRuleSummary rule={rule} />
+                        ) : (
+                          <RuleSummary rule={rule} />
+                        )
+                      ) : rule.rawBlock ? (
+                        <pre className="mt-1.5 text-xs font-mono whitespace-pre-wrap break-all text-muted-foreground bg-muted rounded p-2 max-h-32 overflow-y-auto">
+                          {rule.rawBlock.trim()}
+                        </pre>
+                      ) : null}
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
                 <div
-                  className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
-                  aria-label={t("drag_to_reorder")}
+                  key={rule.id}
+                  role="listitem"
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, index)}
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDrop={(e) => handleDrop(e, index)}
+                  onDragEnd={handleDragEnd}
+                  className={`flex items-start gap-3 p-3 rounded-md border transition-colors ${
+                    dragOverIndex === index
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:bg-muted/50"
+                  } ${!rule.enabled ? "opacity-60" : ""}`}
                 >
-                  <GripVertical className="w-4 h-4" />
-                </div>
+                  <div
+                    className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground pt-0.5"
+                    aria-label={t("drag_to_reorder")}
+                  >
+                    <GripVertical className="w-4 h-4" />
+                  </div>
 
-                <ToggleSwitch
-                  checked={rule.enabled}
-                  onChange={() => handleToggle(rule.id)}
-                />
+                  <div className="pt-0.5">
+                    <ToggleSwitch
+                      checked={rule.enabled}
+                      onChange={() => handleToggle(rule.id)}
+                    />
+                  </div>
 
-                <div
-                  className="flex-1 min-w-0 cursor-pointer"
-                  onClick={() => {
-                    setEditingRule(rule);
-                    setShowRuleModal(true);
-                  }}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
+                  <div
+                    className="flex-1 min-w-0 cursor-pointer"
+                    onClick={() => {
                       setEditingRule(rule);
                       setShowRuleModal(true);
-                    }
-                  }}
-                >
-                  <p className="text-sm font-medium text-foreground truncate">
-                    {rule.name}
-                  </p>
-                  <RuleSummary rule={rule} />
-                </div>
-
-                {deleteConfirmId === rule.id ? (
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDelete(rule.id)}
-                    >
-                      {t("confirm_delete")}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setDeleteConfirmId(null)}
-                    >
-                      {t("cancel")}
-                    </Button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setDeleteConfirmId(rule.id)}
-                    className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                    aria-label={t("delete_rule")}
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setEditingRule(rule);
+                        setShowRuleModal(true);
+                      }
+                    }}
                   >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-            ))}
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {rule.name}
+                    </p>
+                    {expandedFilterView ? (
+                      <VisualRuleSummary rule={rule} />
+                    ) : (
+                      <RuleSummary rule={rule} />
+                    )}
+                  </div>
+
+                  {deleteConfirmId === rule.id ? (
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDelete(rule.id)}
+                      >
+                        {t("confirm_delete")}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDeleteConfirmId(null)}
+                      >
+                        {t("cancel")}
+                      </Button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setDeleteConfirmId(rule.id)}
+                      className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                      aria-label={t("delete_rule")}
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </SettingsSection>
@@ -421,7 +661,7 @@ export function FilterSettings() {
                 setShowRuleModal(true);
               }}
             >
-              <Plus className="w-4 h-4 mr-1" />
+              <Plus className="w-4 h-4 me-1" />
               {t("add_rule")}
             </Button>
           )}
@@ -430,17 +670,28 @@ export function FilterSettings() {
             size="sm"
             onClick={() => setShowSieveEditor(true)}
           >
-            <Code className="w-4 h-4 mr-1" />
+            <Code className="w-4 h-4 me-1" />
             {t("raw_editor")}
           </Button>
         </div>
 
-        {isSaving && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            {t("saving")}
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          {isSaving && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              {t("saving")}
+            </div>
+          )}
+          {!isOpaque && rules.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">{t("expanded_view")}</span>
+              <ToggleSwitch
+                checked={expandedFilterView}
+                onChange={(v) => updateSetting("expandedFilterView", v)}
+              />
+            </div>
+          )}
+        </div>
       </div>
 
       {showRuleModal && (

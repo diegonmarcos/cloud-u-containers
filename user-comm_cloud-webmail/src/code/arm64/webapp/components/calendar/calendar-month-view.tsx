@@ -1,18 +1,18 @@
 "use client";
 
 import { useMemo, useState, useCallback, type DragEvent } from "react";
-import { useTranslations, useFormatter } from "next-intl";
-import {
-  startOfMonth, endOfMonth, startOfWeek, endOfWeek,
-  eachDayOfInterval, isSameDay, isSameMonth, isToday, format, parseISO, getWeek,
-} from "date-fns";
+import { useTranslations } from "next-intl";
+import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import { EventCard } from "./event-card";
-import { getEventEndDate } from "@/lib/calendar-utils";
+import { buildWeekSegments, getEventDayBounds, getPrimaryCalendarId } from "@/lib/calendar-utils";
 import type { CalendarEvent, Calendar } from "@/lib/jmap/types";
 import { useAuthStore } from "@/stores/auth-store";
 import { useCalendarStore } from "@/stores/calendar-store";
+import { useSettingsStore } from "@/stores/settings-store";
+import type { PendingEventPreview } from "./event-modal";
 import { toast } from "@/stores/toast-store";
+import { useCalendarLocale } from "@/hooks/use-calendar-locale";
 
 interface CalendarMonthViewProps {
   selectedDate: Date;
@@ -20,8 +20,14 @@ interface CalendarMonthViewProps {
   calendars: Calendar[];
   onSelectDate: (date: Date) => void;
   onSelectEvent: (event: CalendarEvent, anchorRect: DOMRect) => void;
-  onCreateAtTime: (date: Date, endDate?: Date) => void;
+  onHoverEvent?: (event: CalendarEvent, anchorRect: DOMRect) => void;
+  onHoverLeave?: () => void;
+  onContextMenuEvent?: (e: React.MouseEvent, event: CalendarEvent) => void;
+  onContextMenuEmpty?: (e: React.MouseEvent, date: Date, hour?: number, allDayArea?: boolean) => void;
+  onCreateAtTime?: (date: Date) => void;
   firstDayOfWeek?: number;
+  isMobile?: boolean;
+  pendingPreview?: PendingEventPreview | null;
 }
 
 export function CalendarMonthView({
@@ -30,21 +36,38 @@ export function CalendarMonthView({
   calendars,
   onSelectDate,
   onSelectEvent,
+  onHoverEvent,
+  onHoverLeave,
+  onContextMenuEvent,
+  onContextMenuEmpty,
   onCreateAtTime,
   firstDayOfWeek = 1,
+  isMobile,
+  pendingPreview,
 }: CalendarMonthViewProps) {
   const t = useTranslations("calendar");
-  const intlFormatter = useFormatter();
-  const weekStart = (firstDayOfWeek === 0 ? 0 : 1) as 0 | 1;
-  const firstWeekContainsDate = weekStart === 1 ? 4 : 1;
+  const showTimeInMonthView = useSettingsStore((state) => state.showTimeInMonthView);
+  // On mobile the month view collapses events to dots unless the user opted
+  // into full entries via "Show time in month view" (#666).
+  const showChips = !isMobile || showTimeInMonthView;
+  const overlayTop = isMobile ? 34 : 30;
+  const rowHeight = isMobile ? 18 : 22;
+  const chipHeight = rowHeight - 2;
+  const {
+    weekStartsOn,
+    dayHeaderKeys,
+    getMonthGridDays,
+    checkIsToday,
+    checkIsSameMonth,
+    checkIsSameDay,
+    formatDayNumber,
+    formatFullDate,
+  } = useCalendarLocale();
 
-  const days = useMemo(() => {
-    const monthStart = startOfMonth(selectedDate);
-    const monthEnd = endOfMonth(selectedDate);
-    const gridStart = startOfWeek(monthStart, { weekStartsOn: weekStart });
-    const gridEnd = endOfWeek(monthEnd, { weekStartsOn: weekStart });
-    return eachDayOfInterval({ start: gridStart, end: gridEnd });
-  }, [selectedDate, weekStart]);
+  const days = useMemo(
+    () => getMonthGridDays(selectedDate),
+    [selectedDate, getMonthGridDays],
+  );
 
   const calendarMap = useMemo(() => {
     const map = new Map<string, Calendar>();
@@ -56,12 +79,7 @@ export function CalendarMonthView({
     const map = new Map<string, CalendarEvent[]>();
     events.forEach((e) => {
       try {
-        const start = new Date(e.start);
-        const end = getEventEndDate(e);
-        const startDay = new Date(start);
-        startDay.setHours(0, 0, 0, 0);
-        const endDay = new Date(end);
-        endDay.setHours(0, 0, 0, 0);
+        const { startDay, endDay } = getEventDayBounds(e);
 
         const cursor = new Date(startDay);
         while (cursor <= endDay) {
@@ -76,10 +94,6 @@ export function CalendarMonthView({
     return map;
   }, [events]);
 
-  const dayHeaders = firstDayOfWeek === 0
-    ? ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const
-    : ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
-
   const weeks = useMemo(() => {
     const result: Date[][] = [];
     for (let i = 0; i < days.length; i += 7) {
@@ -88,71 +102,15 @@ export function CalendarMonthView({
     return result;
   }, [days]);
 
+  const weekSegments = useMemo(() => {
+    return weeks.map((week) => {
+      const segments = buildWeekSegments(events, week);
+      const rowCount = segments.reduce((maxRows, segment) => Math.max(maxRows, segment.row + 1), 0);
+      return { week, segments, rowCount };
+    });
+  }, [events, weeks]);
+
   const [dropDayKey, setDropDayKey] = useState<string | null>(null);
-
-  // Round up to the next whole hour, keeping exact-hour times unchanged.
-  const getRoundedUpHour = useCallback((date: Date): number => {
-    const rounded = new Date(date);
-    if (
-      rounded.getMinutes() > 0 ||
-      rounded.getSeconds() > 0 ||
-      rounded.getMilliseconds() > 0
-    ) {
-      rounded.setHours(rounded.getHours() + 1, 0, 0, 0);
-    } else {
-      rounded.setMinutes(0, 0, 0);
-    }
-    return rounded.getHours();
-  }, []);
-
-  // Build busy minute ranges for this specific day, clipped to day boundaries.
-  const getBusyIntervalsForDay = useCallback((day: Date, dayEvents: CalendarEvent[]) => {
-    const dayStart = new Date(day);
-    dayStart.setHours(0, 0, 0, 0);
-    const dayEnd = new Date(dayStart);
-    dayEnd.setDate(dayEnd.getDate() + 1);
-
-    const intervals: Array<[number, number]> = [];
-    for (const ev of dayEvents) {
-      if (ev.showWithoutTime) continue;
-      const evStart = new Date(ev.start);
-      const evEnd = getEventEndDate(ev);
-      if (evEnd <= dayStart || evStart >= dayEnd) continue;
-
-      const clippedStart = evStart < dayStart ? dayStart : evStart;
-      const clippedEnd = evEnd > dayEnd ? dayEnd : evEnd;
-      const startMin = Math.max(0, Math.floor((clippedStart.getTime() - dayStart.getTime()) / 60000));
-      const endMin = Math.min(24 * 60, Math.ceil((clippedEnd.getTime() - dayStart.getTime()) / 60000));
-      if (endMin > startMin) intervals.push([startMin, endMin]);
-    }
-    return intervals;
-  }, []);
-
-  // Pick the first free 1-hour slot; fallback to the next whole hour when fully occupied.
-  const findSuggestedStart = useCallback((day: Date, dayEvents: CalendarEvent[]) => {
-    const now = new Date();
-    const startHour = isToday(day) ? getRoundedUpHour(now) : 9;
-    const fallbackHour = isToday(day) ? getRoundedUpHour(now) : 9;
-    const busyIntervals = getBusyIntervalsForDay(day, dayEvents);
-
-    const isSlotFree = (hour: number) => {
-      const startMin = hour * 60;
-      const endMin = startMin + 60;
-      return busyIntervals.every(([busyStart, busyEnd]) => endMin <= busyStart || startMin >= busyEnd);
-    };
-
-    for (let hour = Math.max(0, startHour); hour < 24; hour++) {
-      if (isSlotFree(hour)) {
-        const start = new Date(day);
-        start.setHours(hour, 0, 0, 0);
-        return start;
-      }
-    }
-
-    const fallback = new Date(day);
-    fallback.setHours(Math.min(23, Math.max(0, fallbackHour)), 0, 0, 0);
-    return fallback;
-  }, [getBusyIntervalsForDay, getRoundedUpHour]);
 
   const handleCellDragOver = useCallback((e: DragEvent<HTMLDivElement>, dayKey: string) => {
     if (!e.dataTransfer.types.includes("application/x-calendar-event")) return;
@@ -174,13 +132,14 @@ export function CalendarMonthView({
     try {
       const data = JSON.parse(json);
       const originalStart = parseISO(data.originalStart);
+      const event = useCalendarStore.getState().events.find(e => e.id === data.eventId);
+      const isAllDay = event?.showWithoutTime;
       const newStart = new Date(day);
       newStart.setHours(originalStart.getHours(), originalStart.getMinutes(), originalStart.getSeconds(), 0);
-      const newStartISO = format(newStart, "yyyy-MM-dd'T'HH:mm:ss");
+      const newStartISO = isAllDay ? format(newStart, "yyyy-MM-dd") : format(newStart, "yyyy-MM-dd'T'HH:mm:ss");
       if (newStartISO === data.originalStart) return;
       const client = useAuthStore.getState().client;
       if (!client) return;
-      const event = useCalendarStore.getState().events.find(e => e.id === data.eventId);
       const hasParticipants = event?.participants && Object.keys(event.participants).length > 0;
       await useCalendarStore.getState().updateEvent(client, data.eventId, { start: newStartISO }, hasParticipants || undefined);
     } catch {
@@ -189,35 +148,32 @@ export function CalendarMonthView({
   }, [t]);
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden" role="grid" aria-label={intlFormatter.dateTime(selectedDate, { month: "long", year: "numeric" })}>
-      <div className="grid grid-cols-[2.25rem_repeat(7,minmax(0,1fr))] border-b border-border" role="row">
-        {dayHeaders.map((d) => (
-          <div
-            key={d}
-            role="columnheader"
-            className="text-center text-xs font-medium text-muted-foreground py-2 border-r border-border last:border-r-0 first:col-start-2"
-          >
-            {t(`days.${d}`)}
+    <div className="flex flex-col flex-1 overflow-hidden" role="grid" aria-label={formatFullDate(selectedDate)}>
+      <div className="grid grid-cols-7 border-b border-border" role="row">
+        {dayHeaderKeys.map((d) => (
+          <div key={d} role="columnheader" className={cn(
+            "text-center text-xs font-medium text-muted-foreground py-2 border-e border-border last:border-e-0",
+            isMobile && "py-1.5 text-[11px]"
+          )}>
+            {isMobile ? t(`days.${d}`).slice(0, 2) : t(`days.${d}`)}
           </div>
         ))}
       </div>
 
       <div className="flex-1 flex flex-col overflow-y-auto">
-        {weeks.map((week, wi) => (
-          <div key={wi} className="grid grid-cols-[2.25rem_repeat(7,minmax(0,1fr))] flex-1 min-h-[100px] border-b border-border last:border-b-0" role="row">
-            <div className="border-r border-border bg-muted/30 px-1 py-1 flex items-start justify-center">
-              <span className="text-[10px] text-muted-foreground font-medium leading-5">
-                {getWeek(week[0], { weekStartsOn: weekStart, firstWeekContainsDate })}
-              </span>
-            </div>
+        {weekSegments.map(({ week, segments, rowCount }, wi) => (
+          <div key={wi} className={cn(
+            "relative flex-1 border-b border-border last:border-b-0",
+            isMobile ? "min-h-[52px]" : "min-h-[100px]"
+          )} role="row" style={showChips ? { minHeight: Math.max(isMobile ? 52 : 100, overlayTop + 4 + rowCount * rowHeight + 8) } : undefined}>
+            <div className="grid grid-cols-7 h-full">
             {week.map((day) => {
-              const inMonth = isSameMonth(day, selectedDate);
-              const selected = isSameDay(day, selectedDate);
-              const today = isToday(day);
+              const inMonth = checkIsSameMonth(day, selectedDate);
+              const selected = checkIsSameDay(day, selectedDate);
+              const today = checkIsToday(day);
               const key = format(day, "yyyy-MM-dd");
               const dayEvents = eventsByDate.get(key) || [];
-              const maxVisible = 3;
-              const fullDateLabel = intlFormatter.dateTime(day, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+              const fullDateLabel = formatFullDate(day);
 
               return (
                 <div
@@ -225,62 +181,128 @@ export function CalendarMonthView({
                   role="gridcell"
                   aria-selected={selected}
                   aria-label={fullDateLabel}
-                  onClick={() => {
-                    onSelectDate(day);
-                  }}
-                  onDoubleClick={() => {
-                    onSelectDate(day);
-                    const suggestedStart = findSuggestedStart(day, dayEvents);
-                    const suggestedEnd = new Date(suggestedStart);
-                    suggestedEnd.setHours(suggestedEnd.getHours() + 1);
-                    onCreateAtTime(suggestedStart, suggestedEnd);
-                  }}
+                  onClick={() => onSelectDate(day)}
+                  onDoubleClick={() => onCreateAtTime?.(day)}
+                  onContextMenu={onContextMenuEmpty ? (e) => onContextMenuEmpty(e, day, undefined, true) : undefined}
                   onDragOver={(e) => handleCellDragOver(e, key)}
                   onDragLeave={handleCellDragLeave}
                   onDrop={(e) => handleCellDrop(e, day)}
                   className={cn(
-                    "border-r border-border last:border-r-0 p-1 cursor-pointer transition-colors",
+                    "border-e border-border last:border-e-0 p-1 cursor-pointer transition-colors touch-manipulation",
                     !inMonth && "bg-muted/30",
                     "hover:bg-muted/50",
+                    selected && isMobile && "bg-primary/10",
                     dropDayKey === key && "ring-2 ring-inset ring-primary bg-primary/10"
                   )}
                 >
                   <div className="flex items-center justify-center mb-0.5">
                     <span
                       className={cn(
-                        "inline-flex items-center justify-center w-6 h-6 text-xs rounded-full",
+                        "inline-flex items-center justify-center rounded-full",
+                        isMobile ? "w-7 h-7 text-xs" : "w-6 h-6 text-xs",
                         today && !selected && "bg-primary text-primary-foreground font-bold",
                         selected && "bg-primary text-primary-foreground font-bold",
                         !inMonth && !selected && !today && "text-muted-foreground/50",
                         inMonth && !selected && !today && "font-medium"
                       )}
                     >
-                      {format(day, "d")}
+                      {formatDayNumber(day)}
                     </span>
                   </div>
-                  <div className="space-y-0.5">
-                    {dayEvents.slice(0, maxVisible).map((ev) => {
-                      const calId = Object.keys(ev.calendarIds)[0];
-                      return (
-                        <EventCard
-                          key={ev.id}
-                          event={ev}
-                          calendar={calendarMap.get(calId)}
-                          variant="chip"
-                          onClick={(rect) => onSelectEvent(ev, rect)}
-                          draggable
+                  {isMobile && !showChips ? (
+                    <div className="flex items-center justify-center gap-0.5 flex-wrap">
+                      {dayEvents.slice(0, 3).map((ev) => {
+                        const calId = getPrimaryCalendarId(ev);
+                        const cal = calId ? calendarMap.get(calId) : undefined;
+                        const evColor = ev.color || cal?.color || "#3b82f6";
+                        return (
+                          <span
+                            key={ev.id}
+                            className="w-1.5 h-1.5 rounded-full"
+                            style={{ backgroundColor: evColor }}
+                          />
+                        );
+                      })}
+                      {dayEvents.length > 3 && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40" />
+                      )}
+                      {pendingPreview && checkIsSameDay(pendingPreview.start, day) && (
+                        <span
+                          className="w-1.5 h-1.5 rounded-full border border-dashed"
+                          style={{ borderColor: calendarMap.get(pendingPreview.calendarId)?.color || "#3b82f6" }}
                         />
-                      );
-                    })}
-                    {dayEvents.length > maxVisible && (
-                      <div className="text-[10px] text-muted-foreground px-1">
-                        {t("events.more", { count: dayEvents.length - maxVisible })}
-                      </div>
-                    )}
-                  </div>
+                      )}
+                    </div>
+                  ) : null}
                 </div>
               );
             })}
+            </div>
+
+            {showChips && pendingPreview && (() => {
+              const previewDayIdx = week.findIndex(d => checkIsSameDay(d, pendingPreview.start));
+              if (previewDayIdx === -1) return null;
+              const previewRow = rowCount;
+              const cal = calendarMap.get(pendingPreview.calendarId);
+              const color = cal?.color || "#3b82f6";
+              return (
+                <div className="absolute inset-x-0 pointer-events-none" style={{ top: overlayTop }}>
+                  <div
+                    className="absolute px-0.5"
+                    style={{
+                      left: `calc(${(previewDayIdx / 7) * 100}% + 1px)`,
+                      width: `calc(${(1 / 7) * 100}% - 2px)`,
+                      top: previewRow * rowHeight,
+                      height: chipHeight,
+                    }}
+                  >
+                    <div
+                      className={cn(
+                        "h-full rounded text-[10px] font-medium truncate border-2 border-dashed",
+                        isMobile ? "leading-[16px] px-1" : "leading-[20px] px-1.5"
+                      )}
+                      style={{ borderColor: color, color, backgroundColor: `${color}10` }}
+                    >
+                      {pendingPreview.title}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {showChips && segments.length > 0 && (
+              <div className="absolute inset-x-0 pointer-events-none" style={{ top: overlayTop }}>
+                {segments.map((segment) => {
+                  const calId = getPrimaryCalendarId(segment.event);
+                  return (
+                    <div
+                      key={`${segment.event.id}-${segment.startIndex}-${segment.row}`}
+                      className="absolute px-0.5 pointer-events-auto"
+                      style={{
+                        left: `calc(${(segment.startIndex / 7) * 100}% + 1px)`,
+                        width: `calc(${(segment.span / 7) * 100}% - 2px)`,
+                        top: segment.row * rowHeight,
+                        height: chipHeight,
+                      }}
+                    >
+                      <EventCard
+                        event={segment.event}
+                        calendar={calId ? calendarMap.get(calId) : undefined}
+                        variant="span"
+                        continuesBefore={segment.continuesBefore}
+                        continuesAfter={segment.continuesAfter}
+                        onClick={(rect) => onSelectEvent(segment.event, rect)}
+                        onMouseEnter={(rect) => onHoverEvent?.(segment.event, rect)}
+                        onMouseLeave={onHoverLeave}
+                        onContextMenu={onContextMenuEvent}
+                        draggable
+                        className={isMobile ? "text-[10px] px-1" : undefined}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         ))}
       </div>
