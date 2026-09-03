@@ -6,8 +6,17 @@
 # + forbidden patterns to stdout — Claude Code captures as additionalContext.
 # Deliberate per-prompt repetition pressure to prevent mid-session drift.
 #
-# Source: ~/git/cloud-infra-desktop/{ba_flakes_desktop,bb_flakes_termux}/src/modules/dotfiles/claude/
-# Deployed: ~/.claude/hooks/b-context-inject-prompt.sh (via home-manager)
+# Source: ~/git/cloud-u-linux/da_my-ai/src/data/claude
+# Provenance: this is a DELIBERATE FORK for the container, not a copy awaiting
+#   re-sync. The machines stopped running these scripts — the same behaviour is
+#   now cloud-marketplace plugins in the SoT above, registered as a real plugin
+#   marketplace rather than settings.json hooks, which is what removed the
+#   double injection. This service has no working checkout to read the SoT from
+#   and no home-manager to deploy it, so it copies and diverges by design.
+#   The header used to name .../src/modules/dotfiles/claude/, a directory that
+#   no longer exists anywhere; nothing noticed for months, which is what
+#   test-claude-sot.sh's provenance check now prevents.
+# Deployed: ~/.claude/hooks/b-context-inject-prompt.sh (copied by start.sh from /app/claude-config)
 # Wired in: settings.json → hooks.UserPromptSubmit[0].hooks[0].command
 # ============================================================================
 
