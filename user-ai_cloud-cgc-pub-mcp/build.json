@@ -72,7 +72,6 @@
         "**/screenshots/",
         "**/fastlane/",
         "**/detox/",
-        "ac_cloud-matrix/libraries/",
         "*.min.js",
         "*.min.css",
         "*.map",
