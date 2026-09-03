@@ -11,8 +11,17 @@
 # Companion script: c-pretool-guard-blockers.sh (same matcher; deny tier).
 # Order in settings.json: blockers FIRST (may exit 2), warnings SECOND.
 #
-# Source: ~/git/cloud-infra-desktop/{ba_flakes_desktop,bb_flakes_termux}/src/modules/dotfiles/claude/
-# Deployed: ~/.claude/hooks/c-pretool-guard-warning.sh (via home-manager)
+# Source: ~/git/cloud-u-linux/da_my-ai/src/data/claude
+# Provenance: this is a DELIBERATE FORK for the container, not a copy awaiting
+#   re-sync. The machines stopped running these scripts — the same behaviour is
+#   now cloud-marketplace plugins in the SoT above, registered as a real plugin
+#   marketplace rather than settings.json hooks, which is what removed the
+#   double injection. This service has no working checkout to read the SoT from
+#   and no home-manager to deploy it, so it copies and diverges by design.
+#   The header used to name .../src/modules/dotfiles/claude/, a directory that
+#   no longer exists anywhere; nothing noticed for months, which is what
+#   test-claude-sot.sh's provenance check now prevents.
+# Deployed: ~/.claude/hooks/c-pretool-guard-warning.sh (copied by start.sh from /app/claude-config)
 #
 # Input:  JSON on stdin { "tool_name": "Bash", "tool_input": { "command": "..." } }
 # Output: warning text on stderr, exit 0 (never denies, never asks)
