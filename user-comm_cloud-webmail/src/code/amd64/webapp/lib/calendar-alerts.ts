@@ -1,0 +1,123 @@
+import type {
+  CalendarEvent,
+  CalendarEventAlert,
+  CalendarOffsetTrigger,
+  CalendarAbsoluteTrigger,
+  Calendar,
+} from '@/lib/jmap/types';
+
+export interface PendingAlert {
+  eventId: string;
+  alertId: string;
+  fireTimeMs: number;
+  event: CalendarEvent;
+  calendarName: string | null;
+}
+
+const STALE_THRESHOLD_MS = 10 * 60 * 1000; // 10 minutes
+
+const DURATION_RE = /^(-?)P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/;
+
+export function parseAlertOffset(offset: string): number | null {
+  const match = DURATION_RE.exec(offset);
+  if (!match) return null;
+
+  const negative = match[1] === '-';
+  const days = parseInt(match[2] || '0', 10);
+  const hours = parseInt(match[3] || '0', 10);
+  const minutes = parseInt(match[4] || '0', 10);
+  const seconds = parseInt(match[5] || '0', 10);
+
+  const ms = ((days * 24 * 60 * 60) + (hours * 60 * 60) + (minutes * 60) + seconds) * 1000;
+  return negative ? -ms : ms;
+}
+
+export function computeFireTime(
+  event: CalendarEvent,
+  trigger: CalendarOffsetTrigger | CalendarAbsoluteTrigger
+): number | null {
+  if (trigger['@type'] === 'AbsoluteTrigger') {
+    const t = new Date(trigger.when).getTime();
+    return Number.isNaN(t) ? null : t;
+  }
+
+  const offsetMs = parseAlertOffset(trigger.offset);
+  if (offsetMs === null) return null;
+
+  let baseTime: number;
+  if (trigger.relativeTo === 'end') {
+    baseTime = event.utcEnd
+      ? new Date(event.utcEnd).getTime()
+      : new Date(event.start).getTime();
+  } else {
+    baseTime = event.utcStart
+      ? new Date(event.utcStart).getTime()
+      : new Date(event.start).getTime();
+  }
+
+  if (Number.isNaN(baseTime)) return null;
+  return baseTime + offsetMs;
+}
+
+export function getEffectiveAlerts(
+  event: CalendarEvent,
+  calendars: Calendar[]
+): Record<string, CalendarEventAlert> | null {
+  if (!event.useDefaultAlerts) {
+    return event.alerts;
+  }
+
+  const calendarId = Object.keys(event.calendarIds)[0];
+  if (!calendarId) return null;
+
+  const calendar = calendars.find(c => c.id === calendarId);
+  if (!calendar) return null;
+
+  if (event.showWithoutTime) {
+    return calendar.defaultAlertsWithoutTime;
+  }
+  return calendar.defaultAlertsWithTime;
+}
+
+export function buildAlertKey(eventId: string, alertId: string, fireTimeMs: number): string {
+  return `${eventId}:${alertId}:${fireTimeMs}`;
+}
+
+export function getPendingAlerts(
+  events: CalendarEvent[],
+  calendars: Calendar[],
+  acknowledgedKeys: Set<string>,
+  now: number
+): PendingAlert[] {
+  const pending: PendingAlert[] = [];
+
+  for (const event of events) {
+    const alerts = getEffectiveAlerts(event, calendars);
+    if (!alerts) continue;
+
+    const calendar = calendars.find(c => c.id === Object.keys(event.calendarIds)[0]) ?? null;
+
+    for (const [alertId, alert] of Object.entries(alerts)) {
+      if (alert.action !== 'display') continue;
+      if (alert.acknowledged) continue;
+
+      const fireTimeMs = computeFireTime(event, alert.trigger);
+      if (fireTimeMs === null) continue;
+      if (fireTimeMs > now) continue;
+      if (fireTimeMs <= now - STALE_THRESHOLD_MS) continue;
+
+      const key = buildAlertKey(event.id, alertId, fireTimeMs);
+      if (acknowledgedKeys.has(key)) continue;
+
+      pending.push({
+        eventId: event.id,
+        alertId,
+        fireTimeMs,
+        event,
+        calendarName: calendar?.name ?? null,
+      });
+    }
+  }
+
+  return pending;
+}
