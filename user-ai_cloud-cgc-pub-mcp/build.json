@@ -136,9 +136,9 @@
         "use_llm": false,
         "llm_model": "openrouter:openai/gpt-4o-mini",
         "schedule": "0 4,16 * * *",
-        "_budget_comment": "repo_timeout_min is a CEILING, not a reservation (corrected 2026-08-21). The gate clamps each repo's slice to min(ceiling, max_minutes - elapsed), so worst-case wall time is max_minutes ALONE and the invariant is simply max_minutes <= timeout-minutes (330) minus slack for the final propagate. The earlier 'max + repo <= timeout' rule described the pre-reserve gate; kept afterwards it deadlocked admission — a FIXED reserve must be big enough for the slowest repo (cloud-infra-desktop ~200m+ at measured throughput) yet small enough to still admit a repo late in a run, and both cannot hold, so the giants were never admitted at all while the small repos alone consumed ~75m.",
+        "_budget_comment": "repo_timeout_min is a CEILING, not a reservation (corrected 2026-08-21). The gate clamps each repo's slice to min(ceiling, max_minutes - elapsed), so worst-case wall time is max_minutes ALONE and the invariant is simply max_minutes <= timeout-minutes (330) minus slack for the final propagate. The earlier 'max + repo <= timeout' rule described the pre-reserve gate; kept afterwards it deadlocked admission — a FIXED reserve must be big enough for the slowest repo (cloud-infra-desktop ~200m+ at measured throughput) yet small enough to still admit a repo late in a run, and both cannot hold, so the giants were never admitted at all while the small repos alone consumed ~75m. 2026-09-03: raised 240→300 (= max_minutes). In per-repo matrix mode every repo runs ALONE in its own 330-min job, so a ceiling below the budget only shortens the slice — cloud-u-android needs many slices (measured ~670 files/240m in the semantic phase, 27k files) and each minute cut off the clamp is a minute the ratchet loses. The clamp still bounds monolith mode to max_minutes. Do NOT slice android into sub-repos instead: octocode 0.22 keys a project on sha256(origin URL) even with --no-git, so sparse slices of one origin collapse into one project (see cloud-cgc-db-update.sh ensure_repos).",
         "max_minutes": 300,
-        "repo_timeout_min": 240,
+        "repo_timeout_min": 300,
         "code_embedding_model": "fastembed:nomic-ai/nomic-embed-text-v1.5",
         "text_embedding_model": "fastembed:nomic-ai/nomic-embed-text-v1.5"
       },
@@ -176,15 +176,6 @@
         "cloud-data-my-ai-memory": "cloud-data-my-ai-memory",
         "cloud-u-containers": "cloud-u-containers",
         "cloud-u-android": "cloud-u-android"
-      },
-      "_repo_subpaths_comment": "DORMANT — NOT YET ACTIVE. Staged config for the cloud-u-android breakdown; the slice names are deliberately NOT in index_repos yet because activating them broke every cloud-infra ship (derive-repo-map.ts validates index_repos ⊆ I_cloud/repos.json, which declares only cloud-u-android). Before re-adding the 6 slices to index_repos, land ALL of: (1) 6 slice entries in I_cloud/repos.json → cloud-u-android url, (2) derive-repo-map.ts + the ops_git-sync DAG made subpath-aware so the box /repos slices are SPARSE (else full clones make the export path-fallback ambiguous). Until then this key is inert (the deriver ignores it). BREAKDOWN of an over-large repo into sub-repos that each fit under the octocode per-slice ceiling. cloud-u-android is ~27k files ≈ 12-15h of graphrag — far past GitHub's 6h hosted-runner kill — so a single slice always times out with 0 graph nodes and never advances. Sliced by top-level subpath into independent index units, each its OWN octocode project (path-keyed via --no-git on its sparse checkout), so a finished slice STAYS finished and android reaches full coverage over a few nightly runs instead of dying whole every time. clone = the repo_map remote to sparse-checkout from; include = subpaths to check out; exclude = catch-all (everything NOT claimed by the other slices) so new top-level dirs land here automatically. Honored by cloud-cgc-db-update.sh ensure_repos (sparse checkout) + the index call (--no-git for path-keyed distinct projects off one origin).",
-      "repo_subpaths": {
-        "cloud-u-android-matrix": { "clone": "cloud-u-android", "include": ["ac_cloud-matrix"] },
-        "cloud-u-android-chat": { "clone": "cloud-u-android", "include": ["ac_cloud-chat"] },
-        "cloud-u-android-mail": { "clone": "cloud-u-android", "include": ["ac_cloud-mail"] },
-        "cloud-u-android-vault": { "clone": "cloud-u-android", "include": ["ac_cloud-vault"] },
-        "cloud-u-android-libs": { "clone": "cloud-u-android", "include": ["ab_cloud-libs-shared"] },
-        "cloud-u-android-apps": { "clone": "cloud-u-android", "exclude": ["ac_cloud-matrix", "ac_cloud-chat", "ac_cloud-mail", "ac_cloud-vault", "ab_cloud-libs-shared"] }
       },
       "_graphrag_skip_comment": "Subset of index_repos (data-driven, no hardcoded names in the script) whose GraphRAG LLM relationship pass is skipped entirely — pure prose/text corpora have no code semantics to relate, so the pass is zero graph nodes for real per-node LLM cost. Structural/FastEmbed indexing (the semantic phase, USE_LLM=false) still runs normally; only the graphrag phase (USE_LLM=true) skips these repos. Honored by cloud-cgc-db-update.sh's per-repo loop.",
       "graphrag_skip": [],
