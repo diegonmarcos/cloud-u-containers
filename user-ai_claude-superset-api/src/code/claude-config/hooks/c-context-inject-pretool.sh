@@ -20,7 +20,7 @@
 # (per Claude Code hooks spec). Plain stdout text on this event is shown to
 # the user but doesn't modify the model's prompt.
 #
-# Source: ~/git/cloud-u-linux/da_my-ai/src/data/claude
+# Source: ~/git/cloud-u-linux/da_my-ai/data/claude
 # Provenance: this is a DELIBERATE FORK for the container, not a copy awaiting
 #   re-sync. The machines stopped running these scripts — the same behaviour is
 #   now cloud-marketplace plugins in the SoT above, registered as a real plugin
