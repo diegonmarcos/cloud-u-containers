@@ -74,14 +74,23 @@ function loadTopology(): { vms: Record<string, TopologyVm>; services: Record<str
     resolveCloudDataPath("build-cloud-infra-mcp.json"),
     getConsolidatedPath(),
   ];
+  // MERGE, don't first-wins. build-cloud-infra-mcp.json carries an enriched
+  // `services` map but has NO `vms` key at all, so returning on the first
+  // existing candidate yielded vms:{} and made finops.vps/finops.assets render
+  // "0 VMs / $0/mo" even with a perfectly good consolidated file sitting right
+  // behind it. Take each key from the first candidate that actually has it.
+  let vms: Record<string, TopologyVm> = {};
+  let services: Record<string, TopologyService> = {};
   for (const p of candidates) {
     if (!existsSync(p)) continue;
     try {
       const raw = JSON.parse(readFileSync(p, "utf-8"));
-      return { vms: raw.vms ?? {}, services: raw.services ?? {} };
+      if (Object.keys(vms).length === 0 && raw.vms && Object.keys(raw.vms).length > 0) vms = raw.vms;
+      if (Object.keys(services).length === 0 && raw.services && Object.keys(raw.services).length > 0) services = raw.services;
+      if (Object.keys(vms).length > 0 && Object.keys(services).length > 0) break;
     } catch { /* try next */ }
   }
-  return { vms: {}, services: {} };
+  return { vms, services };
 }
 
 function loadServicePorts(): Map<string, number> {
