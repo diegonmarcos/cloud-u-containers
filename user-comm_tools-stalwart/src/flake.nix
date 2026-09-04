@@ -96,6 +96,19 @@
       map (u: "${u.name}=${u.pass_env}") (lib.attrValues (buildJson.users or {}))
     );
 
+    # Same users, but carrying everything activate.sh Step A needs to CREATE
+    # a missing Stalwart account: local-part, role, secret-env name, aliases.
+    # Format: "me|Admin|ME_PASSWORD| no-reply|User|NOREPLY_PASSWORD|noreply"
+    # — space-separated records of four pipe-separated fields (the alias field
+    # is empty for most users, hence the trailing pipe; a fixed arity keeps the
+    # parser a plain split). Role follows the same key=="admin" convention as
+    # mkUserLines, but spelled the way v0.16.5 spells it: admin-ness is
+    # roles.@type on the account object, "Admin" or "User".
+    usersAccounts = lib.concatStringsSep " " (lib.mapAttrsToList
+      (key: u: "${u.name}|${if key == "admin" then "Admin" else "User"}|${u.pass_env}|"
+               + lib.concatStringsSep "," (u.aliases or []))
+      (buildJson.users or {}));
+
     # Admin-role user — used by activate.sh for any admin-scope JMAP calls
     # (readiness probe, MtaRoute/MtaOutboundStrategy upserts). Sourced from
     # build.json#users.admin (the role mapping is owned by mkUserLines:
@@ -119,6 +132,7 @@
       BIND_IP              = activateBindIp;
       USER_CREATION_BLOCK  = userBlock;  # unused by new template, kept for back-compat
       USERS_LIST           = usersList;
+      USERS_ACCOUNTS       = usersAccounts;
       FOLDERS_LINES        = foldersLines;
       ADMIN_EMAIL          = adminEmail;
       ADMIN_PASS_ENV       = adminPassEnv;
