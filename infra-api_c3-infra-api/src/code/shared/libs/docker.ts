@@ -416,7 +416,12 @@ export function updateContainer(
   let result: { ok: boolean; output: string; recreated: boolean };
 
   if (workingDir && service && workingDir !== "<no value>" && service !== "<no value>") {
-    const cmd = `cd ${workingDir} && docker compose pull ${service} && docker compose up -d ${service}`;
+    // workingDir is the compose project working_dir label, i.e. the SERVICE
+    // ROOT (/opt/containers/<svc>) for engine-deployed v2 services — which
+    // holds no compose file, so a bare `cd && docker compose` there dies with
+    // "no configuration file provided". Same defect composeCd() fixes for
+    // every other call site; reuse it rather than open-coding the flags.
+    const cmd = `${composeCd(workingDir)} && docker compose $COMPOSE_ARGS pull ${service} && docker compose $COMPOSE_ARGS up -d ${service}`;
     const r = sshExec(vmId, cmd, 120_000);
     result = { ok: r.ok, output: `${r.stdout}${r.stderr}`.trim(), recreated: r.ok };
   } else {
