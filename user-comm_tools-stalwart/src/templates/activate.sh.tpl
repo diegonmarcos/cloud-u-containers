@@ -3,19 +3,22 @@
 # Runs after compose-up. Idempotent.
 #
 # Per user in build.json#users:
-#   1. Wait for admin API.
-#   2. Discover JMAP accountId from /jmap/session.
-#   3. Create mailbox hierarchy (4 parents + 10 leaves) declared in
+#   0. Wait for admin API.
+#   A. Create the Stalwart account itself if missing (create-only — see the
+#      Step A block for why an existing account is never updated).
+#   1. Discover JMAP accountId from /jmap/session.
+#   2. Create mailbox hierarchy (4 parents + 10 leaves) declared in
 #      mail-rules-general.json::folders + folders_ui. Skips existing.
-#   4. Upload + activate dist/configs/default.sieve via JMAP Sieve API.
+#   3. Upload + activate dist/configs/default.sieve via JMAP Sieve API.
 #
 # Plus (admin scope):
 #   D. Apply outbound MTA routes declared in build.json#mta_routes,
 #      emitted as configs/mta-routes.json by the flake. Secrets pulled
 #      from $SECRETS_DIR/<env-var-name>. No hardcoded data in this file.
 #
-# Domain + Account creation are owned by stalwart-cli apply (manual
-# recovery-mode bootstrap), NOT this hook.
+# Domain creation is still owned by stalwart-cli apply (manual recovery-mode
+# bootstrap), NOT this hook. Account creation used to be too — that is what
+# left three declared users existing in maddy and nowhere else.
 #
 # Folder list and user/pass-env pairs are injected by the flake from
 # mail-rules-general.json + build.json#users. They appear below inside
@@ -66,6 +69,87 @@ done
 if [ "$_ready" = 0 ]; then
   echo "[activate] ERROR: Stalwart JMAP never became ready (last HTTP $_code)" >&2
   exit 1
+fi
+
+# ── Step A: reconcile accounts (admin scope) ──────────────────────────
+# Why this exists: the declared users used to provision maddy ONLY, so an
+# address could be declared here, answer 250 at the MX, and still not exist
+# in Stalwart's store — invisible until someone tried cloud-webmail, which
+# authenticates against JMAP. Verified 2026-09-04: maddy had five accounts,
+# Stalwart two. v0.16.5 has no REST management API (/api/principal is 404,
+# x:Principal/get answers unknownMethod); accounts are ordinary registry
+# objects reached with the urn:stalwart:jmap capability — the same channel
+# Steps F and G already use.
+#
+# CREATE-ONLY, deliberately. An existing account is never updated:
+#   * secrets are stored hashed, so "unchanged" is indistinguishable from
+#     "rotated" — a blind update would silently reset the password on EVERY
+#     ship, including any the owner changed in the webmail;
+#   * roles are a lock: pushing User onto the one Admin account would lock
+#     this very script out of the registry, recoverable only by another
+#     recovery-mode bootstrap.
+# Role drift on an existing account is therefore REPORTED, not corrected.
+# Aliases are not reconciled (the only aliased account predates this hook).
+# Must run before the per-user loop below, which authenticates as each user.
+if [ "$_ready" = 1 ]; then
+  echo "[activate] Reconciling accounts from declared users (admin: $ADMIN_EMAIL)..."
+  ACCOUNTS="@USERS_ACCOUNTS@" BASE_DOMAIN="@BASE_DOMAIN@" SECRETS_DIR="$SECRETS_DIR" \
+  ADMIN_EMAIL="$ADMIN_EMAIL" ADMIN_PW="$ADMIN_PW" BASE="$BASE" python3 - <<'PYEOF' \
+    || echo "[activate]   account reconcile exited $? (non-fatal)"
+import os, ssl, json, base64
+from urllib import request as ur, error as ue
+BASE=os.environ["BASE"]
+AUTH="Basic "+base64.b64encode(f'{os.environ["ADMIN_EMAIL"]}:{os.environ["ADMIN_PW"]}'.encode()).decode()
+ctx=ssl._create_unverified_context()
+def jmap(calls):
+    body=json.dumps({"using":["urn:ietf:params:jmap:core","urn:stalwart:jmap"],"methodCalls":calls}).encode()
+    req=ur.Request(BASE+"/jmap/",data=body,method="POST",
+                   headers={"Content-Type":"application/json","Authorization":AUTH})
+    try: return json.loads(ur.urlopen(req,context=ctx,timeout=20).read())
+    except ue.HTTPError as e: return {"err":e.code,"body":e.read().decode(errors="replace")[:300]}
+try:
+    req=ur.Request(BASE+"/jmap/session",headers={"Authorization":AUTH})
+    s=json.loads(ur.urlopen(req,context=ctx,timeout=10).read())
+except Exception as e:
+    print("  [accounts] session failed (non-fatal):",e); raise SystemExit(0)
+acct=s.get("primaryAccounts",{}).get("urn:stalwart:jmap") or next(iter(s.get("accounts",{})),None)
+r=jmap([["x:Account/get",{"accountId":acct,"ids":None},"0"]])
+try: live={o.get("name"):o for o in r["methodResponses"][0][1].get("list",[])}
+except Exception:
+    print("  [accounts] x:Account/get failed (non-fatal):",r); raise SystemExit(0)
+for rec in os.environ["ACCOUNTS"].split():
+    name,role,pass_env,_aliases=rec.split("|")
+    cur=live.get(name)
+    if cur is not None:
+        have=(cur.get("roles") or {}).get("@type","User")
+        if have!=role:
+            print(f"  [accounts] {name}: present with roles={have}, declared {role} — left as is (create-only)")
+        else:
+            print(f"  [accounts] {name}: already present, no-op")
+        continue
+    try: pw=open(os.path.join(os.environ["SECRETS_DIR"],pass_env)).read().strip()
+    except OSError: pw=""
+    if not pw:
+        print(f"  [accounts] {name}: no password ({pass_env}) — cannot create"); continue
+    obj={"name":name,"emailAddress":f'{name}@{os.environ["BASE_DOMAIN"]}',
+         "roles":{"@type":role},"secrets":[pw]}
+    def create(o):
+        rr=jmap([["x:Account/set",{"accountId":acct,"create":{"c":o}},"0"]])
+        return rr,(rr.get("methodResponses") or [[None,{}]])[0][1]
+    rr,res=create(obj)
+    if res.get("created"):
+        print(f"  [accounts] {name}: CREATED (roles={role})"); continue
+    # The secret is the one property x:Account/get never returns, so its name
+    # cannot be confirmed by inspection. Try the singular spelling once, then
+    # print the server's own rejection — invalidProperties names the field.
+    obj.pop("secrets"); obj["password"]=pw
+    rr2,res2=create(obj)
+    if res2.get("created"):
+        print(f"  [accounts] {name}: CREATED (roles={role}, singular secret property)")
+    else:
+        print(f"  [accounts] FAIL create {name}: {json.dumps(res.get('notCreated') or rr)}"
+              f" / {json.dumps(res2.get('notCreated') or rr2)}")
+PYEOF
 fi
 
 # Resolve a mailbox id by name from current Mailbox/get response (JSON in $1).
