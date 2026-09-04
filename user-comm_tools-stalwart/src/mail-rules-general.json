@@ -106,10 +106,29 @@
   },
   "filters": {
     "_doc": "Dynamic cross-cutting filter views maintained by jmap-sorter each poll over emails in the numeric 1*-9* folders. Multi-mailbox membership only (no copies, no $seen changes); add+remove each poll so time/read windows stay current.",
-    "source_folder_regex": "^(Inbox$|[0-9])",
+    "source_folder_regex": "^(Inbox$|[1-9])",
     "section_headers": ["A0 _ SIZE", "B0 _ TIME", "C0 _ STATE", "D0 _ ATTACH", "E0 _ PRIORITY", "F0 _ SENDER"],
     "_axis_doc": "Each view declares its axis and whether it is volatile. A volatile view depends on wall-clock time or read state and must be re-evaluated every poll; a static view is a property of the message itself (size, attachments) and is computed once. The size axis is a PARTITION: its buckets are half-open [lo,hi) and must tile the whole range, so every message lands in exactly one. That invariant is what lets the sorter use size-view membership as the sentinel for 'static views already computed' -- guarded by 9_others/test/test_mail_filter_views_partition.sh.",
     "views": [
+      {
+        "folder": "01 Inbox - noAlerts",
+        "axis": "inbox",
+        "volatile": false,
+        "_doc": "Everything in scope EXCEPT GitHub Actions failure notifications — the inbox with the CI noise removed. A view, not a route: membership is maintained over the mail that is already filed, so it backfills over the existing 10k+ messages instead of only applying to new deliveries. The excluded set is deliberately narrow: sender is GitHub AND the subject carries 'Run failed:' (e.g. '[diegonmarcos/cloud-infra] Run failed: Health Mail Full - main (3cc7464)'). Successful-run notifications and ordinary GitHub mail (issues, PRs, releases) stay in. The sender half is the same predicate as `predicates.github_any`, inlined because view predicates are evaluated by the Rust sorter, which has no `ref` resolution (see Fz Others, which inlines for the same reason). Named with a leading 0 so it sorts above the numeric category folders; `filters.source_folder_regex` was narrowed from ^[0-9] to ^[1-9] at the same time so this folder is NOT itself a source folder — otherwise its own members would count as in-scope forever and keep stale view membership after leaving their numeric category.",
+        "predicate": {
+          "not": {
+            "all_of": [
+              {
+                "any_of": [
+                  {"type": "from_domain", "values": ["github.com", "noreply.github.com"]},
+                  {"type": "from_domain_suffix", "values": [".github.com"]}
+                ]
+              },
+              {"type": "header_contains", "header": "Subject", "values": ["Run failed:"]}
+            ]
+          }
+        }
+      },
       {"folder": "Aa    📏 Large (≥10MB)",       "axis": "size",   "volatile": false, "predicate": {"type": "size_min", "bytes": 10485760}},
       {"folder": "Ab    📏 Medium (1–10MB)",      "axis": "size",   "volatile": false, "predicate": {"type": "size_range", "min": 1048576, "max": 10485760}},
       {"folder": "Ac    📏 Small (<1MB)",         "axis": "size",   "volatile": false, "predicate": {"type": "size_max", "bytes": 1048576}},
