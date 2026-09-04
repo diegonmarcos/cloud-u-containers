@@ -54,12 +54,21 @@ PW="$ADMIN_PW"
 echo "[activate] Waiting for Stalwart JMAP on $BASE (probe: $ADMIN_EMAIL) ..."
 _ready=0
 for i in $(seq 1 60); do
-  _code=$(curl -sk -o /dev/null -w '%{http_code}' -u "$ADMIN_EMAIL:$ADMIN_PW" "$BASE/jmap/session" 2>/dev/null || echo 000)
+  # Bounded: an unbounded curl against a TCP-open-but-unresponsive Stalwart
+  # blocks forever, so the loop could stall on a single iteration.
+  _code=$(curl -sk --connect-timeout 5 --max-time 15 -o /dev/null -w '%{http_code}' -u "$ADMIN_EMAIL:$ADMIN_PW" "$BASE/jmap/session" 2>/dev/null || echo 000)
   case "$_code" in
     2*) _ready=1; break ;;
     4*) echo "[activate] WARN: $ADMIN_EMAIL auth returned $_code — Stalwart up but admin principal not yet bootstrapped?" >&2
         _ready=2; break ;;
   esac
+  # Heartbeat, NOT decoration. ssh_run_detached (cloud-ship-container-engine.sh)
+  # polls the remote log's byte count and calls the whole post-hook dead after
+  # 900s of no growth. A silent readiness wait therefore gets reported as
+  # "FAIL (exit 124)" while the detached post-hook runs on and succeeds — a
+  # false failure that cost an incident (stalwart, 2026-09-04). One line per
+  # iteration keeps the log growing for as long as we are legitimately waiting.
+  echo "[activate]   still waiting for JMAP ($i/60, last HTTP $_code)"
   sleep 2
 done
 if [ "$_ready" = 0 ]; then
@@ -233,8 +242,9 @@ if [ -f "$TLS_DIR/fullchain.pem" ] && [ -f "$TLS_DIR/privkey.pem" ]; then
     docker restart stalwart 2>/dev/null || true
     # Wait for JMAP to come back before exit
     for i in $(seq 1 30); do
-      _c=$(curl -sk -o /dev/null -w '%{http_code}' -u "$ADMIN_EMAIL:$ADMIN_PW" "$BASE/jmap/session" 2>/dev/null || echo 000)
+      _c=$(curl -sk --connect-timeout 5 --max-time 15 -o /dev/null -w '%{http_code}' -u "$ADMIN_EMAIL:$ADMIN_PW" "$BASE/jmap/session" 2>/dev/null || echo 000)
       case "$_c" in 2*) echo "[activate]   stalwart ready (HTTP $_c)"; break ;; esac
+      echo "[activate]   waiting for stalwart to come back ($i/30, last HTTP $_c)"
       sleep 2
     done
   fi
