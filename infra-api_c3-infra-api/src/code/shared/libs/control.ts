@@ -419,7 +419,7 @@ export function serviceStart(
   }
 
   const remotePath = `${config.remote_base}/${serviceName}`;
-  const result = sshExec(vmId, `${composeCd(remotePath)} && docker compose up -d`, 60_000);
+  const result = sshExec(vmId, `${composeCd(remotePath)} && docker compose $COMPOSE_ARGS up -d`, 60_000);
 
   audit(
     "service_start",
@@ -452,7 +452,7 @@ export function serviceStop(
   }
 
   const remotePath = `${config.remote_base}/${serviceName}`;
-  const result = sshExec(vmId, `${composeCd(remotePath)} && docker compose down`, 60_000);
+  const result = sshExec(vmId, `${composeCd(remotePath)} && docker compose $COMPOSE_ARGS down`, 60_000);
 
   audit(
     "service_stop",
@@ -487,7 +487,7 @@ export function serviceRestart(
   }
 
   const remotePath = `${config.remote_base}/${serviceName}`;
-  const result = sshExec(vmId, `${composeCd(remotePath)} && docker compose down && docker compose up -d`, 90_000);
+  const result = sshExec(vmId, `${composeCd(remotePath)} && docker compose $COMPOSE_ARGS down && docker compose $COMPOSE_ARGS up -d`, 90_000);
 
   audit(
     "service_restart",
