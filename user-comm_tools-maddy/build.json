@@ -106,6 +106,14 @@
     "mailadmin": {
       "name": "admin",
       "pass_env": "ADMIN_PASSWORD"
+    },
+    "yo": {
+      "name": "yo",
+      "pass_env": "MAIL_DEFAULT_PASSWORD"
+    },
+    "42": {
+      "name": "42",
+      "pass_env": "MAIL_DEFAULT_PASSWORD"
     }
   },
   "containers": {
