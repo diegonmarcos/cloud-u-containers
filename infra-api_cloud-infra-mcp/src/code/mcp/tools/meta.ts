@@ -156,7 +156,9 @@ async function safeAsync(fn: () => Promise<string>) {
 function resolveGhRepo(): string {
   try {
     const config = getConfig();
-    return `${(config as any).owner?.github ?? "diegonmarcos"}/cloud`;
+    // 2026-09-04: was `${owner}/cloud` — the pre-rename name, which still
+    // resolves to a stale repo, so gh queries silently hit the wrong one.
+    return `${(config as any).owner?.github ?? "diegonmarcos"}/cloud-infra`;
   } catch {}
   return "diegonmarcos/cloud-infra";
 }

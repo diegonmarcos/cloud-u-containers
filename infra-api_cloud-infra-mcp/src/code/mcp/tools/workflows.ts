@@ -12,7 +12,10 @@ function resolveGhRepo(): string {
   try {
     const { getConfig } = require("../../shared/libs/config.js");
     const config = getConfig();
-    return `${config.owner?.github ?? "diegonmarcos"}/cloud`;
+    // 2026-09-04: was `${owner}/cloud` — the pre-rename name. `diegonmarcos/cloud`
+    // still resolves (a stale repo holding one "Copilot" workflow), so every
+    // enumeration silently returned the wrong repo instead of erroring.
+    return `${config.owner?.github ?? "diegonmarcos"}/cloud-infra`;
   } catch {}
   return "diegonmarcos/cloud-infra";
 }
@@ -31,6 +34,16 @@ function safeRun(fn: () => Promise<string>): Promise<{ content: [{ type: "text";
 async function gh(args: string[], timeout = 15_000): Promise<{ ok: boolean; stdout: string; stderr: string }> {
   const r = await execAsync("gh", args, { timeout });
   return { ok: r.ok, stdout: r.stdout, stderr: r.stderr };
+}
+
+// gh's unauthenticated message is a login tutorial, not an error anyone reading
+// a workflow report would recognise. Rewrite it into the actual operator action.
+function ghError(stderr: string): string {
+  const text = stderr.trim() || "(no stderr)";
+  if (/gh auth login|GH_TOKEN environment variable|authentication token/i.test(text)) {
+    return `${text}\n→ The container has no GitHub credential. GITHUB_TOKEN comes from src/secrets.yaml (sops) via the .secrets env_file; re-run build.sh secrets and redeploy.`;
+  }
+  return text;
 }
 
 async function daguFetch(path: string, method = "GET", body?: string): Promise<{ ok: boolean; data: unknown; error?: string }> {
@@ -104,7 +117,7 @@ async function ghaRuns24h(filter?: string): Promise<{ runs: GhaRun[]; error?: st
   if (filter) args.push("--status", filter);
 
   const r = await gh(args, 20_000);
-  if (!r.ok) return { runs: [], error: r.stderr.trim() };
+  if (!r.ok) return { runs: [], error: ghError(r.stderr) };
 
   try {
     const all: GhaRun[] = JSON.parse(r.stdout);
@@ -114,10 +127,52 @@ async function ghaRuns24h(filter?: string): Promise<{ runs: GhaRun[]; error?: st
   }
 }
 
-async function ghaWorkflows(repo: string = GH_REPO): Promise<{ id: number; name: string; state: string }[]> {
-  const r = await gh(["workflow", "list", "--repo", repo, "--json", "id,name,state", "--all"], 10_000);
-  if (!r.ok) return [];
-  try { return JSON.parse(r.stdout); } catch { return []; }
+interface GhaWorkflow { id: number; name: string; state: string; path: string }
+
+// Returns the error instead of swallowing it. The previous version returned []
+// on any failure, which turned "gh is not authenticated" into a convincing
+// "Available workflows:" with nothing under it.
+async function ghaWorkflows(repo: string = GH_REPO): Promise<{ workflows: GhaWorkflow[]; error?: string }> {
+  const r = await gh(["workflow", "list", "--repo", repo, "--json", "id,name,state,path", "--all"], 10_000);
+  if (!r.ok) return { workflows: [], error: ghError(r.stderr) };
+  try {
+    return { workflows: JSON.parse(r.stdout) as GhaWorkflow[] };
+  } catch {
+    return { workflows: [], error: `could not parse 'gh workflow list' output: ${r.stdout.slice(0, 200)}` };
+  }
+}
+
+// Workflow names carry typographic characters ("Ship → terraform" — U+2192, and
+// non-breaking spaces in some names). A caller retyping the name produces an
+// ASCII "->", a hyphen, or nothing at all, and strict equality fails. Reduce
+// both sides to their alphanumeric words: every separator — arrow, dash,
+// punctuation, whitespace — collapses to a single space.
+function normalizeName(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function fileName(path: string): string {
+  return path.split("/").pop() ?? path;
+}
+
+// Match on ID, workflow file name (with or without .yml), exact name, normalized
+// name, then normalized substring — in that order of confidence.
+function matchWorkflow(workflows: GhaWorkflow[], wanted: string): GhaWorkflow | undefined {
+  const norm = normalizeName(wanted);
+  const base = fileName(wanted).replace(/\.ya?ml$/, "");
+  return (
+    workflows.find((w) => String(w.id) === wanted) ??
+    workflows.find((w) => fileName(w.path).replace(/\.ya?ml$/, "") === base) ??
+    workflows.find((w) => w.name === wanted) ??
+    workflows.find((w) => normalizeName(w.name) === norm) ??
+    workflows.find((w) => normalizeName(w.name).includes(norm))
+  );
+}
+
+function listWorkflows(workflows: GhaWorkflow[]): string {
+  return workflows
+    .map((w) => `  ${w.state === "active" ? "✓" : "✗"} ${w.name}  (id: ${w.id}, file: ${fileName(w.path)})`)
+    .join("\n");
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -191,8 +246,12 @@ async function workflowsGha(): Promise<string> {
   sections.push("═".repeat(70));
 
   // Available workflows
-  const wfs = await ghaWorkflows();
-  sections.push(`\n${wfs.length} workflows registered (${wfs.filter((w) => w.state === "active").length} active)\n`);
+  const { workflows: wfs, error: wfError } = await ghaWorkflows();
+  sections.push(
+    wfError
+      ? `\nCould not list workflows in ${GH_REPO}: ${wfError}\n`
+      : `\n${wfs.length} workflows registered (${wfs.filter((w) => w.state === "active").length} active)\n`,
+  );
 
   // Recent runs
   const { runs, error } = await ghaRuns24h();
@@ -315,7 +374,8 @@ async function workflowsGhaTrigger(
     // Trigger all dispatchable workflows. Inputs are deliberately NOT forwarded
     // here — they are per-workflow and would be rejected by any workflow that
     // does not declare them.
-    const wfs = await ghaWorkflows(repo);
+    const { workflows: wfs, error } = await ghaWorkflows(repo);
+    if (error) return `Could not list workflows in ${repo}: ${error}`;
     const active = wfs.filter((w) => w.state === "active");
     sections.push(`Triggering ${active.length} active workflows in ${repo}...`);
     const results = await Promise.allSettled(
@@ -330,15 +390,19 @@ async function workflowsGhaTrigger(
       }
     }
   } else {
-    // Trigger specific workflow
-    const wfs = await ghaWorkflows(repo);
-    const match = wfs.find((w) => w.name === workflowName || w.name.includes(workflowName) || String(w.id) === workflowName);
-    if (!match) {
-      return `Workflow not found in ${repo}: "${workflowName}"\nAvailable: ${wfs.map((w) => w.name).join(", ")}`;
+    // Trigger specific workflow. `gh workflow run` itself accepts an ID, a file
+    // name or a name, so when enumeration is unavailable we hand the caller's
+    // identifier straight through rather than refusing on an empty list.
+    const { workflows: wfs, error } = await ghaWorkflows(repo);
+    const match = matchWorkflow(wfs, workflowName);
+    if (!match && wfs.length > 0) {
+      return `Workflow not found in ${repo}: "${workflowName}"\nAvailable:\n${listWorkflows(wfs)}`;
     }
-    const r = await gh(["workflow", "run", String(match.id), "--repo", repo, "--ref", ref, ...inputArgs], 10_000);
+    const target = match ? String(match.id) : workflowName;
+    const label = match ? match.name : `${workflowName} (unverified — ${error ?? "no workflows listed"})`;
+    const r = await gh(["workflow", "run", target, "--repo", repo, "--ref", ref, ...inputArgs], 10_000);
     const withInputs = inputArgs.length ? ` (${Object.entries(inputs ?? {}).map(([k, v]) => `${k}=${v}`).join(", ")})` : "";
-    sections.push(r.ok ? `✓ Triggered: ${match.name}${withInputs}` : `✗ Failed: ${match.name} — ${r.stderr.trim()}`);
+    sections.push(r.ok ? `✓ Triggered: ${label}${withInputs}` : `✗ Failed: ${label} — ${ghError(r.stderr)}`);
   }
 
   return sections.join("\n");
@@ -502,17 +566,138 @@ export function registerWorkflowTools(server: McpServer): void {
     "devops.workflows.gha_trigger",
     "Trigger GHA workflow(s) on the GHA x86 runner (ubuntu-latest, ship.yml). This is the canonical build+deploy runner for cloud services. Specify workflow name or 'all' for all active workflows. Pass `inputs` to supply workflow_dispatch inputs, and `repo` to target a repo other than the default cloud one.",
     {
-      workflow: z.string().optional().describe("Workflow name (partial match) or 'all'. Omit to list available."),
-      inputs: z.record(z.string()).optional().describe("workflow_dispatch inputs, e.g. {\"build_fork\":\"true\"}. Booleans must be the strings 'true'/'false'. Ignored when workflow is 'all'."),
-      repo: z.string().optional().describe("owner/repo to dispatch in (default: the cloud repo)"),
+      workflow: z.string().optional().describe("Workflow ID (250165604), file name (ship-terraform.yml) or name ('Ship → terraform', partial match, arrow/dash variants tolerated), or 'all'. Omit to list available."),
+      inputs: z.record(z.string()).optional().describe("workflow_dispatch inputs, e.g. {\"build_fork\":\"true\"}. Booleans must be the strings 'true'/'false'. Use devops.workflows.gha_definition to see which inputs a workflow declares. Ignored when workflow is 'all'."),
+      repo: z.string().optional().describe("owner/repo to dispatch in (default: the cloud-infra repo). Works for any repo, e.g. diegonmarcos/cloud-u-linux."),
       ref: z.string().optional().describe("Git ref to run on (default: main)"),
     },
     ({ workflow, inputs, repo, ref }) => safeRun(async () => {
       if (!workflow) {
-        const wfs = await ghaWorkflows(repo);
-        return `Available workflows${repo ? ` in ${repo}` : ""}:\n${wfs.map((w) => `  ${w.state === "active" ? "✓" : "✗"} ${w.name} (id: ${w.id})`).join("\n")}`;
+        const target = repo ?? GH_REPO;
+        const { workflows: wfs, error } = await ghaWorkflows(target);
+        if (error) return `Could not list workflows in ${target}: ${error}`;
+        if (wfs.length === 0) return `No workflows registered in ${target}.`;
+        return `Available workflows in ${target}:\n${listWorkflows(wfs)}`;
       }
       return workflowsGhaTrigger(workflow, inputs, repo, ref);
+    }),
+  );
+
+  server.tool(
+    "devops.workflows.gha_definition",
+    "GHA: show a workflow's YAML definition (gh workflow view --yaml). Read this BEFORE devops.workflows.gha_trigger to discover which workflow_dispatch inputs the workflow actually declares — dispatching with undeclared inputs is rejected, and omitting a required one produces a green run that does nothing.",
+    {
+      workflow: z.string().describe("Workflow ID, file name (ship-terraform.yml) or name ('Ship → terraform')"),
+      repo: z.string().optional().describe("owner/repo (default: the cloud-infra repo)"),
+    },
+    ({ workflow, repo }) => safeRun(async () => {
+      const target = repo ?? GH_REPO;
+      const { workflows: wfs } = await ghaWorkflows(target);
+      const match = matchWorkflow(wfs, workflow);
+      if (!match && wfs.length > 0) {
+        return `Workflow not found in ${target}: "${workflow}"\nAvailable:\n${listWorkflows(wfs)}`;
+      }
+      const r = await gh(["workflow", "view", match ? String(match.id) : workflow, "--repo", target, "--yaml"], 20_000);
+      if (!r.ok) return `ERROR: ${ghError(r.stderr)}`;
+      return `${match ? `${match.name} (id: ${match.id}, file: ${fileName(match.path)})` : workflow} in ${target}\n${"═".repeat(70)}\n${r.stdout}`;
+    }),
+  );
+
+  server.tool(
+    "devops.workflows.gha_runs",
+    "GHA: recent runs for one workflow (gh run list --workflow). Unlike devops.workflows.gha this is not capped at 24h — use it to follow a run you just dispatched.",
+    {
+      workflow: z.string().optional().describe("Workflow ID, file name or name. Omit for all workflows in the repo."),
+      limit: z.number().optional().describe("How many runs to return (default: 10)"),
+      repo: z.string().optional().describe("owner/repo (default: the cloud-infra repo)"),
+    },
+    ({ workflow, limit, repo }) => safeRun(async () => {
+      const target = repo ?? GH_REPO;
+      const args = ["run", "list", "--repo", target, "--limit", String(limit ?? 10),
+        "--json", "databaseId,workflowName,status,conclusion,createdAt,displayTitle,headBranch"];
+      if (workflow) {
+        const { workflows: wfs } = await ghaWorkflows(target);
+        const match = matchWorkflow(wfs, workflow);
+        if (!match && wfs.length > 0) {
+          return `Workflow not found in ${target}: "${workflow}"\nAvailable:\n${listWorkflows(wfs)}`;
+        }
+        args.push("--workflow", match ? String(match.id) : workflow);
+      }
+      const r = await gh(args, 20_000);
+      if (!r.ok) return `ERROR: ${ghError(r.stderr)}`;
+      let runs: Array<Record<string, string | number>>;
+      try { runs = JSON.parse(r.stdout); } catch { return `Could not parse run list: ${r.stdout.slice(0, 200)}`; }
+      if (runs.length === 0) return `No runs found in ${target}${workflow ? ` for "${workflow}"` : ""}.`;
+      const rows = runs.map((run) => [
+        String(run.databaseId),
+        String(run.workflowName ?? "-"),
+        String(run.conclusion || run.status),
+        String(run.headBranch ?? "-"),
+        timeAgo(String(run.createdAt)),
+        String(run.displayTitle ?? "").slice(0, 40),
+      ]);
+      return `GHA RUNS — ${target}${workflow ? ` / ${workflow}` : ""}\n${"═".repeat(70)}\n${formatTable(["ID", "Workflow", "Result", "Branch", "When", "Title"], rows)}`;
+    }),
+  );
+
+  server.tool(
+    "devops.workflows.gha_run",
+    "GHA: one run's jobs AND per-step status (gh run view --json jobs). Step granularity is what tells you WHICH step a run is stuck or failing on — the run-level conclusion does not.",
+    {
+      runId: z.string().describe("Run database ID (from devops.workflows.gha_runs)"),
+      repo: z.string().optional().describe("owner/repo (default: the cloud-infra repo)"),
+    },
+    ({ runId, repo }) => safeRun(async () => {
+      const target = repo ?? GH_REPO;
+      const r = await gh(["run", "view", runId, "--repo", target,
+        "--json", "databaseId,workflowName,status,conclusion,displayTitle,createdAt,url,jobs"], 30_000);
+      if (!r.ok) return `ERROR: ${ghError(r.stderr)}`;
+      let run: {
+        workflowName?: string; status?: string; conclusion?: string; displayTitle?: string;
+        createdAt?: string; url?: string;
+        jobs?: Array<{ name: string; status: string; conclusion: string; steps?: Array<{ number: number; name: string; status: string; conclusion: string }> }>;
+      };
+      try { run = JSON.parse(r.stdout); } catch { return `Could not parse run view: ${r.stdout.slice(0, 200)}`; }
+      const out: string[] = [];
+      out.push(`RUN ${runId} — ${run.workflowName ?? "?"} (${target})`);
+      out.push("═".repeat(70));
+      out.push(`Result: ${run.conclusion || run.status}  |  ${run.createdAt ? timeAgo(run.createdAt) : "?"}  |  ${run.displayTitle ?? ""}`);
+      if (run.url) out.push(run.url);
+      for (const job of run.jobs ?? []) {
+        out.push(`\n── ${job.name}: ${job.conclusion || job.status} ──`);
+        for (const step of job.steps ?? []) {
+          const state = step.conclusion || step.status;
+          const marker = state === "success" ? "✓" : state === "failure" ? "✗" : state === "skipped" ? "-" : "…";
+          out.push(`  ${marker} ${String(step.number).padStart(2)} ${step.name} (${state})`);
+        }
+      }
+      return out.join("\n");
+    }),
+  );
+
+  server.tool(
+    "devops.workflows.gha_run_logs",
+    "GHA: a run's logs (gh run view --log-failed, or --log for the full transcript). Failed-only by default — the full log of a ship run is megabytes.",
+    {
+      runId: z.string().describe("Run database ID (from devops.workflows.gha_runs)"),
+      full: z.boolean().optional().describe("true = whole log (--log); default false = failed steps only (--log-failed)"),
+      tail: z.number().optional().describe("Return only the last N lines (default: 200)"),
+      repo: z.string().optional().describe("owner/repo (default: the cloud-infra repo)"),
+    },
+    ({ runId, full, tail, repo }) => safeRun(async () => {
+      const target = repo ?? GH_REPO;
+      const r = await gh(["run", "view", runId, "--repo", target, full ? "--log" : "--log-failed"], 120_000);
+      if (!r.ok) return `ERROR: ${ghError(r.stderr)}`;
+      const lines = r.stdout.trim().split("\n");
+      if (!r.stdout.trim()) {
+        return full ? `Run ${runId} has no logs (still queued, or expired).`
+                    : `Run ${runId} has no failed-step logs — it may have succeeded, been cancelled, or still be running. Pass full: true for the whole log.`;
+      }
+      const n = tail ?? 200;
+      const shown = lines.slice(-n);
+      const header = `RUN ${runId} LOGS (${full ? "full" : "failed steps"}) — ${target}\n${"═".repeat(70)}`;
+      const elided = lines.length > shown.length ? `… ${lines.length - shown.length} earlier line(s) elided; raise \`tail\` to see them\n` : "";
+      return `${header}\n${elided}${shown.join("\n")}`;
     }),
   );
 
