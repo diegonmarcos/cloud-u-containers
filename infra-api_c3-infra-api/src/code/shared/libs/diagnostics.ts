@@ -55,10 +55,17 @@ export function profileContainer(containerName: string): ProfilingResponse {
 
   // Check 1: WireGuard ping
   checks.push(timedCheck("wg_ping", () => {
-    const result = exec("ping", ["-c", "1", "-W", "3", vmConfig.ip], { timeout: 5_000 });
+    // 2026-09-04: this pinged vmConfig.ip — the PUBLIC address — despite being
+    // named wg_ping. Providers drop ICMP to public IPs (oci-mail reported
+    // "Ping to 130.110.251.193: FAILED" while SSH over the mesh was fine), so
+    // the check reported a false failure on every healthy VM. Probe the
+    // WireGuard address, falling back to the public IP only if no wg_ip.
+    const target = vmConfig.wg_ip ?? vmConfig.ip;
+    const via = vmConfig.wg_ip ? "wg" : "public";
+    const result = exec("ping", ["-c", "1", "-W", "3", target], { timeout: 5_000 });
     return {
       passed: result.ok,
-      details: result.ok ? `Ping to ${vmConfig.ip}: OK` : `Ping to ${vmConfig.ip}: FAILED`,
+      details: `Ping to ${target} (${via}): ${result.ok ? "OK" : "FAILED"}`,
     };
   }));
 
@@ -74,12 +81,19 @@ export function profileContainer(containerName: string): ProfilingResponse {
   // Batch checks 3+4: container status + docker network (single SSH call)
   checks.push(timedCheck("container_status", () => {
     const result = sshExec(vmId, [
-      `docker inspect --format '{{.State.Status}}|{{.State.Health.Status}}|{{.RestartCount}}|{{.State.OOMKilled}}' ${containerName} 2>/dev/null`,
+      // 2026-09-04: {{.State.Health.Status}} makes `docker inspect` FAIL
+      // outright on any container without a healthcheck (State.Health is nil),
+      // so this check reported "Container inspect failed:" for healthy
+      // containers like maddy. Guard the field with {{if}}.
+      `docker inspect --format '{{.State.Status}}|{{if .State.Health}}{{.State.Health.Status}}{{end}}|{{.RestartCount}}|{{.State.OOMKilled}}' ${containerName}`,
       `docker network inspect $(docker inspect --format '{{range .NetworkSettings.Networks}}{{.NetworkID}} {{end}}' ${containerName} 2>/dev/null) --format '{{.Name}}: {{range .Containers}}{{.Name}} {{end}}' 2>/dev/null`,
     ].join(" && echo '===NET===' && "), 10_000);
 
     if (!result.ok) {
-      return { passed: false, details: `Container inspect failed: ${result.stderr}` };
+      // stderr can be empty (the remote command redirects it, or ssh itself
+      // failed) — never render a bare "failed:" with nothing after it.
+      const why = (result.stderr || result.stdout || "").trim() || "no error output from remote command";
+      return { passed: false, details: `Container inspect failed: ${why}` };
     }
 
     const parts = result.stdout.split("===NET===");
@@ -106,12 +120,22 @@ export function profileContainer(containerName: string): ProfilingResponse {
       `sudo nft list ruleset 2>/dev/null | grep -i "${containerName}" | head -5 || echo "(no DNAT rules found)"`,
     ].join(" && echo '===DNAT===' && "), 10_000);
 
+    // 2026-09-04: this ignored result.ok entirely and treated "no published
+    // ports" as a FAILURE, while wg_port_probe treats the identical condition
+    // as a pass. Publishing no ports is a normal, intentional configuration
+    // (host networking, mesh-only services), so it is not a fault — only an
+    // actual SSH/docker failure is.
+    if (!result.ok) {
+      const why = (result.stderr || "").trim() || "no error output from remote command";
+      return { passed: false, details: `Port lookup failed: ${why}` };
+    }
+
     const parts = result.stdout.split("===DNAT===");
     const ports = (parts[0] ?? "").trim();
     const dnat = (parts[1] ?? "").trim();
 
     return {
-      passed: ports.length > 0,
+      passed: true,
       details: [
         ports ? `Ports: ${ports}` : "No ports published",
         dnat ? `DNAT: ${dnat}` : "",

@@ -1,9 +1,10 @@
 // ── Ops: push events and DAG triggers ──
 
-import { writeFileSync, mkdirSync } from "fs";
+import { writeFileSync, mkdirSync, readFileSync } from "fs";
 import { join } from "path";
 import { audit } from "./audit.js";
-import { syncRepos } from "./paths.js";
+import { syncRepos, getConfigPath } from "./paths.js";
+import { execAsync } from "./async-exec.js";
 
 // Resolve Dagu API from cloud-data topology (env override available)
 function resolveDaguApi(): string {
@@ -152,21 +153,33 @@ async function triggerDag(name: string): Promise<{ ok: boolean; dagRunId?: strin
 
 async function triggerDagViaSsh(name: string): Promise<{ ok: boolean; dagRunId?: string; error?: string }> {
   // Resolve Dagu VM from topology (default: oci-analytics)
+  //
+  // 2026-09-04: this function could never run. It called a bare `execAsync`
+  // that was never imported (ReferenceError the moment the HTTP path fell
+  // through to it) AND passed (string, number) to a (command, args[],
+  // options) signature. It also used require() inside an ESM module
+  // ("type": "module"), which throws — silently swallowed by the catch, so
+  // the topology lookup was dead code and the default alias always won.
   let sshAlias = "oci-analytics";
   try {
-    const { readFileSync } = require("fs");
-    const { getConfigPath } = require("./paths.js");
     const topo = JSON.parse(readFileSync(getConfigPath(), "utf-8"));
     const svc = topo.services?.dagu;
     if (svc?.vm) {
       const vm = topo.vms?.[svc.vm];
       if (vm?.ssh_alias) sshAlias = vm.ssh_alias;
     }
-  } catch {}
+  } catch { /* fall back to the default alias */ }
 
-  const r = await execAsync(`ssh -o ConnectTimeout=5 -o BatchMode=yes -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR ${sshAlias} 'docker exec dagu dagu start ${name}'`, 30000);
+  const r = await execAsync("ssh", [
+    "-o", "ConnectTimeout=5",
+    "-o", "BatchMode=yes",
+    "-o", "UserKnownHostsFile=/dev/null",
+    "-o", "LogLevel=ERROR",
+    sshAlias,
+    `docker exec dagu dagu start ${name}`,
+  ], { timeout: 30_000 });
   if (r.ok) {
     return { ok: true };
   }
-  return { ok: false, error: `SSH trigger failed: ${r.stderr || r.stdout}` };
+  return { ok: false, error: `SSH trigger failed: ${(r.stderr || r.stdout || "").trim() || "no output"}` };
 }

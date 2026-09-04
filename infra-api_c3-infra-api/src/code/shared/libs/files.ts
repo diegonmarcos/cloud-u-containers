@@ -407,9 +407,20 @@ export function getSecretsStatus(service?: string): string {
         continue;
       }
 
-      // Check if the service directory itself exists
+      // Check if the service directory itself exists.
+      // 2026-09-04: this printed a bare "directory not found" for 68 of 74
+      // services, which reads like a per-service fault. The real cause is
+      // almost always that the a_solutions source tree is not checked out in
+      // this container at all (it is a git submodule of cloud-infra, and the
+      // repos volume clones without submodules) — so say which path was
+      // probed and name that cause once, instead of 68 identical mysteries.
       if (!existsSync(serviceDir)) {
-        lines.push(`${name}: ERROR (directory not found)`);
+        const treeMissing = !existsSync(SOLUTIONS_DIR);
+        lines.push(
+          treeMissing
+            ? `${name}: UNKNOWN (service source tree not available at ${SOLUTIONS_DIR} — a_solutions submodule not checked out)`
+            : `${name}: ERROR (directory not found: ${serviceDir})`,
+        );
         continue;
       }
 

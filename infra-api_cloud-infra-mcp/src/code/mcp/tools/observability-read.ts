@@ -51,9 +51,33 @@ export function registerObservabilityReadTools(server: McpServer) {
     return jsonText("Health: OK", healthAlive());
   });
 
-  server.tool("obs.health.declared", "List config-declared services (instant, no network probing)", {}, async () => {
-    return jsonText("Declared services", healthDeclared());
-  });
+  // 2026-09-04: this returned the ENTIRE consolidated vms+services blob
+  // (~275 KB / 8.7k lines), which overflows the MCP client token cap on every
+  // single call — the tool was unusable as written. Default to a summary and
+  // keep the full payload behind an explicit flag.
+  server.tool(
+    "obs.health.declared",
+    "List config-declared services (instant, no network probing). Returns a summary by default; pass full=true for the complete topology payload (large).",
+    { full: z.boolean().optional().describe("Return the complete declared topology instead of the summary (large output)") },
+    async ({ full }) => {
+      const declared = healthDeclared();
+      if (full) return jsonText("Declared services", declared);
+      return jsonText("Declared services (summary)", {
+        vmCount: declared.vmCount,
+        serviceCount: declared.serviceCount,
+        vms: Object.keys(declared.vms).sort(),
+        services: Object.entries(declared.services)
+          .map(([name, svc]: [string, any]) => ({
+            name,
+            vm: svc?.vm ?? null,
+            category: svc?.category ?? null,
+            domain: svc?.domain ?? null,
+          }))
+          .sort((a, b) => a.name.localeCompare(b.name)),
+        note: "Summary view. Call with full=true for the complete declared topology.",
+      });
+    },
+  );
 
   server.tool(
     "obs.health.deployed",

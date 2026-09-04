@@ -1,5 +1,5 @@
 import { sshExec, checkVmReachable } from "./ssh.js";
-import { getConfig, resolveVmId, getVmSshAlias, getServicesForVm } from "./config.js";
+import { getConfig, resolveVmId, getVmSshAlias, getServicesForVm, serviceContainerNames } from "./config.js";
 import { listContainers } from "./docker.js";
 import { exec } from "./exec.js";
 // 2026-04-27 migrated: cloud-data-configs.json → _cloud-data-consolidated.json[.configs]
@@ -259,10 +259,7 @@ export function healthDrift(): DriftEntry[] {
     // suffixes (_app, _db, _rclone, ...) — listing ALL of them here makes drift
     // report "ok" when ANY are up. Exact names match first; glob patterns (containing
     // '*' or '?') are then checked against deployed names as a fall-through.
-    const declaredNames: string[] =
-      (svc as any).containers && Array.isArray((svc as any).containers)
-        ? (svc as any).containers
-        : ((svc as any).compose?.containers ?? [serviceName]);
+    const declaredNames: string[] = serviceContainerNames(svc, serviceName);
 
     const hasGlob = (pat: string) => pat.includes("*") || pat.includes("?");
     const globToRegex = (pat: string) =>
@@ -584,13 +581,13 @@ function resolveTarget(target: string): { type: "vm" | "service" | "container"; 
   // 3. Container name — look up in topology (services + VMs have containers arrays)
   // Search services first (maps container → service → VM)
   for (const [svcName, svc] of Object.entries(config.services)) {
-    if (svc.containers?.includes(target)) {
+    if (serviceContainerNames(svc, svcName).includes(target)) {
       return { type: "container", vmId: svc.vm, serviceName: svcName, containerName: target };
     }
   }
   // Fallback: search VM containers arrays directly
   for (const [vmId, vm] of Object.entries(config.vms)) {
-    if (vm.containers?.includes(target)) {
+    if (Array.isArray(vm.containers) && vm.containers.includes(target)) {
       return { type: "container", vmId, containerName: target };
     }
   }
