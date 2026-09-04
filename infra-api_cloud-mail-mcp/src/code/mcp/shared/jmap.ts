@@ -34,7 +34,7 @@ function authHeader(user: string, pass: string): string {
 
 // fetch() throws an opaque "fetch failed" TypeError on transport errors
 // (TLS, ECONNREFUSED, DNS); the real reason lives in err.cause. Surface it.
-async function doFetch(url: string, init: RequestInit, what: string): Promise<Response> {
+export async function doFetch(url: string, init: RequestInit, what: string): Promise<Response> {
   try {
     return await fetch(url, init);
   } catch (e) {

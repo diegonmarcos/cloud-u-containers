@@ -7,6 +7,11 @@
     "include_cloud_data": "true",
     "headers_enforced": true
   },
+  "ssh": {
+    "uid": 0,
+    "ssh_dir": "/root/.ssh",
+    "keys": ["vault_id_rsa", "vault_id_rsa.pub"]
+  },
   "docker": {
     "image": "cloud-mail-mcp",
     "dockerfile": "Dockerfile",

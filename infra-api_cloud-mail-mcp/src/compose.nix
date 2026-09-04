@@ -103,8 +103,31 @@ in
         STALWART_IMAP_PORT  = toString mp.stalwart_imap;
         STALWART_SMTP_PORT  = toString mp.stalwart_smtp;
         STALWART_JMAP_URL   = stalwartJmap;
+        # Stalwart serves its REST admin API from the SAME HTTP listener as
+        # JMAP, so the admin base URL is the JMAP origin. The sops secret
+        # STALWART_ADMIN_URL is stale — it says https://mail.diegonmarcos.com,
+        # i.e. the *maddy* hostname on the default port 443, and oci-mail
+        # listens on nothing at :443 (the public :443 edge is oci-analytics,
+        # a different VM). Every admin call therefore died in connect() as an
+        # opaque undici "fetch failed". Verified on the mesh 2026-09-04:
+        # 10.0.0.3 has 25/465/993/2443/2465/2993 open and :443 refused.
+        # A URL is not a secret; `environment` wins over `env_file`, so
+        # setting it here overrides the stale value declaratively. Only
+        # STALWART_ADMIN_USER/PASSWORD still come from sops.
+        STALWART_ADMIN_URL  = stalwartJmap;
         PROXIED_MCPS        = proxiedMcpsJson;
       };
+      # `mail_admin_users` on maddy shells out to
+      # `ssh oci-mail 'docker exec maddy maddy creds list'` — maddy's creds
+      # live behind its control socket, so there is no network API for it.
+      # Without this mount the container has no ~/.ssh at all and the alias
+      # fails to resolve ("Could not resolve hostname oci-mail"). ssh-keys.nix
+      # populates /opt/ssh-keys/<container>/ from build.json's `ssh` field with
+      # a config that maps oci-mail -> 10.0.0.3 over the WG mesh; same pattern
+      # as cloud-infra-mcp, c3-infra-api and dagu.
+      volumes = [
+        "/opt/ssh-keys/${app.container_name}:/root/.ssh:ro"
+      ];
     };
   };
 }

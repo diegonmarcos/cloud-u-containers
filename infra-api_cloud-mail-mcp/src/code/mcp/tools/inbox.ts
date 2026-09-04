@@ -109,15 +109,33 @@ export async function handle_mail_read({ server: srv, account, folder, uid }: { 
   return { content: [{ type: "text", text: result }] };
 }
 
-export async function handle_mail_search({ server: srv, account, folder, from, subject, since, unseen, limit }: { server: any; account: any; folder: any; from: any; subject: any; since: any; unseen: any; limit: any }) {
+export async function handle_mail_search({ server: srv, account, folder, query, from, subject, since, unseen, limit }: { server: any; account: any; folder: any; query: any; from: any; subject: any; since: any; unseen: any; limit: any }) {
   const result = await withImap(srv, account, async (client) => {
     const lock = await client.getMailboxLock(folder);
     try {
       const criteria: Record<string, unknown> = {};
+      // `query` is the obvious name for a search tool and callers reach for it
+      // first. It had no schema entry, so zod's default strip-unknown-keys
+      // silently dropped it and left `criteria` empty — see the guard below.
+      // imapflow exposes no IMAP SEARCH TEXT, so OR the header/body keys it
+      // does have to cover the same ground.
+      if (query) criteria.or = [{ subject: query }, { body: query }, { from: query }];
       if (from) criteria.from = from;
       if (subject) criteria.subject = subject;
       if (since) criteria.since = new Date(since);
       if (unseen) criteria.seen = false;
+
+      // An empty criteria object is IMAP SEARCH ALL: it matches every message
+      // in the folder, and the code below then prints the newest `limit` of
+      // them under a "Found N messages" header. That is indistinguishable from
+      // a successful search, so a dropped or unsupported filter returns
+      // confidently wrong results rather than an error. Refuse instead.
+      if (!Object.keys(criteria).length) {
+        throw new Error(
+          "mail_search: no usable search criteria — pass at least one of query, from, subject, since or unseen. " +
+          "(Searching with no filter would return the whole folder; use mail_list_messages to browse unfiltered.)"
+        );
+      }
 
       const searchResult = await client.search(criteria, { uid: true });
       const uids = Array.isArray(searchResult) ? searchResult : [];
@@ -253,6 +271,7 @@ export const mailSearchSchema = {
   server: serverSchema,
   account: accountSchema,
   folder: z.string().default("INBOX").describe("IMAP folder name"),
+  query: z.string().optional().describe("Free-text search — matches subject OR body OR sender"),
   from: z.string().optional().describe("Filter by sender address"),
   subject: z.string().optional().describe("Filter by subject substring"),
   since: z.string().optional().describe("Filter messages since date (YYYY-MM-DD)"),
