@@ -193,7 +193,6 @@
     "messages": {
       "portless_placeholder": "Portless worker/sidecar \u2014 no HTTP endpoint",
       "db_catalog_template": "DB catalog \u2014 container={container} engine={engine} port={port} upstream={upstream} path={path} vm={vm}",
-      "mcp_hub_fallback": "MCP Hub \u2014 use /g-workspace/mcp, /mail-mcp/mcp, /mattermost-mcp/mcp, /c3-infra-mcp/mcp, /c3-services-mcp/mcp, /cloud-cgc-pub-mcp/mcp",
       "app_hub_fallback": "Not Found"
     }
   },
@@ -252,12 +251,10 @@
         "landing_page": "cloud"
       },
       "mcp.diegonmarcos.com": {
-        "comment": "MCP -- Streamable HTTP endpoints for Claude Code MCP clients",
-        "fallback_message": "MCP Hub -- use /c3-infra-mcp/mcp, /c3-services-mcp/mcp, /mattermost-mcp/mcp, /mail-mcp/mcp, /g-workspace/mcp"
+        "comment": "MCP -- Streamable HTTP endpoints for Claude Code MCP clients"
       },
       "mail.diegonmarcos.com": {
-        "landing_page": "mymail",
-        "comment": "Mail hub -- landing + /snappy + /maddy + /stalwart"
+        "comment": "Redirect to webmail.diegonmarcos.com"
       }
     }
   },
