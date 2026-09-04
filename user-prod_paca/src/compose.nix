@@ -17,8 +17,10 @@
 # removed (the SPA fetches assets from STORAGE_PUBLIC_URL).
 #
 # Secrets (src/secrets.yaml → .secrets env_file): POSTGRES_PASSWORD, JWT_SECRET,
-# ADMIN_PASSWORD, ENCRYPTION_KEY, STORAGE_ENDPOINT, STORAGE_ACCESS_KEY_ID,
-# STORAGE_SECRET_ACCESS_KEY. escape_dollars=true (compose ${VAR} in DATABASE_URL).
+# ADMIN_PASSWORD, ENCRYPTION_KEY, AI_AGENT_INTERNAL_KEY, STORAGE_ENDPOINT,
+# STORAGE_ACCESS_KEY_ID, STORAGE_SECRET_ACCESS_KEY. escape_dollars=true
+# (compose ${VAR} in DATABASE_URL). AI_AGENT_INTERNAL_KEY is required by the Go
+# API config loader even though the ai-agent service itself is dropped.
 { buildJson, container, base_domain }:
 
 let
