@@ -1,3 +1,24 @@
+# ###################################################################
+# ##  THIS FILE IS NOT LOADED. EDITING IT CHANGES NOTHING.         ##
+# ###################################################################
+#
+# Stalwart v0.16.5 is started with `--config .../config.json`, a 62-byte
+# data-store pointer ({"@type":"RocksDb","path":...}), and compose mounts
+# ONLY config.json into the container (src/compose.nix). This TOML file is
+# never read by anything, at build time or at run time.
+#
+# Every setting below — [server] listeners, server.allowed-ip, [auth.fail2ban],
+# [authentication.fallback-admin] — is DEAD. The live values live in the
+# RocksDB settings registry and are reachable only over JMAP. The mechanism
+# that actually works is activate.sh, which upserts registry objects via JMAP.
+#
+# In particular: the fallback-admin user below does NOT exist. Do not reach
+# for it to explain a 401 — it has already cost one debugging session.
+#
+# Kept solely as documentation of intent and as a starting point should the
+# service ever be reverted to the v0.13 file-based config format.
+# ###################################################################
+
 # Stalwart v0.16 — file-based config (TOML). Certificate read from file on every
 # startup via %{file:...}% macro — no RocksDB API call needed for TLS.
 # Data (accounts, emails, JMAP objects) stays in RocksDB data store.
