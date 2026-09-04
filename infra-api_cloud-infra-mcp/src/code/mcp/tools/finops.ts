@@ -6,7 +6,7 @@ import { z } from "zod";
 import { execAsync } from "../../shared/libs/exec.js";
 import { sshExecAsync } from "../../shared/libs/ssh.js";
 import { getVmSshAlias } from "../../shared/libs/config.js";
-import { CLOUD_DATA_DIR, SOLUTIONS_DIR } from "../../shared/libs/paths.js";
+import { CLOUD_DATA_DIR, SOLUTIONS_DIR, resolveCloudDataPath, getConsolidatedPath } from "../../shared/libs/paths.js";
 import { readFileSync, existsSync, readdirSync } from "fs";
 import { join } from "path";
 
@@ -62,12 +62,17 @@ function loadTopology(): { vms: Record<string, TopologyVm>; services: Record<str
   // Migrated 2026-04-27: read own build-cloud-infra-mcp.json (has services map enriched
   // by deriveServiceConnections) + fall back to consolidated for full vm/service data.
   // 2026-04-27 migrated: cloud-data-topology.json legacy fallback dropped — consolidated covers all data
+  // 2026-09-04: was a hand-rolled list containing join(CLOUD_DATA_DIR, "..",
+  // "cloud", ...) — "cloud" is the PRE-RENAME repo dirname. The checkout is
+  // named "cloud-infra" (paths.ts fixed exactly this for SOLUTIONS_DIR on
+  // 2026-08-21 but these inline copies were missed), so every dev/host
+  // fallback resolved to a directory that does not exist and loadTopology()
+  // returned {} — which is why finops.vps / finops.assets / finops.services
+  // all rendered empty tables with 0 VMs and $0/mo.
+  // Route through the canonical resolver so this cannot drift again.
   const candidates = [
-    "/app/build-cloud-infra-mcp.json",
-    join(CLOUD_DATA_DIR, "..", "cloud", "1_cloud-configs", "dist", "build-cloud-infra-mcp.json"),
-    "/app/_cloud-data-consolidated.json",
-    join(CLOUD_DATA_DIR, "..", "cloud", "1_cloud-configs", "dist", "_cloud-data-consolidated.json"),
-    join(CLOUD_DATA_DIR, "_cloud-data-consolidated.json"),
+    resolveCloudDataPath("build-cloud-infra-mcp.json"),
+    getConsolidatedPath(),
   ];
   for (const p of candidates) {
     if (!existsSync(p)) continue;
@@ -378,9 +383,7 @@ async function finOpsAssets(): Promise<string> {
   sections.push("\n── CLOUDFLARE DNS ──");
   // 2026-04-27 migrated: cloud-data-cloudflare-dns.json → _cloud-data-consolidated.json[.dns]
   const cfCandidates = [
-    "/app/_cloud-data-consolidated.json",
-    join(CLOUD_DATA_DIR, "..", "cloud", "1_cloud-configs", "dist", "_cloud-data-consolidated.json"),
-    join(CLOUD_DATA_DIR, "_cloud-data-consolidated.json"),
+    getConsolidatedPath(),
   ];
   const cfPath = cfCandidates.find((p) => existsSync(p));
   if (cfPath) {

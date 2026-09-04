@@ -210,6 +210,53 @@ export function getServiceDir(name: string): string {
   return join(SOLUTIONS_DIR, getServiceFolder(name));
 }
 
+// Normalise a service's declared container names to a string[].
+//
+// 2026-09-04: `svc.containers` has TWO shapes depending on which loader
+// populated config.services:
+//   - discoverServices() (build.json scan) already normalises to string[]
+//   - _cloud-data-consolidated.json keeps the RAW build.json shape, an OBJECT
+//     keyed by role: { app: { container_name: "..." }, db: { ... } }
+// Every consumer assumed the array form, so against consolidated data
+// `Array.isArray(...)` was false and `svc.containers.includes(...)` /
+// `push(...svc.containers)` either silently matched nothing or threw
+// TypeError. That is what made health.drift report EVERY service as both
+// "missing" and "extra": declaredNames came back empty, so nothing matched a
+// running container, and every running container then looked undeclared.
+//
+// Priority mirrors discoverServices():
+//   1. container_names[] explicit override (may contain glob patterns)
+//   2. containers as object → each role's container_name
+//   3. containers already a string[]
+//   4. legacy compose.containers[]
+//   5. fall back to the service name itself
+// Empty arrays are treated as ABSENT, not as "no containers" — `?? [name]`
+// does not fire on [], which is the second half of the same bug.
+export function serviceContainerNames(svc: unknown, serviceName: string): string[] {
+  const s = (svc ?? {}) as Record<string, any>;
+  const strings = (v: unknown): string[] =>
+    Array.isArray(v) ? v.filter((x): x is string => typeof x === "string" && x.length > 0) : [];
+
+  const override = strings(s.container_names);
+  if (override.length > 0) return override;
+
+  const c = s.containers;
+  if (Array.isArray(c)) {
+    const arr = strings(c);
+    if (arr.length > 0) return arr;
+  } else if (c && typeof c === "object") {
+    const fromRoles = Object.values(c as Record<string, any>)
+      .map((r) => (r && typeof r === "object" ? r.container_name : undefined))
+      .filter((n): n is string => typeof n === "string" && n.length > 0);
+    if (fromRoles.length > 0) return fromRoles;
+  }
+
+  const legacy = strings(s.compose?.containers);
+  if (legacy.length > 0) return legacy;
+
+  return [serviceName];
+}
+
 function buildAliasMap(): { vmToAlias: Record<string, string>; aliasToVm: Record<string, string> } {
   const config = getConfig();
   const vmToAlias: Record<string, string> = { ...VM_SSH_ALIASES_FALLBACK };

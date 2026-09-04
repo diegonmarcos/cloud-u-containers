@@ -8,7 +8,7 @@
  * PROFILING: Deep (~10-30s). 4 engines: URL, Container, Network, VM.
  */
 
-import { getConfig, resolveVmId, getVmSshAlias } from "./config.js";
+import { getConfig, resolveVmId, getVmSshAlias, serviceContainerNames } from "./config.js";
 import { sshPool, httpPool, Pool, runAsBulk } from "./pool.js";
 import {
   sshExecAsync,
@@ -138,9 +138,9 @@ export function resolve(target: string): Resolved {
     result.wg_ip = vm?.wg_ip ?? vm?.ip;
     // Collect all containers on this VM
     const containers: string[] = [];
-    for (const [, svc] of Object.entries(config.services)) {
-      if (svc.vm === vmId && svc.containers) {
-        containers.push(...svc.containers);
+    for (const [_name, svc] of Object.entries(config.services)) {
+      if (svc.vm === vmId) {
+        containers.push(...serviceContainerNames(svc, _name));
       }
     }
     result.containers = containers;
@@ -153,7 +153,7 @@ export function resolve(target: string): Resolved {
     result.service = target;
     result.vm = svc.vm;
     result.domain = svc.domain;
-    result.containers = svc.containers ?? [];
+    result.containers = serviceContainerNames(svc, target);
     if (svc.vm && config.vms[svc.vm]) {
       result.wg_ip = config.vms[svc.vm].wg_ip ?? config.vms[svc.vm].ip;
     }
@@ -162,7 +162,7 @@ export function resolve(target: string): Resolved {
 
   // 3. Container name — scan services for matching container
   for (const [svcName, svc] of Object.entries(config.services)) {
-    if (svc.containers?.includes(target)) {
+    if (serviceContainerNames(svc, svcName).includes(target)) {
       result.container = target;
       result.service = svcName;
       result.vm = svc.vm;
@@ -272,8 +272,8 @@ export async function upAllContainers(): Promise<UpAllResult> {
   const config = getConfig();
 
   const containers: string[] = [];
-  for (const [, svc] of Object.entries(config.services)) {
-    if (svc.containers) containers.push(...svc.containers);
+  for (const [_name, svc] of Object.entries(config.services)) {
+    containers.push(...serviceContainerNames(svc, _name));
   }
   const t_resolve = Date.now();
 
@@ -796,8 +796,8 @@ export async function profileAllContainers(): Promise<{
   const config = getConfig();
 
   const containers: string[] = [];
-  for (const [, svc] of Object.entries(config.services)) {
-    if (svc.containers) containers.push(...svc.containers);
+  for (const [_name, svc] of Object.entries(config.services)) {
+    containers.push(...serviceContainerNames(svc, _name));
   }
 
   const pool = new Pool(6);
