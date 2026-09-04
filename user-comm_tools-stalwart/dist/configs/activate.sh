@@ -99,11 +99,17 @@ fi
 # Role drift on an existing account is therefore REPORTED, not corrected.
 # Aliases are not reconciled (the only aliased account predates this hook).
 # Must run before the per-user loop below, which authenticates as each user.
+# Deferred failure: a missing account must turn the ship RED, but it must not
+# skip the TLS cert / MTA route / throttle steps below, so the verdict is
+# parked in a flag file and cashed in at the very end of this script.
+ACCOUNTS_FLAG=/tmp/.stalwart-activate-accounts-failed
+rm -f "$ACCOUNTS_FLAG"
 if [ "$_ready" = 1 ]; then
   echo "[activate] Reconciling accounts from declared users (admin: $ADMIN_EMAIL)..."
   ACCOUNTS="42|User|MAIL_DEFAULT_PASSWORD| me|Admin|ME_PASSWORD| admin|User|ADMIN_PASSWORD| no-reply|User|NOREPLY_PASSWORD|noreply yo|User|MAIL_DEFAULT_PASSWORD|" BASE_DOMAIN="diegonmarcos.com" SECRETS_DIR="$SECRETS_DIR" \
+  ACCOUNTS_FLAG="$ACCOUNTS_FLAG" \
   ADMIN_EMAIL="$ADMIN_EMAIL" ADMIN_PW="$ADMIN_PW" BASE="$BASE" python3 - <<'PYEOF' \
-    || echo "[activate]   account reconcile exited $? (non-fatal)"
+    || { echo "[activate]   account reconcile crashed (rc $?)"; : > "$ACCOUNTS_FLAG"; }
 import os, ssl, json, base64
 from urllib import request as ur, error as ue
 BASE=os.environ["BASE"]
@@ -121,10 +127,27 @@ try:
 except Exception as e:
     print("  [accounts] session failed (non-fatal):",e); raise SystemExit(0)
 acct=s.get("primaryAccounts",{}).get("urn:stalwart:jmap") or next(iter(s.get("accounts",{})),None)
+FLAG=os.environ["ACCOUNTS_FLAG"]
+def fail(msg):
+    print("  [accounts] "+msg); open(FLAG,"w").close()
 r=jmap([["x:Account/get",{"accountId":acct,"ids":None},"0"]])
 try: live={o.get("name"):o for o in r["methodResponses"][0][1].get("list",[])}
 except Exception:
-    print("  [accounts] x:Account/get failed (non-fatal):",r); raise SystemExit(0)
+    fail(f"x:Account/get failed: {r}"); raise SystemExit(0)
+# @type here is a VARIANT discriminator, not a table name — x:Action/set below
+# sends "ReloadSettings", not "Action" — so for an account it is a principal
+# kind and cannot be guessed. Guessing is what broke the 2026-09-04 ship: every
+# create came back invalidPatch "Missing or invalid '@type' property in object",
+# which also means validation stopped before the secret property was ever
+# looked at. Copy the discriminator off an account that already exists instead,
+# and print one live account's property names so the log settles the remaining
+# schema (secrets vs password, alias field) without another round trip. Keys
+# only, never values — an account object may carry a hash.
+proto=next((o for o in live.values() if o.get("@type")),None)
+ATYPE=(proto or {}).get("@type")
+print("  [accounts] live schema:",sorted(next(iter(live.values()),{}).keys()),"@type:",ATYPE)
+if not ATYPE and any(rec.split("|")[0] not in live for rec in os.environ["ACCOUNTS"].split()):
+    fail("no @type on any existing account — cannot build a create payload"); raise SystemExit(0)
 for rec in os.environ["ACCOUNTS"].split():
     name,role,pass_env,_aliases=rec.split("|")
     cur=live.get(name)
@@ -138,8 +161,8 @@ for rec in os.environ["ACCOUNTS"].split():
     try: pw=open(os.path.join(os.environ["SECRETS_DIR"],pass_env)).read().strip()
     except OSError: pw=""
     if not pw:
-        print(f"  [accounts] {name}: no password ({pass_env}) — cannot create"); continue
-    obj={"name":name,"emailAddress":f'{name}@{os.environ["BASE_DOMAIN"]}',
+        fail(f"{name}: no password ({pass_env}) — cannot create"); continue
+    obj={"@type":ATYPE,"name":name,"emailAddress":f'{name}@{os.environ["BASE_DOMAIN"]}',
          "roles":{"@type":role},"secrets":[pw]}
     def create(o):
         rr=jmap([["x:Account/set",{"accountId":acct,"create":{"c":o}},"0"]])
@@ -148,15 +171,16 @@ for rec in os.environ["ACCOUNTS"].split():
     if res.get("created"):
         print(f"  [accounts] {name}: CREATED (roles={role})"); continue
     # The secret is the one property x:Account/get never returns, so its name
-    # cannot be confirmed by inspection. Try the singular spelling once, then
-    # print the server's own rejection — invalidProperties names the field.
+    # still cannot be confirmed by inspection. Try the singular spelling once,
+    # then report the server's own rejection — invalidProperties names the
+    # field, and the live-schema line above lists what an account really holds.
     obj.pop("secrets"); obj["password"]=pw
     rr2,res2=create(obj)
     if res2.get("created"):
         print(f"  [accounts] {name}: CREATED (roles={role}, singular secret property)")
     else:
-        print(f"  [accounts] FAIL create {name}: {json.dumps(res.get('notCreated') or rr)}"
-              f" / {json.dumps(res2.get('notCreated') or rr2)}")
+        fail(f"FAIL create {name}: {json.dumps(res.get('notCreated') or rr)}"
+             f" / {json.dumps(res2.get('notCreated') or rr2)}")
 PYEOF
 fi
 
@@ -462,3 +486,15 @@ for variant in ("ReloadSettings", "InvalidateCaches"):
 PYEOF
 
 echo "[activate] Done — folders + sieve + mta routes + tls cert + allowed-ip + throttle cap ensured"
+
+# Cash in the Step A verdict LAST, so everything above still ran. The ship
+# engine propagates this hook's exit code (ssh_run_detached returns the remote
+# rc under set -e), so a declared user that is missing from Stalwart now turns
+# the deploy RED instead of passing as green while the account silently does
+# not exist — which is exactly how the 2026-09-04 ship reported success with
+# three of five accounts uncreated.
+if [ -f "$ACCOUNTS_FLAG" ]; then
+    rm -f "$ACCOUNTS_FLAG"
+    echo "[activate] FAILED: declared users are missing from Stalwart — see the [accounts] lines above"
+    exit 1
+fi
