@@ -103,8 +103,9 @@ in
         STALWART_IMAP_PORT  = toString mp.stalwart_imap;
         STALWART_SMTP_PORT  = toString mp.stalwart_smtp;
         STALWART_JMAP_URL   = stalwartJmap;
-        # Stalwart serves its REST admin API from the SAME HTTP listener as
-        # JMAP, so the admin base URL is the JMAP origin. The sops secret
+        # Stalwart v0.16.5 has no REST admin API at all — administration runs
+        # over the SAME JMAP listener via the urn:stalwart:jmap capability, so
+        # the admin base URL is simply the JMAP origin. The sops secret
         # STALWART_ADMIN_URL is stale — it says https://mail.diegonmarcos.com,
         # i.e. the *maddy* hostname on the default port 443, and oci-mail
         # listens on nothing at :443 (the public :443 edge is oci-analytics,

@@ -221,6 +221,7 @@
   },
   "upstream_image": "stalwartlabs/stalwart:v0.16.5",
   "timezone": "Europe/Madrid",
+  "_doc_users": "The `admin` entry is the ADMIN PRINCIPAL: src/flake.nix derives adminEmail/adminPassEnv from it and configs/activate.sh authenticates every registry upsert (allowed-ip, MTA routes, throttles) as that account. In v0.16.5 admin-ness is a field on the account object itself — `roles: {\"@type\": \"Admin\"}` — not a separate principal record; an account with roles=User authenticates fine but gets no `urn:stalwart:jmap` entry in its JMAP session's primaryAccounts and can read nothing from the registry. Verified live 2026-09-04: only `me` (roles Admin) and `no-reply` (roles User) exist in Stalwart's store. `mailadmin`/`yo`/`42` below are declared but have NEVER been created here — account creation is not part of this deploy (see _doc_post_hook: it is a manual `stalwart-cli apply` recovery-mode bootstrap), so those three exist only in maddy. cloud-mail-mcp's STALWART_ADMIN_USER pointed at admin@diegonmarcos.com for that reason and 401'd against Stalwart; it now points at me@diegonmarcos.com.",
   "users": {
     "admin": {
       "name": "me",

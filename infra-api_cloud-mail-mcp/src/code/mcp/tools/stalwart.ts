@@ -1,33 +1,38 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { stalwartAdminFetch } from "../shared/admin.js";
+import { stalwartRegistryGet } from "../shared/admin.js";
 
 export async function handle_stalwart_admin_accounts({ name }: { name: any }) {
+  const items = await stalwartRegistryGet("Account");
   if (name) {
-    const data = await stalwartAdminFetch(`/api/principal/${encodeURIComponent(name)}`);
-    return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+    const one = items.find((a: any) => a.name === name || a.emailAddress === name);
+    if (!one) return { content: [{ type: "text", text: `(no account ${name})` }] };
+    return { content: [{ type: "text", text: JSON.stringify(one, null, 2) }] };
   }
-  const data = await stalwartAdminFetch("/api/principal?type=individual&limit=100");
-  const items = data?.data?.items ?? data?.items ?? [];
   if (!items.length) return { content: [{ type: "text", text: "(no accounts)" }] };
-  const lines = items.map((p: any) => typeof p === "string" ? p : `${p.name} (${p.type ?? "?"})`);
+  const lines = items.map((a: any) => `${a.emailAddress ?? a.name} (${a["@type"] ?? "?"}, role ${a.roles?.["@type"] ?? "?"})`);
   return { content: [{ type: "text", text: `${items.length} accounts:\n${lines.join("\n")}` }] };
 }
 
 export async function handle_stalwart_admin_domains(_params: Record<string, unknown>) {
-  const data = await stalwartAdminFetch("/api/principal?type=domain&limit=100");
-  const items = data?.data?.items ?? data?.items ?? [];
+  const items = await stalwartRegistryGet("Domain");
   if (!items.length) return { content: [{ type: "text", text: "(no domains)" }] };
-  const lines = items.map((d: any) => typeof d === "string" ? d : d.name ?? JSON.stringify(d));
+  const lines = items.map((d: any) => d.name);
   return { content: [{ type: "text", text: `${items.length} domains:\n${lines.join("\n")}` }] };
 }
 
+// v0.16.5 exposes no settings registry over JMAP — x:Setting, x:Settings and
+// x:Config all return `unknownMethod`, and the old REST /api/settings/list is
+// 404 on this build (see shared/admin.ts). Settings are per-object types
+// (x:AllowedIp, x:MtaRoute, x:MtaInboundThrottle, ...), so `prefix` selects
+// the registry type instead of a dotted config key.
 export async function handle_stalwart_admin_settings({ prefix }: { prefix: any }) {
-  const path = prefix
-    ? `/api/settings/list?prefix=${encodeURIComponent(prefix)}`
-    : "/api/settings/list";
-  const data = await stalwartAdminFetch(path);
-  return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+  if (!prefix) {
+    return { content: [{ type: "text", text:
+      "Stalwart v0.16.5 has no flat settings API. Pass prefix=<registry type>, e.g. AllowedIp, MtaRoute, MtaInboundThrottle, Tenant, Domain, Account." }] };
+  }
+  const items = await stalwartRegistryGet(String(prefix));
+  return { content: [{ type: "text", text: JSON.stringify(items, null, 2) }] };
 }
 
 export const stalwartAdminAccountsSchema = {
@@ -37,7 +42,7 @@ export const stalwartAdminAccountsSchema = {
 export const stalwartAdminDomainsSchema = {};
 
 export const stalwartAdminSettingsSchema = {
-  prefix: z.string().default("").describe("Settings prefix to filter (e.g. 'server.listener', 'store')"),
+  prefix: z.string().default("").describe("Registry object type (e.g. 'AllowedIp', 'MtaRoute', 'MtaInboundThrottle', 'Tenant'); omit to list the known types"),
 };
 
 export function registerStalwartTools(server: McpServer): void {
