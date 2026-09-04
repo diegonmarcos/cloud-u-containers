@@ -243,7 +243,7 @@ export function registerOperationsTools(server: McpServer) {
       const vmId = svc.vm;
       validatePath(service);
       const remotePath = `${config.remote_base}/${service}`;
-      const cmd = `${composeCd(remotePath)} && docker compose down 2>/dev/null; docker compose up -d`;
+      const cmd = `${composeCd(remotePath)} && docker compose $COMPOSE_ARGS down 2>/dev/null; docker compose $COMPOSE_ARGS up -d`;
 
       const result = sshExec(vmId, cmd, 60_000);
       audit("docker_compose_up", `${service}@${getVmSshAlias(vmId)}`, result.ok ? "OK" : `FAILED (exit ${result.exitCode})`);

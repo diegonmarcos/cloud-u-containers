@@ -191,8 +191,19 @@ export function getServiceFolder(name: string): string {
 // docker.compose_up_all, build.backup) failed with "no configuration file
 // provided: not found". Precedence mirrors the engine: compose/ first, root as
 // fallback.
+//
+// It must be `-f compose/docker-compose.yml --project-directory .` from the
+// SERVICE ROOT, never a plain `cd .../compose`. cd'ing INTO compose/ makes it
+// the project directory, and compose resolves `env_file: [".secrets"]` plus the
+// `./.secrets.d` / `./.secrets.json` bind mounts against the project directory —
+// while the ship engine scp's all three to the service ROOT
+// (cloud-ship-container-step-deploy-rsync.sh) and runs compose with
+// `--project-directory .` there. So from 2026-08-23 every compose verb on this
+// server died with "env file /opt/containers/<svc>/compose/.secrets not found"
+// (stalwart on oci-mail, 2026-09-04, ~50 min mail outage). Callers must pass
+// $COMPOSE_ARGS to every `docker compose` invocation.
 export function composeCd(remotePath: string): string {
-  return `cd ${remotePath}/compose 2>/dev/null || cd ${remotePath}`;
+  return `cd ${remotePath} && if [ -f compose/docker-compose.yml ]; then COMPOSE_ARGS="-f compose/docker-compose.yml --project-directory ."; else COMPOSE_ARGS=; fi`;
 }
 
 export function getServiceDir(name: string): string {
