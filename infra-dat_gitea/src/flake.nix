@@ -44,6 +44,7 @@
           AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
         elif [ "${privateStr}" = "true" ]; then
           echo "  WARN: ${m.name} is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
+          tally mirrors_degraded "${m.name}: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
         fi
         PAYLOAD=$(jq -n \
           --arg clone_addr "${m.upstream}" \
@@ -53,9 +54,19 @@
           --argjson private ${privateStr} \
           --argjson auth "$AUTH_JSON" \
           '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
-        api -X POST "$API/repos/migrate" -d "$PAYLOAD" >/dev/null && echo "  OK ${m.name}" || echo "  FAIL ${m.name}"
+        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
+        # Now every outcome lands in exactly one tally, and the SUMMARY at the
+        # bottom of init-mirrors.sh is what decides this script's exit code.
+        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
+          echo "  OK ${m.name}"
+          tally mirrors_created "${m.name}"
+        else
+          echo "  FAIL ${m.name}: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
+          tally mirrors_failed "${m.name}: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
+        fi
       else
         echo "EXISTS ${org}/${m.name}"
+        tally mirrors_exists "${m.name}"
       fi
     '';
     mirrorBlock = lib.concatMapStringsSep "\n" mkMirrorEntry mirrorEntries;

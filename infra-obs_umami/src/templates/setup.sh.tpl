@@ -15,8 +15,19 @@ STATE_FILE="/output/site_id"
 # all subsequent runs short-circuit here without touching the Umami API.
 if [ -s "$STATE_FILE" ]; then
   EXISTING_ID=$(cat "$STATE_FILE")
-  echo "[umami-setup] Already configured (site_id=$EXISTING_ID, state=$STATE_FILE). Skipping."
-  exit 0
+  # ...unless the marker is the POISON value. The auth-failure path below used
+  # to write the literal string "unknown" here and exit 0, which permanently
+  # satisfied this guard: setup then short-circuited on every subsequent run
+  # forever, so a website that was never created could never be created, and
+  # every ship reported success. A marker that records "we gave up" is not
+  # evidence of a completed setup — treat it as unconfigured and try again.
+  if [ "$EXISTING_ID" = "unknown" ]; then
+    echo "[umami-setup] state=$STATE_FILE holds the give-up marker 'unknown' — NOT treating that as configured; retrying setup."
+  else
+    echo "[umami-setup] Already configured (site_id=$EXISTING_ID, state=$STATE_FILE). Skipping."
+    echo "[umami-setup] SUMMARY revision=${SHIP_REVISION:-unknown} outcome=already-configured site_id=$EXISTING_ID"
+    exit 0
+  fi
 fi
 
 # Extract JSON field value using awk index() — no sed escaping issues
@@ -55,15 +66,19 @@ if [ -z "$TOKEN" ]; then
   TOKEN=$(json_val "$RESP" "token")
 
   if [ -z "$TOKEN" ]; then
-    # Neither default nor configured password works. Admin likely exists
-    # with a different password (e.g. set manually or migrated from Matomo).
-    # We can't auto-recover — but since the admin exists, the job IS done:
-    # write a stub marker to /output so next runs short-circuit idempotently.
-    echo "[umami-setup] WARNING: Cannot authenticate with default or configured password."
-    echo "[umami-setup] Admin likely exists with external password — marking as done."
-    echo "unknown" > "$STATE_FILE"
-    echo "{\"umami_site_id\":\"unknown\",\"umami_url\":\"https://@DOMAIN@\",\"note\":\"admin password unknown — set STATE_FILE manually\"}" > /output/analytics.json
-    exit 0
+    # Neither default nor configured password works. "Admin likely exists with
+    # an external password" was a GUESS, and the code acted on it by writing
+    # a "done" marker and exiting 0 — so an Umami that was simply not up yet,
+    # or a password that never got injected, was recorded as a completed setup
+    # forever and shipped green. We genuinely cannot tell those apart from
+    # here, and the honest answer to "I could not authenticate" is a failure,
+    # not a marker. No poison marker is written: the next run gets to try
+    # again with whatever the operator fixed.
+    echo "[umami-setup] ERROR: cannot authenticate with the default OR the configured password." >&2
+    echo "[umami-setup]   → either Umami is not ready, or ADMIN_PASSWORD does not match the admin account." >&2
+    echo "[umami-setup]   → NOT writing a 'done' marker; that is what made this state permanent and invisible." >&2
+    echo "[umami-setup] SUMMARY revision=${SHIP_REVISION:-unknown} outcome=auth-failed site_id= configured=0"
+    exit 1
   fi
   echo "[umami-setup] Already configured, verifying website..."
 else
@@ -117,7 +132,16 @@ else
   SITE_ID=$(json_val "$RESP" "id")
 fi
 
-# Write SITE_ID to persistent volume for declarative retrieval
+# Write SITE_ID to persistent volume for declarative retrieval.
+# An empty SITE_ID means the lookup found nothing and the create returned
+# nothing — writing that would leave an empty marker (which the -s guard above
+# correctly ignores) plus an analytics.json advertising a website id of "".
+# Fail instead: this script exists to produce a site id.
+if [ -z "$SITE_ID" ]; then
+  echo "[umami-setup] ERROR: no website id — neither found nor created for diegonmarcos.com." >&2
+  echo "[umami-setup] SUMMARY revision=${SHIP_REVISION:-unknown} outcome=no-site-id site_id= configured=0"
+  exit 1
+fi
 echo "$SITE_ID" > /output/site_id
 echo "{\"umami_site_id\":\"$SITE_ID\",\"umami_url\":\"https://@DOMAIN@\"}" > /output/analytics.json
 
@@ -129,3 +153,4 @@ echo "  User:       admin"
 echo "  Website ID: $SITE_ID"
 echo "  Config:     /output/analytics.json"
 echo "========================================="
+echo "[umami-setup] SUMMARY revision=${SHIP_REVISION:-unknown} outcome=configured site_id=$SITE_ID configured=1"
