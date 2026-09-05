@@ -34,10 +34,44 @@ function authHeader(user: string, pass: string): string {
 
 async function countMaddy(sinceDate: Date): Promise<number> {
   return withImap("maddy", "me", async (client) => {
-    // IMAP SEARCH SINCE is date-granularity only (no time-of-day) — fine for
-    // the loose (multi-message / percentage) tolerance the caller applies.
-    const uids = await client.search({ since: sinceDate }, { uid: true });
-    return Array.isArray(uids) ? uids.length : 0;
+    // Three traps here, all of which used to collapse into a silent 0 — the
+    // one value this script must never invent, because the caller reads 0 as
+    // data loss and raises a mail-outage alarm.
+    //
+    //  1. withImap connects but never SELECTs a mailbox, and imapflow's
+    //     search() returns `undefined` (not []) with none selected. The old
+    //     `Array.isArray(uids) ? uids.length : 0` turned that into 0
+    //     unconditionally, for any amount of real mail, forever. INBOX alone
+    //     holds 10152 messages. An absent result set is now a throw, which
+    //     main()'s .catch converts to the -1 "unavailable" sentinel.
+    //  2. Sieve sorts incoming mail out of INBOX into the F* folders, so a
+    //     single-mailbox count structurally undercounts — over 7 days INBOX
+    //     saw 801 of 1602 messages, half the total. Count every selectable
+    //     mailbox.
+    //  3. IMAP SEARCH SINCE is date-granularity, and maddy's imapsql treats
+    //     it as INTERNALDATE > <the whole day> rather than RFC 3501's ">=":
+    //     `SINCE 2026-09-04` returned 0 while 76 messages carried that exact
+    //     INTERNALDATE. Prefilter deliberately wide, then compare real
+    //     timestamps so the window is honest.
+    const prefilter = new Date(sinceDate.getTime() - 3 * 86400000);
+    let total = 0;
+    for (const box of await client.list()) {
+      if (box.flags?.has("\\Noselect")) continue;
+      const lock = await client.getMailboxLock(box.path);
+      try {
+        const uids = await client.search({ since: prefilter }, { uid: true });
+        if (!Array.isArray(uids)) {
+          throw new Error(`IMAP SEARCH returned no result set for ${box.path} (mailbox not selected?)`);
+        }
+        if (uids.length === 0) continue;
+        for await (const msg of client.fetch(uids, { uid: true, internalDate: true }, { uid: true })) {
+          if (msg.internalDate && msg.internalDate >= sinceDate) total++;
+        }
+      } finally {
+        lock.release();
+      }
+    }
+    return total;
   });
 }
 
@@ -75,7 +109,11 @@ async function countStalwart(sinceIso: string): Promise<number> {
   const body = (await res.json()) as { methodResponses?: [string, Record<string, unknown>, string][] };
   const result = body.methodResponses?.[0]?.[1] as { total?: number; ids?: string[] } | undefined;
   if (typeof result?.total === "number") return result.total;
-  return result?.ids?.length ?? 0;
+  if (Array.isArray(result?.ids)) return result.ids.length;
+  // Neither total nor ids came back: the query did not answer. Returning 0
+  // here would be the same lie countMaddy used to tell — throw so the caller
+  // gets the -1 "unavailable" sentinel instead of a fake "no mail".
+  throw new Error(`JMAP Email/query returned neither total nor ids: ${JSON.stringify(body).slice(0, 300)}`);
 }
 
 async function main() {
