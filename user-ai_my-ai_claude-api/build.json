@@ -1,7 +1,7 @@
 {
-  "name": "claude-superset-api",
+  "name": "my-ai_claude-api",
   "description": "Claude superset API on oci-apps — one polyglot container: OpenAI /v1 + Ollama /api + Anthropic /v1/messages mimic backed by the subscription `claude` CLI (no metered key), with a vendored Headroom (Apache-2.0) compression hop and a savings dashboard. Successor to kg-bridge; usable as a local/remote fallback. Internal WG-only sidecar, never public.",
-  "dns": "claude-superset-api.app",
+  "dns": "my-ai-claude-api.app",
   "ports": {
     "app": 3117,
     "ollama": 11436,
@@ -12,6 +12,7 @@
   "_upstream_image_doc": "Top-level upstream_image marks this as a Type-B vendored-Dockerfile build: the ship engine builds src/code/Dockerfile (staged to dist/code/arm64/) natively on the arm64 cloud-builder. It is NOT injected as a FROM-override build-arg — it only selects BUILD_CONTEXT=dist/code/arch. The real multi-stage Dockerfile (builder compiles the Headroom sidecar, runtime installs node) is preserved. The old docker.native_build:image-wrapper was WRONG: image-wrapper with no cmd made the native block skip AND blocked Type-B auto-detect, so CI silently built nothing and only recreated the stale image.",
   "upstream_image": "python:3.13-slim",
   "docker": {
+    "_image_rename_doc": "DELIBERATELY still `claude-superset-api` after the 2026-09-05 rebrand to `my-ai_claude-api`. GHCR package visibility is fixed AT CREATION and there is no API to flip it, so pushing under a new name would create a brand-new package born PRIVATE and the VM pull would be denied (exactly how session-memory and matrix-mautrix-whatsapp are currently stuck). Renaming this field is therefore a breaking change, not a cosmetic one. The engine appends `-binaries`, giving ghcr.io/diegonmarcos/claude-superset-api-binaries:latest — which src/compose.nix hardcodes to match. Do NOT 'tidy' this to match the service name unless you first confirm the new package can be made public.",
     "image": "claude-superset-api",
     "dockerfile": "Dockerfile",
     "registry": "ghcr.io/diegonmarcos",
@@ -20,7 +21,7 @@
   },
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/claude-superset-api",
+    "remote_path": "/opt/containers/my-ai_claude-api",
     "compose_flags": "--pull always --force-recreate"
   },
   "secrets": {
@@ -53,11 +54,11 @@
   },
   "containers": {
     "app": {
-      "container_name": "claude-superset-api",
+      "container_name": "my-ai_claude-api",
       "image": "ghcr.io/diegonmarcos/claude-superset-api:latest",
       "port": 3117,
       "port_env": "BRIDGE_PORT",
-      "dns": "claude-superset-api.app",
+      "dns": "my-ai-claude-api.app",
       "public": false,
       "healthcheck": "/health",
       "monitoring": null,

@@ -1,4 +1,4 @@
-# compose.nix — docker-compose for claude-superset-api.
+# compose.nix — docker-compose for my-ai_claude-api (formerly claude-superset-api).
 # engine.nix serialises this via lib.generators.toYAML, merging compose-defaults.json.
 #
 # WG-ONLY sidecar (inherited from kg-bridge): host network, listeners bound to the
@@ -8,7 +8,7 @@
 #
 # AUTH: NO secret in the (public) repo. The Claude login lives ONLY in the
 # `claude_home` named volume — log in once via
-# `docker exec -it claude-superset-api claude`. Both the front's `claude -p`
+# `docker exec -it my-ai_claude-api claude`. Both the front's `claude -p`
 # and interactive use share that persisted ~/.claude. No metered API key.
 #
 # Tunables are data-driven from build.json `runtime` (rule 6 — no hardcoded data
@@ -21,13 +21,26 @@ let
   hr   = rt.headroom or {};
   svc  = container.services or {};
   # WG IP from cloud-data (same source as kg-bridge/cgc). Falls back to oci-apps WG IP.
-  wgIp = svc."claude-superset-api".ip or svc."kg-bridge".ip or "10.0.0.6";
+  # New name first; the pre-rename key stays as a fallback so this keeps resolving
+  # on any consolidated config generated before the 2026-09-05 rebrand.
+  wgIp = svc."my-ai_claude-api".ip or svc."claude-superset-api".ip
+         or svc."kg-bridge".ip or "10.0.0.6";
   home = "/home/appuser";
-  binariesImage = "ghcr.io/diegonmarcos/${buildJson.name}-binaries:latest";
+  # HARDCODED, NOT derived from buildJson.name — deliberate, do not "fix".
+  # This service was renamed claude-superset-api -> my-ai_claude-api on 2026-09-05,
+  # but the GHCR image path was deliberately NOT renamed: package visibility on GHCR
+  # is fixed AT CREATION and there is no API to flip it afterwards. Pushing under a
+  # new name creates a brand-new package that is born PRIVATE, and the VM's pull is
+  # then denied — which is exactly the state session-memory and matrix-mautrix-whatsapp
+  # are stuck in today. Interpolating buildJson.name here would have silently done
+  # that on the first deploy after the rename. Keep this literal in sync with
+  # build.json `docker.image` (also still claude-superset-api); the ship engine
+  # appends `-binaries` to that field when it pushes.
+  binariesImage = "ghcr.io/diegonmarcos/claude-superset-api-binaries:latest";
 in
 {
   services = {
-    claude-superset-api = {
+    my-ai_claude-api = {
       image = binariesImage;
       container_name = app.container_name;
       network_mode = "host";
@@ -93,6 +106,15 @@ in
   };
   # Named volume holding the persisted Claude login + savings — never in git, never public.
   volumes = {
+    # HARDCODED to the pre-rename name, deliberately — do not "fix" to match the
+    # service name. This volume holds the ONLY copy of the Claude subscription
+    # login (~/.claude/.credentials.json), ~/.claude.json, the cross-device
+    # session store and the lifetime Headroom savings ledger. Renaming it does not
+    # move the data: compose would create a fresh EMPTY volume and the service
+    # would come up logged out, with the savings ledger reset to zero.
+    # oci-apps still carries claude-api-superset-home and claude-openai-bridge-home
+    # — two volumes orphaned by exactly this mistake during earlier renames of this
+    # same service. Renaming this is a live data migration, not a rename.
     claude_home = { name = "claude-superset-api-home"; };
   };
 }
