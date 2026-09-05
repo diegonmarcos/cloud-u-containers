@@ -8,7 +8,7 @@ set -euo pipefail
 REPO_ROOT="${GITHUB_WORKSPACE:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-VMS="gcp-proxy gcp-t4 oci-apps oci-analytics oci-mail"
+VMS="gcp-proxy oci-apps oci-analytics oci-mail"
 
 if [ -n "${GITHUB_ACTIONS:-}" ]; then
   # In GHA: trigger individual workflows

@@ -126,14 +126,13 @@
 | oci-E2-f_0 | oci-mail | 130.110.251.193 | 10.0.0.3 | Oracle Free - E2 Micro 0 - Mail Server |
 | oci-E2-f_1 | oci-analytics | 129.151.228.66 | 10.0.0.4 | Oracle Free - E2 Micro 1 - Analytics + Workflows |
 | oci-A1-f_0 | oci-apps | 82.70.229.129 | 10.0.0.6 | Oracle Free - A1 Flex 0 (4 OCPUs / 24GB / 100GB) — Consolidated |
-| gcp-T4-p_0 | gcp-t4 | 34.173.227.250 | 10.0.0.8 | GCloud Paid - N1 Std 4 + T4 GPU (Spot) - Ollama LLM |
 | gcp-E2-f_0 | gcp-proxy | 35.226.147.64 | 10.0.0.1 | GCloud Free - E2 Micro 0 - Central Proxy + Control |
 
 ## B.3 Networking
 
 Traffic flow: **Cloudflare -> Caddy (gcp-proxy) -> WireGuard -> target VM**. Auth: Authelia 2FA (browser) or Bearer token via introspect-proxy (CLI/API).
 
-SSH aliases: `ssh oci-mail`, `ssh oci-analytics`, `ssh oci-apps`, `ssh gcp-t4`, `ssh gcp-proxy`.
+SSH aliases: `ssh oci-mail`, `ssh oci-analytics`, `ssh oci-apps`, `ssh gcp-proxy`.
 
 ## B.4 Active Services
 

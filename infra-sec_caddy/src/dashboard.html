@@ -405,13 +405,13 @@ Bearer?  Cookie?
 │          │ │Gitea,Ethr│ │         │ │            │
 └──────────┘ └──────────┘ └─────────┘ └────────────┘
 
-┌──────────┐ ┌──────────┐
-│oci-apps-2│ │gcp-ollama│
-│ 10.0.0.7 │ │ 10.0.0.8   │
-│          │ │          │
-│(on-demand│ │ Ollama   │
-│ compute) │ │ LLM      │
-└──────────┘ └──────────┘</code></pre>
+┌──────────┐
+│gcp-ollama│
+│ 10.0.0.8 │
+│          │
+│ Ollama   │
+│ LLM      │
+└──────────┘</code></pre>
 
 </div>
 
@@ -450,8 +450,6 @@ Bearer?  Cookie?
 <tr><td><strong>oci-mail</strong></td><td><code>10.0.0.3</code></td><td>51820/udp</td><td>0.0.0.0</td><td>WireGuard</td><td><span class="st-ok">OPEN</span></td></tr>
 <tr><td><strong>oci-analytics</strong></td><td><code>10.0.0.4</code></td><td>22/tcp</td><td>0.0.0.0</td><td>SSH</td><td><span class="st-warn">RESTRICT</span></td></tr>
 <tr><td><strong>oci-analytics</strong></td><td><code>10.0.0.4</code></td><td>51820/udp</td><td>0.0.0.0</td><td>WireGuard</td><td><span class="st-ok">OPEN</span></td></tr>
-<tr><td><strong>oci-apps-2</strong></td><td><code>10.0.0.7</code></td><td>22/tcp</td><td>0.0.0.0</td><td>SSH</td><td><span class="st-warn">RESTRICT</span></td></tr>
-<tr><td><strong>oci-apps-2</strong></td><td><code>10.0.0.7</code></td><td>51820/udp</td><td>0.0.0.0</td><td>WireGuard</td><td><span class="st-ok">OPEN</span></td></tr>
 <tr><td><strong>gcp-ollama</strong></td><td><code>10.0.0.8</code></td><td>22/tcp</td><td>0.0.0.0</td><td>SSH</td><td><span class="st-warn">RESTRICT</span></td></tr>
 <tr><td><strong>gcp-ollama</strong></td><td><code>10.0.0.8</code></td><td>51820/udp</td><td>0.0.0.0</td><td>WireGuard</td><td><span class="st-ok">OPEN</span></td></tr>
 </tbody></table>
@@ -527,7 +525,6 @@ Bearer?  Cookie?
 <tr><td><strong>oci-apps</strong></td><td>OCI</td><td>Free (A1.Flex)</td><td><code>82.70.229.129</code></td><td><code>10.0.0.6</code></td><td>16 GB</td><td>Ampere A1 (3 OCPU)</td><td>24/7</td></tr>
 <tr><td><strong>oci-mail</strong></td><td>OCI</td><td>Free</td><td><code>130.110.251.193</code></td><td><code>10.0.0.3</code></td><td>1 GB</td><td>E2.1.Micro</td><td>24/7</td></tr>
 <tr><td><strong>oci-analytics</strong></td><td>OCI</td><td>Free</td><td><code>129.151.228.66</code></td><td><code>10.0.0.4</code></td><td>1 GB</td><td>E2.1.Micro</td><td>24/7</td></tr>
-<tr><td><strong>oci-apps-2</strong></td><td>OCI</td><td>Paid (A1.Flex)</td><td><code>79.72.28.10</code></td><td><code>10.0.0.7</code></td><td>32 GB</td><td>Ampere A1 (8 OCPU)</td><td>On-demand</td></tr>
 <tr><td><strong>gcp-ollama</strong></td><td>GCP</td><td>Paid (Spot)</td><td><code>34.57.36.41</code></td><td><code>10.0.0.8</code></td><td>15 GB</td><td>N1-Std-4 + T4 GPU</td><td>Spot</td></tr>
 </tbody></table>
 

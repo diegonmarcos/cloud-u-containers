@@ -2,7 +2,7 @@
 # ── Ship all services for a VM ──
 # Portable: works in GHA, Dagu, CLI
 # Usage: cloud-ship-orchestrate-vm.sh <vm-alias> [service-filter]
-#   vm-alias: gcp-proxy, oci-apps, oci-mail, oci-analytics, gcp-t4
+#   vm-alias: gcp-proxy, oci-apps, oci-mail, oci-analytics
 #   service-filter: optional, only ship this service dir (e.g. bc-obs_dagu)
 set -euo pipefail
 

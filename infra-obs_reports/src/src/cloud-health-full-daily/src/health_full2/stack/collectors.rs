@@ -198,7 +198,7 @@ async fn collect_vms(ctx: &Context) -> (Vec<VmLiveData>, u64) {
     let t = Instant::now();
     // Try rsync from /opt/health/latest.json first (fast, via Dropbear if needed)
     // Fallback to SSH commands if rsync fails
-    // Skip terminated spot instances (gcp-t4) — check via gcloud first
+    // Skip stopped on-demand GPU instances (gcp-gpu-embed) — check via gcloud first
     let active_vms: Vec<_> = ctx.vms.iter().filter(|vm| {
         if vm.vm_id.contains("-p_") || vm.vm_id.contains("-p-") {
             // Spot/paid instance — check if running via gcloud
