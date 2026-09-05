@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { mkdir, readFile, writeFile, rename, unlink } from "node:fs/promises";
+import { mkdir, chmod, readFile, writeFile, rename, unlink } from "node:fs/promises";
 import { join } from "node:path";
 import { randomBytes, scrypt, timingSafeEqual } from "node:crypto";
 
@@ -94,12 +94,31 @@ async function readRecord(installId: string): Promise<StoredRecord | null> {
 }
 
 /**
+ * Docker pre-creates a volume mountpoint as 0755 before the process starts, so
+ * mkdir's `mode` is a no-op on the very path that matters here. chmod
+ * unconditionally instead: the file mode 0600 already protects the contents,
+ * but a listable directory leaks the set of install ids, and those are
+ * per-person identifiers. Done once, not per write.
+ */
+let dirReady: Promise<void> | null = null;
+function ensureDir(): Promise<void> {
+  dirReady ??= (async () => {
+    await mkdir(PROFILES_DIR, { recursive: true, mode: 0o700 });
+    await chmod(PROFILES_DIR, 0o700);
+  })().catch((err) => {
+    dirReady = null; // let a transient failure be retried on the next write
+    throw err;
+  });
+  return dirReady;
+}
+
+/**
  * Write via temp file + rename so a crash mid-write cannot leave a truncated
  * record — a half-written profile would be an unreadable contact channel,
  * which is the one thing this route exists to prevent.
  */
 async function writeRecord(installId: string, record: StoredRecord): Promise<void> {
-  await mkdir(PROFILES_DIR, { recursive: true, mode: 0o700 });
+  await ensureDir();
   const target = recordPath(installId);
   const tmp = `${target}.${randomBytes(6).toString("hex")}.tmp`;
   await writeFile(tmp, JSON.stringify(record), { encoding: "utf8", mode: 0o600 });
