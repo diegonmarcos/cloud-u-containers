@@ -12,6 +12,7 @@ import { registerObservabilityRoutes } from "./routes/observability.js";
 import { registerSecurityRoutes } from "./routes/security.js";
 import { registerFinOpsRoutes } from "./routes/finops.js";
 import { registerPublicLogsRoutes } from "./routes/publicLogs.js";
+import { registerFleetProfileRoutes } from "./routes/fleetProfile.js";
 import { registerMetricsRoutes } from "./routes/metrics.js";
 import { registerLogsRoutes } from "./routes/logs.js";
 import { registerAlertsRoutes } from "./routes/alerts.js";
@@ -68,6 +69,7 @@ export async function buildApp() {
   await app.register(registerSecurityRoutes);
   await app.register(registerFinOpsRoutes);
   await app.register(registerPublicLogsRoutes);
+  await app.register(registerFleetProfileRoutes);
   await app.register(registerMetricsRoutes);
   await app.register(registerLogsRoutes);
   await app.register(registerAlertsRoutes);

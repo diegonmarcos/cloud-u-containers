@@ -48,6 +48,10 @@ in
         "~/.config/gcloud:/root/.config/gcloud"
         "octocode_repos:/root/git"
         "c3_public_logs:/app/public/logs"
+        # Personal data (names/emails/phones), one file per install id. A named
+        # volume so an erasure is a real unlink that survives redeploys, rather
+        # than a record that reappears when the container is recreated.
+        "c3_fleet_profiles:/app/data/fleet-profiles"
       ];
       healthcheck = {
         test = [
@@ -64,5 +68,6 @@ in
   volumes = {
     octocode_repos = { name = "octocode_repos"; };
     c3_public_logs = { };
+    c3_fleet_profiles = { };
   };
 }

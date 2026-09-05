@@ -40,7 +40,21 @@ TLS_DIR="/opt/containers/maddy/tls"
 # user with role=admin (mkUserLines in flake.nix gates this on key=="admin").
 ADMIN_EMAIL="@ADMIN_EMAIL@"
 ADMIN_PW=$(cat "$SECRETS_DIR/@ADMIN_PASS_ENV@" 2>/dev/null || echo)
-[ -z "$ADMIN_PW" ] && echo "[activate] No @ADMIN_PASS_ENV@ found, skipping" && exit 0
+# Was `exit 0` — "no admin password, skipping" is not a benign condition, it
+# means NOTHING in this hook can run, and exiting 0 reported that as a green
+# ship. A skip must never be silent.
+[ -z "$ADMIN_PW" ] && echo "[activate] ERROR: no @ADMIN_PASS_ENV@ in $SECRETS_DIR — cannot provision anything" >&2 && exit 1
+
+# ── Per-item outcome accounting ───────────────────────────────────────
+# Counts live in FILES, not shell variables: the folder loop below runs in a
+# pipeline subshell (`printf ... | while read`), where an incremented variable
+# is discarded on subshell exit — the classic way a loop "counts" failures and
+# still reports none. Every per-item branch lands in exactly one tally, and the
+# machine-readable SUMMARY at the bottom is what decides this hook's exit code.
+TALLY_DIR=$(mktemp -d /tmp/.stalwart-activate-tally.XXXXXX)
+trap 'rm -rf "$TALLY_DIR"' EXIT
+tally()       { echo "$2" >> "$TALLY_DIR/$1"; }
+tally_count() { _c=$(cat "$TALLY_DIR/$1" 2>/dev/null | wc -l | tr -d ' '); echo "${_c:-0}"; }
 
 # Keep legacy $PW for any reader that still expects it (per-user sieve loop
 # below uses its own $USER_PW, so this is only documentary).
@@ -94,14 +108,18 @@ fi
 # Deferred failure: a missing account must turn the ship RED, but it must not
 # skip the TLS cert / MTA route / throttle steps below, so the verdict is
 # parked in a flag file and cashed in at the very end of this script.
-ACCOUNTS_FLAG=/tmp/.stalwart-activate-accounts-failed
-rm -f "$ACCOUNTS_FLAG"
+ACCOUNTS_FLAG="$TALLY_DIR/accounts_failed"
+if [ "$_ready" != 1 ]; then
+  # Stalwart answered, but the admin principal did not authenticate. Every
+  # admin-scoped step below is then a no-op — which used to pass as green.
+  tally accounts_failed "admin auth $_code — account reconcile not attempted"
+fi
 if [ "$_ready" = 1 ]; then
   echo "[activate] Reconciling accounts from declared users (admin: $ADMIN_EMAIL)..."
   ACCOUNTS="@USERS_ACCOUNTS@" BASE_DOMAIN="@BASE_DOMAIN@" SECRETS_DIR="$SECRETS_DIR" \
   ACCOUNTS_FLAG="$ACCOUNTS_FLAG" \
   ADMIN_EMAIL="$ADMIN_EMAIL" ADMIN_PW="$ADMIN_PW" BASE="$BASE" python3 - <<'PYEOF' \
-    || { echo "[activate]   account reconcile crashed (rc $?)"; : > "$ACCOUNTS_FLAG"; }
+    || { echo "[activate]   account reconcile crashed (rc $?)"; echo crashed >> "$ACCOUNTS_FLAG"; }
 import os, ssl, json, base64
 from urllib import request as ur, error as ue
 BASE=os.environ["BASE"]
@@ -113,15 +131,21 @@ def jmap(calls):
                    headers={"Content-Type":"application/json","Authorization":AUTH})
     try: return json.loads(ur.urlopen(req,context=ctx,timeout=20).read())
     except ue.HTTPError as e: return {"err":e.code,"body":e.read().decode(errors="replace")[:300]}
+FLAG=os.environ["ACCOUNTS_FLAG"]
+CREATED_TALLY=os.path.join(os.path.dirname(FLAG),"accounts_created")
+# APPEND, never truncate: the shell counts the LINES of this file to size the
+# failure, and a truncating write reported ten broken accounts as one.
+def fail(msg):
+    print("  [accounts] "+msg)
+    with open(FLAG,"a") as f: f.write(msg+"\n")
 try:
     req=ur.Request(BASE+"/jmap/session",headers={"Authorization":AUTH})
     s=json.loads(ur.urlopen(req,context=ctx,timeout=10).read())
 except Exception as e:
-    print("  [accounts] session failed (non-fatal):",e); raise SystemExit(0)
+    # Was "(non-fatal)" + SystemExit(0): no session means not one account was
+    # reconciled, and reporting that as success is the whole bug.
+    fail(f"session failed: {e}"); raise SystemExit(0)
 acct=s.get("primaryAccounts",{}).get("urn:stalwart:jmap") or next(iter(s.get("accounts",{})),None)
-FLAG=os.environ["ACCOUNTS_FLAG"]
-def fail(msg):
-    print("  [accounts] "+msg); open(FLAG,"w").close()
 r=jmap([["x:Account/get",{"accountId":acct,"ids":None},"0"]])
 try: live={o.get("name"):o for o in r["methodResponses"][0][1].get("list",[])}
 except Exception:
@@ -183,6 +207,7 @@ for rec in os.environ["ACCOUNTS"].split():
 # IMAP and JMAP still answer AUTHENTICATIONFAILED. Flush it here so a freshly
 # provisioned mailbox is usable the moment the ship reports green.
 if created:
+    with open(CREATED_TALLY,"a") as f: f.write("\n".join(created)+"\n")
     print("  [accounts] flushing negative caches for:", ", ".join(created))
     jmap([["x:Action/set",{"create":{"flush":{"@type":"InvalidateNegativeCaches"}}},"0"]])
 PYEOF
@@ -216,7 +241,8 @@ for PAIR in @USERS_LIST@; do
   USER="$U@@BASE_DOMAIN@"
   USER_PW=$(cat "$SECRETS_DIR/$PASS_ENV" 2>/dev/null || echo)
   if [ -z "$USER_PW" ]; then
-    echo "[activate]   $USER: no password ($PASS_ENV), skipping"
+    echo "[activate]   $USER: ERROR no password ($PASS_ENV) — cannot provision" >&2
+    tally users_failed "$USER: no password ($PASS_ENV)"
     continue
   fi
 
@@ -225,9 +251,12 @@ for PAIR in @USERS_LIST@; do
   SESSION=$(curl -sk -u "$USER:$USER_PW" "$BASE/jmap/session" 2>/dev/null)
   ACCOUNT_ID=$(printf '%s' "$SESSION" | grep -o '"urn:ietf:params:jmap:mail":"[^"]*"' | head -1 | cut -d'"' -f4)
   if [ -z "$ACCOUNT_ID" ]; then
-    echo "[activate]   $USER: could not discover accountId, skipping"
+    # This exact line printed four times on 2026-09-04 and the ship was green.
+    echo "[activate]   $USER: ERROR could not discover accountId (account missing or auth rejected)" >&2
+    tally users_failed "$USER: no accountId from /jmap/session"
     continue
   fi
+  tally users_ok "$USER"
 
   # ── Step B: create missing mailboxes ─────────────────────────────
   refresh_existing() {
@@ -251,7 +280,8 @@ for PAIR in @USERS_LIST@; do
     if [ -n "$FPARENT" ]; then
       PARENT_ID=$(mailbox_id_for "$EXISTING" "$FPARENT")
       if [ -z "$PARENT_ID" ]; then
-        echo "[activate]   skip '$FNAME' — parent '$FPARENT' not yet created"
+        echo "[activate]   FAIL '$FNAME' — parent '$FPARENT' not yet created" >&2
+        tally mailboxes_failed "$USER/$FNAME: parent '$FPARENT' missing"
         continue
       fi
       PARENT_JSON="\"$PARENT_ID\""
@@ -263,15 +293,21 @@ for PAIR in @USERS_LIST@; do
 
     if printf '%s' "$RESP" | grep -q '"created":{[^}]*"id"'; then
       echo "[activate]   created mailbox '$FNAME'"
+      tally mailboxes_created "$USER/$FNAME"
       refresh_existing
     else
-      echo "[activate]   FAIL create '$FNAME': $(printf '%s' "$RESP" | head -c 200)"
+      echo "[activate]   FAIL create '$FNAME': $(printf '%s' "$RESP" | head -c 200)" >&2
+      tally mailboxes_failed "$USER/$FNAME: $(printf '%s' "$RESP" | head -c 120)"
     fi
   done
 
   # ── Step C: upload + activate sieve script ─────────────────────────
   if [ ! -f "$SIEVE_FILE" ]; then
-    echo "[activate]   no $SIEVE_FILE, sieve skipped"
+    # The flake always emits default.sieve into configs/, so its absence means
+    # the rsync did not land what the build produced — a deploy fault, not a
+    # config choice.
+    echo "[activate]   ERROR $SIEVE_FILE missing — sieve not applied for $USER" >&2
+    tally sieve_failed "$USER: $SIEVE_FILE absent"
     continue
   fi
 
@@ -282,7 +318,8 @@ for PAIR in @USERS_LIST@; do
     -H "Content-Type: application/sieve" --data-binary @"$SIEVE_FILE" 2>/dev/null)
   BLOB_ID=$(printf '%s' "$UPLOAD_RESP" | grep -o '"blobId":"[^"]*"' | head -1 | cut -d'"' -f4)
   if [ -z "$BLOB_ID" ]; then
-    echo "[activate]   sieve blob upload failed: $UPLOAD_RESP"
+    echo "[activate]   sieve blob upload failed: $UPLOAD_RESP" >&2
+    tally sieve_failed "$USER: blob upload failed"
     continue
   fi
 
@@ -292,6 +329,7 @@ for PAIR in @USERS_LIST@; do
 
   if printf '%s' "$JMAP_RESP" | grep -q '"created":{[^}]*"id"'; then
     echo "[activate]   sieve created + activated for $USER"
+    tally sieve_ok "$USER"
   else
     LIST=$(curl -sk -u "$USER:$USER_PW" -X POST "$BASE/jmap/" \
       -H "Content-Type: application/json" \
@@ -302,8 +340,10 @@ for PAIR in @USERS_LIST@; do
         -H "Content-Type: application/json" \
         -d "{\"using\":[\"urn:ietf:params:jmap:core\",\"urn:ietf:params:jmap:sieve\"],\"methodCalls\":[[\"SieveScript/set\",{\"accountId\":\"$SIEVE_ACCT\",\"update\":{\"$SID\":{\"blobId\":\"$BLOB_ID\"}},\"onSuccessActivateScript\":\"$SID\"},\"0\"]]}" >/dev/null 2>&1
       echo "[activate]   sieve updated + activated for $USER"
+      tally sieve_ok "$USER"
     else
-      echo "[activate]   sieve create+update both failed: $JMAP_RESP"
+      echo "[activate]   sieve create+update both failed: $JMAP_RESP" >&2
+      tally sieve_failed "$USER: create+update both failed"
     fi
   fi
 done
@@ -479,14 +519,31 @@ PYEOF
 
 echo "[activate] Done — folders + sieve + mta routes + tls cert + allowed-ip + throttle cap ensured"
 
-# Cash in the Step A verdict LAST, so everything above still ran. The ship
-# engine propagates this hook's exit code (ssh_run_detached returns the remote
-# rc under set -e), so a declared user that is missing from Stalwart now turns
-# the deploy RED instead of passing as green while the account silently does
-# not exist — which is exactly how the 2026-09-04 ship reported success with
-# three of five accounts uncreated.
-if [ -f "$ACCOUNTS_FLAG" ]; then
-    rm -f "$ACCOUNTS_FLAG"
-    echo "[activate] FAILED: declared users are missing from Stalwart — see the [accounts] lines above"
+# ── Verdict, cashed in LAST so every step above still ran ─────────────
+# One machine-readable line, then the exit code. The ship engine propagates
+# this hook's rc (ssh_run_detached returns the remote rc, and the engine runs
+# under set -e), so any per-item failure now turns the deploy RED. That is the
+# opposite of the 2026-09-04 ship, which printed four "skipping" lines and
+# reported success while four declared accounts did not exist.
+ACCOUNTS_CREATED=$(tally_count accounts_created)
+ACCOUNTS_FAILED=$(tally_count accounts_failed)
+USERS_OK=$(tally_count users_ok)
+USERS_FAILED=$(tally_count users_failed)
+MAILBOXES_CREATED=$(tally_count mailboxes_created)
+MAILBOXES_FAILED=$(tally_count mailboxes_failed)
+SIEVE_OK=$(tally_count sieve_ok)
+SIEVE_FAILED=$(tally_count sieve_failed)
+echo "[activate] SUMMARY revision=${SHIP_REVISION:-unknown} accounts_created=$ACCOUNTS_CREATED accounts_failed=$ACCOUNTS_FAILED users_ok=$USERS_OK users_failed=$USERS_FAILED mailboxes_created=$MAILBOXES_CREATED mailboxes_failed=$MAILBOXES_FAILED sieve_ok=$SIEVE_OK sieve_failed=$SIEVE_FAILED"
+
+TOTAL_FAILED=$((ACCOUNTS_FAILED + USERS_FAILED + MAILBOXES_FAILED + SIEVE_FAILED))
+if [ "$TOTAL_FAILED" -gt 0 ]; then
+    echo "[activate] FAILED: $TOTAL_FAILED provisioning item(s) did not complete:" >&2
+    for _t in accounts_failed users_failed mailboxes_failed sieve_failed; do
+        [ -f "$TALLY_DIR/$_t" ] && sed "s/^/[activate]   $_t: /" "$TALLY_DIR/$_t" >&2 || true
+    done
+    exit 1
+fi
+if [ "$USERS_OK" = 0 ]; then
+    echo "[activate] FAILED: not one declared user was provisioned — the hook ran but did nothing" >&2
     exit 1
 fi
