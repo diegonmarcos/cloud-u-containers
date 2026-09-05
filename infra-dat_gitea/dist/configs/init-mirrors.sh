@@ -85,18 +85,18 @@ if ! api "$API/orgs/diego" >/dev/null 2>&1; then
 fi
 
 # Step 4: Ensure each mirror repo exists
-      if ! api "$API/repos/diego/cloud-u-android" >/dev/null 2>&1; then
-        echo "Creating mirror: diego/cloud-u-android <- https://github.com/diegonmarcos/cloud-u-android.git"
+      if ! api "$API/repos/diego/back-Algo" >/dev/null 2>&1; then
+        echo "Creating mirror: diego/back-Algo <- https://github.com/diegonmarcos/back-Algo.git"
         AUTH_JSON="{}"
         if [ "false" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
           AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
         elif [ "false" = "true" ]; then
-          echo "  WARN: cloud-u-android is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
-          tally mirrors_degraded "cloud-u-android: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
+          echo "  WARN: back-Algo is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
+          tally mirrors_degraded "back-Algo: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
         fi
         PAYLOAD=$(jq -n \
-          --arg clone_addr "https://github.com/diegonmarcos/cloud-u-android.git" \
-          --arg repo_name "cloud-u-android" \
+          --arg clone_addr "https://github.com/diegonmarcos/back-Algo.git" \
+          --arg repo_name "back-Algo" \
           --arg repo_owner "diego" \
           --arg mirror_interval "1h" \
           --argjson private false \
@@ -106,719 +106,15 @@ fi
         # Now every outcome lands in exactly one tally, and the SUMMARY at the
         # bottom of init-mirrors.sh is what decides this script's exit code.
         if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
-          echo "  OK cloud-u-android"
-          tally mirrors_created "cloud-u-android"
+          echo "  OK back-Algo"
+          tally mirrors_created "back-Algo"
         else
-          echo "  FAIL cloud-u-android: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
-          tally mirrors_failed "cloud-u-android: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
+          echo "  FAIL back-Algo: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
+          tally mirrors_failed "back-Algo: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
         fi
       else
-        echo "EXISTS diego/cloud-u-android"
-        tally mirrors_exists "cloud-u-android"
-      fi
-
-      if ! api "$API/repos/diego/cloud-data" >/dev/null 2>&1; then
-        echo "Creating mirror: diego/cloud-data <- https://github.com/diegonmarcos/cloud-data.git"
-        AUTH_JSON="{}"
-        if [ "true" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
-          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
-        elif [ "true" = "true" ]; then
-          echo "  WARN: cloud-data is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
-          tally mirrors_degraded "cloud-data: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
-        fi
-        PAYLOAD=$(jq -n \
-          --arg clone_addr "https://github.com/diegonmarcos/cloud-data.git" \
-          --arg repo_name "cloud-data" \
-          --arg repo_owner "diego" \
-          --arg mirror_interval "1h" \
-          --argjson private true \
-          --argjson auth "$AUTH_JSON" \
-          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
-        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
-        # Now every outcome lands in exactly one tally, and the SUMMARY at the
-        # bottom of init-mirrors.sh is what decides this script's exit code.
-        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
-          echo "  OK cloud-data"
-          tally mirrors_created "cloud-data"
-        else
-          echo "  FAIL cloud-data: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
-          tally mirrors_failed "cloud-data: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
-        fi
-      else
-        echo "EXISTS diego/cloud-data"
-        tally mirrors_exists "cloud-data"
-      fi
-
-      if ! api "$API/repos/diego/cloud-u-linux" >/dev/null 2>&1; then
-        echo "Creating mirror: diego/cloud-u-linux <- https://github.com/diegonmarcos/cloud-u-linux.git"
-        AUTH_JSON="{}"
-        if [ "false" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
-          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
-        elif [ "false" = "true" ]; then
-          echo "  WARN: cloud-u-linux is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
-          tally mirrors_degraded "cloud-u-linux: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
-        fi
-        PAYLOAD=$(jq -n \
-          --arg clone_addr "https://github.com/diegonmarcos/cloud-u-linux.git" \
-          --arg repo_name "cloud-u-linux" \
-          --arg repo_owner "diego" \
-          --arg mirror_interval "1h" \
-          --argjson private false \
-          --argjson auth "$AUTH_JSON" \
-          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
-        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
-        # Now every outcome lands in exactly one tally, and the SUMMARY at the
-        # bottom of init-mirrors.sh is what decides this script's exit code.
-        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
-          echo "  OK cloud-u-linux"
-          tally mirrors_created "cloud-u-linux"
-        else
-          echo "  FAIL cloud-u-linux: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
-          tally mirrors_failed "cloud-u-linux: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
-        fi
-      else
-        echo "EXISTS diego/cloud-u-linux"
-        tally mirrors_exists "cloud-u-linux"
-      fi
-
-      if ! api "$API/repos/diego/cloud-infra" >/dev/null 2>&1; then
-        echo "Creating mirror: diego/cloud-infra <- https://github.com/diegonmarcos/cloud-infra.git"
-        AUTH_JSON="{}"
-        if [ "false" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
-          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
-        elif [ "false" = "true" ]; then
-          echo "  WARN: cloud-infra is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
-          tally mirrors_degraded "cloud-infra: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
-        fi
-        PAYLOAD=$(jq -n \
-          --arg clone_addr "https://github.com/diegonmarcos/cloud-infra.git" \
-          --arg repo_name "cloud-infra" \
-          --arg repo_owner "diego" \
-          --arg mirror_interval "1h" \
-          --argjson private false \
-          --argjson auth "$AUTH_JSON" \
-          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
-        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
-        # Now every outcome lands in exactly one tally, and the SUMMARY at the
-        # bottom of init-mirrors.sh is what decides this script's exit code.
-        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
-          echo "  OK cloud-infra"
-          tally mirrors_created "cloud-infra"
-        else
-          echo "  FAIL cloud-infra: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
-          tally mirrors_failed "cloud-infra: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
-        fi
-      else
-        echo "EXISTS diego/cloud-infra"
-        tally mirrors_exists "cloud-infra"
-      fi
-
-      if ! api "$API/repos/diego/cloud-u-containers" >/dev/null 2>&1; then
-        echo "Creating mirror: diego/cloud-u-containers <- https://github.com/diegonmarcos/cloud-u-containers.git"
-        AUTH_JSON="{}"
-        if [ "false" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
-          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
-        elif [ "false" = "true" ]; then
-          echo "  WARN: cloud-u-containers is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
-          tally mirrors_degraded "cloud-u-containers: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
-        fi
-        PAYLOAD=$(jq -n \
-          --arg clone_addr "https://github.com/diegonmarcos/cloud-u-containers.git" \
-          --arg repo_name "cloud-u-containers" \
-          --arg repo_owner "diego" \
-          --arg mirror_interval "1h" \
-          --argjson private false \
-          --argjson auth "$AUTH_JSON" \
-          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
-        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
-        # Now every outcome lands in exactly one tally, and the SUMMARY at the
-        # bottom of init-mirrors.sh is what decides this script's exit code.
-        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
-          echo "  OK cloud-u-containers"
-          tally mirrors_created "cloud-u-containers"
-        else
-          echo "  FAIL cloud-u-containers: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
-          tally mirrors_failed "cloud-u-containers: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
-        fi
-      else
-        echo "EXISTS diego/cloud-u-containers"
-        tally mirrors_exists "cloud-u-containers"
-      fi
-
-      if ! api "$API/repos/diego/front-data" >/dev/null 2>&1; then
-        echo "Creating mirror: diego/front-data <- https://github.com/diegonmarcos/front-data.git"
-        AUTH_JSON="{}"
-        if [ "false" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
-          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
-        elif [ "false" = "true" ]; then
-          echo "  WARN: front-data is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
-          tally mirrors_degraded "front-data: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
-        fi
-        PAYLOAD=$(jq -n \
-          --arg clone_addr "https://github.com/diegonmarcos/front-data.git" \
-          --arg repo_name "front-data" \
-          --arg repo_owner "diego" \
-          --arg mirror_interval "1h" \
-          --argjson private false \
-          --argjson auth "$AUTH_JSON" \
-          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
-        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
-        # Now every outcome lands in exactly one tally, and the SUMMARY at the
-        # bottom of init-mirrors.sh is what decides this script's exit code.
-        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
-          echo "  OK front-data"
-          tally mirrors_created "front-data"
-        else
-          echo "  FAIL front-data: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
-          tally mirrors_failed "front-data: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
-        fi
-      else
-        echo "EXISTS diego/front-data"
-        tally mirrors_exists "front-data"
-      fi
-
-      if ! api "$API/repos/diego/cloud-infra-desktop" >/dev/null 2>&1; then
-        echo "Creating mirror: diego/cloud-infra-desktop <- https://github.com/diegonmarcos/cloud-infra-desktop.git"
-        AUTH_JSON="{}"
-        if [ "false" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
-          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
-        elif [ "false" = "true" ]; then
-          echo "  WARN: cloud-infra-desktop is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
-          tally mirrors_degraded "cloud-infra-desktop: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
-        fi
-        PAYLOAD=$(jq -n \
-          --arg clone_addr "https://github.com/diegonmarcos/cloud-infra-desktop.git" \
-          --arg repo_name "cloud-infra-desktop" \
-          --arg repo_owner "diego" \
-          --arg mirror_interval "1h" \
-          --argjson private false \
-          --argjson auth "$AUTH_JSON" \
-          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
-        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
-        # Now every outcome lands in exactly one tally, and the SUMMARY at the
-        # bottom of init-mirrors.sh is what decides this script's exit code.
-        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
-          echo "  OK cloud-infra-desktop"
-          tally mirrors_created "cloud-infra-desktop"
-        else
-          echo "  FAIL cloud-infra-desktop: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
-          tally mirrors_failed "cloud-infra-desktop: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
-        fi
-      else
-        echo "EXISTS diego/cloud-infra-desktop"
-        tally mirrors_exists "cloud-infra-desktop"
-      fi
-
-      if ! api "$API/repos/diego/diegonmarcos" >/dev/null 2>&1; then
-        echo "Creating mirror: diego/diegonmarcos <- https://github.com/diegonmarcos/diegonmarcos.git"
-        AUTH_JSON="{}"
-        if [ "false" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
-          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
-        elif [ "false" = "true" ]; then
-          echo "  WARN: diegonmarcos is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
-          tally mirrors_degraded "diegonmarcos: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
-        fi
-        PAYLOAD=$(jq -n \
-          --arg clone_addr "https://github.com/diegonmarcos/diegonmarcos.git" \
-          --arg repo_name "diegonmarcos" \
-          --arg repo_owner "diego" \
-          --arg mirror_interval "1h" \
-          --argjson private false \
-          --argjson auth "$AUTH_JSON" \
-          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
-        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
-        # Now every outcome lands in exactly one tally, and the SUMMARY at the
-        # bottom of init-mirrors.sh is what decides this script's exit code.
-        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
-          echo "  OK diegonmarcos"
-          tally mirrors_created "diegonmarcos"
-        else
-          echo "  FAIL diegonmarcos: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
-          tally mirrors_failed "diegonmarcos: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
-        fi
-      else
-        echo "EXISTS diego/diegonmarcos"
-        tally mirrors_exists "diegonmarcos"
-      fi
-
-      if ! api "$API/repos/diego/front-unity" >/dev/null 2>&1; then
-        echo "Creating mirror: diego/front-unity <- https://github.com/diegonmarcos/front-unity.git"
-        AUTH_JSON="{}"
-        if [ "true" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
-          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
-        elif [ "true" = "true" ]; then
-          echo "  WARN: front-unity is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
-          tally mirrors_degraded "front-unity: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
-        fi
-        PAYLOAD=$(jq -n \
-          --arg clone_addr "https://github.com/diegonmarcos/front-unity.git" \
-          --arg repo_name "front-unity" \
-          --arg repo_owner "diego" \
-          --arg mirror_interval "1h" \
-          --argjson private true \
-          --argjson auth "$AUTH_JSON" \
-          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
-        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
-        # Now every outcome lands in exactly one tally, and the SUMMARY at the
-        # bottom of init-mirrors.sh is what decides this script's exit code.
-        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
-          echo "  OK front-unity"
-          tally mirrors_created "front-unity"
-        else
-          echo "  FAIL front-unity: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
-          tally mirrors_failed "front-unity: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
-        fi
-      else
-        echo "EXISTS diego/front-unity"
-        tally mirrors_exists "front-unity"
-      fi
-
-      if ! api "$API/repos/diego/front-galaxy-gaia" >/dev/null 2>&1; then
-        echo "Creating mirror: diego/front-galaxy-gaia <- https://github.com/diegonmarcos/front-galaxy-gaia.git"
-        AUTH_JSON="{}"
-        if [ "true" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
-          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
-        elif [ "true" = "true" ]; then
-          echo "  WARN: front-galaxy-gaia is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
-          tally mirrors_degraded "front-galaxy-gaia: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
-        fi
-        PAYLOAD=$(jq -n \
-          --arg clone_addr "https://github.com/diegonmarcos/front-galaxy-gaia.git" \
-          --arg repo_name "front-galaxy-gaia" \
-          --arg repo_owner "diego" \
-          --arg mirror_interval "1h" \
-          --argjson private true \
-          --argjson auth "$AUTH_JSON" \
-          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
-        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
-        # Now every outcome lands in exactly one tally, and the SUMMARY at the
-        # bottom of init-mirrors.sh is what decides this script's exit code.
-        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
-          echo "  OK front-galaxy-gaia"
-          tally mirrors_created "front-galaxy-gaia"
-        else
-          echo "  FAIL front-galaxy-gaia: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
-          tally mirrors_failed "front-galaxy-gaia: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
-        fi
-      else
-        echo "EXISTS diego/front-galaxy-gaia"
-        tally mirrors_exists "front-galaxy-gaia"
-      fi
-
-      if ! api "$API/repos/diego/front-assets-cdn" >/dev/null 2>&1; then
-        echo "Creating mirror: diego/front-assets-cdn <- https://github.com/diegonmarcos/front-assets-cdn.git"
-        AUTH_JSON="{}"
-        if [ "false" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
-          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
-        elif [ "false" = "true" ]; then
-          echo "  WARN: front-assets-cdn is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
-          tally mirrors_degraded "front-assets-cdn: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
-        fi
-        PAYLOAD=$(jq -n \
-          --arg clone_addr "https://github.com/diegonmarcos/front-assets-cdn.git" \
-          --arg repo_name "front-assets-cdn" \
-          --arg repo_owner "diego" \
-          --arg mirror_interval "1h" \
-          --argjson private false \
-          --argjson auth "$AUTH_JSON" \
-          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
-        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
-        # Now every outcome lands in exactly one tally, and the SUMMARY at the
-        # bottom of init-mirrors.sh is what decides this script's exit code.
-        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
-          echo "  OK front-assets-cdn"
-          tally mirrors_created "front-assets-cdn"
-        else
-          echo "  FAIL front-assets-cdn: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
-          tally mirrors_failed "front-assets-cdn: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
-        fi
-      else
-        echo "EXISTS diego/front-assets-cdn"
-        tally mirrors_exists "front-assets-cdn"
-      fi
-
-      if ! api "$API/repos/diego/diegonmarcos.github.io" >/dev/null 2>&1; then
-        echo "Creating mirror: diego/diegonmarcos.github.io <- https://github.com/diegonmarcos/diegonmarcos.github.io.git"
-        AUTH_JSON="{}"
-        if [ "false" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
-          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
-        elif [ "false" = "true" ]; then
-          echo "  WARN: diegonmarcos.github.io is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
-          tally mirrors_degraded "diegonmarcos.github.io: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
-        fi
-        PAYLOAD=$(jq -n \
-          --arg clone_addr "https://github.com/diegonmarcos/diegonmarcos.github.io.git" \
-          --arg repo_name "diegonmarcos.github.io" \
-          --arg repo_owner "diego" \
-          --arg mirror_interval "1h" \
-          --argjson private false \
-          --argjson auth "$AUTH_JSON" \
-          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
-        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
-        # Now every outcome lands in exactly one tally, and the SUMMARY at the
-        # bottom of init-mirrors.sh is what decides this script's exit code.
-        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
-          echo "  OK diegonmarcos.github.io"
-          tally mirrors_created "diegonmarcos.github.io"
-        else
-          echo "  FAIL diegonmarcos.github.io: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
-          tally mirrors_failed "diegonmarcos.github.io: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
-        fi
-      else
-        echo "EXISTS diego/diegonmarcos.github.io"
-        tally mirrors_exists "diegonmarcos.github.io"
-      fi
-
-      if ! api "$API/repos/diego/cloud-data-lfs" >/dev/null 2>&1; then
-        echo "Creating mirror: diego/cloud-data-lfs <- https://github.com/diegonmarcos/cloud-data-lfs.git"
-        AUTH_JSON="{}"
-        if [ "true" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
-          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
-        elif [ "true" = "true" ]; then
-          echo "  WARN: cloud-data-lfs is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
-          tally mirrors_degraded "cloud-data-lfs: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
-        fi
-        PAYLOAD=$(jq -n \
-          --arg clone_addr "https://github.com/diegonmarcos/cloud-data-lfs.git" \
-          --arg repo_name "cloud-data-lfs" \
-          --arg repo_owner "diego" \
-          --arg mirror_interval "1h" \
-          --argjson private true \
-          --argjson auth "$AUTH_JSON" \
-          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
-        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
-        # Now every outcome lands in exactly one tally, and the SUMMARY at the
-        # bottom of init-mirrors.sh is what decides this script's exit code.
-        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
-          echo "  OK cloud-data-lfs"
-          tally mirrors_created "cloud-data-lfs"
-        else
-          echo "  FAIL cloud-data-lfs: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
-          tally mirrors_failed "cloud-data-lfs: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
-        fi
-      else
-        echo "EXISTS diego/cloud-data-lfs"
-        tally mirrors_exists "cloud-data-lfs"
-      fi
-
-      if ! api "$API/repos/diego/cloud" >/dev/null 2>&1; then
-        echo "Creating mirror: diego/cloud <- https://github.com/diegonmarcos/cloud.git"
-        AUTH_JSON="{}"
-        if [ "false" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
-          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
-        elif [ "false" = "true" ]; then
-          echo "  WARN: cloud is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
-          tally mirrors_degraded "cloud: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
-        fi
-        PAYLOAD=$(jq -n \
-          --arg clone_addr "https://github.com/diegonmarcos/cloud.git" \
-          --arg repo_name "cloud" \
-          --arg repo_owner "diego" \
-          --arg mirror_interval "1h" \
-          --argjson private false \
-          --argjson auth "$AUTH_JSON" \
-          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
-        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
-        # Now every outcome lands in exactly one tally, and the SUMMARY at the
-        # bottom of init-mirrors.sh is what decides this script's exit code.
-        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
-          echo "  OK cloud"
-          tally mirrors_created "cloud"
-        else
-          echo "  FAIL cloud: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
-          tally mirrors_failed "cloud: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
-        fi
-      else
-        echo "EXISTS diego/cloud"
-        tally mirrors_exists "cloud"
-      fi
-
-      if ! api "$API/repos/diego/git-repos-master" >/dev/null 2>&1; then
-        echo "Creating mirror: diego/git-repos-master <- https://github.com/diegonmarcos/git-repos-master.git"
-        AUTH_JSON="{}"
-        if [ "false" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
-          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
-        elif [ "false" = "true" ]; then
-          echo "  WARN: git-repos-master is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
-          tally mirrors_degraded "git-repos-master: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
-        fi
-        PAYLOAD=$(jq -n \
-          --arg clone_addr "https://github.com/diegonmarcos/git-repos-master.git" \
-          --arg repo_name "git-repos-master" \
-          --arg repo_owner "diego" \
-          --arg mirror_interval "1h" \
-          --argjson private false \
-          --argjson auth "$AUTH_JSON" \
-          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
-        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
-        # Now every outcome lands in exactly one tally, and the SUMMARY at the
-        # bottom of init-mirrors.sh is what decides this script's exit code.
-        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
-          echo "  OK git-repos-master"
-          tally mirrors_created "git-repos-master"
-        else
-          echo "  FAIL git-repos-master: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
-          tally mirrors_failed "git-repos-master: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
-        fi
-      else
-        echo "EXISTS diego/git-repos-master"
-        tally mirrors_exists "git-repos-master"
-      fi
-
-      if ! api "$API/repos/diego/cloud-data-my-ai-memory" >/dev/null 2>&1; then
-        echo "Creating mirror: diego/cloud-data-my-ai-memory <- https://github.com/diegonmarcos/cloud-data-my-ai-memory.git"
-        AUTH_JSON="{}"
-        if [ "true" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
-          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
-        elif [ "true" = "true" ]; then
-          echo "  WARN: cloud-data-my-ai-memory is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
-          tally mirrors_degraded "cloud-data-my-ai-memory: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
-        fi
-        PAYLOAD=$(jq -n \
-          --arg clone_addr "https://github.com/diegonmarcos/cloud-data-my-ai-memory.git" \
-          --arg repo_name "cloud-data-my-ai-memory" \
-          --arg repo_owner "diego" \
-          --arg mirror_interval "1h" \
-          --argjson private true \
-          --argjson auth "$AUTH_JSON" \
-          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
-        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
-        # Now every outcome lands in exactly one tally, and the SUMMARY at the
-        # bottom of init-mirrors.sh is what decides this script's exit code.
-        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
-          echo "  OK cloud-data-my-ai-memory"
-          tally mirrors_created "cloud-data-my-ai-memory"
-        else
-          echo "  FAIL cloud-data-my-ai-memory: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
-          tally mirrors_failed "cloud-data-my-ai-memory: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
-        fi
-      else
-        echo "EXISTS diego/cloud-data-my-ai-memory"
-        tally mirrors_exists "cloud-data-my-ai-memory"
-      fi
-
-      if ! api "$API/repos/diego/ffront" >/dev/null 2>&1; then
-        echo "Creating mirror: diego/ffront <- https://github.com/diegonmarcos/ffront.git"
-        AUTH_JSON="{}"
-        if [ "false" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
-          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
-        elif [ "false" = "true" ]; then
-          echo "  WARN: ffront is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
-          tally mirrors_degraded "ffront: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
-        fi
-        PAYLOAD=$(jq -n \
-          --arg clone_addr "https://github.com/diegonmarcos/ffront.git" \
-          --arg repo_name "ffront" \
-          --arg repo_owner "diego" \
-          --arg mirror_interval "1h" \
-          --argjson private false \
-          --argjson auth "$AUTH_JSON" \
-          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
-        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
-        # Now every outcome lands in exactly one tally, and the SUMMARY at the
-        # bottom of init-mirrors.sh is what decides this script's exit code.
-        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
-          echo "  OK ffront"
-          tally mirrors_created "ffront"
-        else
-          echo "  FAIL ffront: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
-          tally mirrors_failed "ffront: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
-        fi
-      else
-        echo "EXISTS diego/ffront"
-        tally mirrors_exists "ffront"
-      fi
-
-      if ! api "$API/repos/diego/cloud-notes" >/dev/null 2>&1; then
-        echo "Creating mirror: diego/cloud-notes <- https://github.com/diegonmarcos/cloud-notes.git"
-        AUTH_JSON="{}"
-        if [ "true" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
-          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
-        elif [ "true" = "true" ]; then
-          echo "  WARN: cloud-notes is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
-          tally mirrors_degraded "cloud-notes: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
-        fi
-        PAYLOAD=$(jq -n \
-          --arg clone_addr "https://github.com/diegonmarcos/cloud-notes.git" \
-          --arg repo_name "cloud-notes" \
-          --arg repo_owner "diego" \
-          --arg mirror_interval "1h" \
-          --argjson private true \
-          --argjson auth "$AUTH_JSON" \
-          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
-        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
-        # Now every outcome lands in exactly one tally, and the SUMMARY at the
-        # bottom of init-mirrors.sh is what decides this script's exit code.
-        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
-          echo "  OK cloud-notes"
-          tally mirrors_created "cloud-notes"
-        else
-          echo "  FAIL cloud-notes: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
-          tally mirrors_failed "cloud-notes: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
-        fi
-      else
-        echo "EXISTS diego/cloud-notes"
-        tally mirrors_exists "cloud-notes"
-      fi
-
-      if ! api "$API/repos/diego/back-System" >/dev/null 2>&1; then
-        echo "Creating mirror: diego/back-System <- https://github.com/diegonmarcos/back-System.git"
-        AUTH_JSON="{}"
-        if [ "false" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
-          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
-        elif [ "false" = "true" ]; then
-          echo "  WARN: back-System is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
-          tally mirrors_degraded "back-System: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
-        fi
-        PAYLOAD=$(jq -n \
-          --arg clone_addr "https://github.com/diegonmarcos/back-System.git" \
-          --arg repo_name "back-System" \
-          --arg repo_owner "diego" \
-          --arg mirror_interval "1h" \
-          --argjson private false \
-          --argjson auth "$AUTH_JSON" \
-          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
-        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
-        # Now every outcome lands in exactly one tally, and the SUMMARY at the
-        # bottom of init-mirrors.sh is what decides this script's exit code.
-        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
-          echo "  OK back-System"
-          tally mirrors_created "back-System"
-        else
-          echo "  FAIL back-System: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
-          tally mirrors_failed "back-System: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
-        fi
-      else
-        echo "EXISTS diego/back-System"
-        tally mirrors_exists "back-System"
-      fi
-
-      if ! api "$API/repos/diego/ml-Agentic" >/dev/null 2>&1; then
-        echo "Creating mirror: diego/ml-Agentic <- https://github.com/diegonmarcos/ml-Agentic.git"
-        AUTH_JSON="{}"
-        if [ "false" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
-          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
-        elif [ "false" = "true" ]; then
-          echo "  WARN: ml-Agentic is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
-          tally mirrors_degraded "ml-Agentic: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
-        fi
-        PAYLOAD=$(jq -n \
-          --arg clone_addr "https://github.com/diegonmarcos/ml-Agentic.git" \
-          --arg repo_name "ml-Agentic" \
-          --arg repo_owner "diego" \
-          --arg mirror_interval "1h" \
-          --argjson private false \
-          --argjson auth "$AUTH_JSON" \
-          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
-        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
-        # Now every outcome lands in exactly one tally, and the SUMMARY at the
-        # bottom of init-mirrors.sh is what decides this script's exit code.
-        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
-          echo "  OK ml-Agentic"
-          tally mirrors_created "ml-Agentic"
-        else
-          echo "  FAIL ml-Agentic: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
-          tally mirrors_failed "ml-Agentic: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
-        fi
-      else
-        echo "EXISTS diego/ml-Agentic"
-        tally mirrors_exists "ml-Agentic"
-      fi
-
-      if ! api "$API/repos/diego/lecole42" >/dev/null 2>&1; then
-        echo "Creating mirror: diego/lecole42 <- https://github.com/diegonmarcos/lecole42.git"
-        AUTH_JSON="{}"
-        if [ "true" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
-          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
-        elif [ "true" = "true" ]; then
-          echo "  WARN: lecole42 is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
-          tally mirrors_degraded "lecole42: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
-        fi
-        PAYLOAD=$(jq -n \
-          --arg clone_addr "https://github.com/diegonmarcos/lecole42.git" \
-          --arg repo_name "lecole42" \
-          --arg repo_owner "diego" \
-          --arg mirror_interval "1h" \
-          --argjson private true \
-          --argjson auth "$AUTH_JSON" \
-          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
-        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
-        # Now every outcome lands in exactly one tally, and the SUMMARY at the
-        # bottom of init-mirrors.sh is what decides this script's exit code.
-        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
-          echo "  OK lecole42"
-          tally mirrors_created "lecole42"
-        else
-          echo "  FAIL lecole42: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
-          tally mirrors_failed "lecole42: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
-        fi
-      else
-        echo "EXISTS diego/lecole42"
-        tally mirrors_exists "lecole42"
-      fi
-
-      if ! api "$API/repos/diego/dev" >/dev/null 2>&1; then
-        echo "Creating mirror: diego/dev <- https://github.com/diegonmarcos/dev.git"
-        AUTH_JSON="{}"
-        if [ "true" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
-          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
-        elif [ "true" = "true" ]; then
-          echo "  WARN: dev is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
-          tally mirrors_degraded "dev: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
-        fi
-        PAYLOAD=$(jq -n \
-          --arg clone_addr "https://github.com/diegonmarcos/dev.git" \
-          --arg repo_name "dev" \
-          --arg repo_owner "diego" \
-          --arg mirror_interval "1h" \
-          --argjson private true \
-          --argjson auth "$AUTH_JSON" \
-          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
-        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
-        # Now every outcome lands in exactly one tally, and the SUMMARY at the
-        # bottom of init-mirrors.sh is what decides this script's exit code.
-        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
-          echo "  OK dev"
-          tally mirrors_created "dev"
-        else
-          echo "  FAIL dev: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
-          tally mirrors_failed "dev: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
-        fi
-      else
-        echo "EXISTS diego/dev"
-        tally mirrors_exists "dev"
-      fi
-
-      if ! api "$API/repos/diego/ops-Mylibs" >/dev/null 2>&1; then
-        echo "Creating mirror: diego/ops-Mylibs <- https://github.com/diegonmarcos/ops-Mylibs.git"
-        AUTH_JSON="{}"
-        if [ "false" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
-          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
-        elif [ "false" = "true" ]; then
-          echo "  WARN: ops-Mylibs is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
-          tally mirrors_degraded "ops-Mylibs: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
-        fi
-        PAYLOAD=$(jq -n \
-          --arg clone_addr "https://github.com/diegonmarcos/ops-Mylibs.git" \
-          --arg repo_name "ops-Mylibs" \
-          --arg repo_owner "diego" \
-          --arg mirror_interval "1h" \
-          --argjson private false \
-          --argjson auth "$AUTH_JSON" \
-          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
-        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
-        # Now every outcome lands in exactly one tally, and the SUMMARY at the
-        # bottom of init-mirrors.sh is what decides this script's exit code.
-        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
-          echo "  OK ops-Mylibs"
-          tally mirrors_created "ops-Mylibs"
-        else
-          echo "  FAIL ops-Mylibs: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
-          tally mirrors_failed "ops-Mylibs: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
-        fi
-      else
-        echo "EXISTS diego/ops-Mylibs"
-        tally mirrors_exists "ops-Mylibs"
+        echo "EXISTS diego/back-Algo"
+        tally mirrors_exists "back-Algo"
       fi
 
       if ! api "$API/repos/diego/back-Graphic" >/dev/null 2>&1; then
@@ -853,18 +149,18 @@ fi
         tally mirrors_exists "back-Graphic"
       fi
 
-      if ! api "$API/repos/diego/back-Algo" >/dev/null 2>&1; then
-        echo "Creating mirror: diego/back-Algo <- https://github.com/diegonmarcos/back-Algo.git"
+      if ! api "$API/repos/diego/back-System" >/dev/null 2>&1; then
+        echo "Creating mirror: diego/back-System <- https://github.com/diegonmarcos/back-System.git"
         AUTH_JSON="{}"
         if [ "false" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
           AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
         elif [ "false" = "true" ]; then
-          echo "  WARN: back-Algo is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
-          tally mirrors_degraded "back-Algo: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
+          echo "  WARN: back-System is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
+          tally mirrors_degraded "back-System: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
         fi
         PAYLOAD=$(jq -n \
-          --arg clone_addr "https://github.com/diegonmarcos/back-Algo.git" \
-          --arg repo_name "back-Algo" \
+          --arg clone_addr "https://github.com/diegonmarcos/back-System.git" \
+          --arg repo_name "back-System" \
           --arg repo_owner "diego" \
           --arg mirror_interval "1h" \
           --argjson private false \
@@ -874,29 +170,29 @@ fi
         # Now every outcome lands in exactly one tally, and the SUMMARY at the
         # bottom of init-mirrors.sh is what decides this script's exit code.
         if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
-          echo "  OK back-Algo"
-          tally mirrors_created "back-Algo"
+          echo "  OK back-System"
+          tally mirrors_created "back-System"
         else
-          echo "  FAIL back-Algo: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
-          tally mirrors_failed "back-Algo: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
+          echo "  FAIL back-System: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
+          tally mirrors_failed "back-System: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
         fi
       else
-        echo "EXISTS diego/back-Algo"
-        tally mirrors_exists "back-Algo"
+        echo "EXISTS diego/back-System"
+        tally mirrors_exists "back-System"
       fi
 
-      if ! api "$API/repos/diego/ml-MachineLearning" >/dev/null 2>&1; then
-        echo "Creating mirror: diego/ml-MachineLearning <- https://github.com/diegonmarcos/ml-MachineLearning.git"
+      if ! api "$API/repos/diego/cloud" >/dev/null 2>&1; then
+        echo "Creating mirror: diego/cloud <- https://github.com/diegonmarcos/cloud.git"
         AUTH_JSON="{}"
         if [ "false" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
           AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
         elif [ "false" = "true" ]; then
-          echo "  WARN: ml-MachineLearning is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
-          tally mirrors_degraded "ml-MachineLearning: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
+          echo "  WARN: cloud is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
+          tally mirrors_degraded "cloud: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
         fi
         PAYLOAD=$(jq -n \
-          --arg clone_addr "https://github.com/diegonmarcos/ml-MachineLearning.git" \
-          --arg repo_name "ml-MachineLearning" \
+          --arg clone_addr "https://github.com/diegonmarcos/cloud.git" \
+          --arg repo_name "cloud" \
           --arg repo_owner "diego" \
           --arg mirror_interval "1h" \
           --argjson private false \
@@ -906,15 +202,303 @@ fi
         # Now every outcome lands in exactly one tally, and the SUMMARY at the
         # bottom of init-mirrors.sh is what decides this script's exit code.
         if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
-          echo "  OK ml-MachineLearning"
-          tally mirrors_created "ml-MachineLearning"
+          echo "  OK cloud"
+          tally mirrors_created "cloud"
         else
-          echo "  FAIL ml-MachineLearning: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
-          tally mirrors_failed "ml-MachineLearning: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
+          echo "  FAIL cloud: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
+          tally mirrors_failed "cloud: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
         fi
       else
-        echo "EXISTS diego/ml-MachineLearning"
-        tally mirrors_exists "ml-MachineLearning"
+        echo "EXISTS diego/cloud"
+        tally mirrors_exists "cloud"
+      fi
+
+      if ! api "$API/repos/diego/cloud-data" >/dev/null 2>&1; then
+        echo "Creating mirror: diego/cloud-data <- https://github.com/diegonmarcos/cloud-data.git"
+        AUTH_JSON="{}"
+        if [ "true" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
+          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
+        elif [ "true" = "true" ]; then
+          echo "  WARN: cloud-data is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
+          tally mirrors_degraded "cloud-data: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
+        fi
+        PAYLOAD=$(jq -n \
+          --arg clone_addr "https://github.com/diegonmarcos/cloud-data.git" \
+          --arg repo_name "cloud-data" \
+          --arg repo_owner "diego" \
+          --arg mirror_interval "1h" \
+          --argjson private true \
+          --argjson auth "$AUTH_JSON" \
+          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
+        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
+        # Now every outcome lands in exactly one tally, and the SUMMARY at the
+        # bottom of init-mirrors.sh is what decides this script's exit code.
+        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
+          echo "  OK cloud-data"
+          tally mirrors_created "cloud-data"
+        else
+          echo "  FAIL cloud-data: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
+          tally mirrors_failed "cloud-data: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
+        fi
+      else
+        echo "EXISTS diego/cloud-data"
+        tally mirrors_exists "cloud-data"
+      fi
+
+      if ! api "$API/repos/diego/cloud-data-lfs" >/dev/null 2>&1; then
+        echo "Creating mirror: diego/cloud-data-lfs <- https://github.com/diegonmarcos/cloud-data-lfs.git"
+        AUTH_JSON="{}"
+        if [ "true" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
+          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
+        elif [ "true" = "true" ]; then
+          echo "  WARN: cloud-data-lfs is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
+          tally mirrors_degraded "cloud-data-lfs: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
+        fi
+        PAYLOAD=$(jq -n \
+          --arg clone_addr "https://github.com/diegonmarcos/cloud-data-lfs.git" \
+          --arg repo_name "cloud-data-lfs" \
+          --arg repo_owner "diego" \
+          --arg mirror_interval "1h" \
+          --argjson private true \
+          --argjson auth "$AUTH_JSON" \
+          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
+        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
+        # Now every outcome lands in exactly one tally, and the SUMMARY at the
+        # bottom of init-mirrors.sh is what decides this script's exit code.
+        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
+          echo "  OK cloud-data-lfs"
+          tally mirrors_created "cloud-data-lfs"
+        else
+          echo "  FAIL cloud-data-lfs: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
+          tally mirrors_failed "cloud-data-lfs: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
+        fi
+      else
+        echo "EXISTS diego/cloud-data-lfs"
+        tally mirrors_exists "cloud-data-lfs"
+      fi
+
+      if ! api "$API/repos/diego/cloud-data-my-ai-memory" >/dev/null 2>&1; then
+        echo "Creating mirror: diego/cloud-data-my-ai-memory <- https://github.com/diegonmarcos/cloud-data-my-ai-memory.git"
+        AUTH_JSON="{}"
+        if [ "true" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
+          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
+        elif [ "true" = "true" ]; then
+          echo "  WARN: cloud-data-my-ai-memory is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
+          tally mirrors_degraded "cloud-data-my-ai-memory: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
+        fi
+        PAYLOAD=$(jq -n \
+          --arg clone_addr "https://github.com/diegonmarcos/cloud-data-my-ai-memory.git" \
+          --arg repo_name "cloud-data-my-ai-memory" \
+          --arg repo_owner "diego" \
+          --arg mirror_interval "1h" \
+          --argjson private true \
+          --argjson auth "$AUTH_JSON" \
+          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
+        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
+        # Now every outcome lands in exactly one tally, and the SUMMARY at the
+        # bottom of init-mirrors.sh is what decides this script's exit code.
+        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
+          echo "  OK cloud-data-my-ai-memory"
+          tally mirrors_created "cloud-data-my-ai-memory"
+        else
+          echo "  FAIL cloud-data-my-ai-memory: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
+          tally mirrors_failed "cloud-data-my-ai-memory: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
+        fi
+      else
+        echo "EXISTS diego/cloud-data-my-ai-memory"
+        tally mirrors_exists "cloud-data-my-ai-memory"
+      fi
+
+      if ! api "$API/repos/diego/cloud-infra" >/dev/null 2>&1; then
+        echo "Creating mirror: diego/cloud-infra <- https://github.com/diegonmarcos/cloud-infra.git"
+        AUTH_JSON="{}"
+        if [ "false" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
+          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
+        elif [ "false" = "true" ]; then
+          echo "  WARN: cloud-infra is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
+          tally mirrors_degraded "cloud-infra: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
+        fi
+        PAYLOAD=$(jq -n \
+          --arg clone_addr "https://github.com/diegonmarcos/cloud-infra.git" \
+          --arg repo_name "cloud-infra" \
+          --arg repo_owner "diego" \
+          --arg mirror_interval "1h" \
+          --argjson private false \
+          --argjson auth "$AUTH_JSON" \
+          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
+        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
+        # Now every outcome lands in exactly one tally, and the SUMMARY at the
+        # bottom of init-mirrors.sh is what decides this script's exit code.
+        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
+          echo "  OK cloud-infra"
+          tally mirrors_created "cloud-infra"
+        else
+          echo "  FAIL cloud-infra: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
+          tally mirrors_failed "cloud-infra: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
+        fi
+      else
+        echo "EXISTS diego/cloud-infra"
+        tally mirrors_exists "cloud-infra"
+      fi
+
+      if ! api "$API/repos/diego/cloud-infra-desktop" >/dev/null 2>&1; then
+        echo "Creating mirror: diego/cloud-infra-desktop <- https://github.com/diegonmarcos/cloud-infra-desktop.git"
+        AUTH_JSON="{}"
+        if [ "false" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
+          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
+        elif [ "false" = "true" ]; then
+          echo "  WARN: cloud-infra-desktop is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
+          tally mirrors_degraded "cloud-infra-desktop: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
+        fi
+        PAYLOAD=$(jq -n \
+          --arg clone_addr "https://github.com/diegonmarcos/cloud-infra-desktop.git" \
+          --arg repo_name "cloud-infra-desktop" \
+          --arg repo_owner "diego" \
+          --arg mirror_interval "1h" \
+          --argjson private false \
+          --argjson auth "$AUTH_JSON" \
+          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
+        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
+        # Now every outcome lands in exactly one tally, and the SUMMARY at the
+        # bottom of init-mirrors.sh is what decides this script's exit code.
+        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
+          echo "  OK cloud-infra-desktop"
+          tally mirrors_created "cloud-infra-desktop"
+        else
+          echo "  FAIL cloud-infra-desktop: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
+          tally mirrors_failed "cloud-infra-desktop: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
+        fi
+      else
+        echo "EXISTS diego/cloud-infra-desktop"
+        tally mirrors_exists "cloud-infra-desktop"
+      fi
+
+      if ! api "$API/repos/diego/cloud-notes" >/dev/null 2>&1; then
+        echo "Creating mirror: diego/cloud-notes <- https://github.com/diegonmarcos/cloud-notes.git"
+        AUTH_JSON="{}"
+        if [ "true" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
+          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
+        elif [ "true" = "true" ]; then
+          echo "  WARN: cloud-notes is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
+          tally mirrors_degraded "cloud-notes: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
+        fi
+        PAYLOAD=$(jq -n \
+          --arg clone_addr "https://github.com/diegonmarcos/cloud-notes.git" \
+          --arg repo_name "cloud-notes" \
+          --arg repo_owner "diego" \
+          --arg mirror_interval "1h" \
+          --argjson private true \
+          --argjson auth "$AUTH_JSON" \
+          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
+        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
+        # Now every outcome lands in exactly one tally, and the SUMMARY at the
+        # bottom of init-mirrors.sh is what decides this script's exit code.
+        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
+          echo "  OK cloud-notes"
+          tally mirrors_created "cloud-notes"
+        else
+          echo "  FAIL cloud-notes: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
+          tally mirrors_failed "cloud-notes: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
+        fi
+      else
+        echo "EXISTS diego/cloud-notes"
+        tally mirrors_exists "cloud-notes"
+      fi
+
+      if ! api "$API/repos/diego/cloud-u-android" >/dev/null 2>&1; then
+        echo "Creating mirror: diego/cloud-u-android <- https://github.com/diegonmarcos/cloud-u-android.git"
+        AUTH_JSON="{}"
+        if [ "false" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
+          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
+        elif [ "false" = "true" ]; then
+          echo "  WARN: cloud-u-android is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
+          tally mirrors_degraded "cloud-u-android: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
+        fi
+        PAYLOAD=$(jq -n \
+          --arg clone_addr "https://github.com/diegonmarcos/cloud-u-android.git" \
+          --arg repo_name "cloud-u-android" \
+          --arg repo_owner "diego" \
+          --arg mirror_interval "1h" \
+          --argjson private false \
+          --argjson auth "$AUTH_JSON" \
+          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
+        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
+        # Now every outcome lands in exactly one tally, and the SUMMARY at the
+        # bottom of init-mirrors.sh is what decides this script's exit code.
+        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
+          echo "  OK cloud-u-android"
+          tally mirrors_created "cloud-u-android"
+        else
+          echo "  FAIL cloud-u-android: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
+          tally mirrors_failed "cloud-u-android: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
+        fi
+      else
+        echo "EXISTS diego/cloud-u-android"
+        tally mirrors_exists "cloud-u-android"
+      fi
+
+      if ! api "$API/repos/diego/cloud-u-containers" >/dev/null 2>&1; then
+        echo "Creating mirror: diego/cloud-u-containers <- https://github.com/diegonmarcos/cloud-u-containers.git"
+        AUTH_JSON="{}"
+        if [ "false" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
+          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
+        elif [ "false" = "true" ]; then
+          echo "  WARN: cloud-u-containers is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
+          tally mirrors_degraded "cloud-u-containers: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
+        fi
+        PAYLOAD=$(jq -n \
+          --arg clone_addr "https://github.com/diegonmarcos/cloud-u-containers.git" \
+          --arg repo_name "cloud-u-containers" \
+          --arg repo_owner "diego" \
+          --arg mirror_interval "1h" \
+          --argjson private false \
+          --argjson auth "$AUTH_JSON" \
+          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
+        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
+        # Now every outcome lands in exactly one tally, and the SUMMARY at the
+        # bottom of init-mirrors.sh is what decides this script's exit code.
+        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
+          echo "  OK cloud-u-containers"
+          tally mirrors_created "cloud-u-containers"
+        else
+          echo "  FAIL cloud-u-containers: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
+          tally mirrors_failed "cloud-u-containers: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
+        fi
+      else
+        echo "EXISTS diego/cloud-u-containers"
+        tally mirrors_exists "cloud-u-containers"
+      fi
+
+      if ! api "$API/repos/diego/cloud-u-linux" >/dev/null 2>&1; then
+        echo "Creating mirror: diego/cloud-u-linux <- https://github.com/diegonmarcos/cloud-u-linux.git"
+        AUTH_JSON="{}"
+        if [ "false" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
+          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
+        elif [ "false" = "true" ]; then
+          echo "  WARN: cloud-u-linux is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
+          tally mirrors_degraded "cloud-u-linux: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
+        fi
+        PAYLOAD=$(jq -n \
+          --arg clone_addr "https://github.com/diegonmarcos/cloud-u-linux.git" \
+          --arg repo_name "cloud-u-linux" \
+          --arg repo_owner "diego" \
+          --arg mirror_interval "1h" \
+          --argjson private false \
+          --argjson auth "$AUTH_JSON" \
+          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
+        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
+        # Now every outcome lands in exactly one tally, and the SUMMARY at the
+        # bottom of init-mirrors.sh is what decides this script's exit code.
+        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
+          echo "  OK cloud-u-linux"
+          tally mirrors_created "cloud-u-linux"
+        else
+          echo "  FAIL cloud-u-linux: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
+          tally mirrors_failed "cloud-u-linux: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
+        fi
+      else
+        echo "EXISTS diego/cloud-u-linux"
+        tally mirrors_exists "cloud-u-linux"
       fi
 
       if ! api "$API/repos/diego/cyber-Cyberwarfare" >/dev/null 2>&1; then
@@ -949,6 +533,358 @@ fi
         tally mirrors_exists "cyber-Cyberwarfare"
       fi
 
+      if ! api "$API/repos/diego/dev" >/dev/null 2>&1; then
+        echo "Creating mirror: diego/dev <- https://github.com/diegonmarcos/dev.git"
+        AUTH_JSON="{}"
+        if [ "true" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
+          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
+        elif [ "true" = "true" ]; then
+          echo "  WARN: dev is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
+          tally mirrors_degraded "dev: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
+        fi
+        PAYLOAD=$(jq -n \
+          --arg clone_addr "https://github.com/diegonmarcos/dev.git" \
+          --arg repo_name "dev" \
+          --arg repo_owner "diego" \
+          --arg mirror_interval "1h" \
+          --argjson private true \
+          --argjson auth "$AUTH_JSON" \
+          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
+        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
+        # Now every outcome lands in exactly one tally, and the SUMMARY at the
+        # bottom of init-mirrors.sh is what decides this script's exit code.
+        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
+          echo "  OK dev"
+          tally mirrors_created "dev"
+        else
+          echo "  FAIL dev: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
+          tally mirrors_failed "dev: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
+        fi
+      else
+        echo "EXISTS diego/dev"
+        tally mirrors_exists "dev"
+      fi
+
+      if ! api "$API/repos/diego/diegonmarcos" >/dev/null 2>&1; then
+        echo "Creating mirror: diego/diegonmarcos <- https://github.com/diegonmarcos/diegonmarcos.git"
+        AUTH_JSON="{}"
+        if [ "false" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
+          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
+        elif [ "false" = "true" ]; then
+          echo "  WARN: diegonmarcos is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
+          tally mirrors_degraded "diegonmarcos: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
+        fi
+        PAYLOAD=$(jq -n \
+          --arg clone_addr "https://github.com/diegonmarcos/diegonmarcos.git" \
+          --arg repo_name "diegonmarcos" \
+          --arg repo_owner "diego" \
+          --arg mirror_interval "1h" \
+          --argjson private false \
+          --argjson auth "$AUTH_JSON" \
+          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
+        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
+        # Now every outcome lands in exactly one tally, and the SUMMARY at the
+        # bottom of init-mirrors.sh is what decides this script's exit code.
+        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
+          echo "  OK diegonmarcos"
+          tally mirrors_created "diegonmarcos"
+        else
+          echo "  FAIL diegonmarcos: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
+          tally mirrors_failed "diegonmarcos: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
+        fi
+      else
+        echo "EXISTS diego/diegonmarcos"
+        tally mirrors_exists "diegonmarcos"
+      fi
+
+      if ! api "$API/repos/diego/diegonmarcos.github.io" >/dev/null 2>&1; then
+        echo "Creating mirror: diego/diegonmarcos.github.io <- https://github.com/diegonmarcos/diegonmarcos.github.io.git"
+        AUTH_JSON="{}"
+        if [ "false" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
+          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
+        elif [ "false" = "true" ]; then
+          echo "  WARN: diegonmarcos.github.io is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
+          tally mirrors_degraded "diegonmarcos.github.io: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
+        fi
+        PAYLOAD=$(jq -n \
+          --arg clone_addr "https://github.com/diegonmarcos/diegonmarcos.github.io.git" \
+          --arg repo_name "diegonmarcos.github.io" \
+          --arg repo_owner "diego" \
+          --arg mirror_interval "1h" \
+          --argjson private false \
+          --argjson auth "$AUTH_JSON" \
+          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
+        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
+        # Now every outcome lands in exactly one tally, and the SUMMARY at the
+        # bottom of init-mirrors.sh is what decides this script's exit code.
+        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
+          echo "  OK diegonmarcos.github.io"
+          tally mirrors_created "diegonmarcos.github.io"
+        else
+          echo "  FAIL diegonmarcos.github.io: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
+          tally mirrors_failed "diegonmarcos.github.io: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
+        fi
+      else
+        echo "EXISTS diego/diegonmarcos.github.io"
+        tally mirrors_exists "diegonmarcos.github.io"
+      fi
+
+      if ! api "$API/repos/diego/ffront" >/dev/null 2>&1; then
+        echo "Creating mirror: diego/ffront <- https://github.com/diegonmarcos/ffront.git"
+        AUTH_JSON="{}"
+        if [ "false" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
+          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
+        elif [ "false" = "true" ]; then
+          echo "  WARN: ffront is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
+          tally mirrors_degraded "ffront: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
+        fi
+        PAYLOAD=$(jq -n \
+          --arg clone_addr "https://github.com/diegonmarcos/ffront.git" \
+          --arg repo_name "ffront" \
+          --arg repo_owner "diego" \
+          --arg mirror_interval "1h" \
+          --argjson private false \
+          --argjson auth "$AUTH_JSON" \
+          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
+        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
+        # Now every outcome lands in exactly one tally, and the SUMMARY at the
+        # bottom of init-mirrors.sh is what decides this script's exit code.
+        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
+          echo "  OK ffront"
+          tally mirrors_created "ffront"
+        else
+          echo "  FAIL ffront: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
+          tally mirrors_failed "ffront: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
+        fi
+      else
+        echo "EXISTS diego/ffront"
+        tally mirrors_exists "ffront"
+      fi
+
+      if ! api "$API/repos/diego/front-assets-cdn" >/dev/null 2>&1; then
+        echo "Creating mirror: diego/front-assets-cdn <- https://github.com/diegonmarcos/front-assets-cdn.git"
+        AUTH_JSON="{}"
+        if [ "false" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
+          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
+        elif [ "false" = "true" ]; then
+          echo "  WARN: front-assets-cdn is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
+          tally mirrors_degraded "front-assets-cdn: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
+        fi
+        PAYLOAD=$(jq -n \
+          --arg clone_addr "https://github.com/diegonmarcos/front-assets-cdn.git" \
+          --arg repo_name "front-assets-cdn" \
+          --arg repo_owner "diego" \
+          --arg mirror_interval "1h" \
+          --argjson private false \
+          --argjson auth "$AUTH_JSON" \
+          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
+        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
+        # Now every outcome lands in exactly one tally, and the SUMMARY at the
+        # bottom of init-mirrors.sh is what decides this script's exit code.
+        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
+          echo "  OK front-assets-cdn"
+          tally mirrors_created "front-assets-cdn"
+        else
+          echo "  FAIL front-assets-cdn: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
+          tally mirrors_failed "front-assets-cdn: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
+        fi
+      else
+        echo "EXISTS diego/front-assets-cdn"
+        tally mirrors_exists "front-assets-cdn"
+      fi
+
+      if ! api "$API/repos/diego/front-data" >/dev/null 2>&1; then
+        echo "Creating mirror: diego/front-data <- https://github.com/diegonmarcos/front-data.git"
+        AUTH_JSON="{}"
+        if [ "false" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
+          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
+        elif [ "false" = "true" ]; then
+          echo "  WARN: front-data is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
+          tally mirrors_degraded "front-data: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
+        fi
+        PAYLOAD=$(jq -n \
+          --arg clone_addr "https://github.com/diegonmarcos/front-data.git" \
+          --arg repo_name "front-data" \
+          --arg repo_owner "diego" \
+          --arg mirror_interval "1h" \
+          --argjson private false \
+          --argjson auth "$AUTH_JSON" \
+          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
+        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
+        # Now every outcome lands in exactly one tally, and the SUMMARY at the
+        # bottom of init-mirrors.sh is what decides this script's exit code.
+        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
+          echo "  OK front-data"
+          tally mirrors_created "front-data"
+        else
+          echo "  FAIL front-data: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
+          tally mirrors_failed "front-data: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
+        fi
+      else
+        echo "EXISTS diego/front-data"
+        tally mirrors_exists "front-data"
+      fi
+
+      if ! api "$API/repos/diego/front-galaxy-gaia" >/dev/null 2>&1; then
+        echo "Creating mirror: diego/front-galaxy-gaia <- https://github.com/diegonmarcos/front-galaxy-gaia.git"
+        AUTH_JSON="{}"
+        if [ "true" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
+          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
+        elif [ "true" = "true" ]; then
+          echo "  WARN: front-galaxy-gaia is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
+          tally mirrors_degraded "front-galaxy-gaia: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
+        fi
+        PAYLOAD=$(jq -n \
+          --arg clone_addr "https://github.com/diegonmarcos/front-galaxy-gaia.git" \
+          --arg repo_name "front-galaxy-gaia" \
+          --arg repo_owner "diego" \
+          --arg mirror_interval "1h" \
+          --argjson private true \
+          --argjson auth "$AUTH_JSON" \
+          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
+        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
+        # Now every outcome lands in exactly one tally, and the SUMMARY at the
+        # bottom of init-mirrors.sh is what decides this script's exit code.
+        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
+          echo "  OK front-galaxy-gaia"
+          tally mirrors_created "front-galaxy-gaia"
+        else
+          echo "  FAIL front-galaxy-gaia: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
+          tally mirrors_failed "front-galaxy-gaia: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
+        fi
+      else
+        echo "EXISTS diego/front-galaxy-gaia"
+        tally mirrors_exists "front-galaxy-gaia"
+      fi
+
+      if ! api "$API/repos/diego/front-unity" >/dev/null 2>&1; then
+        echo "Creating mirror: diego/front-unity <- https://github.com/diegonmarcos/front-unity.git"
+        AUTH_JSON="{}"
+        if [ "true" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
+          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
+        elif [ "true" = "true" ]; then
+          echo "  WARN: front-unity is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
+          tally mirrors_degraded "front-unity: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
+        fi
+        PAYLOAD=$(jq -n \
+          --arg clone_addr "https://github.com/diegonmarcos/front-unity.git" \
+          --arg repo_name "front-unity" \
+          --arg repo_owner "diego" \
+          --arg mirror_interval "1h" \
+          --argjson private true \
+          --argjson auth "$AUTH_JSON" \
+          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
+        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
+        # Now every outcome lands in exactly one tally, and the SUMMARY at the
+        # bottom of init-mirrors.sh is what decides this script's exit code.
+        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
+          echo "  OK front-unity"
+          tally mirrors_created "front-unity"
+        else
+          echo "  FAIL front-unity: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
+          tally mirrors_failed "front-unity: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
+        fi
+      else
+        echo "EXISTS diego/front-unity"
+        tally mirrors_exists "front-unity"
+      fi
+
+      if ! api "$API/repos/diego/git-repos-master" >/dev/null 2>&1; then
+        echo "Creating mirror: diego/git-repos-master <- https://github.com/diegonmarcos/git-repos-master.git"
+        AUTH_JSON="{}"
+        if [ "false" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
+          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
+        elif [ "false" = "true" ]; then
+          echo "  WARN: git-repos-master is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
+          tally mirrors_degraded "git-repos-master: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
+        fi
+        PAYLOAD=$(jq -n \
+          --arg clone_addr "https://github.com/diegonmarcos/git-repos-master.git" \
+          --arg repo_name "git-repos-master" \
+          --arg repo_owner "diego" \
+          --arg mirror_interval "1h" \
+          --argjson private false \
+          --argjson auth "$AUTH_JSON" \
+          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
+        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
+        # Now every outcome lands in exactly one tally, and the SUMMARY at the
+        # bottom of init-mirrors.sh is what decides this script's exit code.
+        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
+          echo "  OK git-repos-master"
+          tally mirrors_created "git-repos-master"
+        else
+          echo "  FAIL git-repos-master: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
+          tally mirrors_failed "git-repos-master: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
+        fi
+      else
+        echo "EXISTS diego/git-repos-master"
+        tally mirrors_exists "git-repos-master"
+      fi
+
+      if ! api "$API/repos/diego/lecole42" >/dev/null 2>&1; then
+        echo "Creating mirror: diego/lecole42 <- https://github.com/diegonmarcos/lecole42.git"
+        AUTH_JSON="{}"
+        if [ "true" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
+          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
+        elif [ "true" = "true" ]; then
+          echo "  WARN: lecole42 is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
+          tally mirrors_degraded "lecole42: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
+        fi
+        PAYLOAD=$(jq -n \
+          --arg clone_addr "https://github.com/diegonmarcos/lecole42.git" \
+          --arg repo_name "lecole42" \
+          --arg repo_owner "diego" \
+          --arg mirror_interval "1h" \
+          --argjson private true \
+          --argjson auth "$AUTH_JSON" \
+          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
+        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
+        # Now every outcome lands in exactly one tally, and the SUMMARY at the
+        # bottom of init-mirrors.sh is what decides this script's exit code.
+        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
+          echo "  OK lecole42"
+          tally mirrors_created "lecole42"
+        else
+          echo "  FAIL lecole42: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
+          tally mirrors_failed "lecole42: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
+        fi
+      else
+        echo "EXISTS diego/lecole42"
+        tally mirrors_exists "lecole42"
+      fi
+
+      if ! api "$API/repos/diego/ml-Agentic" >/dev/null 2>&1; then
+        echo "Creating mirror: diego/ml-Agentic <- https://github.com/diegonmarcos/ml-Agentic.git"
+        AUTH_JSON="{}"
+        if [ "false" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
+          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
+        elif [ "false" = "true" ]; then
+          echo "  WARN: ml-Agentic is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
+          tally mirrors_degraded "ml-Agentic: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
+        fi
+        PAYLOAD=$(jq -n \
+          --arg clone_addr "https://github.com/diegonmarcos/ml-Agentic.git" \
+          --arg repo_name "ml-Agentic" \
+          --arg repo_owner "diego" \
+          --arg mirror_interval "1h" \
+          --argjson private false \
+          --argjson auth "$AUTH_JSON" \
+          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
+        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
+        # Now every outcome lands in exactly one tally, and the SUMMARY at the
+        # bottom of init-mirrors.sh is what decides this script's exit code.
+        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
+          echo "  OK ml-Agentic"
+          tally mirrors_created "ml-Agentic"
+        else
+          echo "  FAIL ml-Agentic: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
+          tally mirrors_failed "ml-Agentic: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
+        fi
+      else
+        echo "EXISTS diego/ml-Agentic"
+        tally mirrors_exists "ml-Agentic"
+      fi
+
       if ! api "$API/repos/diego/ml-DataScience" >/dev/null 2>&1; then
         echo "Creating mirror: diego/ml-DataScience <- https://github.com/diegonmarcos/ml-DataScience.git"
         AUTH_JSON="{}"
@@ -979,6 +915,70 @@ fi
       else
         echo "EXISTS diego/ml-DataScience"
         tally mirrors_exists "ml-DataScience"
+      fi
+
+      if ! api "$API/repos/diego/ml-MachineLearning" >/dev/null 2>&1; then
+        echo "Creating mirror: diego/ml-MachineLearning <- https://github.com/diegonmarcos/ml-MachineLearning.git"
+        AUTH_JSON="{}"
+        if [ "false" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
+          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
+        elif [ "false" = "true" ]; then
+          echo "  WARN: ml-MachineLearning is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
+          tally mirrors_degraded "ml-MachineLearning: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
+        fi
+        PAYLOAD=$(jq -n \
+          --arg clone_addr "https://github.com/diegonmarcos/ml-MachineLearning.git" \
+          --arg repo_name "ml-MachineLearning" \
+          --arg repo_owner "diego" \
+          --arg mirror_interval "1h" \
+          --argjson private false \
+          --argjson auth "$AUTH_JSON" \
+          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
+        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
+        # Now every outcome lands in exactly one tally, and the SUMMARY at the
+        # bottom of init-mirrors.sh is what decides this script's exit code.
+        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
+          echo "  OK ml-MachineLearning"
+          tally mirrors_created "ml-MachineLearning"
+        else
+          echo "  FAIL ml-MachineLearning: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
+          tally mirrors_failed "ml-MachineLearning: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
+        fi
+      else
+        echo "EXISTS diego/ml-MachineLearning"
+        tally mirrors_exists "ml-MachineLearning"
+      fi
+
+      if ! api "$API/repos/diego/ops-Mylibs" >/dev/null 2>&1; then
+        echo "Creating mirror: diego/ops-Mylibs <- https://github.com/diegonmarcos/ops-Mylibs.git"
+        AUTH_JSON="{}"
+        if [ "false" = "true" ] && [ -n "${GITHUB_MIRROR_TOKEN:-}" ]; then
+          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
+        elif [ "false" = "true" ]; then
+          echo "  WARN: ops-Mylibs is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. Populate the GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml (sops) with a fine-grained GitHub PAT (repo:read) to fix."
+          tally mirrors_degraded "ops-Mylibs: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
+        fi
+        PAYLOAD=$(jq -n \
+          --arg clone_addr "https://github.com/diegonmarcos/ops-Mylibs.git" \
+          --arg repo_name "ops-Mylibs" \
+          --arg repo_owner "diego" \
+          --arg mirror_interval "1h" \
+          --argjson private false \
+          --argjson auth "$AUTH_JSON" \
+          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
+        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
+        # Now every outcome lands in exactly one tally, and the SUMMARY at the
+        # bottom of init-mirrors.sh is what decides this script's exit code.
+        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
+          echo "  OK ops-Mylibs"
+          tally mirrors_created "ops-Mylibs"
+        else
+          echo "  FAIL ops-Mylibs: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
+          tally mirrors_failed "ops-Mylibs: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
+        fi
+      else
+        echo "EXISTS diego/ops-Mylibs"
+        tally mirrors_exists "ops-Mylibs"
       fi
 
 

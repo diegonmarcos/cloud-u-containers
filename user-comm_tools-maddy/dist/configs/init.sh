@@ -119,21 +119,21 @@ echo "[init] Ensuring accounts + syncing passwords..."
 # USER_CREATION_BLOCK below — generated from build.json#users at flake build time.
 # Each entry produces: creds create + creds password + imap-acct create.
 # Source: aa-sui_tools-maddy/build.json#users (this service's own SoT).
-prov accounts 'creds:create me'   maddy creds create   -p "$ME_PASSWORD" me@diegonmarcos.com
-prov users    'creds:password me' maddy creds password -p "$ME_PASSWORD" me@diegonmarcos.com
-prov imap     'imap-acct me'      maddy imap-acct create me@diegonmarcos.com
-prov accounts 'creds:create no-reply'   maddy creds create   -p "$NOREPLY_PASSWORD" no-reply@diegonmarcos.com
-prov users    'creds:password no-reply' maddy creds password -p "$NOREPLY_PASSWORD" no-reply@diegonmarcos.com
-prov imap     'imap-acct no-reply'      maddy imap-acct create no-reply@diegonmarcos.com
-prov accounts 'creds:create admin'   maddy creds create   -p "$ADMIN_PASSWORD" admin@diegonmarcos.com
-prov users    'creds:password admin' maddy creds password -p "$ADMIN_PASSWORD" admin@diegonmarcos.com
-prov imap     'imap-acct admin'      maddy imap-acct create admin@diegonmarcos.com
-prov accounts 'creds:create yo'   maddy creds create   -p "$MAIL_DEFAULT_PASSWORD" yo@diegonmarcos.com
-prov users    'creds:password yo' maddy creds password -p "$MAIL_DEFAULT_PASSWORD" yo@diegonmarcos.com
-prov imap     'imap-acct yo'      maddy imap-acct create yo@diegonmarcos.com
 prov accounts 'creds:create 42'   maddy creds create   -p "$MAIL_DEFAULT_PASSWORD" 42@diegonmarcos.com
 prov users    'creds:password 42' maddy creds password -p "$MAIL_DEFAULT_PASSWORD" 42@diegonmarcos.com
 prov imap     'imap-acct 42'      maddy imap-acct create 42@diegonmarcos.com
+prov accounts 'creds:create me'   maddy creds create   -p "$ME_PASSWORD" me@diegonmarcos.com
+prov users    'creds:password me' maddy creds password -p "$ME_PASSWORD" me@diegonmarcos.com
+prov imap     'imap-acct me'      maddy imap-acct create me@diegonmarcos.com
+prov accounts 'creds:create admin'   maddy creds create   -p "$ADMIN_PASSWORD" admin@diegonmarcos.com
+prov users    'creds:password admin' maddy creds password -p "$ADMIN_PASSWORD" admin@diegonmarcos.com
+prov imap     'imap-acct admin'      maddy imap-acct create admin@diegonmarcos.com
+prov accounts 'creds:create no-reply'   maddy creds create   -p "$NOREPLY_PASSWORD" no-reply@diegonmarcos.com
+prov users    'creds:password no-reply' maddy creds password -p "$NOREPLY_PASSWORD" no-reply@diegonmarcos.com
+prov imap     'imap-acct no-reply'      maddy imap-acct create no-reply@diegonmarcos.com
+prov accounts 'creds:create yo'   maddy creds create   -p "$MAIL_DEFAULT_PASSWORD" yo@diegonmarcos.com
+prov users    'creds:password yo' maddy creds password -p "$MAIL_DEFAULT_PASSWORD" yo@diegonmarcos.com
+prov imap     'imap-acct yo'      maddy imap-acct create yo@diegonmarcos.com
 
 # FOLDER_CREATION_BLOCK below — the F0 sender-classification folders
 # (mail-rules-general.json#filters.views, axis="sender"). Must exist before
@@ -142,54 +142,6 @@ prov imap     'imap-acct 42'      maddy imap-acct create 42@diegonmarcos.com
 # silent no-op. `imap-mboxes create` errors on an existing folder — expected,
 # same idempotent-boot pattern as USER_CREATION_BLOCK above.
 echo "[init] Ensuring F0 sender-classification folders..."
-prov mailboxes 'mboxes:me' maddy imap-mboxes create me@diegonmarcos.com 'Fa    🏛️ Gov & Official'
-prov mailboxes 'mboxes:me' maddy imap-mboxes create me@diegonmarcos.com 'Fb    💬 Socials'
-prov mailboxes 'mboxes:me' maddy imap-mboxes create me@diegonmarcos.com 'Fc    💰 Finance'
-prov mailboxes 'mboxes:me' maddy imap-mboxes create me@diegonmarcos.com 'Fd    💼 Work & Professional'
-prov mailboxes 'mboxes:me' maddy imap-mboxes create me@diegonmarcos.com 'Fe    💻 Dev & Tech'
-prov mailboxes 'mboxes:me' maddy imap-mboxes create me@diegonmarcos.com 'Ff    🛍️ Shopping & Commerce'
-prov mailboxes 'mboxes:me' maddy imap-mboxes create me@diegonmarcos.com 'Fg    📰 Subscriptions & Newsletters'
-prov mailboxes 'mboxes:me' maddy imap-mboxes create me@diegonmarcos.com 'Fh    ✈️ Travel'
-prov mailboxes 'mboxes:me' maddy imap-mboxes create me@diegonmarcos.com 'Fi    🏠 Utilities & Services'
-prov mailboxes 'mboxes:me' maddy imap-mboxes create me@diegonmarcos.com 'Fj    👪 Personal'
-prov mailboxes 'mboxes:me' maddy imap-mboxes create me@diegonmarcos.com 'Fk    🎓 Education'
-prov mailboxes 'mboxes:me' maddy imap-mboxes create me@diegonmarcos.com 'Fz    📭 Others'
-prov mailboxes 'mboxes:no-reply' maddy imap-mboxes create no-reply@diegonmarcos.com 'Fa    🏛️ Gov & Official'
-prov mailboxes 'mboxes:no-reply' maddy imap-mboxes create no-reply@diegonmarcos.com 'Fb    💬 Socials'
-prov mailboxes 'mboxes:no-reply' maddy imap-mboxes create no-reply@diegonmarcos.com 'Fc    💰 Finance'
-prov mailboxes 'mboxes:no-reply' maddy imap-mboxes create no-reply@diegonmarcos.com 'Fd    💼 Work & Professional'
-prov mailboxes 'mboxes:no-reply' maddy imap-mboxes create no-reply@diegonmarcos.com 'Fe    💻 Dev & Tech'
-prov mailboxes 'mboxes:no-reply' maddy imap-mboxes create no-reply@diegonmarcos.com 'Ff    🛍️ Shopping & Commerce'
-prov mailboxes 'mboxes:no-reply' maddy imap-mboxes create no-reply@diegonmarcos.com 'Fg    📰 Subscriptions & Newsletters'
-prov mailboxes 'mboxes:no-reply' maddy imap-mboxes create no-reply@diegonmarcos.com 'Fh    ✈️ Travel'
-prov mailboxes 'mboxes:no-reply' maddy imap-mboxes create no-reply@diegonmarcos.com 'Fi    🏠 Utilities & Services'
-prov mailboxes 'mboxes:no-reply' maddy imap-mboxes create no-reply@diegonmarcos.com 'Fj    👪 Personal'
-prov mailboxes 'mboxes:no-reply' maddy imap-mboxes create no-reply@diegonmarcos.com 'Fk    🎓 Education'
-prov mailboxes 'mboxes:no-reply' maddy imap-mboxes create no-reply@diegonmarcos.com 'Fz    📭 Others'
-prov mailboxes 'mboxes:admin' maddy imap-mboxes create admin@diegonmarcos.com 'Fa    🏛️ Gov & Official'
-prov mailboxes 'mboxes:admin' maddy imap-mboxes create admin@diegonmarcos.com 'Fb    💬 Socials'
-prov mailboxes 'mboxes:admin' maddy imap-mboxes create admin@diegonmarcos.com 'Fc    💰 Finance'
-prov mailboxes 'mboxes:admin' maddy imap-mboxes create admin@diegonmarcos.com 'Fd    💼 Work & Professional'
-prov mailboxes 'mboxes:admin' maddy imap-mboxes create admin@diegonmarcos.com 'Fe    💻 Dev & Tech'
-prov mailboxes 'mboxes:admin' maddy imap-mboxes create admin@diegonmarcos.com 'Ff    🛍️ Shopping & Commerce'
-prov mailboxes 'mboxes:admin' maddy imap-mboxes create admin@diegonmarcos.com 'Fg    📰 Subscriptions & Newsletters'
-prov mailboxes 'mboxes:admin' maddy imap-mboxes create admin@diegonmarcos.com 'Fh    ✈️ Travel'
-prov mailboxes 'mboxes:admin' maddy imap-mboxes create admin@diegonmarcos.com 'Fi    🏠 Utilities & Services'
-prov mailboxes 'mboxes:admin' maddy imap-mboxes create admin@diegonmarcos.com 'Fj    👪 Personal'
-prov mailboxes 'mboxes:admin' maddy imap-mboxes create admin@diegonmarcos.com 'Fk    🎓 Education'
-prov mailboxes 'mboxes:admin' maddy imap-mboxes create admin@diegonmarcos.com 'Fz    📭 Others'
-prov mailboxes 'mboxes:yo' maddy imap-mboxes create yo@diegonmarcos.com 'Fa    🏛️ Gov & Official'
-prov mailboxes 'mboxes:yo' maddy imap-mboxes create yo@diegonmarcos.com 'Fb    💬 Socials'
-prov mailboxes 'mboxes:yo' maddy imap-mboxes create yo@diegonmarcos.com 'Fc    💰 Finance'
-prov mailboxes 'mboxes:yo' maddy imap-mboxes create yo@diegonmarcos.com 'Fd    💼 Work & Professional'
-prov mailboxes 'mboxes:yo' maddy imap-mboxes create yo@diegonmarcos.com 'Fe    💻 Dev & Tech'
-prov mailboxes 'mboxes:yo' maddy imap-mboxes create yo@diegonmarcos.com 'Ff    🛍️ Shopping & Commerce'
-prov mailboxes 'mboxes:yo' maddy imap-mboxes create yo@diegonmarcos.com 'Fg    📰 Subscriptions & Newsletters'
-prov mailboxes 'mboxes:yo' maddy imap-mboxes create yo@diegonmarcos.com 'Fh    ✈️ Travel'
-prov mailboxes 'mboxes:yo' maddy imap-mboxes create yo@diegonmarcos.com 'Fi    🏠 Utilities & Services'
-prov mailboxes 'mboxes:yo' maddy imap-mboxes create yo@diegonmarcos.com 'Fj    👪 Personal'
-prov mailboxes 'mboxes:yo' maddy imap-mboxes create yo@diegonmarcos.com 'Fk    🎓 Education'
-prov mailboxes 'mboxes:yo' maddy imap-mboxes create yo@diegonmarcos.com 'Fz    📭 Others'
 prov mailboxes 'mboxes:42' maddy imap-mboxes create 42@diegonmarcos.com 'Fa    🏛️ Gov & Official'
 prov mailboxes 'mboxes:42' maddy imap-mboxes create 42@diegonmarcos.com 'Fb    💬 Socials'
 prov mailboxes 'mboxes:42' maddy imap-mboxes create 42@diegonmarcos.com 'Fc    💰 Finance'
@@ -202,6 +154,54 @@ prov mailboxes 'mboxes:42' maddy imap-mboxes create 42@diegonmarcos.com 'Fi    �
 prov mailboxes 'mboxes:42' maddy imap-mboxes create 42@diegonmarcos.com 'Fj    👪 Personal'
 prov mailboxes 'mboxes:42' maddy imap-mboxes create 42@diegonmarcos.com 'Fk    🎓 Education'
 prov mailboxes 'mboxes:42' maddy imap-mboxes create 42@diegonmarcos.com 'Fz    📭 Others'
+prov mailboxes 'mboxes:me' maddy imap-mboxes create me@diegonmarcos.com 'Fa    🏛️ Gov & Official'
+prov mailboxes 'mboxes:me' maddy imap-mboxes create me@diegonmarcos.com 'Fb    💬 Socials'
+prov mailboxes 'mboxes:me' maddy imap-mboxes create me@diegonmarcos.com 'Fc    💰 Finance'
+prov mailboxes 'mboxes:me' maddy imap-mboxes create me@diegonmarcos.com 'Fd    💼 Work & Professional'
+prov mailboxes 'mboxes:me' maddy imap-mboxes create me@diegonmarcos.com 'Fe    💻 Dev & Tech'
+prov mailboxes 'mboxes:me' maddy imap-mboxes create me@diegonmarcos.com 'Ff    🛍️ Shopping & Commerce'
+prov mailboxes 'mboxes:me' maddy imap-mboxes create me@diegonmarcos.com 'Fg    📰 Subscriptions & Newsletters'
+prov mailboxes 'mboxes:me' maddy imap-mboxes create me@diegonmarcos.com 'Fh    ✈️ Travel'
+prov mailboxes 'mboxes:me' maddy imap-mboxes create me@diegonmarcos.com 'Fi    🏠 Utilities & Services'
+prov mailboxes 'mboxes:me' maddy imap-mboxes create me@diegonmarcos.com 'Fj    👪 Personal'
+prov mailboxes 'mboxes:me' maddy imap-mboxes create me@diegonmarcos.com 'Fk    🎓 Education'
+prov mailboxes 'mboxes:me' maddy imap-mboxes create me@diegonmarcos.com 'Fz    📭 Others'
+prov mailboxes 'mboxes:admin' maddy imap-mboxes create admin@diegonmarcos.com 'Fa    🏛️ Gov & Official'
+prov mailboxes 'mboxes:admin' maddy imap-mboxes create admin@diegonmarcos.com 'Fb    💬 Socials'
+prov mailboxes 'mboxes:admin' maddy imap-mboxes create admin@diegonmarcos.com 'Fc    💰 Finance'
+prov mailboxes 'mboxes:admin' maddy imap-mboxes create admin@diegonmarcos.com 'Fd    💼 Work & Professional'
+prov mailboxes 'mboxes:admin' maddy imap-mboxes create admin@diegonmarcos.com 'Fe    💻 Dev & Tech'
+prov mailboxes 'mboxes:admin' maddy imap-mboxes create admin@diegonmarcos.com 'Ff    🛍️ Shopping & Commerce'
+prov mailboxes 'mboxes:admin' maddy imap-mboxes create admin@diegonmarcos.com 'Fg    📰 Subscriptions & Newsletters'
+prov mailboxes 'mboxes:admin' maddy imap-mboxes create admin@diegonmarcos.com 'Fh    ✈️ Travel'
+prov mailboxes 'mboxes:admin' maddy imap-mboxes create admin@diegonmarcos.com 'Fi    🏠 Utilities & Services'
+prov mailboxes 'mboxes:admin' maddy imap-mboxes create admin@diegonmarcos.com 'Fj    👪 Personal'
+prov mailboxes 'mboxes:admin' maddy imap-mboxes create admin@diegonmarcos.com 'Fk    🎓 Education'
+prov mailboxes 'mboxes:admin' maddy imap-mboxes create admin@diegonmarcos.com 'Fz    📭 Others'
+prov mailboxes 'mboxes:no-reply' maddy imap-mboxes create no-reply@diegonmarcos.com 'Fa    🏛️ Gov & Official'
+prov mailboxes 'mboxes:no-reply' maddy imap-mboxes create no-reply@diegonmarcos.com 'Fb    💬 Socials'
+prov mailboxes 'mboxes:no-reply' maddy imap-mboxes create no-reply@diegonmarcos.com 'Fc    💰 Finance'
+prov mailboxes 'mboxes:no-reply' maddy imap-mboxes create no-reply@diegonmarcos.com 'Fd    💼 Work & Professional'
+prov mailboxes 'mboxes:no-reply' maddy imap-mboxes create no-reply@diegonmarcos.com 'Fe    💻 Dev & Tech'
+prov mailboxes 'mboxes:no-reply' maddy imap-mboxes create no-reply@diegonmarcos.com 'Ff    🛍️ Shopping & Commerce'
+prov mailboxes 'mboxes:no-reply' maddy imap-mboxes create no-reply@diegonmarcos.com 'Fg    📰 Subscriptions & Newsletters'
+prov mailboxes 'mboxes:no-reply' maddy imap-mboxes create no-reply@diegonmarcos.com 'Fh    ✈️ Travel'
+prov mailboxes 'mboxes:no-reply' maddy imap-mboxes create no-reply@diegonmarcos.com 'Fi    🏠 Utilities & Services'
+prov mailboxes 'mboxes:no-reply' maddy imap-mboxes create no-reply@diegonmarcos.com 'Fj    👪 Personal'
+prov mailboxes 'mboxes:no-reply' maddy imap-mboxes create no-reply@diegonmarcos.com 'Fk    🎓 Education'
+prov mailboxes 'mboxes:no-reply' maddy imap-mboxes create no-reply@diegonmarcos.com 'Fz    📭 Others'
+prov mailboxes 'mboxes:yo' maddy imap-mboxes create yo@diegonmarcos.com 'Fa    🏛️ Gov & Official'
+prov mailboxes 'mboxes:yo' maddy imap-mboxes create yo@diegonmarcos.com 'Fb    💬 Socials'
+prov mailboxes 'mboxes:yo' maddy imap-mboxes create yo@diegonmarcos.com 'Fc    💰 Finance'
+prov mailboxes 'mboxes:yo' maddy imap-mboxes create yo@diegonmarcos.com 'Fd    💼 Work & Professional'
+prov mailboxes 'mboxes:yo' maddy imap-mboxes create yo@diegonmarcos.com 'Fe    💻 Dev & Tech'
+prov mailboxes 'mboxes:yo' maddy imap-mboxes create yo@diegonmarcos.com 'Ff    🛍️ Shopping & Commerce'
+prov mailboxes 'mboxes:yo' maddy imap-mboxes create yo@diegonmarcos.com 'Fg    📰 Subscriptions & Newsletters'
+prov mailboxes 'mboxes:yo' maddy imap-mboxes create yo@diegonmarcos.com 'Fh    ✈️ Travel'
+prov mailboxes 'mboxes:yo' maddy imap-mboxes create yo@diegonmarcos.com 'Fi    🏠 Utilities & Services'
+prov mailboxes 'mboxes:yo' maddy imap-mboxes create yo@diegonmarcos.com 'Fj    👪 Personal'
+prov mailboxes 'mboxes:yo' maddy imap-mboxes create yo@diegonmarcos.com 'Fk    🎓 Education'
+prov mailboxes 'mboxes:yo' maddy imap-mboxes create yo@diegonmarcos.com 'Fz    📭 Others'
 
 # ── Provisioning verdict: emitted, not enforced (see header) ──────────
 # One machine-readable line, on stdout AND in the receipt. `written_at` is the
