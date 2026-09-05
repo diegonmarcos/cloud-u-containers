@@ -141,6 +141,7 @@ DOMAINID=(proto or {}).get("domainId")
 print("  [accounts] live schema:",sorted(next(iter(live.values()),{}).keys()),"@type:",ATYPE,"domainId:",DOMAINID)
 if (not ATYPE or not DOMAINID) and any(rec.split("|")[0] not in live for rec in os.environ["ACCOUNTS"].split()):
     fail("no @type/domainId on any existing account — cannot build a create payload"); raise SystemExit(0)
+created=[]
 for rec in os.environ["ACCOUNTS"].split():
     name,role,pass_env,_aliases=rec.split("|")
     cur=live.get(name)
@@ -171,8 +172,19 @@ for rec in os.environ["ACCOUNTS"].split():
     rr=jmap([["x:Account/set",{"accountId":acct,"create":{"c":obj}},"0"]])
     res=(rr.get("methodResponses") or [[None,{}]])[0][1]
     if res.get("created"):
+        created.append(name)
         print(f"  [accounts] {name}: CREATED (roles={role})"); continue
     fail(f"FAIL create {name}: {json.dumps(res.get('notCreated') or rr)}")
+# A brand-new account is invisible to authentication until the negative email
+# cache is dropped: v0.16.5 has no process_create invalidator (added upstream
+# in 0.16.10), so any earlier lookup of the address — an SMTP RCPT TO, a probe
+# login, a delivery attempt — pins a "no such account" entry for negativeTtl,
+# one hour by default. The account exists, the password is right, and both
+# IMAP and JMAP still answer AUTHENTICATIONFAILED. Flush it here so a freshly
+# provisioned mailbox is usable the moment the ship reports green.
+if created:
+    print("  [accounts] flushing negative caches for:", ", ".join(created))
+    jmap([["x:Action/set",{"create":{"flush":{"@type":"InvalidateNegativeCaches"}}},"0"]])
 PYEOF
 fi
 
