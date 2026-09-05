@@ -12,6 +12,10 @@
     "remote_path": "/opt/containers/gitea",
     "compose_flags": "--build"
   },
+  "compose": {
+    "post_hook": "configs/init-mirrors.sh",
+    "_doc_post_hook": "init-mirrors.sh converges the admin user, the mirror owner, mirror_policy.exclude (by DELETION) and every derived mirror. Its header claimed 'container-init calls this' but nothing did — no systemd unit, cron entry, compose hook or ship step referenced it, the deploy only COPIED it to configs/, and a stale April copy sat at the deploy root. So the mirror set only ever moved when somebody ran it by hand (17 -> 32 on 2026-09-05) and drifted the rest of the time. Declaring it here runs it on every ship under the engine's revision-scoped receipt (<DEPLOY_PATH>/.posthook-receipt), which is wiped first and written only on exit 0 — a hook that did not run can no longer report green."
+  },
   "proxy": {
     "primary": {
       "domain": "git.diegonmarcos.com",
