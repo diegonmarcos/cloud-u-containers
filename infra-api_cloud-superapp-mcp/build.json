@@ -1,12 +1,84 @@
 {
   "name": "cloud-superapp-mcp",
   "description": "MCP + HTTP faces over the Android constellation's on-device debug API (libs:devtools AppDebugServer), reached over ssh. lib-api/lib-mcp shared, one module per app under mcps-apps/, one server process.",
+  "dns": "superapp-mcp.app",
   "category": "app",
   "build": {
+    "include_cloud_data": "true",
     "headers_enforced": true
   },
+  "docker": {
+    "image": "cloud-superapp-mcp",
+    "dockerfile": "Dockerfile",
+    "registry": "ghcr.io/diegonmarcos",
+    "arch": "arm64",
+    "native_build": {
+      "type": "image-wrapper",
+      "cmd": "npm install --omit=dev",
+      "_cmd_doc": "npm install, not npm ci: this monorepo has no committed package-lock.json.",
+      "entrypoint": "node /app/node_modules/tsx/dist/cli.mjs cloud-superapp-mcp/src/index.ts --http",
+      "base_image": "node:22-slim",
+      "apt": "openssh-client",
+      "_apt_doc": "device.ts spawns ssh to reach the phone's loopback-bound AppDebugServer.",
+      "app_dir": "code",
+      "user": "root",
+      "_user_doc": "root so the /root/.ssh key mount is readable, same as cloud-infra-mcp."
+    }
+  },
+  "ssh": {
+    "uid": 0,
+    "ssh_dir": "/root/.ssh",
+    "keys": [
+      "vault_id_rsa",
+      "vault_id_rsa.pub"
+    ]
+  },
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/cloud-superapp-mcp",
+    "compose_flags": "--build"
+  },
+  "proxy": {
+    "primary": {
+      "streaming": true,
+      "type": "path",
+      "parent_domain": "mcp.diegonmarcos.com",
+      "base_path": "/cloud-superapp-mcp",
+      "wg_only": true
+    },
+    "app_hub": false
+  },
+  "ports": {
+    "app": 3110
+  },
+  "domain": "mcp.diegonmarcos.com",
+  "containers": {
+    "app": {
+      "container_name": "cloud-superapp-mcp",
+      "image": "ghcr.io/diegonmarcos/cloud-superapp-mcp:latest",
+      "port": 3110,
+      "port_env": "PORT",
+      "dns": "superapp-mcp.app",
+      "public": true,
+      "proxy": {
+        "streaming": true,
+        "type": "path",
+        "parent_domain": "mcp.diegonmarcos.com",
+        "base_path": "/cloud-superapp-mcp"
+      },
+      "healthcheck": null,
+      "monitoring": null,
+      "volumes": [],
+      "env_file": true,
+      "depends_on": [],
+      "resources": null,
+      "read_only": false,
+      "protocol": "http"
+    }
+  },
   "mcp": {
-    "transport": "stdio",
+    "transport": "streamable-http",
+    "endpoint_path": "/mcp",
     "tools_count": 6,
     "resources_count": 0,
     "prompts_count": 0,
@@ -19,7 +91,7 @@
       "command": "sh",
       "args": [
         "-c",
-        "\"${MCP_LOCAL_LAUNCH:-$HOME/.claude/mcp-local-launch.sh}\" \"${CLOUD_INFRA_DIR:-$HOME/git/cloud-infra}/a_solutions/infra-api_cloud-superapp-mcp/cloud-superapp-mcp/src/index.ts\""
+        "\"${MCP_LOCAL_LAUNCH:-$HOME/.claude/mcp-local-launch.sh}\" \"${CLOUD_INFRA_DIR:-$HOME/git/cloud-infra}/a_solutions/infra-api_cloud-superapp-mcp/src/code/cloud-superapp-mcp/src/index.ts\""
       ]
     }
   }

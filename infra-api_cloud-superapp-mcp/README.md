@@ -5,12 +5,15 @@ debug API. Reached from `cloud-u-android/aa_cloud-superapp-mcp` — that path is
 a symlink to this directory, which lives in the `a_solutions` submodule whose
 source clone is `~/git/cloud-u-containers`. **Edit it there.**
 
+The tree lives under `src/code/` — the fleet convention is that a service's
+app tree sits at `src/<app_dir>/`, and `app_dir` here is `code`:
+
 ```
-lib-api/            the route contract every app is guaranteed to serve
-lib-mcp/            transport, the default tools, the app-module registry
-mcps-apps/<app>/    one folder per constellation app (18 today)
-cloud-superapp-mcp/ the MCP face  — stdio, loads every module
-cloud-superapp-api/ the HTTP face — same modules, loopback only
+src/code/lib-api/            the route contract every app is guaranteed to serve
+src/code/lib-mcp/            transport, the default tools, the app-module registry
+src/code/mcps-apps/<app>/    one folder per constellation app (18 today)
+src/code/cloud-superapp-mcp/ the MCP face  — stdio or streamable HTTP (`--http`)
+src/code/cloud-superapp-api/ the HTTP face — same modules, loopback only
 ```
 
 ## The privileged plane (Shizuku-class, through one door)
@@ -36,7 +39,7 @@ the older DevControlServer in SuperApp and cloud-nav) and serves the contract
 `AppDebugServer.route("<group>") { op, query -> ... }`, self-catalogued into
 `/api/docs`.
 
-`lib-api/src/contract.ts` is a **mirror** of that, so the two faces here agree
+`src/code/lib-api/src/contract.ts` is a **mirror** of that, so the two faces here agree
 on what an app must answer without either hardcoding it. A mirror can drift;
 `superapp_docs` asks the device and is always the truth. Prefer it whenever
 the two could disagree.
@@ -57,7 +60,7 @@ So the tool set is fixed at six and takes `app` as an argument.
 `superapp_call` is the escape hatch that keeps this from needing to know about
 a new app route; `superapp_docs` is how it stays discoverable.
 
-## What a module under `mcps-apps/` is for
+## What a module under `src/code/mcps-apps/` is for
 
 A description of an app, not a server. It earns its place three ways:
 
@@ -80,7 +83,7 @@ no barrel file to forget.
 Two edits, in one change, in this order:
 
 1. the app's Kotlin — `AppDebugServer.route("news", listOf(Op(...))) { ... }`;
-2. `mcps-apps/<app>/index.ts` — list the same ops under `routes`.
+2. `src/code/mcps-apps/<app>/index.ts` — list the same ops under `routes`.
 
 It is callable via `superapp_call` the moment the APK lands, whether or not
 step 2 happened. Step 2 is what makes it findable offline. Doing 2 without 1
@@ -98,8 +101,8 @@ same `${VAR:-default}` expansion the file already uses for `headersHelper`.
 Run it by hand meanwhile:
 
 ```
-cd cloud-superapp-mcp && npm start        # stdio MCP
-cd cloud-superapp-api && npm start        # HTTP face, 127.0.0.1:38150
+cd src/code/cloud-superapp-mcp && npm start        # stdio MCP
+cd src/code/cloud-superapp-api && npm start        # HTTP face, 127.0.0.1:38150
 ```
 
 `SUPERAPP_FLEET_TOKEN` (SuperApp -> Configs -> About) unlocks the data routes;

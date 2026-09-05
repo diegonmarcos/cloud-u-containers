@@ -18,6 +18,13 @@ const server = new McpServer({ name: "cloud-superapp-mcp", version: "1.0.0" });
 const log = (msg: string) => process.stderr.write(`[cloud-superapp-mcp] ${msg}\n`);
 
 async function main() {
+  if (process.argv.includes("--http")) {
+    const { startMcpHttpServer } = await import("./http.js");
+    const port = parseInt(process.env.MCP_HTTP_PORT || process.env.PORT || "3110", 10);
+    await startMcpHttpServer(port);
+    return;
+  }
+
   const modules = await loadModules();
   registerTools(server, modules);
 
