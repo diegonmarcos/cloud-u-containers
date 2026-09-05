@@ -20,7 +20,7 @@
     "registry": "ghcr.io/diegonmarcos",
     "image": "umami",
     "dockerfile": "Dockerfile",
-    "arch": "arm64"
+    "arch": "amd64"
   },
   "lifecycle": {
     "site-id": [
@@ -53,6 +53,10 @@
       "parent_domain": "analytics.diegonmarcos.com",
       "base_path": "/umami",
       "auth": "two_factor",
+      "public_paths": [
+        "/umami/script.js",
+        "/umami/api/send"
+      ],
       "paths": {
         "/umami/script.js": {
           "auth": "public"
