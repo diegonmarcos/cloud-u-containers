@@ -1,21 +1,51 @@
 #!/usr/bin/env bash
 # Bootstrap Gitea admin + converge mirror repos
-# Source: build.json .gitea.mirrors + secrets.yaml
-# Run: after container is healthy (container-init calls this)
+# Source: build.json .gitea.mirrors + .gitea.mirror_policy.exclude + secrets.yaml
+# Run: automatically, as the ship engine's compose post-hook — declared in
+#      build.json .compose.post_hook = "configs/init-mirrors.sh". The engine
+#      wipes <DEPLOY_PATH>/.posthook-receipt, runs this script, and writes a
+#      revision-scoped token there only if it exits 0, so a hook that did not
+#      run cannot report green. The header used to claim "container-init calls
+#      this"; nothing did. No systemd unit, cron entry, compose hook or ship
+#      step referenced it, the deploy only COPIED it, and the mirror set only
+#      ever moved when somebody ran it by hand.
 # Idempotent: safe to run multiple times
 #
 # PRIVATE mirrors need auth_token in the migrate payload (anonymous clone of
 # a private repo yields a bare/empty mirror). Read at runtime from the
 # GITHUB_MIRROR_TOKEN env var — populate it by adding a GITHUB_MIRROR_TOKEN
-# key (fine-grained GitHub PAT, repo:read, scoped to the private repos) to
-# a_solutions/infra-dat_gitea/src/secrets.yaml via:
+# key (fine-grained GitHub PAT, contents:read, scoped to the mirrored repos)
+# to a_solutions/infra-dat_gitea/src/secrets.yaml via:
 #   sops a_solutions/infra-dat_gitea/src/secrets.yaml
 # then re-run `build.sh build && build.sh ship` (never edit dist/ directly).
 # Absent that key, each private mirror WARNs and falls back to the previous
 # anonymous-clone behaviour — nothing regresses, the gap just stays visible.
+# That token is offered ONLY to the repos in the migrate block below, which is
+# the derived inventory MINUS mirror_policy.exclude, and excluded repos are
+# actively DELETED from Gitea by step 3.5 before any migrate is attempted —
+# so adding it cannot sweep an excluded repo in through an orphan mirror.
 set -uo pipefail
 API="http://localhost:@PORT_HTTP@/api/v1"
 CONTAINER="@CONTAINER_NAME@"
+
+# ── Secrets ───────────────────────────────────────────────────────────
+# Sourced, not inherited. The post-hook is invoked as
+#   cd <DEPLOY_PATH> && ./configs/init-mirrors.sh
+# with no environment of its own, so GITEA_ADMIN_* (and the optional
+# GITHUB_MIRROR_TOKEN) have to be read from the dotenv the same deploy just
+# wrote one directory up. Missing values are fatal here rather than three
+# steps later as an opaque 401 from the token endpoint.
+SECRETS_ENV="$(cd "$(dirname "$0")/.." && pwd)/.secrets"
+if [ -f "$SECRETS_ENV" ]; then
+  set -a; . "$SECRETS_ENV"; set +a
+fi
+for _required in GITEA_ADMIN_USER GITEA_ADMIN_PASSWORD GITEA_ADMIN_EMAIL; do
+  eval "_required_value=\${$_required:-}"
+  if [ -z "$_required_value" ]; then
+    echo "[init-mirrors] FAILED: $_required is unset (looked in $SECRETS_ENV)" >&2
+    exit 1
+  fi
+done
 
 # ── Per-repo outcome accounting ───────────────────────────────────────
 # Every mirror used to be provisioned as
@@ -89,6 +119,22 @@ else
   fi
 fi
 
+# Step 3.5: Enforce mirror_policy.exclude by REMOVAL, not just by omission
+# The exclusion used to be applied only in the deriver, which drops the repo
+# from the migrate block below — i.e. it prevented CREATION and nothing else.
+# `diego/cloud-vault` was mirrored before the exclusion existed and simply
+# stayed, so the credential store had a mirror in Gitea for months while the
+# policy declaring it must not read as satisfied. It was harmless only because
+# it was empty (private upstream, no GITHUB_MIRROR_TOKEN, anonymous clone) —
+# and the WARN below actively instructs an operator to add that token, which
+# is what would have started filling it.
+#
+# A policy that only guards creation silently fails after any manual action,
+# and there was proof of exactly that. So the exclusion is now converged like
+# everything else: present → deleted, absent → nothing. This runs BEFORE any
+# migrate, so the excluded set is gone before a token is ever offered.
+echo "-- Enforcing mirror_policy.exclude --"
+@EXCLUDE_BLOCK@
 # Step 4: Ensure each mirror repo exists
 @MIRROR_BLOCK@
 
@@ -105,8 +151,18 @@ MIRRORS_CREATED=$(tally_count mirrors_created)
 MIRRORS_EXISTS=$(tally_count mirrors_exists)
 MIRRORS_FAILED=$(tally_count mirrors_failed)
 MIRRORS_DEGRADED=$(tally_count mirrors_degraded)
-echo "[init-mirrors] SUMMARY revision=${SHIP_REVISION:-unknown} org=@ORG@ mirrors_created=$MIRRORS_CREATED mirrors_exists=$MIRRORS_EXISTS mirrors_failed=$MIRRORS_FAILED mirrors_degraded=$MIRRORS_DEGRADED"
+MIRRORS_REMOVED=$(tally_count mirrors_removed)
+MIRRORS_REMOVE_FAILED=$(tally_count mirrors_remove_failed)
+echo "[init-mirrors] SUMMARY revision=${SHIP_REVISION:-unknown} org=@ORG@ mirrors_created=$MIRRORS_CREATED mirrors_exists=$MIRRORS_EXISTS mirrors_failed=$MIRRORS_FAILED mirrors_degraded=$MIRRORS_DEGRADED mirrors_removed=$MIRRORS_REMOVED mirrors_remove_failed=$MIRRORS_REMOVE_FAILED"
 
+# An excluded repo that is still present is the exact failure this step exists
+# to prevent, so it is fatal — unlike `degraded`, there is no missing PAT to
+# wait on and no policy question to settle.
+if [ "$MIRRORS_REMOVE_FAILED" -gt 0 ]; then
+  echo "[init-mirrors] FAILED: $MIRRORS_REMOVE_FAILED excluded repo(s) still exist in Gitea:" >&2
+  sed 's|^|[init-mirrors]   |' "$TALLY_DIR/mirrors_remove_failed" >&2
+  exit 1
+fi
 if [ "$MIRRORS_FAILED" -gt 0 ]; then
   echo "[init-mirrors] FAILED: $MIRRORS_FAILED mirror(s) did not converge:" >&2
   sed 's|^|[init-mirrors]   |' "$TALLY_DIR/mirrors_failed" >&2
