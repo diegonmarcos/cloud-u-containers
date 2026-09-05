@@ -47,13 +47,8 @@
       "port": 3111,
       "port_env": "PORT",
       "dns": "vault-mcp.app",
-      "public": true,
-      "proxy": {
-        "streaming": true,
-        "type": "path",
-        "parent_domain": "mcp.diegonmarcos.com",
-        "base_path": "/cloud-vault-mcp"
-      },
+      "public": false,
+      "_public_doc": "MESH ONLY. This server hands out vault material, so it is not routed on the public edge hostname at all -- not even behind Authelia. containers.app.public:false is what the mcp.json deriver reads (see 1_cloud-configs/src/derive/derive-mcp-json.ts: the gate is app.public && proxy.parent_domain && proxy.base_path, NOT proxy.primary.wg_only), so leaving it true kept emitting https://mcp.diegonmarcos.com/cloud-vault-mcp/mcp into every client list even though proxy.primary.wg_only was already true. Clients now reach it by direct mesh IP via the direct_http block in cloud-u-linux/da_my-ai/data/claude/mcp-policy.json -- the same shape cloud-cgc-pvt-mcp uses. It stays present in BOTH client templates; only the transport changes.",
       "healthcheck": null,
       "monitoring": null,
       "volumes": [],

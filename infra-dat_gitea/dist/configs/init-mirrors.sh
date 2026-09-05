@@ -71,15 +71,28 @@ fi
 
 api() { curl -sf -H "Authorization: token $TOKEN" -H "Content-Type: application/json" "$@"; }
 
-# Step 3: Ensure org exists
+# Step 3: Ensure the mirror OWNER exists
 # The create used to discard its exit status (no `set -e` in this script), so a
 # failure here was invisible — and it is not survivable: every repo below is
-# created under this org, so all 29 would then fail one by one.
+# created under this owner, so all 29 would then fail one by one.
+#
+# The owner may be a USER or an ORG, and here it is a user: diego is the same
+# name as GITEA_ADMIN_USER created in step 1, so `GET /orgs/diego` answers 404
+# and `POST /orgs` then fails on the username collision. Checking only the org
+# endpoint therefore turned a healthy instance into a hard `exit 1` before a
+# single mirror was attempted — which is why 14 declared mirrors, among them
+# cloud-u-containers, were silently absent while 17 pre-existing ones kept
+# syncing. `/users/<name>` is checked first because that is what this deployment
+# actually is; the org branch stays for a fresh instance where neither exists.
 echo "-- Converging Gitea mirrors --"
-if ! api "$API/orgs/diego" >/dev/null 2>&1; then
+if api "$API/users/diego" >/dev/null 2>&1; then
+  echo "Owner diego exists (user)"
+elif api "$API/orgs/diego" >/dev/null 2>&1; then
+  echo "Owner diego exists (org)"
+else
   echo "Creating org: diego"
   if ! api -X POST "$API/orgs" -d '{"username":"diego","visibility":"public"}' >/dev/null; then
-    echo "  FAIL: could not create org diego — no mirror can be created without it" >&2
+    echo "  FAIL: could not create owner diego — no mirror can be created without it" >&2
     exit 1
   fi
 fi
