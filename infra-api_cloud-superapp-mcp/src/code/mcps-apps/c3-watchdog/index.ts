@@ -1,7 +1,7 @@
 import type { AppModule } from "../../lib-mcp/src/registry.js";
 
 /**
- * Cloud-Watchdog.
+ * C3-Watchdog.
  *
  * No routes beyond the contract yet — this app serves what libs:devtools
  * AppDebugServer gives every member and nothing more. When its Kotlin calls
@@ -10,9 +10,9 @@ import type { AppModule } from "../../lib-mcp/src/registry.js";
  * one because it is believed.
  */
 const mod: AppModule = {
-  id: "cloud-watchdog",
+  id: "c3-watchdog",
   pkg: "com.diegonmarcos.watchdog",
-  label: "Cloud-Watchdog",
+  label: "C3-Watchdog",
   routes: [],
 };
 
