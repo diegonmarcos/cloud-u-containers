@@ -105,8 +105,12 @@ export const registerWorkflowsRoutes: FastifyPluginAsync = async (app) => {
       return reply.send({
         repo,
         workflows: (body.workflows ?? [])
-          // Only workflows that actually declare workflow_dispatch can be
-          // triggered; offering the rest would build a button that 422s.
+          // GitHub's workflow listing does not report which triggers a
+          // workflow declares, so this cannot filter down to the
+          // workflow_dispatch-capable ones. Disabled workflows are dropped
+          // and the rest are offered; dispatching one that declares no
+          // workflow_dispatch returns GitHub's own 422, which the dispatch
+          // route below surfaces verbatim.
           .filter((w: any) => w.state === "active")
           .map((w: any) => ({
             id: w.id,
