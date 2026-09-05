@@ -1058,7 +1058,6 @@
         "description": "Ollama LLM Server — DeepSeek/Qwen 14B on GCP Spot T4 + Vast.ai fallback",
         "domain": null,
         "port": 11434,
-        "vm": "gcp-t4",
         "folder": "ad-agi_ollama"
       }
     },
@@ -1084,7 +1083,6 @@
         "description": "Ollama LLM server (ARM CPU, 7b models)",
         "domain": null,
         "port": 11434,
-        "vm": "oci-apps-2",
         "folder": "ad-agi_ollama-arm"
       }
     },

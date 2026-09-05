@@ -110,7 +110,6 @@ pub async fn cloud_vm_status(vm_alias: &str) -> String {
     if is_gcp {
         let gcloud_name = match vm_alias {
             "gcp-proxy" => "arch-1",
-            "gcp-t4" => "ollama-spot-gpu",
             _ => vm_alias,
         };
         let result = timeout(
@@ -191,7 +190,6 @@ async fn cloud_serial_diagnostic(vm_alias: &str) -> String {
         // GCP: check instance status via gcloud
         let gcloud_name = match vm_alias {
             "gcp-proxy" => "arch-1",
-            "gcp-t4" => "ollama-spot-gpu",
             _ => vm_alias,
         };
 

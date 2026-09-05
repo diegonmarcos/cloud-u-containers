@@ -11,7 +11,6 @@ interface OllamaInstance {
 }
 
 const INSTANCES: OllamaInstance[] = [
-  { id: "gpu",  label: "Ollama GPU (gcp-t4, T4 GPU)",    base: "http://10.0.0.8:11434" },
   { id: "arm",  label: "Ollama ARM (oci-apps, A1 CPU)",  base: "http://10.0.0.6:11435" },
 ];
 

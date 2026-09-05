@@ -8,7 +8,7 @@ VM="${1:-}"
 REPO_ROOT="${GITHUB_WORKSPACE:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 cd "$REPO_ROOT"
 
-VMS="${VM:-gcp-proxy gcp-t4 oci-mail oci-analytics oci-apps}"
+VMS="${VM:-gcp-proxy oci-mail oci-analytics oci-apps}"
 OK=0; FAIL=0
 
 for vm in $VMS; do

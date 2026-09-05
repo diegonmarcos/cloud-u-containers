@@ -7,7 +7,6 @@ on:
       - "Ship → oci-apps"
       - "Ship → oci-mail"
       - "Ship → oci-analytics"
-      - "Ship → gcp-t4"
     types: [completed]
   workflow_dispatch:
   schedule:

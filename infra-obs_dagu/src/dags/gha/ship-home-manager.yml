@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       vm:
-        description: "Target VM (gcp-proxy, oci-mail, oci-analytics, oci-apps, oci-apps-2, or empty for all)"
+        description: "Target VM (gcp-proxy, oci-mail, oci-analytics, oci-apps, or empty for all)"
         required: false
         type: string
 

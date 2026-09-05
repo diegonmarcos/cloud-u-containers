@@ -47,7 +47,6 @@ const INFRA_NO_API: Set<string> = new Set([
   "stalwart",          // stale — replaced by maddy
   "gcloud",            // local CLI, not a service
   "db-agent",          // internal sidecar
-  "ollama-arm",        // not yet deployed (oci-apps-2 pending)
   "http-to-smtp-proxy-api",        // HTTP-to-SMTP bridge, no admin API
   "revealmd",          // static slide server, no API
 ]);

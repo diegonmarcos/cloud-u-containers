@@ -3153,11 +3153,10 @@ fn render_topo_i_wireguard(h: &mut String, data: &ReportData) {
     write!(h, r#"<tr><td></td><td style="text-align:center;color:{};font-size:18px;padding:2px 0;font-family:{};">{}</td><td style="text-align:center;color:{};font-size:18px;padding:2px 0;font-family:{};">{}</td></tr>"#,
         C_OK, FONT, "\u{2195}", C_OK, FONT, "\u{2195}").unwrap();
 
-    // Row 3: [Termux] [gcp-t4] [empty]
+    // Row 3: [Termux] [empty] [empty]
     h.push_str("<tr>");
     h.push_str(&vm_box("Termux", "10.0.0.9"));
-    h.push_str(&vm_box("gcp-t4", "10.0.0.8"));
-    h.push_str("<td></td></tr>\n");
+    h.push_str("<td></td><td></td></tr>\n");
 
     h.push_str("</table></td></tr>\n");
 }

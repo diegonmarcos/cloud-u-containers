@@ -50,7 +50,7 @@ Quick fixes made directly on VMs get overwritten on next deploy and create phant
 - oci-apps: arm64, primary app host — most containers live here
 - oci-analytics: public edge, x86_64, c3-public-api
 - oci-mail: mail stack (Stalwart), x86_64
-- gcp-t4: GPU workloads
+- gcp-gpu-embed: on-demand GPU embedding runner (bearer-auth HTTPS endpoint, not a mesh spoke)
 - oci-apps-1: DECOMMISSIONED 2026-02-28
 
 ---
