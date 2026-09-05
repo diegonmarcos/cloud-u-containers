@@ -137,9 +137,10 @@ except Exception:
 # only, never values — an account object may carry a hash.
 proto=next((o for o in live.values() if o.get("@type")),None)
 ATYPE=(proto or {}).get("@type")
-print("  [accounts] live schema:",sorted(next(iter(live.values()),{}).keys()),"@type:",ATYPE)
-if not ATYPE and any(rec.split("|")[0] not in live for rec in os.environ["ACCOUNTS"].split()):
-    fail("no @type on any existing account — cannot build a create payload"); raise SystemExit(0)
+DOMAINID=(proto or {}).get("domainId")
+print("  [accounts] live schema:",sorted(next(iter(live.values()),{}).keys()),"@type:",ATYPE,"domainId:",DOMAINID)
+if (not ATYPE or not DOMAINID) and any(rec.split("|")[0] not in live for rec in os.environ["ACCOUNTS"].split()):
+    fail("no @type/domainId on any existing account — cannot build a create payload"); raise SystemExit(0)
 for rec in os.environ["ACCOUNTS"].split():
     name,role,pass_env,_aliases=rec.split("|")
     cur=live.get(name)
@@ -154,25 +155,24 @@ for rec in os.environ["ACCOUNTS"].split():
     except OSError: pw=""
     if not pw:
         fail(f"{name}: no password ({pass_env}) — cannot create"); continue
-    obj={"@type":ATYPE,"name":name,"emailAddress":f'{name}@{os.environ["BASE_DOMAIN"]}',
-         "roles":{"@type":role},"secrets":[pw]}
-    def create(o):
-        rr=jmap([["x:Account/set",{"accountId":acct,"create":{"c":o}},"0"]])
-        return rr,(rr.get("methodResponses") or [[None,{}]])[0][1]
-    rr,res=create(obj)
+    # Payload verified against v0.16.5 on 2026-09-05. Three properties decide it:
+    #   * emailAddress is SERVER-SET — sending it is rejected with invalidPatch
+    #     "Cannot modify server set property". It is derived from name +
+    #     domainId, so domainId is what has to be sent instead.
+    #   * the secret lives in "credentials", a map keyed by slot index holding
+    #     {"@type":"Password","secret":...}. Neither "secrets" nor "password"
+    #     is a real property; both were accepted-looking guesses that failed.
+    #   * the secret must be PLAINTEXT — Stalwart hashes it on write (it reads
+    #     back masked as "****"). A pre-hashed $6$ crypt string is stored
+    #     happily and then never authenticates, which is silent and worse.
+    obj={"@type":ATYPE,"name":name,"domainId":DOMAINID,
+         "roles":{"@type":role},
+         "credentials":{"0":{"@type":"Password","secret":pw}}}
+    rr=jmap([["x:Account/set",{"accountId":acct,"create":{"c":obj}},"0"]])
+    res=(rr.get("methodResponses") or [[None,{}]])[0][1]
     if res.get("created"):
         print(f"  [accounts] {name}: CREATED (roles={role})"); continue
-    # The secret is the one property x:Account/get never returns, so its name
-    # still cannot be confirmed by inspection. Try the singular spelling once,
-    # then report the server's own rejection — invalidProperties names the
-    # field, and the live-schema line above lists what an account really holds.
-    obj.pop("secrets"); obj["password"]=pw
-    rr2,res2=create(obj)
-    if res2.get("created"):
-        print(f"  [accounts] {name}: CREATED (roles={role}, singular secret property)")
-    else:
-        fail(f"FAIL create {name}: {json.dumps(res.get('notCreated') or rr)}"
-             f" / {json.dumps(res2.get('notCreated') or rr2)}")
+    fail(f"FAIL create {name}: {json.dumps(res.get('notCreated') or rr)}")
 PYEOF
 fi
 
