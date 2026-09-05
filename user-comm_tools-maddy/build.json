@@ -11,7 +11,9 @@
   },
   "compose": {
     "custom": true,
-    "pre_hook": "configs/init.sh"
+    "pre_hook": "configs/init.sh",
+    "post_hook": "configs/assert-provisioning.sh",
+    "_doc_post_hook": "Provisioning assertion, deliberately SEPARATE from init.sh. init.sh is the maddy container's entrypoint and ends in `exec maddy`, so it cannot exit non-zero on a provisioning failure without turning a missing mailbox into a total mail outage; it only emits a SUMMARY receipt into the maddy_data volume. assert-provisioning.sh reads that receipt on the host, rejects one written before the current container start, and fails the SHIP if any *_failed > 0 or users_ok = 0 — while maddy keeps serving. Gated in turn by the engine's revision-scoped post-hook receipt, so a hook that never ran is not green either."
   },
   "lifecycle": {
     "_doc": "Post-hoc maintenance via mail-sieve-subset-post-hoc.sh. SQL-direct on /data/imapsql.db using the actual go-imap-sql schema. UNIFIED-INBOX delivery model: maddy delivery-time always places mail in INBOX (with \\Seen via inbox_copy_flags from mail-rules.json); apply-rules then SQL-direct COPIES (NOT moves) into matched category folders with rule-derived keywords (no \\Seen — copies are unread). INBOX is the chronological archive; category folders are the unread working set. apply-rules is idempotent via the $distributed keyword on the INBOX original — maddy-sorter (src/crate, Rust, compiled into this same image via docker.native_build) runs the equivalent logic continuously (started by init.sh alongside `maddy run`, no external scheduler); the bash cmd_apply_rules / post-hoc-apply-rules lifecycle entries below are for manual/testing use only now. reseed-inbox-archive is a one-shot history backfill that COPIES every existing non-system folder msg back into INBOX as \\Seen + $distributed (Message-Id deduped). recover-headers stays intentionally NOT a subcommand: missing-blob bodies are unrecoverable, integrity-fix is the right action.",

@@ -67,6 +67,14 @@
 
     # User creation block — generated from build.json#users (this service's SoT).
     # Each user gets creds create + creds password (UPSERT) + imap-acct create.
+    # Every line goes through init.sh's `prov` helper rather than ending in
+    # `|| true`: maddy's create verbs error on an object that already exists,
+    # which is the normal path on every boot after the first, so `|| true` made
+    # a real failure (locked credentials.db, uninjected password) look exactly
+    # like a healthy no-op. `prov` separates the two into _exists vs _failed
+    # tallies that the SUMMARY line — and configs/assert-provisioning.sh —
+    # report on. The tally base names below are the contract with that script:
+    # accounts / users / imap / mailboxes.
     # Use -p flag (not pipe) — maddy creds password tries TurnOnRawIO on stdin
     # even when piped, which fails without a TTY (inappropriate ioctl for device).
     # Shell-level $ENV refs are built via string concat to avoid Nix interpolation
@@ -76,9 +84,9 @@
         addr      = "${u.name}@${base_domain}";
         passShell = "\"$" + u.pass_env + "\"";
       in lib.concatStringsSep "\n" [
-        "maddy creds create   -p ${passShell} ${addr} 2>&1 | sed 's|^|  [creds:create ${u.name}]   |' || true"
-        "maddy creds password -p ${passShell} ${addr} 2>&1 | sed 's|^|  [creds:password ${u.name}] |' || true"
-        "maddy imap-acct create ${addr} 2>/dev/null || true"
+        "prov accounts 'creds:create ${u.name}'   maddy creds create   -p ${passShell} ${addr}"
+        "prov users    'creds:password ${u.name}' maddy creds password -p ${passShell} ${addr}"
+        "prov imap     'imap-acct ${u.name}'      maddy imap-acct create ${addr}"
       ];
 
     userBlock = lib.concatStringsSep "\n" (lib.mapAttrsToList mkUserLines (buildJson.users or {}));
@@ -86,7 +94,7 @@
     mkFolderLines = key: u:
       let addr = "${u.name}@${base_domain}";
       in lib.concatMapStringsSep "\n"
-        (f: "maddy imap-mboxes create ${addr} '${f}' 2>&1 | sed 's|^|  [mboxes:create ${u.name}]   |' || true")
+        (f: "prov mailboxes 'mboxes:${u.name}' maddy imap-mboxes create ${addr} '${f}'")
         senderFolders;
 
     folderBlock = lib.concatStringsSep "\n" (lib.mapAttrsToList mkFolderLines (buildJson.users or {}));
@@ -95,6 +103,13 @@
       BASE_DOMAIN          = base_domain;
       USER_CREATION_BLOCK  = userBlock;
       FOLDER_CREATION_BLOCK = folderBlock;
+    };
+
+    # Host-side assertion (build.json#compose.post_hook). Separate from init.sh
+    # on purpose: init.sh is the container entrypoint and cannot exit non-zero
+    # without taking the mail server down with it.
+    assertShVars = {
+      CONTAINER_NAME = buildJson.containers.app.container_name;
     };
 
   in {
@@ -106,6 +121,7 @@
         srcDir = ./.;
         templates = [
           { name = "init.sh";       vars = initShVars; }
+          { name = "assert-provisioning.sh"; vars = assertShVars; }
           { name = "maddy.conf.tpl"; vars = maddyConfVars; }
         ];
         # Two scripts only:

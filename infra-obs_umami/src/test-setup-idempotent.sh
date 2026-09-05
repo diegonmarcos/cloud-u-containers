@@ -65,5 +65,17 @@ if echo "$OUT2" | grep -q "Already configured"; then
     exit 1
 fi
 
+# Third invariant: the give-up marker must NOT satisfy the guard. The auth
+# failure path used to write the literal "unknown" here and exit 0, which
+# made setup short-circuit forever on a site that was never created — and
+# every ship reported success.
+echo "unknown" > "$TMPDIR/output/site_id"
+OUT3=$(sh "$PATCHED" 2>&1 | head -5 || true)
+if echo "$OUT3" | grep -q "Already configured"; then
+    echo "FAIL: 'unknown' give-up marker must not satisfy the idempotency guard"
+    echo "$OUT3"
+    exit 1
+fi
+
 echo ""
 echo "PASS: idempotency guard works correctly"

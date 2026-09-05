@@ -122,13 +122,20 @@ surreal_query() {
 }
 
 # ---- Load schema ----
+# Was `WARNING: schema.surql not found, skipping schema load` + carry on. The
+# schema is shipped alongside this script, so its absence is a deploy fault,
+# not a configuration choice — and seeding into an unschema'd database is not a
+# lesser success, it is a different outcome silently reported as the intended
+# one. Same class of bug as a mail account that never got created while the
+# ship reported green.
 log "Loading schema..."
 if [ -f /opt/containers/kg-graph/schema.surql ]; then
     SCHEMA=$(cat /opt/containers/kg-graph/schema.surql)
     surreal_query "$SCHEMA" > /dev/null
     log "Schema loaded."
 else
-    log "WARNING: schema.surql not found, skipping schema load."
+    log "ERROR: /opt/containers/kg-graph/schema.surql not found — refusing to seed into an unschema'd database."
+    exit 1
 fi
 
 # ---- Parse cloud-data-topology.json and generate seed data ----
@@ -141,6 +148,19 @@ fi
 
 # Export so the heredoc python3 block picks up the resolved path
 export CONFIG_JSON
+
+# ── Per-item outcome accounting ───────────────────────────────────────
+# The generator below `continue`s past VMs with no fixed IP and past services
+# pinned to "all"/"local". Those are legitimate filters, but they were also
+# indistinguishable from a topology file whose every entry got skipped: the
+# script would emit zero statements, seed nothing and exit 0. Counts are
+# written to a FILE because the generator's stdout is captured into $SEED_SQL —
+# anything it prints there becomes SurrealQL — and because a counter
+# incremented inside the command-substitution subshell would be discarded on
+# exit anyway.
+SEED_COUNTS=$(mktemp /tmp/.kg-seed-counts.XXXXXX)
+trap 'rm -f "$SEED_COUNTS"' EXIT
+export SEED_COUNTS
 
 # Generate SurrealQL using python3
 SEED_SQL=$(python3 << 'PYEOF'
@@ -187,11 +207,19 @@ svc_domains = {
 }
 
 stmts = []
+# Outcome tallies. Written to $SEED_COUNTS at the end for the shell to assert
+# on; never to stdout, which is captured verbatim as SurrealQL.
+counts = {"vms": 0, "vms_skipped": 0, "services": 0, "services_skipped": 0,
+          "hosted_on": 0, "hosted_on_skipped": 0}
+skips = []
 
 # --- VM nodes ---
 for vm_id, vm in config["vms"].items():
     if vm.get("ip", "TBD") == "TBD":
-        continue  # Skip vast.ai (no fixed IP)
+        # Skip vast.ai (no fixed IP) — a declared filter, now a counted one.
+        counts["vms_skipped"] += 1
+        skips.append(f"vm {vm_id}: no fixed ip")
+        continue
     provider = "gcp" if vm_id.startswith("gcp") else "oci"
     alias = vm.get("ssh_alias", vm_id)
     esc_desc = vm.get("description", "").replace("'", "\\'")
@@ -216,11 +244,15 @@ for vm_id, vm in config["vms"].items():
     embedding: NONE,
     updated_at: time::now()
 }};""")
+    counts["vms"] += 1
 
 # --- Service nodes ---
 for svc_name, svc in config["services"].items():
     if svc.get("vm") == "all" or svc.get("vm") == "local":
-        continue  # Skip wireguard (all) and terraform (local)
+        # Skip wireguard (all) and terraform (local).
+        counts["services_skipped"] += 1
+        skips.append(f"service {svc_name}: vm={svc.get('vm')}")
+        continue
     esc_desc = svc.get("description", "").replace("'", "\\'")
     domain = svc_domains.get(svc_name, "")
     safe_id = svc_name.replace("-", "_")
@@ -236,17 +268,27 @@ for svc_name, svc in config["services"].items():
     embedding: NONE,
     updated_at: time::now()
 }};""")
+    counts["services"] += 1
 
 # --- hosted_on edges (service -> vm) ---
 for svc_name, svc in config["services"].items():
     vm_id = svc.get("vm", "")
     if vm_id in ("all", "local", "") or vm_id not in config["vms"]:
+        # An unresolvable vm reference is NOT the same thing as the declared
+        # all/local filter — a service pointing at a VM that is not in the
+        # topology is a data fault, so name it rather than dropping the edge.
+        counts["hosted_on_skipped"] += 1
+        if vm_id not in ("all", "local", ""):
+            skips.append(f"hosted_on {svc_name}: vm '{vm_id}' not in topology")
         continue
     if config["vms"][vm_id].get("ip", "TBD") == "TBD":
+        counts["hosted_on_skipped"] += 1
+        skips.append(f"hosted_on {svc_name}: vm {vm_id} has no fixed ip")
         continue
     safe_svc = svc_name.replace("-", "_")
     safe_vm = vm_id.replace("-", "_")
     stmts.append(f"RELATE service:{safe_svc}->hosted_on->vm:{safe_vm};")
+    counts["hosted_on"] += 1
 
 # --- connected_to edges (WireGuard mesh: all VMs connected to each other) ---
 wg_vms = [k.replace("-","_") for k in wg_ips.keys()]
@@ -273,11 +315,17 @@ stmts.append("RELATE service:backup_borg->depends_on->service:photoprism SET typ
 stmts.append("RELATE service:backup_bup->depends_on->service:nocodb SET type = 'data';")
 stmts.append("RELATE service:backup_bup->depends_on->service:matomo SET type = 'data';")
 
+with open(os.environ["SEED_COUNTS"], "w") as f:
+    f.write(" ".join(f"{k}={v}" for k, v in counts.items()) + "\n")
+    for s in skips:
+        f.write("skip " + s + "\n")
+
 print("\n".join(stmts))
 PYEOF
 )
 
 log "Generated $(echo "$SEED_SQL" | wc -l) SurrealQL statements."
+grep '^skip ' "$SEED_COUNTS" | sed 's|^|[seed]   |' || true
 
 # ---- Execute seed ----
 log "Seeding database..."
@@ -295,5 +343,18 @@ for i, label in enumerate(labels):
     count = data[i]['result'][0]['count'] if data[i]['result'] else 0
     print(f'  {label}: {count}')
 " 2>/dev/null || echo "$RESULT"
+
+# ---- Verdict ----
+# One machine-readable line, then the exit code. A seed that skipped every VM
+# or every service produced zero statements, seeded nothing and still exited 0
+# — "the script ran" is not the same as "the graph was populated".
+SEED_SUMMARY=$(head -1 "$SEED_COUNTS")
+echo "[seed] SUMMARY revision=${SHIP_REVISION:-unknown} config=$CONFIG_JSON $SEED_SUMMARY"
+_field() { echo "$SEED_SUMMARY" | tr ' ' '\n' | awk -F= -v k="$1" '$1==k { print $2; exit }'; }
+SEEDED_VMS=$(_field vms); SEEDED_SVCS=$(_field services)
+if [ "${SEEDED_VMS:-0}" -eq 0 ] || [ "${SEEDED_SVCS:-0}" -eq 0 ]; then
+    log "FAILED: seeded ${SEEDED_VMS:-0} vm(s) and ${SEEDED_SVCS:-0} service(s) from $CONFIG_JSON — this run populated nothing."
+    exit 1
+fi
 
 log "Done. KG seeded from cloud-data-topology.json."
