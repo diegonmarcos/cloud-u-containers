@@ -1,0 +1,13 @@
+{
+  "name": "cloud-superapp-mcp",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "MCP + HTTP faces over the Android constellation's on-device debug API",
+  "_doc": "This root manifest exists so a single node_modules at /app resolves for every package in the tree. lib-mcp, mcps-apps and cloud-superapp-mcp all import the SDK, and Node walks UP from the IMPORTING file — a node_modules beside only the entry point leaves them unresolved (ERR_MODULE_NOT_FOUND). The per-package package.json files stay for local/stdio use.",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "tsx": "^4.19.0",
+    "zod": "^3.25.0"
+  }
+}
