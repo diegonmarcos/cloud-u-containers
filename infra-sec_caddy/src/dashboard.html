@@ -322,7 +322,6 @@ tr:hover td{background:#0d0d15}
 <tr><td><code>app.diegonmarcos.com/crawlee/</code></td><td><strong>Crawlee Dash</strong></td><td>oci-apps</td><td>3001</td><td>Authelia + Bearer</td><td>24/7</td></tr>
 <tr><td><code>—</code></td><td><strong>MinIO (S3)</strong></td><td>oci-apps</td><td>9000</td><td>WG direct</td><td>24/7</td></tr>
 <tr><td><code>—</code></td><td><strong>Rust API</strong></td><td>oci-apps</td><td>8080</td><td>Public</td><td>24/7</td></tr>
-<tr><td><code>—</code></td><td><strong>Ollama LLM</strong></td><td>gcp-ollama</td><td>11434</td><td>WG direct</td><td>Spot</td></tr>
 <tr><td><code>diegonmarcos.com</code></td><td><strong>Landing Page</strong></td><td>GitHub Pages</td><td>—</td><td>Public</td><td>24/7</td></tr>
 <tr><td><code>linktree.diegonmarcos.com</code></td><td><strong>Linktree</strong></td><td>GitHub Pages</td><td>—</td><td>Public</td><td>24/7</td></tr>
 <tr><td><code>cloud.diegonmarcos.com</code></td><td><strong>Cloud Dashboard</strong></td><td>GitHub Pages</td><td>—</td><td>Public</td><td>24/7</td></tr>
@@ -403,15 +402,7 @@ Bearer?  Cookie?
 │          │ │ AFFiNE   │ │         │ │            │
 │          │ │Grist,LGTM│ │         │ │            │
 │          │ │Gitea,Ethr│ │         │ │            │
-└──────────┘ └──────────┘ └─────────┘ └────────────┘
-
-┌──────────┐
-│gcp-ollama│
-│ 10.0.0.8 │
-│          │
-│ Ollama   │
-│ LLM      │
-└──────────┘</code></pre>
+└──────────┘ └──────────┘ └─────────┘ └────────────┘</code></pre>
 
 </div>
 
@@ -450,8 +441,6 @@ Bearer?  Cookie?
 <tr><td><strong>oci-mail</strong></td><td><code>10.0.0.3</code></td><td>51820/udp</td><td>0.0.0.0</td><td>WireGuard</td><td><span class="st-ok">OPEN</span></td></tr>
 <tr><td><strong>oci-analytics</strong></td><td><code>10.0.0.4</code></td><td>22/tcp</td><td>0.0.0.0</td><td>SSH</td><td><span class="st-warn">RESTRICT</span></td></tr>
 <tr><td><strong>oci-analytics</strong></td><td><code>10.0.0.4</code></td><td>51820/udp</td><td>0.0.0.0</td><td>WireGuard</td><td><span class="st-ok">OPEN</span></td></tr>
-<tr><td><strong>gcp-ollama</strong></td><td><code>10.0.0.8</code></td><td>22/tcp</td><td>0.0.0.0</td><td>SSH</td><td><span class="st-warn">RESTRICT</span></td></tr>
-<tr><td><strong>gcp-ollama</strong></td><td><code>10.0.0.8</code></td><td>51820/udp</td><td>0.0.0.0</td><td>WireGuard</td><td><span class="st-ok">OPEN</span></td></tr>
 </tbody></table>
 <p><strong>Policy</strong>: All VMs run <code>51820/udp</code> (WireGuard) + <code>22/tcp</code> (SSH restricted). gcp-proxy additionally exposes <code>80/443</code> (Caddy). oci-mail exposes <code>25,465,587,993</code> (mail delivery).</p>
 
@@ -508,7 +497,6 @@ Bearer?  Cookie?
 <tr><td><strong>oci-mail</strong></td><td>radicale</td><td>5232</td><td><code>10.0.0.3</code></td><td>5232</td><td>WG only</td></tr>
 <tr><td><strong>oci-analytics</strong></td><td>matomo</td><td>8080</td><td><code>10.0.0.4</code></td><td>8080</td><td>WG only</td></tr>
 <tr><td><strong>oci-apps</strong></td><td>rust-api</td><td>8080</td><td><code>10.0.0.6</code></td><td>8080</td><td>WG only</td></tr>
-<tr><td><strong>gcp-ollama</strong></td><td>ollama</td><td>11434</td><td><code>10.0.0.8</code></td><td>11434</td><td>WG only</td></tr>
 </tbody></table>
 
 </div>
@@ -525,13 +513,11 @@ Bearer?  Cookie?
 <tr><td><strong>oci-apps</strong></td><td>OCI</td><td>Free (A1.Flex)</td><td><code>82.70.229.129</code></td><td><code>10.0.0.6</code></td><td>16 GB</td><td>Ampere A1 (3 OCPU)</td><td>24/7</td></tr>
 <tr><td><strong>oci-mail</strong></td><td>OCI</td><td>Free</td><td><code>130.110.251.193</code></td><td><code>10.0.0.3</code></td><td>1 GB</td><td>E2.1.Micro</td><td>24/7</td></tr>
 <tr><td><strong>oci-analytics</strong></td><td>OCI</td><td>Free</td><td><code>129.151.228.66</code></td><td><code>10.0.0.4</code></td><td>1 GB</td><td>E2.1.Micro</td><td>24/7</td></tr>
-<tr><td><strong>gcp-ollama</strong></td><td>GCP</td><td>Paid (Spot)</td><td><code>34.57.36.41</code></td><td><code>10.0.0.8</code></td><td>15 GB</td><td>N1-Std-4 + T4 GPU</td><td>Spot</td></tr>
 </tbody></table>
 
 <hr>
 <h2>Declared Containers</h2>
 <table><thead><tr><th>VM</th><th>Count</th><th>Containers</th></tr></thead><tbody>
-<tr><td><strong>gcp-ollama</strong></td><td>1</td><td>ollama</td></tr>
 <tr><td><strong>gcp-proxy</strong></td><td>7</td><td>authelia, caddy, flask-api, introspect-proxy, ntfy, rust-api, vaultwarden</td></tr>
 <tr><td><strong>oci-analytics</strong></td><td>1</td><td>matomo</td></tr>
 <tr><td><strong>oci-apps</strong></td><td>10</td><td>crawlee_api, crawlee_dashboard, crawlee_db, crawlee_minio, crawlee_redis, nautilus_engine, quant_analytics, quant_db, quant_research, rust-api</td></tr>
