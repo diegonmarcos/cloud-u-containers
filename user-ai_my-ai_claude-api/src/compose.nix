@@ -102,6 +102,21 @@ in
         retries      = 3;
         start_period = "40s";
       };
+      # Resource ceiling — measured on oci-apps 2026-09-06: 4 cores, 24G RAM,
+      # 62 containers, ~5.9G available and NO SWAP. The box runs load-shedder.sh
+      # with TIER1_SERVICES="" , so shed_non_tier1() returns 1 and memory PSI>=50%
+      # for 3x15s stops EVERY container — including the inference gateway on
+      # :8789 that the agents here depend on, gitea, and the MCP servers.
+      # The cgroup cap is what makes concurrency safe: without it a runaway agent
+      # fan-out raises GLOBAL memory pressure and sheds the fleet; with it the
+      # container OOMs its own agents and the other 61 containers survive.
+      # 4G total minus ~1G resident baseline (headroom python + node + proxy)
+      # leaves ~3G for agents at ~850M each -> BRIDGE_MAX_CONCURRENCY=3.
+      # cpus 2.0 of 4 leaves half the box for the gateway the agents call.
+      deploy.resources = {
+        limits       = { memory = "4G"; cpus = "2.0"; };
+        reservations = { memory = "512M"; };
+      };
     };
   };
   # Named volume holding the persisted Claude login + savings — never in git, never public.
