@@ -854,7 +854,15 @@ export function checkReach(target: string): ReachResult {
 
   // Run all three probes in parallel via a single shell command
   // Output: HTTPS_STATUS HTTPS_MS HTTP_STATUS HTTP_MS TCP_OK TCP_MS
+  //
+  // 2026-09-06: this was `exec(script, 12_000)` — exec's signature is
+  // (command, args[], options), so the whole script was passed as the
+  // EXECUTABLE name and 12000 as argv. spawnSync threw / ENOENT'd every
+  // time, i.e. /reach never actually probed anything. Surfaced by tsc
+  // (TS2345) the first time the tree was type-checked.
   const probe = exec(
+    "sh",
+    ["-c",
     `#!/bin/sh
 HTTPS_TMP=$(mktemp) HTTP_TMP=$(mktemp) TCP_TMP=$(mktemp)
 (s=$(date +%s%N); code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 --connect-timeout 3 https://${domain}/ 2>/dev/null); e=$(date +%s%N); ms=$(( (e - s) / 1000000 )); echo "$code $ms" > "$HTTPS_TMP") &
@@ -862,8 +870,8 @@ HTTPS_TMP=$(mktemp) HTTP_TMP=$(mktemp) TCP_TMP=$(mktemp)
 (s=$(date +%s%N); timeout 3 bash -c "echo >/dev/tcp/${domain}/443" 2>/dev/null && ok=1 || ok=0; e=$(date +%s%N); ms=$(( (e - s) / 1000000 )); echo "$ok $ms" > "$TCP_TMP") &
 wait
 echo "$(cat "$HTTPS_TMP") $(cat "$HTTP_TMP") $(cat "$TCP_TMP")"
-rm -f "$HTTPS_TMP" "$HTTP_TMP" "$TCP_TMP"`,
-    12_000,
+rm -f "$HTTPS_TMP" "$HTTP_TMP" "$TCP_TMP"`],
+    { timeout: 12_000 },
   );
 
   const result: ReachResult = { target, domain, reachable: false, latencyMs: 0 };

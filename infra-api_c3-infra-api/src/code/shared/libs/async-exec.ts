@@ -56,8 +56,10 @@ export function execAsync(
       return;
     }
 
-    proc.stdout.on("data", (d) => chunks.push(d));
-    proc.stderr.on("data", (d) => errChunks.push(d));
+    // stdio is always piped here, but the typings say the streams may be
+    // null (they are, when stdio is "ignore"); guard so tsc is clean.
+    proc.stdout?.on("data", (d) => chunks.push(d));
+    proc.stderr?.on("data", (d) => errChunks.push(d));
 
     const finish = (exitCode: number) => {
       if (settled) return;

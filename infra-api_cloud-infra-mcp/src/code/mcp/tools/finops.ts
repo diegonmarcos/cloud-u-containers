@@ -440,7 +440,7 @@ async function finOpsAssets(): Promise<string> {
 // TOOL REGISTRATION
 // ──────────────────────────────────────────────────────────────────────────────
 
-function safeRun(fn: () => Promise<string>): Promise<{ content: [{ type: "text"; text: string }] }> {
+function safeRun(fn: () => Promise<string>): Promise<{ content: { type: "text"; text: string }[] }> {
   return fn()
     .then((text) => ({ content: [{ type: "text" as const, text }] }))
     .catch((err) => ({ content: [{ type: "text" as const, text: `ERROR: ${err instanceof Error ? err.message : String(err)}` }] }));
