@@ -267,8 +267,24 @@ export function vmDiskUsage(vmNameOrAlias: string): { ok: boolean; output: strin
   const vmId = resolveVmId(vmNameOrAlias);
   const config = getConfig();
   const remoteBase = config.remote_base;
-  const result = sshExec(vmId, `du -sh ${remoteBase}/* 2>/dev/null | sort -rh | head -30`, 15_000);
-  return { ok: result.ok, output: (result.stdout + result.stderr).trim() };
+  // 2026-09-06: this was `du -sh <remote_base>/*` and returned ok=false with
+  // EMPTY output on every VM: du exits non-zero for any subtree the ssh user
+  // cannot read (docker-owned dirs), and the exit code was trusted over the
+  // output. It also looked in the wrong place — a VM's disk goes to docker
+  // images/volumes, the journal and /tmp staging, none of which live under
+  // remote_base. Lead with df, du the real consumers with sudo (the ssh user
+  // already sudo's for shutdown/nft), never fail on du's exit status.
+  const cmd = [
+    "df -h / | tail -1",
+    "echo '--- top consumers ---'",
+    `sudo -n du -xsh /var/lib/docker/overlay2 /var/lib/docker/volumes /var/lib/docker/image ${remoteBase} /var/log /tmp /home /root 2>/dev/null | sort -rh`,
+    `echo '--- ${remoteBase}/* ---'`,
+    `sudo -n du -xsh ${remoteBase}/* 2>/dev/null | sort -rh | head -20`,
+    "true",
+  ].join("; ");
+  const result = sshExec(vmId, cmd, 90_000);
+  const output = (result.stdout + result.stderr).trim();
+  return { ok: result.ok && output.length > 0, output: output || "(no output: ssh failed or nothing readable)" };
 }
 
 export function vmJournal(
