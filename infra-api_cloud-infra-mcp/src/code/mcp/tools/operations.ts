@@ -612,6 +612,47 @@ export function registerOperationsTools(server: McpServer) {
     },
   );
 
+  // ── Root filesystem growth (1 tool) ──
+  // 2026-09-06: added for the oci-apps boot-volume resize (100 -> 150 GB).
+  // Terraform ignores source_details on the instance (so a size change never
+  // replaces the VM), the volume itself is resized with `oci bv boot-volume
+  // update`, and the LAST step — telling the guest the disk grew — had no
+  // tool: no host shell by design, and a reboot to let cloud-init growpart
+  // run costs every service on the box two minutes. This is that last step,
+  // and only that: rescan the disk, grow the last partition, resize ext4.
+  // Idempotent (growpart exits 1 with NOCHANGE when there is nothing to do).
+  server.tool(
+    "devops.vm.grow_root",
+    "Grow the ROOT filesystem of a VM to fill its (already enlarged) boot volume: rescan the disk, growpart the root partition, resize2fs. Online, no reboot, idempotent. Run AFTER the cloud provider resized the volume (e.g. `oci bv boot-volume update --size-in-gbs`). Reports df before/after.",
+    { vm: z.string().describe("VM ID or SSH alias") },
+    async ({ vm }) => {
+      const vmId = resolveVmId(vm);
+      const before = sshExec(vmId, "df -h / | tail -1", 10_000);
+      // findmnt resolves the real root device (/dev/sda1, /dev/vda1, …); the
+      // disk is the device minus its trailing partition number.
+      const cmd = [
+        "set -o pipefail",
+        "ROOT_SRC=$(findmnt -no SOURCE /)",
+        "PART_NUM=$(echo \"$ROOT_SRC\" | grep -o '[0-9]*$')",
+        "DISK=$(echo \"$ROOT_SRC\" | sed 's/p\\?[0-9]*$//')",
+        "echo \"root=$ROOT_SRC disk=$DISK part=$PART_NUM\"",
+        "echo 1 | sudo tee /sys/class/block/$(basename \"$DISK\")/device/rescan >/dev/null 2>&1 || true",
+        "sudo growpart \"$DISK\" \"$PART_NUM\" 2>&1 | grep -v '^$' || true",
+        "sudo resize2fs \"$ROOT_SRC\" 2>&1 | tail -2",
+      ].join(" && ");
+      const r = sshExec(vmId, cmd, 120_000);
+      const after = sshExec(vmId, "df -h / | tail -1", 10_000);
+      audit("vm.grow_root", vmId, r.ok ? "OK" : "FAILED");
+      const text = [
+        `grow_root on ${vmId}`,
+        `before: ${before.stdout.trim()}`,
+        (r.stdout + (r.stderr ? "\n" + r.stderr : "")).trim(),
+        `after:  ${after.stdout.trim()}`,
+      ].join("\n");
+      return { content: [{ type: "text", text }], isError: !r.ok };
+    },
+  );
+
   // ── VM Control (4 tools, from control.ts) ──
 
   server.tool(
