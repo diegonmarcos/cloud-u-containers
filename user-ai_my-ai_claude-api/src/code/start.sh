@@ -42,6 +42,12 @@ if command -v git >/dev/null 2>&1; then
   git config --global credential.helper \
     '!f() { echo username=x-access-token; echo "password=${GH_TOKEN}"; }; f' || true
   git config --global --add safe.directory '*' || true
+  # cloud-infra's .gitmodules pins git@github.com: (SSH) for a_solutions and
+  # I_cloud. This container has no SSH key, so --recurse-submodules fails
+  # SILENTLY: the clone reports success and a_solutions is left EMPTY, which
+  # dangles every src/build-*.json symlink and makes the tree look corrupt.
+  # Rewriting SSH->HTTPS routes submodules through the same credential helper.
+  git config --global url."https://github.com/".insteadOf "git@github.com:" || true
 else
   echo "[start] WARN: git not installed; skipping git identity + repo bootstrap" >&2
 fi
@@ -76,6 +82,12 @@ bootstrap_repos() {
     [ "${repo}" = "cloud-infra" ] && extra="--recurse-submodules"
     # shellcheck disable=SC2086
     if git clone ${extra} "https://github.com/diegonmarcos/${repo}.git" "${repo}"; then
+      # Belt and braces: --recurse-submodules can fail without failing the
+      # clone, leaving a_solutions empty. Re-run it explicitly and say so.
+      if [ "${repo}" = "cloud-infra" ]; then
+        git -C "${repo}" submodule update --init --recursive \
+          || echo "[bootstrap] WARN: submodule init failed; a_solutions may be empty" >&2
+      fi
       git -C "${repo}" remote add gitea "http://10.0.0.6:3002/diego/${repo}.git" 2>/dev/null || true
       # Belt and braces: even if someone runs `git push gitea`, refuse it.
       git -C "${repo}" remote set-url --push gitea DISABLED_pull_only_mirror

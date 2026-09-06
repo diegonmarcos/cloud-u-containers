@@ -37,7 +37,8 @@
       "claude-sonnet": "claude-sonnet-4-6",
       "claude-haiku": "claude-haiku-4-5"
     },
-    "max_concurrency": 3,
+    "_max_concurrency_comment": "Demand-led, shedder-enforced. 15 does NOT fit in the free memory on oci-apps and that is deliberate: agents are resumable, so the load shedder culls them under pressure instead of the concurrency being pre-capped to what fits. Requires my-ai_claude-api to be NON-tier1 in the shedder config, and the inference gateway on 10.0.0.6:8789 to be tier1.",
+    "max_concurrency": 15,
     "call_timeout_ms": 180000,
     "_sessions_comment": "Cross-device session store: devices push recent Claude Code sessions here (WG-only) so any device can restore them. dir is under container HOME; keep = max sessions retained per device.",
     "sessions": {
