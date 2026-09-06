@@ -102,19 +102,31 @@ in
         retries      = 3;
         start_period = "40s";
       };
-      # Resource ceiling — measured on oci-apps 2026-09-06: 4 cores, 24G RAM,
-      # 62 containers, ~5.9G available and NO SWAP. The box runs load-shedder.sh
-      # with TIER1_SERVICES="" , so shed_non_tier1() returns 1 and memory PSI>=50%
-      # for 3x15s stops EVERY container — including the inference gateway on
-      # :8789 that the agents here depend on, gitea, and the MCP servers.
-      # The cgroup cap is what makes concurrency safe: without it a runaway agent
-      # fan-out raises GLOBAL memory pressure and sheds the fleet; with it the
-      # container OOMs its own agents and the other 61 containers survive.
-      # 4G total minus ~1G resident baseline (headroom python + node + proxy)
-      # leaves ~3G for agents at ~850M each -> BRIDGE_MAX_CONCURRENCY=3.
-      # cpus 2.0 of 4 leaves half the box for the gateway the agents call.
+      # Sizing model: DEMAND-LED, shedder-enforced (deliberate, not an oversight).
+      # Measured on oci-apps 2026-09-06: 4 cores, 24G RAM, 62 containers, ~5.9G
+      # available and NO SWAP. 15 agents at ~900M is ~14G, which does NOT fit
+      # alongside the current load — that is accepted on purpose. Rather than
+      # pre-capping concurrency to what fits, we ask for the full 15 and let the
+      # load shedder cull agents under memory pressure. Claude Code agents are
+      # resumable, so a culled agent is an inconvenience; a starved inference
+      # gateway is an outage.
+      #
+      # This only holds if two invariants are true, and BOTH are outside this file:
+      #   1. my-ai_claude-api is NON-tier1, so shed_non_tier1() kills agents first.
+      #   2. The inference gateway on 10.0.0.6:8789 IS tier1. Note it is a HOST
+      #      process, not a container, so container-level shedding never reaps it
+      #      — but it still dies if the box goes to global OOM, which is why the
+      #      memory limit below exists.
+      # Owned by the load-shedder configuration; do not set TIER1_SERVICES here.
+      #
+      # The 16G ceiling is the safety valve, not the budget: it keeps a runaway
+      # fan-out inside THIS cgroup so the kernel OOM-kills our own agents instead
+      # of picking victims at random across the other 61 containers.
+      # cpus 3.0 of 4 leaves a full core for the gateway the agents call.
+      # pids 4096 because the engine default of 256 is far too low for 15 agents,
+      # each of which spawns a claude CLI plus tool subprocesses.
       deploy.resources = {
-        limits       = { memory = "4G"; cpus = "2.0"; };
+        limits       = { memory = "16G"; cpus = "3.0"; pids = 4096; };
         reservations = { memory = "512M"; };
       };
     };
