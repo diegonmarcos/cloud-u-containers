@@ -484,6 +484,134 @@ export function registerOperationsTools(server: McpServer) {
     }
   );
 
+  // ── Docker storage hygiene (3 tools) ──
+  // 2026-09-06: added because a full disk on oci-apps (89% → 92%) was blocking
+  // cgc-db's restore-all at repo 5/6 ("no space left on device") and NOTHING in
+  // this server could free it: docker.system_df could SEE ~8 GB of 0-link
+  // volumes but no verb could remove them, docker.exec runs inside a container
+  // (no host docker), and there is no host shell by design. Rather than add a
+  // raw shell, add the specific storage verbs. Each is audit-logged and refuses
+  // anything ambiguous: exact names only, never a glob, never a prune-all of
+  // volumes (that would take matomo/mattermost/umami data with it).
+  const shq = (v: string) => `'${v.replace(/'/g, "'\\''")}'`;
+  const sizeToMb = (raw: string): number => {
+    const m = /^([\d.]+)\s*(B|kB|MB|GB|TB)$/.exec(raw.trim());
+    if (!m) return 0;
+    const v = parseFloat(m[1]);
+    return m[2] === "B" ? v / 1e6 : m[2] === "kB" ? v / 1e3 : m[2] === "MB" ? v : m[2] === "GB" ? v * 1e3 : v * 1e6;
+  };
+  // Parse the "Local Volumes space usage" table out of `docker system df -v`.
+  const parseVolumeTable = (df: string): { name: string; links: number; mb: number }[] => {
+    const rows: { name: string; links: number; mb: number }[] = [];
+    const lines = df.split("\n");
+    let i = lines.findIndex((l) => l.startsWith("Local Volumes space usage"));
+    if (i < 0) return rows;
+    for (i += 1; i < lines.length; i++) {
+      const l = lines[i].trim();
+      if (!l) { if (rows.length) break; continue; }
+      if (l.startsWith("Build cache")) break;
+      const p = l.split(/\s+/);
+      if (p.length !== 3) continue;
+      const links = Number(p[1]);
+      if (!Number.isFinite(links)) continue;
+      rows.push({ name: p[0], links, mb: sizeToMb(p[2]) });
+    }
+    return rows;
+  };
+  const dfRoot = (vmId: string) => {
+    const r = sshExec(vmId, "df -h / | tail -1", 10_000);
+    return r.ok ? r.stdout.trim().replace(/\s+/g, " ") : "(df failed)";
+  };
+
+  server.tool(
+    "devops.docker.volume_ls",
+    "List Docker volumes on a VM with link count and size, largest first. links=0 means no container references the volume (candidate for docker.volume_rm). Focused and much smaller than docker.system_df.",
+    {
+      vm: z.string().describe("VM ID or SSH alias"),
+      min_mb: z.number().optional().describe("Only list volumes of at least this many MB (default 0)"),
+      orphaned_only: z.boolean().optional().describe("Only list volumes with 0 links"),
+    },
+    async ({ vm, min_mb, orphaned_only }) => {
+      const vmId = resolveVmId(vm);
+      const r = sshExec(vmId, "docker system df -v 2>/dev/null", 20_000);
+      if (!r.ok) {
+        return { content: [{ type: "text", text: `docker system df failed on ${vmId}: ${(r.stderr || r.stdout).trim() || "no output"}` }], isError: true };
+      }
+      const rows = parseVolumeTable(r.stdout)
+        .filter((v) => v.mb >= (min_mb ?? 0) && (!orphaned_only || v.links === 0))
+        .sort((a, b) => b.mb - a.mb);
+      const orphanMb = rows.filter((v) => v.links === 0).reduce((s, v) => s + v.mb, 0);
+      const lines = [
+        `Volumes on ${vmId} — ${rows.length} listed, ${(orphanMb / 1e3).toFixed(2)} GB in 0-link volumes`,
+        `disk: ${dfRoot(vmId)}`,
+        "",
+        `${"VOLUME".padEnd(48)} ${"LINKS".padStart(5)} ${"SIZE".padStart(10)}`,
+        ...rows.map((v) => `${v.name.padEnd(48)} ${String(v.links).padStart(5)} ${(v.mb >= 1e3 ? (v.mb / 1e3).toFixed(2) + " GB" : v.mb.toFixed(1) + " MB").padStart(10)}${v.links === 0 ? "   (orphaned)" : ""}`),
+      ];
+      return { content: [{ type: "text", text: lines.join("\n") }] };
+    },
+  );
+
+  server.tool(
+    "devops.docker.volume_rm",
+    "Remove named Docker volumes on a VM. Explicit names only — no globs, no prune-all. Each volume must exist and have no container referencing it (checked first; the holder is named if refused). IRREVERSIBLE: the data is gone. Reports disk free before/after.",
+    {
+      vm: z.string().describe("VM ID or SSH alias"),
+      volumes: z.array(z.string().regex(/^[A-Za-z0-9][A-Za-z0-9_.-]*$/, "docker volume name")).min(1).max(20)
+        .describe("Exact volume names to remove (see docker.volume_ls)"),
+    },
+    async ({ vm, volumes }) => {
+      const vmId = resolveVmId(vm);
+      const lines: string[] = [`before: ${dfRoot(vmId)}`];
+      let removed = 0;
+      for (const name of volumes) {
+        const target = `${name}@${vmId}`;
+        const exists = sshExec(vmId, `docker volume inspect ${shq(name)} --format '{{.Name}}' 2>/dev/null`, 10_000);
+        if (!exists.ok || exists.stdout.trim() !== name) {
+          lines.push(`SKIP    ${name}: no such volume`);
+          audit("docker.volume_rm", target, "SKIP no such volume");
+          continue;
+        }
+        const holders = sshExec(vmId, `docker ps -a --filter volume=${shq(name)} --format '{{.Names}}' 2>/dev/null`, 10_000);
+        const held = holders.ok ? holders.stdout.trim().split("\n").filter(Boolean) : [];
+        if (held.length) {
+          lines.push(`REFUSED ${name}: in use by ${held.join(", ")}`);
+          audit("docker.volume_rm", target, `REFUSED in use by ${held.join(",")}`);
+          continue;
+        }
+        const rm = sshExec(vmId, `docker volume rm ${shq(name)} 2>&1`, 60_000);
+        if (rm.ok) {
+          removed++;
+          lines.push(`REMOVED ${name}`);
+          audit("docker.volume_rm", target, "OK");
+        } else {
+          const why = (rm.stderr || rm.stdout).trim() || "no output";
+          lines.push(`FAILED  ${name}: ${why}`);
+          audit("docker.volume_rm", target, `FAILED ${why.slice(0, 120)}`);
+        }
+      }
+      lines.push(`after:  ${dfRoot(vmId)}`, `removed ${removed}/${volumes.length}`);
+      return { content: [{ type: "text", text: lines.join("\n") }], isError: removed === 0 };
+    },
+  );
+
+  server.tool(
+    "devops.docker.image_prune",
+    "Remove dangling Docker images on a VM (`docker image prune -f`: untagged AND unreferenced only — never a tagged or in-use image). Reports reclaimed space and disk free before/after.",
+    { vm: z.string().describe("VM ID or SSH alias") },
+    async ({ vm }) => {
+      const vmId = resolveVmId(vm);
+      const before = dfRoot(vmId);
+      const r = sshExec(vmId, "docker image prune -f 2>&1 | tail -n 3", 180_000);
+      audit("docker.image_prune", vmId, r.ok ? "OK" : "FAILED");
+      const body = r.ok ? (r.stdout.trim() || "nothing to prune") : `FAILED: ${(r.stderr || r.stdout).trim() || "no output"}`;
+      return {
+        content: [{ type: "text", text: `image prune on ${vmId}\nbefore: ${before}\n${body}\nafter:  ${dfRoot(vmId)}` }],
+        isError: !r.ok,
+      };
+    },
+  );
+
   // ── VM Control (4 tools, from control.ts) ──
 
   server.tool(
