@@ -1,0 +1,72 @@
+name: Dispatch cloud-infra ship
+
+# This repository holds the container fleet; the pipelines that build, deploy
+# and lint it live in diegonmarcos/cloud-infra.
+#
+# Until 2026-09-06 this tree was a SUBMODULE of cloud-infra, so a change here
+# reached the pipelines as a gitlink bump and cloud-infra's own `paths:`
+# filters could see it. It is a standalone repository now. Nothing in
+# cloud-infra observes a push here — that is precisely the point of the split
+# — which makes this workflow the ONLY thing that tells it a container
+# changed. If this file stops working, every service change will sit
+# committed-but-undeployed while cloud-infra's Ship page looks perfectly idle.
+#
+# The PUSHED RANGE is the payload, not just the new SHA. cloud-infra's detect
+# steps diff before..after inside their own checkout of this repo to decide
+# which services to ship. Sending only `after` would force them to assume
+# HEAD^, which silently drops every service touched by the earlier commit of a
+# multi-commit push — the exact false-green (green run, strict subset
+# deployed) that left the c3-public-api mail fix undeployed on 2026-08-24.
+on:
+  push:
+    branches: [main]
+
+# Serialised, never cancelled. Two pushes in quick succession would otherwise
+# race, and an older dispatch landing second would ship an older tree last.
+# cancel-in-progress would be worse still: the cancelled push's services would
+# never be announced to anyone.
+concurrency:
+  group: dispatch-cloud-infra
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify cloud-infra of the pushed range
+        env:
+          # A cross-repository dispatch needs contents:write on the TARGET
+          # repo. This repository's GITHUB_TOKEN is scoped to this repository
+          # alone and CANNOT do it — hence a separate token secret.
+          GH_TOKEN: ${{ secrets.CLOUD_INFRA_DISPATCH_TOKEN }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+          REF: ${{ github.ref }}
+        run: |
+          set -euo pipefail
+
+          # Fail loudly on a missing credential. A silent skip here is the
+          # worst possible outcome: pushes keep succeeding, this workflow
+          # keeps going green, and nothing ever deploys.
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::CLOUD_INFRA_DISPATCH_TOKEN is empty. cloud-infra will not hear about this push and every service changed in it will stay undeployed. Set the secret on this repository."
+            exit 1
+          fi
+
+          # Built as JSON rather than with `gh api -f/-F` flags: the payload is
+          # a NESTED object, and -F additionally type-coerces values that look
+          # numeric — a commit SHA of all digits is rare but perfectly legal,
+          # and would arrive at the other end as a number.
+          jq -n \
+            --arg before "$BEFORE" \
+            --arg after  "$AFTER" \
+            --arg ref    "$REF" \
+            '{
+               event_type: "containers-push",
+               client_payload: { before: $before, after: $after, ref: $ref }
+             }' \
+          | gh api -X POST repos/diegonmarcos/cloud-infra/dispatches --input -
+
+          echo "dispatched containers-push  ${BEFORE}..${AFTER}  (${REF})"
+          echo "### containers-push dispatched" >> "$GITHUB_STEP_SUMMARY"
+          echo "range: \`${BEFORE}..${AFTER}\`" >> "$GITHUB_STEP_SUMMARY"
