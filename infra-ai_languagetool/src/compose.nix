@@ -18,12 +18,10 @@ in
       image          = app.image;
       container_name = app.container_name;
       env_file       = [];
-      environment = {
-        # Java heap cap — keeps the JVM within the container mem_limit.
-        Java_Xmx = "2g";
-        # N-GRAMS HOOK (disabled):
-        # languageModel = "/ngrams";
-      };
+      # JVM heap + any langtool_* passthrough live in build.json
+      # (containers.app.environment); the `_doc` key is stripped here.
+      # N-GRAMS HOOK (disabled): add langtool_languageModel = "/ngrams" there.
+      environment = builtins.removeAttrs app.environment [ "_doc" ];
       ports = [ "${toString app.port}:${toString app.port}" ];
       volumes = app.volumes;
       deploy = {
