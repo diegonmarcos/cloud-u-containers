@@ -37,7 +37,7 @@
       "claude-sonnet": "claude-sonnet-4-6",
       "claude-haiku": "claude-haiku-4-5"
     },
-    "max_concurrency": 12,
+    "max_concurrency": 3,
     "call_timeout_ms": 180000,
     "_sessions_comment": "Cross-device session store: devices push recent Claude Code sessions here (WG-only) so any device can restore them. dir is under container HOME; keep = max sessions retained per device.",
     "sessions": {

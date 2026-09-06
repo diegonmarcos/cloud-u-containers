@@ -26,6 +26,67 @@ else
   echo "[start] AUTHELIA_OIDC_TOKEN_CLAUDE_ADMIN unset; skipping MCP servers" >&2
 fi
 
+# ── Git identity + agent workspace ───────────────────────────────────────
+# The token is delivered by the .secrets env_file (sops -> GH_TOKEN), never
+# baked into the image. It is handed to git by a credential helper that reads
+# $GH_TOKEN at call time, so the token never lands in .git/config or on the
+# persistent volume.
+git config --global user.name  "Diego"
+git config --global user.email "me@diegonmarcos.com"
+git config --global credential.helper \
+  '!f() { echo username=x-access-token; echo "password=${GH_TOKEN}"; }; f'
+git config --global --add safe.directory '*'
+
+# Repos live in the persistent home volume, so clones survive redeploys.
+#
+# ORIGIN IS GITHUB, NOT GITEA — deliberate, do not "optimise" this to gitea:
+#   The gitea repos at http://10.0.0.6:3002 are PULL-ONLY MIRRORS, resynced
+#   from GitHub hourly. A push to a mirror is ACCEPTED and then DESTROYED on
+#   the next sync. Pointing origin at gitea would hand agents a remote that
+#   silently eats their work. So: READ-LOCAL / WRITE-UPSTREAM — origin is
+#   always GitHub (pushable), and gitea is added as a separate `gitea` remote
+#   for fast mesh-local fetches when you explicitly want them.
+#   cloud-infra must clone from GitHub regardless: its .gitmodules pins
+#   https://github.com/... URLs, so --recurse-submodules leaves the mesh anyway.
+#   Ten gitea mirrors are EMPTY (private repos, no GITHUB_MIRROR_TOKEN) —
+#   cloud-data, cloud-data-lfs, cloud-data-my-ai-memory, cloud-notes, dev,
+#   front-galaxy-gaia, front-unity, lecole42, cloud-mykonsole-dtk, cloud-vault.
+#   Those can ONLY come from GitHub.
+bootstrap_repos() {
+  mkdir -p "${HOME}/git"
+  cd "${HOME}/git" || return 0
+  for repo in cloud-infra cloud-u-containers cloud-u-android cloud-u-linux; do
+    if [ -d "${repo}/.git" ]; then
+      echo "[bootstrap] ${repo} already present; leaving it alone" >&2
+      continue
+    fi
+    echo "[bootstrap] cloning ${repo} from GitHub" >&2
+    # cloud-infra without --recurse-submodules leaves a_solutions empty and the
+    # tree structurally broken (the build-*.json symlinks all dangle).
+    extra=""
+    [ "${repo}" = "cloud-infra" ] && extra="--recurse-submodules"
+    # shellcheck disable=SC2086
+    if git clone ${extra} "https://github.com/diegonmarcos/${repo}.git" "${repo}"; then
+      git -C "${repo}" remote add gitea "http://10.0.0.6:3002/diego/${repo}.git" 2>/dev/null || true
+      # Belt and braces: even if someone runs `git push gitea`, refuse it.
+      git -C "${repo}" remote set-url --push gitea DISABLED_pull_only_mirror
+    else
+      echo "[bootstrap] WARN: ${repo} clone failed; continuing" >&2
+    fi
+  done
+  echo "[bootstrap] done" >&2
+}
+
+if [ -n "${GH_TOKEN:-}" ]; then
+  # Detached from the job table on purpose: the supervisor below uses `wait -n`,
+  # and an un-disowned background job completing would satisfy that wait and
+  # take the whole container down.
+  bootstrap_repos &
+  disown $! 2>/dev/null || true
+else
+  echo "[start] GH_TOKEN unset; skipping repo bootstrap (agents will have no repos)" >&2
+fi
+
 term() { echo "[start] shutting down"; kill "${PIDS[@]}" 2>/dev/null || true; }
 trap term TERM INT
 
@@ -64,7 +125,9 @@ node /app/server.mjs &
 PIDS+=("$!")
 
 # Supervise: first process to exit takes the container down with it.
-wait -n
+# Wait on the SERVICE pids explicitly — a bare `wait -n` returns for any
+# background job, so an unrelated helper finishing would stop the container.
+wait -n "${PIDS[@]}"
 code=$?
 echo "[start] a process exited (code=${code}); stopping siblings"
 term
