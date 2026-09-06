@@ -29,5 +29,19 @@ if (existsSync(claudeJson)) {
   }
 }
 cfg.mcpServers = servers; // replace only mcpServers; login + all other keys preserved
+// Headless agents cannot answer the workspace-trust dialog, and an untrusted
+// workspace IGNORES every permissions.allow entry — the runner then reads but
+// silently cannot write (hit live 2026-09-06). Trust the agent workspaces here,
+// where boot already regenerates this file, so redeploys cannot lose it.
+cfg.projects = cfg.projects || {};
+for (const dir of [
+  "/home/appuser/git",
+  "/home/appuser/git/cloud-infra",
+  "/home/appuser/git/cloud-u-android",
+  "/home/appuser/git/cloud-u-containers",
+  "/home/appuser/git/cloud-u-linux",
+]) {
+  cfg.projects[dir] = { ...cfg.projects[dir], hasTrustDialogAccepted: true };
+}
 writeFileSync(claudeJson, JSON.stringify(cfg, null, 2));
 console.error(`[render-mcp] wrote ${Object.keys(servers).length} MCP servers to ${claudeJson}`);
