@@ -7,7 +7,7 @@ import { execAsync } from "../../shared/libs/exec.js";
 
 const log = (msg: string) => process.stderr.write(`[vps-ops] ${msg}\n`);
 
-function safeRun(fn: () => Promise<string>): Promise<{ content: [{ type: "text"; text: string }] }> {
+function safeRun(fn: () => Promise<string>): Promise<{ content: { type: "text"; text: string }[] }> {
   return fn()
     .then((text) => ({ content: [{ type: "text" as const, text }] }))
     .catch((err) => ({ content: [{ type: "text" as const, text: `ERROR: ${err instanceof Error ? err.message : String(err)}` }] }));

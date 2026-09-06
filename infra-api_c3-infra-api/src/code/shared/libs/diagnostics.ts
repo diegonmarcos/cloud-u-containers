@@ -86,7 +86,15 @@ export function profileContainer(containerName: string): ProfilingResponse {
       // so this check reported "Container inspect failed:" for healthy
       // containers like maddy. Guard the field with {{if}}.
       `docker inspect --format '{{.State.Status}}|{{if .State.Health}}{{.State.Health.Status}}{{end}}|{{.RestartCount}}|{{.State.OOMKilled}}' ${containerName}`,
-      `docker network inspect $(docker inspect --format '{{range .NetworkSettings.Networks}}{{.NetworkID}} {{end}}' ${containerName} 2>/dev/null) --format '{{.Name}}: {{range .Containers}}{{.Name}} {{end}}' 2>/dev/null`,
+      // 2026-09-06: the network half is DECORATIVE and must never fail the
+      // check. It did: `docker network inspect` exits non-zero for a
+      // network-mode:host / none container (no NetworkID → no argument), and
+      // for networks the caller's docker cannot see — so the whole chain
+      // returned !ok and this reported "Container inspect failed:
+      // running||0|false ===NET===" for a container that was fine (seen live
+      // on 2026-09-06 after the {{if}} fix above). Subshell + `|| true`: the
+      // status line decides pass/fail, networks are appended when available.
+      `(docker network inspect $(docker inspect --format '{{range .NetworkSettings.Networks}}{{.NetworkID}} {{end}}' ${containerName} 2>/dev/null) --format '{{.Name}}: {{range .Containers}}{{.Name}} {{end}}' 2>/dev/null || true)`,
     ].join(" && echo '===NET===' && "), 10_000);
 
     if (!result.ok) {

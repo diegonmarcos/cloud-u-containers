@@ -38,7 +38,9 @@ export interface UpProbe {
 }
 
 export interface PerfTiming {
-  [phase: string]: number;
+  // Milliseconds per phase, plus the `*_triggered` booleans profile() records
+  // for its conditional engines C/D (tsc TS2322 until the index admitted them).
+  [phase: string]: number | boolean;
 }
 
 export interface UpResult {

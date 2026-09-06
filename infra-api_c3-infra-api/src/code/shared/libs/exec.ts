@@ -6,6 +6,12 @@ export interface ExecResult {
   stderr: string;
   exitCode: number;
   ok: boolean;
+  // 2026-09-06: true when the child was killed by OUR timeout (not a
+  // generic failure). mail-ops read `result.timedOut` to tell a slow
+  // post-hoc transaction from a broken one; the field never existed here,
+  // so that branch was dead (tsc TS2339) — every timeout rendered as a
+  // plain "Error:". Both exec paths now set it.
+  timedOut: boolean;
 }
 
 // Cloud CLIs (gcloud/oci/aws) read config from $HOME/.config/<tool> or
@@ -37,11 +43,15 @@ export function exec(
     maxBuffer: 10 * 1024 * 1024,
   });
 
+  // spawnSync reports its own timeout as error.code ETIMEDOUT (status null,
+  // signal SIGTERM); a child that merely exits 124 is NOT our timeout.
+  const timedOut = (result.error as NodeJS.ErrnoException | undefined)?.code === "ETIMEDOUT";
   return {
     stdout: result.stdout ?? "",
     stderr: result.stderr ?? "",
     exitCode: result.status ?? 1,
     ok: result.status === 0,
+    timedOut,
   };
 }
 
@@ -72,7 +82,7 @@ export function execAsync(
         settled = true;
         proc.kill("SIGTERM");
         setTimeout(() => { try { proc.kill("SIGKILL"); } catch {} }, 1_000);
-        resolve({ stdout, stderr, exitCode: 1, ok: false });
+        resolve({ stdout, stderr, exitCode: 1, ok: false, timedOut: true });
       }
     }, timeout);
 
@@ -80,7 +90,7 @@ export function execAsync(
       clearTimeout(timer);
       if (!settled) {
         settled = true;
-        resolve({ stdout, stderr, exitCode: code ?? 1, ok: code === 0 });
+        resolve({ stdout, stderr, exitCode: code ?? 1, ok: code === 0, timedOut: false });
       }
     });
 
@@ -88,7 +98,7 @@ export function execAsync(
       clearTimeout(timer);
       if (!settled) {
         settled = true;
-        resolve({ stdout, stderr: stderr + err.message, exitCode: 1, ok: false });
+        resolve({ stdout, stderr: stderr + err.message, exitCode: 1, ok: false, timedOut: false });
       }
     });
   });
