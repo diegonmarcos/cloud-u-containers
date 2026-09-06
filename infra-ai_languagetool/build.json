@@ -14,7 +14,8 @@
     "primary": {
       "domain": "languagetool.diegonmarcos.com",
       "wg_only": true,
-      "_doc": "wg_only:true → caddyfile.nix emits a remote_ip 10.0.0.0/24 gate (403 for anything off the WireGuard mesh). No Cloudflare A-record exists for this domain — fail-closed."
+      "auth": "none",
+      "_doc": "wg_only:true → caddyfile.nix emits a remote_ip 10.0.0.0/24 gate (403 for anything off the WireGuard mesh). No Cloudflare A-record exists for this domain — fail-closed. auth:none → no Authelia forward_auth on this vhost: the ONLY consumer is the Cloud Keyboard's GrammarChecker (headless POST /v2/check from the phone over WG); with the default two_factor policy every POST got a 303 to auth.diegonmarcos.com and the keyboard silently fell back to its 3 local rules — the 'grammar never corrects anything' symptom. The WG gate stays; the API is stateless and read-only."
     }
   },
   "health": {
@@ -36,13 +37,19 @@
       "public": false,
       "proxy": {
         "domain": "languagetool.diegonmarcos.com",
-        "wg_only": true
+        "wg_only": true,
+        "auth": "none"
       },
       "healthcheck": null,
       "monitoring": null,
       "volumes": [
         "languagetool_data:/home/user/languagetool"
       ],
+      "environment": {
+        "Java_Xms": "512m",
+        "Java_Xmx": "2g",
+        "_doc": "erikvl87/languagetool JVM heap (image defaults 256m/512m). 2g cap keeps the JVM inside the VM's headroom; Xms=512m matches mem_reservation so the heap does not grow-and-GC on the first checks. Measured on the mesh 2026-09-06 (rules-only): es/en ~40 ms, pt-PT 0.7–1.9 s, de-DE 1.3–1.8 s per sentence."
+      },
       "env_file": false,
       "depends_on": [],
       "resources": {
@@ -50,7 +57,7 @@
       },
       "read_only": false,
       "protocol": "http",
-      "_ngrams_note": "N-gram language models (~24 GB) are DEFERRED. To enable: (1) download the desired language pack from https://languagetool.org/download/ngram-data/ to /opt/languagetool/ngrams on oci-apps; (2) add volume mount 'ngrams:/ngrams:ro' to this container; (3) set environment.languageModel='/ngrams' below. Rules-only mode is the current default."
+      "_ngrams_note": "N-gram language models are DEFERRED — BLOCKED BY DISK, not by config. Upstream https://languagetool.org/download/ngram-data/ (checked 2026-09-06): ngrams-de 1.6 GB, ngrams-en 8.4 GB, ngrams-es 1.6 GB, fr 1.7 GB, nl 1.1 GB; NO Portuguese pack exists. de+en+es = 11.6 GB zipped, plus unzip headroom. oci-apps root disk 2026-09-06: 95.8 GB, 84.9 GB used, 10.9 GB free (89%, disk-watchdog tiers at 85/90/95%). To enable once space exists: (1) add an init service to compose.nix that wget+unzips each language into a named volume 'ngrams' (idempotent: skip when /ngrams/<lang>/3grams exists); (2) mount 'ngrams:/ngrams:ro' on this container with depends_on condition service_completed_successfully; (3) add environment.langtool_languageModel='/ngrams' here (erikvl87 image passes langtool_* through to HTTPServerConfig). Rules-only mode is the current default."
     }
   },
   "build": {
