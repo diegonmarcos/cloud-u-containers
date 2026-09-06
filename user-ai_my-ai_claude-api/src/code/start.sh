@@ -31,11 +31,20 @@ fi
 # baked into the image. It is handed to git by a credential helper that reads
 # $GH_TOKEN at call time, so the token never lands in .git/config or on the
 # persistent volume.
-git config --global user.name  "Diego"
-git config --global user.email "me@diegonmarcos.com"
-git config --global credential.helper \
-  '!f() { echo username=x-access-token; echo "password=${GH_TOKEN}"; }; f'
-git config --global --add safe.directory '*'
+# NEVER let workspace setup kill the container: this script runs under
+# `set -e`, so an unguarded `git` call in an image without git exits PID1 and
+# the service dies on boot. That is exactly what happened on the first deploy
+# of this block (git was installed in the builder stage only), so every command
+# here is guarded and non-fatal.
+if command -v git >/dev/null 2>&1; then
+  git config --global user.name  "Diego" || true
+  git config --global user.email "me@diegonmarcos.com" || true
+  git config --global credential.helper \
+    '!f() { echo username=x-access-token; echo "password=${GH_TOKEN}"; }; f' || true
+  git config --global --add safe.directory '*' || true
+else
+  echo "[start] WARN: git not installed; skipping git identity + repo bootstrap" >&2
+fi
 
 # Repos live in the persistent home volume, so clones survive redeploys.
 #
@@ -77,7 +86,7 @@ bootstrap_repos() {
   echo "[bootstrap] done" >&2
 }
 
-if [ -n "${GH_TOKEN:-}" ]; then
+if [ -n "${GH_TOKEN:-}" ] && command -v git >/dev/null 2>&1; then
   # Detached from the job table on purpose: the supervisor below uses `wait -n`,
   # and an un-disowned background job completing would satisfy that wait and
   # take the whole container down.

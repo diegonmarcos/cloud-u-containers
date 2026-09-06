@@ -54,7 +54,10 @@ ENV PYTHONUNBUFFERED=1 \
 # for `claude setup-token` (it refuses to run without a tty). Both are normally
 # present in the slim base as Essential packages — named explicitly so an image
 # rebuild can never silently drop the interactive-login path.
-RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates jq bsdutils util-linux \
+# git is REQUIRED at runtime, not just in the builder stage: start.sh clones the
+# agent workspaces and the agents themselves commit and push. It was previously
+# installed only in the builder, so the runtime had no git at all.
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates jq bsdutils util-linux git \
     && curl -fsSL https://deb.nodesource.com/setup_${NODE_MAJOR}.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
     && npm install -g @anthropic-ai/claude-code \
