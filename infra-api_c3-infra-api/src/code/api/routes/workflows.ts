@@ -66,8 +66,12 @@ export const registerWorkflowsRoutes: FastifyPluginAsync = async (app) => {
   );
 
   // ── List a repo's workflows (so the UI can offer real choices) ──
+  // "/workflows" itself belongs to observability.ts (the Dagu listing);
+  // registering it here too made Fastify FST_ERR_DUPLICATED_ROUTE-crash the
+  // whole API at boot (down 14:50-18:45 on 2026-09-06). This one lists GHA
+  // workflows of an allowlisted repo, so it lives under /workflows/gha.
   app.get<{ Querystring: { repo?: string } }>(
-    "/workflows",
+    "/workflows/gha",
     {
       schema: {
         tags: ["reports"],
