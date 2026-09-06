@@ -118,7 +118,14 @@ export function computeServiceStatus(
 
 // ── New: Container Inspection ────────────────────────────────────────────
 
-const SENSITIVE_ENV_RE = /^(.*(?:PASSWORD|SECRET|TOKEN|KEY|CREDENTIAL|API_KEY)=).*/i;
+// 2026-09-06: the previous pattern only matched when the keyword sat right
+// before "=" (…_KEY=), so OCI_API_KEY_PEM_B64=<whole private key, base64>
+// went out UNREDACTED in a docker.inspect result. Match the keyword anywhere
+// in the NAME, add the blob-ish markers (PEM/PRIVATE/CERT/B64/PASS/AUTH), and
+// as a backstop redact any value over 200 chars — nothing that long is a
+// hostname or a flag.
+const SENSITIVE_ENV_RE = /^([A-Za-z0-9_]*(?:PASSWORD|PASS|SECRET|TOKEN|KEY|CREDENTIAL|PEM|PRIVATE|CERT|B64|AUTH)[A-Za-z0-9_]*=).*/i;
+const LONG_VALUE_RE = /^([A-Za-z0-9_]+=)(.{200,})$/s;
 
 export function containerTop(
   vmNameOrAlias: string,
@@ -160,7 +167,7 @@ export function containerInspectFull(
         const env = item?.Config?.Env;
         if (Array.isArray(env)) {
           item.Config.Env = env.map((e: string) => {
-            const match = e.match(SENSITIVE_ENV_RE);
+            const match = e.match(SENSITIVE_ENV_RE) ?? e.match(LONG_VALUE_RE);
             return match ? `${match[1]}***REDACTED***` : e;
           });
         }
