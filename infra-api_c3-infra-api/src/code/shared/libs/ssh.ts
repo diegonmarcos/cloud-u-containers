@@ -20,6 +20,17 @@ const SSH_BASE_OPTS = (connectTimeout: number | string) => [
   "-o", `ConnectTimeout=${connectTimeout}`,
 ];
 
+// 2026-09-06: the remote LOGIN shell on oci-apps is fish, which rejects
+// `$(...)` ("command substitutions not allowed here") and other POSIX/bash
+// syntax the 120+ call sites in this tree were written in. profile's
+// container_status had been failing on exactly that for two days while the
+// error read as a docker problem. Run every command under `bash -c` with a
+// single-quoted body so the login shell only ever sees one opaque argument;
+// bash is present on every VM (the login shell is merely fish).
+export function remoteShellWrap(command: string): string {
+  return `bash -c '${command.replace(/'/g, "'\\''")}'`;
+}
+
 export function sshExec(
   vmNameOrAlias: string,
   command: string,
@@ -30,7 +41,7 @@ export function sshExec(
   const vmId = resolveVmId(vmNameOrAlias);
   const alias = getVmSshAlias(vmId);
 
-  const sshArgs = [...SSH_BASE_OPTS(connectTimeout), alias, command];
+  const sshArgs = [...SSH_BASE_OPTS(connectTimeout), alias, remoteShellWrap(command)];
   const effectiveTimeout = timeout ?? 30_000;
 
   const result = exec("ssh", sshArgs, { timeout: effectiveTimeout });
@@ -49,7 +60,7 @@ export async function sshExecAsync(
   const vmId = resolveVmId(vmNameOrAlias);
   const alias = getVmSshAlias(vmId);
 
-  const sshArgs = [...SSH_BASE_OPTS(connectTimeout), alias, command];
+  const sshArgs = [...SSH_BASE_OPTS(connectTimeout), alias, remoteShellWrap(command)];
   const effectiveTimeout = timeout ?? 30_000;
 
   const result = await execAsync("ssh", sshArgs, { timeout: effectiveTimeout });

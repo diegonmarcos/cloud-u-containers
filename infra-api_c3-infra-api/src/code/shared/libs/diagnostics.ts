@@ -78,24 +78,21 @@ export function profileContainer(containerName: string): ProfilingResponse {
     };
   }));
 
-  // Batch checks 3+4: container status + docker network (single SSH call)
+  // Check 3+4: container status + networks (single inspect, no subshell)
   checks.push(timedCheck("container_status", () => {
-    const result = sshExec(vmId, [
-      // 2026-09-04: {{.State.Health.Status}} makes `docker inspect` FAIL
-      // outright on any container without a healthcheck (State.Health is nil),
-      // so this check reported "Container inspect failed:" for healthy
-      // containers like maddy. Guard the field with {{if}}.
-      `docker inspect --format '{{.State.Status}}|{{if .State.Health}}{{.State.Health.Status}}{{end}}|{{.RestartCount}}|{{.State.OOMKilled}}' ${containerName}`,
-      // 2026-09-06: the network half is DECORATIVE and must never fail the
-      // check. It did: `docker network inspect` exits non-zero for a
-      // network-mode:host / none container (no NetworkID → no argument), and
-      // for networks the caller's docker cannot see — so the whole chain
-      // returned !ok and this reported "Container inspect failed:
-      // running||0|false ===NET===" for a container that was fine (seen live
-      // on 2026-09-06 after the {{if}} fix above). Subshell + `|| true`: the
-      // status line decides pass/fail, networks are appended when available.
-      `(docker network inspect $(docker inspect --format '{{range .NetworkSettings.Networks}}{{.NetworkID}} {{end}}' ${containerName} 2>/dev/null) --format '{{.Name}}: {{range .Containers}}{{.Name}} {{end}}' 2>/dev/null || true)`,
-    ].join(" && echo '===NET===' && "), 10_000);
+    // 2026-09-04: {{.State.Health.Status}} makes `docker inspect` FAIL
+    // outright on any container without a healthcheck (State.Health is nil),
+    // so this check reported "Container inspect failed:" for healthy
+    // containers like maddy. Guard the field with {{if}}.
+    // 2026-09-06: the network half used a `$(docker inspect ...)` subshell,
+    // which the fish login shell on oci-apps refuses ("command substitutions
+    // not allowed here") — the check failed for EVERY container on that VM
+    // and the error text read like a docker fault. sshExec now runs under
+    // bash -c, and this no longer needs a subshell at all: the network NAMES
+    // are the keys of .NetworkSettings.Networks, one template, one call.
+    const result = sshExec(vmId,
+      `docker inspect --format '{{.State.Status}}|{{if .State.Health}}{{.State.Health.Status}}{{end}}|{{.RestartCount}}|{{.State.OOMKilled}}|{{range $k, $v := .NetworkSettings.Networks}}{{$k}} {{end}}' ${containerName}`,
+      10_000);
 
     if (!result.ok) {
       // stderr can be empty (the remote command redirects it, or ssh itself
@@ -104,18 +101,14 @@ export function profileContainer(containerName: string): ProfilingResponse {
       return { passed: false, details: `Container inspect failed: ${why}` };
     }
 
-    const parts = result.stdout.split("===NET===");
-    const statusLine = (parts[0] ?? "").trim();
-    const networkLine = (parts[1] ?? "").trim();
-
-    const [status, health, restarts, oom] = statusLine.split("|");
+    const [status, health, restarts, oom, networks] = result.stdout.trim().split("|");
     const isRunning = status === "running";
     const details = [
       `Status: ${status}`,
       health ? `Health: ${health}` : null,
       `Restarts: ${restarts}`,
       oom === "true" ? "OOM KILLED!" : null,
-      networkLine ? `Networks: ${networkLine}` : null,
+      networks?.trim() ? `Networks: ${networks.trim()}` : null,
     ].filter(Boolean).join(", ");
 
     return { passed: isRunning, details };
@@ -162,11 +155,18 @@ export function profileContainer(containerName: string): ProfilingResponse {
     const portLines = portResult.stdout.trim().split("\n");
     const results: string[] = [];
     for (const line of portLines.slice(0, 3)) {
-      const match = line.match(/:(\d+)$/);
+      // 2026-09-06: probe the address the port is actually BOUND to.
+      // `docker port` prints e.g. "8090/tcp -> 10.0.0.6:8090" — mesh-only
+      // services bind the WireGuard address, so probing the public IP (as
+      // this did) reported "CLOSED" for a perfectly reachable port. A
+      // wildcard bind (0.0.0.0 / [::]) falls back to wg_ip, then public.
+      const match = line.match(/->\s*\[?([^\]\s]+)\]?:(\d+)\s*$/);
       if (match) {
-        const port = match[1];
-        const probe = exec("bash", ["-c", `timeout 3 bash -c "echo > /dev/tcp/${vmConfig.ip}/${port}" 2>/dev/null`], { timeout: 5_000 });
-        results.push(`${vmConfig.ip}:${port} ${probe.ok ? "OPEN" : "CLOSED"}`);
+        const bound = match[1];
+        const port = match[2];
+        const host = bound === "0.0.0.0" || bound === "::" ? (vmConfig.wg_ip ?? vmConfig.ip) : bound;
+        const probe = exec("bash", ["-c", `timeout 3 bash -c "echo > /dev/tcp/${host}/${port}" 2>/dev/null`], { timeout: 5_000 });
+        results.push(`${host}:${port} ${probe.ok ? "OPEN" : "CLOSED"}`);
       }
     }
 
@@ -265,26 +265,25 @@ export function vmTop(vmNameOrAlias: string): { ok: boolean; output: string } {
 
 export function vmDiskUsage(vmNameOrAlias: string): { ok: boolean; output: string } {
   const vmId = resolveVmId(vmNameOrAlias);
-  const config = getConfig();
-  const remoteBase = config.remote_base;
-  // 2026-09-06: this was `du -sh <remote_base>/*` and returned ok=false with
-  // EMPTY output on every VM: du exits non-zero for any subtree the ssh user
-  // cannot read (docker-owned dirs), and the exit code was trusted over the
-  // output. It also looked in the wrong place — a VM's disk goes to docker
-  // images/volumes, the journal and /tmp staging, none of which live under
-  // remote_base. Lead with df, du the real consumers with sudo (the ssh user
-  // already sudo's for shutdown/nft), never fail on du's exit status.
+  const remoteBase = getConfig().remote_base;
+  // 2026-09-06 (second pass): the first rewrite ran `du` over /var/lib/docker
+  // — 80 GB of overlay2 on oci-apps, minutes of I/O — and the tool call
+  // timed out at 60 s with nothing shown. Docker already accounts for its
+  // own space (`docker system df`, instant); du only the human-sized trees,
+  // each under a hard `timeout`, and never fail on du's exit code.
   const cmd = [
     "df -h / | tail -1",
-    "echo '--- top consumers ---'",
-    `sudo -n du -xsh /var/lib/docker/overlay2 /var/lib/docker/volumes /var/lib/docker/image ${remoteBase} /var/log /tmp /home /root 2>/dev/null | sort -rh`,
+    "echo '--- docker (docker system df) ---'",
+    "docker system df 2>/dev/null || echo '(docker system df unavailable)'",
+    "echo '--- other trees (du, 20s cap each) ---'",
+    `timeout 20 sudo -n du -xsh ${remoteBase} /var/log /tmp /home /root /var/cache 2>/dev/null | sort -rh`,
     `echo '--- ${remoteBase}/* ---'`,
-    `sudo -n du -xsh ${remoteBase}/* 2>/dev/null | sort -rh | head -20`,
+    `timeout 20 sudo -n du -xsh ${remoteBase}/* 2>/dev/null | sort -rh | head -20`,
     "true",
   ].join("; ");
-  const result = sshExec(vmId, cmd, 90_000);
-  const output = (result.stdout + result.stderr).trim();
-  return { ok: result.ok && output.length > 0, output: output || "(no output: ssh failed or nothing readable)" };
+  const result = sshExec(vmId, cmd, 55_000);
+  const output = (result.stdout + (result.stderr ? "\n" + result.stderr : "")).trim();
+  return { ok: result.ok && output.length > 0, output: output || "(no output — ssh failed or du unreadable)" };
 }
 
 export function vmJournal(
