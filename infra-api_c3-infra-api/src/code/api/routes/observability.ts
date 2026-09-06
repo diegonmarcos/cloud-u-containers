@@ -43,7 +43,7 @@ import {
   pruneOldRecords,
 } from "../../shared/libs/db.js";
 import { resolveVmId } from "../../shared/libs/config.js";
-import { DAGU_API, daguHeaders } from "../../shared/libs/ops.js";
+import { DAGU_API, DAGU_API_PATH, daguHeaders } from "../../shared/libs/ops.js";
 import { pollerEvents, getLastFleetHealthSnapshot, type FleetHealthSnapshot } from "../../shared/libs/poller.js";
 
 // ── Zod schemas for validated endpoints ──
@@ -331,8 +331,17 @@ export const registerObservabilityRoutes: FastifyPluginAsync = async (app) => {
 
   app.get("/workflows/dagu", { schema: { tags: ["Observability"] } }, async () => {
     try {
+      // Was hardcoded to /api/v2/dags — confirmed live against the deployed
+      // server (2026-09-06) that path answers the SPA's index.html (HTTP 200
+      // text/html), not JSON, because the deployed Dagu serves its REST API
+      // at /api/v1 (the SPA's own getConfig() reports apiURL: "/api/v1").
+      // resp.json() below was throwing on every call and this endpoint has
+      // been silently returning `{dags: [], error: ...}` regardless of
+      // what Dagu actually has registered. DAGU_API_PATH already resolves
+      // to the correct, data-driven base path (shared/libs/ops.ts) — this
+      // was the one caller still bypassing it with its own hardcoded guess.
       const resp = await fetch(
-        `${DAGU_API}/api/v2/dags`,
+        `${DAGU_API}${DAGU_API_PATH}/dags`,
         { signal: AbortSignal.timeout(10000), headers: daguHeaders() },
       );
       if (!resp.ok) return { dags: [], error: `Dagu API ${resp.status}` };
