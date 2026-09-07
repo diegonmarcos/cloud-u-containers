@@ -122,11 +122,28 @@ const toPrompt = (messages = []) => {
 const mapModel = (requested) =>
   MODEL_ALIASES[String(requested || "").replace(/:latest$/, "")] || DEFAULT_MODEL;
 
-// setup-token prints a long-lived OAuth token which login.mjs persists to this
-// file (the CLI no longer writes ~/.claude/.credentials.json); read it per
-// spawn so a fresh /login takes effect without a container restart.
+// Two ways to be logged in, and the order matters.
+//
+// .credentials.json is the web-authenticated subscription login (the same one a
+// browser /login writes) and it carries a refresh token, so the CLI renews it by
+// itself and the container stays up indefinitely. oauth-token is what setup-token
+// PRINTS: a static long-lived string with no refresh path, persisted by login.mjs.
+//
+// CLAUDE_CODE_OAUTH_TOKEN overrides the credentials file, so injecting a stale
+// oauth-token silently shadows a perfectly good web login — that is exactly how
+// this backend served "OAuth access token has been revoked" 502s while a valid
+// credential sat in the same directory. So: credentials file wins when present,
+// token file is the fallback. Both are read per spawn, so a fresh login takes
+// effect without a container restart.
+const CREDENTIALS_FILE = process.env.CLAUDE_CREDENTIALS_FILE || "/home/appuser/.claude/.credentials.json";
 const claudeEnv = () => {
   const env = { ...process.env };
+  try {
+    if (fs.readFileSync(CREDENTIALS_FILE, "utf8").trim()) {
+      delete env.CLAUDE_CODE_OAUTH_TOKEN;
+      return env;
+    }
+  } catch { /* no web login persisted — fall through to the static token */ }
   try {
     const token = fs.readFileSync(process.env.CLAUDE_OAUTH_TOKEN_FILE || "/home/appuser/.claude/oauth-token", "utf8").trim();
     if (token) env.CLAUDE_CODE_OAUTH_TOKEN = token;
