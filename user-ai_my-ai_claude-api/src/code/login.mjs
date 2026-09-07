@@ -30,10 +30,11 @@
 
 // ship-cover 2026-08-09T18:40Z — batched trigger; see commit message.
 import { spawn } from "node:child_process";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, renameSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 
 const TOKEN_FILE = () => process.env.CLAUDE_OAUTH_TOKEN_FILE || "/home/appuser/.claude/oauth-token";
+const CREDENTIALS_FILE = () => process.env.CLAUDE_CREDENTIALS_FILE || "/home/appuser/.claude/.credentials.json";
 
 // A login attempt is a singleton: two concurrent OAuth flows would race on
 // ~/.claude/.credentials.json and there is exactly one human doing this.
@@ -112,10 +113,16 @@ export const startLogin = ({ claudeBin = "claude" } = {}) =>
   });
 
 // Persist the token to CLAUDE_OAUTH_TOKEN_FILE. Throws on failure.
+//
+// And retire the web login it replaces: server.mjs prefers ~/.claude/.credentials.json
+// (it self-refreshes, a printed token does not), so leaving a dead credentials file in
+// place would shadow the token this login just produced and /code would appear to do
+// nothing. Somebody only runs /login because the web login stopped working — say so.
 const persistToken = (token) => {
   const file = TOKEN_FILE();
   mkdirSync(dirname(file), { recursive: true });
   writeFileSync(file, token, { mode: 0o600 });
+  try { renameSync(CREDENTIALS_FILE(), `${CREDENTIALS_FILE()}.superseded`); } catch { /* none to retire */ }
 };
 
 export const submitCode = (code) =>

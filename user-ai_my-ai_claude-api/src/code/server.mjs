@@ -187,7 +187,10 @@ const callClaude = ({ system, prompt, model }) =>
         // code. A revoked token is the same class of problem as never having logged
         // in — both need a human at a browser — so they classify together.
         const both = `${err}\n${out}`;
-        if (/not logged in|please run \/login|token has been revoked|invalid[_ ]api[_ ]key|401/i.test(both)) {
+        // Expiry belongs in here too, not just revocation: a web login whose refresh
+        // token has run out fails exactly like never having logged in, and the bot
+        // only offers its /login link when it recognises the failure as an auth one.
+        if (/not logged in|please run \/login|token has (been revoked|expired)|refresh token|invalid[_ ]api[_ ]key|401/i.test(both)) {
           return reject(new Error(`claude-cli auth required — run 'claude setup-token' and refresh the container's oauth-token: ${tail}`));
         }
         return reject(new Error(`claude -p exit ${code}: ${tail}`));
