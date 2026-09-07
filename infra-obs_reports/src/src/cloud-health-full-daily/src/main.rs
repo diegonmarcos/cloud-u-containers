@@ -546,7 +546,26 @@ async fn main() -> Result<()> {
                 format!("dns/{}.txt", cert.domain),
                 "cloudflare/all_records.json".to_string(),
             ];
-            if cert.days_left < 7 {
+            // days_left is negative only as collect::check_cert's "could not
+            // determine" sentinel — openssl returned nothing, or the notAfter
+            // date would not parse. Reporting that as an expiry countdown reads
+            // as "this certificate expired yesterday" and files a CRITICAL for
+            // a host we never actually reached, which is how one unreachable
+            // report runner turned into seventeen imaginary expired certs.
+            if cert.days_left < 0 {
+                warnings += 1;
+                issues.push(Issue {
+                    severity: "WARN".into(),
+                    message: format!(
+                        "cert {} not checked — no TLS answer from the report runner",
+                        cert.domain
+                    ),
+                    kind: "cert".into(),
+                    entity: cert.domain.clone(),
+                    vm: String::new(),
+                    evidence_paths: cert_evidence,
+                });
+            } else if cert.days_left < 7 {
                 critical += 1;
                 issues.push(Issue {
                     severity: "CRIT".into(),
