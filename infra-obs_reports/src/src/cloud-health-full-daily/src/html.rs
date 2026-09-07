@@ -902,13 +902,22 @@ fn render_certs(h: &mut String, data: &ReportData) {
     h.push_str("</tr>\n");
 
     for cert in &data.certs {
-        let color = if cert.days_left < 0 { C_CRIT }
+        // A negative days_left is check_cert's "could not determine" sentinel,
+        // not an expired certificate. Print it as "n/a" in warning colour so a
+        // report runner that cannot resolve the domain never masquerades as a
+        // fleet-wide certificate expiry.
+        let color = if cert.days_left < 0 { C_WARN }
             else if cert.days_left < 7 { C_CRIT }
             else if cert.days_left < 30 { C_WARN }
             else { C_OK };
+        let days_cell = if cert.days_left < 0 {
+            "n/a".to_string()
+        } else {
+            format!("{}d", cert.days_left)
+        };
         write!(h, "<tr>{}{}{}</tr>\n",
             td(&cert.domain, C_TEXT, "11px", "left"),
-            td(&format!("{}d", cert.days_left), color, "11px", "right"),
+            td(&days_cell, color, "11px", "right"),
             td(&cert.expiry, C_DIM, "11px", "left"),
         ).unwrap();
     }

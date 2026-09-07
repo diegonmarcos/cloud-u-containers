@@ -155,9 +155,16 @@ fn render_certs(d: &ReportData) -> String {
     }
     let mut s = tb(&["Domain", "Days Left", "Expiry"]);
     for c in &d.certs {
+        // Negative days_left means check_cert never got an answer, so print
+        // "not checked" rather than a nonsense countdown like "-1".
+        let days_left = if c.days_left < 0 {
+            "not checked".to_string()
+        } else {
+            c.days_left.to_string()
+        };
         s.push_str(&format!(
             "| {} | {} | {} |\n",
-            c.domain, c.days_left, c.expiry
+            c.domain, days_left, c.expiry
         ));
     }
     s
