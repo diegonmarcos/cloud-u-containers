@@ -53,8 +53,18 @@ async function countMaddy(sinceDate: Date): Promise<number> {
     //     `SINCE 2026-09-04` returned 0 while 76 messages carried that exact
     //     INTERNALDATE. Prefilter deliberately wide, then compare real
     //     timestamps so the window is honest.
+    //  4. Sieve's fileinto does not cancel the implicit keep, so a sorted
+    //     message stays in INBOX *and* appears in its F* folder. Walking every
+    //     mailbox therefore counts it twice: on 2026-09-07 the 24h window held
+    //     82 distinct messages and this loop returned 166 (83 in INBOX, 83
+    //     across the F* folders), which the reconciliation read as "maddy
+    //     diverges from Gmail: gmail=95 maddy=188" and failed the run. Gmail
+    //     and Stalwart both count a message once, so dedupe on Message-ID to
+    //     compare like with like. Messages with no Message-ID fall back to a
+    //     per-mailbox synthetic key — that cannot dedupe them, but it also
+    //     cannot collapse two genuinely different messages into one.
     const prefilter = new Date(sinceDate.getTime() - 3 * 86400000);
-    let total = 0;
+    const seen = new Set<string>();
     for (const box of await client.list()) {
       if (box.flags?.has("\\Noselect")) continue;
       const lock = await client.getMailboxLock(box.path);
@@ -64,14 +74,20 @@ async function countMaddy(sinceDate: Date): Promise<number> {
           throw new Error(`IMAP SEARCH returned no result set for ${box.path} (mailbox not selected?)`);
         }
         if (uids.length === 0) continue;
-        for await (const msg of client.fetch(uids, { uid: true, internalDate: true }, { uid: true })) {
-          if (msg.internalDate && msg.internalDate >= sinceDate) total++;
+        for await (const msg of client.fetch(
+          uids,
+          { uid: true, internalDate: true, envelope: true },
+          { uid: true },
+        )) {
+          if (msg.internalDate && msg.internalDate >= sinceDate) {
+            seen.add(msg.envelope?.messageId || `no-message-id:${box.path}:${msg.uid}`);
+          }
         }
       } finally {
         lock.release();
       }
     }
-    return total;
+    return seen.size;
   });
 }
 
