@@ -271,19 +271,35 @@ export function vmDiskUsage(vmNameOrAlias: string): { ok: boolean; output: strin
   // timed out at 60 s with nothing shown. Docker already accounts for its
   // own space (`docker system df`, instant); du only the human-sized trees,
   // each under a hard `timeout`, and never fail on du's exit code.
+  //
+  // 2026-09-07 (third pass): `docker system df` has no timeout of its own and
+  // BLOCKS while the daemon is busy — on oci-apps mid-cgc-restore (multi-GB
+  // GHCR pulls) it never returned, so the 55 s ssh deadline killed the whole
+  // chain with the output ending at the "--- docker ---" banner and ok:false.
+  // `|| echo` cannot rescue a command that never exits; only `timeout` can.
+  // Every section now runs under its own `timeout`, and a section that blows
+  // its cap says so instead of silently truncating everything after it.
   const cmd = [
     "df -h / | tail -1",
     "echo '--- docker (docker system df) ---'",
-    "docker system df 2>/dev/null || echo '(docker system df unavailable)'",
+    "timeout 20 docker system df 2>/dev/null || echo '(docker system df unavailable or >20s — daemon busy)'",
     "echo '--- other trees (du, 20s cap each) ---'",
     `timeout 20 sudo -n du -xsh ${remoteBase} /var/log /tmp /home /root /var/cache 2>/dev/null | sort -rh`,
     `echo '--- ${remoteBase}/* ---'`,
     `timeout 20 sudo -n du -xsh ${remoteBase}/* 2>/dev/null | sort -rh | head -20`,
     "true",
   ].join("; ");
-  const result = sshExec(vmId, cmd, 55_000);
-  const output = (result.stdout + (result.stderr ? "\n" + result.stderr : "")).trim();
-  return { ok: result.ok && output.length > 0, output: output || "(no output — ssh failed or du unreadable)" };
+  const result = sshExec(vmId, cmd, 75_000);
+  let output = (result.stdout + (result.stderr ? "\n" + result.stderr : "")).trim();
+  // The root df line is the answer to "is the disk full?" — the docker and du
+  // breakdowns are colour. Getting the first and losing the rest is a partial
+  // result worth returning as ok, clearly marked, not an error with the one
+  // number the caller actually needed buried in a false failure.
+  const gotDf = /\d+%/.test(output.split("\n")[0] || "");
+  if (result.timedOut) {
+    output += "\n(truncated — the ssh command hit its deadline; sections above are complete)";
+  }
+  return { ok: gotDf || (result.ok && output.length > 0), output: output || "(no output — ssh failed or du unreadable)" };
 }
 
 export function vmJournal(
