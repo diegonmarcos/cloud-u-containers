@@ -18,7 +18,11 @@
 set -euo pipefail
 
 REPO_ROOT="${GIT_BASE:-$HOME/git}/cloud-data"
-JSON="$REPO_ROOT/reports/dist/cloud_health_daily.json"
+# The reports app moved to cloud-infra/a_solutions/infra-obs_reports on
+# 2026-08-19; since then cloud-data keeps only the published OUTPUT, and it
+# lives under y_old/reports/dist/. The old reports/dist/ copy stopped being
+# written that same day, so reading it silently tested an August fossil.
+JSON="$REPO_ROOT/y_old/reports/dist/cloud_health_daily.json"
 FAILS=0
 
 [ -f "$JSON" ] || { echo "✗ $JSON missing — run reports/build.sh health-full-daily"; exit 1; }
