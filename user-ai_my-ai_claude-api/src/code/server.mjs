@@ -155,9 +155,23 @@ const callClaude = ({ system, prompt, model }) =>
         // stderr, so fall back to the stdout tail when stderr is empty, and classify
         // the auth-required case explicitly so callers can react (e.g. auto-send a
         // login link) instead of seeing an opaque exit-code failure.
-        const tail = (err || out).slice(0, 500);
-        if (/not logged in|please run \/login/i.test(err || out)) {
-          return reject(new Error(`claude-cli auth required — not logged in: ${tail}`));
+        // The reason lives in the JSON's `result` field, which on a failure sits far
+        // past any tail slice — a raw 500-char prefix is all envelope and no cause,
+        // which is exactly the opaque "[gateway error 502] claude -p exit 1:
+        // {duration_api_ms:0,...}" the bot used to relay. Read the field.
+        let reason = "";
+        try {
+          const j = JSON.parse(out);
+          reason = [j.result, j.terminal_reason].filter(Boolean).join(" · ");
+        } catch { /* not JSON (crash, truncated output) — the tail is all there is */ }
+        const tail = (reason || err || out).slice(0, 500);
+        // Match BOTH streams, not `err || out`: any stderr noise at all used to hide
+        // the stdout message and downgrade a known auth failure to an opaque exit
+        // code. A revoked token is the same class of problem as never having logged
+        // in — both need a human at a browser — so they classify together.
+        const both = `${err}\n${out}`;
+        if (/not logged in|please run \/login|token has been revoked|invalid[_ ]api[_ ]key|401/i.test(both)) {
+          return reject(new Error(`claude-cli auth required — run 'claude setup-token' and refresh the container's oauth-token: ${tail}`));
         }
         return reject(new Error(`claude -p exit ${code}: ${tail}`));
       }
