@@ -132,6 +132,52 @@ export function registerOperationsTools(server: McpServer) {
     }
   );
 
+  // Raw remote command. Every other tool here is a fixed command with a fixed
+  // shape, which is right for the 95% case and useless the moment a diagnosis
+  // needs one more fact than some tool happened to bake in. On 2026-09-07 the
+  // vm_disk chain had a section that produced no output and no error, and the
+  // only way to tell "docker printed nothing" from "the `||` fallback did not
+  // fire" was to run the exact string by hand — which nothing here could do.
+  //
+  // Deliberately unglamorous: it reports stdout, stderr and the exit code
+  // SEPARATELY (a tool that merges them cannot answer "did this fail?"),
+  // audits every invocation, and caps the timeout. It runs through the same
+  // sshExec as everything else, so it inherits the `bash -c` wrapper that
+  // oci-apps' fish login shell requires.
+  server.tool(
+    "devops.ssh.exec",
+    "Run an arbitrary shell command on a VM over SSH and return stdout, stderr and the exit code separately. The escape hatch for diagnoses no fixed-shape tool covers; prefer a specific tool when one fits.",
+    {
+      vm: z.string().describe("VM ID or SSH alias"),
+      command: z.string().min(1).describe("Shell command to run remotely (runs under bash -c)"),
+      timeout_ms: z
+        .number()
+        .int()
+        .min(1000)
+        .max(300_000)
+        .optional()
+        .describe("Kill the command after this many ms (default 30000, max 300000)"),
+    },
+    async ({ vm, command, timeout_ms }) => {
+      const vmId = resolveVmId(vm);
+      const timeout = timeout_ms ?? 30_000;
+      audit("devops.ssh.exec", vmId, `${timeout}ms: ${command}`);
+      const r = sshExec(vmId, command, timeout);
+      // An empty stdout is a RESULT, not a gap to paper over — that is the
+      // exact signal this tool was added to be able to see — so say so
+      // explicitly rather than rendering nothing.
+      const parts = [
+        `$ ${command}`,
+        `exit: ${r.exitCode}${r.timedOut ? `  (TIMED OUT after ${timeout}ms)` : ""}`,
+        `--- stdout ---`,
+        r.stdout.length ? r.stdout.replace(/\n$/, "") : "(empty)",
+        `--- stderr ---`,
+        r.stderr.length ? r.stderr.replace(/\n$/, "") : "(empty)",
+      ];
+      return { content: [{ type: "text", text: parts.join("\n") }], isError: !r.ok };
+    }
+  );
+
   // ── Docker (14 tools, from docker.ts) ──
 
   server.tool(
