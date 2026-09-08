@@ -53,7 +53,6 @@ pub struct RemoteData {
     pub maddy_accounts: String,
     pub maddy_domains: String,
     pub maddy_queue: String,
-    pub snappymail_internal: String,
     pub sieve4190: String,
     pub all_local_ports: String,
     #[allow(dead_code)]

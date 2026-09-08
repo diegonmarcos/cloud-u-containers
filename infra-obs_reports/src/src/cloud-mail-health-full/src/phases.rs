@@ -1137,7 +1137,8 @@ echo "$r993" | grep "Not After" | head -1"#,
         }));
     }
 
-    // Webmail internal (from cache)
+    // Webmail internal (from cache) — cloud-webmail on oci-apps:3000, probed
+    // from oci-mail across the mesh. See constants::WEBMAIL_INTERNAL_URL.
     {
         let webmail_int = mail_data.as_ref().map(|d| d.webmail_internal.clone());
         futs.push(Box::pin(async move {
@@ -1159,33 +1160,12 @@ echo "$r993" | grep "Not After" | head -1"#,
         }));
     }
 
-    // SnappyMail internal (from cache)
-    {
-        let snappy = mail_data.as_ref().map(|d| d.snappymail_internal.clone());
-        futs.push(Box::pin(async move {
-            let (ok, detail) = match &snappy {
-                Some(s) => {
-                    let code = s.trim();
-                    let good = matches!(code, "200" | "301" | "302");
-                    (good, format!("HTTP {}", code))
-                }
-                None => (false, "no data".into()),
-            };
-            Check {
-                name: "SnappyMail internal".into(),
-                passed: ok,
-                details: detail.clone(),
-                duration_ms: 0,
-                error: if ok { None } else { Some(detail) },
-                // B6: SnappyMail 302→Authelia is correct routing, not a
-                // failure; passing already flagged this Info in the
-                // Severity column. Match other similar probes.
-                severity: if ok { Severity::Info } else { Severity::Warning },
-            }
-        }));
-    }
+    // (The "SnappyMail internal" check was removed 2026-09-09. SnappyMail is
+    // decommissioned — it probed the same dead localhost:8888 as the webmail
+    // check above, so it was a duplicate of a probe that could only ever
+    // return HTTP 000.)
 
-    // Caddy route: mail.diegonmarcos.com/webmail/ → SnappyMail
+    // Caddy route: mail.diegonmarcos.com/webmail/ → cloud-webmail
     {
         let cl = client.clone();
         futs.push(Box::pin(async move {

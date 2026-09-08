@@ -62,12 +62,20 @@ pub const JMAP_DISCOVERY_URLS: &[&str] = &[
 // false-negatives because the wg-public address doesn't expose any
 // uniform liveness port — see the comment block at the WGP removal
 // site. Re-add only when the wg-quick handshake-age check is wired.)
-pub const MAIL_CONTAINERS: &[&str] = &["maddy"];
+// stalwart is the store the mail clients actually read (Phase 3, 2026-08-07);
+// maddy is the WG-only MX that dual-writes into it. A mail health check that
+// only looked at maddy was blind to the half of the stack the user sees.
+pub const MAIL_CONTAINERS: &[&str] = &["maddy", "stalwart"];
 // http-to-smtp-proxy-api runs on gcp-proxy, NOT oci-mail — container_health()
 // only ever inspects oci-mail's `docker ps`, so listing it here always
 // reports a false "NOT FOUND". Its real liveness signal is the live WG
 // probe "IN→4 http-to-smtp-proxy-api :8090 (gcp-proxy)" in path_checker().
-pub const EXTRA_CONTAINERS: &[&str] = &["snappymail"];
+//
+// snappymail was removed here 2026-09-09. It was decommissioned in the repo
+// months ago (5e6882b0, 247926df) and replaced by user-comm_cloud-webmail,
+// which runs on oci-apps — so this check asserted a container that cannot
+// exist on oci-mail and emitted a permanent CRITICAL "snappymail NOT FOUND".
+pub const EXTRA_CONTAINERS: &[&str] = &[];
 pub const TEST_FROM: &str = "health@mails.diegonmarcos.com";
 pub const TEST_TO: &str = "me@diegonmarcos.com";
 
@@ -79,8 +87,21 @@ pub const TEST_TO: &str = "me@diegonmarcos.com";
 // 587 internally but the Phase-4 compose doesn't map it to the host. Including
 // 587 in this list produces a spurious "All ports bound — missing: 587" failure.
 //
-// 8888 = Maddy admin debug socket (legacy; bound on 0.0.0.0 by Maddy).
-pub const EXPECTED_PORTS: &[u16] = &[25, 143, 465, 993, 8888];
+// 8888 was the Maddy admin debug socket. It has not been bound since the
+// Stalwart migration, so it produced a permanent CRITICAL "All ports bound —
+// missing: 8888". Removed 2026-09-09 and replaced by the two ports Stalwart
+// actually listens on: 2443 (JMAP) and 2993 (IMAPS) — the store mail clients
+// read from. Keep this list in sync with the grep in ssh::ssh_batch_mail's
+// allLocalPorts section, or a port added here can never be seen as bound.
+pub const EXPECTED_PORTS: &[u16] = &[25, 143, 465, 993, 2443, 2993];
+
+// cloud-webmail replaced SnappyMail and runs on oci-apps, not oci-mail
+// (a_solutions/user-comm_cloud-webmail/build.json: host oci-apps, port 3000).
+// The internal probe therefore has to cross the mesh from oci-mail. Consumed
+// by the shell batch in ssh::ssh_batch_mail (a raw string literal, so the
+// value is repeated there); this is the documented source of truth.
+#[allow(dead_code)]
+pub const WEBMAIL_INTERNAL_URL: &str = "http://10.0.0.6:3000/";
 
 // Bearer token path (relative to $HOME)
 pub const BEARER_TOKEN_PATH: &str =
