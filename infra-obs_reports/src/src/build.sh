@@ -184,7 +184,10 @@ generate_manifest() {
     for md in "$DIST_DIR"/*.md; do
         [ -f "$md" ] || continue
         name=$(basename "$md" .md | tr '_' ' ')
-        file="reports/dist/$(basename "$md")"
+        # Path as the Pages site sees it. The reports moved under y_old/ when
+        # the old APIs were archived; this stayed on the pre-move path, so
+        # every link the site drew from here 404'd.
+        file="y_old/reports/dist/$(basename "$md")"
         if [ "$first" = true ]; then first=false; else printf ',\n' >> "$MANIFEST"; fi
         printf '  {"file": "%s", "name": "%s"}' "$file" "$name" >> "$MANIFEST"
     done
