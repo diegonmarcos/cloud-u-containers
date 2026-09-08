@@ -373,7 +373,7 @@ timeout $T docker info --format '{{.ServerVersion}}' 2>&1 | head -1
 echo "===containers==="
 timeout $T docker ps -a --format '{{.Names}}\t{{.Status}}\t{{.Image}}\t{{.Ports}}' 2>&1
 echo "===restarts==="
-timeout $T docker inspect --format '{{.Name}}\t{{.RestartCount}}' $(timeout $T docker ps -aq --filter name=maddy --filter name=http-to-smtp-proxy-api --filter name=snappymail 2>/dev/null) 2>/dev/null | tr -d '/'
+timeout $T docker inspect --format '{{.Name}}\t{{.RestartCount}}' $(timeout $T docker ps -aq --filter name=maddy --filter name=http-to-smtp-proxy-api --filter name=stalwart 2>/dev/null) 2>/dev/null | tr -d '/'
 echo "===dovecotUser==="
 echo "a001 CAPABILITY" | timeout $T openssl s_client -connect localhost:993 -quiet 2>/dev/null | head -3
 echo "===imapCap==="
@@ -399,7 +399,12 @@ echo QUIT | timeout 8 nc -w8 localhost 25 2>&1 | head -1
 echo "===smtp587==="
 echo QUIT | timeout $T openssl s_client -starttls smtp -connect localhost:587 2>&1 | head -5
 echo "===webmailInternal==="
-curl -skL -o /dev/null -w '%{http_code}' --max-time $T http://localhost:8888/ 2>&1
+# cloud-webmail lives on oci-apps (10.0.0.6:3000), NOT here — this probed
+# localhost:8888 (the retired SnappyMail/Maddy-debug port) and so returned
+# HTTP 000 forever. Kept as a mesh hop rather than moved into ssh_batch_apps
+# because it also proves oci-mail → oci-apps reachability. See
+# constants::WEBMAIL_INTERNAL_URL.
+curl -skL -o /dev/null -w '%{http_code}' --max-time $T http://10.0.0.6:3000/ 2>&1
 echo ""
 echo "===maddyAccounts==="
 docker exec maddy maddy creds list 2>/dev/null || echo "CLI_FAIL"
@@ -407,13 +412,13 @@ echo "===maddyDomains==="
 docker exec maddy grep 'local_domains' /data/maddy.conf 2>/dev/null || echo "CLI_FAIL"
 echo "===maddyQueue==="
 docker exec maddy maddy -config /data/maddy.conf queue list 2>/dev/null || echo "empty"
-echo "===snappymailInternal==="
-curl -skL -o /dev/null -w '%{http_code}' --max-time $T http://localhost:8888/ 2>&1
-echo ""
 echo "===sieve4190==="
 echo QUIT | timeout $T nc -w3 localhost 4190 2>&1 | head -1
 echo "===allLocalPorts==="
-sudo ss -tlnp 2>/dev/null | grep -E ':(25|143|465|587|993|4190|8888)\s' || ss -tlnp 2>/dev/null | grep -E ':(25|143|465|587|993|4190|8888)\s' || echo "(none)"
+# Keep this port set a superset of constants::EXPECTED_PORTS — a port that is
+# expected but not grepped here can never be seen as bound. 8888 dropped and
+# 2443/2993 (Stalwart JMAP + IMAPS) added 2026-09-09.
+sudo ss -tlnp 2>/dev/null | grep -E ':(25|143|465|587|993|2443|2993|4190)\s' || ss -tlnp 2>/dev/null | grep -E ':(25|143|465|587|993|2443|2993|4190)\s' || echo "(none)"
 echo "===configGhcrHash==="
 echo "maddy-no-ghcr-image"
 echo "===configContainerTplHash==="
@@ -468,7 +473,6 @@ cat /etc/resolv.conf 2>/dev/null || true
         maddy_accounts: parse_section(&output, "maddyAccounts"),
         maddy_domains: parse_section(&output, "maddyDomains"),
         maddy_queue: parse_section(&output, "maddyQueue"),
-        snappymail_internal: parse_section(&output, "snappymailInternal"),
         sieve4190: parse_section(&output, "sieve4190"),
         all_local_ports: parse_section(&output, "allLocalPorts"),
         debug_dump: parse_section(&output, "debugDump"),
@@ -495,21 +499,30 @@ pub async fn ssh_batch_apps() -> Result<RemoteDataApps, String> {
     let dns_resolve_js = node_script(
         r#"require('dns').resolve4('imap.diegonmarcos.com',(e,a)=>console.log(e?'ERR:'+e.message:'OK:'+a.join(',')));"#,
     );
-    let imap_tls_js = node_script(&format!(
-        r#"const tls=require('tls');const s=tls.connect(993,'imap.diegonmarcos.com',{{servername:'imap.diegonmarcos.com',timeout:5000}},()=>{{console.log('OK proto='+s.getProtocol()+' cn='+((s.getPeerCertificate()||{{}}).subject||{{}}).CN);s.end()}});s.on('error',e=>console.log('ERR:'+e.code+' '+e.message));s.setTimeout(5000,()=>{{console.log('ERR:TIMEOUT');s.destroy()}});"#
-    ));
+    // These four probes dial :443 with SNI, NOT raw 993/465. The public
+    // surface was collapsed to 443+51820+25, so 993 and 465 are refused from
+    // anywhere off the mesh — every one of these checks failed permanently
+    // (ECONNREFUSED on the TLS pair, TIMEOUT on the LOGIN/AUTH pair) while the
+    // path real clients use was fine. Hostnames must be imap.* and smtps.*
+    // (constants::IMAP_DOMAIN / SMTPS_DOMAIN); the old smtp.* name does not
+    // route at all. Verified 2026-09-09 from oci-apps: :443 CONNECTED on both,
+    // :465 and :993 Connection refused. Kept as literals rather than format!
+    // args because the JS bodies are full of braces.
+    let imap_tls_js = node_script(
+        r#"const tls=require('tls');const s=tls.connect(443,'imap.diegonmarcos.com',{servername:'imap.diegonmarcos.com',timeout:5000},()=>{console.log('OK proto='+s.getProtocol()+' cn='+((s.getPeerCertificate()||{}).subject||{}).CN);s.end()});s.on('error',e=>console.log('ERR:'+e.code+' '+e.message));s.setTimeout(5000,()=>{console.log('ERR:TIMEOUT');s.destroy()});"#,
+    );
     let smtp_tls_js = node_script(
-        r#"const tls=require('tls');const s=tls.connect(465,'smtp.diegonmarcos.com',{servername:'smtp.diegonmarcos.com',timeout:5000},()=>{console.log('OK proto='+s.getProtocol());s.end()});s.on('error',e=>console.log('ERR:'+e.code+' '+e.message));s.setTimeout(5000,()=>{console.log('ERR:TIMEOUT');s.destroy()});"#,
+        r#"const tls=require('tls');const s=tls.connect(443,'smtps.diegonmarcos.com',{servername:'smtps.diegonmarcos.com',timeout:5000},()=>{console.log('OK proto='+s.getProtocol());s.end()});s.on('error',e=>console.log('ERR:'+e.code+' '+e.message));s.setTimeout(5000,()=>{console.log('ERR:TIMEOUT');s.destroy()});"#,
     );
     let imap_wg_js = node_script(&format!(
         r#"const tls=require('tls');const s=tls.connect(993,'{}',{{servername:'{}',rejectUnauthorized:false,timeout:5000}},()=>{{console.log('OK proto='+s.getProtocol());s.end()}});s.on('error',e=>console.log('ERR:'+e.code+' '+e.message));s.setTimeout(5000,()=>{{console.log('ERR:TIMEOUT');s.destroy()}});"#,
         MAIL_WG_IP, MAIL_DOMAIN
     ));
     let imap_login_js = node_script(
-        r#"const tls=require('tls');const u=process.env.MAIL_USER||'';const p=process.env.MAIL_PASSWORD||'';if(!u||!p){console.log('NO_CREDS');process.exit(0)}const s=tls.connect(993,'imap.diegonmarcos.com',{servername:'imap.diegonmarcos.com',timeout:6000},()=>{let buf='';s.on('data',d=>{buf+=d.toString();if(buf.includes('* OK')&&!buf.includes('a001')){s.write('a001 LOGIN '+u+' '+p+'\r\n')}if(buf.includes('a001 OK')){console.log('LOGIN_OK');s.end()}if(buf.includes('a001 NO')||buf.includes('a001 BAD')){console.log('LOGIN_FAIL: '+buf.split('\n').pop());s.end()}})});s.on('error',e=>console.log('ERR:'+e.message));setTimeout(()=>{console.log('TIMEOUT');process.exit(1)},7000);"#,
+        r#"const tls=require('tls');const u=process.env.MAIL_USER||'';const p=process.env.MAIL_PASSWORD||'';if(!u||!p){console.log('NO_CREDS');process.exit(0)}const s=tls.connect(443,'imap.diegonmarcos.com',{servername:'imap.diegonmarcos.com',timeout:6000},()=>{let buf='';s.on('data',d=>{buf+=d.toString();if(buf.includes('* OK')&&!buf.includes('a001')){s.write('a001 LOGIN '+u+' '+p+'\r\n')}if(buf.includes('a001 OK')){console.log('LOGIN_OK');s.end()}if(buf.includes('a001 NO')||buf.includes('a001 BAD')){console.log('LOGIN_FAIL: '+buf.split('\n').pop());s.end()}})});s.on('error',e=>console.log('ERR:'+e.message));setTimeout(()=>{console.log('TIMEOUT');process.exit(1)},7000);"#,
     );
     let smtp_auth_js = node_script(
-        r#"const tls=require('tls');const s=tls.connect(465,'smtp.diegonmarcos.com',{servername:'smtp.diegonmarcos.com',timeout:5000},()=>{let phase=0,buf='';s.on('data',d=>{buf+=d.toString();if(phase===0&&buf.includes('220')){s.write('EHLO health-check\r\n');phase=1;buf=''}if(phase===1&&buf.includes('250')){const hasAuth=buf.includes('AUTH');console.log(hasAuth?'SMTP_AUTH_OK: '+buf.split('\n').filter(l=>l.includes('AUTH'))[0]:'SMTP_NO_AUTH');s.write('QUIT\r\n');s.end()}})});s.on('error',e=>console.log('ERR:'+e.message));setTimeout(()=>{console.log('TIMEOUT');process.exit(1)},6000);"#,
+        r#"const tls=require('tls');const s=tls.connect(443,'smtps.diegonmarcos.com',{servername:'smtps.diegonmarcos.com',timeout:5000},()=>{let phase=0,buf='';s.on('data',d=>{buf+=d.toString();if(phase===0&&buf.includes('220')){s.write('EHLO health-check\r\n');phase=1;buf=''}if(phase===1&&buf.includes('250')){const hasAuth=buf.includes('AUTH');console.log(hasAuth?'SMTP_AUTH_OK: '+buf.split('\n').filter(l=>l.includes('AUTH'))[0]:'SMTP_NO_AUTH');s.write('QUIT\r\n');s.end()}})});s.on('error',e=>console.log('ERR:'+e.message));setTimeout(()=>{console.log('TIMEOUT');process.exit(1)},6000);"#,
     );
 
     let script = format!(
