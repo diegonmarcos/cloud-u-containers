@@ -34,17 +34,47 @@ PROFILE = os.environ.get("HEADROOM_SAVINGS_PROFILE", "agent-90")
 KOMPRESS = os.environ.get("HEADROOM_KOMPRESS", "disabled")  # ML off by default on arm64
 MIN_TOKENS = int(os.environ.get("HEADROOM_MIN_TOKENS", "250"))
 WORKSPACE = Path(os.environ.get("HEADROOM_WORKSPACE_DIR", str(Path.home() / ".headroom")))
-LEDGER = Path(os.environ.get("HEADROOM_SAVINGS_PATH", str(WORKSPACE / "proxy_savings.json")))
+# NOT proxy_savings.json. That filename belongs to headroom's own
+# SavingsTracker, which resolves the same workspace directory and writes a
+# completely different shape — {schema_version, lifetime, display_session,
+# history, projects}, with no counters at the top level. Sharing the name
+# meant the first headroom path to run in this container silently replaced
+# this ledger with a document that parses fine and has none of the keys the
+# counters below index, so the next POST /compress died on KeyError.
+LEDGER = Path(os.environ.get("HEADROOM_SAVINGS_PATH", str(WORKSPACE / "superset_savings.json")))
+
+# The counters every reader below indexes directly. Kept as one constant so
+# the load path and the empty case cannot drift apart.
+_LEDGER_DEFAULTS: dict[str, int] = {
+    "compressions": 0, "tokens_before": 0, "tokens_after": 0, "tokens_saved": 0,
+}
 
 app = FastAPI(title="claude-api-superset · compress", docs_url=None, redoc_url=None)
 
 
 def _load_ledger() -> dict[str, Any]:
+    """The ledger, guaranteed to carry every counter its readers index.
+
+    Falling back only when the file fails to PARSE was the bug: any JSON
+    object that parses was trusted verbatim, so a foreign document — see the
+    LEDGER comment above — passed straight through and the first increment
+    raised KeyError. Merging over the defaults makes every reader total no
+    matter what is on disk, and coercing to int means a string counter cannot
+    turn an increment into a TypeError instead.
+    """
     try:
-        return json.loads(LEDGER.read_text())
+        parsed = json.loads(LEDGER.read_text())
     except Exception:
-        return {"compressions": 0, "tokens_before": 0, "tokens_after": 0,
-                "tokens_saved": 0, "since": int(time.time())}
+        parsed = {}
+    if not isinstance(parsed, dict):
+        parsed = {}
+    led: dict[str, Any] = {**_LEDGER_DEFAULTS, "since": int(time.time()), **parsed}
+    for key in _LEDGER_DEFAULTS:
+        try:
+            led[key] = int(led[key])
+        except (TypeError, ValueError):
+            led[key] = 0
+    return led
 
 
 def _save_ledger(led: dict[str, Any]) -> None:
