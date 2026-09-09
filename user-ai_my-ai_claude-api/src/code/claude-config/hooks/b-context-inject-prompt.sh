@@ -39,7 +39,7 @@ cat <<'GUARD'
 3. NO IMPERATIVE SOLUTION if it is not already DECLARED. An "easy fix" is not a fix — it is a new potential BUG. Declarative always.
 4. DATA-DRIVEN ONLY. Never hardcode data in scripts. Use `build.json` or auxiliary `.json` files (in `9_others/`) as the source of truth.
 5. A TASK IS NOT DONE UNTIL IT HAS A TESTER. After every solution, design the test that proves it — no task is complete without a test.
-6. **NEVER GUESS THE CODE / INFRA ARCHITECTURE — USE cloud-cgc-pub-mcp.** The `cloud-cgc-pub-mcp` (code-graph-context) server is ONLINE. Before reasoning about how the code/build/runner/topology works, query it: `octocode_search` / `octocode_graphrag` (semantic code + call-graph), `knowledge_*` / `c3_*` (services, runners, configs, topology). Reading 5 files and guessing the 6th is the bug — be SURE via cloud-cgc-pub-mcp, THEN act. Guessing architecture is forbidden when the graph can tell you.
+6. **NEVER GUESS THE CODE / INFRA ARCHITECTURE — QUERY THE CODE-GRAPH MCP.** Before reasoning about how the code/build/runner/topology works, query it. Reading 5 files and guessing the 6th is the bug — be SURE, THEN act. The servers, the exact way to name their tools, and what to do when you cannot reach them are in **MCP SERVERS** at the end of this block. Follow it literally: MCP tool names are not guessable, and guessing them is what used to end with agents curling the endpoint and mistaking its handshake error for a dead server.
 
 ## Stack Philosophy
 0. IMPERATIVE SOLUTIONS ARE FORBIDDEN
@@ -76,3 +76,51 @@ If Bash fails on everything (even `echo test`), the CWD was deleted by git mv/rm
 **Fix**: Use `Write` tool to create a dummy file at the dead path → restores CWD → Bash works again.
 Then clean up with `git checkout HEAD -- path/` or continue with absolute paths.
 GUARD
+
+# ── MCP SERVERS (data-driven) ────────────────────────────────────────────────
+# The server list is NOT restated here: mcp.tpl.json is the single source of
+# truth for what render-mcp.mjs actually writes into ~/.claude.json at boot, so
+# reading it is the only way this block cannot drift out of date. Keys only —
+# the values carry the bearer token and must never reach a model's context.
+#
+# WHY this block exists at all: agents were told to call `octocode_search` /
+# `c3_*`, which are not tool names on any server here. Finding no such tool, an
+# agent would curl https://mcp.diegonmarcos.com/... directly, get back
+# HTTP 400 "Bad Request: Server not initialized" — the streamable-HTTP MCP
+# transport refusing a request that skipped `initialize` — read that as "the
+# code graph is down", and silently fall back to grepping. The tool was never
+# down. Nobody saw an error, so nobody noticed the graph had stopped being
+# consulted at all.
+MCP_TPL="${MCP_TPL:-/app/claude-config/mcp.tpl.json}"
+if [ -r "$MCP_TPL" ] && command -v jq >/dev/null 2>&1; then
+  printf '\n## MCP SERVERS\n\nWired into this container (source: %s):\n' "$MCP_TPL"
+  jq -r 'keys[] | "- " + .' "$MCP_TPL"
+  cat <<'MCPGUARD'
+
+Their tools are DEFERRED — they are NOT in your initial tool list, and their
+absence there means nothing about whether the server is up. Discover them, never
+guess:
+
+  ToolSearch("select:mcp__<server>__<tool>")  when you already know the exact name
+  ToolSearch("<keywords>")                    when you do not
+
+Every name has the form `mcp__<server>__<tool>`, where `<server>` is one of the
+keys listed above and `<tool>` is the server's own tool name with dots replaced
+by underscores (`cgc.octocode.search` becomes `cgc_octocode_search`). A bare
+`octocode_search`, `knowledge_spec` or `c3_*` is NOT a tool and never was.
+
+DO NOT curl these URLs as a fallback. They are streamable-HTTP MCP endpoints: any
+request that arrives without a prior `initialize` on the same `Mcp-Session-Id`
+gets HTTP 400 `{"code":-32000,"message":"Bad Request: Server not initialized"}`.
+That 400 means YOU skipped the handshake. It does not mean the server is down.
+
+If ToolSearch genuinely cannot reach a server listed above, SAY SO IN YOUR REPORT
+and mark every architectural claim you made without it as unverified. Never
+silently fall back to grep: a wrong answer from grep looks exactly like a right
+one, and a dependency that degrades quietly costs more than one that fails loudly.
+MCPGUARD
+else
+  printf '\n## MCP SERVERS\n\nCould not read %s — the MCP server list is UNKNOWN.\n' "$MCP_TPL"
+  printf 'Treat the code-graph MCP as unavailable, say so in your report, and mark\n'
+  printf 'every architectural claim you make without it as unverified.\n'
+fi

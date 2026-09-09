@@ -58,7 +58,12 @@ read -r -d '' CONTEXT <<'PRINCIPLES' || true
 7A. SECRETS = SOPS. src/secrets.yaml encrypted; dist/.secrets gitignored. Never inline credentials.
 7B. NEVER git add .env/.key/.pem/.age/*secret*/dist/.secrets. secrets.yaml needs sops marker. Vault is the only carve-out.
 8. ASK, DON'T ASSUME — clarify unclear intent/architecture/requirements before any tool call. No silent guesses.
-9. NEVER GUESS ARCHITECTURE — cloud-cgc-pub-mcp is ONLINE; use octocode_search / octocode_graphrag + knowledge_* / c3_* to read the real code, runners, and topology BEFORE acting. Don't read-5-files-and-guess-the-6th.
+9. NEVER GUESS ARCHITECTURE — query the code-graph MCP. Its tools are DEFERRED, so their absence
+   from your tool list says nothing about the server: load one with
+   ToolSearch("select:mcp__cloud-cgc-pub-mcp__cgc_octocode_search"), then call it by that full name.
+   Never curl the MCP URL instead — with no `initialize` handshake it returns HTTP 400 "Server not
+   initialized", which means you skipped the handshake, NOT that the server is down. If you truly
+   cannot reach it, say so in your report; do not quietly grep and present the guess as fact.
 PRINCIPLES
 
 # Emit JSON with hookSpecificOutput.additionalContext so the model receives
