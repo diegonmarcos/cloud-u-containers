@@ -27,11 +27,17 @@ steps:
         | grep -o '"access_token":"[^"]*"' | cut -d'"' -f4)
       BEARER="${FRESH_TOKEN:-$AUTHELIA_BEARER_TOKEN}"
       # CLOUD_DATA_DIR points reports-common's find_cloud_data_file at the
-      # cloud-source 1_cicd/dist tree (the report cwd is under cloud-data/,
-      # which is NOT an ancestor of cloud-source/ — the walk-up can't reach it).
-      # REPORTS_DIR: app SOURCE moved to cloud-infra (2026-08-19) —
-      # cloud-source/a_solutions/infra-obs_reports/src is where
-      # sync_secrets.yaml's hourly cloud-infra mirror puts it.
+      # cloud-source 1_cloud-configs/dist tree (the report cwd is under
+      # cloud-data/, which is NOT an ancestor of cloud-source/ — the walk-up
+      # can't reach it). Keeping it on cloud-source rather than the
+      # octocode_repos copy the report_* DAGs use is deliberate: entrypoint.sh
+      # derives CLOUD_REPO_DIR from this value, and only cloud-source has an
+      # a_solutions/ that survived the 2026-09-06 split.
+      # REPORTS_DIR: the app left cloud-data on 2026-08-19 and left cloud-infra
+      # on 2026-09-06 with the rest of a_solutions. cloud-source/a_solutions is
+      # a SEPARATE cloud-u-containers clone made by sync_secrets.yaml — the
+      # cloud-infra mirror alone no longer puts anything there, which is why
+      # that second clone is load-bearing for this DAG.
       docker run --pull always --rm --network host \
         -v dagu_dagu_data:/var/lib/dagu/data \
         -v /opt/ssh-keys/dagu:/root/.ssh \
