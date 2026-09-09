@@ -30,11 +30,23 @@ steps:
   # entrypoint target (already in src/), this command can shorten to just
   # `cloud-data-reports:latest daily-mail`.
   - name: daily-mail
-    # CLOUD_DATA_DIR points at the dagu-volume location of the PRIVATE
-    # cloud repo's 1_cicd/dist/, populated hourly by sync_secrets.yaml.
+    # CLOUD_DATA_DIR points at cloud-infra's 1_cloud-configs/dist/ inside the
+    # octocode_repos volume, refreshed every 15 min by ops_git-sync.yaml.
     # Both the entrypoint's SSH-config derivation and the Rust report
     # engine's reports-common::find_cloud_data_file honour this env var,
     # so a single declaration unblocks both consumers.
+    #
+    # CLOUD_REPO_DIR must be declared, NOT left to the entrypoint's derive.
+    # entrypoint.sh infers it by stripping /1_cloud-configs/dist/... off
+    # CLOUD_DATA_DIR, which lands on /repos/cloud-infra — and that tree's
+    # a_solutions/ is a five-directory husk frozen at the 2026-09-06 split:
+    # a_solutions is untracked in cloud-infra now, and ops_git-sync's
+    # `git reset --hard` never removes untracked leftovers, so the husk can
+    # neither refresh nor be pruned. Everything reached through
+    # $CLOUD_REPO_DIR/a_solutions/ would read dead pre-split config forever.
+    # cloud-source is the only tree here that carries a live a_solutions
+    # (sync_secrets.yaml clones cloud-u-containers into it) and it still
+    # carries 2_secrets/ for the entrypoint's sops NOREPLY_PASSWORD probe.
     #
     # NOTE: command: | (literal block) is mandatory — Dagu runs it through
     # bash so $VAR references expand. The previous `>-` (folded) form was
@@ -48,6 +60,7 @@ steps:
         -v octocode_repos:/repos:ro \
         -w /var/lib/dagu/data/cloud-source/a_solutions/infra-obs_reports/src \
         -e CLOUD_DATA_DIR=/repos/cloud-infra/1_cloud-configs/dist \
+        -e CLOUD_REPO_DIR=/var/lib/dagu/data/cloud-source \
         -e BEARER_TOKEN="$AUTHELIA_BEARER_TOKEN" \
         -e NOREPLY_PASSWORD="$NOREPLY_PASSWORD" \
         -e STALWART_LOGIN_PASSWORD="$STALWART_LOGIN_PASSWORD" \
@@ -70,8 +83,11 @@ steps:
         -e UMAMI_URL="$UMAMI_URL" \
         ghcr.io/diegonmarcos/cloud-data-reports:latest \
         bash src/cloud-health-full-daily/build.sh ship
-      # App SOURCE moved to cloud-infra (2026-08-19) — cloud-source/ is a
-      # hard-reset-hourly mirror (sync_secrets.yaml), so dist/ output written
+      # App SOURCE left cloud-data on 2026-08-19 and left cloud-infra again on
+      # 2026-09-06, when a_solutions was split into its own repo
+      # (cloud-u-containers). cloud-source/a_solutions is that repo, cloned
+      # separately by sync_secrets.yaml — NOT part of the cloud-infra mirror.
+      # It is hard-reset hourly all the same, so dist/ output written
       # there is NOT persisted/pushed by anything. DATA still flows to
       # cloud-data as before: copy the fresh dist/ into the (git-pull-rebase,
       # not hard-reset) cloud-data checkout in the same volume, exactly what

@@ -38,6 +38,14 @@ steps:
         -v octocode_repos:/repos:ro \
         -w /var/lib/dagu/data/cloud-source/a_solutions/infra-obs_reports/src \
         -e CLOUD_DATA_DIR=/repos/cloud-infra/1_cloud-configs/dist \
+        `# Declared, never derived — see the CLOUD_REPO_DIR note in
+         # report_daily.yaml. entrypoint.sh would infer /repos/cloud-infra
+         # from CLOUD_DATA_DIR, whose a_solutions/ is an untracked husk
+         # frozen at the 2026-09-06 split and unreachable by ops_git-sync's
+         # reset --hard. cloud-source carries the live a_solutions (a
+         # separate cloud-u-containers clone) and 2_secrets/ for the sops
+         # NOREPLY_PASSWORD probe.` \
+        -e CLOUD_REPO_DIR=/var/lib/dagu/data/cloud-source \
         -e NOREPLY_PASSWORD="$NOREPLY_PASSWORD" \
         -e STALWART_LOGIN_PASSWORD="$STALWART_LOGIN_PASSWORD" \
         `# Do NOT set LOCAL_ENVELOPE_FROM to an address in a LOCAL domain.
@@ -65,8 +73,10 @@ steps:
         bash src/cloud-analytics-daily/build.sh ship
 
       # Persist the rendered reports into the cloud-data checkout, exactly as
-      # report_daily.yaml does: cloud-source/ is hard-reset hourly by
-      # sync_secrets.yaml, so dist/ written there is not kept by anything.
+      # report_daily.yaml does: cloud-source/a_solutions is the
+      # cloud-u-containers clone sync_secrets.yaml hard-resets hourly (the
+      # app left cloud-infra in the 2026-09-06 split), so dist/ written
+      # there is not kept by anything.
       docker run --rm --entrypoint sh \
         -v dagu_dagu_data:/var/lib/dagu/data \
         ghcr.io/diegonmarcos/cloud-data-reports:latest -c '
