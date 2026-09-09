@@ -720,7 +720,7 @@ async def _delete_script_project_impl(
 
 @server.tool()
 @handle_http_errors("delete_script_project", is_read_only=False, service_type="drive")
-@require_google_service("drive", "drive_full")
+@require_google_service("drive", "drive_write")
 async def delete_script_project(
     service: Any,
     user_google_email: str,
@@ -839,7 +839,7 @@ async def _create_version_impl(
 
 @server.tool()
 @handle_http_errors("create_version", is_read_only=False, service_type="script")
-@require_google_service("script", "script_full")
+@require_google_service("script", "script_projects")
 async def create_version(
     service: Any,
     user_google_email: str,

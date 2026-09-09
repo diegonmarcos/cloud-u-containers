@@ -49,10 +49,15 @@ class TestDocsScopes:
         scopes = get_scopes_for_tools(["docs"])
         assert DRIVE_FILE_SCOPE in scopes
 
-    def test_docs_does_not_include_full_drive(self):
-        """docs should NOT request full drive access."""
+    def test_docs_includes_full_drive_for_pdf_export(self):
+        """export_doc_to_pdf needs full drive, not drive.file.
+
+        It reads a caller-supplied document and writes the PDF into a
+        caller-supplied parent folder. Neither is created by this application,
+        and drive.file reports anything it did not create as HTTP 404.
+        """
         scopes = get_scopes_for_tools(["docs"])
-        assert DRIVE_SCOPE not in scopes
+        assert DRIVE_SCOPE in scopes
 
 
 class TestSheetsScopes:

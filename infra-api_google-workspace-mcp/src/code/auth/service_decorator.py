@@ -55,6 +55,8 @@ from auth.scopes import (
     SCRIPT_PROJECTS_READONLY_SCOPE,
     SCRIPT_DEPLOYMENTS_SCOPE,
     SCRIPT_DEPLOYMENTS_READONLY_SCOPE,
+    OPENID_SCOPE,
+    GOOGLE_SCOPE_URL_PREFIX,
     has_required_scopes,
 )
 
@@ -430,6 +432,17 @@ SCOPE_GROUPS = {
     "drive": DRIVE_SCOPE,
     "drive_read": DRIVE_READONLY_SCOPE,
     "drive_file": DRIVE_FILE_SCOPE,
+    # Mutating Drive tools must use "drive_write", not "drive_file". The
+    # drive.file scope is an addressing model, not a permission level: it can
+    # only ever see files this application itself created. A folder the owner
+    # made by hand in the Drive web interface is not merely read-only under
+    # drive.file, it is invisible, and the Drive API reports invisible as
+    # HTTP 404 "File not found" rather than 403. Every write tool here takes a
+    # caller-supplied file or parent-folder id that the owner created, so
+    # drive.file makes all of them permanently unusable. Google publishes no
+    # intermediate scope that can write to pre-existing files, so addressing
+    # them at all requires full drive.
+    "drive_write": DRIVE_SCOPE,
     # Docs scopes
     "docs_read": DOCS_READONLY_SCOPE,
     "docs_write": DOCS_WRITE_SCOPE,
@@ -467,21 +480,31 @@ SCOPE_GROUPS = {
 }
 
 
+def _resolve_one_scope(scope: str) -> str:
+    """Resolve a single scope group name, or pass through a literal scope URL.
+
+    Unknown names are rejected rather than passed through. A pass-through let
+    misspelled group names such as "drive_full" and "script_full" reach the
+    Google token endpoint as literal strings, where they were silently dropped
+    or rejected, so the tool failed at call time with an authentication error
+    that named neither the tool nor the typo. Decorators are resolved at import
+    time, so raising here turns that class of mistake into a startup failure.
+    """
+    if scope in SCOPE_GROUPS:
+        return SCOPE_GROUPS[scope]
+    if scope == OPENID_SCOPE or scope.startswith(GOOGLE_SCOPE_URL_PREFIX):
+        return scope
+    raise ValueError(
+        f"Unknown OAuth scope group {scope!r}. Use one of "
+        f"{sorted(SCOPE_GROUPS)} or a literal {GOOGLE_SCOPE_URL_PREFIX}... URL."
+    )
+
+
 def _resolve_scopes(scopes: Union[str, List[str]]) -> List[str]:
     """Resolve scope names to actual scope URLs."""
     if isinstance(scopes, str):
-        if scopes in SCOPE_GROUPS:
-            return [SCOPE_GROUPS[scopes]]
-        else:
-            return [scopes]
-
-    resolved = []
-    for scope in scopes:
-        if scope in SCOPE_GROUPS:
-            resolved.append(SCOPE_GROUPS[scope])
-        else:
-            resolved.append(scope)
-    return resolved
+        return [_resolve_one_scope(scopes)]
+    return [_resolve_one_scope(scope) for scope in scopes]
 
 
 def _handle_token_refresh_error(
