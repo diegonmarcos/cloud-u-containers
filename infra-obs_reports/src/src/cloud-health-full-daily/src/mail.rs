@@ -9,7 +9,19 @@ use trust_dns_resolver::TokioAsyncResolver;
 const MAIL_WG_IP: &str = "10.0.0.3";
 const PROXY_WG_IP: &str = "10.0.0.1";
 const MAIL_DOMAIN: &str = "mail.diegonmarcos.com";
-const STALWART_DOMAIN: &str = "mail-stalwart.diegonmarcos.com";
+// Canonical public JMAP hostname. Was mail-stalwart.diegonmarcos.com, one of the
+// Caddy SNI subhostnames retired upstream — it still resolves, so the probes
+// connected and then failed on content: /.well-known/jmap returns 404 there and
+// 200 on jmap.diegonmarcos.com. Three checks (JMAP TLS, JMAP well-known,
+// Stalwart webadmin) were permanently red against a healthy Stalwart.
+const JMAP_DOMAIN: &str = "jmap.diegonmarcos.com";
+// Client-facing SNI-mux hostnames on :443. The public surface was collapsed to
+// 443 + 51820 + 25, so raw 993/465/587 on mail.diegonmarcos.com are refused
+// from off-mesh — verified `Connection refused` on all three, and CONNECTED on
+// both of these. Probing the legacy ports publicly is the check being wrong,
+// not the fleet.
+const IMAP_DOMAIN: &str = "imap.diegonmarcos.com";
+const SMTPS_DOMAIN: &str = "smtps.diegonmarcos.com";
 const BASE_DOMAIN: &str = "diegonmarcos.com";
 const HICKORY_IP: &str = "10.0.0.1";
 
@@ -54,12 +66,21 @@ pub fn fill_from_vmdata(health: &mut MailHealthData, vms: &[VmData]) {
 
     if let Some(vm) = mail_vm {
         // ── Containers ──────────────────────────────────────────────
-        let mail_containers = ["maddy", "http-to-smtp-proxy-api", "snappymail", "stalwart"];
+        // Only the two containers oci-mail actually runs as the mail path:
+        // maddy (WG-only MX) and stalwart (the store clients read).
+        // snappymail was decommissioned and replaced by cloud-webmail on
+        // oci-apps; http-to-smtp-proxy-api runs on gcp-proxy. Both were
+        // asserted against oci-mail's container list, where they cannot appear,
+        // so each emitted a permanent CRITICAL "not found in container list".
+        let mail_containers = ["maddy", "stalwart"];
         for name in &mail_containers {
+            // Exact match, not `contains`. oci-mail also runs stalwart-sorter,
+            // so a substring match on "stalwart" could resolve to the sorter and
+            // report its status as the store's.
             let found = vm
                 .container_list
                 .iter()
-                .find(|c| c.name.contains(name));
+                .find(|c| c.name == *name);
             let (passed, details) = match found {
                 Some(c) if c.status.to_lowercase().contains("up") => {
                     (true, format!("{}: {}", c.name, c.status))
@@ -297,28 +318,22 @@ async fn check_dns_auth() -> Vec<MailCheck> {
 // ── TLS port checks ─────────────────────────────────────────────────
 
 async fn check_tls_ports() -> Vec<MailCheck> {
-    let (imap_tls, smtps_tls, starttls) = tokio::join!(
-        openssl_check(
-            "IMAP TLS :993",
-            MAIL_DOMAIN,
-            993,
-            false,
-        ),
-        openssl_check(
-            "SMTPS :465",
-            MAIL_DOMAIN,
-            465,
-            false,
-        ),
-        openssl_check(
-            "STARTTLS :587",
-            MAIL_DOMAIN,
-            587,
-            true,
-        ),
+    // Two distinct surfaces, both real:
+    //   - maddy's own 993/465, reachable only over the mesh (WG IP + public SNI)
+    //   - the imap./smtps. SNI-mux hostnames on :443, which is where real mail
+    //     clients terminate TLS
+    // The old version probed mail.diegonmarcos.com:993/:465/:587 publicly, all
+    // three of which are refused by design, so this whole group was red every
+    // run. :587 is dropped rather than moved — nothing binds it on any host
+    // (submission goes http-to-smtp-proxy-api → :25 over WG).
+    let (imap_wg, smtps_wg, imap_public, smtps_public) = tokio::join!(
+        openssl_check("IMAP TLS :993 (WG)", MAIL_WG_IP, MAIL_DOMAIN, 993, false),
+        openssl_check("SMTPS TLS :465 (WG)", MAIL_WG_IP, MAIL_DOMAIN, 465, false),
+        openssl_check("IMAP TLS :443 (public SNI)", IMAP_DOMAIN, IMAP_DOMAIN, 443, false),
+        openssl_check("SMTPS TLS :443 (public SNI)", SMTPS_DOMAIN, SMTPS_DOMAIN, 443, false),
     );
 
-    vec![imap_tls, smtps_tls, starttls]
+    vec![imap_wg, smtps_wg, imap_public, smtps_public]
 }
 
 // ── Helper: TCP port probe ──────────────────────────────────────────
@@ -694,30 +709,41 @@ async fn check_dns_dmarc() -> MailCheck {
 // ── Stalwart + JMAP checks ──────────────────────────────────────
 
 async fn check_stalwart() -> Vec<MailCheck> {
-    // All Stalwart checks run in parallel
-    let (smtp, smtps, submission, imaps, https_jmap, sieve,
-         tls_imaps, tls_smtps, tls_sub, tls_jmap,
+    // All Stalwart checks run in parallel.
+    //
+    // Stalwart's ports are published through docker-proxy, which binds only
+    // 10.0.0.3 (wg0) and 10.1.0.3 (wg-public) — never loopback, never the public
+    // interface. So every probe here dials the WG IP with the public cert name
+    // as SNI. The previous version sent the TLS probes to
+    // mail.diegonmarcos.com:2993/:2465/:2587, all refused from off-mesh.
+    //
+    // :2025 is raised from "warning" to "critical": it is the target of maddy's
+    // `stalwart_relay`, the only route by which mail reaches the store the user
+    // reads. A warning understates a silent-mail-loss condition.
+    //
+    // :2587 is gone. Nothing binds it (verified 0 CONNECTED on the WG IP);
+    // Stalwart declares submission internally but the compose does not map it.
+    let (relay_2025, smtps, imaps, https_jmap, sieve,
+         tls_imaps, tls_smtps, tls_jmap,
          jmap_wellknown, jmap_webadmin) = tokio::join!(
         // TCP port probes (via WG IP)
-        tcp_check("Stalwart :2025 SMTP", MAIL_WG_IP, 2025, "warning"),
+        tcp_check("Stalwart :2025 SMTP (maddy dual-write)", MAIL_WG_IP, 2025, "critical"),
         tcp_check("Stalwart :2465 SMTPS", MAIL_WG_IP, 2465, "warning"),
-        tcp_check("Stalwart :2587 Submission", MAIL_WG_IP, 2587, "warning"),
-        tcp_check("Stalwart :2993 IMAPS", MAIL_WG_IP, 2993, "warning"),
+        tcp_check("Stalwart :2993 IMAPS", MAIL_WG_IP, 2993, "critical"),
         tcp_check("Stalwart :2443 HTTPS/JMAP", MAIL_WG_IP, 2443, "warning"),
         tcp_check("Stalwart :6190 ManageSieve", MAIL_WG_IP, 6190, "warning"),
-        // TLS via public Caddy L4 passthrough
-        openssl_check("Stalwart IMAPS TLS :2993", MAIL_DOMAIN, 2993, false),
-        openssl_check("Stalwart SMTPS TLS :2465", MAIL_DOMAIN, 2465, false),
-        openssl_check("Stalwart STARTTLS :2587", MAIL_DOMAIN, 2587, true),
-        openssl_check("Stalwart HTTPS/JMAP TLS :2443", STALWART_DOMAIN, 2443, false),
-        // JMAP endpoints
+        // TLS over the mesh, public cert name as SNI
+        openssl_check("Stalwart IMAPS TLS :2993", MAIL_WG_IP, MAIL_DOMAIN, 2993, false),
+        openssl_check("Stalwart SMTPS TLS :2465", MAIL_WG_IP, MAIL_DOMAIN, 2465, false),
+        openssl_check("Stalwart HTTPS/JMAP TLS :2443", MAIL_WG_IP, MAIL_DOMAIN, 2443, false),
+        // JMAP endpoints (public, canonical hostname)
         check_jmap_wellknown(),
         check_jmap_webadmin(),
     );
 
     vec![
-        smtp, smtps, submission, imaps, https_jmap, sieve,
-        tls_imaps, tls_smtps, tls_sub, tls_jmap,
+        relay_2025, smtps, imaps, https_jmap, sieve,
+        tls_imaps, tls_smtps, tls_jmap,
         jmap_wellknown, jmap_webadmin,
     ]
 }
@@ -731,7 +757,7 @@ async fn check_jmap_wellknown() -> MailCheck {
         .build()
         .unwrap();
 
-    let url = format!("https://{}/.well-known/jmap", STALWART_DOMAIN);
+    let url = format!("https://{}/.well-known/jmap", JMAP_DOMAIN);
     let result = timeout(HTTP_TIMEOUT, client.get(&url).send()).await;
     let duration_ms = start.elapsed().as_millis() as u64;
 
@@ -787,7 +813,7 @@ async fn check_jmap_webadmin() -> MailCheck {
         .build()
         .unwrap();
 
-    let url = format!("https://{}/", STALWART_DOMAIN);
+    let url = format!("https://{}/", JMAP_DOMAIN);
     let result = timeout(HTTP_TIMEOUT, client.get(&url).send()).await;
     let duration_ms = start.elapsed().as_millis() as u64;
 
@@ -823,16 +849,26 @@ async fn check_jmap_webadmin() -> MailCheck {
 
 // ── Helper: TLS checks via openssl subprocess ───────────────────────
 
-async fn openssl_check(name: &str, domain: &str, port: u16, starttls: bool) -> MailCheck {
+/// TLS handshake probe. `connect_host` and `sni` are separate so a mesh-only
+/// listener can be dialled by WG IP while still presenting the public cert name
+/// it is configured for — dialling 10.0.0.3 with SNI "10.0.0.3" gets no
+/// certificate back.
+async fn openssl_check(
+    name: &str,
+    connect_host: &str,
+    sni: &str,
+    port: u16,
+    starttls: bool,
+) -> MailCheck {
     let start = Instant::now();
 
-    let connect_arg = format!("{}:{}", domain, port);
+    let connect_arg = format!("{}:{}", connect_host, port);
     let mut args = vec![
         "s_client".to_string(),
         "-connect".to_string(),
         connect_arg.clone(),
         "-servername".to_string(),
-        domain.to_string(),
+        sni.to_string(),
     ];
 
     if starttls {

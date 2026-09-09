@@ -93,7 +93,30 @@ pub const TEST_TO: &str = "me@diegonmarcos.com";
 // actually listens on: 2443 (JMAP) and 2993 (IMAPS) — the store mail clients
 // read from. Keep this list in sync with the grep in ssh::ssh_batch_mail's
 // allLocalPorts section, or a port added here can never be seen as bound.
-pub const EXPECTED_PORTS: &[u16] = &[25, 143, 465, 993, 2443, 2993];
+//
+// 2025 is the single most important port in this list and was missing entirely.
+// It is the Stalwart end of maddy's dual-write: maddy.conf declares
+// `target.smtp stalwart_relay { targets tcp://10.0.0.3:2025 }` fronted by
+// `target.queue stalwart_queue { location /data/queue-stalwart }`. Because that
+// queue is durable and asynchronous, losing 2025 does NOT fail any inbound SMTP
+// transaction and does not turn any other probe red — maddy keeps accepting mail
+// and piling it on disk while the store the user actually reads goes stale. This
+// port plus STALWART_QUEUE_MAX_DEPTH are the only two signals that see it.
+//
+// 6190 is Stalwart's ManageSieve. The batch used to probe 4190 (Dovecot's port,
+// which nothing has bound since Mailu) and assert nothing with the result.
+//
+// 2587 is deliberately absent: nothing binds it (verified `openssl s_client
+// -connect 10.0.0.3:2587` → 0 CONNECTED). Stalwart declares submission
+// internally but the compose does not map it to the host.
+pub const EXPECTED_PORTS: &[u16] = &[25, 143, 465, 993, 2025, 2443, 2993, 6190];
+
+// Stalwart-relay backlog ceiling. /data/queue-stalwart holds one file per
+// message still waiting on tcp://10.0.0.3:2025. A healthy mesh drains it to
+// empty within seconds, so any sustained depth means the dual-write leg is
+// down and the user's store is falling behind the MX. Not zero: a poll that
+// lands mid-delivery legitimately sees a handful of in-flight messages.
+pub const STALWART_QUEUE_MAX_DEPTH: usize = 25;
 
 // cloud-webmail replaced SnappyMail and runs on oci-apps, not oci-mail
 // (a_solutions/user-comm_cloud-webmail/build.json: host oci-apps, port 3000).

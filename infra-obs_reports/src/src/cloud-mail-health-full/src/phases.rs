@@ -10,7 +10,12 @@ use std::time::Instant;
 //
 // OUTBOUND: mail_send → Maddy :465 → OCI relay :587 → (retry: AWS :587) → dest MX
 // INBOUND:  Resend → CF MX → CF Worker → api.diegonmarcos.com/http-to-smtp-proxy-api (HTTPS)
-//           → Caddy gcp-proxy → http-to-smtp-proxy-api gcp-proxy :8090 → SMTP/WG → Maddy :25 → INBOX
+//           → Caddy gcp-proxy → http-to-smtp-proxy-api gcp-proxy :8090 → SMTP/WG → Maddy :25
+//           → dual-write: Maddy imapsql (:993)  AND  stalwart_queue → :2025 → Stalwart (:2993)
+//
+// The inbound path does NOT end at Maddy. Maddy is the WG-only MX; Stalwart is
+// the store mail clients read. Both legs have to be traced or the report can
+// call inbound healthy while the user's mailbox has stopped receiving.
 //
 
 pub async fn path_checker() -> Vec<Check> {
@@ -135,15 +140,43 @@ pub async fn path_checker() -> Vec<Check> {
         severity: if ok { Severity::Info } else { Severity::Critical },
     });
 
-    // Step 6: IMAP :993 (delivery to INBOX)
+    // Step 6: Maddy IMAP :993 — the local_mailboxes leg of the dual-write.
     let t = Instant::now();
     let ok = tcp(MAIL_WG_IP, 993).await;
     checks.push(Check {
-        name: "IN→6 IMAP :993 (INBOX)".into(),
+        name: "IN→6 Maddy IMAP :993 (local store)".into(),
         passed: ok,
         details: format!("tcp {}:993 {}", MAIL_WG_IP, if ok { "OPEN" } else { "CLOSED" }),
         duration_ms: t.elapsed().as_millis() as u64,
-        error: if ok { None } else { Some("IMAP not accessible".into()) },
+        error: if ok { None } else { Some("Maddy IMAP not accessible".into()) },
+        severity: if ok { Severity::Info } else { Severity::Critical },
+    });
+
+    // Steps 7-8: the second leg. maddy.conf's local_routing pipeline ends in
+    // `deliver_to &local_mailboxes` AND `deliver_to &stalwart_queue`, and
+    // stalwart_queue drains to `target.smtp stalwart_relay { targets
+    // tcp://10.0.0.3:2025 }`. Until now the inbound trace stopped at step 6, so
+    // it declared inbound healthy while describing only the store the user does
+    // not read. These two steps carry it to the actual destination.
+    let t = Instant::now();
+    let ok = tcp(MAIL_WG_IP, 2025).await;
+    checks.push(Check {
+        name: "IN→7 stalwart_relay :2025 (dual-write)".into(),
+        passed: ok,
+        details: format!("tcp {}:2025 {}", MAIL_WG_IP, if ok { "OPEN" } else { "CLOSED" }),
+        duration_ms: t.elapsed().as_millis() as u64,
+        error: if ok { None } else { Some("Stalwart not accepting maddy's mirror — mail queues on disk".into()) },
+        severity: if ok { Severity::Info } else { Severity::Critical },
+    });
+
+    let t = Instant::now();
+    let ok = tcp(MAIL_WG_IP, 2993).await;
+    checks.push(Check {
+        name: "IN→8 Stalwart IMAPS :2993 (user store)".into(),
+        passed: ok,
+        details: format!("tcp {}:2993 {}", MAIL_WG_IP, if ok { "OPEN" } else { "CLOSED" }),
+        duration_ms: t.elapsed().as_millis() as u64,
+        error: if ok { None } else { Some("user-facing store unreachable".into()) },
         severity: if ok { Severity::Info } else { Severity::Critical },
     });
 
@@ -1524,77 +1557,49 @@ pub fn mail_internals(mail_data: &Option<RemoteData>) -> Vec<Check> {
 
     let mut checks = Vec::new();
 
-    // IMAP auth
-    let imap_ok = data.dovecot_user.contains("IMAP4")
-        || data.dovecot_user.contains("OK")
-        || data.dovecot_user.contains("Maddy")
-        || data.dovecot_user.contains("maddy");
+    // Maddy's own IMAP (127.0.0.1:993) — the `deliver_to &local_mailboxes` leg.
+    //
+    // This used to be two checks, "IMAP auth" and "IMAP protocol", fed by two
+    // SSH sections (dovecotUser and imapCap) that ran the *identical* command.
+    // One probe reported as two independent signals inflates the pass count and
+    // hides the fact that nothing was watching the other store at all.
+    let maddy_imap_ok = data.imap_cap.contains("IMAP4") || data.imap_cap.contains("OK");
     checks.push(Check {
-        name: "IMAP auth".into(),
-        passed: imap_ok,
-        details: if imap_ok {
-            "Maddy IMAP responding".into()
+        name: "Maddy IMAP :993".into(),
+        passed: maddy_imap_ok,
+        details: if maddy_imap_ok { "IMAP4rev1 responding".into() } else { "not responding".into() },
+        duration_ms: 0,
+        error: if maddy_imap_ok { None } else { Some("maddy IMAP not responding".into()) },
+        severity: if maddy_imap_ok { Severity::Info } else { Severity::Critical },
+    });
+
+    // Stalwart's IMAP (10.0.0.3:2993) — the store mail clients actually read,
+    // written by the `deliver_to &stalwart_queue` leg. The two legs are not
+    // atomic (maddy.conf documents this at length), so maddy answering on 993
+    // says nothing about whether the user can see their mail.
+    let stalwart_imap_ok = data.stalwart_imap.contains("IMAP4") || data.stalwart_imap.contains("OK");
+    checks.push(Check {
+        name: "Stalwart IMAP :2993".into(),
+        passed: stalwart_imap_ok,
+        details: if stalwart_imap_ok {
+            "IMAP4rev2 responding (user-facing store)".into()
         } else {
-            format!("FAILED: {}", &data.dovecot_user[..data.dovecot_user.len().min(60)])
+            "not responding — user cannot read mail".into()
         },
         duration_ms: 0,
-        error: if imap_ok { None } else { Some("IMAP not responding".into()) },
-        severity: if imap_ok { Severity::Info } else { Severity::Critical },
+        error: if stalwart_imap_ok { None } else { Some("stalwart IMAP not responding".into()) },
+        severity: if stalwart_imap_ok { Severity::Info } else { Severity::Critical },
     });
 
-    // IMAP protocol
-    let proto_ok = data.imap_cap.contains("IMAP4") || data.imap_cap.contains("OK");
-    checks.push(Check {
-        name: "IMAP protocol".into(),
-        passed: proto_ok,
-        details: if proto_ok { "IMAP4rev1".into() } else { "not responding".into() },
-        duration_ms: 0,
-        error: if proto_ok { None } else { Some("IMAP protocol fail".into()) },
-        severity: if proto_ok { Severity::Info } else { Severity::Critical },
-    });
-
-    // spam filter (Maddy built-in DKIM/SPF checks)
-    let spam_ok = data.rspamd.contains("maddy-builtin") || data.rspamd.contains("dkim") || data.rspamd.contains("scanned");
-    checks.push(Check {
-        name: "spam filter".into(),
-        passed: spam_ok,
-        details: if spam_ok { "Maddy built-in DKIM/SPF".into() } else { data.rspamd[..data.rspamd.len().min(40)].to_string() },
-        duration_ms: 0,
-        error: if spam_ok { None } else { Some("spam filter issue".into()) },
-        severity: Severity::Info,
-    });
-
-    // data store (Maddy uses SQLite)
-    let store_ok = data.redis.contains("maddy-sqlite") || data.redis.contains("PONG") || data.redis.contains("sqlite");
-    checks.push(Check {
-        name: "data store".into(),
-        passed: store_ok,
-        details: "Maddy SQLite".into(),
-        duration_ms: 0,
-        error: if store_ok { None } else { Some("data store issue".into()) },
-        severity: Severity::Info,
-    });
-
-    // admin panel (Maddy has no web admin — CLI only, this is expected)
-    let admin_ok = data.admin.contains("maddy-no-web-admin") || data.admin.trim().is_empty();
-    checks.push(Check {
-        name: "admin panel".into(),
-        passed: true, // Maddy has no web admin by design
-        details: "Maddy CLI-only (no web admin)".into(),
-        duration_ms: 0,
-        error: None,
-        severity: Severity::Info,
-    });
-
-    // sieve filter (Maddy has built-in sieve support, no separate ManageSieve server)
-    checks.push(Check {
-        name: "sieve filter".into(),
-        passed: true,
-        details: "Maddy built-in sieve (no ManageSieve server)".into(),
-        duration_ms: 0,
-        error: None,
-        severity: Severity::Info,
-    });
+    // (Removed 2026-09-09: "spam filter", "data store", "admin panel" and
+    // "sieve filter". Each asserted a string the SSH batch had just echoed as a
+    // literal on the line above — `echo "maddy-builtin-dkim-spf"` then assert
+    // it contains "maddy-builtin" — so all four passed unconditionally and
+    // measured nothing. Their names were Mailu-era besides: there is no rspamd,
+    // no redis and no web admin on this VM. "sieve filter" was also actively
+    // wrong: it reported "no ManageSieve server" while Stalwart answers
+    // `"IMPLEMENTATION" "Stalwart ManageSieve"` on :6190 — now covered by the
+    // EXPECTED_PORTS bound check.)
 
     // mailbox quota
     checks.push(Check {
@@ -1635,21 +1640,49 @@ pub fn mail_internals(mail_data: &Option<RemoteData>) -> Vec<Check> {
         });
     }
 
-    // Queue status
-    let queue_ok = data.maddy_queue.contains("empty")
-        || data.maddy_queue.contains("[]");
-    checks.push(Check {
-        name: "Mail queue".into(),
-        passed: queue_ok || data.maddy_queue.len() < 100,
-        details: if queue_ok {
-            "empty".into()
-        } else {
-            data.maddy_queue[..data.maddy_queue.len().min(60)].to_string()
-        },
-        duration_ms: 0,
-        error: None,
-        severity: Severity::Info,
-    });
+    // Stalwart dual-write backlog — messages in maddy's local store that have
+    // not reached the store the user reads.
+    //
+    // This replaces a check that could not fail: it read `maddy queue list`,
+    // which is not a maddy subcommand, and the batch masked the error with
+    // `|| echo "empty"`. So it reported an empty queue forever, including
+    // through a total stalwart_relay outage. Because maddy fronts the relay with
+    // a durable on-disk queue, that outage raises no other alarm anywhere in
+    // this report — inbound SMTP still succeeds, both containers stay Up, and
+    // mail silently stops appearing for the user. Depth is the only signal.
+    {
+        let raw = data.stalwart_queue_depth.trim();
+        let depth = raw.parse::<usize>().ok();
+        let (passed, details, severity) = match depth {
+            Some(0) => (true, "empty — stalwart mirror caught up".to_string(), Severity::Info),
+            Some(d) if d <= STALWART_QUEUE_MAX_DEPTH => (
+                true,
+                format!("{} in flight (ceiling {})", d, STALWART_QUEUE_MAX_DEPTH),
+                Severity::Info,
+            ),
+            Some(d) => (
+                false,
+                format!(
+                    "{} messages queued for tcp://{}:2025 (ceiling {}) — mirror to Stalwart is stalled",
+                    d, MAIL_WG_IP, STALWART_QUEUE_MAX_DEPTH
+                ),
+                Severity::Critical,
+            ),
+            None => (
+                false,
+                format!("cannot read /data/queue-stalwart ({})", raw),
+                Severity::Warning,
+            ),
+        };
+        checks.push(Check {
+            name: "Stalwart relay backlog".into(),
+            passed,
+            details: details.clone(),
+            duration_ms: 0,
+            error: if passed { None } else { Some(details) },
+            severity,
+        });
+    }
 
     // User accounts
     let user_count = serde_json::from_str::<serde_json::Value>(&data.users)

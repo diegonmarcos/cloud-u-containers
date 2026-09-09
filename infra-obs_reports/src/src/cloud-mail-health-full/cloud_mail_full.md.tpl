@@ -14,31 +14,39 @@
 $ISSUES_SUMMARY
 
 
-0. INSTANT KPIs
+0. PATH CHECKER (outbound / inbound / discovery)
+──────────────────────────────────────────────────────────────
+$PATH_CHECKS
+
+1. INSTANT KPIs
 ──────────────────────────────────────────────────────────────
 $INSTANT_KPIS
 
-1. PRE-FLIGHT
+2. PRE-FLIGHT
 ──────────────────────────────────────────────────────────────
 $PREFLIGHT
 
-2. CONTAINERS
+3. CONTAINERS
 ──────────────────────────────────────────────────────────────
 $CONTAINERS
 
-3. NETWORK + AUTH
+4. NETWORK + AUTH
 ──────────────────────────────────────────────────────────────
 $NETWORK
 
-4. DNS AUTH
+5. DNS AUTH
 ──────────────────────────────────────────────────────────────
 $DNS_AUTH
 
-5. MAIL INTERNALS
+6. MAIL INTERNALS
 ──────────────────────────────────────────────────────────────
 $INTERNALS
 
-6. E2E DELIVERY
+7. CONFIG DRIFT
+──────────────────────────────────────────────────────────────
+$CONFIG_DRIFT
+
+8. E2E DELIVERY
 ──────────────────────────────────────────────────────────────
 $E2E_DELIVERY
 

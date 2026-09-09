@@ -58,6 +58,7 @@ pub fn build_template_vars(results: &MailHealthResult) -> HashMap<String, String
     vars.insert("ISSUES_SUMMARY".into(), build_issues_summary(results));
 
     // Phase sections
+    vars.insert("PATH_CHECKS".into(), format_checks(&results.path_checks));
     vars.insert(
         "INSTANT_KPIS".into(),
         format_checks(&results.instant_kpis),
@@ -67,6 +68,7 @@ pub fn build_template_vars(results: &MailHealthResult) -> HashMap<String, String
     vars.insert("NETWORK".into(), format_checks(&results.network));
     vars.insert("DNS_AUTH".into(), format_checks(&results.dns_auth));
     vars.insert("INTERNALS".into(), format_checks(&results.internals));
+    vars.insert("CONFIG_DRIFT".into(), format_checks(&results.config_drift));
     vars.insert(
         "E2E_DELIVERY".into(),
         format_checks(&results.e2e_delivery),
@@ -81,15 +83,25 @@ pub fn build_template_vars(results: &MailHealthResult) -> HashMap<String, String
     vars
 }
 
+/// Every check group, in the same order main.rs counts them for the summary.
+///
+/// path_checks and config_drift used to be missing here while main.rs counted
+/// them into Summary.critical. A red path check therefore produced a report
+/// whose footer said "CRITICAL -- 2 critical" above an ISSUES FOUND block that
+/// said "No issues found" and a body with no section to look in — the two most
+/// diagnostic groups in the run, the end-to-end path trace and config drift,
+/// were the two that could never be read.
 fn build_issues_summary(results: &MailHealthResult) -> String {
     let all_checks: Vec<&Check> = results
-        .instant_kpis
+        .path_checks
         .iter()
+        .chain(&results.instant_kpis)
         .chain(&results.preflight)
         .chain(&results.containers)
         .chain(&results.network)
         .chain(&results.dns_auth)
         .chain(&results.internals)
+        .chain(&results.config_drift)
         .chain(&results.e2e_delivery)
         .collect();
 
