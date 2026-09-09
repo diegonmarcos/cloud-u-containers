@@ -26,16 +26,19 @@ use std::time::Instant;
 use types::*;
 
 fn load_bearer_token() -> Option<String> {
-    // Prefer the env var when set — this is the canonical path for
-    // automated runs (Dagu mounts the sops-decrypted token into the
-    // container's environment via `docker run -e AUTHELIA_BEARER_TOKEN`).
-    // Fall back to the on-disk vault token file for interactive
-    // developer-workstation runs where the vault repo is mounted at
-    // ~/git/cloud-vault/.
-    if let Ok(tok) = std::env::var("AUTHELIA_BEARER_TOKEN") {
-        let trimmed = tok.trim();
-        if !trimmed.is_empty() {
-            return Some(trimmed.to_string());
+    // Prefer the env var when set — this is the canonical path for automated
+    // runs. The name is NOT free-form: entrypoint.sh, the dagu DAG and the GHA
+    // ops script all agree on BEARER_TOKEN, so that name is tried first. See
+    // constants::BEARER_TOKEN_ENV_VARS for why reading only the second name
+    // silently disabled every OIDC check. Fall back to the on-disk vault token
+    // file for interactive developer-workstation runs where the vault repo is
+    // mounted at ~/git/cloud-vault/.
+    for var in constants::BEARER_TOKEN_ENV_VARS {
+        if let Ok(tok) = std::env::var(var) {
+            let trimmed = tok.trim();
+            if !trimmed.is_empty() {
+                return Some(trimmed.to_string());
+            }
         }
     }
     let home = std::env::var("HOME").unwrap_or("/home/diego".into());

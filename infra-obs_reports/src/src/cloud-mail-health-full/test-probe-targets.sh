@@ -67,6 +67,48 @@ if [ "${1:-}" = "--emit-batch" ]; then
   exit 0
 fi
 
+# ── Static assertions ──────────────────────────────────────────────────────
+# These need no network and run before the transport is chosen, so they still
+# fire on a machine with no ssh client. They cover the two probe defects found
+# on 2026-09-09 that dialling a target cannot catch, because in both cases the
+# target was healthy and the probe never reached it:
+#
+#  * The report read the bearer from AUTHELIA_BEARER_TOKEN while entrypoint.sh
+#    and both callers pass BEARER_TOKEN, so every OIDC check reported "no OIDC
+#    token" and asserted nothing.
+#  * "webmail.* redirect" overrode the request deadline to 5s — below the
+#    crate's own HTTP_TIMEOUT — and expired at 5002ms against an endpoint that
+#    answers in ~1-2s, reporting a transport error as an outage.
+PHASES="$(dirname "$0")/src/phases.rs"
+MAIN="$(dirname "$0")/src/main.rs"
+CHECKS="$(dirname "$0")/src/checks.rs"
+
+echo
+echo "0. Static: the bearer env name matches the name the pipeline sets"
+# Matched on the executable line, not on a mention: the previous wording was
+# satisfied by a comment naming the constant while the code still read a
+# hardcoded env name one line below.
+BEARER_LOOP=$(grep -c 'for var in constants::BEARER_TOKEN_ENV_VARS' "$MAIN")
+BEARER_LITERAL=$(grep -c 'env::var("[^"]*BEARER' "$MAIN")
+BEARER_LISTED=$(sed -n 's/^pub const BEARER_TOKEN_ENV_VARS.*&\[\(.*\)\];/\1/p' "$CONSTANTS" | grep -c '"BEARER_TOKEN"')
+if [ "$BEARER_LOOP" -ge 1 ] && [ "$BEARER_LITERAL" -eq 0 ] && [ "$BEARER_LISTED" -ge 1 ]; then
+  pass "main.rs loops constants::BEARER_TOKEN_ENV_VARS (no literal env::var name), and BEARER_TOKEN is listed"
+else
+  fail "main.rs must read the bearer by looping constants::BEARER_TOKEN_ENV_VARS, which must list BEARER_TOKEN — entrypoint.sh and both callers set that name and nothing else (loop=$BEARER_LOOP literals=$BEARER_LITERAL listed=$BEARER_LISTED)"
+fi
+
+echo
+echo "0b. Static: no probe deadline tighter than the crate's HTTP_TIMEOUT"
+HTTP_TIMEOUT_SECS=$(sed -n 's/^pub const HTTP_TIMEOUT.*from_secs(\([0-9]*\)).*/\1/p' "$CHECKS")
+[ -n "$HTTP_TIMEOUT_SECS" ] || { echo "✗ could not parse HTTP_TIMEOUT from checks.rs"; exit 1; }
+TIGHT=$(grep -oE '\.timeout\(std::time::Duration::from_secs\([0-9]+\)\)' "$PHASES" \
+        | grep -oE '[0-9]+' | awk -v lim="$HTTP_TIMEOUT_SECS" '$1 < lim' | sort -un | tr '\n' ' ')
+if [ -z "$TIGHT" ]; then
+  pass "every per-request timeout in phases.rs is >= HTTP_TIMEOUT (${HTTP_TIMEOUT_SECS}s)"
+else
+  fail "phases.rs overrides the deadline to ${TIGHT}s, below HTTP_TIMEOUT ${HTTP_TIMEOUT_SECS}s — a probe that expires early reports a healthy endpoint as unreachable"
+fi
+
 # PROBE_OUTPUT lets a caller without an ssh client (the api-runner container has
 # none) supply a batch transcript collected some other way — the MCP ssh tool, a
 # CI step, a paste. Same assertions either way; only the transport differs.
@@ -77,9 +119,15 @@ elif command -v ssh >/dev/null; then
   OUT=$(remote_batch | ssh -o BatchMode=yes -o ConnectTimeout=5 "$MAIL_ALIAS" bash -s 2>/dev/null)
   echo "batch transcript: live ssh $MAIL_ALIAS"
 else
-  echo "✗ no ssh client and no PROBE_OUTPUT set"
+  # Static-only run. The live half is skipped, but the static assertions above
+  # have already executed and their verdict is the exit code — otherwise a
+  # transportless environment (the api-runner container has no ssh client)
+  # would report "cannot test" for checks it just finished running.
+  echo "✗ no ssh client and no PROBE_OUTPUT set — LIVE PROBES SKIPPED, static assertions above still apply"
   echo "  collect the batch with:  ./test-probe-targets.sh --emit-batch | <your ssh transport> > /tmp/batch.txt"
   echo "  then re-run with:        PROBE_OUTPUT=/tmp/batch.txt ./test-probe-targets.sh"
+  [ "$FAILS" -eq 0 ] && { echo "PASS (static only) — $FAILS static failure(s)"; exit 0; }
+  echo "FAIL (static only) — $FAILS static assertion(s) failed"
   exit 1
 fi
 

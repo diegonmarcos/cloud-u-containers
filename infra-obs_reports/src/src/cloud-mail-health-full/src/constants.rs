@@ -126,6 +126,22 @@ pub const STALWART_QUEUE_MAX_DEPTH: usize = 25;
 #[allow(dead_code)]
 pub const WEBMAIL_INTERNAL_URL: &str = "http://10.0.0.6:3000/";
 
+// Environment variable names carrying the Authelia bearer, in priority order.
+//
+// The pipeline's contract is BEARER_TOKEN: the dagu DAG health_mail-full.yaml
+// and the GHA ops script 1_cicd/src/ops/cloud-health-mail-full.sh both run the
+// reports image with `-e BEARER_TOKEN=...`, and infra-obs_reports/src/entrypoint.sh
+// validates that exact name (it aborts with "FATAL: BEARER_TOKEN unset and no
+// vault JWT found" when it is missing). load_bearer_token() read only
+// AUTHELIA_BEARER_TOKEN, a name nothing sets inside the container — so every
+// OIDC-gated check reported "no OIDC token" on every run even when the caller
+// had supplied a valid token, and asserted nothing about the auth chain.
+// Verified 2026-09-09: a run with BEARER_TOKEN set (entrypoint accepted it, no
+// FATAL) still printed "Bearer token: not found (OIDC checks will fail)".
+// AUTHELIA_BEARER_TOKEN is kept as a fallback for the dagu container's own
+// boot-time environment, which does export that name.
+pub const BEARER_TOKEN_ENV_VARS: &[&str] = &["BEARER_TOKEN", "AUTHELIA_BEARER_TOKEN"];
+
 // Bearer token path (relative to $HOME)
 pub const BEARER_TOKEN_PATH: &str =
     "git/cloud-vault/A0_keys/providers/authelia/signed-bearer_jwt/tokens/cloud-admin.json";
