@@ -1,37 +1,77 @@
 {
-  "cloud-infra": {
-    "type": "http",
-    "url": "https://mcp.diegonmarcos.com/c3-infra-mcp/mcp",
-    "headers": { "Authorization": "Bearer ${AUTHELIA_OIDC_TOKEN_CLAUDE_ADMIN}" }
-  },
-  "cloud-cgc-pub-mcp": {
-    "type": "http",
-    "url": "https://mcp.diegonmarcos.com/cloud-cgc-pub-mcp/mcp",
-    "headers": { "Authorization": "Bearer ${AUTHELIA_OIDC_TOKEN_CLAUDE_ADMIN}" }
-  },
-  "cloud-services": {
-    "type": "http",
-    "url": "https://mcp.diegonmarcos.com/c3-services-mcp/mcp",
-    "headers": { "Authorization": "Bearer ${AUTHELIA_OIDC_TOKEN_CLAUDE_ADMIN}" }
-  },
-  "mattermost": {
-    "type": "http",
-    "url": "https://mcp.diegonmarcos.com/mattermost-mcp/mcp",
-    "headers": { "Authorization": "Bearer ${AUTHELIA_OIDC_TOKEN_CLAUDE_ADMIN}" }
-  },
-  "cloud-mail-mcp": {
-    "type": "http",
-    "url": "https://mcp.diegonmarcos.com/mail-mcp/mcp",
-    "headers": { "Authorization": "Bearer ${AUTHELIA_OIDC_TOKEN_CLAUDE_ADMIN}" }
-  },
-  "google-workspace": {
-    "type": "http",
-    "url": "https://mcp.diegonmarcos.com/g-workspace/mcp",
-    "headers": { "Authorization": "Bearer ${AUTHELIA_OIDC_TOKEN_CLAUDE_ADMIN}" }
-  },
-  "google-personal": {
-    "type": "http",
-    "url": "https://mcp.diegonmarcos.com/g-personal/mcp",
-    "headers": { "Authorization": "Bearer ${AUTHELIA_OIDC_TOKEN_CLAUDE_ADMIN}" }
+  "_warning": "GENERATED — DO NOT EDIT. Derived from cloud-infra/1_cloud-configs/dist/mcp.json + mcp-policy.json by cloud-u-linux da_my-ai/data/claude/gen-mcp-tpl.sh. Hand-editing this file is the bug it exists to prevent: edit the service declaration or mcp-policy.json and regenerate.",
+  "_doc": "The my-ai_claude-api agent runner on oci-apps. It gets the SAME derived HTTP set as the two human machines — a headless agent that cannot reach the code graph reasons blind, which is exactly what a shorter list here caused. TWO declared exceptions, and no others:\n  1. auth_header uses AUTHELIA_OIDC_TOKEN_CLAUDE_ADMIN with an UNDERSCORE. The container is      rendered by render-mcp.mjs, which does a literal replaceAll of that exact string at boot;      desktop and termux are rendered by nix, which substitutes the hyphenated spelling. Neither      renderer recognises the other's placeholder, so one shared spelling would silently ship an      unexpanded literal as the bearer token and 403 every gated server.\n  2. output points OUT of this repository. The container image is built from a cloud-u-containers      build context that cannot reach this checkout, so its copy has to be committed there;      generating it directly is what keeps it from becoming a second hand-maintained list again.      The path is relative to ${GIT_BASE:-$HOME/git}. When that checkout is absent — cloud-infra's      lint-pipeline clones only cloud-u-linux — this platform is SKIPPED rather than failed, and      cloud-u-containers' own test-mcp-contract.sh asserts the same equality from its side.",
+  "mcpServers": {
+    "cloud-cgc-pub-mcp": {
+      "type": "http",
+      "url": "https://mcp.diegonmarcos.com/cloud-cgc-pub-mcp/mcp",
+      "headers": {
+        "Authorization": "Bearer ${AUTHELIA_OIDC_TOKEN_CLAUDE_ADMIN}"
+      }
+    },
+    "cloud-cgc-pvt-mcp": {
+      "type": "http",
+      "url": "http://10.0.0.6:3107/mcp"
+    },
+    "cloud-drive-mcp": {
+      "type": "http",
+      "url": "https://mcp.diegonmarcos.com/cloud-drive-mcp/mcp",
+      "headers": {
+        "Authorization": "Bearer ${AUTHELIA_OIDC_TOKEN_CLAUDE_ADMIN}"
+      }
+    },
+    "cloud-infra-mcp": {
+      "type": "http",
+      "url": "https://mcp.diegonmarcos.com/c3-infra-mcp/mcp",
+      "headers": {
+        "Authorization": "Bearer ${AUTHELIA_OIDC_TOKEN_CLAUDE_ADMIN}"
+      }
+    },
+    "cloud-mail-mcp": {
+      "type": "http",
+      "url": "https://mcp.diegonmarcos.com/mail-mcp/mcp",
+      "headers": {
+        "Authorization": "Bearer ${AUTHELIA_OIDC_TOKEN_CLAUDE_ADMIN}"
+      }
+    },
+    "cloud-mattermost-mcp": {
+      "type": "http",
+      "url": "https://mcp.diegonmarcos.com/mattermost-mcp/mcp",
+      "headers": {
+        "Authorization": "Bearer ${AUTHELIA_OIDC_TOKEN_CLAUDE_ADMIN}"
+      }
+    },
+    "cloud-services-mcp": {
+      "type": "http",
+      "url": "https://mcp.diegonmarcos.com/c3-services-mcp/mcp",
+      "headers": {
+        "Authorization": "Bearer ${AUTHELIA_OIDC_TOKEN_CLAUDE_ADMIN}"
+      }
+    },
+    "cloud-superapp-mcp": {
+      "type": "http",
+      "url": "https://mcp.diegonmarcos.com/cloud-superapp-mcp/mcp",
+      "headers": {
+        "Authorization": "Bearer ${AUTHELIA_OIDC_TOKEN_CLAUDE_ADMIN}"
+      }
+    },
+    "cloud-vault-mcp": {
+      "type": "http",
+      "url": "http://10.0.0.6:3111/mcp"
+    },
+    "google-personal-mcp": {
+      "type": "http",
+      "url": "https://mcp.diegonmarcos.com/g-personal/mcp",
+      "headers": {
+        "Authorization": "Bearer ${AUTHELIA_OIDC_TOKEN_CLAUDE_ADMIN}"
+      }
+    },
+    "google-workspace-mcp": {
+      "type": "http",
+      "url": "https://mcp.diegonmarcos.com/g-workspace/mcp",
+      "headers": {
+        "Authorization": "Bearer ${AUTHELIA_OIDC_TOKEN_CLAUDE_ADMIN}"
+      }
+    }
   }
 }

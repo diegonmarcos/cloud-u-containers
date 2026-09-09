@@ -78,10 +78,16 @@ Then clean up with `git checkout HEAD -- path/` or continue with absolute paths.
 GUARD
 
 # ── MCP SERVERS (data-driven) ────────────────────────────────────────────────
-# The server list is NOT restated here: mcp.tpl.json is the single source of
-# truth for what render-mcp.mjs actually writes into ~/.claude.json at boot, so
-# reading it is the only way this block cannot drift out of date. Keys only —
-# the values carry the bearer token and must never reach a model's context.
+# The server list is NOT restated here: mcp.tpl.json is what render-mcp.mjs
+# actually writes into ~/.claude.json at boot, so reading it is the only way this
+# block cannot drift out of date. Keys only — the values carry the bearer token
+# and must never reach a model's context.
+#
+# mcp.tpl.json is itself GENERATED (cloud-u-linux gen-mcp-tpl.sh, from
+# cloud-infra's derived server list), so the names printed here are the fleet's
+# canonical ones. When it was hand-written this block faithfully printed seven
+# invented keys, which is worse than printing nothing: the list looked
+# authoritative and no `mcp__` name built from it matched anything elsewhere.
 #
 # WHY this block exists at all: agents were told to call `octocode_search` /
 # `c3_*`, which are not tool names on any server here. Finding no such tool, an
@@ -94,7 +100,7 @@ GUARD
 MCP_TPL="${MCP_TPL:-/app/claude-config/mcp.tpl.json}"
 if [ -r "$MCP_TPL" ] && command -v jq >/dev/null 2>&1; then
   printf '\n## MCP SERVERS\n\nWired into this container (source: %s):\n' "$MCP_TPL"
-  jq -r 'keys[] | "- " + .' "$MCP_TPL"
+  jq -r '.mcpServers | keys[] | "- " + .' "$MCP_TPL"
   cat <<'MCPGUARD'
 
 Their tools are DEFERRED — they are NOT in your initial tool list, and their
