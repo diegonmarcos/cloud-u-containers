@@ -1,3 +1,38 @@
+/**
+ * JMAP engine (RFC 8620 core + RFC 8621 mail) for the webmail client.
+ *
+ * Protocol backlog, ordered by user-visible impact, with the evidence gathered
+ * while taking item 1 (w068) so the next pass starts from facts rather than
+ * re-deriving them:
+ *
+ *  1. DONE - paging anchors (RFC 8620 5.5). getEmails / searchEmails /
+ *     advancedSearchEmails anchor each page on the last id of the previous
+ *     one instead of re-offsetting into a list the server recomputes per
+ *     request. See page-anchors.ts.
+ *  2. Conditional writes (ifInState, RFC 8620 5.3). `ifInState` occurs nowhere
+ *     in this repository: every Email/set and Mailbox/set is unconditional, so
+ *     a keyword, move or delete issued from a view that a push event has not
+ *     yet refreshed silently overwrites a concurrent change made in another
+ *     tab or on the phone. Fix: send the state the view was built from and, on
+ *     `stateMismatch`, resync through Email/changes before replaying.
+ *  3. Request coalescing. request-limits.ts (batched / itemsPerRequest) caps
+ *     objects per method call, but every caller still POSTs on its own: one
+ *     push event fans out into folder, tag-count, thread-count and list
+ *     refreshes in parallel and trips Stalwart's maxConcurrentRequests, which
+ *     request() absorbs with a retry and back-off (isConcurrentRequestRefusal).
+ *     Merging one tick's method calls into a single JMAP request would remove
+ *     the refusals instead of retrying them.
+ *  4. EventSource resumption (RFC 8620 7.3). connectSSE() asks for {types}=*,
+ *     closeafter=no, ping=30 and reconnects with back-off, but never sends a
+ *     Last-Event-ID, so a reconnect resyncs by refetching state instead of
+ *     replaying the events missed while the socket was down.
+ *  5. Send atomicity - largely done. sendEmail() puts the Email/set create and
+ *     the EmailSubmission/set (with onSuccessUpdateEmail) in one request, so a
+ *     message cannot be filed into Sent without having been submitted. What
+ *     remains is the old-draft destroy, deliberately deferred to a second
+ *     request (#849): when that one fails the send still succeeds and the
+ *     caller only gets a warning, leaving a duplicate draft behind.
+ */
 import { generateUUID } from '@/lib/utils';
 import type { Email, Mailbox, StateChange, AccountStates, Thread, Identity, EmailAddress, ContactCard, AddressBook, AddressBookRights, VacationResponse, Calendar, CalendarComponentType, CalendarRights, CalendarEvent, CalendarEventFilter, CalendarTask, CreateCalendarOptions, FileNode, FileNodeFilter, FileNodeRights, Principal, PushSubscription, EmailPushConfig, EmailSubmission, ScheduledEmail, SendEmailResult, SharedAccount } from "./types";
 import type { SieveScript, SieveCapabilities } from "./sieve-types";
@@ -6,6 +41,7 @@ import { toWildcardQuery } from "./search-utils";
 import { batched, itemsPerRequest } from "./request-limits";
 import { keywordPointer } from "./patch-pointer";
 import { FirstTouchGate } from "./first-touch-gate";
+import { PageAnchors, emailQueryViewKey, type QueryPage } from "./page-anchors";
 import { debug } from "@/lib/debug";
 import { normalizeCalendarEventLike } from "@/lib/calendar-event-normalization";
 import { findTasksOnlyCalendarIds, isTaskLikeObject, type ScannedCalendarObject } from "@/lib/calendar-component-detection";
@@ -475,6 +511,12 @@ function computeHasMore(position: number, emailCount: number, total: number, lim
   return emailCount === limit;
 }
 
+/** The `type` of the first method response when it came back as an error. */
+function queryErrorType(response: JMAPResponse): string | undefined {
+  const [method, result] = response.methodResponses?.[0] ?? [];
+  return method === "error" ? (result?.type as string | undefined) : undefined;
+}
+
 function hasSubmissionMethod(methodCalls: JMAPMethodCall[]): boolean {
   return methodCalls.some(([method]) => method.startsWith('Identity/') || method.startsWith('EmailSubmission/'));
 }
@@ -674,6 +716,9 @@ export class JMAPClient implements IJMAPClient {
   // Serialises the first calendar/contacts request per account so Stalwart's
   // lazy default-calendar/address-book creation can't run twice (#907).
   private firstTouchGate = new FirstTouchGate();
+  // Where the last served page of each list view ended, so the next page can
+  // anchor on it instead of re-offsetting into a list that moved underneath.
+  private pageAnchors = new PageAnchors();
 
   constructor(serverUrl: string, username: string, password: string) {
     this.serverUrl = serverUrl.replace(/\/$/, '');
@@ -1465,13 +1510,13 @@ export class JMAPClient implements IJMAPClient {
       // same sort or pagination tears, so the sort is built from settings the
       // same way on the first page, load-more and the push refresh.
       const built = await this.buildListSort(targetAccountId, pinnedFirst === true, order);
-      const query = (sort: ReturnType<typeof buildEmailSort>) => this.request([
+      const query = (sort: ReturnType<typeof buildEmailSort>, page: QueryPage) => this.request([
         ["Email/query", {
           accountId: targetAccountId,
           filter,
           sort,
           limit,
-          position,
+          ...page,
           calculateTotal: true,
         }, "0"],
         ["Email/get", {
@@ -1481,17 +1526,24 @@ export class JMAPClient implements IJMAPClient {
         }, "1"],
       ]);
 
-      let response = await query(built.sort);
+      let sort = built.sort;
+      let viewKey = emailQueryViewKey(targetAccountId, filter, sort, limit);
+      let response = await query(sort, this.pageAnchors.pageFor(viewKey, position));
       // A server that advertises nothing but refuses hasKeyword fails the whole
       // query. Remember that and retry once without the keyword comparators
       // rather than showing an empty folder.
-      if (
-        built.keywordSortSupported &&
-        response.methodResponses?.[0]?.[0] === "error" &&
-        (response.methodResponses[0][1] as { type?: string })?.type === "unsupportedSort"
-      ) {
+      if (built.keywordSortSupported && queryErrorType(response) === "unsupportedSort") {
         this.keywordSortUnsupported.add(targetAccountId);
-        response = await query(buildEmailSort(order, { pinnedFirst, keywordSortSupported: false }));
+        sort = buildEmailSort(order, { pinnedFirst, keywordSortSupported: false });
+        // A different sort is a different result list, hence a different view.
+        viewKey = emailQueryViewKey(targetAccountId, filter, sort, limit);
+        response = await query(sort, this.pageAnchors.pageFor(viewKey, position));
+      }
+      // The anchor message left the view between the two pages (deleted, moved,
+      // or no longer matching the filter). Serve the offset the caller asked
+      // for rather than failing the page outright.
+      if (queryErrorType(response) === "anchorNotFound") {
+        response = await query(sort, this.pageAnchors.forget(viewKey, position));
       }
 
       const queryResponse = response.methodResponses?.[0]?.[1];
@@ -1504,7 +1556,8 @@ export class JMAPClient implements IJMAPClient {
         // Must mirror the query sort, or it would undo the configured order.
         emails.sort(compareEmails(order, { pinnedFirst }));
         const total = queryResponse?.total || 0;
-        const hasMore = computeHasMore(position, emails.length, total, limit);
+        const servedPosition = this.pageAnchors.remember(viewKey, queryResponse, position);
+        const hasMore = computeHasMore(servedPosition, emails.length, total, limit);
 
         if (accountId && accountId !== this.accountId) {
           namespaceMailboxIds(emails, accountId);
@@ -2576,13 +2629,15 @@ export class JMAPClient implements IJMAPClient {
         filter = textFilter;
       }
 
-      const response = await this.request([
+      const sort = [{ property: "receivedAt", isAscending: false }];
+      const viewKey = emailQueryViewKey(targetAccountId, filter, sort, limit);
+      const query = (page: QueryPage) => this.request([
         ["Email/query", {
           accountId: targetAccountId,
           filter,
-          sort: [{ property: "receivedAt", isAscending: false }],
+          sort,
           limit,
-          position,
+          ...page,
           calculateTotal: true,
         }, "0"],
         ["Email/get", {
@@ -2592,13 +2647,21 @@ export class JMAPClient implements IJMAPClient {
         }, "1"],
       ]);
 
+      // Anchored paging (see pageFor): search results shift under the same
+      // arrivals and deletions a folder does.
+      let response = await query(this.pageAnchors.pageFor(viewKey, position));
+      if (queryErrorType(response) === "anchorNotFound") {
+        response = await query(this.pageAnchors.forget(viewKey, position));
+      }
+
       const queryResponse = response.methodResponses?.[0]?.[1];
       const emails = (response.methodResponses?.[1]?.[1]?.list || []) as Email[];
       emails.sort((a: Email, b: Email) =>
         new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime()
       );
       const total = queryResponse?.total || 0;
-      const hasMore = computeHasMore(position, emails.length, total, limit);
+      const servedPosition = this.pageAnchors.remember(viewKey, queryResponse, position);
+      const hasMore = computeHasMore(servedPosition, emails.length, total, limit);
 
       // Mirror getEmails: emails fetched from a delegated/shared account carry
       // bare owner mailbox ids; namespace them to `${ownerId}:${id}` so they line
@@ -2627,13 +2690,15 @@ export class JMAPClient implements IJMAPClient {
       // which servers reject; omit the key entirely to mean "no filter".
       const hasFilter = Object.keys(filter).length > 0;
 
-      const response = await this.request([
+      const sort = [{ property: "receivedAt", isAscending: false }];
+      const viewKey = emailQueryViewKey(targetAccountId, hasFilter ? filter : null, sort, limit);
+      const query = (page: QueryPage) => this.request([
         ["Email/query", {
           accountId: targetAccountId,
           ...(hasFilter ? { filter } : {}),
-          sort: [{ property: "receivedAt", isAscending: false }],
+          sort,
           limit,
-          position,
+          ...page,
           calculateTotal: true,
         }, "0"],
         ["Email/get", {
@@ -2643,13 +2708,22 @@ export class JMAPClient implements IJMAPClient {
         }, "1"],
       ]);
 
+      // Anchored paging (see pageFor). The cross-account views (All mail,
+      // Unread, Starred) page through here, and they are the busiest lists
+      // there are - the ones position paging tears most often.
+      let response = await query(this.pageAnchors.pageFor(viewKey, position));
+      if (queryErrorType(response) === "anchorNotFound") {
+        response = await query(this.pageAnchors.forget(viewKey, position));
+      }
+
       const queryResponse = response.methodResponses?.[0]?.[1];
       const emails = (response.methodResponses?.[1]?.[1]?.list || []) as Email[];
       emails.sort((a: Email, b: Email) =>
         new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime()
       );
       const total = queryResponse?.total || 0;
-      const hasMore = computeHasMore(position, emails.length, total, limit);
+      const servedPosition = this.pageAnchors.remember(viewKey, queryResponse, position);
+      const hasMore = computeHasMore(servedPosition, emails.length, total, limit);
 
       // Namespace shared/delegated-account mailbox ids (see searchEmails). The
       // cross-account views (All mail / Unread / Starred) browse via this method,
