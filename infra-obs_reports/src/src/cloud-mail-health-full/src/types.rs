@@ -37,23 +37,21 @@ pub struct RemoteData {
     pub memory: String,
     pub load: String,
     pub docker_version: String,
-    pub dovecot_user: String,
+    /// Maddy's own IMAP banner (127.0.0.1:993) — the local_mailboxes leg.
     pub imap_cap: String,
-    #[allow(dead_code)]
-    pub postfix_queue: String,
-    pub rspamd: String,
-    pub redis: String,
-    pub admin: String,
-    pub sieve: String,
+    /// Stalwart's IMAP banner (10.0.0.3:2993) — the store mail clients read.
+    /// Deliberately a separate probe from imap_cap: the two stores are written
+    /// by two different legs of maddy's dual-write and either can fail alone.
+    pub stalwart_imap: String,
     pub quota: String,
     pub users: String,
     pub smtp25: String,
-    pub smtp587: String,
     pub webmail_internal: String,
     pub maddy_accounts: String,
     pub maddy_domains: String,
-    pub maddy_queue: String,
-    pub sieve4190: String,
+    /// Number of messages still queued for tcp://10.0.0.3:2025, i.e. written to
+    /// maddy's local store but not yet mirrored into Stalwart.
+    pub stalwart_queue_depth: String,
     pub all_local_ports: String,
     #[allow(dead_code)]
     pub debug_dump: String,
@@ -83,7 +81,6 @@ pub struct RemoteDataApps {
 pub struct RemoteDataProxy {
     pub caddy_l4_993: String,
     pub caddy_l4_465: String,
-    pub caddy_l4_587: String,
     pub authelia_health: String,
 }
 

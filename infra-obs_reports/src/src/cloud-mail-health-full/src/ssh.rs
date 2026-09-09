@@ -373,31 +373,38 @@ timeout $T docker info --format '{{.ServerVersion}}' 2>&1 | head -1
 echo "===containers==="
 timeout $T docker ps -a --format '{{.Names}}\t{{.Status}}\t{{.Image}}\t{{.Ports}}' 2>&1
 echo "===restarts==="
-timeout $T docker inspect --format '{{.Name}}\t{{.RestartCount}}' $(timeout $T docker ps -aq --filter name=maddy --filter name=http-to-smtp-proxy-api --filter name=stalwart 2>/dev/null) 2>/dev/null | tr -d '/'
-echo "===dovecotUser==="
-echo "a001 CAPABILITY" | timeout $T openssl s_client -connect localhost:993 -quiet 2>/dev/null | head -3
+# http-to-smtp-proxy-api dropped from the filter: it runs on gcp-proxy, never on
+# oci-mail, so the filter never matched it and only widened the docker ps scan.
+timeout $T docker inspect --format '{{.Name}}\t{{.RestartCount}}' $(timeout $T docker ps -aq --filter name=maddy --filter name=stalwart 2>/dev/null) 2>/dev/null | tr -d '/'
 echo "===imapCap==="
 echo "a001 CAPABILITY" | timeout $T openssl s_client -connect localhost:993 -quiet 2>/dev/null | head -3
-echo "===postfixQueue==="
-docker exec maddy maddy -config /data/maddy.conf queue list 2>/dev/null || echo "empty"
-echo "===rspamd==="
-echo "maddy-builtin-dkim-spf"
-echo "===redis==="
-echo "maddy-sqlite"
-echo "===admin==="
-echo "maddy-no-web-admin"
-echo "===sieve==="
-echo QUIT | timeout $T nc -w3 localhost 4190 2>&1 | head -1 || echo "managesieve-ok"
+echo "===stalwartImap==="
+# Stalwart's IMAPS, the store the user actually reads. Must be dialled on the
+# WG IP, not localhost: stalwart is published through docker-proxy, which binds
+# only 10.0.0.3 and 10.1.0.3 — there is no loopback listener on 2993.
+echo "a001 CAPABILITY" | timeout $T openssl s_client -connect 10.0.0.3:2993 -quiet 2>/dev/null | head -3
+echo "===stalwartQueueDepth==="
+# The dual-write backlog. `maddy queue list` (used here until 2026-09-09) is not
+# a maddy subcommand at all — `maddy --help` offers only verify-config, run,
+# version, hash, imap-mboxes, imap-msgs, imap-acct and creds. The old probe
+# swallowed that error with `|| echo "empty"`, so the queue check reported an
+# empty queue forever and could never see a backlog. The real queue is the
+# on-disk one maddy.conf declares: target.queue stalwart_queue, location
+# /data/queue-stalwart. Count its entries.
+docker exec maddy sh -c 'ls -1 /data/queue-stalwart 2>/dev/null | wc -l' 2>/dev/null || echo "QUEUE_FAIL"
 echo "===quota==="
 docker exec maddy maddy imap-acct list 2>/dev/null | head -5 || echo "maddy-accounts"
 echo "===users==="
 docker exec maddy maddy creds list 2>/dev/null | wc -l || echo "0"
 echo "===smtp25==="
-# Maddy on a 1-vCPU OCI Ampere VM frequently takes >3s to emit its
-# 220 banner under load. Allow up to 8s before reporting "no banner".
-echo QUIT | timeout 8 nc -w8 localhost 25 2>&1 | head -1
-echo "===smtp587==="
-echo QUIT | timeout $T openssl s_client -starttls smtp -connect localhost:587 2>&1 | head -5
+# Dial the WG IP, not localhost. maddy.conf declares the inbound listener as
+# `smtp tcp://10.0.0.3:25 tcp://10.1.0.3:25` — wg0 and wg-public, with no
+# loopback bind — so `nc localhost 25` returned nothing and the "SMTP :25 relay"
+# check was red on every run. The 8s timeout below was added to chase that as a
+# slow-banner problem on the 1-vCPU Ampere VM; the banner was never slow, the
+# port was simply not there. Kept at 8s anyway because SPF evaluation genuinely
+# can delay it under load.
+echo QUIT | timeout 8 nc -w8 10.0.0.3 25 2>&1 | head -1
 echo "===webmailInternal==="
 # cloud-webmail lives on oci-apps (10.0.0.6:3000), NOT here — this probed
 # localhost:8888 (the retired SnappyMail/Maddy-debug port) and so returned
@@ -410,21 +417,26 @@ echo "===maddyAccounts==="
 docker exec maddy maddy creds list 2>/dev/null || echo "CLI_FAIL"
 echo "===maddyDomains==="
 docker exec maddy grep 'local_domains' /data/maddy.conf 2>/dev/null || echo "CLI_FAIL"
-echo "===maddyQueue==="
-docker exec maddy maddy -config /data/maddy.conf queue list 2>/dev/null || echo "empty"
-echo "===sieve4190==="
-echo QUIT | timeout $T nc -w3 localhost 4190 2>&1 | head -1
 echo "===allLocalPorts==="
 # Keep this port set a superset of constants::EXPECTED_PORTS — a port that is
 # expected but not grepped here can never be seen as bound. 8888 dropped and
-# 2443/2993 (Stalwart JMAP + IMAPS) added 2026-09-09.
-sudo ss -tlnp 2>/dev/null | grep -E ':(25|143|465|587|993|2443|2993|4190)\s' || ss -tlnp 2>/dev/null | grep -E ':(25|143|465|587|993|2443|2993|4190)\s' || echo "(none)"
+# 2443/2993 (Stalwart JMAP + IMAPS) added 2026-09-09. 4190 dropped: it is
+# Dovecot's ManageSieve port and nothing has bound it since Mailu; Stalwart's
+# ManageSieve is 6190. 2025 (stalwart_relay) and 2465 (Stalwart SMTPS) added.
+sudo ss -tlnp 2>/dev/null | grep -E ':(25|143|465|587|993|2025|2443|2465|2993|6190)\s' || ss -tlnp 2>/dev/null | grep -E ':(25|143|465|587|993|2025|2443|2465|2993|6190)\s' || echo "(none)"
 echo "===configGhcrHash==="
 echo "maddy-no-ghcr-image"
 echo "===configContainerTplHash==="
 docker exec maddy md5sum /etc/maddy/maddy.conf.tpl 2>/dev/null | awk '{print $1}' || echo "CONTAINER_FAIL"
 echo "===configHostHash==="
-md5sum /opt/containers/maddy/maddy.conf.tpl 2>/dev/null | awk '{print $1}' || echo "HOST_FAIL"
+# configs/maddy.conf.tpl, not the top-level copy. The deploy pipeline ships
+# ./configs/maddy.conf.tpl (see /opt/containers/maddy/.deploy-manifest) and that
+# file is md5-identical to the container's /etc/maddy/maddy.conf.tpl. The
+# top-level /opt/containers/maddy/maddy.conf.tpl is an April leftover from
+# before the layout moved and has a different hash, so hashing it made
+# "Host→Container tpl" and "FULL CHAIN" report CRITICAL DRIFT on every run
+# against a chain that is in fact consistent.
+md5sum /opt/containers/maddy/configs/maddy.conf.tpl 2>/dev/null | awk '{print $1}' || echo "HOST_FAIL"
 echo "===configRunning==="
 docker exec maddy grep -E 'hostname|targets|deliver_to|local_domains|smart_host|tls' /data/maddy.conf 2>/dev/null | head -20 || echo "CONFIG_FAIL"
 echo "===debugDump==="
@@ -458,22 +470,15 @@ cat /etc/resolv.conf 2>/dev/null || true
         memory: parse_section(&output, "memory"),
         load: parse_section(&output, "load"),
         docker_version: parse_section(&output, "dockerVersion"),
-        dovecot_user: parse_section(&output, "dovecotUser"),
         imap_cap: parse_section(&output, "imapCap"),
-        postfix_queue: parse_section(&output, "postfixQueue"),
-        rspamd: parse_section(&output, "rspamd"),
-        redis: parse_section(&output, "redis"),
-        admin: parse_section(&output, "admin"),
-        sieve: parse_section(&output, "sieve"),
+        stalwart_imap: parse_section(&output, "stalwartImap"),
         quota: parse_section(&output, "quota"),
         users: parse_section(&output, "users"),
         smtp25: parse_section(&output, "smtp25"),
-        smtp587: parse_section(&output, "smtp587"),
         webmail_internal: parse_section(&output, "webmailInternal"),
         maddy_accounts: parse_section(&output, "maddyAccounts"),
         maddy_domains: parse_section(&output, "maddyDomains"),
-        maddy_queue: parse_section(&output, "maddyQueue"),
-        sieve4190: parse_section(&output, "sieve4190"),
+        stalwart_queue_depth: parse_section(&output, "stalwartQueueDepth"),
         all_local_ports: parse_section(&output, "allLocalPorts"),
         debug_dump: parse_section(&output, "debugDump"),
         config_src_hash: String::new(),  // filled locally, not via SSH
@@ -570,8 +575,9 @@ pub async fn ssh_batch_proxy() -> Result<RemoteDataProxy, String> {
 echo Q | timeout 8 openssl s_client -connect {mail_wg}:993 -servername {mail_domain} 2>&1 | grep -c CONNECTED
 echo "===caddyL4_465==="
 echo Q | timeout 8 openssl s_client -connect {mail_wg}:465 -servername {mail_domain} 2>&1 | grep -c CONNECTED
-echo "===caddyL4_587==="
-echo Q | timeout 8 openssl s_client -starttls smtp -connect {mail_wg}:587 -servername {mail_domain} 2>&1 | grep -c CONNECTED
+# No 587 probe: nothing binds 587 on oci-mail by design (submission goes through
+# http-to-smtp-proxy-api on gcp-proxy, which speaks :25 over WG). network_checks
+# never read the result, so this only spent 8s per run timing out on a closed port.
 echo "===autheliaHealth==="
 # Authelia publishes on gcp-proxy's WG IP (10.0.0.1:9091), not localhost.
 # Probing localhost:9091 always returned FAIL.
@@ -593,7 +599,6 @@ curl -skf http://{proxy_wg}:9091/api/health 2>/dev/null || curl -skf http://auth
     Ok(RemoteDataProxy {
         caddy_l4_993: parse_section(&output, "caddyL4_993"),
         caddy_l4_465: parse_section(&output, "caddyL4_465"),
-        caddy_l4_587: parse_section(&output, "caddyL4_587"),
         authelia_health: parse_section(&output, "autheliaHealth"),
     })
 }
