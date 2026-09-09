@@ -21,5 +21,9 @@
         "limits": { "pids": 256 }
       }
     }
+  },
+  "_deploy_comment": "Fleet-wide DEPLOY defaults, read by 1_cicd/src/scripts/cloud-ship-container-step-deploy-rsync.sh via get_config_array under the same key path a service's own build.json uses, so build.json:deploy.manifest_protect overrides it wholesale. Not merged by engine.nix (which reads only .defaults) and not part of any docker-compose spec. ─── manifest_protect ─── The reconciler deletes every remote file present in the previous deploy manifest and missing from the new one. .secrets, .secrets.json and .secrets.d are shipped by the secrets step, not by dist/, so a failed decrypt made them 'missing' and the reconciler wiped a running container's credentials; .dist-hash and .deploy-manifest are the deploy's own bookkeeping and are never rebuilt from dist/.",
+  "deploy": {
+    "manifest_protect": [".secrets", ".secrets.json", ".secrets.d", ".dist-hash", ".deploy-manifest"]
   }
 }

@@ -68,6 +68,12 @@
           "description": "Glob patterns to exclude from rsync during deployment",
           "items": { "type": "string" }
         },
+        "manifest_protect": {
+          "type": "array",
+          "description": "Top-level dist entries the deploy-manifest reconciler must never delete from the remote path, even when they are absent from dist/. Overrides the fleet default in _shared/compose-defaults.json (deploy.manifest_protect) wholesale. An entry protects the path itself and everything under it.",
+          "items": { "type": "string" },
+          "examples": [[".secrets", ".secrets.json", ".secrets.d", ".dist-hash", ".deploy-manifest"]]
+        },
         "compose_flags": {
           "type": "string",
           "description": "Additional flags passed to 'docker compose up' (e.g. '--build')"
