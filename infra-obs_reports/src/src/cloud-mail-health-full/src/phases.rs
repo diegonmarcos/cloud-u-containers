@@ -1222,8 +1222,19 @@ echo "$r993" | grep "Not After" | head -1"#,
         futs.push(Box::pin(async move {
             let t = Instant::now();
             let url = format!("https://{}/", WEBMAIL_DOMAIN);
+            // No per-request timeout override: the client already carries
+            // checks::HTTP_TIMEOUT (8s), which every sibling probe in this
+            // phase uses. This call used to override it down to 5s and was the
+            // only probe here that did. Phase 3 fires ~23 requests at once, and
+            // under that concurrency the 5s budget expired before the edge
+            // answered — the 2026-09-09 run recorded duration_ms 5002 and
+            // "ERR: error sending request", while the identical URL probed by
+            // phase 0 with the 8s budget returned HTTP 302 in 1988ms in the
+            // same run, and five consecutive curls from oci-apps returned the
+            // expected 302 -> auth.diegonmarcos.com in 0.48-1.24s. A tighter
+            // deadline than the crate's own is a latency assertion nobody
+            // asked for, dressed up as an availability failure.
             let resp = cl.get(&url)
-                .timeout(std::time::Duration::from_secs(5))
                 .send()
                 .await;
             let (ok, detail) = match resp {
