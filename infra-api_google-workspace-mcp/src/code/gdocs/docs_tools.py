@@ -1293,7 +1293,7 @@ async def debug_table_structure(
 
 @server.tool()
 @handle_http_errors("export_doc_to_pdf", service_type="drive")
-@require_google_service("drive", "drive_file")
+@require_google_service("drive", "drive_write")
 async def export_doc_to_pdf(
     service: Any,
     user_google_email: str,

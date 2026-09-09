@@ -16,6 +16,11 @@ _ENABLED_TOOLS = None
 USERINFO_EMAIL_SCOPE = "https://www.googleapis.com/auth/userinfo.email"
 USERINFO_PROFILE_SCOPE = "https://www.googleapis.com/auth/userinfo.profile"
 OPENID_SCOPE = "openid"
+
+# Every Google OAuth scope except the bare "openid" is a URL under this prefix.
+# auth.service_decorator uses it to tell a literal scope URL apart from a
+# misspelled scope group name.
+GOOGLE_SCOPE_URL_PREFIX = "https://www.googleapis.com/auth/"
 CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar"
 CALENDAR_READONLY_SCOPE = "https://www.googleapis.com/auth/calendar.readonly"
 CALENDAR_EVENTS_SCOPE = "https://www.googleapis.com/auth/calendar.events"
@@ -137,6 +142,10 @@ DOCS_SCOPES = [
     DOCS_WRITE_SCOPE,
     DRIVE_READONLY_SCOPE,
     DRIVE_FILE_SCOPE,
+    # export_doc_to_pdf both reads a caller-supplied document and writes the
+    # resulting PDF into a caller-supplied parent folder. Neither is created by
+    # this application, so drive.file cannot address either one.
+    DRIVE_SCOPE,
 ]
 
 CALENDAR_SCOPES = [CALENDAR_SCOPE, CALENDAR_READONLY_SCOPE, CALENDAR_EVENTS_SCOPE]

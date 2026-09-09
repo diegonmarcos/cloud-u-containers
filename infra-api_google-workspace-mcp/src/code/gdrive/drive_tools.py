@@ -547,7 +547,7 @@ async def _create_drive_folder_impl(
 
 @server.tool()
 @handle_http_errors("create_drive_folder", service_type="drive")
-@require_google_service("drive", "drive_file")
+@require_google_service("drive", "drive_write")
 async def create_drive_folder(
     service,
     user_google_email: str,
@@ -576,7 +576,7 @@ async def create_drive_folder(
 
 @server.tool()
 @handle_http_errors("create_drive_file", service_type="drive")
-@require_google_service("drive", "drive_file")
+@require_google_service("drive", "drive_write")
 async def create_drive_file(
     service,
     user_google_email: str,
@@ -1132,7 +1132,7 @@ def _detect_source_format(file_name: str, content: Optional[str] = None) -> str:
 
 @server.tool()
 @handle_http_errors("import_to_google_doc", service_type="drive")
-@require_google_service("drive", "drive_file")
+@require_google_service("drive", "drive_write")
 async def import_to_google_doc(
     service,
     user_google_email: str,
@@ -1538,7 +1538,7 @@ async def check_drive_file_public_access(
 
 @server.tool()
 @handle_http_errors("update_drive_file", is_read_only=False, service_type="drive")
-@require_google_service("drive", "drive_file")
+@require_google_service("drive", "drive_write")
 async def update_drive_file(
     service,
     user_google_email: str,
@@ -1775,7 +1775,7 @@ async def get_drive_shareable_link(
 
 @server.tool()
 @handle_http_errors("manage_drive_access", is_read_only=False, service_type="drive")
-@require_google_service("drive", "drive_file")
+@require_google_service("drive", "drive_write")
 async def manage_drive_access(
     service,
     user_google_email: str,
@@ -2142,7 +2142,7 @@ async def manage_drive_access(
 
 @server.tool()
 @handle_http_errors("copy_drive_file", is_read_only=False, service_type="drive")
-@require_google_service("drive", "drive_file")
+@require_google_service("drive", "drive_write")
 async def copy_drive_file(
     service,
     user_google_email: str,
@@ -2216,7 +2216,7 @@ async def copy_drive_file(
 @handle_http_errors(
     "set_drive_file_permissions", is_read_only=False, service_type="drive"
 )
-@require_google_service("drive", "drive_file")
+@require_google_service("drive", "drive_write")
 async def set_drive_file_permissions(
     service,
     user_google_email: str,
