@@ -40,5 +40,9 @@ your prompt — read it first and follow it over anything here.
   without evidence is a guess. If something failed or was skipped, say so
   plainly — a false green here costs days downstream.
 - Cloud service layout, VM topology, and per-service docs: query the
-  cloud-infra MCP servers (`cloud-infra`, `cloud-cgc-pub-mcp`) instead of
-  trusting any baked file — including this one — to be current.
+  cloud-infra MCP servers (`cloud-infra-mcp`, `cloud-cgc-pub-mcp`,
+  `cloud-cgc-pvt-mcp`) instead of trusting any baked file — including this one
+  — to be current. Those keys are the ones the generated server list uses, and
+  they are what a `mcp__<server>__<tool>` name has to be built from; the
+  container used to key the same servers `cloud-infra`/`cloud-services`, which
+  made every tool name written against the fleet's list unreachable here.
