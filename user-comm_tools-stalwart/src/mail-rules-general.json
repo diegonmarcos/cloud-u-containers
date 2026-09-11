@@ -145,20 +145,8 @@
         "folder": "Ea    ⭐ Important",
         "axis": "priority",
         "volatile": true,
-        "_doc": "Any tag flag that already marks 'this matters': login/security alerts, money (invoices, receipts, subscriptions, insurance, bank mail), explicit review requests. Needs those specific rules' engines.stalwart flipped to full/tag_only (see rules[] below) -- they were all 'drop'/'route_only' before, so these flags were never emitted on Stalwart.",
-        "predicate": {
-          "any_of": [
-            {"type": "has_flag", "flag": "Sec_type:Login_Alert"},
-            {"type": "has_flag", "flag": "Cloud_Sec:Auth_Alert"},
-            {"type": "has_flag", "flag": "Cloud_Sec:Threat_Blocked"},
-            {"type": "has_flag", "flag": "Fin_type:Invoice"},
-            {"type": "has_flag", "flag": "Fin_type:Receipt"},
-            {"type": "has_flag", "flag": "Fin_type:Subscription"},
-            {"type": "has_flag", "flag": "Fin_type:Insurance"},
-            {"type": "has_flag", "flag": "Fin_entity:Bank"},
-            {"type": "has_flag", "flag": "Action_ReviewRequested"}
-          ]
-        }
+        "_doc": "Any tag flag that already marks 'this matters': the star the owner presses in the app, login/security alerts, money (invoices, receipts, subscriptions, insurance, bank mail), explicit review requests. Needs those specific rules' engines.stalwart flipped to full/tag_only (see rules[] below) -- they were all 'drop'/'route_only' before, so these flags were never emitted on Stalwart. The list itself is predicates.important_flags, referenced here and negated in Eb so the two can never disagree.",
+        "predicate": {"ref": "important_flags"}
       },
       {
         "folder": "Eb    📄 Normal",
@@ -175,19 +163,7 @@
                 {"type": "header_contains", "header": "Authentication-Results", "values": ["dmarc=fail", "spf=fail"]}
               ]
             }},
-            {"not": {
-              "any_of": [
-                {"type": "has_flag", "flag": "Sec_type:Login_Alert"},
-                {"type": "has_flag", "flag": "Cloud_Sec:Auth_Alert"},
-                {"type": "has_flag", "flag": "Cloud_Sec:Threat_Blocked"},
-                {"type": "has_flag", "flag": "Fin_type:Invoice"},
-                {"type": "has_flag", "flag": "Fin_type:Receipt"},
-                {"type": "has_flag", "flag": "Fin_type:Subscription"},
-                {"type": "has_flag", "flag": "Fin_type:Insurance"},
-                {"type": "has_flag", "flag": "Fin_entity:Bank"},
-                {"type": "has_flag", "flag": "Action_ReviewRequested"}
-              ]
-            }}
+            {"not": {"ref": "important_flags"}}
           ]
         }
       },
@@ -1098,6 +1074,21 @@
     "partition_axis": "size"
   },
   "predicates": {
+    "important_flags": {
+      "_doc": "What puts a message in 'Ea    \u2b50 Important'. Referenced by the Ea view and negated by Eb, so the priority axis stays a partition no matter what is added here. `$flagged` is the IANA keyword (RFC 8621 4.1.1) the app writes when the owner taps the star -- filing is done HERE, by the sorter, because a view's membership is recomputed from this predicate every poll and any mailboxIds the app wrote itself would be removed on the next one.",
+      "any_of": [
+        {"type": "has_flag", "flag": "$flagged"},
+        {"type": "has_flag", "flag": "Sec_type:Login_Alert"},
+        {"type": "has_flag", "flag": "Cloud_Sec:Auth_Alert"},
+        {"type": "has_flag", "flag": "Cloud_Sec:Threat_Blocked"},
+        {"type": "has_flag", "flag": "Fin_type:Invoice"},
+        {"type": "has_flag", "flag": "Fin_type:Receipt"},
+        {"type": "has_flag", "flag": "Fin_type:Subscription"},
+        {"type": "has_flag", "flag": "Fin_type:Insurance"},
+        {"type": "has_flag", "flag": "Fin_entity:Bank"},
+        {"type": "has_flag", "flag": "Action_ReviewRequested"}
+      ]
+    },
     "github_any": {
       "any_of": [
         {
