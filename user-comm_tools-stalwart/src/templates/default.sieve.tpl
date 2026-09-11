@@ -34,258 +34,258 @@ if header :contains "Subject" ["blocked", "threat", "intrusion", "fail2ban", "ba
 # ─── ROUTES ─────────────────────────────────────────────────────
 # route.profile.tax_authorities
 if address :domain :is "From" ["elster.de", "agenciatributaria.es", "tax.service.gov.uk"] {
-  fileinto :copy :create "23    🧻 Government";
+  fileinto :copy :create "20 _ INFORMS/23    🧻 Government";
   stop;
 }
 
 # route.admin.security_accounts
 if address :domain :is "From" ["bitwarden.com", "1password.com", "accounts.google.com"] {
   addflag "Sec_type:Login_Alert";
-  fileinto :copy :create "11    🛡️ Admin";
+  fileinto :copy :create "10 _ ADMIN/11    🛡️ Admin";
   stop;
 }
 
 # route.profile.homelab
 if address :domain :is "From" "diegonmarcos.com" {
-  fileinto :copy :create "31    ☁️ Cloud - Reports & CI/Cloud Reports";
+  fileinto :copy :create "30 _ CLOUD/31    ☁️ Cloud - Reports & CI/Cloud Reports";
   stop;
 }
 
 # route.profile.banks_es_de
 if address :domain :is "From" ["ing.es", "ing.de", "commerzbank.de", "deutschebank.de"] {
-  fileinto :copy :create "12    💰 Finance";
+  fileinto :copy :create "10 _ ADMIN/12    💰 Finance";
   stop;
 }
 
 # route.cloud_workflows.github_ci
 if anyof(header :contains "X-GitHub-Reason" "ci_activity", header :contains "Subject" ["Run failed:", "workflow run"]) {
-  fileinto :copy :create "31    ☁️ Cloud - Reports & CI/GH Workflows";
+  fileinto :copy :create "30 _ CLOUD/31    ☁️ Cloud - Reports & CI/GH Workflows";
   stop;
 }
 
 # route.government.agencies
 if anyof(address :domain :matches "From" "*.gov.br", address :domain :is "From" "dgt.es") {
-  fileinto :copy :create "23    🧻 Government";
+  fileinto :copy :create "20 _ INFORMS/23    🧻 Government";
   stop;
 }
 
 # route.career.platforms
 if address :domain :is "From" ["linkedin.com", "indeed.com", "glassdoor.com", "hired.com", "wellfound.com"] {
-  fileinto :copy :create "21    💼 Career & Network";
+  fileinto :copy :create "20 _ INFORMS/21    💼 Career & Network";
   stop;
 }
 
 # route.lifestyle.housing_rental_de
 if address :domain :is "From" ["wg-gesucht.de", "nachrichten.immobilienscout24.de", "myplace.de", "kleinanzeigen.de"] {
-  fileinto :copy :create "24    🏠 House";
+  fileinto :copy :create "20 _ INFORMS/24    🏠 House";
   stop;
 }
 
 # route.admin.payments
 if address :domain :is "From" ["paypal.com", "stripe.com"] {
   addflag "Fin_type:Receipt";
-  fileinto :copy :create "12    💰 Finance";
+  fileinto :copy :create "10 _ ADMIN/12    💰 Finance";
   stop;
 }
 
 # route.admin.subscriptions
 if address :domain :is "From" ["apple.com", "spotify.com", "netflix.com", "adobe.com"] {
   addflag "Fin_type:Subscription";
-  fileinto :copy :create "12    💰 Finance";
+  fileinto :copy :create "10 _ ADMIN/12    💰 Finance";
   stop;
 }
 
 # route.admin.insurance_intl
 if address :domain :is "From" ["allianz.com", "axa.com"] {
   addflag "Fin_type:Insurance";
-  fileinto :copy :create "12    💰 Finance";
+  fileinto :copy :create "10 _ ADMIN/12    💰 Finance";
   stop;
 }
 
 # route.admin.bank_neobank
 if address :domain :is "From" ["n26.com", "revolut.com", "wise.com"] {
   addflag "Fin_entity:Bank";
-  fileinto :copy :create "12    💰 Finance";
+  fileinto :copy :create "10 _ ADMIN/12    💰 Finance";
   stop;
 }
 
 # route.admin.marketplace
 if address :domain :is "From" ["amazon.com", "amazon.de", "amazon.es", "ebay.com", "ebay.de", "aliexpress.com", "zalando.de"] {
-  fileinto :copy :create "12    💰 Finance";
+  fileinto :copy :create "10 _ ADMIN/12    💰 Finance";
   stop;
 }
 
 # route.admin.bank_es
 if address :domain :is "From" ["emailing.bancosantander-mail.es", "cofidis.es", "s.cofidis.es", "c.cofidis.es", "nordaccount.com"] {
   addflag "Fin_entity:Bank";
-  fileinto :copy :create "12    💰 Finance";
+  fileinto :copy :create "10 _ ADMIN/12    💰 Finance";
   stop;
 }
 
 # route.admin.bank_intl
 if address :domain :is "From" ["btgpactual.com", "tcbs.com.vn", "b3.com.br", "bitpanda.com", "info.bitpanda.com", "getbernstein.com"] {
   addflag "Fin_entity:Bank";
-  fileinto :copy :create "12    💰 Finance";
+  fileinto :copy :create "10 _ ADMIN/12    💰 Finance";
   stop;
 }
 
 # route.admin.telecom_utilities_de
 if address :domain :is "From" ["congstar.de", "news.congstar.de", "service.congstar.de", "mails.swm.de"] {
   addflag "Fin_type:Subscription";
-  fileinto :copy :create "12    💰 Finance";
+  fileinto :copy :create "10 _ ADMIN/12    💰 Finance";
   stop;
 }
 
 # route.info.tech_media
 if address :domain :is "From" ["theregister.com", "arstechnica.com", "hackernewsletter.com"] {
-  fileinto :copy :create "22    📰 Social & General";
+  fileinto :copy :create "20 _ INFORMS/22    📰 Social & General";
   stop;
 }
 
 # route.info.news_intl
 if address :domain :is "From" ["bbc.com", "reuters.com", "theguardian.com", "nytimes.com"] {
-  fileinto :copy :create "22    📰 Social & General";
+  fileinto :copy :create "20 _ INFORMS/22    📰 Social & General";
   stop;
 }
 
 # route.info.newsletters
 if address :domain :is "From" ["substack.com", "medium.com", "beehiiv.com", "revue.email"] {
-  fileinto :copy :create "22    📰 Social & General";
+  fileinto :copy :create "20 _ INFORMS/22    📰 Social & General";
   stop;
 }
 
 # route.info.video_music
 if address :domain :is "From" ["youtube.com", "twitch.tv", "hbomax.com", "disneyplus.com", "primevideo.com", "soundcloud.com", "bandcamp.com"] {
-  fileinto :copy :create "22    📰 Social & General";
+  fileinto :copy :create "20 _ INFORMS/22    📰 Social & General";
   stop;
 }
 
 # route.info.books_games
 if address :domain :is "From" ["goodreads.com", "kindle.amazon.com", "audible.com", "steampowered.com", "epicgames.com", "gog.com", "playstation.com", "xbox.com", "nintendo.com"] {
-  fileinto :copy :create "22    📰 Social & General";
+  fileinto :copy :create "20 _ INFORMS/22    📰 Social & General";
   stop;
 }
 
 # route.info.social
 if address :domain :is "From" ["twitter.com", "x.com", "mastodon.social", "facebook.com", "instagram.com", "whatsapp.com", "reddit.com"] {
-  fileinto :copy :create "22    📰 Social & General";
+  fileinto :copy :create "20 _ INFORMS/22    📰 Social & General";
   stop;
 }
 
 # route.social.platforms_extra
 if address :domain :is "From" ["mail.instagram.com", "facebookmail.com", "legal.pinterest.com", "account.pinterest.com", "gotinder.com"] {
-  fileinto :copy :create "22    📰 Social & General";
+  fileinto :copy :create "20 _ INFORMS/22    📰 Social & General";
   stop;
 }
 
 # route.social.lifestyle_extra
 if address :domain :is "From" ["tidal.com", "info.tidal.com", "c.rituals.com", "s.rituals.com", "rituals.com", "soundiiz.com", "ae.linktr.ee", "decathlon.com"] {
-  fileinto :copy :create "22    📰 Social & General";
+  fileinto :copy :create "20 _ INFORMS/22    📰 Social & General";
   stop;
 }
 
 # route.cloud.letsencrypt
 if address :domain :is "From" "letsencrypt.org" {
-  fileinto :copy :create "31    ☁️ Cloud - Reports & CI/Cloud Reports";
+  fileinto :copy :create "30 _ CLOUD/31    ☁️ Cloud - Reports & CI/Cloud Reports";
   stop;
 }
 
 # route.cloud.registrars
 if address :domain :is "From" ["namecheap.com", "gandi.net", "name.com", "godaddy.com"] {
-  fileinto :copy :create "31    ☁️ Cloud - Reports & CI/Cloud Reports";
+  fileinto :copy :create "30 _ CLOUD/31    ☁️ Cloud - Reports & CI/Cloud Reports";
   stop;
 }
 
 # route.cloud.hardware
 if address :domain :is "From" ["hetzner.com", "hetzner.de", "dell.com", "lenovo.com"] {
-  fileinto :copy :create "31    ☁️ Cloud - Reports & CI/Cloud Reports";
+  fileinto :copy :create "30 _ CLOUD/31    ☁️ Cloud - Reports & CI/Cloud Reports";
   stop;
 }
 
 # route.cloud.providers
 if address :domain :is "From" ["cloudflare.com", "digitalocean.com"] {
-  fileinto :copy :create "31    ☁️ Cloud - Reports & CI/Cloud Reports";
+  fileinto :copy :create "30 _ CLOUD/31    ☁️ Cloud - Reports & CI/Cloud Reports";
   stop;
 }
 
 # route.cloud.vps_oracle
 if address :domain :is "From" ["oraclecloud.com", "oracle.com", "oracle-mail.com"] {
-  fileinto :copy :create "32    ☁️ Cloud - VPS Providers/VPS Oracle";
+  fileinto :copy :create "30 _ CLOUD/32    ☁️ Cloud - VPS Providers/VPS Oracle";
   stop;
 }
 
 # route.cloud.vps_google
 if address :domain :is "From" ["cloud.google.com", "google.cloud"] {
-  fileinto :copy :create "32    ☁️ Cloud - VPS Providers/VPS Google";
+  fileinto :copy :create "30 _ CLOUD/32    ☁️ Cloud - VPS Providers/VPS Google";
   stop;
 }
 
 # route.cloud.vps_git
 if address :domain :is "From" ["github.com", "noreply.github.com"] {
-  fileinto :copy :create "32    ☁️ Cloud - VPS Providers/VPS Git";
+  fileinto :copy :create "30 _ CLOUD/32    ☁️ Cloud - VPS Providers/VPS Git";
   stop;
 }
 
 # route.cloud.notifications
 if address :domain :is "From" ["ntfy.sh", "resend.com"] {
-  fileinto :copy :create "31    ☁️ Cloud - Reports & CI/Rss Notifications";
+  fileinto :copy :create "30 _ CLOUD/31    ☁️ Cloud - Reports & CI/Rss Notifications";
   stop;
 }
 
 # route.profile.career_de
 if address :domain :is "From" ["indeed.de", "xing.com", "stepstone.de"] {
-  fileinto :copy :create "21    💼 Career & Network";
+  fileinto :copy :create "20 _ INFORMS/21    💼 Career & Network";
   stop;
 }
 
 # route.profile.housing_es_de
 if address :domain :is "From" ["idealista.com", "fotocasa.es", "pisos.com", "immobilienscout24.de", "immowelt.de"] {
-  fileinto :copy :create "24    🏠 House";
+  fileinto :copy :create "20 _ INFORMS/24    🏠 House";
   stop;
 }
 
 # route.profile.health_eu
 if address :domain :is "From" ["doctolib.de", "doctolib.com"] {
-  fileinto :copy :create "22    📰 Social & General";
+  fileinto :copy :create "20 _ INFORMS/22    📰 Social & General";
   stop;
 }
 
 # route.profile.insurance_es_de
 if address :domain :is "From" ["mapfre.com", "huk.de"] {
-  fileinto :copy :create "12    💰 Finance";
+  fileinto :copy :create "10 _ ADMIN/12    💰 Finance";
   stop;
 }
 
 # route.profile.news_es_de
 if address :domain :is "From" ["elpais.com", "spiegel.de"] {
-  fileinto :copy :create "22    📰 Social & General";
+  fileinto :copy :create "20 _ INFORMS/22    📰 Social & General";
   stop;
 }
 
 # route.lifestyle.wellness
 if address :domain :is "From" ["gympass.com", "freeletics.com", "strava.com"] {
-  fileinto :copy :create "22    📰 Social & General";
+  fileinto :copy :create "20 _ INFORMS/22    📰 Social & General";
   stop;
 }
 
 # route.lifestyle.events
 if address :domain :is "From" ["eventbrite.com", "meetup.com", "ticketmaster.com", "dice.fm", "stubhub.com"] {
-  fileinto :copy :create "22    📰 Social & General";
+  fileinto :copy :create "20 _ INFORMS/22    📰 Social & General";
   stop;
 }
 
 # route.lifestyle.dating
 if address :domain :is "From" ["tinder.com", "bumble.com", "hinge.co", "okcupid.com"] {
-  fileinto :copy :create "22    📰 Social & General";
+  fileinto :copy :create "20 _ INFORMS/22    📰 Social & General";
   stop;
 }
 
 # route.junk.spam_flagged
 if anyof(header :contains "X-Spam-Status" "Yes", header :contains "X-Spam-Flag" "YES", header :contains "X-Microsoft-Antispam-Message-Info" "spam", header :contains "Authentication-Results" ["dmarc=fail", "spf=fail"]) {
-  fileinto :copy :create "93    🚫 Junk";
+  fileinto :copy :create "90 _ OTHERS/93    🚫 Junk";
   stop;
 }
 
 # ─── FALLBACK ───────────────────────────────────────────────────
 # fallback (no route matched)
-fileinto :copy :create "91    📬 Others (fallback)";
+fileinto :copy :create "90 _ OTHERS/91    📬 Others (fallback)";
