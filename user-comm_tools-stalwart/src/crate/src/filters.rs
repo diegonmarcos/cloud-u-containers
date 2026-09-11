@@ -478,6 +478,53 @@ mod tests {
     }
 
     #[test]
+    fn star_is_the_lowercase_dollar_flagged_keyword() {
+        // The owner's star. cloud-mail writes `keywords/$flagged` -- the IANA
+        // keyword, RFC 8621 4.1.1, lowercase and `$`-prefixed (see its own
+        // StarOnTheWireTest). `Ea    Important` references that exact string
+        // through predicates.important_flags, and this lookup is a plain
+        // case-sensitive map get: `$Flagged` would be stored happily by the
+        // server and matched by NOBODY, leaving a star that silently files
+        // nothing. Assert the evaluator, not the spelling in the JSON.
+        let p = pred(json!({"type": "has_flag", "flag": "$flagged"}));
+        let starred = email(json!({"id": "e", "keywords": {"$flagged": true}}));
+        let read_only = email(json!({"id": "e", "keywords": {"$seen": true}}));
+        let no_keywords = email(json!({"id": "e"}));
+        let wrong_case = email(json!({"id": "e", "keywords": {"$Flagged": true}}));
+        // JMAP models "unstar" as REMOVING the key; a false value is the other
+        // shape a client could leave behind, and it must not count as starred.
+        let unstarred = email(json!({"id": "e", "keywords": {"$flagged": false}}));
+        assert!(email_matches(&starred, &p, 0.0), "a starred message must match");
+        assert!(!email_matches(&read_only, &p, 0.0));
+        assert!(!email_matches(&no_keywords, &p, 0.0));
+        assert!(!email_matches(&unstarred, &p, 0.0), "$flagged:false is not starred");
+        assert!(
+            !email_matches(&wrong_case, &p, 0.0),
+            "keyword matching is case-sensitive: if this ever passes, the view would \
+             also match keywords no client writes, and the real one may be missed"
+        );
+    }
+
+    #[test]
+    fn starring_moves_a_message_from_normal_to_important() {
+        // The priority axis is hand-tiled: Eb Normal is NOT(Ec) AND NOT(Ea).
+        // Adding a flag to Ea alone would put a starred message in BOTH
+        // folders, so the two predicates share one list in the rules data
+        // (predicates.important_flags). This is that pair's shape.
+        let important = json!({"any_of": [{"type": "has_flag", "flag": "$flagged"}]});
+        let ea = pred(important.clone());
+        let eb = pred(json!({"all_of": [{"not": important}]}));
+        let starred = email(json!({"id": "e", "keywords": {"$flagged": true}}));
+        let plain = email(json!({"id": "e"}));
+        for (em, label) in [(&starred, "starred"), (&plain, "plain")] {
+            let hits = [&ea, &eb].iter().filter(|p| email_matches(em, p, 0.0)).count();
+            assert_eq!(hits, 1, "{label} matched {hits} of {{Ea, Eb}}, expected exactly 1");
+        }
+        assert!(email_matches(&starred, &ea, 0.0), "starred belongs to Important");
+        assert!(email_matches(&plain, &eb, 0.0), "unstarred belongs to Normal");
+    }
+
+    #[test]
     fn from_domain_atoms() {
         let em = email(json!({"id": "e", "from": [{"email": "Alerts@GitHub.com"}]}));
         let exact = pred(json!({"type": "from_domain", "values": ["github.com"]}));

@@ -122,7 +122,17 @@ export function merge(general: Json, profile: Json | null): Merged {
     routing_default: p.routing_default ?? general.routing_default ?? 'others',
     inbox_copy: p.inbox_copy ?? general.inbox_copy ?? { enabled: false, flags: [] },
     cleanup: p.cleanup ?? general.cleanup ?? {},
-    filters: p.filters ?? general.filters ?? { views: [], section_headers: [] },
+    // Views resolve `ref` exactly like rules do. Without this a `{"ref": ...}`
+    // inside a view predicate reached the artifacts verbatim, where the Rust's
+    // tagged Predicate enum has no such variant -- a startup error, and until
+    // then the only way to share one predicate between two views was to paste
+    // it twice (Ea's flag list and Eb's negation of it were exactly that, and
+    // the Eb _doc claimed they were "referencing the same tree" while being a
+    // second copy that nothing kept in sync).
+    filters: resolveViews(
+      { ...(general.predicates ?? {}), ...(p.predicates ?? {}) },
+      p.filters ?? general.filters ?? { views: [], section_headers: [] },
+    ),
     folder_renames: p.folder_renames ?? general.folder_renames ?? { map: {} },
     folder_options: p.folder_options ?? general.folder_options ?? {},
     predicates: { ...(general.predicates ?? {}), ...(p.predicates ?? {}) },
@@ -135,6 +145,17 @@ export function loadAndMerge(generalPath: string, profilePath: string | null): M
 }
 
 // ── Predicate resolution ────────────────────────────────────────────
+
+/** Every view's predicate, with `ref`s resolved. See the call in [[merge]]. */
+export function resolveViews(predicates: Record<string, Json>, filters: Json): Json {
+  return {
+    ...filters,
+    views: (filters.views ?? []).map((v: Json) => ({
+      ...v,
+      predicate: resolvePredicate(predicates, v.predicate),
+    })),
+  };
+}
 
 export function resolvePredicate(predicates: Record<string, Json>, pred: Json): Json {
   if (pred && typeof pred === 'object') {

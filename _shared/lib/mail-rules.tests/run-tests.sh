@@ -275,6 +275,47 @@ DUP_LEAVES="$(jq -r '
 assert "no two managed mailboxes share a leaf name (dupes: ${DUP_LEAVES:-none})" \
   test -z "$DUP_LEAVES"
 
+# ── Priority axis: the star, and the complement that must track it ─
+# `Ea Important` and `Eb Normal` are hand-tiled -- Normal is NOT(Important)
+# AND NOT(Junk) -- and they used to be two pasted copies of one flag list.
+# Adding a flag to Important alone would then put the message in BOTH
+# folders. Nothing below restates a flag: the first check asks the DERIVED
+# artifact whether the app's star keyword reaches the axis at all, the second
+# asks the CANONICAL whether every tree Normal negates is verbatim another
+# priority view's predicate. Break either copy and this fails.
+
+STAR_VIEWS="$(jq -r --arg star '$flagged' '
+  [ .filters.views[]
+    | select(.axis == "priority")
+    | select([.predicate | .. | objects | select(.type? == "has_flag") | .flag] | index($star))
+    | .folder ]
+  | join(", ")
+' "$RULES_JSON")"
+assert "the app's star keyword reaches the priority axis (views: ${STAR_VIEWS:-NONE})" \
+  test -n "$STAR_VIEWS"
+
+# Fail closed: no complement view found at all must abort, not pass quietly.
+COMPLEMENT_N="$(jq '
+  [ .filters.views[]
+    | select(.axis == "priority")
+    | select(.predicate | has("all_of") and ([.all_of[] | has("not")] | all)) ]
+  | length
+' "$GENERAL")"
+assert "exactly one priority view is the NOT-of-the-others complement (found: $COMPLEMENT_N)" \
+  test "$COMPLEMENT_N" = 1
+
+UNPAIRED="$(jq -r '
+  [ .filters.views[] | select(.axis == "priority") ] as $p
+  | ($p | map(select(.predicate | has("all_of") and ([.all_of[] | has("not")] | all)))[0]) as $c
+  | [ $c.predicate.all_of[].not
+      | . as $negated
+      | select([ $p[] | select(.folder != $c.folder) | .predicate ] | index($negated) | not)
+      | @json ]
+  | join("; ")
+' "$GENERAL")"
+assert "every tree the complement view negates is verbatim another priority view (orphaned: ${UNPAIRED:-none})" \
+  test -z "$UNPAIRED"
+
 # ── End-to-end mail-filter.sh fixtures ────────────────────────────
 # Runs the Maddy filter against each fixture case and asserts the
 # emitted folder + flags match the declarative expectation.
