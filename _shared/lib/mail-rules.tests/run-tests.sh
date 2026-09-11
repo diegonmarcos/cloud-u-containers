@@ -121,8 +121,14 @@ assert "sieve starts with require" \
   grep -q '^require \[' "$TMP/stalwart.sieve"
 
 # Derive the fallback folder from the data, not a literal: hardcoding the
-# display name silently rotted through the Aa->91 folder rename.
-FALLBACK_FOLDER="$(jq -r '.folders[.routing_default]' "$GENERAL")"
+# display name silently rotted through the Aa->91 folder rename. Read from the
+# EMITTED rules, and as a full path — the fallback folder is nested under its
+# section header, so the bare display name is no longer what Sieve addresses.
+FALLBACK_FOLDER="$(jq -rn --slurpfile r "$TMP/stalwart-rules.json" '
+  def fullpath($p; $n): if $p[$n] then fullpath($p; $p[$n]) + "/" + $n else $n end;
+  $r[0] as $rules
+  | fullpath($rules.folder_parents; $rules.routing_default)
+')"
 assert "sieve has fallback fileinto to routing_default ($FALLBACK_FOLDER)" \
   grep -qF "fileinto :copy :create \"$FALLBACK_FOLDER\"" "$TMP/stalwart.sieve"
 
@@ -159,6 +165,115 @@ assert "every non-fallback, non-archive folder is targeted by at least one route
 
 assert "sieve has inbox-read addflag on routes when inbox_copy.enabled" \
   test "$(grep -c 'addflag "\\\\Seen"' "$TMP/stalwart.sieve")" -gt 0
+
+# ── Folder tree / Sieve path agreement ────────────────────────────
+# In IMAP a mailbox's hierarchy IS its name, so the moment a folder is nested
+# every Sieve `fileinto` naming it by the old flat path goes stale. It still
+# COMPILES -- and because the routes carry `:create`, delivery then makes a
+# second, top-level folder of that name and files the mail there instead.
+# These assertions are the only thing standing between "folder nested" and
+# "mail silently filed somewhere he will not look".
+
+RULES_JSON="$TMP/stalwart-rules.json"
+
+# Fail closed: an empty tree must abort, not quietly pass every check below.
+assert "folder_parents is non-empty (tree resolved)" \
+  test "$(jq '.folder_parents | length' "$RULES_JSON")" -gt 0
+
+# Full path of a folder, walking folder_parents to the root.
+JQ_PATHS='
+  def fullpath($p; $n): if $p[$n] then fullpath($p; $p[$n]) + "/" + $n else $n end;
+  . as $r | $r.folder_parents as $p
+'
+
+# Every fileinto target must equal the full path its own leaf resolves to.
+# Catches both directions: a flat path left behind after nesting, and a path
+# that nests a folder the tree says is at ROOT.
+STALE_PATHS="$(jq -rn --slurpfile r "$RULES_JSON" --rawfile sieve "$TMP/stalwart.sieve" '
+  def fullpath($p; $n): if $p[$n] then fullpath($p; $p[$n]) + "/" + $n else $n end;
+  $r[0].folder_parents as $p
+  | [ $sieve
+      | [scan("fileinto :copy :create \"([^\"]*)\"")]
+      | flatten | unique | .[]
+      | . as $target
+      | ($target | split("/") | last) as $leaf
+      | select(fullpath($p; $leaf) != $target)
+      | "\($target)  (should be: \(fullpath($p; $leaf)))" ]
+  | join("; ")
+')"
+assert "every sieve fileinto path matches the folder tree (stale: ${STALE_PATHS:-none})" \
+  test -z "$STALE_PATHS"
+
+# A parent that is not itself a declared mailbox would be created implicitly by
+# Sieve's :create and then reaped by cleanup_stale as an undeclared folder.
+UNDECLARED_PARENTS="$(jq -r '
+  ( (.folders_ui // []) + ((.filters.section_headers) // [])
+    + ((.folders // {}) | to_entries | map(.value))
+    + ((.folder_groups // []) | map(.name))
+    + ((.folder_groups // []) | map((.children // {}) | to_entries | map(.value)) | flatten)
+    + (((.filters.views) // []) | map(.folder)) ) as $declared
+  | [ (.folder_parents // {}) | to_entries[] | .value
+      | select(. as $v | $declared | index($v) | not) ]
+  | unique | join(", ")
+' "$RULES_JSON")"
+assert "every folder_parents parent is itself a declared mailbox (undeclared: ${UNDECLARED_PARENTS:-none})" \
+  test -z "$UNDECLARED_PARENTS"
+
+# The owner's rule, asserted against the data rather than a hardcoded list:
+# a folder whose prefix class has a declared "X0" header must be nested under
+# exactly that header. Derived from the headers actually present, so adding a
+# G0 section next year extends the check for free.
+MISNESTED="$(jq -r '
+  ((.folders_ui // []) + ((.filters.section_headers) // [])) as $headers
+  | ($headers | map({key: .[0:1], value: .}) | from_entries) as $byclass
+  | (.folder_parents // {}) as $parents
+  | [ ((.folders // {}) | to_entries | map(.value))
+      + ((.folder_groups // []) | map(.name))
+      + (((.filters.views) // []) | map(.folder)) | .[]
+      | . as $f
+      | select($headers | index($f) | not)
+      | select($byclass[$f[0:1]] != null)
+      | select($parents[$f] != $byclass[$f[0:1]]) ]
+  | join(", ")
+' "$RULES_JSON")"
+assert "every prefixed folder nests under its own X0 header (misnested: ${MISNESTED:-none})" \
+  test -z "$MISNESTED"
+
+# The sorter's routing list is addressed by LEAF NAME (routing.rs looks each
+# folder up in `name_to_id`, keyed by JMAP `mailbox.name`). A path there
+# resolves to nothing, `routing_ids` comes back empty, and the backfill logs
+# "no target folder exists yet" and re-routes nothing — with every container
+# still reporting healthy. Sieve is the one that wants paths.
+ROUTING_PATHS="$(jq -r '
+  ( ((.folders // {}) | to_entries | map(.value))
+    + ((.folder_groups // []) | map((.children // {}) | to_entries | map(.value)) | flatten) ) as $leaves
+  | [ (.routing // [])[] | .folder
+      | select((. | contains("/")) or (. as $f | $leaves | index($f) | not)) ]
+  | unique | join(", ")
+' "$RULES_JSON")"
+assert "every routing folder is a declared leaf name, not a path (bad: ${ROUTING_PATHS:-none})" \
+  test -z "$ROUTING_PATHS"
+
+# Nesting must never rename. The Rust sorter's `name_to_id` and the app both
+# address mailboxes by leaf name, so two DISTINCT mailboxes sharing one leaf
+# name make the lookup ambiguous and one of them silently wins.
+#
+# A view may deliberately point at a routing folder -- `junkMirror` aims the Ec
+# view at `93 Junk` so the additive view engine and the exclusive route engine
+# report the same set -- so views are counted only where they name a mailbox no
+# routing folder already declares. Everything else must be pairwise distinct.
+DUP_LEAVES="$(jq -r '
+  ((.folders // {}) | to_entries | map(.value)) as $routing
+  | ( $routing
+      + ((.folder_groups // []) | map(.name))
+      + ((.folder_groups // []) | map((.children // {}) | to_entries | map(.value)) | flatten)
+      + (.folders_ui // []) + ((.filters.section_headers) // [])
+      + (((.filters.views) // []) | map(.folder)
+         | map(select(. as $v | $routing | index($v) | not))) )
+  | group_by(.) | map(select(length > 1) | .[0]) | unique | join(", ")
+' "$RULES_JSON")"
+assert "no two managed mailboxes share a leaf name (dupes: ${DUP_LEAVES:-none})" \
+  test -z "$DUP_LEAVES"
 
 # ── End-to-end mail-filter.sh fixtures ────────────────────────────
 # Runs the Maddy filter against each fixture case and asserts the

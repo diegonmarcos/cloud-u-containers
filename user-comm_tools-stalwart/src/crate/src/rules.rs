@@ -57,9 +57,28 @@ pub struct Rules {
     #[serde(default, deserialize_with = "null_default")]
     pub folder_groups: Vec<FolderGroup>,
 
-    /// Visual section-header folders — flat ROOT siblings, not parents.
+    /// Section-header folders (`10 _ ADMIN`, `A0 _ SIZE`, ...). Real parents:
+    /// see [`Rules::folder_parents`].
     #[serde(default, deserialize_with = "null_default")]
     pub folders_ui: Vec<String>,
+
+    /// The folder tree, `child display name -> parent display name`, resolved
+    /// by the generator (`derive-mail-rules.ts::folderParents`) and applied
+    /// here verbatim as JMAP `parentId`.
+    ///
+    /// Derived THERE, not here, on purpose. The prefix rule ("the first
+    /// character of a folder's prefix selects its section header") already had
+    /// two implementations -- `src/flake.nix::findParent`, which lowers it into
+    /// activate.sh's `name|parent` table, and the hand-built `folder_groups`.
+    /// This binary used to have a third, implicit one: it planned every folder
+    /// at `parentId: null`, so each poll flattened the very nesting activate.sh
+    /// had just created. `31 Cloud - Reports & CI` kept its children only
+    /// because `folder_groups` was the one path that set a parent at all.
+    ///
+    /// A folder absent from this map is a ROOT folder. That is a real state,
+    /// not a gap: `01 Inbox - noAlerts` has no `00` header and stays at ROOT.
+    #[serde(default, deserialize_with = "null_default")]
+    pub folder_parents: BTreeMap<String, String>,
 
     #[serde(default, deserialize_with = "null_default")]
     pub filters: Filters,

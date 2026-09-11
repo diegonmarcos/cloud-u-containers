@@ -208,25 +208,129 @@ export function sortByPriority(rules: Json[]): Json[] {
 }
 
 /**
- * ROOT `folders` plus every folder_group child keyed to its FULL IMAP PATH
- * ("<parent>/<child>").
+ * The folder TREE, as an explicit `child display name -> parent display name`
+ * map. The ONE place the hierarchy is derived; every consumer reads this.
  *
- * The path, not the bare leaf: Sieve `fileinto` resolves a mailbox by its
- * hierarchical path, so `fileinto "GH Workflows"` does not find the child of
- * "31 Cloud - Reports & CI" -- it creates a NEW top-level mailbox of that
- * name. That produced an endless churn loop in production: Sieve created the
- * root copy on delivery, ensure_mailboxes reparented it under the group,
- * cleanup_stale reaped it as a duplicate, and the next message started over.
- * 22 create/reparent/delete events on oci-mail before it was caught.
+ * The rule is the owner's own, and it already lived in the repo twice --
+ * `src/flake.nix::findParent` (which lowers it into activate.sh's `name|parent`
+ * table) and, implicitly, in `folder_groups`: the FIRST CHARACTER of a folder's
+ * prefix selects its parent, which is the declared section header of that same
+ * class. `11 Admin` and `12 Finance` hang off `10 _ ADMIN`; `Aa/Ab/Ac` hang off
+ * `A0 _ SIZE`.
  *
- * SIEVE side only. The Rust sorter addresses children by leaf name + parentId,
+ * The section headers (`folders_ui` + `filters.section_headers`) were created
+ * as flat ROOT siblings whose only job was to sort just above their block --
+ * a simulated hierarchy. They are real parents now, so the sort trick and the
+ * nesting agree instead of competing.
+ *
+ * `folder_groups` children keep their explicit group parent, which is how the
+ * one already-nested branch (`31 Cloud - Reports & CI`) was built; feeding it
+ * through the same map is what makes the CLOUD branch three deep
+ * (`30 _ CLOUD / 31 Cloud - Reports & CI / GH Workflows`).
+ *
+ * A folder whose class has no declared `X0` header keeps `parentId: null` and
+ * stays at ROOT -- `01 Inbox - noAlerts` is the live example. Unclassified
+ * folders are left alone rather than forced somewhere they do not belong.
+ */
+export function folderParents(merged: Merged): Record<string, string> {
+  const headers = [
+    ...(merged.folders_ui ?? []),
+    ...((merged.filters?.section_headers ?? []) as string[]),
+  ];
+  // class char -> header. First declaration wins; a second header claiming the
+  // same class is a data error, not a silent overwrite.
+  const byClass = new Map<string, string>();
+  for (const h of headers) {
+    const c = h[0];
+    if (!c) continue;
+    if (byClass.has(c) && byClass.get(c) !== h)
+      throw new Error(`two section headers claim class "${c}": ${byClass.get(c)} and ${h}`);
+    byClass.set(c, h);
+  }
+
+  const out: Record<string, string> = {};
+  const attach = (name: string) => {
+    const parent = byClass.get(name[0] ?? '');
+    // No header for this class, or the folder IS the header: stays at ROOT.
+    if (parent && parent !== name) out[name] = parent;
+  };
+
+  for (const name of Object.values(merged.folders ?? {})) attach(name);
+  for (const g of merged.folder_groups ?? []) {
+    attach(g.name);
+    // Explicit group parent beats the prefix rule -- group children are named
+    // without a prefix ("GH Workflows"), so the rule would not fire anyway.
+    for (const child of Object.values(g.children ?? {}) as string[]) out[child] = g.name;
+  }
+  for (const v of (merged.filters?.views ?? []) as Json[]) attach(v.folder);
+
+  return out;
+}
+
+/**
+ * Full IMAP path of `name`, walking [folderParents] to the root.
+ *
+ * Sieve `fileinto` resolves a mailbox by its hierarchical PATH, so
+ * `fileinto "GH Workflows"` does not find the child of "31 Cloud - Reports &
+ * CI" -- it creates a NEW top-level mailbox of that name. That produced an
+ * endless churn loop in production: Sieve created the root copy on delivery,
+ * ensure_mailboxes reparented it under the group, cleanup_stale reaped it as a
+ * duplicate, and the next message started over. 22 create/reparent/delete
+ * events on oci-mail before it was caught.
+ *
+ * SIEVE side only. The Rust sorter addresses mailboxes by leaf name + parentId,
  * which is what JMAP Mailbox/set wants; it has no notion of a path.
  */
+export function folderPath(parents: Record<string, string>, name: string): string {
+  const segs = [name];
+  const seen = new Set([name]);
+  let cur = name;
+  // Cycle guard: a malformed parent map must not hang the build.
+  while (parents[cur]) {
+    cur = parents[cur];
+    if (seen.has(cur)) throw new Error(`folder parent cycle at ${cur}`);
+    seen.add(cur);
+    segs.unshift(cur);
+  }
+  return segs.join('/');
+}
+
+/**
+ * Every Sieve-addressable routing target, keyed by rule slug, valued by FULL
+ * IMAP PATH.
+ */
 function allFolderTargets(merged: Merged): Record<string, string> {
+  const parents = folderParents(merged);
+  const out: Record<string, string> = {};
+  for (const [k, name] of Object.entries(merged.folders ?? {}))
+    out[k] = folderPath(parents, name);
+  for (const g of merged.folder_groups ?? [])
+    for (const [k, child] of Object.entries(g.children ?? {}) as [string, string][])
+      out[k] = folderPath(parents, child);
+  return out;
+}
+
+/**
+ * The same routing targets as [allFolderTargets], but keyed to the mailbox's
+ * LEAF display name instead of its path.
+ *
+ * The two consumers want different things and always did. Sieve resolves by
+ * path. The Rust sorter resolves by leaf name -- `routing.rs` looks each
+ * `routing[].folder` up in `name_to_id`, which `ensure_mailboxes` builds as
+ * `mailbox.name -> id`, and JMAP `name` is the leaf label with no hierarchy in
+ * it. Handing it a path means every lookup misses, `routing_ids` comes back
+ * empty, and the backfill logs "no target folder exists yet -- skipping" and
+ * quietly re-routes nothing.
+ *
+ * That was already happening to the five `folder_groups` rules before the tree
+ * was generalised, because those were the only targets `allFolderTargets`
+ * returned a path for.
+ */
+function allFolderLeaves(merged: Merged): Record<string, string> {
   const out: Record<string, string> = { ...merged.folders };
   for (const g of merged.folder_groups ?? [])
-    for (const [k, child] of Object.entries(g.children ?? {}))
-      out[k] = `${g.name}/${child}`;
+    for (const [k, child] of Object.entries(g.children ?? {}) as [string, string][])
+      out[k] = child;
   return out;
 }
 
@@ -376,7 +480,8 @@ export function toLegacyJson(merged: Merged): Json {
 
   const routingFrom = (rule: Json): Json | null => {
     const mode = rule.engines?.stalwart ?? 'full';
-    const folder = effectiveFolder(allFolderTargets(merged), rule);
+    // Leaf names: this list feeds the Rust sorter, not Sieve.
+    const folder = effectiveFolder(allFolderLeaves(merged), rule);
     const atom = resolvePredicate(predicates, rule.when);
     if (mode === 'drop' || folder === null) return null;
     if (!atom || typeof atom !== 'object' || !SORTER_ATOMS.has(atom.type)) return null;
@@ -460,6 +565,10 @@ export function toLegacyJson(merged: Merged): Json {
     folders: merged.folders,
     folder_groups: merged.folder_groups ?? [],
     folders_ui: merged.folders_ui ?? [],
+    // The resolved tree, explicit. The Rust sorter applies it verbatim as
+    // `parentId` rather than re-deriving the prefix rule -- one derivation,
+    // one artifact, no drift between the two engines.
+    folder_parents: folderParents(merged),
     routing_default: defFolder,
     filters: junkMirror(curatedCarveOut(merged.filters ?? { views: [], section_headers: [] })),
     folder_renames: merged.folder_renames ?? { map: {} },
@@ -515,6 +624,11 @@ function emitForTests(dir: string) {
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, 'stalwart.sieve'), toSieve(merged));
   fs.writeFileSync(path.join(dir, 'maddy.json'), prettyStringify(toMaddyJson(merged)) + '\n');
+  // Not a golden — the suite asserts the sieve's fileinto paths against the
+  // tree in here, which is what catches a folder that got nested without its
+  // Sieve path being regenerated. That combination compiles perfectly and
+  // misfiles every message it touches.
+  fs.writeFileSync(path.join(dir, 'stalwart-rules.json'), prettyStringify(toLegacyJson(merged)) + '\n');
 }
 
 function main() {

@@ -2,7 +2,7 @@
 
 use anyhow::Result;
 use serde_json::{json, Map, Value};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 use crate::jmap::{Client, Mailbox, PAGE};
 use crate::rules::{FolderOptions, Rules};
@@ -97,6 +97,25 @@ impl<'a> Planner<'a> {
     }
 }
 
+/// How many `folder_parents` hops `name` is from the root.
+///
+/// Walks with a visit set: a malformed map that cycles must terminate here
+/// rather than spin the reconcile loop forever.
+fn parent_depth(parents: &BTreeMap<String, String>, name: &str) -> usize {
+    let mut seen: HashSet<&str> = HashSet::new();
+    let mut cur = name;
+    let mut d = 0;
+    while let Some(parent) = parents.get(cur) {
+        if !seen.insert(cur) {
+            tracing::warn!("folder_parents cycle at {cur:?}; treating as ROOT");
+            return d;
+        }
+        cur = parent.as_str();
+        d += 1;
+    }
+    d
+}
+
 /// Reconcile mailbox state with the rules.
 ///
 /// Two steps: plan every `(name, parent)` the rules declare (preferring an
@@ -112,38 +131,58 @@ pub fn ensure_mailboxes(
     let existing = client.mailbox_get()?;
     let mut plan = Planner::new(&existing, &rules.folder_options);
 
-    // Routing targets — all at ROOT (parentId = None).
-    for (i, folder) in rules.folders.values().enumerate() {
-        plan.pick_or_create(folder, None, "inbox", i as u32 + 1);
-    }
-
-    // Two-level folder groups (e.g. "31 Cloud - Reports & CI" -> GH Workflows
-    // / Cloud Reports / Rss Notifications). Real parent-child nesting, unlike
-    // the flat `folders` loop above — sort_order continues from where that
-    // loop left off so groups sort after the flat routing targets.
+    // Every managed mailbox as (name, sortOrder), in the order that decides
+    // sortOrder for newly created ones. Parentage comes from
+    // `rules.folder_parents` alone — see below.
     let folders_len = rules.folders.len() as u32;
+    let mut declared: Vec<(&str, u32)> = Vec::new();
+    for (i, folder) in rules.folders.values().enumerate() {
+        declared.push((folder.as_str(), i as u32 + 1));
+    }
     for (gi, group) in rules.folder_groups.iter().enumerate() {
-        let parent = plan.pick_or_create(&group.name, None, "foldergroup", folders_len + 1 + gi as u32);
+        declared.push((group.name.as_str(), folders_len + 1 + gi as u32));
         for (ci, child) in group.children.values().enumerate() {
-            plan.pick_or_create(child, Some(&parent), &format!("foldergroup_{gi}"), ci as u32);
+            declared.push((child.as_str(), ci as u32));
         }
     }
-
-    // Visual section-header folders (flat ROOT siblings, NOT parents). They
-    // sort alphabetically just before each numeric block (10 _ ADMIN < 11 ...)
-    // so users get the same grouped layout Maddy ships. Not routing targets.
     for (j, label) in rules.folders_ui.iter().enumerate() {
-        plan.pick_or_create(label, None, "section", 100 + j as u32);
+        declared.push((label.as_str(), 100 + j as u32));
     }
-
-    // Dynamic filter views — flat ROOT mailboxes (section headers + one folder
-    // per view). Membership is maintained by `maintain_filters`; here we only
-    // ensure the mailboxes exist.
+    // Filter views: section headers plus one folder per view. Membership is
+    // maintained by `maintain_filters`; here we only ensure they exist.
     for (k, label) in rules.filters.section_headers.iter().enumerate() {
-        plan.pick_or_create(label, None, "filtersec", 200 + k as u32);
+        declared.push((label.as_str(), 200 + k as u32));
     }
     for (vi, view) in rules.filters.views.iter().enumerate() {
-        plan.pick_or_create(&view.folder, None, "filterview", 300 + vi as u32);
+        declared.push((view.folder.as_str(), 300 + vi as u32));
+    }
+
+    // Plan shallowest-first, so a parent always has an id (real, or a `#ref`
+    // resolvable inside this same Mailbox/set) before any child asks for it.
+    //
+    // `sort_by_key` is STABLE, so folders at equal depth keep the declaration
+    // order above and therefore their sortOrder.
+    declared.sort_by_key(|(name, _)| parent_depth(&rules.folder_parents, name));
+
+    // name -> planned id, so a child can name its parent. Holds `#ref`
+    // placeholders for mailboxes created in this batch; JMAP resolves those
+    // back-references server-side within the one Mailbox/set.
+    let mut planned: HashMap<&str, String> = HashMap::new();
+    for (name, sort_order) in declared {
+        let parent: Option<String> = rules
+            .folder_parents
+            .get(name)
+            .and_then(|p| planned.get(p.as_str()).cloned());
+        // A declared parent we could not resolve means the parent is missing
+        // from the declaration set entirely. Leaving the child at ROOT would
+        // silently flatten it, so say so — the tree is the contract.
+        if parent.is_none() {
+            if let Some(p) = rules.folder_parents.get(name) {
+                tracing::warn!("parent {p:?} of {name:?} is not a declared folder; leaving at ROOT");
+            }
+        }
+        let id = plan.pick_or_create(name, parent.as_deref(), "mbox", sort_order);
+        planned.insert(name, id);
     }
 
     if !plan.creates.is_empty() || !plan.updates.is_empty() {
@@ -425,4 +464,90 @@ pub fn cleanup_stale(
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn parents(pairs: &[(&str, &str)]) -> BTreeMap<String, String> {
+        pairs.iter().map(|(c, p)| (c.to_string(), p.to_string())).collect()
+    }
+
+    /// The live shape: `30 _ CLOUD` -> `31 …` -> `GH Workflows` is three deep,
+    /// which is the whole reason the two-level `folder_groups` special case was
+    /// not enough.
+    #[test]
+    fn depth_counts_hops_to_root() {
+        let p = parents(&[
+            ("11    Admin", "10 _ ADMIN"),
+            ("31    Cloud", "30 _ CLOUD"),
+            ("GH Workflows", "31    Cloud"),
+        ]);
+        assert_eq!(parent_depth(&p, "10 _ ADMIN"), 0);
+        assert_eq!(parent_depth(&p, "11    Admin"), 1);
+        assert_eq!(parent_depth(&p, "31    Cloud"), 1);
+        assert_eq!(parent_depth(&p, "GH Workflows"), 2);
+    }
+
+    /// A folder with no declared parent is ROOT, not an error. `01 Inbox -
+    /// noAlerts` has no `00` header and must stay where it is.
+    #[test]
+    fn unparented_folder_is_root() {
+        let p = parents(&[("11    Admin", "10 _ ADMIN")]);
+        assert_eq!(parent_depth(&p, "01 Inbox - noAlerts"), 0);
+    }
+
+    /// A cycle must terminate. Before the visit set this spun forever, and the
+    /// reconcile loop with it.
+    #[test]
+    fn cyclic_parents_terminate() {
+        let p = parents(&[("a", "b"), ("b", "a")]);
+        assert!(parent_depth(&p, "a") <= 2);
+    }
+
+    /// The ordering contract `ensure_mailboxes` relies on: after the stable
+    /// depth sort, every parent is planned before any of its children, so
+    /// `planned` always has the parent's id ready.
+    #[test]
+    fn depth_sort_puts_every_parent_before_its_children() {
+        let p = parents(&[
+            ("GH Workflows", "31    Cloud"),
+            ("31    Cloud", "30 _ CLOUD"),
+            ("11    Admin", "10 _ ADMIN"),
+        ]);
+        // Deliberately worst-case: deepest first, parents last.
+        let mut declared = vec![
+            ("GH Workflows", 0u32),
+            ("11    Admin", 1),
+            ("31    Cloud", 2),
+            ("30 _ CLOUD", 3),
+            ("10 _ ADMIN", 4),
+        ];
+        declared.sort_by_key(|(name, _)| parent_depth(&p, name));
+
+        let mut seen: HashSet<&str> = HashSet::new();
+        for (name, _) in &declared {
+            if let Some(parent) = p.get(*name) {
+                assert!(
+                    seen.contains(parent.as_str()),
+                    "{name:?} planned before its parent {parent:?}"
+                );
+            }
+            seen.insert(name);
+        }
+    }
+
+    /// Equal-depth folders keep declaration order, which is what hands each
+    /// newly created mailbox a stable `sortOrder` across restarts.
+    #[test]
+    fn depth_sort_is_stable_within_a_level() {
+        let p = parents(&[("11    Admin", "10 _ ADMIN"), ("12    Finance", "10 _ ADMIN")]);
+        let mut declared = vec![("11    Admin", 1u32), ("12    Finance", 2), ("10 _ ADMIN", 100)];
+        declared.sort_by_key(|(name, _)| parent_depth(&p, name));
+        assert_eq!(
+            declared,
+            vec![("10 _ ADMIN", 100u32), ("11    Admin", 1), ("12    Finance", 2)]
+        );
+    }
 }
