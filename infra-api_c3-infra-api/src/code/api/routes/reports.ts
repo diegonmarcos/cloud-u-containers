@@ -7,17 +7,26 @@
 //   gha      -> cloud-health-reports-x86-gha.yml      (ubuntu-latest, default)
 //   oci-apps -> cloud-health-reports-arm-oci-apps.yml (self-hosted arm64)
 //
-// Artifacts are published to the PUBLIC diegonmarcos/cloud-data repo, which
-// serves them with `access-control-allow-origin: *`. Browsers therefore fetch
-// report DATA directly from raw.githubusercontent and never through here — this
-// module only orchestrates runs and reports their status.
+// Artifacts are published to diegonmarcos/cloud-data, which is PRIVATE — it
+// also holds the Claude session archives, so it is not a candidate for being
+// made public. This header used to say PUBLIC and concluded that browsers
+// could fetch report DATA straight from raw.githubusercontent; they cannot,
+// and that false premise is why the freshness probe below silently 404'd.
+// This module orchestrates runs and reports their status; anything serving
+// report BODIES to a browser has to proxy them through here with the token.
 
 import { FastifyPluginAsync } from "fastify";
 
 const GH_API = "https://api.github.com";
 const OWNER_REPO = "diegonmarcos/cloud-infra";
-const RAW_BASE =
-  "https://raw.githubusercontent.com/diegonmarcos/cloud-data/main/reports/dist";
+const DATA_REPO = "diegonmarcos/cloud-data";
+// `y_old/` is not a typo and not an archive. All three cloud-health-reports
+// workflows publish here, so it IS the live path — the name is historical and
+// renaming it would break every URL already handed out. This pointed at
+// `reports/dist`, which holds only the GHA traces, so every freshness lookup
+// 404'd and /reports/status reported the whole fleet as never having run.
+const DATA_PATH = "y_old/reports/dist";
+const RAW_BASE = `https://raw.githubusercontent.com/${DATA_REPO}/main/${DATA_PATH}`;
 
 // Runner -> workflow file. Keys are the only accepted `runner` values.
 export const REPORT_RUNNERS: Record<string, string> = {
@@ -82,40 +91,65 @@ export const registerReportsRoutes: FastifyPluginAsync = async (app) => {
     "/reports/status",
     { schema: { tags: ["reports"], summary: "Published report freshness" } },
     async () => {
+      // Freshness comes from the commits API, not a HEAD on raw, for two
+      // reasons that each break the HEAD on their own:
+      //
+      //   1. cloud-data is PRIVATE. Unauthenticated raw.githubusercontent
+      //      answers 404 for it, and the catch below turned that into a
+      //      plausible-looking "ok: false" row rather than anything that read
+      //      as misconfiguration. Every family looked equally dead, which is
+      //      also what a genuinely halted fleet looks like.
+      //   2. raw serves private content with NO last-modified header (etag
+      //      only), so even authenticated the age arithmetic yields NaN.
+      //
+      // The commits API needs the same token the dispatch path already uses,
+      // returns a real date, and is per-path — which matters because the
+      // failure worth catching is one family going stale while the rest keep
+      // publishing, not the whole set stopping at once.
+      const token = process.env.GITHUB_TOKEN;
       const out = await Promise.all(
         REPORT_FAMILIES.map(async (fam) => {
           const url = `${RAW_BASE}/${fam}.json`;
+          const links = { json: url, markdown: `${RAW_BASE}/${fam}.md` };
           try {
-            const res = await fetch(url, {
-              method: "HEAD",
-              signal: AbortSignal.timeout(8000),
-            });
-            const lm = res.headers.get("last-modified");
+            const res = await fetch(
+              `${GH_API}/repos/${DATA_REPO}/commits` +
+                `?path=${encodeURIComponent(`${DATA_PATH}/${fam}.json`)}&per_page=1`,
+              { headers: ghHeaders(token), signal: AbortSignal.timeout(8000) },
+            );
+            if (!res.ok) {
+              return { family: fam, ok: false, status: res.status, ...links };
+            }
+            const commits = (await res.json()) as any[];
+            const lm = commits[0]?.commit?.committer?.date ?? null;
             const ageH = lm
               ? Math.round((Date.now() - new Date(lm).getTime()) / 36e5)
               : null;
             return {
               family: fam,
-              ok: res.ok,
+              // No commit touching this path means the family has NEVER
+              // published. That is not a healthy zero, so it is not ok.
+              ok: lm !== null,
               status: res.status,
               lastModified: lm,
               ageHours: ageH,
               stale: ageH === null ? null : ageH > 48,
-              json: url,
-              markdown: `${RAW_BASE}/${fam}.md`,
+              ...links,
             };
           } catch (e) {
             return {
               family: fam,
               ok: false,
               error: e instanceof Error ? e.message : String(e),
-              json: url,
-              markdown: `${RAW_BASE}/${fam}.md`,
+              ...links,
             };
           }
         }),
       );
-      return { families: out, base: RAW_BASE };
+      // `base` is a raw URL into a private repo: a browser cannot fetch it
+      // without a token. Callers that render report BODIES need a proxied
+      // route here; the module header still claims the repo is public.
+      return { families: out, base: RAW_BASE, baseRequiresAuth: true };
     },
   );
 
