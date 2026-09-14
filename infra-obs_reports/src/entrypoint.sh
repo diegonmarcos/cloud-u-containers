@@ -37,6 +37,17 @@ case "${1:-}" in
     # Handled below after setup
     ;;
   *)
+    # Deliberate escape hatch: `docker compose run reports <any command>` must
+    # keep working. But it also swallowed every mistyped report kind — `cloud`
+    # (which the API advertised for months) reached here and died as
+    # `exec: cloud: not found`, exit 127, which reads as a broken IMAGE rather
+    # than a bad input. Anything that is not actually runnable is a typo, so
+    # name the valid kinds instead of handing it to exec.
+    if ! command -v "$1" >/dev/null 2>&1 && [ ! -x "$1" ]; then
+      echo "cloud-data-reports: unknown report '$1'" >&2
+      echo "valid: all daily daily-mail mail url sec-network sec-data bash" >&2
+      exit 2
+    fi
     exec "$@"
     ;;
 esac
