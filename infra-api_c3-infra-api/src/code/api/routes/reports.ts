@@ -36,14 +36,21 @@ export const REPORT_RUNNERS: Record<string, string> = {
 
 // Mirrors the workflow_dispatch `report` input options. Anything else is rejected
 // before it reaches GitHub.
+//
+// These must match entrypoint.sh's case statement exactly. Its final arm is
+// `*) exec "$@"`, so a kind the engine does not know is not rejected — it is
+// RUN AS A SHELL COMMAND and the job dies with `exec: <kind>: not found`
+// (exit 127), which reads like a broken image rather than a bad input. The
+// list used to advertise "cloud", which the engine has never accepted, and to
+// omit "daily", which it has always accepted.
 export const REPORT_KINDS = [
   "all",
-  "cloud",
+  "daily",
+  "daily-mail",
   "mail",
   "url",
   "sec-network",
   "sec-data",
-  "daily-mail",
 ] as const;
 
 // Published artifact families (json + md per family).
