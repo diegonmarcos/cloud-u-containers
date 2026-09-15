@@ -91,7 +91,24 @@ in
       # Persist home: ~/.claude/.credentials.json (login), ~/.claude.json, and
       # ~/.headroom/proxy_savings.json (lifetime savings). Volume initialises from
       # the image dir (appuser-owned via the Dockerfile) so appuser can write.
-      volumes = [ "claude_home:${home}" ];
+      volumes = [
+        "claude_home:${home}"
+        # ${home}/git — the same layout every VM has (/home/ubuntu/git/…),
+        # and the same docker volume Gitea mounts at /data/git-gh. One tree,
+        # one checkout per repository, shared by every agent that runs here.
+        #
+        # Before this, each dispatch did its own `git clone` into
+        # ~/w<NNN>-<slug>. Sixty-three of those accumulated: sixty-three
+        # copies of the same repositories, none of which could see the
+        # others' commits, so two agents editing one file never conflicted —
+        # they just overwrote each other at push time and the loser's work
+        # vanished with no error anywhere.
+        #
+        # A shared tree does not by itself stop that; it makes it VISIBLE
+        # (git refuses the second write) and it makes keeping agents on
+        # disjoint files the dispatcher's explicit job.
+        "git_gh:${home}/git"
+      ];
       healthcheck = {
         test = [
           "CMD" "node" "-e"
@@ -143,5 +160,10 @@ in
     # — two volumes orphaned by exactly this mistake during earlier renames of this
     # same service. Renaming this is a live data migration, not a rename.
     claude_home = { name = "claude-superset-api-home"; };
+    # Same pinned name as infra-dat_gitea declares. Two compose projects
+    # reach the one docker volume only because both spell the name out;
+    # an undeclared "git_gh" would be scoped per project and give each
+    # service its own empty tree.
+    git_gh = { name = "cloud-git-gh"; };
   };
 }
