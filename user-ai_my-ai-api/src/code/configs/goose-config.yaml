@@ -1,12 +1,15 @@
 # Goose config for the my-ai-api container — baked at /app/.config/goose/config.yaml
 # schema mirrors III_unix/bb_flakes_termux/src/modules/dotfiles/goose/config.yaml (goose 1.44)
 
-# Provider: goose -> my-ai-api's own OpenAI-compatible front (127.0.0.1:3217/v1/chat/completions)
+# Provider: goose -> my-ai-api's own OpenAI-compatible front (/v1/chat/completions)
 # so every goose LLM call flows back through the my-ai-api plugin pipeline
 # (principles/RTK/ponytail/headroom) before hitting OpenRouter.
+# OPENAI_HOST is deliberately NOT set here: compose.nix exports it from the same wg0
+# bind the API listens on. A host pinned in this file (http://127.0.0.1:3217) went
+# dead when that bind moved to the WG IP, and goose could reach neither its model
+# nor any extension below.
 GOOSE_PROVIDER: openai
 GOOSE_MODEL: deepseek/deepseek-v4-pro
-OPENAI_HOST: http://127.0.0.1:3217
 OPENAI_API_KEY: sk-my-ai-api-local
 GOOSE_CONTEXT_WINDOW: 8192
 GOOSE_TELEMETRY_ENABLED: false

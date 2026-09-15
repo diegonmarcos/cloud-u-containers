@@ -31,6 +31,12 @@ in
         # In-container gateway (telegram/mattermost bot) calls the /v1 API. Follow
         # the wg0 bind — localhost no longer answers once BRIDGE_BIND is the WG IP.
         MYAI_LOCAL_URL     = "http://${rt.wg_bind or "10.0.0.6"}:3217";
+        # goose itself (`goose run`, goosed on GOOSE_PORT) calls this same /v1 API as its
+        # OpenAI provider, so its host follows the wg0 bind too. The baked goose-config.yaml
+        # pinned http://127.0.0.1:3217, which stopped answering when the bind moved to the
+        # WG IP (0c5311af, 2026-08-07): every goose model call was refused, so its declared
+        # MCP extensions could never be used. The environment overrides goose's config.yaml.
+        OPENAI_HOST        = "http://${rt.wg_bind or "10.0.0.6"}:${toString (ports.app or 3217)}";
         HEADROOM_PORT      = toString (ports.headroom or 8890);
         GOOSE_PORT         = toString (ports.goosed   or 3227);
         # BRIDGE_ prefix is MANDATORY: server.mjs reads process.env.BRIDGE_DEFAULT_MODEL /

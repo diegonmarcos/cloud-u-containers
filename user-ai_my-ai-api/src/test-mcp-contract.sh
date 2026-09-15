@@ -1,0 +1,127 @@
+#!/usr/bin/env bash
+# ============================================================================
+# test-mcp-contract.sh — goose in my-ai-api must reach its model and offer
+# cloud-infra-mcp and cloud-cgc-pub-mcp to it (#346).
+#
+# goose reads code/configs/goose-config.yaml, baked by the Dockerfile at
+# /app/.config/goose/config.yaml. Two ways it silently stops using MCP:
+#
+#   1. its model host is unreachable. The config pinned OPENAI_HOST to
+#      http://127.0.0.1:3217 while compose moved the API bind to the WG IP, so
+#      every goose model call was refused and no extension was ever called.
+#      The host must come from compose (same wg_bind as BRIDGE_BIND), never
+#      from a literal in the config.
+#   2. an extension URL drifts from the fleet's declaration of that server.
+#
+#   static  (always)            — both extensions declared, enabled and
+#                                 streamable_http; URL equals the fleet
+#                                 declaration (ip + container port) when
+#                                 cloud-infra is checked out beside; the model
+#                                 host follows the bind
+#   live    (endpoint reachable) — each declared URL completes an MCP
+#                                 initialize and lists tools
+#
+# Usage: src/test-mcp-contract.sh
+# ============================================================================
+set -uo pipefail
+
+HERE="$(cd "$(dirname "$0")" && pwd)"
+INFRA="${CLOUD_INFRA_DIR:-$HERE/../../../cloud-infra}"
+
+python3 - "$HERE/code/configs/goose-config.yaml" "$HERE/compose.nix" "$INFRA/1_cloud-configs/dist" <<'PY'
+import json, os, re, sys, urllib.request, yaml
+
+config_path, compose_path, dist_dir = sys.argv[1], sys.argv[2], sys.argv[3]
+REQUIRED = ["cloud-infra-mcp", "cloud-cgc-pub-mcp"]
+failed = False
+
+def ok(message):
+    print(f"  ok   {message}")
+
+def bad(message):
+    global failed
+    failed = True
+    print(f"  FAIL {message}")
+
+config = yaml.safe_load(open(config_path))
+extensions = config.get("extensions") or {}
+
+print("== static: extensions ==")
+for name in REQUIRED:
+    entry = extensions.get(name) or {}
+    if not entry:
+        bad(f"{name}: not declared in extensions")
+    elif entry.get("enabled") is not True or entry.get("type") != "streamable_http":
+        bad(f"{name}: enabled={entry.get('enabled')} type={entry.get('type')} (need true, streamable_http)")
+    else:
+        ok(f"{name}: declared -> {entry.get('uri')}")
+
+print("== static: model host follows the API bind ==")
+if "OPENAI_HOST" in config:
+    bad(f"goose-config.yaml pins OPENAI_HOST={config['OPENAI_HOST']} — it must come from compose")
+else:
+    ok("goose-config.yaml does not pin OPENAI_HOST")
+compose = open(compose_path).read()
+bind = re.search(r'BRIDGE_BIND\s*=\s*(.+?);', compose)
+host = re.search(r'OPENAI_HOST\s*=\s*"http://\$\{(.+?)\}:', compose)
+if bind and host and host.group(1).strip() == bind.group(1).strip():
+    ok(f"compose OPENAI_HOST uses the BRIDGE_BIND expression ({bind.group(1).strip()})")
+else:
+    bad("compose.nix must export OPENAI_HOST built from the same expression as BRIDGE_BIND")
+
+print("== static: URL matches the fleet declaration ==")
+if not os.path.isdir(dist_dir):
+    print(f"  (cloud-infra dist/ not checked out at {dist_dir} — skipping)")
+else:
+    for name in REQUIRED:
+        declaration = json.load(open(os.path.join(dist_dir, f"build-{name}.json")))
+        expected = f"http://{declaration['services'][name]['ip']}:{declaration['container']['port']}/mcp"
+        actual = (extensions.get(name) or {}).get("uri")
+        if actual == expected:
+            ok(f"{name}: {actual}")
+        else:
+            bad(f"{name}: declared {actual}, fleet declares {expected}")
+
+print("== live: MCP handshake against the declared URLs ==")
+def post(url, body, session=None):
+    headers = {"Content-Type": "application/json", "Accept": "application/json, text/event-stream"}
+    if session:
+        headers["Mcp-Session-Id"] = session
+    request = urllib.request.Request(url, json.dumps(body).encode(), headers)
+    return urllib.request.urlopen(request, timeout=30)
+
+def result_of(response):
+    for line in response.read().decode().splitlines():
+        line = line.removeprefix("data: ").strip()
+        if line.startswith("{"):
+            message = json.loads(line)
+            if "result" in message:
+                return message["result"]
+    return {}
+
+for name in REQUIRED:
+    url = (extensions.get(name) or {}).get("uri")
+    if not url:
+        continue
+    try:
+        response = post(url, {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {
+            "protocolVersion": "2025-06-18", "capabilities": {},
+            "clientInfo": {"name": "goose-test-mcp-contract", "version": "1"}}})
+    except OSError as error:
+        print(f"  (live SKIPPED for {name}: {url} unreachable from here — {error})")
+        continue
+    session = response.headers.get("Mcp-Session-Id")
+    result_of(response)
+    if not session:
+        bad(f"{name}: initialize returned no Mcp-Session-Id")
+        continue
+    post(url, {"jsonrpc": "2.0", "method": "notifications/initialized"}, session).read()
+    tools = result_of(post(url, {"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}}, session)).get("tools", [])
+    if tools:
+        ok(f"{name}: handshake + {len(tools)} tools")
+    else:
+        bad(f"{name}: handshake succeeded but tools/list returned nothing")
+
+print("FAIL" if failed else "PASS")
+sys.exit(1 if failed else 0)
+PY
