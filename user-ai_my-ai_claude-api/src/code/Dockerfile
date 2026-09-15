@@ -86,8 +86,16 @@ COPY claude-config /app/claude-config
 
 # Non-root appuser; HOME holds the persisted Claude login + ~/.headroom ledger
 # (mounted as the claude_home named volume at runtime).
+# /home/appuser/git is the mount point for the shared cloud-git-gh volume —
+# the one working tree every agent in this container uses, the same one Gitea
+# exposes at /data/git-gh. It must exist HERE, in the image, and already be
+# owned by appuser: Docker seeds a fresh named volume from the image content
+# at the mount path, and a path the image does not have gets a root-owned
+# empty directory instead. appuser cannot clone into that, and the failure
+# surfaces as a permission error at the first `git clone` rather than as
+# anything pointing at this line.
 RUN useradd -r -m -u 10001 appuser \
-    && mkdir -p /home/appuser/.claude /home/appuser/.headroom \
+    && mkdir -p /home/appuser/.claude /home/appuser/.headroom /home/appuser/git \
     && chown -R appuser:appuser /home/appuser /app
 USER appuser
 
