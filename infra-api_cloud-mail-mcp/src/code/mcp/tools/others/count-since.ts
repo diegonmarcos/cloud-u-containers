@@ -1,97 +1,98 @@
 #!/usr/bin/env tsx
-// count-since.ts — read-only: count messages received since a given
-// timestamp on maddy (IMAP SEARCH SINCE) and Stalwart (JMAP Email/query
-// filter.after). Cross-store reconciliation helper for the mail health
-// check (1_cicd/src/ops/cloud-health-mail-full.sh) — NOT an MCP tool, not
-// wired into the MCP server. Sibling of gws_missing_backfill.py: one-off
-// operator/CI script, run by hand or via `docker exec` the same way.
+// count-since.ts — read-only: of the Gmail messages received since a given
+// timestamp, count how many are ABSENT from maddy and how many are absent from
+// Stalwart. Cross-store reconciliation helper for the mail health check
+// (1_cicd/src/ops/cloud-health-mail-full.sh) — NOT an MCP tool, not wired into
+// the MCP server. Sibling of gws_missing_backfill.py: one-off operator/CI
+// script, run by hand or via `docker exec` the same way.
 //
 // Why this exists: the 7-phase cloud-mail-health-full Rust derive is a
 // liveness/e2e PROBE (send a test message, check it round-trips) — it does
-// NOT compare historical message counts across stores, so a store silently
-// falling behind (e.g. maddy's dual-write to Stalwart failing) goes
-// undetected. This script gives the ops script something to diff.
+// NOT compare store contents, so a store silently falling behind (e.g.
+// maddy's dual-write to Stalwart failing) goes undetected.
+//
+// Why membership and not counts: this script used to count what each store
+// received since --since, and the caller compared those totals with Gmail's.
+// A store stamps a message with ITS arrival time; Gmail keeps the original.
+// So every re-injection lands inside the store's window and outside Gmail's:
+// on 2026-09-14 the health_mail-reconcile DAG re-injected 146 messages Gmail
+// had received 09-05..09-10, and for a whole day the check failed on
+// "gmail=32 maddy=178 stalwart=181" — not one message lost, not one
+// duplicated. A count cannot tell a missing message from an extra one either,
+// so a real loss hidden behind a re-injection would have passed. "Is each of
+// Gmail's messages in the store?" is the question the check exists to ask.
 //
 // Usage:
-//   tsx count-since.ts --since 2026-08-21T00:00:00Z
-// Prints: {"maddy":<N>,"stalwart":<M>}  (either count is -1 on error, with
-// the reason on stderr — the caller decides how to treat a -1).
+//   python count_recent.py --since 2026-08-21T00:00:00Z --message-ids \
+//     | tsx count-since.ts --since 2026-08-21T00:00:00Z
+// stdin: one Gmail Message-ID per line.
+// Prints: {"gmail":<N>,"maddy_missing":<M>,"stalwart_missing":<S>}
+// (gmail is the number of distinct Message-IDs read; either missing count is
+// -1 on error, with the reason on stderr — the caller decides how to treat a -1).
 //
 // Credentials: reused exactly as cloud-mail-mcp's own tools read them — see
 // ../../shared/config.ts getAccount(). Set MADDY_ME_USER/MADDY_ME_PASSWORD
 // (or MAIL_USER/MAIL_PASSWORD, the maddy/me back-compat fallback) and
 // STALWART_ME_USER/STALWART_ME_PASSWORD in the environment this runs in —
 // same env vars the cloud-mail-mcp container already has via its .secrets file
-// (see ../../../compose.nix), so this is meant to run via `docker exec
+// (see ../../../compose.nix), so this is meant to run via `docker exec -i
 // cloud-mail-mcp ...` on oci-apps, not standalone.
 
+import { readFileSync } from "node:fs";
 import { withImap } from "../../shared/imap.js";
 import { getServer, getAccount } from "../../shared/config.js";
+
+// A store can hold a message from slightly before Gmail's timestamp, and a
+// re-injected one from long after it, so the stores are not windowed to
+// --since: every Message-ID a store received from three days earlier onwards
+// counts as present.
+const LOOKBACK_MILLISECONDS = 3 * 86400000;
+
+// Angle brackets belong to the header on the wire: imapflow keeps them, JMAP
+// strips them. Case-folded so Gmail and both stores compare alike.
+function normalizeMessageId(value: string | undefined | null): string {
+  return (value || "").trim().replace(/^</, "").replace(/>$/, "").toLowerCase();
+}
 
 function authHeader(user: string, pass: string): string {
   return "Basic " + Buffer.from(`${user}:${pass}`).toString("base64");
 }
 
-async function countMaddy(sinceDate: Date): Promise<number> {
+async function maddyMessageIds(from: Date): Promise<Set<string>> {
   return withImap("maddy", "me", async (client) => {
-    // Three traps here, all of which used to collapse into a silent 0 — the
-    // one value this script must never invent, because the caller reads 0 as
-    // data loss and raises a mail-outage alarm.
+    // Three traps here:
     //
     //  1. withImap connects but never SELECTs a mailbox, and imapflow's
-    //     search() returns `undefined` (not []) with none selected. The old
-    //     `Array.isArray(uids) ? uids.length : 0` turned that into 0
-    //     unconditionally, for any amount of real mail, forever. INBOX alone
-    //     holds 10152 messages. An absent result set is now a throw, which
-    //     main()'s .catch converts to the -1 "unavailable" sentinel.
+    //     search() returns `undefined` (not []) with none selected. Treating
+    //     that as "no mail" reported every Gmail message as missing. An absent
+    //     result set is a throw, which main() converts to the -1 sentinel.
     //  2. Sieve sorts incoming mail out of INBOX into the F* folders, so a
-    //     single-mailbox count structurally undercounts — over 7 days INBOX
-    //     saw 801 of 1602 messages, half the total. Count every selectable
-    //     mailbox.
-    //  3. IMAP SEARCH SINCE is date-granularity, and maddy's imapsql treats
-    //     it as INTERNALDATE > <the whole day> rather than RFC 3501's ">=":
-    //     `SINCE 2026-09-04` returned 0 while 76 messages carried that exact
-    //     INTERNALDATE. Prefilter deliberately wide, then compare real
-    //     timestamps so the window is honest.
-    //  4. Sieve's fileinto does not cancel the implicit keep, so a sorted
-    //     message stays in INBOX *and* appears in its F* folder. Walking every
-    //     mailbox therefore counts it twice: on 2026-09-07 the 24h window held
-    //     82 distinct messages and this loop returned 166 (83 in INBOX, 83
-    //     across the F* folders), which the reconciliation read as "maddy
-    //     diverges from Gmail: gmail=95 maddy=188" and failed the run. Gmail
-    //     and Stalwart both count a message once, so dedupe on Message-ID to
-    //     compare like with like. Messages with no Message-ID fall back to a
-    //     per-mailbox synthetic key — that cannot dedupe them, but it also
-    //     cannot collapse two genuinely different messages into one.
-    const prefilter = new Date(sinceDate.getTime() - 3 * 86400000);
-    const seen = new Set<string>();
+    //     single mailbox misses about half of it. Walk every selectable one.
+    //  3. IMAP SEARCH SINCE is date-granularity, and maddy's imapsql treats it
+    //     as INTERNALDATE > <the whole day>. The three-day lookback absorbs it.
+    const ids = new Set<string>();
     for (const box of await client.list()) {
       if (box.flags?.has("\\Noselect")) continue;
       const lock = await client.getMailboxLock(box.path);
       try {
-        const uids = await client.search({ since: prefilter }, { uid: true });
+        const uids = await client.search({ since: from }, { uid: true });
         if (!Array.isArray(uids)) {
           throw new Error(`IMAP SEARCH returned no result set for ${box.path} (mailbox not selected?)`);
         }
         if (uids.length === 0) continue;
-        for await (const msg of client.fetch(
-          uids,
-          { uid: true, internalDate: true, envelope: true },
-          { uid: true },
-        )) {
-          if (msg.internalDate && msg.internalDate >= sinceDate) {
-            seen.add(msg.envelope?.messageId || `no-message-id:${box.path}:${msg.uid}`);
-          }
+        for await (const message of client.fetch(uids, { uid: true, envelope: true }, { uid: true })) {
+          const id = normalizeMessageId(message.envelope?.messageId);
+          if (id) ids.add(id);
         }
       } finally {
         lock.release();
       }
     }
-    return seen.size;
+    return ids;
   });
 }
 
-async function countStalwart(sinceIso: string): Promise<number> {
+async function stalwartMessageIds(from: Date): Promise<Set<string>> {
   const srv = getServer("stalwart");
   const creds = getAccount("stalwart", "me");
   if (!srv.jmap) throw new Error("STALWART_JMAP_URL not configured");
@@ -111,25 +112,49 @@ async function countStalwart(sinceIso: string): Promise<number> {
   const adv = new URL(session.apiUrl, base);
   const apiUrl = base.origin + adv.pathname + adv.search;
 
-  const res = await fetch(apiUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: auth },
-    body: JSON.stringify({
-      using: ["urn:ietf:params:jmap:core", "urn:ietf:params:jmap:mail"],
-      methodCalls: [
-        ["Email/query", { accountId, filter: { after: sinceIso }, calculateTotal: true }, "q1"],
-      ],
-    }),
-  });
-  if (!res.ok) throw new Error(`JMAP Email/query ${res.status}: ${await res.text()}`);
-  const body = (await res.json()) as { methodResponses?: [string, Record<string, unknown>, string][] };
-  const result = body.methodResponses?.[0]?.[1] as { total?: number; ids?: string[] } | undefined;
-  if (typeof result?.total === "number") return result.total;
-  if (Array.isArray(result?.ids)) return result.ids.length;
-  // Neither total nor ids came back: the query did not answer. Returning 0
-  // here would be the same lie countMaddy used to tell — throw so the caller
-  // gets the -1 "unavailable" sentinel instead of a fake "no mail".
-  throw new Error(`JMAP Email/query returned neither total nor ids: ${JSON.stringify(body).slice(0, 300)}`);
+  // Paged so one response stays bounded however much mail the lookback holds.
+  // Sorted oldest-first so mail arriving mid-scan appends to the end instead
+  // of shifting a page boundary over a message that would then go unread.
+  const pageSize = 250;
+  const ids = new Set<string>();
+  for (let position = 0; ; ) {
+    const res = await fetch(apiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: auth },
+      body: JSON.stringify({
+        using: ["urn:ietf:params:jmap:core", "urn:ietf:params:jmap:mail"],
+        methodCalls: [
+          ["Email/query", {
+            accountId,
+            filter: { after: from.toISOString() },
+            sort: [{ property: "receivedAt", isAscending: true }],
+            position,
+            limit: pageSize,
+          }, "q"],
+          ["Email/get", {
+            accountId,
+            "#ids": { resultOf: "q", name: "Email/query", path: "/ids" },
+            properties: ["messageId"],
+          }, "g"],
+        ],
+      }),
+    });
+    if (!res.ok) throw new Error(`JMAP Email/query ${res.status}: ${await res.text()}`);
+    const body = (await res.json()) as { methodResponses?: [string, Record<string, unknown>, string][] };
+    const query = body.methodResponses?.[0]?.[1] as { ids?: string[] } | undefined;
+    const emails = body.methodResponses?.[1]?.[1] as { list?: { messageId?: string[] | null }[] } | undefined;
+    // A page that did not answer must not end the scan quietly: everything
+    // after it would be reported missing. Throw so the caller gets -1.
+    if (!Array.isArray(query?.ids) || !Array.isArray(emails?.list)) {
+      throw new Error(`JMAP Email/query page returned no ids/list: ${JSON.stringify(body).slice(0, 300)}`);
+    }
+    for (const email of emails.list) {
+      for (const id of email.messageId || []) ids.add(normalizeMessageId(id));
+    }
+    position += query.ids.length;
+    if (query.ids.length < pageSize) break;
+  }
+  return ids;
 }
 
 async function main() {
@@ -137,7 +162,7 @@ async function main() {
   const idx = args.indexOf("--since");
   const sinceArg = idx >= 0 ? args[idx + 1] : undefined;
   if (!sinceArg) {
-    process.stderr.write("usage: count-since.ts --since <ISO8601>\n");
+    process.stderr.write("usage: <Gmail Message-IDs on stdin> | count-since.ts --since <ISO8601>\n");
     process.exit(2);
   }
   const sinceDate = new Date(sinceArg);
@@ -146,18 +171,25 @@ async function main() {
     process.exit(2);
   }
 
-  const [maddy, stalwart] = await Promise.all([
-    countMaddy(sinceDate).catch((e) => {
-      process.stderr.write(`maddy count failed: ${e instanceof Error ? e.message : e}\n`);
-      return -1;
-    }),
-    countStalwart(sinceDate.toISOString()).catch((e) => {
-      process.stderr.write(`stalwart count failed: ${e instanceof Error ? e.message : e}\n`);
-      return -1;
-    }),
+  const gmailIds = [...new Set(readFileSync(0, "utf8").split("\n").map(normalizeMessageId).filter(Boolean))];
+  const from = new Date(sinceDate.getTime() - LOOKBACK_MILLISECONDS);
+
+  const countMissing = (store: string, load: Promise<Set<string>>) =>
+    load
+      .then((present) => gmailIds.filter((id) => !present.has(id)).length)
+      .catch((e) => {
+        process.stderr.write(`${store} Message-ID read failed: ${e instanceof Error ? e.message : e}\n`);
+        return -1;
+      });
+
+  const [maddyMissing, stalwartMissing] = await Promise.all([
+    countMissing("maddy", maddyMessageIds(from)),
+    countMissing("stalwart", stalwartMessageIds(from)),
   ]);
 
-  process.stdout.write(JSON.stringify({ maddy, stalwart }) + "\n");
+  process.stdout.write(
+    JSON.stringify({ gmail: gmailIds.length, maddy_missing: maddyMissing, stalwart_missing: stalwartMissing }) + "\n",
+  );
 }
 
 main().catch((e) => {
