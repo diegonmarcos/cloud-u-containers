@@ -33,11 +33,16 @@ mkdir -p "$DIST"
 
 gen() { # $1 engine label, $2 query script, $3 slug
   echo "[analytics] querying $1 …"
-  # A dead engine must not take the other one's report down with it: emit an
-  # empty section set and let render.sh print "No data in this window."
+  # A dead engine must not take the other one's report down with it — but it
+  # must not erase its own diagnosis either. The query scripts emit ##ENGINE
+  # first and unconditionally ("database|DOWN", "<container>|missing") so a dead
+  # collector never reads like a quiet day; truncating the output on a non-zero
+  # exit threw exactly those rows away and mailed an all-empty report. Keep
+  # whatever was captured and add the failure itself as one more engine row.
   if ! "$HERE/src/$2" > "$DIST/.$3.raw" 2>"$DIST/.$3.err"; then
-    echo "[analytics] WARN: $1 query failed — $(tail -1 "$DIST/.$3.err" 2>/dev/null)" >&2
-    : > "$DIST/.$3.raw"
+    ERR=$(tail -1 "$DIST/.$3.err" 2>/dev/null | tr '|' '/')
+    echo "[analytics] WARN: $1 query failed — $ERR" >&2
+    printf '##ENGINE\nquery|FAILED — %s\n' "${ERR:-no error output}" >> "$DIST/.$3.raw"
   fi
   "$HERE/src/render.sh" "$1" "$DIST/cloud_analytics_$3.md" "$DIST/cloud_analytics_$3.html" < "$DIST/.$3.raw"
   rm -f "$DIST/.$3.raw" "$DIST/.$3.err"
