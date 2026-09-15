@@ -22,6 +22,7 @@
       "app_dir": "./code"
     }
   },
+  "upstream_image": "matomo:fpm-alpine",
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/matomo",
