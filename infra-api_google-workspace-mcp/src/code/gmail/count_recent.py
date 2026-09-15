@@ -24,6 +24,14 @@ Counting: paginates messages.list with q="after:<epoch_seconds>" and sums
 page sizes exactly (NOT resultSizeEstimate, which Gmail documents as
 approximate) so the count is precise enough for a tight tolerance check.
 
+--message-ids: instead of the count, print the Message-ID of each of those
+messages, one per line, angle brackets stripped. This is what the health
+check reconciles on (piped into cloud-mail-mcp's count-since.ts, which
+reports how many are absent from maddy and Stalwart) — see that script for
+why a per-store count comparison gave a false red. A message with no
+Message-ID cannot be matched in another store; those are skipped and their
+number goes to stderr.
+
 RUN — inside the google-workspace-mcp container, same invocation shape as
 gws_missing_backfill.py:
 
@@ -64,10 +72,32 @@ def count_since(svc, epoch_seconds: int) -> int:
     return total
 
 
+def message_ids_since(svc, epoch_seconds: int):
+    without_message_id = 0
+    req = svc.users().messages().list(userId="me", q=f"after:{epoch_seconds}", maxResults=500)
+    while req is not None:
+        resp = req.execute()
+        for message in resp.get("messages", []):
+            full = svc.users().messages().get(
+                userId="me", id=message["id"], format="metadata", metadataHeaders=["Message-ID"]
+            ).execute()
+            headers = full.get("payload", {}).get("headers", [])
+            value = next((h["value"] for h in headers if h["name"].lower() == "message-id"), "")
+            value = value.strip().lstrip("<").split(">")[0]
+            if value:
+                yield value
+            else:
+                without_message_id += 1
+        req = svc.users().messages().list_next(req, resp)
+    if without_message_id:
+        print(f"messages without a Message-ID skipped: {without_message_id}", file=sys.stderr)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--since", required=True, help="ISO8601 timestamp, e.g. 2026-08-21T00:00:00Z")
     ap.add_argument("--user", default="me@diegonmarcos.com")
+    ap.add_argument("--message-ids", action="store_true", help="print each message's Message-ID instead of the count")
     args = ap.parse_args()
 
     try:
@@ -80,12 +110,18 @@ def main() -> None:
 
     try:
         svc = gmail_service(args.user)
-        n = count_since(svc, epoch)
+        if args.message_ids:
+            # Collected before printing, so a failure part-way through exits
+            # non-zero with nothing on stdout instead of a truncated list the
+            # caller would read as "the rest is missing from every store".
+            output = "\n".join(message_ids_since(svc, epoch))
+        else:
+            output = str(count_since(svc, epoch))
     except Exception as e:  # noqa: BLE001 — surface any auth/API failure to the caller
         print(f"gmail count failed: {e}", file=sys.stderr)
         sys.exit(1)
 
-    print(n)
+    print(output)
 
 
 if __name__ == "__main__":
