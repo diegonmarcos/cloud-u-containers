@@ -18,7 +18,20 @@ steps:
         echo "=== Pruning $NAME ($IP) ==="
         BEFORE=$($SSH "$USER@$IP" "df --output=used / | tail -1" 2>/dev/null || echo "?")
 
-        RESULT=$($SSH "$USER@$IP" "docker system prune -af 2>&1 | tail -1" 2>/dev/null || echo "FAILED")
+        # Scoped so it can never delete what a declared service needs to restart.
+        # `system prune -af` removed every stopped container and then every image
+        # no container referenced. The load-shedder stops containers under memory
+        # pressure (restart is "no" by policy), so a temporary stop became the loss
+        # of the container AND the image needed to bring it back — and matomo's
+        # image exists only locally, so there was nothing to pull either.
+        #   container prune, label!=com.docker.compose.project: every declared
+        #     service is deployed by compose and carries the label; only stray
+        #     `docker run` debris is collected.
+        #   image prune without -a: dangling (untagged) layers only. A declared
+        #     service references its image by tag, so its image is never dangling.
+        #   no volume prune: volumes hold the databases.
+        # Mirrors cloud-infra vm-pilot infra/prune-maintenance.nix.
+        RESULT=$($SSH "$USER@$IP" "docker container prune -f --filter label!=com.docker.compose.project >/dev/null && docker image prune -f 2>&1 | tail -1 && docker builder prune -f --keep-storage=1G >/dev/null" 2>/dev/null || echo "FAILED")
 
         AFTER=$($SSH "$USER@$IP" "df --output=used / | tail -1" 2>/dev/null || echo "?")
         FREED=$(( (BEFORE - AFTER) / 1024 ))
