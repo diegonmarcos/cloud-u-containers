@@ -28,6 +28,15 @@ const BIND          = process.env.BRIDGE_BIND || "127.0.0.1";
 const CLAUDE_BIN    = process.env.CLAUDE_BIN || "claude";
 const MAX_CONC      = parseInt(process.env.BRIDGE_MAX_CONCURRENCY || "12", 10);
 const CALL_TIMEOUT  = parseInt(process.env.BRIDGE_CALL_TIMEOUT_MS || "180000", 10);
+// How many assistant turns one request may take. This was hardcoded to 1, which
+// does not mean "one answer" — it means ZERO tool calls, because a tool call
+// costs a turn. So the Telegram bot could say hello and nothing else: the moment
+// a question needed Bash or Read, claude exited 1 with `max_turns` and the user
+// got an opaque "[gateway error 502] claude -p exit 1: max_turns".
+// The real ceiling on a runaway request is CALL_TIMEOUT above, which bounds wall
+// clock no matter how many turns are left; this bounds the turn count so a loop
+// that makes no progress still ends. Data-driven from build.json runtime.
+const MAX_TURNS     = parseInt(process.env.BRIDGE_MAX_TURNS || "30", 10);
 const DEFAULT_MODEL = process.env.BRIDGE_DEFAULT_MODEL || "claude-sonnet-4-6";
 // Requested-id → real `claude --model` id. Data-driven (compose wires it from
 // build.json runtime.model_aliases); unknown/absent ids fall back to DEFAULT_MODEL,
@@ -154,7 +163,7 @@ const claudeEnv = () => {
 // ── one claude -p invocation ─────────────────────────────────────────────────
 const callClaude = ({ system, prompt, model }) =>
   new Promise((resolve, reject) => {
-    const args = ["-p", "--output-format", "json", "--max-turns", "1", "--model", mapModel(model)];
+    const args = ["-p", "--output-format", "json", "--max-turns", String(MAX_TURNS), "--model", mapModel(model)];
     if (system) args.push("--append-system-prompt", system);
     const child = spawn(CLAUDE_BIN, args, {
       env: { ...claudeEnv(), CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1" },

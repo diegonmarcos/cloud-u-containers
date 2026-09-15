@@ -60,6 +60,10 @@ in
         BRIDGE_MODEL_ALIASES   = builtins.toJSON (rt.model_aliases or { });
         BRIDGE_MAX_CONCURRENCY = toString (rt.max_concurrency or 12);
         BRIDGE_CALL_TIMEOUT_MS = toString (rt.call_timeout_ms or 180000);
+        # Assistant turns per request. 1 meant zero tool calls — the bot could
+        # greet and nothing else; every question needing a tool died as
+        # "claude -p exit 1: max_turns". call_timeout_ms is the real ceiling.
+        BRIDGE_MAX_TURNS       = toString (rt.max_turns or 30);
         # Cross-device session store (WG-only), persisted in the claude_home volume.
         BRIDGE_SESSIONS_DIR    = "${home}/${(rt.sessions.dir or ".claude-sessions")}";
         BRIDGE_SESSIONS_KEEP   = toString ((rt.sessions.keep or 20));
