@@ -119,3 +119,19 @@ gateway:
       enabled: false
     # Per-platform toolsets for Mattermost, when enabled, would go under
     # platform_toolsets.mattermost: [web, terminal, file, todo, skills, memory]
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MCP SERVERS — code-graph + infra context.
+# Both endpoints are WireGuard-internal (10.0.0.6), reachable because the
+# container runs with network_mode: host.
+#
+#   cloud-cgc-pub-mcp  → code structure, call graphs, symbol search across repos
+#   cloud-infra-mcp    → infra management (deploy, health, fleet status, secrets)
+# ═══════════════════════════════════════════════════════════════════════════════
+mcp_servers:
+  cloud-cgc-pub-mcp:
+    type: http
+    url: http://10.0.0.6:3105/mcp
+  cloud-infra-mcp:
+    type: http
+    url: http://10.0.0.6:3100/mcp
