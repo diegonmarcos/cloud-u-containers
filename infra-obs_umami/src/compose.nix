@@ -47,7 +47,14 @@ in
         interval = "15s";
         timeout  = "5s";
         retries  = 5;
-        start_period = "30s";
+        # Measured 2026-09-15 on oci-analytics (954MB, memory pressure high):
+        # the container started just before 22:52 and first answered the
+        # heartbeat at ~22:56. With 30s the compose wait marked it unhealthy
+        # after ~105s and failed the ship (run 35032157716) while it was still
+        # booting, and umami-setup never ran. A check that passes during
+        # start_period marks it healthy at once, so a long window costs a
+        # fast start nothing.
+        start_period = "600s";
       };
       deploy.resources = {
         # No memory ceiling: build.json declares no limits.memory. A cgroup memory.max
