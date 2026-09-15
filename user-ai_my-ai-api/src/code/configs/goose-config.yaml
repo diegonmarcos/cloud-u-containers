@@ -19,6 +19,13 @@ extensions:
     enabled: true
     timeout: 300
 
+  cloud-infra-mcp:
+    name: Cloud Infra MCP
+    type: streamable_http
+    uri: http://10.0.0.6:3100/mcp
+    enabled: true
+    timeout: 300
+
   developer:
     enabled: true
     type: platform
