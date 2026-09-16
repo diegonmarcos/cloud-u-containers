@@ -26,7 +26,12 @@ W="${WINDOW_H} hours"
 echo "##ENGINE"
 if $DB "select 1;" 2>/dev/null | grep -q 1; then echo "database|reachable"; else echo "database|DOWN — no data can be ingested"; fi
 for c in umami umami-db; do
-  echo "\$c|\$(docker inspect -f '{{.State.Status}}{{if .State.Health}} ({{.State.Health.Status}}){{end}}' \$c 2>/dev/null || echo missing)"
+  # Strip before testing for empty — see the note in matomo-query.sh: docker
+  # inspect writes a bare newline to STDOUT for an absent container, and the
+  # inline \`|| echo missing\` form let that newline break the rendered row in two.
+  st=\$(docker inspect -f '{{.State.Status}}{{if .State.Health}} ({{.State.Health.Status}}){{end}}' \$c 2>/dev/null | tr -d '\\r\\n')
+  [ -n "\$st" ] || st=missing
+  echo "\$c|\$st"
 done
 
 echo "##SUMMARY"
