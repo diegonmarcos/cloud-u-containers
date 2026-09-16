@@ -6,10 +6,15 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { readFileSync, existsSync, readdirSync } from "fs";
 import { join } from "path";
-import { getConfig, getVmSshAlias, getRepoRoot } from "../../config.js";
+import { getConfig, getVmSshAlias } from "../../config.js";
+import { getContainersRoot } from "../../shared/libs/paths.js";
 
 function getSolutionsDir(): string {
-  return join(getRepoRoot(), "a_solutions");
+  // Previously joined the config module's repo-root helper onto "a_solutions";
+  // that root resolves to the empty ./data deploy bind in the image, so the
+  // scan landed nowhere. a_solutions IS the cloud-u-containers checkout: use
+  // the container source tree under $GIT_ROOT instead (Ticket #402).
+  return getContainersRoot();
 }
 
 export function registerSpecTools(server: McpServer) {

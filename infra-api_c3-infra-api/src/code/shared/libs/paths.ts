@@ -267,6 +267,45 @@ export function getSolutionRoots(): string[] {
   return roots;
 }
 
+// ── Repository content roots for the a-knowledge tools (Ticket #402) ───────
+// The a-knowledge tools (docs.ts, specs.ts, configs.ts, context.ts) used to
+// resolve repository content on the config module's repo-root helper, which
+// resolves to dirname($CONFIG_PATH) = .runtime.data_path — in production the
+// EMPTY ./data deploy bind. Every path joined onto it (a_solutions/*,
+// README.md, front-deps.json) landed nowhere and the tools answered "not
+// found" with a cheerful success instead of failing. The image has no such
+// root; it has the octocode repos volume at $GIT_ROOT with one checkout per
+// .runtime.octocode.index_repos entry. a_solutions IS the cloud-u-containers
+// checkout, so the two helpers below resolve repository content the way
+// codegraph.ts already does: anchor on $GIT_ROOT and join the repo name.
+
+/** The container source tree root. CI checks a cloud-infra checkout's
+ *  a_solutions/; the standalone (production) layout is the cloud-u-containers
+ *  checkout in the octocode repos volume. First existing root wins; absent
+ *  any, THROW rather than silently point at a phantom path — a knowledge tool
+ *  that cannot read its subject must fail loudly, not report a clean negative. */
+export function getContainersRoot(): string {
+  for (const root of getSolutionRoots()) {
+    if (existsSync(root)) return root;
+  }
+  throw new Error(
+    `[cloud-cgc-pub-mcp] no container source tree found — expected 'a_solutions' under a cloud-infra checkout or a 'cloud-u-containers' checkout under '$GIT_BASE'. Point GIT_ROOT at the octocode repos volume.`
+  );
+}
+
+/** Absolute checkout dir of an indexed repo by its local_name (the layout of
+ *  the octocode repos volume: $GIT_ROOT/<local_name>). Throws for a repo that
+ *  is absent from .runtime.octocode.index_repos — same loudness principle. */
+export function getRepoDir(localName: string): string {
+  const dir = REPOS[localName];
+  if (!dir) {
+    throw new Error(
+      `[cloud-cgc-pub-mcp] repo '${localName}' is not in .runtime.octocode.index_repos; cannot resolve its checkout under '$GIT_BASE'.`
+    );
+  }
+  return dir;
+}
+
 // ── Repo sync ────────────────────────────────────────────────────────
 let _lastSync = 0;
 const SYNC_TTL = 5 * 60 * 1000; // 5 minutes
