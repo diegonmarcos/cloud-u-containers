@@ -15,14 +15,15 @@
     "_comment_working_directory": "Hermes' main process is an s6-supervised idle holder; the real work arrives as `docker exec`, which starts at the image WorkingDir (/opt/hermes) — outside the checkout. The agent then sees zero repositories and answers as if the code did not exist. Starting it in the tree is the point of mounting the tree.",
     "git_tree_is_working_directory": true
   },
+  "upstream_image": "ghcr.io/diegonmarcos/hermes-agent:latest",
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
     "image": "hermes-agent",
     "arch": "arm64",
-    "native_build": {
-      "type": "none"
-    },
-    "platform": "linux/arm64"
+    "platform": "linux/arm64",
+    "runtime_packages": {
+      "apt": "jq ripgrep wget unzip netcat-openbsd patch yq procps less"
+    }
   },
   "deploy": {
     "host": "oci-apps",
