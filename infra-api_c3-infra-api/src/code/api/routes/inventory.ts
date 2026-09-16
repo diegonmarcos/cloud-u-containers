@@ -266,7 +266,11 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
     const analyticsUpstreams: Record<string, any> = {};
 
     // Read Caddy build.json for non-service routes (github pages, proxy dashboard, parent domain metadata)
-    const caddyBjPath = join(solutionsDir, "bb-sec_caddy", "build.json");
+    // The folder is declared; it used to be the literal "bb-sec_caddy", which is
+    // pre-rename and no longer on disk — caddy is declared at infra-sec_caddy.
+    // The existsSync below then quietly yielded an empty proxy object, so this
+    // route dropped every non-service Caddy route and still answered 200.
+    const caddyBjPath = join(solutionsDir, config.services["caddy"]?.folder ?? getServiceFolder("caddy"), "build.json");
     let caddyProxy: any = {};
     if (existsSync(caddyBjPath)) {
       try {

@@ -45,31 +45,19 @@ export function getDriftReport(): { onDiskOnly: string[]; configOnly: string[] }
   return {
     onDiskOnly: [...diskNames].filter((n) => !configNames.has(n)).sort(),
     configOnly: [...configNames].filter((n) => {
-      // Check if the config entry's folder exists on disk (with or without build.json)
+      // The folder is DECLARED, per service, at services[*].folder — all 76 of
+      // them. This used to rebuild the folder name from a category→prefix table
+      // instead, and that table was pre-rename: it produced aa-sui_/bc-obs_/
+      // ba-clo_ names while the tree moved to infra-api_/infra-obs_/user-comm_.
+      // So the existsSync missed for almost every service and the drift report
+      // announced 69 of 76 services as present in config but absent from disk.
+      // A drift report that cries wolf about 90% of the fleet is worse than
+      // none — it trains everyone to ignore the one entry that is real.
       const svc = fileConfig.services[n];
-      const baseName = svc.flake ?? n;
-      const prefix = CATEGORY_PREFIX[svc.category] ?? "";
-      const folder = `${prefix}${baseName}`;
+      const folder = svc.folder ?? svc.flake ?? n;
       return !existsSync(join(SOLUTIONS_DIR, folder));
     }).sort(),
   };
-}
-
-const CATEGORY_PREFIX: Record<string, string> = {
-  app: "aa-sui_",
-  mic: "ab-mic_",
-  fin: "ac-fin_",
-  agi: "ad-agi_",
-  cloud: "ba-clo_",
-  sec: "bb-sec_",
-  tools: "bc-obs_",
-  data: "ca-dat_",
-};
-
-// Reverse map: directory prefix → category
-const PREFIX_TO_CATEGORY: Record<string, ServiceConfig["category"]> = {};
-for (const [cat, prefix] of Object.entries(CATEGORY_PREFIX)) {
-  PREFIX_TO_CATEGORY[prefix] = cat as ServiceConfig["category"];
 }
 
 function discoverServicesFromDisk(fileConfig: InfraConfig): Record<string, ServiceConfig> {
@@ -115,11 +103,13 @@ function discoverServicesFromDisk(fileConfig: InfraConfig): Record<string, Servi
     const name = buildJson.name;
     if (!name) continue;
 
-    // Reverse-map prefix → category (fall back to build.json category)
-    const prefix = Object.keys(PREFIX_TO_CATEGORY).find((p) => dirName.startsWith(p));
-    const category = prefix
-      ? PREFIX_TO_CATEGORY[prefix]
-      : ((buildJson as any).category as ServiceConfig["category"]) ?? "tools";
+    // The category is declared by the service itself. This used to reverse-map
+    // the directory prefix first and only fall back to build.json; the prefix
+    // table it mapped through was pre-rename, so it matched 2 of 81 directories
+    // and the fallback was doing the work. For the one directory it did still
+    // match (bc-obs_alerts-api) the table and the build.json agree on "tools",
+    // so reading the declaration directly changes no category here.
+    const category = ((buildJson as any).category as ServiceConfig["category"]) ?? "tools";
 
     // Map deploy.host alias → VM ID
     const host = buildJson.deploy?.host ?? "local";
@@ -159,13 +149,15 @@ export function getServiceFolder(name: string): string {
   const config = getConfig();
   const svc = config.services[name];
   if (!svc) throw new Error(`Unknown service: ${name}`);
-  // Use actual folder from discovery, fall back to prefix+name reconstruction
+  // The declaration first. Between it and the scan below there used to be a
+  // third step that invented a folder name from a category→prefix table, and
+  // the table was pre-rename. Inventing a name is the #371/#378 failure mode:
+  // a guess that does not match resolves to nothing, and a guess that DOES
+  // match resolves confidently to the wrong tree — ab-mic_vaultwarden is still
+  // on disk next to the live user-vault_vaultwarden. The scan that follows
+  // finds the folder by reading each build.json's own name, which cannot be
+  // stale, so the guess was never the thing making this work.
   if (svc.folder) return svc.folder;
-  const baseName = svc.flake ?? name;
-  const prefix = CATEGORY_PREFIX[svc.category] ?? "";
-  const constructed = `${prefix}${baseName}`;
-  // Verify constructed path exists, otherwise scan for matching build.json
-  if (existsSync(join(SOLUTIONS_DIR, constructed))) return constructed;
   try {
     const dirs = readdirSync(SOLUTIONS_DIR, { withFileTypes: true })
       .filter((d) => d.isDirectory())
