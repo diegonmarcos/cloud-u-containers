@@ -54,7 +54,13 @@ if q "select 1;" | grep -q 1; then echo "database|reachable"; else echo "databas
 # quirk rather than a dead engine, which is the exact failure the ##ENGINE
 # contract in build.sh exists to prevent. Observed 2026-09-16: the container
 # was absent from oci-apps entirely and the report still showed no engine row.
-STATE=\$(docker inspect -f '{{.State.Status}}' ${CONTAINER} 2>/dev/null || echo missing)
+# tr -d, then test for empty: \`docker inspect\` on an absent container writes a
+# bare newline to STDOUT before exiting non-zero, so \`|| echo missing\` yielded
+# "\\nmissing" and render.sh split it across two broken table rows
+# ("| matomo-hybrid |  |" then "| missing |"). Observed in production
+# 2026-09-16 02:40. Capture, strip, and only then decide it is empty.
+STATE=\$(docker inspect -f '{{.State.Status}}' ${CONTAINER} 2>/dev/null | tr -d '\\r\\n')
+[ -n "\$STATE" ] || STATE=missing
 echo "${CONTAINER}|\$STATE"
 if [ "\$STATE" = running ]; then
   docker exec ${CONTAINER} supervisorctl status 2>/dev/null | awk '{print \$1"|"\$2}' || true

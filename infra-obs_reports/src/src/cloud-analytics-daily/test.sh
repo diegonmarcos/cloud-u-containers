@@ -12,7 +12,12 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 T=$(mktemp -d); trap 'rm -rf "$T"' EXIT
 mkdir "$T/bin"
 printf '#!/bin/sh\nexec bash -s\n' > "$T/bin/ssh"
-printf '#!/bin/sh\nexit 1\n' > "$T/bin/docker"
+# echo, THEN exit 1 — the real `docker inspect` writes a bare newline to STDOUT
+# before failing on an absent container. A stub that printed nothing made this
+# tester pass against a query script whose rendered row was actually split in
+# two ("| matomo-hybrid |  |" / "| missing |"), which only surfaced on the live
+# system. A stub that does not reproduce the failure mode does not test it.
+printf '#!/bin/sh\necho\nexit 1\n' > "$T/bin/docker"
 chmod +x "$T/bin/ssh" "$T/bin/docker"
 
 PATH="$T/bin:$PATH" DIST_DIR="$T/dist" bash "$HERE/build.sh" build >/dev/null 2>&1
