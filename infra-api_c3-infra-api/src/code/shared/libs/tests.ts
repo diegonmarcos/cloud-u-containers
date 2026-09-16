@@ -3,6 +3,7 @@ import { getConfig, resolveVmId, getVmSshAlias, getServiceDir } from "./config.j
 import { exec } from "./exec.js";
 import { listContainers } from "./docker.js";
 import { listServices, getService } from "./discovery.js";
+import { getDeployHistory } from "./db.js";
 import { AUTHELIA_TOKEN_PATH } from "./paths.js";
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
@@ -283,6 +284,37 @@ export function testPortOpen(ip: string, port: number): TestResult {
       return { passed: true, details: `Port ${port} is open on ${ip}` };
     }
     return { passed: false, details: `Port ${port} is closed or unreachable on ${ip}` };
+  });
+}
+
+/**
+ * REGRESSION #412: obs_debug_db_deploy used to return [] for every query
+ * because recordDeploy had no callers, so deploy_log stayed empty even for
+ * services that were provably deployed. The deploy recorder is now wired
+ * into every deployment tool; an empty deploy_log means that wiring broke
+ * again (or the deployment pipeline stopped shipping entirely). Fail loudly
+ * instead of letting the tool silently report a clean history.
+ */
+export function testDeployHistoryPopulated(): TestResult {
+  return runTest("deploy-history-populated", "deploy_log", () => {
+    const rows = getDeployHistory({});
+    if (rows.length === 0) {
+      return {
+        passed: false,
+        details:
+          "getDeployHistory() returned []. deploy_log has no rows: recordDeploy " +
+          "is not being called by the deployment tools (ticket #412 regression) " +
+          "or no deployment has ever been recorded. An empty deploy history for " +
+          "provably deployed services is the fail-open this check exists to catch.",
+      };
+    }
+    const latest = rows[0];
+    return {
+      passed: true,
+      details:
+        `deploy_log has ${rows.length} rows (limit 50); most recent: ` +
+        `${latest.service} ${latest.step} at ${latest.ts} (success=${latest.success})`,
+    };
   });
 }
 
@@ -737,9 +769,17 @@ function runCrossVmSuite(): TestSuiteResult {
   return buildSuiteResult("cross-vm", tests, start);
 }
 
+/**
+ * Run the "deploy" suite: deploy history must never be empty (ticket #412).
+ */
+function runDeploySuite(): TestSuiteResult {
+  const start = Date.now();
+  return buildSuiteResult("deploy", [testDeployHistoryPopulated()], start);
+}
+
 // ── Master Dispatcher ────────────────────────────────────────────────────
 
-type SuiteName = "connectivity" | "dns" | "tls" | "routes" | "containers" | "wireguard" | "auth" | "secrets" | "compose" | "volumes" | "resources" | "latency" | "images" | "cross-vm" | "full";
+type SuiteName = "connectivity" | "dns" | "tls" | "routes" | "containers" | "wireguard" | "auth" | "secrets" | "compose" | "volumes" | "resources" | "latency" | "images" | "cross-vm" | "deploy" | "full";
 
 /**
  * Run a named test suite, optionally scoped to a specific VM target.
@@ -751,6 +791,7 @@ type SuiteName = "connectivity" | "dns" | "tls" | "routes" | "containers" | "wir
  * - "routes"       — HTTP route check for all services with domains
  * - "containers"   — Container health for all running containers (or target VM)
  * - "wireguard"    — WireGuard ping + wg show for all VMs
+ * - "deploy"       — Deploy history must not be empty (ticket #412 regression)
  * - "full"         — All of the above combined into one suite
  */
 export function runTestSuite(suite: SuiteName, target?: string): TestSuiteResult {
@@ -797,6 +838,9 @@ export function runTestSuite(suite: SuiteName, target?: string): TestSuiteResult
     case "cross-vm":
       return runCrossVmSuite();
 
+    case "deploy":
+      return runDeploySuite();
+
     case "full": {
       const start = Date.now();
       const suites = [
@@ -814,6 +858,7 @@ export function runTestSuite(suite: SuiteName, target?: string): TestSuiteResult
         runLatencySuite(),
         runImagesSuite(target),
         runCrossVmSuite(),
+        runDeploySuite(),
       ];
 
       // Flatten all tests into one combined suite
@@ -829,6 +874,7 @@ export function runTestSuite(suite: SuiteName, target?: string): TestSuiteResult
       const validSuites: SuiteName[] = [
         "connectivity", "dns", "tls", "routes", "containers", "wireguard",
         "auth", "secrets", "compose", "volumes", "resources", "latency", "images", "cross-vm",
+        "deploy",
         "full",
       ];
       return {

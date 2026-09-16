@@ -238,6 +238,7 @@ export function registerObservabilityReadTools(server: McpServer) {
         "latency",
         "images",
         "cross-vm",
+        "deploy",
         "full",
       ]).describe("Test suite to run"),
       target: z.string().optional().describe("Optional target (VM ID/alias for connectivity/containers, domain for dns/tls/routes)"),
