@@ -141,8 +141,28 @@ pub async fn run(cfg: &EmailE2EConfig, token: &str) -> EmailResult {
     });
 
     // ── outbound SMTP send (dual-delivers Maddy + Stalwart + g-workspace) ──
+    // Bounded by the same timeout_secs budget as the polls above. lettre applies
+    // its 60s default per SMTP COMMAND, not to the conversation as a whole, so a
+    // peer that stalls each of the ~8 commands just under that limit costs
+    // minutes with no aggregate ceiling. That is the same shape — every
+    // operation individually bounded, the total unbounded — that wedged the
+    // derives fan-out, and this is the last leg of the email round-trip that
+    // still had it: the IMAP and JMAP polls already carry their own deadline.
+    // Unbounded here stalls the whole report, because the awaits below cannot
+    // start until this returns.
     let outbound_start = Instant::now();
-    let outbound = send_smtp(cfg, &noreply_pw, &subject, token).await;
+    let outbound = match tokio::time::timeout(
+        timeout,
+        send_smtp(cfg, &noreply_pw, &subject, token),
+    )
+    .await
+    {
+        Ok(r) => r,
+        Err(_) => Err(anyhow::anyhow!(
+            "smtp send exceeded the {}s email budget",
+            cfg.timeout_secs
+        )),
+    };
     let outbound_ms = outbound_start.elapsed().as_millis() as u64;
     let outbound_ok = outbound.is_ok();
     let mut error: Option<String> = outbound.err().map(|e| e.to_string());
@@ -194,6 +214,16 @@ pub async fn run(cfg: &EmailE2EConfig, token: &str) -> EmailResult {
             Err(e) => push_err(&mut error, "cloud-mail-mcp", e.to_string()),
         }
     }
+
+    // Per-leg cost. Without this the email round-trip reports only pass/fail, so
+    // a leg that merely runs long is indistinguishable from one that hangs —
+    // which is exactly what made the derives hang take several runs to pin down.
+    // Note inbound_ms/jmap_ms measure the RESIDUAL wait after the SMTP send
+    // returns, since both polls are spawned concurrently before it.
+    println!(
+        "[email_e2e] smtp {}ms (ok={}) | imap residual {}ms (ok={}) | jmap residual {}ms (ok={}, checked={})",
+        outbound_ms, outbound_ok, inbound_ms, inbound_ok, jmap_ms, jmap_ok, jmap_checked
+    );
 
     EmailResult {
         subject,
