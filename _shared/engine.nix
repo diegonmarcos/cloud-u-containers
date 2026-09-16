@@ -153,7 +153,47 @@ let
   # decision, not a default to inherit: git refuses the second write, so
   # an unplanned writer shows up as a failed dispatch rather than as
   # work silently lost — which is the failure #345 set out to end.
-  gitTreeSuffix = if (agentSpec.git_tree_writable or false) == true then "" else ":ro";
+  gitTreeWritable = (agentSpec.git_tree_writable or false) == true;
+  gitTreeSuffix   = if gitTreeWritable then "" else ":ro";
+
+  # The tree on disk has ONE owner — the uid that cloned it, 10001 — and
+  # every other agent container arrives with a different one. git's
+  # ownership check then refuses EVERYTHING, not merely writes:
+  #
+  #   fatal: detected dubious ownership in repository at '/opt/data/git/cloud-infra'
+  #
+  # `git status`, `git log`, `git remote` and `git push` all die that same
+  # way, so an agent stands in the tree, lists six repositories, and cannot
+  # read a single one of them. #421 moved the working directory INTO the
+  # tree; this is the half that was underneath it, and it is why mounting
+  # the tree writable was never enough to make an agent able to use it.
+  #
+  # safe.directory is git's own answer and is honoured ONLY from protected
+  # configuration — system, global, or the command scope that
+  # GIT_CONFIG_COUNT/KEY/VALUE writes. The env triple is the only one of
+  # those three that can be declared from here, for images we do not build.
+  # It is set for read-only mounts too: reading is exactly what the check
+  # blocks first.
+  #
+  # The credential helper travels with it, for writable trees only, because
+  # a token-less agent fails at the LAST step rather than the first — it
+  # edits, commits, and only then discovers it can never push, having
+  # already written into a tree the other agents share. The helper reads
+  # GH_TOKEN from the environment, which each container's own sops secrets
+  # supply; `$$` is compose's escape, so what reaches the container is the
+  # literal `${GH_TOKEN}` for git's shell to expand when the helper runs.
+  gitTreeGitEnv =
+    {
+      GIT_CONFIG_COUNT   = if gitTreeWritable then "2" else "1";
+      GIT_CONFIG_KEY_0   = "safe.directory";
+      GIT_CONFIG_VALUE_0 = "*";
+    } // (if gitTreeWritable
+          then {
+            GIT_CONFIG_KEY_1   = "credential.helper";
+            GIT_CONFIG_VALUE_1 =
+              "!f() { echo username=x-access-token; echo \"password=$\${GH_TOKEN}\"; }; f";
+          }
+          else {});
 
   # Mounting the tree is only half of it. `docker exec` starts every command
   # at the image's WorkingDir, and an agent that is handed work there starts
@@ -173,6 +213,14 @@ let
     else svc // {
       volumes = lib.unique ((svc.volumes or [])
         ++ [ "${gitTreeKey}:${gitTreeMount}${gitTreeSuffix}" ]);
+      # The service's own declarations win: this supplies the git contract
+      # the mount needs, it does not overrule a container that states its
+      # own. Compose also accepts a LIST for `environment`, and merging an
+      # attrset into a list is a build error rather than a wrong value, so
+      # the list form is left exactly as written.
+      environment =
+        let e = svc.environment or {}; in
+        if builtins.isAttrs e then gitTreeGitEnv // e else e;
     } // (if gitTreeIsWorkingDirectory
           then { working_dir = gitTreeMount; }
           else {});
