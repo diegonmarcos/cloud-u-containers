@@ -42,13 +42,29 @@ in
       # Secrets: TELEGRAM_BOT_TOKEN, OPENAI_API_KEY, MATTERMOST_TOKEN.
       env_file       = [ "./.secrets" ];
       environment    = {
-        HERMES_UID           = "10000";
-        HERMES_GID           = "10000";
+        # 10001:999, not the image default 10000:10000, because the shared git tree
+        # mounted at /opt/data/git is owned 10001:999 mode 0755 — group 999 gets r-x
+        # only, so joining the group grants nothing and ONLY uid 10001 can write.
+        # At 10000 hermes could read the tree and commit nothing: measured 2026-09-16,
+        # its own sandbox returned uid=10000 and TOUCH_DENIED, and the run then
+        # reported a commit sha that does not exist.
+        #
+        # Safe against stage2-hook.sh's boot chown: it remaps via usermod/groupmod
+        # FIRST, then recursively chowns only its own subdir list (cron sessions logs
+        # hooks memories skills skins plans workspace home profiles pairing
+        # platforms/pairing lazy-packages) — `git` is not in it, so the shared tree is
+        # never touched. $HERMES_HOME itself gets a non-recursive chown to 10001:999.
+        HERMES_UID           = "10001";
+        HERMES_GID           = "999";
         TZ                   = buildJson.timezone or "Europe/Berlin";
         TELEGRAM_ALLOWED_USERS = "6431508617";
         # Point the OpenAI-compat client at claude-superset-api over WG.
         OPENAI_BASE_URL      = rt.backend_url or "http://10.0.0.6:3117/v1";
-        OPENAI_MODEL         = rt.model or "claude-sonnet-4-6";
+        # No `or` fallback: a default naming a different model is a second model
+        # declaration, and "claude-sonnet-4-6" is not what build.json declares. If
+        # runtime.model ever goes missing, eval must fail here rather than quietly
+        # run a model nobody asked for.
+        OPENAI_MODEL         = rt.model;
       };
       volumes = [
         "hermes_data:/opt/data"

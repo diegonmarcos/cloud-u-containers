@@ -8,8 +8,12 @@
 # bind the API listens on. A host pinned in this file (http://127.0.0.1:3217) went
 # dead when that bind moved to the WG IP, and goose could reach neither its model
 # nor any extension below.
+#
+# GOOSE_MODEL is deliberately NOT set here either, for exactly the same reason:
+# compose.nix exports it from build.json's runtime.model. This file used to pin
+# deepseek/deepseek-v4-pro in two places (here and providers.openai.model below),
+# which silently outranked build.json — the declared v4-flash never reached goose.
 GOOSE_PROVIDER: openai
-GOOSE_MODEL: deepseek/deepseek-v4-pro
 OPENAI_API_KEY: sk-my-ai-api-local
 GOOSE_CONTEXT_WINDOW: 8192
 GOOSE_TELEMETRY_ENABLED: false
@@ -50,7 +54,7 @@ extensions:
 providers:
   openai:
     enabled: true
-    model: deepseek/deepseek-v4-pro
+    # No `model:` key — see the GOOSE_MODEL note at the top of this file.
     configured: true
 
 active_provider: openai
