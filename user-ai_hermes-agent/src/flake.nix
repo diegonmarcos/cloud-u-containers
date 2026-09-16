@@ -27,7 +27,21 @@
         # allow_from, lean toolset all silently disabled — found 2026-08-09).
         # Passed verbatim (no @VAR@ templating needed): this file has no vars.
         templates = [
-          { name = "config.yaml"; text = builtins.readFile ./configs/config.yaml; }
+          # #434: configs/config.yaml is a TEMPLATE, not a finished file — its
+          # model line reads @HERMES_MODEL@ and is filled in here from
+          # build.json's runtime.model, which is the ONE declaration of the
+          # model. It used to carry the literal, which made it a second
+          # declaration that silently drifted (it said deepseek/deepseek-v4-pro
+          # for weeks while build.json declared v4-flash, and hermes ran the
+          # value in THIS file because it reads no OPENAI_MODEL env var).
+          # A placeholder rather than a search-and-replace of the old literal on
+          # purpose: if this substitution ever stops matching, the container gets
+          # a model literally named "@HERMES_MODEL@" and dies at the first
+          # request, instead of quietly running a stale pin.
+          { name = "config.yaml";
+            text = builtins.replaceStrings
+              [ "@HERMES_MODEL@" ] [ buildJson.runtime.model ]
+              (builtins.readFile ./configs/config.yaml); }
         ];
         composeSpec = import ./compose.nix { inherit buildJson container; };
         title = "Hermes Agent";

@@ -5,21 +5,22 @@
 
 # LLM backend → OpenRouter (metered key). api_mode chat_completions selects the
 # /v1/chat/completions wire format against the base_url below.
-# CORRECTION 2026-09-16: the note that used to sit here claimed compose's OPENAI_MODEL /
-# OPENAI_BASE_URL "take precedence at runtime". That is FALSE and it hid a live defect for
-# weeks — hermes reads no OPENAI_MODEL env var at all (every OPENAI_MODEL* hit in
-# /opt/hermes is the unrelated constant OPENAI_MODEL_EXECUTION_GUIDANCE), so `default:`
-# below is the value hermes actually runs. It said deepseek/deepseek-v4-pro while
-# build.json declared deepseek/deepseek-v4-flash-0731, and the declared model never
-# reached the agent. Same shape as the goose defect fixed in the same commit.
+# THIS FILE IS A TEMPLATE. The `default:` placeholder below is substituted at emission time
+# from build.json's runtime.model by src/flake.nix. build.json is the ONE declaration of the
+# model — do not paste a literal back in here. (No placeholder token appears anywhere else in
+# this file, including in prose: the substitution is global, and a token in a comment would be
+# rewritten too and make a stale-literal check unreadable.)
 #
-# This is still a SECOND declaration of the model: build.json is the first. It cannot be
-# deleted the way the goose pin was, because deleting it does not fall back to build.json
-# — hermes fills an absent default from an alias instead. The real fix is to generate this
-# file from build.json; until then the two MUST be edited together.
+# Why the indirection (#434): hermes reads no OPENAI_MODEL env var at all (every OPENAI_MODEL*
+# hit in /opt/hermes is the unrelated constant OPENAI_MODEL_EXECUTION_GUIDANCE), so `default:`
+# is the value hermes actually runs — compose's OPENAI_MODEL does NOT override it. When this
+# line carried its own literal it was a second declaration, and it drifted: it pinned the Pro
+# model for weeks while build.json declared the Flash one, and the declared model never reached
+# the agent. Deleting the key outright is not an option either — hermes fills an absent default
+# from an alias rather than falling back to build.json.
 model:
   provider: openrouter
-  default: deepseek/deepseek-v4-flash-0731
+  default: @HERMES_MODEL@
   base_url: https://openrouter.ai/api/v1
   api_mode: chat_completions
   # api_key supplied via OPENAI_API_KEY env (sops secrets.yaml → .secrets): an
