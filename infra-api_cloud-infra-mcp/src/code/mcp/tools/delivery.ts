@@ -11,8 +11,26 @@ import { getConfig, getServiceDir, getServiceFolder, isSolutionTreeMissing, reso
 import { BUILD_SCRIPT, SOLUTIONS_DIR, getSolutionRoots } from "../../shared/libs/paths.js";
 import { audit } from "../../shared/libs/audit.js";
 import { describeSecretsStatus } from "../../shared/libs/secrets-status.js";
+import { recordDeploy } from "../../shared/libs/db.js";
 
 const SAFE_NAME_RE = /^[a-zA-Z0-9_.-]+$/;
+
+// Steps that result in a service being (re)deployed or an image published.
+const DEPLOY_STEPS = new Set(["ship", "deploy", "compose", "docker", "all"]);
+
+/**
+ * Record a deploy attempt in deploy_log so obs.debug.db_deploy can report
+ * it (ticket #412: the table was defined but never written, so the tool
+ * returned [] for every service). Best-effort: a history write must never
+ * fail the deployment itself.
+ */
+function recordDeployAttempt(service: string, step: string, success: boolean, durationMs: number, output?: string): void {
+  try {
+    recordDeploy(service, step, success, durationMs, output);
+  } catch (error) {
+    process.stderr.write(`[cloud-infra] [DEPLOY] could not record deploy history for ${service} ${step}: ${error instanceof Error ? error.message : String(error)}\n`);
+  }
+}
 
 function validatePath(path: string): void {
   if (!SAFE_NAME_RE.test(path)) {
@@ -44,10 +62,15 @@ export function registerDeliveryTools(server: McpServer) {
         };
       }
 
-      const result = exec("sh", [buildSh, step ?? "all"], {
+      const runStep = step ?? "all";
+      const started = Date.now();
+      const result = exec("sh", [buildSh, runStep], {
         timeout: 120_000,
         cwd: svcDir,
       });
+      if (DEPLOY_STEPS.has(runStep)) {
+        recordDeployAttempt(service, runStep, result.ok, Date.now() - started, result.stdout);
+      }
 
       return {
         content: [
@@ -117,10 +140,12 @@ export function registerDeliveryTools(server: McpServer) {
         };
       }
 
+      const started = Date.now();
       const result = exec("sh", [buildSh, "ship"], {
         timeout: 300_000,
         cwd: svcDir,
       });
+      recordDeployAttempt(service, "ship", result.ok, Date.now() - started, result.stdout);
       audit("devops.build.ship", service, result.ok ? "OK" : `FAILED (exit ${result.exitCode})`);
 
       return {
@@ -155,10 +180,12 @@ export function registerDeliveryTools(server: McpServer) {
         };
       }
 
+      const started = Date.now();
       const result = exec("sh", [buildSh, "docker"], {
         timeout: 600_000,
         cwd: svcDir,
       });
+      recordDeployAttempt(service, "docker", result.ok, Date.now() - started, result.stdout);
 
       return {
         content: [{

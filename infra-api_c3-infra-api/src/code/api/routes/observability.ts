@@ -109,8 +109,8 @@ const pruneSchema = z.object({
   days: z.number().optional(),
 });
 
-type SuiteName = "connectivity" | "dns" | "tls" | "routes" | "containers" | "wireguard" | "full";
-const VALID_SUITES = new Set<string>(["connectivity", "dns", "tls", "routes", "containers", "wireguard", "full"]);
+type SuiteName = "connectivity" | "dns" | "tls" | "routes" | "containers" | "wireguard" | "full" | "deploy";
+const VALID_SUITES = new Set<string>(["connectivity", "dns", "tls", "routes", "containers", "wireguard", "full", "deploy"]);
 
 const P_vmId = { type: "object" as const, properties: { vmId: { type: "string" as const } }, required: ["vmId"] };
 const P_target = { type: "object" as const, properties: { target: { type: "string" as const } }, required: ["target"] };
