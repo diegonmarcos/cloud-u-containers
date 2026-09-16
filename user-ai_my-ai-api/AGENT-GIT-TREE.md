@@ -60,3 +60,6 @@ permissions.
 In short: pushes work because the environment triple tells git which credential
 helper to call, and the credential helper answers with the token from
 `GH_TOKEN`. No `~/.git-credentials` file is involved.
+## Container Identity
+
+The container that maintains this shared tree runs as real uid 10001 and gid 999. This matters because the shared git checkout is owned by that same uid: a container running as any other uid can read the tree but cannot write to it.
