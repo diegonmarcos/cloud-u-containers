@@ -173,6 +173,21 @@ if [ -z "$SITE_ID" ]; then
   echo "[umami-setup] SUMMARY revision=${SHIP_REVISION:-unknown} outcome=no-site-id site_id= configured=0"
   exit 1
 fi
+
+# ── Verify the site exists before recording it ─────────────────────
+# A durable marker that points at a website Umami does not serve back is
+# exactly the hollow "configured but nothing collected" state this job
+# exists to prevent. Re-fetch the site by id and confirm the API returns
+# it before we write a record claiming setup is complete.
+VERIFY=$(curl -sf "$UMAMI_URL/api/websites/$SITE_ID" \
+  -H "Authorization: Bearer ***" 2>/dev/null || echo "")
+if ! printf '%s' "$VERIFY" | grep -q "$SITE_ID"; then
+  echo "[umami-setup] ERROR: site_id=$SITE_ID not confirmed by the API — NOT writing a configured marker." >&2
+  echo "[umami-setup] SUMMARY revision=${SHIP_REVISION:-unknown} outcome=site-unverified site_id=$SITE_ID configured=0"
+  exit 1
+fi
+echo "[umami-setup] Site verified via the API: $SITE_ID"
+
 echo "$SITE_ID" > /output/site_id
 echo "{\"umami_site_id\":\"$SITE_ID\",\"umami_url\":\"https://@DOMAIN@\"}" > /output/analytics.json
 
