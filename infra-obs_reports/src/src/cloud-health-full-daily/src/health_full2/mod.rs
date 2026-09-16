@@ -96,20 +96,20 @@ async fn with_deadline(
         }
         Err(_) => {
             eprintln!(
-                "::error::health_full2: LAYER {} EXCEEDED ITS {}s DEADLINE — a probe inside it wedged. Its checks are MISSING from this report, not passing.",
+                "::error::health_full2: LAYER {} EXCEEDED ITS {:.1}s DEADLINE — a probe inside it wedged. Its checks are MISSING from this report, not passing.",
                 layer,
-                budget.as_secs()
+                budget.as_secs_f64()
             );
             vec![Check {
                 name: format!("LAYER TIMEOUT: {}", layer),
                 passed: false,
                 details: format!(
-                    "layer {} did not finish within {}s — a probe inside it wedged. Every check this layer would have produced is MISSING from this report; do NOT read their absence as healthy.",
+                    "layer {} did not finish within {:.1}s — a probe inside it wedged. Every check this layer would have produced is MISSING from this report; do NOT read their absence as healthy.",
                     layer,
-                    budget.as_secs()
+                    budget.as_secs_f64()
                 ),
                 duration_ms: t.elapsed().as_millis() as u64,
-                error: Some(format!("layer deadline exceeded after {}s", budget.as_secs())),
+                error: Some(format!("layer deadline exceeded after {:.1}s", budget.as_secs_f64())),
                 severity: Severity::Critical,
             }]
         }
@@ -351,6 +351,15 @@ mod tests {
             c.name.contains("L11 email_e2e") && c.details.contains("L11 email_e2e"),
             "the check must NAME the layer that wedged, got name={:?} details={:?}",
             c.name,
+            c.details
+        );
+        // The budget must be rendered honestly. `as_secs()` truncates this
+        // 200ms budget to a flat "0s", which made the loud line read
+        // "EXCEEDED ITS 0s DEADLINE" — an alarm that misstates its own
+        // threshold is a worse alarm.
+        assert!(
+            c.details.contains("0.2s"),
+            "sub-second budgets must not be truncated in the message, got {:?}",
             c.details
         );
     }
