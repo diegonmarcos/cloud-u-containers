@@ -61,12 +61,20 @@ ENV PYTHONUNBUFFERED=1 \
     AGENTS_PRINCIPLES_ENABLED=1 \
     CLOUD_PRINCIPLES_ENABLED=1
 
-# Node (for server.mjs) + curl (start.sh readiness probe).
+# Node (for server.mjs) + curl (start.sh readiness probe) + git.
+#
+# git is NOT incidental here. This image mounts the shared checkout and runs
+# goose from inside it (see start.sh), which only makes sense if the agent can
+# commit and push what it changes. The runtime stage had no git at all — only
+# the discarded builder stage did — so goose could open every file in six
+# repositories and not run a single git command: `git: not found`. That reads
+# as "the agent chose not to commit" rather than "the agent cannot", which is
+# why it went unnoticed while the tree looked correctly mounted.
 # Also install goose (Block) — the container ships a preconfigured agent so it
 # is self-contained: `docker exec -it my-ai-api goose session` works out of the
 # box, pointed at OpenRouter via the container's OPENROUTER_API_KEY (sops-decrypted
 # at ship time). goose is downloaded as a static binary for the target arch.
-RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates \
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates git \
     && curl -fsSL https://deb.nodesource.com/setup_${NODE_MAJOR}.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
     && ARCH="$(uname -m)" \
