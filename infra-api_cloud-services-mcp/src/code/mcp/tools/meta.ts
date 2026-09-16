@@ -6,6 +6,7 @@ import { join } from "path";
 import { homedir } from "os";
 import { XMLParser } from "fast-xml-parser";
 import { registry } from "../../registry/index.js";
+import { summarizeServices } from "../../registry/summary.js";
 import { searchPublicRegistry, getPublicServer } from "../../registry/public-registry.js";
 
 // ── Authelia ─────────────────────────────────────────────────────────────────
@@ -781,15 +782,11 @@ export function registerMetaTools(server: McpServer) {
       }
 
       case "registry.services_list": {
-        const services = registry.list().map((s) => ({
-          name: s.name,
-          displayName: s.displayName,
-          description: s.description,
-          vm: s.vm,
-          apiType: s.api.type,
-          endpointCount: s.api.endpointCount,
-          hasSpec: !!s.api.specUrl,
-        }));
+        // The projection lives in registry/summary.ts, where it is tested. It
+        // used to be inline here and read `s.api.type` unconditionally, but
+        // `api` is optional — an MCP-only peer has none, so the first one threw
+        // and the whole list came back as a single error.
+        const services = summarizeServices(registry.list());
         return { content: [{ type: "text" as const, text: JSON.stringify({ services, total: services.length }, null, 2) }] };
       }
 
