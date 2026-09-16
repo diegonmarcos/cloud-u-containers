@@ -109,12 +109,76 @@ let
       volumes  = lib.unique ((svc.volumes  or []) ++ secretsVolumes);
     };
 
+  # ──────────────────────────────────────────────────────────────
+  # Conditional shared git-tree auto-mount (agent containers).
+  #
+  # #345 mounted the one shared checkout — docker volume cloud-git-gh,
+  # the same tree Gitea serves at /data/git-gh — into my-ai_claude-api
+  # by hand-copying a PAIR of lines into its compose.nix: one entry in
+  # the service `volumes` list, and one pinned name in the top-level
+  # `volumes` attrset. Two more agent containers needed the identical
+  # pair and never got it, so hermes-agent and my-ai-api spent weeks
+  # telling their users the repositories did not exist (#416).
+  #
+  # Declaring it ONCE here is what stops the third recurrence.
+  #
+  # Deliberately NOT in compose-defaults.json: that file is merged into
+  # EVERY service on the fleet (mergeSvc above), which would mount the
+  # source tree into matomo, caddy and stalwart. This is opt-in per
+  # container, from build.json `agent.git_tree`.
+  #
+  # The top-level `name` pin is the whole point and is NOT optional.
+  # Without it compose invents a PROJECT-SCOPED volume (<project>_git_gh)
+  # and the container gets an empty directory with no error at all —
+  # indistinguishable from the bug this exists to fix.
+  # ──────────────────────────────────────────────────────────────
+  agentSpec    = buildJson.agent or {};
+  wantsGitTree = (agentSpec.git_tree or false) == true;
+  gitTreeKey   = "git_gh";
+  gitTreeName  = "cloud-git-gh";
+
+  # No default: a silent fallback path is how a mount lands in the wrong
+  # place and still looks fine. Opting in without saying where is a build
+  # error, not a guess.
+  gitTreeMount =
+    let m = agentSpec.git_tree_mount or ""; in
+    if m != "" then m
+    else throw ("${title}: build.json sets agent.git_tree = true but "
+                + "agent.git_tree_mount is missing. Give the absolute "
+                + "in-container path for the shared checkout "
+                + "(the container's own $HOME/git).");
+
+  # Read-only unless the container is expected to COMMIT from the shared
+  # tree. Extra writers on ONE working tree is a real concurrency
+  # decision, not a default to inherit: git refuses the second write, so
+  # an unplanned writer shows up as a failed dispatch rather than as
+  # work silently lost — which is the failure #345 set out to end.
+  gitTreeSuffix = if (agentSpec.git_tree_writable or false) == true then "" else ":ro";
+
+  mergeGitTreeInto = svc:
+    if !wantsGitTree then svc
+    else svc // {
+      volumes = lib.unique ((svc.volumes or [])
+        ++ [ "${gitTreeKey}:${gitTreeMount}${gitTreeSuffix}" ]);
+    };
+
+  # Order matters for the rendered YAML: the git tree is appended BEFORE
+  # the secrets mounts, matching the volume order my-ai_claude-api
+  # already renders today (claude_home, git_gh, .secrets.d, .secrets.json).
+  # Keeping that order means migrating a service from hand-written lines
+  # to this flag does not churn its dist hash — and a dist-hash churn
+  # here means a container RECREATE, which kills any agent running in it.
   applyDefaults = spec:
     spec // {
       services = lib.mapAttrs
-        (_: svc: mergeSecretsInto (mergeSvc svc))
+        (_: svc: mergeSecretsInto (mergeGitTreeInto (mergeSvc svc)))
         (spec.services or {});
-    };
+    } // (if wantsGitTree
+          then {
+            volumes = (spec.volumes or {})
+              // { "${gitTreeKey}" = { name = gitTreeName; }; };
+          }
+          else {});
 
   # ──────────────────────────────────────────────────────────────
   # Arch routing — data-driven from build.json:docker.arch

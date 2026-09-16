@@ -21,6 +21,30 @@
       "description": "Service category matching the directory prefix",
       "enum": ["app", "mic", "fin", "cloud", "sec", "tools", "obs", "data", "agi"]
     },
+    "agent": {
+      "type": "object",
+      "description": "Agent-container wiring. Read by _shared/engine.nix, which is the ONE place the shared git checkout is declared. Before this existed the mount was a hand-copied PAIR of lines per compose.nix, so #345 landed in one of three agent containers and hermes-agent / my-ai-api stayed blind for weeks (#416).",
+      "additionalProperties": false,
+      "properties": {
+        "_comment": {
+          "type": "string",
+          "description": "Why this container does or does not get the shared tree."
+        },
+        "git_tree": {
+          "type": "boolean",
+          "description": "Mount the shared git checkout: external docker volume cloud-git-gh, the same tree Gitea serves at /data/git-gh. Every container with category 'agi' must set this EXPLICITLY, true or false — that is what 9_others/test/test_agent_git_tree_declared.sh enforces, so a new agent container cannot be added while quietly inheriting no tree."
+        },
+        "git_tree_mount": {
+          "type": "string",
+          "pattern": "^/",
+          "description": "Absolute in-container path for the shared checkout — the container's own $HOME/git. Required when git_tree is true; the engine throws rather than defaulting, because a mount in the wrong place still looks perfectly healthy."
+        },
+        "git_tree_writable": {
+          "type": "boolean",
+          "description": "Mount read-write instead of read-only. Default false. True only for a container expected to COMMIT from the shared tree: extra writers on one working tree is a concurrency decision, not an inherited default."
+        }
+      }
+    },
     "version": {
       "type": "string",
       "description": "Semantic version of the service",
