@@ -48,10 +48,25 @@ done
 # Sidecar: goosed (ACP remote-agent server).
 # Only launch if the secret key is set. Wrapped so that if `goose serve` is an
 # unsupported subcommand in this build, the container is not affected.
+#
+# A goose session starts in the daemon's working directory. The shared git tree
+# is mounted at this container's own $HOME/git — the same rule every agent
+# container follows, declared as agent.git_tree_mount in build.json — while the
+# image WORKDIR is /app. Started from /app, goose sees no repository at all and
+# reports the checkout as missing, which is exactly what it was doing. So the
+# daemon runs from the tree, and if the tree is not mounted goose does not start
+# at all: an agent server with no repositories looks alive and answers every
+# question about the code wrongly, which is worse than being plainly absent.
 if [ -n "${GOOSE_SERVER__SECRET_KEY:-}" ]; then
-  echo "[goosed] serving on :${GOOSE_PORT} (ACP, X-Secret-Key)"
-  ( goose serve --platform desktop --host 0.0.0.0 --port "${GOOSE_PORT}" \
-      || echo "[goosed] serve unavailable — remote agent disabled, container continues" ) &
+  goose_working_directory="${HOME}/git"
+  if [ -d "${goose_working_directory}" ]; then
+    echo "[goosed] serving on :${GOOSE_PORT} (ACP, X-Secret-Key) from ${goose_working_directory}"
+    ( cd "${goose_working_directory}" \
+        && goose serve --platform desktop --host 0.0.0.0 --port "${GOOSE_PORT}" \
+        || echo "[goosed] serve unavailable — remote agent disabled, container continues" ) &
+  else
+    echo "[goosed] ERROR: ${goose_working_directory} does not exist — the shared git tree is not mounted, so goose would answer with no repositories. Not starting it." >&2
+  fi
 else
   echo "[goosed] no secret key — skipping"
 fi

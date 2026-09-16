@@ -11,7 +11,9 @@
     "_comment": "Shared git checkout (docker volume cloud-git-gh), mounted by _shared/engine.nix. Mount point is this container's own $HOME/git: getent passwd 10000 -> hermes:x:10000:10000::/opt/data:/bin/sh, so HOME is /opt/data and the tree belongs at /opt/data/git. Read-write: this is an agent's own working directory. An agent that can read the code but cannot edit, commit or push it cannot do the job it exists for, and a read-only working tree fails in a way that looks like a broken checkout rather than a deliberate policy. Every agi container mounts this tree writable.",
     "git_tree": true,
     "git_tree_mount": "/opt/data/git",
-    "git_tree_writable": true
+    "git_tree_writable": true,
+    "_comment_working_directory": "Hermes' main process is an s6-supervised idle holder; the real work arrives as `docker exec`, which starts at the image WorkingDir (/opt/hermes) — outside the checkout. The agent then sees zero repositories and answers as if the code did not exist. Starting it in the tree is the point of mounting the tree.",
+    "git_tree_is_working_directory": true
   },
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
