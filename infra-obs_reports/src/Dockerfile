@@ -6,6 +6,14 @@ WORKDIR /build
 # All Rust sources live under src/ (workspace root).
 COPY src/ /build/
 RUN cargo build --release
+# The layer-deadline tests are the ONLY executable proof that a wedged probe
+# cannot hang the report again: nothing else in this repo runs `cargo test`, so
+# without this line health_full2::with_deadline is unverified code that happens
+# to compile. Scoped by name (not the whole workspace) so this gate stays about
+# the hang and cannot be turned red by an unrelated test elsewhere.
+# --nocapture so the loud ::error:: timeout line is visible in the build log.
+# --release reuses the artefacts the line above just built.
+RUN cargo test --release --bin cloud-health-full-daily health_full2::tests -- --nocapture
 
 FROM debian:bookworm-slim
 # WireGuard stack: wireguard-tools provides wg/wg-quick; iproute2 provides ip
