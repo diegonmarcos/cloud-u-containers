@@ -1,0 +1,38 @@
+{
+  "name": "agents-tmp-reaper",
+  "description": "Agent /tmp reaper — periodically clears stale agent scratch from the /tmp of the agent containers on oci-apps, so a runaway agent cache cannot fill the host root filesystem (task 442 / issue 410). Cron-driven maintenance container in the db-agent pattern: docker.sock (read-only) + docker exec, scope locked to the declared AGENT_CONTAINERS' /tmp and STALE_MINUTES of age.",
+  "category": "tools",
+  "timezone": "Europe/Berlin",
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/agents-tmp-reaper"
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "agents-tmp-reaper",
+    "dockerfile": "Dockerfile",
+    "arch": "arm64",
+    "native_build": {
+      "type": "image-wrapper",
+      "cmd": "apk add --no-cache bash docker-cli tzdata && chmod +x /usr/local/bin/entrypoint.sh",
+      "entrypoint": "/usr/local/bin/entrypoint.sh",
+      "base_image": "alpine:3.19",
+      "app_dir": "code"
+    }
+  },
+  "containers": {
+    "app": {
+      "container_name": "agents-tmp-reaper",
+      "public": false,
+      "env_file": false,
+      "read_only": false,
+      "protocol": "none"
+    }
+  },
+  "resources": {
+    "mem_reservation": "16m"
+  },
+  "build": {
+    "headers_enforced": true
+  }
+}
