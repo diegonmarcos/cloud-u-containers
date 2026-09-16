@@ -24,5 +24,20 @@ for e in umami matomo; do
   else
     echo "FAIL: $e report lost its engine state"; RC=1
   fi
+
+  # The OTHER half of the ##ENGINE contract, and the half that was never
+  # asserted: a "<container>|missing" row. "database | DOWN" alone cannot tell
+  # a reader WHICH engine died, and matomo-query.sh emitted its container rows
+  # through `docker exec <c> supervisorctl`, which prints nothing at all when
+  # the container is absent — so on 2026-09-16, with matomo-hybrid gone from
+  # oci-apps entirely, the Matomo health table silently dropped all seven
+  # process rows and still read as a well-formed report. umami-query.sh had
+  # always looped over its declared containers and printed "missing"; this
+  # asserts BOTH engines do, so the asymmetry cannot come back unnoticed.
+  if grep -qE '^\| [A-Za-z0-9_-]+ \| missing \|' "$T/dist/cloud_analytics_$e.md"; then
+    echo "PASS: $e report names the missing container"
+  else
+    echo "FAIL: $e report has no '<container> | missing' row — a dead engine reads as a quiet day"; RC=1
+  fi
 done
 exit $RC

@@ -18,11 +18,24 @@ set -eu
 HOST="${MATOMO_SSH_HOST:-oci-apps}"
 WINDOW_H="${WINDOW_H:-24}"
 
+# The container name is DECLARED in infra-obs_matomo/build.json, never invented
+# here. infra-obs_matomo is a sibling of infra-obs_reports in every checkout
+# this crate runs from (cloud-source/a_solutions/ in the DAG, the repo root
+# locally), so one relative hop reaches the declaration and a rename there
+# cannot silently desync this reader the way eight copies of a literal would.
+# The fallback keeps the tester and any detached checkout working without it.
+HERE="$(cd "$(dirname "$0")" && pwd)"
+MATOMO_BUILD_JSON="${MATOMO_BUILD_JSON:-$HERE/../../../../../infra-obs_matomo/build.json}"
+CONTAINER="${MATOMO_CONTAINER:-$(
+  jq -r '.containers.app.container_name // empty' "$MATOMO_BUILD_JSON" 2>/dev/null || true
+)}"
+CONTAINER="${CONTAINER:-matomo-hybrid}"
+
 ssh -o BatchMode=yes -o ConnectTimeout=15 "$HOST" 'bash -s' <<EOF
 set -u
 W=${WINDOW_H}
-PW=\$(docker exec matomo-hybrid sh -c 'echo \$MATOMO_DATABASE_PASSWORD' 2>/dev/null || echo '')
-q() { docker exec matomo-hybrid mysql -umatomo -p"\$PW" matomo -N -B -e "\$1" 2>/dev/null | tr '\t' '|' || true; }
+PW=\$(docker exec ${CONTAINER} sh -c 'echo \$MATOMO_DATABASE_PASSWORD' 2>/dev/null || echo '')
+q() { docker exec ${CONTAINER} mysql -umatomo -p"\$PW" matomo -N -B -e "\$1" 2>/dev/null | tr '\t' '|' || true; }
 CUT="DATE_SUB(NOW(), INTERVAL \$W HOUR)"
 
 # Emitted FIRST and unconditionally. When Matomo's DB is down every metric
@@ -31,10 +44,24 @@ CUT="DATE_SUB(NOW(), INTERVAL \$W HOUR)"
 # and the per-process status are the numbers that tell those apart.
 echo "##ENGINE"
 if q "select 1;" | grep -q 1; then echo "database|reachable"; else echo "database|DOWN — no data can be ingested"; fi
-docker exec matomo-hybrid supervisorctl status 2>/dev/null | awk '{print \$1"|"\$2}' || true
+# The container row is emitted UNCONDITIONALLY, exactly as umami-query.sh does
+# for umami/umami-db. \`docker exec … supervisorctl\` prints NOTHING when the
+# container is absent — stderr is discarded and \`|| true\` swallows the failure
+# — so a missing ${CONTAINER} made all seven process rows (mariadb,
+# matomo-archiver, matomo-nginx, matomo-php-fpm, receiver-nginx,
+# receiver-php-fpm) disappear from the health table instead of one row naming
+# the outage. A health table that quietly loses its rows reads like a rendering
+# quirk rather than a dead engine, which is the exact failure the ##ENGINE
+# contract in build.sh exists to prevent. Observed 2026-09-16: the container
+# was absent from oci-apps entirely and the report still showed no engine row.
+STATE=\$(docker inspect -f '{{.State.Status}}' ${CONTAINER} 2>/dev/null || echo missing)
+echo "${CONTAINER}|\$STATE"
+if [ "\$STATE" = running ]; then
+  docker exec ${CONTAINER} supervisorctl status 2>/dev/null | awk '{print \$1"|"\$2}' || true
+fi
 
 echo "##INBOX"
-docker exec matomo-hybrid sh -c 'ls /inbox 2>/dev/null | wc -l' 2>/dev/null || echo 0
+docker exec ${CONTAINER} sh -c 'ls /inbox 2>/dev/null | wc -l' 2>/dev/null || echo 0
 
 echo "##SUMMARY"
 q "select
