@@ -37,6 +37,17 @@ in
         # WG IP (0c5311af, 2026-08-07): every goose model call was refused, so its declared
         # MCP extensions could never be used. The environment overrides goose's config.yaml.
         OPENAI_HOST        = "http://${rt.wg_bind or "10.0.0.6"}:${toString (ports.app or 3217)}";
+        # Same reason, same mechanism, for the model itself. goose-config.yaml used to
+        # restate the model TWICE (GOOSE_MODEL and providers.openai.model), both pinned
+        # to deepseek-v4-pro, so build.json's runtime.model was dead config: goose ran
+        # v4-pro no matter what was declared. build.json is the ONE declaration now, and
+        # this export is what carries it — proven live 2026-09-16, banner read
+        # "openai deepseek/deepseek-v4-flash-0731" and the run pushed a360baf2.
+        # No `or` fallback on purpose: a default naming a different model would be a
+        # second declaration of exactly the kind this fix removes. If build.json ever
+        # stops declaring runtime.model, eval must fail here rather than quietly run
+        # something other than what is declared.
+        GOOSE_MODEL        = rt.model;
         HEADROOM_PORT      = toString (ports.headroom or 8890);
         GOOSE_PORT         = toString (ports.goosed   or 3227);
         # BRIDGE_ prefix is MANDATORY: server.mjs reads process.env.BRIDGE_DEFAULT_MODEL /
@@ -45,7 +56,10 @@ in
         # used its hardcoded fallbacks — build.json runtime.model was dead config (goose kept
         # answering as z-ai/glm-5 no matter what runtime.model said). Renaming a key here
         # without changing server.mjs re-breaks it silently; keep the two in lockstep.
-        BRIDGE_DEFAULT_MODEL   = rt.model or "z-ai/glm-5";
+        # Fallback dropped for the same reason as GOOSE_MODEL above: "z-ai/glm-5" here
+        # is what the old un-prefixed export silently fell back to, and leaving it named
+        # keeps a second model declaration alive in the file that exists to have one.
+        BRIDGE_DEFAULT_MODEL   = rt.model;
         BRIDGE_MAX_CONCURRENCY = toString (rt.max_concurrency or 12);
         BRIDGE_CALL_TIMEOUT_MS = toString (rt.call_timeout_ms or 180000);
         # Requested-id → OpenRouter slug map, consumed as JSON by server.mjs.
