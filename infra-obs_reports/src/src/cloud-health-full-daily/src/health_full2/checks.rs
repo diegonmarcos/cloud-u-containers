@@ -7,6 +7,12 @@ use trust_dns_resolver::TokioAsyncResolver;
 
 pub const TCP_TIMEOUT: Duration = Duration::from_secs(3);
 pub const HTTP_TIMEOUT: Duration = Duration::from_secs(8);
+/// Deadline for a layer's shelled-out helpers (`openssl s_client`, `gh`).
+/// Neither has a connect/read deadline of its own, so an unanswered socket
+/// blocks the process forever — the same class of defect that hung the whole
+/// report at L11. Sized above HTTP_TIMEOUT because these pay process spawn +
+/// TLS handshake on top of the network round-trip.
+pub const SUBPROCESS_TIMEOUT: Duration = Duration::from_secs(15);
 pub const HICKORY_IP: &str = "10.0.0.1";
 
 /// Native TCP port check

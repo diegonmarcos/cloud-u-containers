@@ -3,6 +3,7 @@ use super::ssh;
 use super::types::*;
 use std::collections::{HashMap, HashSet};
 use std::time::Instant;
+use tokio::time::timeout;
 
 // ═══════════════════════════════════════════════════════════════════════════
 // LAYER 1: SELF-CHECK
@@ -67,10 +68,24 @@ pub async fn layer_self_check(ctx: &Context) -> Vec<Check> {
     // Local docker
     {
         let t = Instant::now();
-        let out = tokio::process::Command::new("docker")
-            .args(["info", "--format", "{{.ServerVersion}}"])
-            .output()
-            .await;
+        // `docker info` blocks indefinitely against an unresponsive daemon
+        // socket. L1 is sequential and runs before L2/L3, so a stall here hangs
+        // the report just as dead as the L4-L11 join did — bound it too.
+        let out = match timeout(
+            SUBPROCESS_TIMEOUT,
+            tokio::process::Command::new("docker")
+                .args(["info", "--format", "{{.ServerVersion}}"])
+                .kill_on_drop(true)
+                .output(),
+        )
+        .await
+        {
+            Ok(r) => r,
+            Err(_) => Err(std::io::Error::new(
+                std::io::ErrorKind::TimedOut,
+                "docker info exceeded its deadline",
+            )),
+        };
         let (ok, detail) = match out {
             Ok(o) if o.status.success() => {
                 let ver = String::from_utf8_lossy(&o.stdout).trim().to_string();
@@ -918,19 +933,33 @@ pub async fn layer_external(_ctx: &Context) -> Vec<Check> {
     // GHA workflows (gh run list)
     {
         let t = Instant::now();
-        let out = tokio::process::Command::new("gh")
-            .args([
-                "run",
-                "list",
-                "--repo",
-                "diegonmarcos/cloud-infra",
-                "--limit",
-                "5",
-                "--json",
-                "conclusion,name,status",
-            ])
-            .output()
-            .await;
+        // `gh` talks to api.github.com with no timeout of its own. L8 runs its
+        // checks sequentially, so an unanswered call here used to stall every
+        // remaining check in the layer AND the whole join! behind it.
+        let out = match timeout(
+            SUBPROCESS_TIMEOUT,
+            tokio::process::Command::new("gh")
+                .args([
+                    "run",
+                    "list",
+                    "--repo",
+                    "diegonmarcos/cloud-infra",
+                    "--limit",
+                    "5",
+                    "--json",
+                    "conclusion,name,status",
+                ])
+                .kill_on_drop(true)
+                .output(),
+        )
+        .await
+        {
+            Ok(r) => r,
+            Err(_) => Err(std::io::Error::new(
+                std::io::ErrorKind::TimedOut,
+                "gh run list exceeded its deadline",
+            )),
+        };
         let (ok, detail) = match out {
             Ok(o) if o.status.success() => {
                 let stdout = String::from_utf8_lossy(&o.stdout);
@@ -1388,16 +1417,34 @@ pub async fn layer_security(ctx: &Context) -> Vec<Check> {
             async move {
                 let t = Instant::now();
                 // Use openssl s_client to check cert expiry
-                let out = tokio::process::Command::new("bash")
-                    .args([
-                        "-c",
-                        &format!(
-                            "echo | openssl s_client -servername {} -connect {}:443 2>/dev/null | openssl x509 -noout -dates 2>/dev/null",
-                            domain, domain
-                        ),
-                    ])
-                    .output()
-                    .await;
+                // `openssl s_client` has no connect or read deadline: against a
+                // host that accepts the TCP connection and then never completes
+                // the handshake it blocks forever, and with no timeout here that
+                // blocked the whole L10 future — and, through tokio::join!, the
+                // entire report. kill_on_drop so a timed-out probe does not
+                // leave an orphan process behind (run 35022084038 left orphan
+                // docker/docker-compose pids for the runner to reap).
+                let out = match timeout(
+                    SUBPROCESS_TIMEOUT,
+                    tokio::process::Command::new("bash")
+                        .args([
+                            "-c",
+                            &format!(
+                                "echo | openssl s_client -servername {} -connect {}:443 2>/dev/null | openssl x509 -noout -dates 2>/dev/null",
+                                domain, domain
+                            ),
+                        ])
+                        .kill_on_drop(true)
+                        .output(),
+                )
+                .await
+                {
+                    Ok(r) => r,
+                    Err(_) => Err(std::io::Error::new(
+                        std::io::ErrorKind::TimedOut,
+                        "openssl s_client exceeded its deadline",
+                    )),
+                };
 
                 let (ok, detail) = match out {
                     Ok(o) if o.status.success() => {

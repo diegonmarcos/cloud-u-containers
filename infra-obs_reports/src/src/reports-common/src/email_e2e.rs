@@ -423,15 +423,33 @@ async fn poll_inbox(
     total_timeout: Duration,
     poll_interval: Duration,
 ) -> anyhow::Result<()> {
+    // `total_timeout` used to bound the LOOP but not an ATTEMPT: poll_once has
+    // no deadline of its own — its TcpStream::connect, its TLS handshake and
+    // every read_until_crlf/read_response inside it block indefinitely — so the
+    // `while` condition was simply never re-evaluated once one attempt stalled.
+    // Measured: Health Reports run 35041138252 (2026-09-16T00:43Z) spent 441s
+    // inside ONE attempt against this 180s budget before the socket was reset,
+    // and the whole 11-layer report hung behind it until SIGTERM at 20 minutes.
+    // Bounding each attempt by the time actually LEFT makes the declared
+    // timeout mean what it says: 180s is 180s, whether spent across ten
+    // attempts or stuck in the first one.
     let deadline = Instant::now() + total_timeout;
-    while Instant::now() < deadline {
-        match poll_once(host, port, username, password, subject_needle).await {
-            Ok(true) => return Ok(()),
-            Ok(false) => tokio::time::sleep(poll_interval).await,
-            Err(e) => {
+    while let Some(remaining) = deadline.checked_duration_since(Instant::now()) {
+        match tokio::time::timeout(
+            remaining,
+            poll_once(host, port, username, password, subject_needle),
+        )
+        .await
+        {
+            Ok(Ok(true)) => return Ok(()),
+            Ok(Ok(false)) => tokio::time::sleep(poll_interval).await,
+            Ok(Err(e)) => {
                 eprintln!("[email_e2e] imap transient error: {}", e);
                 tokio::time::sleep(poll_interval).await;
             }
+            // One attempt consumed the entire remaining budget — stop, don't
+            // start another that cannot possibly fit.
+            Err(_) => break,
         }
     }
     Err(anyhow::anyhow!(
