@@ -98,8 +98,12 @@
         "*.bin",
         "*.icns",
         "*.efi",
-        "a_solutions/*/src/build-*.json"
+        "a_solutions/*/src/build-*.json",
+        "*_private.json",
+        "*_private.yaml",
+        "*_private.yml"
       ],
+      "_noindex_private_comment": "The *_private.* entries above are a NAMING-CONVENTION gate, not a per-file blocklist (ticket #360). A data file whose own name declares it private (aa_cloud-superapp/data/services_private.json — 602 lines enumerating every internal host:port pair and which auth component fronts what) was returned by a plain cgc.octocode.search against the PUBLIC surface. The point of declaring the pattern rather than the path is that the NEXT such file is excluded on the day it is written, with no ticket. Scope was measured before it was chosen: across the indexed repos *_private.json matches that one file and nothing else, while the wider glob *_private.* was REJECTED because it would have swallowed real source (ac_cloud-chat tool_private.ts, convert_private.tsx, public_private.tsx). yaml/yml carry zero matches today and are declared so the convention holds for the fleet's other data format. Applies to BOTH surfaces by construction: there is ONE .runtime.octocode block, one indexer pass and one .noindex per repo, and the pub/pvt split is the VOLUME (private_repos) not the file — so a pvt-only carve-out would need a second full index pass (hours per repo) to spare one 13KB JSON file that is public on github.com anyway. Honored by cloud-cgc-db-update.sh NOINDEX_PATTERNS (gitignore syntax: a slash-free pattern matches the basename at any depth). NOT a substitute for the real fix — cloud-u-android is a PUBLIC repo, so the file is served by github.com with or without this rule. Asserted by cloud-infra 9_others/test/cgc-db-noindex-private.test.sh.",
       "_noindex_extra_comment": "PER-REPO noindex additions (data-driven, keyed by local repo name) layered ON TOP of noindex_patterns above, for content only ONE repo needs excluded. cloud-data-my-ai-memory: a_sessions/ holds raw Claude Code session transcripts (giant, opaque tool-result JSON that would abort the index; the text is invisible to embeddings anyway) and a_commits/ holds 18 rewritten-wholesale JSON snapshots up to 7.5MB each (embedding noise + whole-file-JSON abort risk). Honored by cloud-cgc-db-update.sh next to NOINDEX_PATTERNS.",
       "noindex_extra": {
         "cloud-data-my-ai-memory": [
