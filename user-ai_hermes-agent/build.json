@@ -7,6 +7,12 @@
     "dashboard": 9119
   },
   "category": "agi",
+  "agent": {
+    "_comment": "Shared git checkout (docker volume cloud-git-gh), mounted by _shared/engine.nix. Mount point is this container's own $HOME/git: getent passwd 10000 -> hermes:x:10000:10000::/opt/data:/bin/sh, so HOME is /opt/data and the tree belongs at /opt/data/git. Read-only: hermes is a chat gateway that reads code, it does not commit. Flip git_tree_writable to true to change that.",
+    "git_tree": true,
+    "git_tree_mount": "/opt/data/git",
+    "git_tree_writable": false
+  },
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
     "image": "hermes-agent",

@@ -6,6 +6,10 @@
     "app": 3108
   },
   "category": "agi",
+  "agent": {
+    "_comment": "Explicit opt-OUT, required by 9_others/test/test_agent_git_tree_declared.sh in cloud-infra. session-memory is a SQLite transcript store, not a code-reading agent: it never opens a repository, so mounting the shared tree would widen its blast radius for nothing. This key exists so the decision is recorded rather than forgotten, which is how #416 happened.",
+    "git_tree": false
+  },
   "docker": {
     "image": "session-memory",
     "dockerfile": "Dockerfile",
