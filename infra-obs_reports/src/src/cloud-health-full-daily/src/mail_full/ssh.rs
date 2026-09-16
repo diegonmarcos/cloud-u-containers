@@ -7,7 +7,17 @@ use tokio::time::timeout;
 #[allow(dead_code)]
 const SSH_TIMEOUT: Duration = Duration::from_secs(10);
 
-/// SSH args with mux support + fail-fast keepalive (≤30s dead-conn abort).
+/// SSH args with mux support + keepalive that tolerates the mesh's idle gaps.
+///
+/// The batch is silent for minutes at a time (docker runs, openssl handshakes)
+/// while the connect stays real, and the old ServerAliveCountMax=2 meant any
+/// blip longer than 30s (NAT expiry, a WireGuard rekey, a congested mesh hop)
+/// dropped the session with `client_loop: send disconnect: Broken pipe`,
+/// killing the whole liveness report — #398. 12 unacknowledged probes at 15s
+/// apart tolerates ~3 minutes of silence, matching the hardened options
+/// cloud-infra applies to its own mail-health SSH calls (see
+/// 9_others/mail-health-diagnosis.json in that repo). (Kept in sync with the
+/// identical function in cloud-mail-health-full/src/ssh.rs.)
 fn ssh_args(alias: &str, cmd: &str) -> Vec<String> {
     vec![
         "-o".into(),
@@ -15,7 +25,7 @@ fn ssh_args(alias: &str, cmd: &str) -> Vec<String> {
         "-o".into(),
         "ServerAliveInterval=15".into(),
         "-o".into(),
-        "ServerAliveCountMax=2".into(),
+        "ServerAliveCountMax=12".into(),
         "-o".into(),
         "BatchMode=yes".into(),
         "-o".into(),
@@ -33,10 +43,27 @@ fn ssh_args(alias: &str, cmd: &str) -> Vec<String> {
 /// Ok(stdout) on success; Err(reason) on any failure (timeout, connection
 /// error, non-zero exit) so the caller can decide whether to retry.
 async fn ssh_exec_once(vm_alias: &str, command: &str, timeout_secs: u64) -> std::result::Result<String, String> {
+    ssh_exec_once_with(vm_alias, command, timeout_secs, ssh_args(vm_alias, command))
+}
+
+/// One SSH attempt on a FRESH connection with multiplexing disabled. A broken
+/// session's fault almost always lives in the stale ControlMaster socket
+/// (`read failed: Broken pipe` on the mux): retrying through the same socket
+/// reproduces the same fault, so a broken pipe is taken here instead —
+/// ControlPath=none makes OpenSSH start a new connection rather than reuse the
+/// dead master (#398). (Kept in sync with cloud-mail-health-full/src/ssh.rs.)
+async fn ssh_exec_once_fresh(vm_alias: &str, command: &str, timeout_secs: u64) -> std::result::Result<String, String> {
+    let mut args = ssh_args(vm_alias, command);
+    args.push("-o".into());
+    args.push("ControlPath=none".into());
+    ssh_exec_once_with(vm_alias, command, timeout_secs, args)
+}
+
+async fn ssh_exec_once_with(vm_alias: &str, command: &str, timeout_secs: u64, args: Vec<String>) -> std::result::Result<String, String> {
     let result = timeout(
         Duration::from_secs(timeout_secs),
         tokio::process::Command::new("ssh")
-            .args(ssh_args(vm_alias, command))
+            .args(args)
             .output(),
     )
     .await;
@@ -49,6 +76,19 @@ async fn ssh_exec_once(vm_alias: &str, command: &str, timeout_secs: u64) -> std:
         Ok(Err(e)) => Err(e.to_string()),
         Err(_) => Err("tokio timeout".to_string()),
     }
+}
+
+/// True when an ssh failure is a broken channel rather than a command that
+/// genuinely failed on the far side: a dead mux socket, a mid-run disconnect,
+/// or a silent exit (SIGPIPE has no message). These say nothing about the
+/// remote command or the VM — only about the pipe — so they are retryable, and
+/// they must never be reported as the remote's own fault (#398).
+fn is_broken_pipe(stderr: &str) -> bool {
+    stderr.is_empty()
+        || stderr.contains("broken pipe") || stderr.contains("Broken pipe")
+        || stderr.contains("Connection reset") || stderr.contains("Connection closed")
+        || stderr.contains("packet_write_wait") || stderr.contains("read failed")
+        || stderr.contains("Connection reset by peer")
 }
 
 /// Execute a command on a remote VM via SSH (port 22), with Dropbear :2200
@@ -76,6 +116,24 @@ pub async fn ssh_exec(vm_alias: &str, command: &str, timeout_secs: u64) -> Resul
             let is_timeout = stderr.contains("timed out") || stderr.contains("tokio timeout")
                 || stderr.contains("Connection refused") || stderr.contains("banner exchange")
                 || stderr.contains("No route to host");
+            // A broken pipe is a transport fault, not a mail fault: it must not
+            // kill the liveness report any more than a 30s mesh blip does. Give
+            // one broken pipe a fresh (mux-less) attempt before escalating — a
+            // stale ControlMaster socket is exactly why the retry above just
+            // failed again. When it still fails, escalate through the diagnostic
+            // so the report names the REAL cause (Dropbear down, VM frozen,
+            // cloud-API state) instead of a bare "SSH to VM failed" (#398).
+            if is_broken_pipe(&stderr) {
+                if let Ok(out) = ssh_exec_once_fresh(vm_alias, command, timeout_secs).await {
+                    return Ok(out);
+                }
+                let cause = if stderr.is_empty() {
+                    "no ssh output (broken pipe on a dropped connection)".to_string()
+                } else {
+                    stderr.clone()
+                };
+                return ssh_failure_diagnostic(vm_alias, &cause).await;
+            }
             if is_timeout {
                 return ssh_failure_diagnostic(vm_alias, &stderr).await;
             }
@@ -161,7 +219,7 @@ async fn dropbear_alive(vm_alias: &str) -> bool {
             .args([
                 "-o", "ConnectTimeout=5",
                 "-o", "ServerAliveInterval=15",
-                "-o", "ServerAliveCountMax=2",
+                "-o", "ServerAliveCountMax=12",
                 "-o", "BatchMode=yes",
                 "-o", "ControlPath=none",
                 "-p", "2200",

@@ -109,6 +109,23 @@ else
   fail "phases.rs overrides the deadline to ${TIGHT}s, below HTTP_TIMEOUT ${HTTP_TIMEOUT_SECS}s — a probe that expires early reports a healthy endpoint as unreachable"
 fi
 
+echo
+echo "0c. Static: the SSH layer survives a broken pipe instead of killing the report (#398)"
+SSH_RS="$(dirname "$0")/src/ssh.rs"
+# #398: a dropped session ('client_loop: send disconnect: Broken pipe') used to
+# kill the whole liveness report. Two engine guards must be present: a
+# keepalive tolerant of minutes of probe silence (ServerAliveCountMax > 2), and
+# a FRESH (mux-less) retry for a broken pipe so a stale ControlMaster socket
+# cannot mask a recoverable transport fault.
+ALIVE_COUNT=$(grep -oE '"ServerAliveCountMax=[0-9]+"' "$SSH_RS" | sort -u | tr '\n' ' ')
+FRESH_RETRY=$(grep -c 'ssh_exec_once_fresh' "$SSH_RS")
+BROKEN_DETECT=$(grep -c 'is_broken_pipe' "$SSH_RS")
+if [ "${ALIVE_COUNT% }" = '"ServerAliveCountMax=12"' ] && [ "$FRESH_RETRY" -ge 1 ] && [ "$BROKEN_DETECT" -ge 2 ]; then
+  pass "ssh args keep waiting through ~3min of probe silence (${ALIVE_COUNT}) and a broken pipe gets a fresh connection ($FRESH_RETRY fresh-attempt refs, is_broken_pipe used $BROKEN_DETECT times)"
+else
+  fail "ssh.rs must keepalive past a 30s blip (ServerAliveCountMax=12) and give a broken pipe a fresh mux-less retry (refs: alive='$ALIVE_COUNT' fresh=$FRESH_RETRY is_broken_pipe=$BROKEN_DETECT) — otherwise a dropped session still kills the report"
+fi
+
 # PROBE_OUTPUT lets a caller without an ssh client (the api-runner container has
 # none) supply a batch transcript collected some other way — the MCP ssh tool, a
 # CI step, a paste. Same assertions either way; only the transport differs.
