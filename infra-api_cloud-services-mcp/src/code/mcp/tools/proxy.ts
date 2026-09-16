@@ -20,7 +20,7 @@ export function registerProxyTools(server: McpServer) {
       }
 
       const svc = registry.get(service)!;
-      if (svc.api.type === "no-api") {
+      if (!svc.api || svc.api.type === "no-api") {
         return { content: [{ type: "text" as const, text: `Service '${service}' has no API` }], isError: true };
       }
 

@@ -763,7 +763,7 @@ export function registerMetaTools(server: McpServer) {
           return { content: [{ type: "text" as const, text: `Service '${p.service}' not found` }], isError: true };
         }
         const svc = registry.get(p.service)!;
-        if (svc.api.type === "no-api") {
+        if (!svc.api || svc.api.type === "no-api") {
           return { content: [{ type: "text" as const, text: `Service '${p.service}' has no API` }], isError: true };
         }
         const envToken = process.env[`${(p.service as string).toUpperCase()}_API_TOKEN`];
@@ -816,7 +816,7 @@ export function registerMetaTools(server: McpServer) {
         if (!svc) {
           return { content: [{ type: "text" as const, text: `Service '${p.service}' not found locally. Use registry-mcp_search to find public MCP servers.` }], isError: true };
         }
-        if (!svc.api.specUrl) {
+        if (!svc.api?.specUrl) {
           return { content: [{ type: "text" as const, text: `Service '${p.service}' has no OpenAPI spec URL` }], isError: true };
         }
         const spec = await registry.fetchSpec(p.service);

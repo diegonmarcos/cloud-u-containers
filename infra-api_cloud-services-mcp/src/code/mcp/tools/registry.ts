@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { registry } from "../../registry/index.js";
+import { summarizeServices } from "../../registry/summary.js";
 import { searchPublicRegistry, getPublicServer } from "../../registry/public-registry.js";
 
 export function registerRegistryTools(server: McpServer) {
@@ -9,15 +10,14 @@ export function registerRegistryTools(server: McpServer) {
     "List all local services (Diego's cloud infra) with their API status, type, and endpoint count. These are deployed and accessible via WireGuard mesh.",
     {},
     async () => {
-      const services = registry.list().map((s) => ({
-        name: s.name,
-        displayName: s.displayName,
-        description: s.description,
-        vm: s.vm,
-        apiType: s.api.type,
-        endpointCount: s.api.endpointCount,
-        hasSpec: !!s.api.specUrl,
-      }));
+      // This is the handler the HTTP transport actually serves, and it is the one
+      // every MCP client reaches. It used to restate the projection inline and read
+      // `s.api.type` unconditionally; `ServiceDefinition.api` is optional, so the
+      // first MCP-only peer threw and the whole list came back as one error. The
+      // projection has exactly one home now — registry/summary.ts, where it is
+      // tested — so fixing it in the stdio entry point alone can no longer leave
+      // this one broken.
+      const services = summarizeServices(registry.list());
       return { content: [{ type: "text" as const, text: JSON.stringify({ services, total: services.length }, null, 2) }] };
     }
   );
@@ -61,7 +61,7 @@ export function registerRegistryTools(server: McpServer) {
       if (!svc) {
         return { content: [{ type: "text" as const, text: `Service '${service}' not found locally. Use registry-mcp_search to find public MCP servers.` }], isError: true };
       }
-      if (!svc.api.specUrl) {
+      if (!svc.api?.specUrl) {
         return { content: [{ type: "text" as const, text: `Service '${service}' has no OpenAPI spec URL` }], isError: true };
       }
       const spec = await registry.fetchSpec(service);
