@@ -20,6 +20,9 @@ REPORTS_ROOT="$(cd "$SELF_DIR/.." && pwd)"
 SRC_DIR="$SELF_DIR"
 DIST_DIR="$REPORTS_ROOT/dist"
 MANIFEST="$REPORTS_ROOT/manifest.json"
+# Cross-crate snapshot the master writes and every derive reads. The name is
+# the pipeline ABI, declared once in Rust as run_state::RUN_STATE_FILENAME.
+RUN_STATE="$DIST_DIR/_run_state.json"
 
 # Discover crates — every cloud-* dir under src/ that has a build.sh.
 list_crate_dirs() {
@@ -73,6 +76,81 @@ cmd_list() {
     done
 }
 
+# ── Vacuity guard: a run that reached no host verified NOTHING ────────────
+# A health report is a probe. When it reaches zero of its hosts it has
+# measured nothing, and the only honest outcome is a non-zero exit — never
+# an empty success.
+#
+# THE FAILURE THIS GUARDS
+#   cloud-health-reports-arm-oci-apps.yml concluded `success` on eight
+#   consecutive runs (2026-09-01 .. 2026-09-16, newest 35058414004). Its
+#   GitHub-hosted runner had no route to the WireGuard mesh, so every SSH to
+#   a 10.0.0.0/24 address failed. The log said so plainly —
+#       Fleet: 0/4 reachable
+#       SSH oci-mail UNREACHABLE: SSH failed        (and oci-analytics,
+#       L2 WG Mesh: 0/4 reachable in 6.0s            oci-apps, gcp-proxy)
+#   — and then the job exited 0, because nothing in this pipeline ever
+#   asserted that the reach count was above zero. Eight clean bills of
+#   health from a probe that never reached a single host, consumed
+#   downstream as evidence that the fleet was fine.
+#
+# WHY HERE AND NOT IN THE BINARY
+#   This is the function that decides the exit status of a report run, and
+#   it is read from the repository checkout the workflows mount, not from
+#   the prebuilt image — so the guard takes effect on the next run rather
+#   than on the next image build.
+#
+# WHY THE COUNT IS READ, NOT KEPT
+#   The number comes out of the snapshot the master itself just wrote. The
+#   VM set behind it originates in _cloud-data-consolidated.json, so there
+#   is no host list maintained here to drift out of agreement with the
+#   declarations.
+#
+# There is deliberately NO opt-out environment variable. A vacuity guard
+# with a bypass is decoration: the first red run sets the bypass and the
+# check is back to proving nothing.
+require_hosts_reached() {
+    if ! command -v jq >/dev/null 2>&1; then
+        echo "✗ reach guard cannot run: jq is not in PATH" >&2
+        echo "  A check that cannot evaluate its subject fails; it does not skip." >&2
+        return 1
+    fi
+    if [ ! -f "$RUN_STATE" ]; then
+        echo "✗ reach guard: $RUN_STATE missing — the master recorded no fleet state" >&2
+        echo "  Without it there is no evidence this run reached anything." >&2
+        return 1
+    fi
+
+    # Mirrors fleet::VmState::is_reachable — Running | Provisioning |
+    # Client{tcp_up:true}. serde renders the unit variants as bare strings
+    # and Client as {"Client":{"tcp_up":<bool>}}.
+    reached=$(jq '[.fleet_state.vms // {} | .[]
+                   | select(. == "Running" or . == "Provisioning"
+                            or (type == "object" and .Client.tcp_up == true))]
+                  | length' "$RUN_STATE" 2>/dev/null || true)
+    total=$(jq '(.fleet_state.vms // {}) | length' "$RUN_STATE" 2>/dev/null || true)
+    case "$reached" in ''|*[!0-9]*) reached=-1 ;; esac
+    case "$total"   in ''|*[!0-9]*) total=-1   ;; esac
+    if [ "$reached" -lt 0 ] || [ "$total" -lt 0 ]; then
+        echo "✗ reach guard: could not read .fleet_state.vms out of $RUN_STATE" >&2
+        return 1
+    fi
+
+    if [ "$reached" -eq 0 ]; then
+        echo "✗ hosts reached: 0 of $total — this report verified NOTHING" >&2
+        echo "  Every declared host was unreachable. That is a failed probe," >&2
+        echo "  not a healthy fleet, and it must not publish as a success." >&2
+        echo "  Usual cause: the runner has no route to the 10.0.0.0/24 mesh." >&2
+        echo "  A mesh-capable run needs either a runner that is already on the" >&2
+        echo "  mesh, or the container started with --cap-add NET_ADMIN and a" >&2
+        echo "  WireGuard key, as cloud-health-reports.yml does." >&2
+        return 1
+    fi
+
+    echo "✓ hosts reached: $reached of $total"
+    return 0
+}
+
 cmd_all() {
     action="${1:-all}"  # all | build
     MASTER="cloud-health-full-daily"
@@ -119,6 +197,12 @@ cmd_all() {
         echo "══════════════════════════════════════════"
         sh "$SRC_DIR/$MASTER/build.sh" run
     fi
+
+    # ── Phase 1b: the run must have reached at least one host ────────────
+    # Checked before the fan-out, not after it: every derive reads the same
+    # snapshot, so a vacuous snapshot makes the whole fan-out vacuous too.
+    # Stopping at the source is both the cheapest and the loudest place.
+    require_hosts_reached || return 1
 
     # ── Phase 2: run DERIVES in PARALLEL ────────────────────────────────
     # Each derive owns a distinct output file. No cargo invocations now,
