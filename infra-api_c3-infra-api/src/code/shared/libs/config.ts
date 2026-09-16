@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync, existsSync } from "fs";
 import { join } from "path";
 import type { InfraConfig, ServiceConfig } from "./types.js";
-import { getConfigPath, SOLUTIONS_DIR, syncRepos } from "./paths.js";
+import { getConfigPath, SOLUTIONS_DIR, getSolutionRoots, syncRepos } from "./paths.js";
 
 let _config: InfraConfig | null = null;
 let _configTimestamp = 0;
@@ -207,7 +207,21 @@ export function composeCd(remotePath: string): string {
 }
 
 export function getServiceDir(name: string): string {
-  return join(SOLUTIONS_DIR, getServiceFolder(name));
+  const folder = getServiceFolder(name);
+  for (const root of getSolutionRoots()) {
+    const dir = join(root, folder);
+    if (existsSync(dir)) return dir;
+  }
+  // Nothing on disk under any declared root. Return the primary path so the
+  // caller's error message names a real, checkable location — and so callers
+  // can tell "not found" apart from "found", which is the whole point: a tool
+  // that cannot read its subject must say so, not report a clean negative.
+  return join(SOLUTIONS_DIR, folder);
+}
+
+/** True when no declared solution root holds a source tree at all. */
+export function isSolutionTreeMissing(): boolean {
+  return !getSolutionRoots().some((root) => existsSync(root));
 }
 
 // Normalise a service's declared container names to a string[].

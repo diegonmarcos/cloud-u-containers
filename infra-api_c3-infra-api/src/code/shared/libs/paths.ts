@@ -238,6 +238,35 @@ export const REPOS: Record<string, string> = {
   "cloud-vault": join(GIT_BASE, "cloud-vault"),
 };
 
+// The container source tree has TWO declared locations, and code that names
+// only one of them has now gone stale twice.
+//
+// cloud-infra/0_git/src/gitmodules (2026-09-06) declares both: the tree "was
+// split out to diegonmarcos/cloud-u-containers on 2026-08-27 ... checked out
+// by CI at the path `a_solutions` with actions/checkout ... and cloned
+// standalone into ~/git/cloud-u-containers for local work".
+//
+// CI keeps the a_solutions path, so SOLUTIONS_DIR stays FIRST and CI resolution
+// is unchanged. Inside this server's container it is the pre-split husk: the
+// sparse checkout in syncRepos() below asks only for
+// `a_solutions/*/build.json` and `a_solutions/*/src/flake.nix` — it never
+// fetched `src/secrets.yaml`, and since the split it matches almost nothing at
+// all. The standalone clone is the one that actually holds the files, and it
+// is itself declared, in .runtime.octocode.index_repos.
+//
+// Naming only the first root is what let devops.build.secrets_status report
+// "no secrets.yaml" for all 76 services while every one of those files was
+// present and sops-encrypted on disk.
+const CONTAINERS_REPO = "cloud-u-containers";
+
+/** Roots that may hold the container source tree, in declaration order. */
+export function getSolutionRoots(): string[] {
+  const roots = [SOLUTIONS_DIR];
+  const standaloneCheckout = REPOS[CONTAINERS_REPO];
+  if (standaloneCheckout) roots.push(standaloneCheckout);
+  return roots;
+}
+
 // ── Repo sync ────────────────────────────────────────────────────────
 let _lastSync = 0;
 const SYNC_TTL = 5 * 60 * 1000; // 5 minutes
