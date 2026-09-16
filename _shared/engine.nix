@@ -155,12 +155,27 @@ let
   # work silently lost — which is the failure #345 set out to end.
   gitTreeSuffix = if (agentSpec.git_tree_writable or false) == true then "" else ":ro";
 
+  # Mounting the tree is only half of it. `docker exec` starts every command
+  # at the image's WorkingDir, and an agent that is handed work there starts
+  # OUTSIDE the checkout: it finds no repository, reports the code as missing,
+  # and answers anyway. That failure looks identical to "the mount is broken"
+  # while the mount is perfectly fine, so the working directory is declared
+  # here, next to the mount it depends on, rather than left to the image.
+  #
+  # Opt-in, not automatic: a container whose main process needs its own
+  # WORKDIR (an API serving /app) must keep it, and only the sessions that
+  # are supposed to live in the tree move into it.
+  gitTreeIsWorkingDirectory =
+    (agentSpec.git_tree_is_working_directory or false) == true;
+
   mergeGitTreeInto = svc:
     if !wantsGitTree then svc
     else svc // {
       volumes = lib.unique ((svc.volumes or [])
         ++ [ "${gitTreeKey}:${gitTreeMount}${gitTreeSuffix}" ]);
-    };
+    } // (if gitTreeIsWorkingDirectory
+          then { working_dir = gitTreeMount; }
+          else {});
 
   # Order matters for the rendered YAML: the git tree is appended BEFORE
   # the secrets mounts, matching the volume order my-ai_claude-api
