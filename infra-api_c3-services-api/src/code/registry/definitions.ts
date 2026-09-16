@@ -1,23 +1,24 @@
-// Service definitions — fully data-driven from this container's own build-c3-services-api.json.
+// Service definitions — fully data-driven from this container's own peer map.
 //
 // Source-of-truth chain:
 //   1. each service declares its `api` and/or `mcp` block in its own build.json
 //   2. cloud-data-config-consolidated.ts merges those into _cloud-data-consolidated.json
 //   3. cloud-data-config-derive.ts (deriveServiceConnections + deriveContainerConfigs)
-//      stamps every peer's api/mcp into THIS container's build-c3-services-api.json
+//      stamps every peer's api/mcp into THIS container's build-<name>.json
 //      under .services.<name>
 //   4. this loader filters that map for entries with has_api or has_mcp true
 //
-// At build time the file is symlinked into src/build-c3-services-api.json and copied
-// into the image at /app/build-c3-services-api.json by the existing pipeline. There
-// is no shared cloud-data file at runtime, no GIT_BASE volume mount.
+// At build time the file is symlinked into src/ and copied into the image at
+// /app/build-<name>.json by the existing pipeline. There is no shared cloud-data
+// file at runtime, no GIT_BASE volume mount. The `<name>` is read from the
+// container's own build.json rather than written out here — see peer-map.ts.
 //
 // Adding a new API/MCP requires zero edits in this file — declare `api:` or `mcp:`
 // in the new service's build.json and rebuild.
 
 import { readFileSync, existsSync } from "fs";
-import { join } from "path";
 import type { ServiceDefinition } from "./types.js";
+import { peerMapCandidates, describeCandidates } from "./peer-map.js";
 
 interface PeerEntry {
   ip: string;
@@ -68,11 +69,9 @@ function pickPort(ports: Record<string, number> | undefined): number {
 }
 
 function loadRegistry(): ServiceDefinition[] {
-  const candidates = [
-    process.env.C3_SERVICES_BUILD_JSON,
-    "/app/build-c3-services-api.json",                                              // in-image (deployed)
-    join(import.meta.dirname ?? "", "../../build-c3-services-api.json"),            // dev: src/
-  ].filter(Boolean) as string[];
+  // Named from this container's own build.json — see peer-map.ts for why the
+  // filename is never written out as a literal here.
+  const candidates = peerMapCandidates();
 
   for (const p of candidates) {
     if (!existsSync(p)) continue;
@@ -128,7 +127,7 @@ function loadRegistry(): ServiceDefinition[] {
       console.error(`[definitions] failed to parse ${p}:`, e);
     }
   }
-  console.error("[definitions] no build-c3-services-api.json found — empty registry");
+  console.error(`[definitions] peer map unreadable — empty registry (${describeCandidates(candidates)})`);
   return [];
 }
 
