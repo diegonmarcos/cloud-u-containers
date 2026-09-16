@@ -17,7 +17,7 @@ use reports_common::context::find_cloud_data_file;
 use reports_common::probe::{self, Protocol};
 use serde::Serialize;
 use serde_json::Value;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 #[derive(Debug, Serialize, Clone)]
 pub struct PrivateTarget {
@@ -180,14 +180,41 @@ pub async fn run(
     };
     let bearer = bearer.map(|s| s.to_string());
     let tcp_timeout = Duration::from_secs(timeouts.tcp_secs);
+    // Aggregate ceiling for the phase. Each probe below is bounded by
+    // tcp_timeout, but the PHASE cost is targets x attempts x tcp_secs /
+    // parallel and had no ceiling of its own, so it grew with the fleet: at 111
+    // private targets, 3 attempts and parallel=4 an unreachable mesh costs
+    // ceil(111/4)=28 waves x 32s = roughly 896 seconds. That overran the 600s
+    // derives deadline and the report's whole step budget, and presented as a
+    // hang rather than as slow probes. Past the deadline the remaining targets
+    // are reported as not-probed instead of each burning its full retry budget,
+    // so the phase degrades into an honest partial result instead of wedging.
+    let phase_deadline_secs = timeouts.private_phase_secs;
+    let phase_start = Instant::now();
+    let phase_deadline = phase_start + Duration::from_secs(phase_deadline_secs);
 
     let tcp_only: std::collections::HashSet<u16> = tcp_only_ports.iter().copied().collect();
-    stream::iter(targets)
+    let results: Vec<PrivateResult> = stream::iter(targets)
         .map(|t| {
             let client = client.clone();
             let bearer = bearer.clone();
             let tcp_only = tcp_only.clone();
             async move {
+                if Instant::now() >= phase_deadline {
+                    return PrivateResult {
+                        service: t.service,
+                        upstream: t.upstream,
+                        source: t.source,
+                        status: None,
+                        latency_ms: 0,
+                        ok: false,
+                        probe: "deadline-skipped",
+                        error: Some(format!(
+                            "not probed — private phase deadline of {}s exceeded",
+                            phase_deadline_secs
+                        )),
+                    };
+                }
                 let (ip, port) = split_upstream(&t.upstream)
                     .unwrap_or_else(|| (String::new(), 0));
                 // Force TCP-only probe for ports declared as non-HTTP (redis,
@@ -205,7 +232,10 @@ pub async fn run(
                 // for genuinely-healthy probes.
                 let mut res = probe::probe_endpoint(&ip, port, proto, bearer.as_deref(), &client, tcp_timeout).await;
                 let mut attempt = 1u32;
-                while !res.ok && res.error.is_some() && attempt < 3 {
+                // The deadline bounds the retries as well: without this a probe
+                // that starts just inside the deadline still costs its full
+                // 3 x tcp_secs, and 4 such probes in flight overrun the phase.
+                while !res.ok && res.error.is_some() && attempt < 3 && Instant::now() < phase_deadline {
                     let backoff = if attempt == 1 { 500 } else { 1500 };
                     tokio::time::sleep(Duration::from_millis(backoff)).await;
                     res = probe::probe_endpoint(&ip, port, proto, bearer.as_deref(), &client, tcp_timeout).await;
@@ -225,7 +255,20 @@ pub async fn run(
         })
         .buffer_unordered(parallel)
         .collect::<Vec<_>>()
-        .await
+        .await;
+    let skipped = results
+        .iter()
+        .filter(|r| r.probe == "deadline-skipped")
+        .count();
+    println!(
+        "[private] {} targets in {:.1}s — {} ok, {} skipped past the {}s phase deadline",
+        results.len(),
+        phase_start.elapsed().as_secs_f64(),
+        results.iter().filter(|r| r.ok).count(),
+        skipped,
+        phase_deadline_secs,
+    );
+    results
 }
 
 #[cfg(test)]

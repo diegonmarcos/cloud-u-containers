@@ -24,9 +24,27 @@ pub struct Timeouts {
     pub http_total_secs: u64,
     #[serde(default = "default_tcp_secs")]
     pub tcp_secs: u64,
+    /// Wall-clock ceiling for the whole private-probe phase.
+    ///
+    /// Every individual probe is already bounded by tcp_secs, but the PHASE cost
+    /// is `targets x attempts x tcp_secs / concurrency.private` and had no
+    /// ceiling of its own, so it scaled with the fleet. At 111 private targets,
+    /// 3 attempts and concurrency 4 an unreachable WireGuard mesh costs
+    /// `ceil(111/4) = 28` waves x 32s = roughly 896 seconds — against a crate
+    /// whose design target is 15 seconds. That is what wedged the derives
+    /// fan-out and killed the whole health report. Data-driven
+    /// (build-reports.json) with a safe built-in default so the engine stays
+    /// bounded even before the config emits this key.
+    #[serde(default = "default_private_phase_secs")]
+    pub private_phase_secs: u64,
 }
 
 fn default_tcp_secs() -> u64 { 3 }
+
+/// 240s is roughly thirty times the healthy private phase (111 targets at
+/// concurrency 4 completes in well under 10s when the mesh is reachable) while
+/// leaving the derive comfortably inside the 600s fan-out deadline.
+fn default_private_phase_secs() -> u64 { 240 }
 
 #[derive(Debug, Deserialize, Clone, Default)]
 pub struct Targets {
