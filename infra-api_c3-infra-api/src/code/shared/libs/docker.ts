@@ -488,6 +488,8 @@ const SECRET_KEY_RE = /secret|password|token|key|pass|credential/i;
 export interface ContainerDetails {
   image: string;
   imageDigest: string | null;
+  /** Why imageDigest is null, when it is. Absent on success. */
+  imageDigestNote?: string;
   env: Record<string, string>;
   mounts: Array<{ source: string; destination: string; mode: string }>;
   ports: Record<string, unknown>;
@@ -526,14 +528,54 @@ export function inspectContainerDetails(
       mode: String(m.Mode ?? ""),
     }));
 
-    const imageDigestSource: string[] = item?.RepoDigests ?? [];
-    const imageDigest = imageDigestSource[0]?.split("@")[1] ?? null;
+    // #357: RepoDigests is a property of the IMAGE, not the container. The
+    // inspect above is a CONTAINER inspect and has no such key, so
+    // `item?.RepoDigests ?? []` was ALWAYS [] and imageDigest was ALWAYS null
+    // — this tool has never once reported a digest. Same wrong-object read
+    // that made cloud-infra's `build.sh status` report DRIFT for the whole
+    // fleet; this is the TypeScript copy of it.
+    //
+    // Resolve the id of the image the container is ACTUALLY running and
+    // inspect that. A tag can move; a running container's image id cannot, so
+    // this digest describes the bytes in the container rather than whatever
+    // `:latest` points at by the time anyone asks.
+    let imageDigest: string | null = null;
+    let imageDigestNote: string | undefined;
+    const imageId = String(item?.Image ?? "");
+    if (!/^sha256:[0-9a-f]{64}$/.test(imageId)) {
+      // Never interpolate an unvalidated string into a remote shell command.
+      imageDigestNote = `container reported no usable image id (${imageId || "empty"})`;
+    } else {
+      const imgResult = sshExec(vmId, `docker image inspect ${imageId}`, 10_000);
+      if (!imgResult.ok) {
+        // Stated, not swallowed. A digest we could not read must never be
+        // indistinguishable from an image that has none.
+        imageDigestNote = `docker image inspect ${imageId} failed: ${imgResult.stderr.trim()}`;
+      } else {
+        try {
+          const repoDigests: string[] =
+            (JSON.parse(imgResult.stdout) as Array<Record<string, any>>)[0]?.RepoDigests ?? [];
+          if (repoDigests.length === 0) {
+            // Real and ordinary: built on the VM, never pushed. Undecidable,
+            // not a match — so imageDigest stays null and says why.
+            imageDigestNote = "image has no RepoDigests — built on the VM, never pushed";
+          } else {
+            imageDigest = repoDigests[0]?.split("@")[1] ?? null;
+          }
+        } catch (parseErr) {
+          imageDigestNote = `docker image inspect ${imageId} returned unparseable JSON: ${
+            parseErr instanceof Error ? parseErr.message : String(parseErr)
+          }`;
+        }
+      }
+    }
 
     return {
       ok: true,
       details: {
         image: item?.Config?.Image ?? "",
         imageDigest,
+        imageDigestNote,
         env,
         mounts,
         ports: item?.NetworkSettings?.Ports ?? {},
