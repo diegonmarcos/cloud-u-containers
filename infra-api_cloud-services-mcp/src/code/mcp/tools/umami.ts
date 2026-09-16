@@ -1,8 +1,13 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { rawHttpRequest } from "../../shared/http.js";
+import { registry } from "../../registry/index.js";
 
-const UMAMI_BASE = "http://10.0.0.4:3000";
+// Resolved from the service registry, which derives it from infra-obs_umami's
+// own build.json (deploy.host oci-analytics -> 10.0.0.4, ports.app 3006). The
+// fallback literal read :3000, Umami's upstream default port, which this
+// deployment has never used — nothing listens there.
+const UMAMI_BASE = registry.getBaseUrl("umami") ?? "http://10.0.0.4:3006";
 
 function umamiApi(method: string, path: string, body?: string): string {
   const token = process.env.UMAMI_API_TOKEN ?? "";

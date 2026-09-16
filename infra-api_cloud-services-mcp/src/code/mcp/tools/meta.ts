@@ -56,7 +56,12 @@ function daguHeaders(): Record<string, string> {
 }
 
 // ── Matomo ────────────────────────────────────────────────────────────────────
-const MATOMO_BASE = "http://10.0.0.4:8080";
+// Resolved from the service registry, which derives it from infra-obs_matomo's
+// own build.json (deploy.host oci-apps -> 10.0.0.6, ports.app 8080). The
+// literal here is only the fallback for when the registry has no entry — and
+// it read 10.0.0.4:8080, which is oci-analytics, where Matomo has never run.
+// Every tool in this file therefore aimed at a host that does not serve it.
+const MATOMO_BASE = registry.getBaseUrl("matomo") ?? "http://10.0.0.6:8080";
 function matomoApiCall(method: string, params: Record<string, string> = {}): string {
   const token = process.env.MATOMO_API_TOKEN ?? "";
   const qs = new URLSearchParams({ module: "API", method, format: "JSON", token_auth: token, ...params });
@@ -192,7 +197,11 @@ function vwApi(path: string): string {
 }
 
 // ── Umami ─────────────────────────────────────────────────────────────────────
-const UMAMI_BASE = "http://10.0.0.4:3000";
+// Resolved from the service registry, which derives it from infra-obs_umami's
+// own build.json (deploy.host oci-analytics -> 10.0.0.4, ports.app 3006). The
+// fallback literal read :3000, Umami's upstream default port, which this
+// deployment has never used — nothing listens there.
+const UMAMI_BASE = registry.getBaseUrl("umami") ?? "http://10.0.0.4:3006";
 function umamiApi(method: string, path: string, body?: string): string {
   const token = process.env.UMAMI_API_TOKEN ?? "";
   const headers: Record<string, string> = {};

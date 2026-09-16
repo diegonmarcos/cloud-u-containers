@@ -1,8 +1,14 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { rawHttpRequest } from "../../shared/http.js";
+import { registry } from "../../registry/index.js";
 
-const MATOMO_BASE = "http://10.0.0.4:8080";
+// Resolved from the service registry, which derives it from infra-obs_matomo's
+// own build.json (deploy.host oci-apps -> 10.0.0.6, ports.app 8080). The
+// literal here is only the fallback for when the registry has no entry — and
+// it read 10.0.0.4:8080, which is oci-analytics, where Matomo has never run.
+// Every tool in this file therefore aimed at a host that does not serve it.
+const MATOMO_BASE = registry.getBaseUrl("matomo") ?? "http://10.0.0.6:8080";
 
 function matomoApiCall(method: string, params: Record<string, string> = {}): string {
   const token = process.env.MATOMO_API_TOKEN ?? "";
