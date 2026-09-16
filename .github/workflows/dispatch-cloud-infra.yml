@@ -1,4 +1,4 @@
-name: Dispatch cloud-infra ship
+name: containers-push dispatch → cloud-infra Ship (courier — verdict is downstream)
 
 # This repository holds the container fleet; the pipelines that build, deploy
 # and lint it live in diegonmarcos/cloud-infra.
@@ -17,6 +17,25 @@ name: Dispatch cloud-infra ship
 # HEAD^, which silently drops every service touched by the earlier commit of a
 # multi-commit push — the exact false-green (green run, strict subset
 # deployed) that left the c3-public-api mail fix undeployed on 2026-08-24.
+#
+# #401 — RENAMED and made to point at the real verdict. This workflow is a
+# COURIER, not a build: its own green means only that the dispatch POST
+# succeeded, never that an image built or anything deployed. Under its old name
+# ("Dispatch cloud-infra ship") a reader — human or agent — could mistake its
+# success for a green build, which is precisely how the broken Rust commit
+# ab1a1971 sat on main for hours on 2026-09-16: the Reports image build was red
+# and the health-reports image silently never rebuilt, while every workflow
+# list showed this green. Hence (a) the unambiguous name and (b) the step that
+# locates the downstream cloud-infra runs and prints their URLs, so a reader is
+# pointed at the verdict that actually decides.
+#
+# We deliberately do NOT wait for the downstream run to finish and adopt its
+# conclusion. That would hold an ubuntu-latest runner hostage for the whole
+# Ship run (up to ~90 minutes of builds plus serialized deploys) on every push,
+# and a transient poll failure would turn this courier red — a worse failure
+# than a green courier, because it would mislead about the build while itself
+# being noise. The fleet's contract is that cloud-infra's Ship owns the
+# verdict; this workflow's job is to get a reader there, not to restate it.
 on:
   push:
     branches: [main]
@@ -34,6 +53,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Notify cloud-infra of the pushed range
+        id: notify
         env:
           # A cross-repository dispatch needs contents:write on the TARGET
           # repo. This repository's GITHUB_TOKEN is scoped to this repository
@@ -70,3 +90,41 @@ jobs:
           echo "dispatched containers-push  ${BEFORE}..${AFTER}  (${REF})"
           echo "### containers-push dispatched" >> "$GITHUB_STEP_SUMMARY"
           echo "range: \`${BEFORE}..${AFTER}\`" >> "$GITHUB_STEP_SUMMARY"
+
+      # #401: a green courier is not a green build. This step finds the
+      # downstream cloud-infra runs this dispatch just created and prints their
+      # URLs, so anyone reading THIS run knows the next place to look. It is a
+      # best-effort directory, not a verdict: if the runs have not appeared yet
+      # it keeps polling for a short window, then hands the reader the
+      # cloud-infra Actions page rather than inventing an answer.
+      - name: Point at the downstream cloud-infra runs (this is a courier, not the verdict)
+        env:
+          GH_TOKEN: ${{ secrets.CLOUD_INFRA_DISPATCH_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          # repository_dispatch fires several cloud-infra workflows at once
+          # (Ship, Ship → reports, Ship → wrangler, Ship → terraform, ...).
+          # Collect every one created around now; those are the real verdicts.
+          RUNS_JSON=""
+          for _i in $(seq 1 15); do
+            RUNS_JSON=$(gh api "repos/diegonmarcos/cloud-infra/actions/runs?per_page=50&event=repository_dispatch" \
+              --jq '[.workflow_runs[]
+                       | select((.created_at | fromdateiso8601) > (now - 90))
+                       | {name: (.name // "unknown"), status, conclusion, html_url}]' 2>/dev/null || true)
+            [ "$(printf '%s' "$RUNS_JSON" | jq 'length')" -gt 0 ] 2>/dev/null && break
+            sleep 5
+          done
+
+          echo "### This run is the COURIER, not the build" >> "$GITHUB_STEP_SUMMARY"
+          echo "Its green means only that the dispatch was sent. The image builds and deploys happen downstream in \`cloud-infra\` — watch THOSE runs, not this one." >> "$GITHUB_STEP_SUMMARY"
+
+          if printf '%s' "$RUNS_JSON" 2>/dev/null | jq -e 'length > 0' >/dev/null 2>&1; then
+            printf '%s' "$RUNS_JSON" | jq -r '.[] | "- **\(.name)**: `\(.status)`/`\(.conclusion // "n/a")` — \(.html_url)"'
+            printf '%s' "$RUNS_JSON" | jq -r '.[] | "- **\(.name)**: [\(.status)/\(.conclusion // "n/a")](\(.html_url))" ' >> "$GITHUB_STEP_SUMMARY"
+            echo "::notice::This workflow is only the dispatch courier. Verify the build/deploy outcome in the downstream cloud-infra runs listed above — a green here does NOT mean anything built or deployed."
+          else
+            echo "::warning::Could not locate the downstream cloud-infra runs within ~75s. The dispatch was POSTed; check diegonmarcos/cloud-infra > Actions directly. Do NOT read this run as a build result."
+            echo "Could not auto-list the downstream runs in time. Go to the verdict directly:" >> "$GITHUB_STEP_SUMMARY"
+            echo "https://github.com/diegonmarcos/cloud-infra/actions" >> "$GITHUB_STEP_SUMMARY"
+          fi
