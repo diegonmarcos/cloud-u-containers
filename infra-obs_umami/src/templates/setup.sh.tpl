@@ -45,6 +45,37 @@ json_val() {
   }'
 }
 
+# Escape a value for use inside a JSON string: backslash first, then double
+# quote, matching what `jq -n --arg` produced. Verified char-for-char against
+# jq inside the real curlimages/curl image (busybox awk supports split with an
+# empty separator).
+json_escape() {
+  printf '%s' "$1" | awk '
+    BEGIN { RS = "\0" }
+    {
+      n = split($0, ch, "")
+      out = ""
+      for (i = 1; i <= n; i++) {
+        c = ch[i]
+        if (c == "\\")      out = out "\\" "\\"
+        else if (c == "\"") out = out "\\" "\""
+        else                out = out c
+      }
+      printf "%s", out
+    }'
+}
+
+# Build a two-field JSON object without jq. The setup container is
+# curlimages/curl, which ships curl but NOT jq, so every `jq -nc` call here
+# died with "jq: not found", curl posted an EMPTY body, and the empty response
+# that came back was reported as outcome=auth-failed — i.e. the configured
+# credentials were never actually tried. Umami therefore never got a tracking
+# site created and collected nothing, while the failure named the wrong cause.
+json_obj2() {
+  printf '{"%s":"%s","%s":"%s"}' \
+    "$1" "$(json_escape "$2")" "$3" "$(json_escape "$4")"
+}
+
 echo "[umami-setup] Starting..."
 
 # Login with default credentials (admin/umami)
@@ -56,10 +87,10 @@ TOKEN=$(json_val "$RESP" "token")
 
 if [ -z "$TOKEN" ]; then
   # Default login failed — try configured credentials.
-  # Body built via jq -n so an ADMIN_PASSWORD containing " or \ doesn't
+  # Body built via json_obj2 so an ADMIN_PASSWORD containing " or \ doesn't
   # break JSON. Never shell-interpolate secrets into JSON strings.
   echo "[umami-setup] Default login failed, trying configured credentials..."
-  RESP=$(jq -nc --arg u admin --arg p "$ADMIN_PASSWORD" '{username:$u,password:$p}' \
+  RESP=$(json_obj2 username admin password "$ADMIN_PASSWORD" \
     | curl -sf "$UMAMI_URL/api/auth/login" \
         -H "Content-Type: application/json" \
         -d @- 2>/dev/null || echo "")
@@ -82,16 +113,16 @@ if [ -z "$TOKEN" ]; then
   fi
   echo "[umami-setup] Already configured, verifying website..."
 else
-  # Change admin password — body via jq -n (JSON-safe).
+  # Change admin password — body via json_obj2 (JSON-safe).
   echo "[umami-setup] Changing admin password..."
-  jq -nc --arg c umami --arg n "$ADMIN_PASSWORD" '{currentPassword:$c,newPassword:$n}' \
+  json_obj2 currentPassword umami newPassword "$ADMIN_PASSWORD" \
     | curl -sf "$UMAMI_URL/api/me/password" \
         -H "Content-Type: application/json" \
         -H "Authorization: Bearer $TOKEN" \
         -d @- >/dev/null
 
   # Re-login with new password (username stays 'admin')
-  RESP=$(jq -nc --arg u admin --arg p "$ADMIN_PASSWORD" '{username:$u,password:$p}' \
+  RESP=$(json_obj2 username admin password "$ADMIN_PASSWORD" \
     | curl -sf "$UMAMI_URL/api/auth/login" \
         -H "Content-Type: application/json" \
         -d @- 2>/dev/null || echo "")
