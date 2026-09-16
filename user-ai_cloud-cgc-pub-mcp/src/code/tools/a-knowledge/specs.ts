@@ -8,11 +8,6 @@ import { readFileSync, existsSync, readdirSync } from "fs";
 import { join } from "path";
 import { getConfig, getVmSshAlias, getRepoRoot } from "../../config.js";
 
-const CATEGORY_PREFIX: Record<string, string> = {
-  app: "aa-sui_", mic: "ab-mic_", fin: "ac-fin_", agi: "ad-agi_",
-  cloud: "ba-clo_", sec: "bb-sec_", tools: "bc-obs_", data: "ca-dat_",
-};
-
 function getSolutionsDir(): string {
   return join(getRepoRoot(), "a_solutions");
 }
@@ -37,27 +32,29 @@ export function registerSpecTools(server: McpServer) {
         const svc = config.services[name];
         const solDir = getSolutionsDir();
 
+        // The declared folder, then a scan that reads each build.json's own
+        // name. This file used to carry its own copy of the category→prefix
+        // table and try an invented `${prefix}${flake ?? name}` in between, and
+        // that copy had drifted pre-rename exactly like the one in
+        // c3-infra-api's config.ts — two files restating one classification,
+        // which is #170. Neither copy is needed: services[*].folder is declared
+        // for every service, and the scan is what actually resolves anything
+        // the declaration misses.
         let folder = "";
         if (svc?.folder) {
           folder = svc.folder;
         } else {
-          const prefix = svc ? (CATEGORY_PREFIX[svc.category] ?? "") : "";
-          const candidate = `${prefix}${svc?.flake ?? name}`;
-          if (existsSync(join(solDir, candidate))) {
-            folder = candidate;
-          } else {
-            try {
-              for (const d of readdirSync(solDir, { withFileTypes: true })) {
-                if (!d.isDirectory()) continue;
-                const bjPath = join(solDir, d.name, "build.json");
-                if (!existsSync(bjPath)) continue;
-                try {
-                  const bj = JSON.parse(readFileSync(bjPath, "utf-8"));
-                  if (bj.name === name) { folder = d.name; break; }
-                } catch { continue; }
-              }
-            } catch { /* no-op */ }
-          }
+          try {
+            for (const d of readdirSync(solDir, { withFileTypes: true })) {
+              if (!d.isDirectory()) continue;
+              const bjPath = join(solDir, d.name, "build.json");
+              if (!existsSync(bjPath)) continue;
+              try {
+                const bj = JSON.parse(readFileSync(bjPath, "utf-8"));
+                if (bj.name === name) { folder = d.name; break; }
+              } catch { continue; }
+            }
+          } catch { /* no-op */ }
         }
 
         if (!folder) {

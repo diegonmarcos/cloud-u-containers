@@ -6,11 +6,18 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { readFileSync, existsSync, readdirSync } from "fs";
 import { join } from "path";
-import { getRepoRoot } from "../../config.js";
+import { getRepoRoot, getConfig } from "../../config.js";
 import { buildContextSummary } from "../../context.js";
 
 function getCloudSpecDir(): string {
-  return join(getRepoRoot(), "a_solutions", "bc-obs_cloud-spec");
+  // "bc-obs_cloud-spec" was a literal here and is pre-rename — that directory
+  // does not exist. cloud-spec is declared at infra-obs_cloud-spec, so every
+  // docs lookup was reading from a path that resolves to nothing.
+  const declared = getConfig().services["cloud-spec"]?.folder;
+  if (!declared) {
+    throw new Error("cloud-spec has no declared folder in the infrastructure declaration; refusing to guess a directory name");
+  }
+  return join(getRepoRoot(), "a_solutions", declared);
 }
 
 export function registerDocsTools(server: McpServer) {
