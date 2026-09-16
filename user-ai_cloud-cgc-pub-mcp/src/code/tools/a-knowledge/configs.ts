@@ -12,7 +12,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 import { z } from "zod";
-import { getRepoRoot, getCloudDataPath } from "../../config.js";
+import { getCloudDataPath } from "../../config.js";
+import { FRONT_DEPS_PATH } from "../../shared/libs/paths.js";
 
 function readJsonSafe(path: string): unknown {
   if (!existsSync(path)) return null;
@@ -73,7 +74,10 @@ export function registerConfigTools(server: McpServer) {
         }
         case "front_deps": {
           const candidates = [
-            join(getRepoRoot(), "front-data", "front-deps.json"),
+            // The front repo's checkout under $GIT_ROOT (the octocode repos
+            // volume). Previously anchored on the config module's repo-root
+            // helper (/data), an empty deploy bind in the image (Ticket #402).
+            FRONT_DEPS_PATH,
             process.env.FRONT_DATA_PATH ? join(process.env.FRONT_DATA_PATH, "front-deps.json") : "",
           ].filter(Boolean);
 
@@ -83,7 +87,7 @@ export function registerConfigTools(server: McpServer) {
               if (content) return { content: [{ type: "text" as const, text: content }] };
             }
           }
-          return { content: [{ type: "text" as const, text: "front-deps.json not found or empty" }] };
+          return { content: [{ type: "text" as const, text: "front-deps.json not found or empty" }], isError: true };
         }
       }
     }

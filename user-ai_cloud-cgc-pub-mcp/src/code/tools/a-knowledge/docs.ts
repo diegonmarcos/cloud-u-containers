@@ -6,7 +6,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { readFileSync, existsSync, readdirSync } from "fs";
 import { join } from "path";
-import { getRepoRoot, getConfig } from "../../config.js";
+import { getConfig } from "../../config.js";
+import { getContainersRoot, getRepoDir } from "../../shared/libs/paths.js";
 import { buildContextSummary } from "../../context.js";
 
 function getCloudSpecDir(): string {
@@ -17,7 +18,12 @@ function getCloudSpecDir(): string {
   if (!declared) {
     throw new Error("cloud-spec has no declared folder in the infrastructure declaration; refusing to guess a directory name");
   }
-  return join(getRepoRoot(), "a_solutions", declared);
+  // Previously joined the service folder onto the config module's repo-root
+  // helper, which resolves to /data — the empty ./data deploy bind in the
+  // image — so docs landed nowhere. a_solutions IS the cloud-u-containers
+  // checkout: resolve on the container source tree under $GIT_ROOT instead
+  // (Ticket #402).
+  return join(getContainersRoot(), declared);
 }
 
 export function registerDocsTools(server: McpServer) {
@@ -36,7 +42,7 @@ export function registerDocsTools(server: McpServer) {
         case "overview": {
           const overviewPath = join(getCloudSpecDir(), "src", "docs", "overview.md");
           if (!existsSync(overviewPath)) {
-            return { content: [{ type: "text" as const, text: "cloud-spec overview.md not found" }] };
+            return { content: [{ type: "text" as const, text: "cloud-spec overview.md not found" }], isError: true };
           }
 
           const summaryPath = join(getCloudSpecDir(), "src", "docs", "SUMMARY.md");
@@ -52,9 +58,12 @@ export function registerDocsTools(server: McpServer) {
         }
 
         case "readme": {
-          const readmePath = join(getRepoRoot(), "README.md");
+          // The cloud (infrastructure) repo README. Previously anchored on the config
+          // module's repo-root helper (/data), which carries no repository in the
+          // image. Resolve the cloud-infra checkout under $GIT_ROOT (Ticket #402).
+          const readmePath = join(getRepoDir("cloud-infra"), "README.md");
           if (!existsSync(readmePath)) {
-            return { content: [{ type: "text" as const, text: "README.md not found" }] };
+            return { content: [{ type: "text" as const, text: "README.md not found" }], isError: true };
           }
           return { content: [{ type: "text" as const, text: readFileSync(readmePath, "utf-8") }] };
         }
@@ -67,7 +76,7 @@ export function registerDocsTools(server: McpServer) {
 
           // Check for docs in the service's own dist/docs or the cloud-spec dist
           const specDistDir = join(getCloudSpecDir(), "dist", "services", service);
-          const serviceDistDir = join(getRepoRoot(), "a_solutions", service, "dist", "docs");
+          const serviceDistDir = join(getContainersRoot(), service, "dist", "docs");
 
           // Try cloud-spec aggregated docs first
           if (existsSync(specDistDir)) {
@@ -83,9 +92,9 @@ export function registerDocsTools(server: McpServer) {
           }
 
           // Fall back to reading the service's flake.nix config block + any docs/ folder
-          const solDir = join(getRepoRoot(), "a_solutions", service);
+          const solDir = join(getContainersRoot(), service);
           if (!existsSync(solDir)) {
-            return { content: [{ type: "text" as const, text: `Service folder "${service}" not found.` }] };
+            return { content: [{ type: "text" as const, text: `Service folder "${service}" not found.` }], isError: true };
           }
 
           const parts: string[] = [`# ${service} Documentation\n`];

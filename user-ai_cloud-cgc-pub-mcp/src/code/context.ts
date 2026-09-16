@@ -4,7 +4,8 @@
  */
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
-import { getConfig, getVmSshAlias, getRepoRoot, getCloudDataPath } from "./config.js";
+import { getConfig, getVmSshAlias, getCloudDataPath } from "./config.js";
+import { getRepoDir } from "./shared/libs/paths.js";
 
 function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
@@ -92,8 +93,6 @@ export function buildContextSummary(size: "compact" | "full"): string {
   parts.push(buildToolIndex());
 
   if (size === "full") {
-    const repoRoot = getRepoRoot();
-
     // Add topology markdown (uses getCloudDataPath for in-image / dist / clone fallback chain)
     const topoMd = readFileSafe(getCloudDataPath("cloud-data-topology.md"));
     if (topoMd) parts.push(`## Full Topology\n\n${topoMd}`);
@@ -102,8 +101,11 @@ export function buildContextSummary(size: "compact" | "full"): string {
     const configsMd = readFileSafe(getCloudDataPath("cloud-data-configs.md"));
     if (configsMd) parts.push(`## Full Configs\n\n${configsMd}`);
 
-    // Add README
-    const readme = readFileSafe(join(repoRoot, "README.md"));
+    // Add README — the cloud (infrastructure) repo README, resolved from the
+    // cloud-infra checkout under $GIT_ROOT. Previously anchored on the config
+    // module's repo-root helper (/data), an empty deploy bind in the image
+    // (Ticket #402).
+    const readme = readFileSafe(join(getRepoDir("cloud-infra"), "README.md"));
     if (readme) parts.push(`## README\n\n${readme}`);
 
     // Add deps summary
