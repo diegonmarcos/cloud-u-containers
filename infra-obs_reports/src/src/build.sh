@@ -151,6 +151,128 @@ require_hosts_reached() {
     return 0
 }
 
+# Snapshot of _run_state.json taken immediately before a single-crate run, so
+# the guard below can tell what THIS run recorded from what was already lying
+# in dist/. Written next to .run-logs/ for the same reason: dist/ is the
+# engine's scratch as well as its output.
+RUN_STATE_BEFORE="$DIST_DIR/.run_state_before.json"
+
+# ── Vacuity guard, second door: the NON-`all` targets ────────────────────
+# require_hosts_reached above is reached only from cmd_all. Every other way
+# into this engine — `daily`, `mail`, `url`, `sec-network`, `sec-data`, `sec`,
+# any crate folder name, any short name, any `report<N>` index — lands in
+# cmd_one, which ran a probe, published its output and returned 0 no matter
+# what it found. #374 was closed by guarding `all`; this is the same defect
+# through the door the first guard does not watch (#385).
+#
+# WHY THIS IS NOT "require_hosts_reached, also called from cmd_one"
+#   cloud-data's cloud-security.yml ("External recon (no mesh membership)")
+#   deliberately withholds WG_PRIVATE_KEY and the per-VM SSH keys and then runs
+#   `sec-network`, `sec-data` and `url` — the exact non-`all` targets — from
+#   outside the mesh ON PURPOSE. Zero fleet reach is that workflow's whole
+#   point. A fleet-reach assertion in cmd_one would turn it permanently red,
+#   and a guard that false-fails is a guard somebody deletes.
+#
+# WHY IT KEEPS NO LIST OF TARGETS
+#   The workflow input it ultimately serves is a free-form string, not a
+#   `type: choice` — cloud-data cloud-health.yml declares the seven valid names
+#   in a `description:`, which constrains nothing. A guard written against that
+#   prose would be a hand-maintained list that has to agree with an enumeration
+#   that does not exist. So this reads what the run RECORDED instead, and no
+#   crate name, target name or report kind appears anywhere below.
+#
+# WHAT COUNTS AS EVIDENCE — two shape rules, both already the snapshot's ABI
+#   1. fleet reach: a VmState in .fleet_state.vms that is_reachable() — the
+#      same expression require_hosts_reached uses (reports-common fleet.rs).
+#   2. probe outcomes: any key named `passed` or ending in `_ok`, at any depth,
+#      in any section the run wrote. Both conventions are emitted by every
+#      report crate today (mail_full 68 outcomes, url_health 9, sec_network 1,
+#      sec_data 1 in the 2026-09-16T05:16 snapshot), as a bool per check or as
+#      a count in a `summary`. A report kind added tomorrow is covered the
+#      moment it writes one of those keys.
+#
+# THREE WAYS IT FAILS, none of them quiet
+#   reached/passed nothing        -> non-zero, and it prints the tally
+#   the run changed no section    -> non-zero: a probe that recorded nothing
+#                                    proved nothing, and a snapshot left over
+#                                    from an earlier run is not this run's
+#                                    evidence (dist/ persists on the Dagu and
+#                                    self-hosted paths)
+#   jq missing / unreadable JSON  -> non-zero. A check that cannot evaluate
+#                                    its subject fails; it does not skip.
+#
+# KNOWN CEILING, stated rather than hidden: this asserts that SOMETHING
+# answered, not that every class of thing did. `mail` on a mesh-less runner
+# still records a handful of passing local checks (the 2026-09-16 snapshot has
+# three preflight entries that pass with the text "cloud CLI not installed in
+# this environment"), so it would clear this bar while its 23 network probes
+# all failed. Closing that needs per-check severity to reach the exit status
+# inside each derive binary, which is Rust and a different ticket — it is NOT
+# a reason to weaken this one.
+#
+# There is deliberately no opt-out environment variable, for the same reason
+# require_hosts_reached has none.
+require_probe_reached() {
+    if ! command -v jq >/dev/null 2>&1; then
+        echo "✗ vacuity guard cannot run: jq is not in PATH" >&2
+        echo "  A check that cannot evaluate its subject fails; it does not skip." >&2
+        return 1
+    fi
+    if [ ! -f "$RUN_STATE" ]; then
+        echo "✗ vacuity guard: $RUN_STATE missing — this run recorded no state" >&2
+        echo "  Without it there is no evidence this run reached anything." >&2
+        return 1
+    fi
+
+    tally=$(jq -r --slurpfile before "$RUN_STATE_BEFORE" '
+        ($before[0] // {}) as $b
+        | with_entries(select(.value != null and $b[.key] != .value)) as $delta
+        | ($delta.fleet_state.vms // {}) as $vms
+        | [ $vms | .[]
+            | select(. == "Running" or . == "Provisioning"
+                     or (type == "object" and .Client.tcp_up == true)) ] as $up
+        | [ $delta | .. | objects | to_entries[]
+            | select(.key == "passed" or (.key | endswith("_ok")))
+            | .value
+            | if type == "boolean" then .
+              elif type == "number" then (. > 0)
+              else empty end ] as $probes
+        | "\(($vms | length) + ($probes | length)) " +
+          "\(($up | length) + ([$probes[] | select(.)] | length)) " +
+          "\($delta | keys | join(","))"' "$RUN_STATE" 2>/dev/null || true)
+
+    total=$(printf '%s' "$tally" | cut -d" " -f1)
+    ok=$(printf '%s' "$tally" | cut -d" " -f2)
+    sections=$(printf '%s' "$tally" | cut -d" " -f3-)
+    case "$total" in ''|*[!0-9]*) total=-1 ;; esac
+    case "$ok"    in ''|*[!0-9]*) ok=-1    ;; esac
+    if [ "$total" -lt 0 ] || [ "$ok" -lt 0 ]; then
+        echo "✗ vacuity guard: could not read $RUN_STATE" >&2
+        return 1
+    fi
+
+    if [ "$total" -eq 0 ]; then
+        echo "✗ this run recorded no probe outcomes at all — it verified NOTHING" >&2
+        echo "  Sections it changed: ${sections:-(none)}" >&2
+        echo "  Either the report wrote no new state, or it writes no key this" >&2
+        echo "  guard can read (a bool/count named 'passed' or ending in '_ok')." >&2
+        echo "  Both are refusals, not passes: unevaluable is not healthy." >&2
+        return 1
+    fi
+
+    if [ "$ok" -eq 0 ]; then
+        echo "✗ probes succeeded: 0 of $total — this report verified NOTHING" >&2
+        echo "  Every host and endpoint it recorded failed. That is a failed" >&2
+        echo "  probe, not a healthy fleet, and it must not publish as success." >&2
+        echo "  Sections it wrote: $sections" >&2
+        echo "  Usual cause: the runner has no route to the 10.0.0.0/24 mesh." >&2
+        return 1
+    fi
+
+    echo "✓ probes succeeded: $ok of $total (sections: $sections)"
+    return 0
+}
+
 cmd_all() {
     action="${1:-all}"  # all | build
     MASTER="cloud-health-full-daily"
@@ -288,7 +410,25 @@ cmd_all() {
 cmd_one() {
     crate="$1"
     action="${2:-all}"
+    # `build`, `link` and `android` compile; they run no probe, so there is
+    # nothing for the vacuity guard to evaluate. These are engine VERBS, the
+    # same ones _crate_engine.sh dispatches on — not a list of report kinds.
+    case "$action" in
+        all|run) probes=yes ;;
+        *)       probes=no  ;;
+    esac
+    if [ "$probes" = yes ]; then
+        mkdir -p "$DIST_DIR"
+        if [ -f "$RUN_STATE" ]; then
+            cp "$RUN_STATE" "$RUN_STATE_BEFORE"
+        else
+            printf '{}\n' > "$RUN_STATE_BEFORE"
+        fi
+    fi
     sh "$SRC_DIR/$crate/build.sh" "$action"
+    if [ "$probes" = yes ]; then
+        require_probe_reached || return 1
+    fi
     generate_manifest
 }
 

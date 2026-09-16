@@ -533,7 +533,14 @@ CMD="$1"; shift
 case "$CMD" in
   all)           exec bash "$REPORTS_DIR/build.sh" all ;;
   daily)         exec bash "$REPORTS_DIR/build.sh" health-full-daily ;;
-  daily-mail)    exec bash "$REPORTS_DIR/src/cloud-health-full-daily/build.sh" ship ;;
+  # `ship` is engine_build + engine_run + send_html inside the crate's own
+  # build.sh, which never touches the orchestrator — so this target skipped
+  # BOTH vacuity guards and could EMAIL a clean bill of health for a run that
+  # reached nothing. Split into the guarded run plus the send: build.sh
+  # health-full-daily goes through cmd_one, which refuses on zero reach, and
+  # `&&` means the mail only leaves once the report has evidence behind it.
+  daily-mail)    bash "$REPORTS_DIR/build.sh" health-full-daily &&
+                 exec bash "$REPORTS_DIR/src/cloud-health-full-daily/build.sh" send ;;
   mail)          exec bash "$REPORTS_DIR/build.sh" mail-health-full ;;
   url)           exec bash "$REPORTS_DIR/build.sh" url-health ;;
   sec-network)   exec bash "$REPORTS_DIR/build.sh" sec-network ;;
