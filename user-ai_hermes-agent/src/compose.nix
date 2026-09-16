@@ -31,18 +31,19 @@ in
       # Docker Hub anonymous pulls are rate-limited and stall the ship's SSH
       # compose window on this ~900MB image (exit 255, nothing cached).
       #
-      # STAGED REPOINT (2026-09-16, step 1 of 2). build.json now declares
+      # STAGED REPOINT (2026-09-16, step 2 of 2 — DONE). build.json declares
       # upstream_image + docker.runtime_packages.apt, so the engine's Type-B path
-      # generates a derived image (FROM this mirror + the agent toolbelt) and
-      # publishes it as ghcr.io/diegonmarcos/hermes-agent-binaries. That package
-      # does NOT exist on GHCR yet — this service has never had a code build, so
-      # pointing at it now would fail the pull and take hermes down. Step 2, once
-      # the tag is confirmed published, is to change this line to
-      #   ghcr.io/diegonmarcos/hermes-agent-binaries:latest
-      # which is the vaultwarden pattern (user-vault_vaultwarden/src/compose.nix).
-      # Until then hermes runs the bare upstream and the toolbelt layer is built
-      # but unused — the same latent state vaultwarden's sqlite3 layer sits in.
-      image          = "ghcr.io/diegonmarcos/hermes-agent:latest";
+      # builds a derived image (FROM that mirror + the agent toolbelt) and
+      # publishes it here. Step 1 deliberately kept this line on the bare mirror
+      # because the derived package did not exist yet and the pull would have
+      # taken hermes down. Ship run 35122459534 published
+      # ghcr.io/diegonmarcos/hermes-agent-binaries:latest (tags dfdcc793c9aa,
+      # latest) at 2026-09-16T16:37:00Z, so the tag is now confirmed and this
+      # points at the derived image — the vaultwarden pattern
+      # (user-vault_vaultwarden/src/compose.nix). The toolbelt (jq, ripgrep,
+      # wget, unzip, netcat-openbsd, patch, yq, procps, less) is no longer built
+      # but unused: it is what the container actually runs.
+      image          = "ghcr.io/diegonmarcos/hermes-agent-binaries:latest";
       container_name = app.container_name;
       # host networking: reach WG mesh (10.0.0.6) + outbound Telegram without NAT.
       network_mode   = "host";
