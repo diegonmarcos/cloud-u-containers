@@ -52,7 +52,7 @@ fn ssh_args(alias: &str, cmd: &str) -> Vec<String> {
 /// Ok(stdout) on success; Err(reason) on any failure (timeout, connection
 /// error, non-zero exit) so the caller can decide whether to retry.
 async fn ssh_exec_once(vm_alias: &str, command: &str, timeout_secs: u64) -> std::result::Result<String, String> {
-    ssh_exec_once_with(vm_alias, command, timeout_secs, ssh_args(vm_alias, command))
+    ssh_exec_once_with(vm_alias, command, timeout_secs, ssh_args(vm_alias, command)).await
 }
 
 /// One SSH attempt on a FRESH connection with multiplexing disabled. A broken
@@ -65,7 +65,7 @@ async fn ssh_exec_once_fresh(vm_alias: &str, command: &str, timeout_secs: u64) -
     let mut args = ssh_args(vm_alias, command);
     args.push("-o".into());
     args.push("ControlPath=none".into());
-    ssh_exec_once_with(vm_alias, command, timeout_secs, args)
+    ssh_exec_once_with(vm_alias, command, timeout_secs, args).await
 }
 
 async fn ssh_exec_once_with(vm_alias: &str, command: &str, timeout_secs: u64, args: Vec<String>) -> std::result::Result<String, String> {
