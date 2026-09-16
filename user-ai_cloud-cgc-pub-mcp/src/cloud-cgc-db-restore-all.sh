@@ -437,10 +437,49 @@ if [ -n "${CGC_DB_TARGET_VOLUME:-}" ]; then
   # every tool call died with "Permission denied (os error 13)" while every child
   # dir sat there readable at 0755. Consumers mount this volume read-only as an
   # unrelated uid, so the root has to be world-traversable.
+  # THE SWAP MUST BE ABLE TO FAIL. This ran as `sh -c '...; :'` until 2026-09-16:
+  # no `set -e`, and a trailing `:` that pinned the busybox shell's exit status at 0
+  # no matter what happened inside it. So a `cp -a` that died part-way -- ENOSPC is
+  # the live risk, not a hypothetical: the comment on STAGING_PARENT above measured
+  # this same staging tree at ~8GB taking the box from 76% past 85% -- let chmod and
+  # chown run over the half-written tree and still returned 0. `docker run` returned
+  # 0, the outer `set -eu` never fired, and the script printed "restored N repo(s)"
+  # over a volume whose lance manifests name fragments that were never copied, with
+  # `rm -rf /dst/*` having already destroyed the good copy. That is the torn store an
+  # agent hits hours later with a green run id behind it -- the restore reporting
+  # success over its own failure is the defect, not the copy dying.
+  #
+  # The `:` was masking something real: `[ -n "$CGC_DB_OWNER" ] && chown ...` exits 1
+  # when CGC_DB_OWNER is empty, and as the LAST command that became the shell's
+  # status. Masking it hid every other failure too. The fix is the explicit `if` --
+  # exactly what the comment at the bottom of this file already prescribes for the
+  # identical trailing-`&&`-status trap it diagnosed on 2026-09-07. Never a `:`.
+  #
+  # PARITY is the post-swap half the integrity gate structurally cannot cover: that
+  # gate proves STAGING is lance-clean BEFORE the swap and nothing ever re-read what
+  # actually landed. Comparing file counts on both sides, inside the same container,
+  # is what turns "a fragment is missing from the volume" from something an agent
+  # discovers hours later into something this run refuses. Counts only, deliberately:
+  # `du` block totals differ legitimately between a fresh dir and one that just had
+  # thousands of entries unlinked, and a verification that false-positives would take
+  # the index down for a healthy restore.
   docker run --rm -e CGC_DB_OWNER="${CGC_DB_OWNER:-}" \
     -v "$CGC_DB_TARGET_VOLUME:/dst" -v "$STAGING:/src:ro" busybox \
-    sh -c 'rm -rf /dst/* /dst/.[!.]* 2>/dev/null; cp -a /src/. /dst/; chmod 0755 /dst
-           [ -n "$CGC_DB_OWNER" ] && chown -R "$CGC_DB_OWNER" /dst; :'
+    sh -ec 'rm -rf /dst/* /dst/.[!.]* 2>/dev/null || true
+            cp -a /src/. /dst/
+            chmod 0755 /dst
+            if [ -n "$CGC_DB_OWNER" ]; then chown -R "$CGC_DB_OWNER" /dst; fi
+            _src_n=$(find /src -type f | wc -l)
+            _dst_n=$(find /dst -type f | wc -l)
+            if [ "$_src_n" -ne "$_dst_n" ]; then
+              echo "swap wrote an INCOMPLETE tree: staged=$_src_n files, volume=$_dst_n files" >&2
+              exit 1
+            fi
+            echo "[cgc-db-restore-all] swap parity OK: $_dst_n files in the volume"' || {
+    echo "::error::[cgc-db-restore-all] the swap into volume $CGC_DB_TARGET_VOLUME FAILED (busybox rc above). That volume is now INCOMPLETE and must not be served -- the old contents were already removed, so there is nothing to roll back to."
+    echo "::error::[cgc-db-restore-all] the overwhelmingly likely cause is the box running out of disk mid-copy; staging alone is $(du -sh "$STAGING" 2>/dev/null | cut -f1). Free space and re-run: every per-repo image is still on GHCR and staging is fully re-pullable."
+    exit 1
+  }
   echo "[cgc-db-restore-all] restored $FOUND repo(s) + base into volume $CGC_DB_TARGET_VOLUME"
 else
   mkdir -p "$TARGET"
@@ -449,8 +488,18 @@ else
   # Same reason as the volume branch above: cp -a copies mktemp -d's 0700 onto
   # TARGET, which locks out any consumer running as a different uid.
   chmod 0755 "$TARGET"
-  [ -n "${CGC_DB_OWNER:-}" ] && chown -R "$CGC_DB_OWNER" "$TARGET" 2>/dev/null
-  :
+  # Explicit if, never `[ ... ] && chown ...` -- see the volume branch.
+  if [ -n "${CGC_DB_OWNER:-}" ]; then chown -R "$CGC_DB_OWNER" "$TARGET" 2>/dev/null || true; fi
+  # Same post-swap parity check as the volume branch. `cp -a` here is under the
+  # outer `set -e` so a reported failure already aborts, but "cp returned 0 and the
+  # tree is still short" is the case neither `set -e` nor the pre-swap gate can see.
+  _src_n=$(find "$STAGING" -type f | wc -l)
+  _dst_n=$(find "$TARGET" -type f | wc -l)
+  if [ "$_src_n" -ne "$_dst_n" ]; then
+    echo "::error::[cgc-db-restore-all] swap wrote an INCOMPLETE tree into $TARGET: staged=$_src_n files, target=$_dst_n files. That target must not be served; free disk and re-run."
+    exit 1
+  fi
+  echo "[cgc-db-restore-all] swap parity OK: $_dst_n files in $TARGET"
   echo "[cgc-db-restore-all] restored $FOUND repo(s) + base into $TARGET ($(du -sh "$TARGET" 2>/dev/null | cut -f1))"
 fi
 
