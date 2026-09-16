@@ -344,6 +344,22 @@ let
         rtPkgs   = buildJson.docker.runtime_packages or {};
         apkList  = rtPkgs.apk or "";
         aptList  = rtPkgs.apt or "";
+        # Declarative opt-in: build.json#docker.runtime_extra_run = [ "cmd"; .. ]
+        # One list entry becomes one RUN, emitted AFTER the package lines so a
+        # command may rely on what runtime_packages just installed.
+        #
+        # This exists because a package manager cannot deliver every tool. The
+        # case that forced it is `gh` (#366): it is not in Debian's repositories,
+        # so `runtime_packages.apt` structurally CANNOT install it — and an agent
+        # without gh runs `gh run view`, gets `gh: not found`, and reports its CI
+        # green having checked nothing. That is a fail-open, so the absence had to
+        # become expressible here rather than pushing the service into a
+        # service-local Dockerfile it does not otherwise need.
+        #
+        # Entries are emitted verbatim, so each one owns its own failure
+        # behaviour: end a command with a version probe if you want a missing
+        # tool to break the BUILD instead of shipping and failing at runtime.
+        extraRun = buildJson.docker.runtime_extra_run or [];
       in
       pkgs.writeText "Dockerfile" ''
         ${mkBanner "#"}# Type B — wrap upstream, arch=${arch}
@@ -354,6 +370,7 @@ let
           "RUN apk add --no-cache ${apkList}"}
         ${lib.optionalString (aptList != "")
           "RUN apt-get update && apt-get install -y --no-install-recommends ${aptList} && rm -rf /var/lib/apt/lists/*"}
+        ${lib.concatMapStringsSep "\n" (cmd: "RUN ${cmd}") extraRun}
       '';
 
   # ──────────────────────────────────────────────────────────────
