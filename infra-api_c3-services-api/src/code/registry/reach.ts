@@ -1,8 +1,8 @@
 /**
  * Generic liveness-probe targets for ALL containers (not just API/MCP services).
  *
- * Built from the same build-c3-services-api.json the registry uses, but reads the
- * full `.services` peer map — every container that declares ip + app-port +
+ * Built from the same peer map the registry uses (see peer-map.ts), but reads
+ * the full `.services` map — every container that declares ip + app-port +
  * healthcheck. The derive (cloud-data-config-derive.ts deriveServiceConnections)
  * stamps `healthcheck` onto each peer entry from its app container.
  *
@@ -10,7 +10,7 @@
  * container, regardless of whether it exposes an API.
  */
 import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { peerMapCandidates, describeCandidates } from "./peer-map.js";
 
 interface PeerEntry {
   ip?: string;
@@ -29,11 +29,8 @@ function pickAppPort(ports: Record<string, number> | undefined): number {
 }
 
 function loadReachMap(): Map<string, string> {
-  const candidates = [
-    process.env.C3_SERVICES_BUILD_JSON,
-    "/app/build-c3-services-api.json", // in-image (deployed)
-    join(import.meta.dirname ?? "", "../../build-c3-services-api.json"), // dev: src/
-  ].filter(Boolean) as string[];
+  // Named from this container's own build.json — see peer-map.ts.
+  const candidates = peerMapCandidates();
 
   const map = new Map<string, string>();
   for (const p of candidates) {
@@ -51,7 +48,7 @@ function loadReachMap(): Map<string, string> {
       console.error(`[reach] failed to parse ${p}:`, e);
     }
   }
-  console.error("[reach] no build-c3-services-api.json found — empty reach map");
+  console.error(`[reach] peer map unreadable — empty reach map (${describeCandidates(candidates)})`);
   return map;
 }
 
