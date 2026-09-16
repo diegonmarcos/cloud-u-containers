@@ -130,22 +130,54 @@ cmd_all() {
     pids=""
     logs_dir="$DIST_DIR/.run-logs"
     mkdir -p "$logs_dir"
+    # Per-derive deadline. Without one, a single wedged derive (an un-timed-out
+    # network probe, say) is waited on forever, eats the entire remaining job
+    # budget and the runner kills the whole workflow with 124 — so nothing else
+    # in the fan-out ever gets to fail loudly first. The slowest healthy derive
+    # measures ~113 seconds, so 600 is roughly five times headroom while still
+    # leaving the 90-minute job budget intact. The -k escalation sends KILL 30
+    # seconds after TERM, so a derive that ignores TERM still dies.
+    derive_timeout_seconds=600
     for c in $(list_crate_dirs); do
         [ "$c" = "$MASTER" ] && continue
         [ "$c" = "$SEC_DATA" ] && continue
         log="$logs_dir/$c.log"
-        ( sh "$SRC_DIR/$c/build.sh" run >"$log" 2>&1 ) &
+        ( timeout -k 30 "$derive_timeout_seconds" sh "$SRC_DIR/$c/build.sh" run >"$log" 2>&1 ) &
         pids="$pids $!:$c"
     done
     rc=0
     for entry in $pids; do
         pid="${entry%%:*}"
         crate="${entry#*:}"
-        if wait "$pid"; then
+        # Name the crate BEFORE blocking on it. The outcome lines below only
+        # print once the wait returns, so a derive that never returns used to
+        # print nothing at all — the hang presented as anonymous silence and
+        # every investigator had to re-identify the culprit by elimination.
+        # The last "waiting" line with no outcome under it is the hung derive.
+        echo "… waiting: $crate"
+        status=0
+        wait "$pid" || status=$?
+        if [ "$status" -eq 0 ]; then
             echo "✓ $crate"
             tail -3 "$logs_dir/$crate.log" | sed "s/^/    /"
+        elif [ "$status" -eq 124 ] || [ "$status" -eq 137 ]; then
+            # Both statuses mean the deadline expired, and this outcome must
+            # name the crate rather than present as a generic failure — 124 is
+            # also the code the runner kills the whole workflow with, so the two
+            # would otherwise be indistinguishable in the log.
+            #   124 = deadline expired and the derive accepted SIGTERM.
+            #   137 = 128 + SIGKILL, the -k escalation for a derive that ignored
+            #         SIGTERM. It is not 124 because coreutils timeout signals
+            #         its own process group and SIGKILL cannot be ignored, so
+            #         timeout dies alongside the derive and never reports its
+            #         own 124. Verified against coreutils 9.7.
+            # An out-of-memory kill also lands on 137; the status is printed and
+            # the log tail follows, which is what tells the two apart.
+            echo "✗ $crate TIMED OUT after ${derive_timeout_seconds}s (exit $status)"
+            tail -20 "$logs_dir/$crate.log" | sed "s/^/    /"
+            rc=1
         else
-            echo "✗ $crate (exit $?)"
+            echo "✗ $crate (exit $status)"
             tail -10 "$logs_dir/$crate.log" | sed "s/^/    /"
             rc=1
         fi
