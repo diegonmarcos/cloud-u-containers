@@ -12,7 +12,7 @@
     "git_tree": true,
     "git_tree_mount": "/opt/data/git",
     "git_tree_writable": true,
-    "_comment_working_directory": "Hermes' main process is an s6-supervised idle holder; the real work arrives as `docker exec`, which starts at the image WorkingDir (/opt/hermes) — outside the checkout. The agent then sees zero repositories and answers as if the code did not exist. Starting it in the tree is the point of mounting the tree.",
+    "_comment_working_directory": "Hermes' main process is an s6-supervised idle holder; the real work arrives as `docker exec`, which starts at the image WorkingDir (/opt/hermes) \u2014 outside the checkout. The agent then sees zero repositories and answers as if the code did not exist. Starting it in the tree is the point of mounting the tree.",
     "git_tree_is_working_directory": true
   },
   "upstream_image": "ghcr.io/diegonmarcos/hermes-agent:latest",
@@ -22,10 +22,10 @@
     "arch": "arm64",
     "platform": "linux/arm64",
     "runtime_packages": {
-      "apt": "jq ripgrep wget curl ca-certificates unzip netcat-openbsd patch yq procps less"
+      "apt": "jq ripgrep wget curl ca-certificates unzip netcat-openbsd patch procps less"
     },
     "runtime_extra_run": [
-      "set -eu; ARCH=\"$(uname -m)\"; case \"$ARCH\" in aarch64|arm64) TOOL_ARCH=arm64 ;; x86_64|amd64) TOOL_ARCH=amd64 ;; *) echo \"unsupported architecture: $ARCH\" >&2; exit 1 ;; esac; GH_VERSION=2.63.2; curl -fsSL \"https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_${TOOL_ARCH}.tar.gz\" | tar -xz -C /tmp; install -m 0755 \"/tmp/gh_${GH_VERSION}_linux_${TOOL_ARCH}/bin/gh\" /usr/local/bin/gh; rm -rf \"/tmp/gh_${GH_VERSION}_linux_${TOOL_ARCH}\"; gh --version"
+      "set -eu; ARCH=\"$(uname -m)\"; case \"$ARCH\" in aarch64|arm64) TOOL_ARCH=arm64 ;; x86_64|amd64) TOOL_ARCH=amd64 ;; *) echo \"unsupported architecture: $ARCH\" >&2; exit 1 ;; esac; GH_VERSION=2.63.2; curl -fsSL \"https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_${TOOL_ARCH}.tar.gz\" | tar -xz -C /tmp; install -m 0755 \"/tmp/gh_${GH_VERSION}_linux_${TOOL_ARCH}/bin/gh\" /usr/local/bin/gh; rm -rf \"/tmp/gh_${GH_VERSION}_linux_${TOOL_ARCH}\"; YQ_VERSION=4.44.6; curl -fsSL -o /usr/local/bin/yq \"https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_${TOOL_ARCH}\"; chmod +x /usr/local/bin/yq; gh --version; yq --version"
     ]
   },
   "deploy": {
