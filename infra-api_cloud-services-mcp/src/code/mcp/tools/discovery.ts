@@ -1,5 +1,6 @@
 /**
- * Discovery & Drift — compares the local build-cloud-services-mcp.json (peer service map)
+ * Discovery & Drift — compares the local peer map (peer service map, filename
+ * derived from this container's build.json — see registry/peer-map.ts)
  * against what cloud-services-mcp actually covers via:
  *   1. Native tool wrappers (API_META in definitions.ts)
  *   2. Proxied child MCPs (proxy-mcp.ts)
@@ -10,6 +11,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 import { homedir } from "os";
+import { peerMapCandidates } from "../../registry/peer-map.js";
 
 const log = (msg: string) => process.stderr.write(`[discovery] ${msg}\n`);
 
@@ -65,14 +67,21 @@ interface TopoData {
 }
 
 function loadTopology(): TopoData | null {
-  // cloud-services-mcp reads its own build-cloud-services-mcp.json (already symlinked
-  // into src/ by the engine, copied into /app/ in the image via include_cloud_data).
-  // The .services map is enriched with peer api/mcp metadata by deriveServiceConnections.
+  // This container reads its own peer map (filename derived from build.json,
+  // symlinked into src/ by the engine, copied into /app/ in the image via
+  // include_cloud_data — see registry/peer-map.ts). The .services map is
+  // enriched with peer api/mcp metadata by deriveServiceConnections.
   // Falls back to the consolidated file (cross-cutting reads) if needed.
   const gitBase = process.env.GIT_BASE ?? join(homedir(), "git");
+  let declared: string[] = [];
+  try {
+    // The peer map filename comes from the declaration, never a literal here.
+    declared = peerMapCandidates();
+  } catch (error) {
+    log(`peer map name underivable: ${error instanceof Error ? error.message : String(error)}`);
+  }
   const candidates = [
-    "/app/build-cloud-services-mcp.json",                                                            // in-image
-    join(gitBase, "cloud", "1_cloud-configs", "dist", "build-cloud-services-mcp.json"),                    // dev / co-located clone
+    ...declared,
     "/app/_cloud-data-consolidated.json",                                                         // in-image fallback
     join(gitBase, "cloud", "1_cloud-configs", "dist", "_cloud-data-consolidated.json"),                 // dev fallback
   ];
@@ -87,12 +96,12 @@ function loadTopology(): TopoData | null {
 export function registerDiscoveryTools(server: McpServer) {
   server.tool(
     "meta.discovery.drift",
-    "Compare all deployed cloud services (from build-cloud-services-mcp.json) against what cloud-services-mcp covers. Reports: covered (native wrapper or proxied MCP), infra (no API needed), self (MCP hub services), and UNCOVERED (the gap).",
+    "Compare all deployed cloud services (from the peer map) against what cloud-services-mcp covers. Reports: covered (native wrapper or proxied MCP), infra (no API needed), self (MCP hub services), and UNCOVERED (the gap).",
     {},
     async () => {
       const topo = loadTopology();
       if (!topo) {
-        return { content: [{ type: "text" as const, text: "ERROR: build-cloud-services-mcp.json not found" }], isError: true };
+        return { content: [{ type: "text" as const, text: "ERROR: no peer map or _cloud-data-consolidated.json was readable — the drift report needs the declared topology" }], isError: true };
       }
 
       const allServices = Object.keys(topo.services).sort();
