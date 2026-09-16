@@ -4,19 +4,28 @@ import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 import { homedir } from "os";
 import { rawHttpRequest } from "../../shared/http.js";
+import { peerMapCandidates } from "../../registry/peer-map.js";
 
 // Data-driven Dagu endpoint resolution (env override → topology → fallback).
-// Reads services.dagu.{ip,ports.app,api.base_path} from the same build-cloud-services-mcp.json
-// this MCP already consumes (see discovery.ts loadTopology), falling back to the
-// consolidated file. NEVER hardcode the IP — dagu runs on oci-apps (10.0.0.6:8070),
-// and a stale 10.0.0.3 default silently pointed every dagu tool at the wrong VM.
+// Reads services.dagu.{ip,ports.app,api.base_path} from the same peer map
+// this MCP already consumes (see registry/peer-map.ts for how its filename is
+// derived), falling back to the consolidated file. NEVER hardcode the IP —
+// dagu runs on oci-apps (10.0.0.6:8070), and a stale 10.0.0.3 default silently
+// pointed every dagu tool at the wrong VM.
 function resolveDagu(): { base: string; path: string } {
   const envBase = process.env.DAGU_API_URL;
   const envPath = process.env.DAGU_API_PATH;
   const gitBase = process.env.GIT_BASE ?? join(homedir(), "git");
+  let declared: string[] = [];
+  try {
+    // The peer map filename comes from this container's own build.json name
+    // field, never a literal here — see registry/peer-map.ts.
+    declared = peerMapCandidates();
+  } catch (error) {
+    console.error(`[dagu] ${error instanceof Error ? error.message : String(error)}`);
+  }
   const candidates = [
-    "/app/build-cloud-services-mcp.json",
-    join(gitBase, "cloud", "1_cloud-configs", "dist", "build-cloud-services-mcp.json"),
+    ...declared,
     "/app/_cloud-data-consolidated.json",
     join(gitBase, "cloud", "1_cloud-configs", "dist", "_cloud-data-consolidated.json"),
   ];

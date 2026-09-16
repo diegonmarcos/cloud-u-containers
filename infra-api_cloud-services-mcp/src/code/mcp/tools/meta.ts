@@ -8,6 +8,7 @@ import { XMLParser } from "fast-xml-parser";
 import { registry } from "../../registry/index.js";
 import { summarizeServices } from "../../registry/summary.js";
 import { searchPublicRegistry, getPublicServer } from "../../registry/public-registry.js";
+import { peerMapCandidates } from "../../registry/peer-map.js";
 
 // ── Authelia ─────────────────────────────────────────────────────────────────
 const AUTHELIA_BASE = "http://10.0.0.1:9091";
@@ -21,9 +22,16 @@ function resolveDagu(): { base: string; path: string } {
   const envBase = process.env.DAGU_API_URL;
   const envPath = process.env.DAGU_API_PATH;
   const gitBase = process.env.GIT_BASE ?? join(homedir(), "git");
+  let declared: string[] = [];
+  try {
+    // The peer map filename comes from this container's own build.json name
+    // field, never a literal here — see registry/peer-map.ts.
+    declared = peerMapCandidates();
+  } catch (error) {
+    console.error(`[meta] ${error instanceof Error ? error.message : String(error)}`);
+  }
   const candidates = [
-    "/app/build-cloud-services-mcp.json",
-    join(gitBase, "cloud", "1_cloud-configs", "dist", "build-cloud-services-mcp.json"),
+    ...declared,
     "/app/_cloud-data-consolidated.json",
     join(gitBase, "cloud", "1_cloud-configs", "dist", "_cloud-data-consolidated.json"),
   ];
@@ -271,9 +279,16 @@ interface TopoData {
 }
 function loadTopology(): TopoData | null {
   const gitBase = process.env.GIT_BASE ?? join(homedir(), "git");
+  let declared: string[] = [];
+  try {
+    // Same declaration as the registry — the peer map filename is derived from
+    // this container's build.json, never restated as a literal (peer-map.ts).
+    declared = peerMapCandidates();
+  } catch (error) {
+    console.error(`[meta] ${error instanceof Error ? error.message : String(error)}`);
+  }
   const candidates = [
-    "/app/build-cloud-services-mcp.json",
-    join(gitBase, "cloud", "1_cloud-configs", "dist", "build-cloud-services-mcp.json"),
+    ...declared,
     "/app/_cloud-data-consolidated.json",
     join(gitBase, "cloud", "1_cloud-configs", "dist", "_cloud-data-consolidated.json"),
   ];
@@ -714,7 +729,7 @@ export function registerMetaTools(server: McpServer) {
       case "discovery.drift": {
         const topo = loadTopology();
         if (!topo) {
-          return { content: [{ type: "text" as const, text: "ERROR: build-cloud-services-mcp.json not found" }], isError: true };
+          return { content: [{ type: "text" as const, text: "ERROR: no peer map or _cloud-data-consolidated.json was readable — the drift report needs the declared topology" }], isError: true };
         }
         const allServices = Object.keys(topo.services).sort();
         const covered: { name: string; how: string; vm?: string; domain?: string }[] = [];
