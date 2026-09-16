@@ -26,11 +26,11 @@
   "compose": {
     "custom": true
   },
+  "_doc_containers": "postlite-authelia is deliberately ABSENT from containers{} below: infra-sec_authelia/build.json carries the real spec (image, volumes, depends_on) and deploys it as authelia's sidecar. A bare stub here made two build.json files claim the same container_name — the owner declares, the catalogue only points. This note sits BESIDE containers{}, not inside it: the ship engine iterates containers{} values and reads .container_name off each one, so a string value there aborts the iteration mid-list (see _doc note history / debt #20 L3).",
   "containers": {
     "postlite-npm": { "container_name": "postlite-npm" },
     "postlite-vaultwarden": { "container_name": "postlite-vaultwarden" },
     "postlite-ntfy": { "container_name": "postlite-ntfy" },
-    "_doc_postlite-authelia": "Declared by infra-sec_authelia/build.json, which carries the real spec (image, volumes, depends_on) and deploys it as authelia's sidecar. A bare stub here made two build.json files claim the same container_name — the owner declares, the catalogue only points.",
     "sqlite-npm": { "container_name": "sqlite-npm" },
     "sqlite-vaultwarden": { "container_name": "sqlite-vaultwarden" },
     "sqlite-ntfy": { "container_name": "sqlite-ntfy" },
