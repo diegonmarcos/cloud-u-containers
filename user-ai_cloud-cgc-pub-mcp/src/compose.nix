@@ -45,6 +45,16 @@ let
   # Octocode index wiring (data-driven from build.json.runtime.octocode).
   oct = buildJson.runtime.octocode;
 
+  # Extension -> EXISTING octocode grammar map, rendered as "kt=java kts=java"
+  # for reindex.sh's set_file_associations(). octocode 0.22.0 drops a file at the
+  # FILE WALK unless detect_language() or ALLOWED_TEXT_EXTENSIONS knows its
+  # extension (src/indexer/mod.rs:401/422), and it ships no Kotlin grammar — so
+  # without this, every on-box index rebuilt a store with zero .kt/.kts files in
+  # it while build.json declared the association. Same data-driven mechanism as
+  # OCTOCODE_REPOS / SYNC_EXCLUDE below: the pairs live in build.json, never here.
+  fileAssociations = toString (builtins.attrValues
+    (builtins.mapAttrs (ext: lang: "${ext}=${lang}") (oct.file_associations or { })));
+
   # ── Private MCP surface (cloud-cgc-pvt-mcp) ────────────────────────────────
   # Read from build.json, not hardcoded here: the port has to be in the port
   # registry the derive pipeline builds from `ports`, and the volume name has to
@@ -79,6 +89,9 @@ let
       OCTOCODE_REPOS      = toString oct.index_repos;
       OCTOCODE_REPOS_ROOT = oct.repos_path;
       OCTOCODE_PULL       = "0";
+      # See fileAssociations above — without this an on-box reindex silently
+      # rebuilds a Kotlin-blind index over a correctly declared build.json.
+      OCTOCODE_FILE_ASSOCIATIONS = fileAssociations;
       # Deny list for reindex.sh's own runtime guard (see there): repos that must never
       # be indexed into the shared /repos volume (e.g. cloud-vault, the credential
       # store). Same data-driven mechanism as OCTOCODE_REPOS above — the derive-time
@@ -145,6 +158,12 @@ let
       # octocode >=0.22 caches fastembed models under $XDG_CACHE_HOME/octolib/fastembed;
       # the restored base image carries them at <db_path>/fastembed — no download at first query.
       XDG_CACHE_HOME = "${oct.db_path}/fastembed";
+      # NOT dead weight on a query-only container: cloud-cgc-db-restore-all.sh
+      # execs reindex.sh INSIDE this container (see restoreMultiService's
+      # MCP_CONTAINER), so that run inherits THIS environment. Without the var
+      # here the box-side tail re-applies an empty [index.file_associations] and
+      # drops every .kt/.kts file again. See fileAssociations above.
+      OCTOCODE_FILE_ASSOCIATIONS = fileAssociations;
       # kg-store SurrealDB — exposed to MCP clients via the cgc.kgstore.* tools
       # (read-only query of this container's OWN graph — see kgStore above).
       # KG_STORE_PASS itself arrives via env_file ".secrets" below / the

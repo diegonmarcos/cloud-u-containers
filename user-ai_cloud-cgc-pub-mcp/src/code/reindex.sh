@@ -37,6 +37,10 @@ for _r in $REPOS; do
   done
 done
 REPOS_ROOT="${OCTOCODE_REPOS_ROOT:-/repos}"
+# Extension -> EXISTING octocode grammar pairs ("kt=java kts=java"), injected by
+# compose.nix from build.json .runtime.octocode.file_associations. Empty is a
+# valid state (no associations declared) and is handled in set_file_associations.
+FILE_ASSOCIATIONS="${OCTOCODE_FILE_ASSOCIATIONS:-}"
 HEALTH="${BRIDGE_HEALTH_URL:-http://10.0.0.6:3117/health}"
 PULL="${OCTOCODE_PULL:-0}"
 # FORCE a fresh index: octocode skips when the git HEAD is unchanged ("No commit
@@ -65,6 +69,79 @@ set_provider() {
     { print }
   ' "$CFG" > "$CFG.tmp" && mv "$CFG.tmp" "$CFG"
   grep -q "use_llm = true" "$CFG" 2>/dev/null || printf '\n[graphrag]\nuse_llm = true\n' >> "$CFG"
+}
+
+# Apply the declared extension -> grammar map into [index.file_associations].
+#
+# WHY: octocode 0.22.0 admits a file to the index only if detect_language()
+# (src/indexer/file_utils.rs:117) or ALLOWED_TEXT_EXTENSIONS knows its extension
+# (src/indexer/mod.rs:401/422). 0.22 ships no Kotlin grammar, so without an
+# association every .kt/.kts file is dropped at the FILE WALK — before chunking,
+# before embedding. cloud-u-android's ~9,900 Kotlin files were therefore absent
+# from the code index entirely, and a search for its primary language returned
+# other repos' boilerplate instead of nothing, which reads as a bad ranking
+# rather than as a missing corpus. [index.file_associations] (src/language.rs:25)
+# maps an extension onto an EXISTING grammar and is the only declarable lever
+# 0.22 has for this.
+#
+# WHY HERE AND NOT ONLY IN CI: the CI producer already applies it
+# (cloud-cgc-db-update.sh apply_file_associations). THIS path did not — and this
+# path is the one the one-shot reindex/index jobs use, and the one
+# cloud-cgc-db-restore-all.sh execs INSIDE the MCP container. So an on-box
+# reindex rebuilt a Kotlin-blind index on top of a correctly declared build.json,
+# silently undoing the declaration on exactly the boxes that serve queries.
+#
+# Must run AFTER set_provider(): `octocode config` rewrites config.toml, so
+# applying this first would be clobbered on every provider iteration.
+#
+# IDEMPOTENT + NON-CLOBBERING: rewrites only the extensions we declare, inside
+# [index.file_associations] alone; every other section, comment and undeclared
+# association stays byte-identical. A missing section is appended as a new table.
+# Pairs arrive from compose.nix (build.json .runtime.octocode.file_associations) —
+# never hardcoded here, so adding a language stays a build.json edit. awk, never sed.
+#
+# An unknown grammar name makes octocode REFUSE the config outright
+# (normalize_file_associations bails), so a typo fails the run loudly instead of
+# silently indexing nothing — which is the exact failure mode this fix ends.
+set_file_associations() {
+  [ -f "$CFG" ] || return 0
+  if [ -z "${FILE_ASSOCIATIONS:-}" ]; then
+    echo "[reindex] no OCTOCODE_FILE_ASSOCIATIONS injected — [index.file_associations] left untouched"
+    return 0
+  fi
+  awk -v pairs="$FILE_ASSOCIATIONS" '
+    function emit(   i) { for (i = 1; i <= count; i++) printf "%s = \"%s\"\n", ext[i], lang[ext[i]] }
+    BEGIN {
+      n = split(pairs, declared, /[ \t]+/)
+      for (i = 1; i <= n; i++) {
+        if (declared[i] == "") continue
+        eq = index(declared[i], "=")
+        if (eq < 2) continue
+        e = substr(declared[i], 1, eq - 1)
+        sub(/^\./, "", e)
+        if (!(e in lang)) ext[++count] = e
+        lang[e] = substr(declared[i], eq + 1)
+      }
+    }
+    /^\[/ {
+      if (in_fa) { emit(); in_fa = 0 }
+      if ($0 ~ /^\[index\.file_associations\][ \t]*$/) { in_fa = 1; seen = 1 }
+      print; next
+    }
+    in_fa && /^[ \t]*"?\.?[A-Za-z0-9_+-]+"?[ \t]*=/ {
+      key = $0
+      sub(/[ \t]*=.*$/, "", key)
+      gsub(/[ \t"]/, "", key)
+      sub(/^\./, "", key)
+      if (key in lang) next
+      print; next
+    }
+    { print }
+    END {
+      if (in_fa) emit()
+      else if (!seen) { printf "\n[index.file_associations]\n"; emit() }
+    }' "$CFG" > "$CFG.tmp" && mv "$CFG.tmp" "$CFG"
+  echo "[reindex] config.toml [index.file_associations] applied: $FILE_ASSOCIATIONS"
 }
 
 # Exclude redundant submodule paths from octocode's walk. Each submodule is its
@@ -118,6 +195,8 @@ for repo in $REPOS; do
   for model in $MODELS; do
     echo "[reindex] === $repo ($nfiles files) · provider=$model ==="
     set_provider "$model"
+    # AFTER set_provider — `octocode config` above rewrites config.toml.
+    set_file_associations
     [ "$CLEAR" = "1" ] && { echo "[reindex] $repo · clearing index (force fresh)"; ( cd "$d" && octocode clear --mode all ) >/dev/null 2>&1 || true; }
     before=$(bridge_calls)
     t0=$(date +%s 2>/dev/null || echo 0)
