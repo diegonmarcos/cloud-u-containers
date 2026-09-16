@@ -56,61 +56,12 @@ SURREAL_PASS="${SURREAL_ROOT_PASSWORD:-root}"
 
 log() { echo "[seed] $*"; }
 
-# WireGuard IP mapping (hardcoded from cloud architecture)
-declare -A WG_IPS=(
-    ["gcp-E2-f_0"]="10.0.0.1"
-    ["oci-A1-f_1"]="10.0.0.2"
-    ["oci-E2-f_0"]="10.0.0.3"
-    ["oci-E2-f_1"]="10.0.0.4"
-    ["oci-A1-f_0"]="10.0.0.6"
-    ["oci-A1-p_0"]="10.0.0.7"
-)
-
-# VM metadata (arch, cpu, ram) not in cloud-data-topology.json
-declare -A VM_ARCH=(
-    ["gcp-E2-f_0"]="x86_64"
-    ["oci-E2-f_0"]="x86_64"
-    ["oci-E2-f_1"]="x86_64"
-    ["oci-A1-f_0"]="aarch64"
-    ["oci-A1-f_1"]="aarch64"
-    ["oci-A1-p_0"]="aarch64"
-)
-declare -A VM_CPU=(
-    ["gcp-E2-f_0"]="1"
-    ["oci-E2-f_0"]="2"
-    ["oci-E2-f_1"]="2"
-    ["oci-A1-f_0"]="3"
-    ["oci-A1-f_1"]="1"
-    ["oci-A1-p_0"]="8"
-)
-declare -A VM_RAM=(
-    ["gcp-E2-f_0"]="1"
-    ["oci-E2-f_0"]="1"
-    ["oci-E2-f_1"]="1"
-    ["oci-A1-f_0"]="16"
-    ["oci-A1-f_1"]="8"
-    ["oci-A1-p_0"]="32"
-)
-
-# Known service domains (extracted from CLAUDE.md / architecture)
-declare -A SVC_DOMAINS=(
-    ["authelia"]="auth.diegonmarcos.com"
-    ["vaultwarden"]="vault.diegonmarcos.com"
-    ["ntfy"]="rss.diegonmarcos.com"
-    ["mailu"]="mail.diegonmarcos.com"
-    ["syncthing"]="sync.diegonmarcos.com"
-    ["radicale"]="cal.diegonmarcos.com"
-    ["matomo"]="analytics.diegonmarcos.com"
-    ["photoprism"]="photos.diegonmarcos.com"
-    ["nocodb"]="db.diegonmarcos.com"
-    ["code-server"]="ide.diegonmarcos.com"
-    ["affine"]="drive-notes-affine.diegonmarcos.com"
-    ["grist"]="sheets.diegonmarcos.com"
-    ["revealmd"]="slides.diegonmarcos.com"
-    ["npm"]="proxy.diegonmarcos.com"
-    ["flask-api"]="api.diegonmarcos.com"
-    ["hickory-dns"]="dns.internal"
-)
+# WG IPs, arch, cpu, ram and service domains used to be restated here as bash
+# associative arrays "hardcoded from cloud architecture" — in a script named
+# seed_from_config.sh. Nothing ever read them: the generator below is python and
+# carried its OWN copy of the same tables, so these five were dead weight that
+# still read like the source of truth. Deleted rather than corrected; the live
+# copies are derived from the topology declaration inside the generator.
 
 surreal_query() {
     curl -sf "${SURREAL_URL}/sql" \
@@ -170,23 +121,27 @@ config_path = os.environ.get("CONFIG_JSON", "/app/cloud-data-topology.json")
 with open(config_path) as f:
     config = json.load(f)
 
-wg_ips = {
-    "gcp-E2-f_0": "10.0.0.1", "oci-A1-f_1": "10.0.0.2",
-    "oci-E2-f_0": "10.0.0.3", "oci-E2-f_1": "10.0.0.4",
-    "oci-A1-f_0": "10.0.0.6", "oci-A1-p_0": "10.0.0.7",
-}
-vm_arch = {
-    "gcp-E2-f_0": "x86_64", "oci-E2-f_0": "x86_64", "oci-E2-f_1": "x86_64",
-    "oci-A1-f_0": "aarch64", "oci-A1-f_1": "aarch64", "oci-A1-p_0": "aarch64",
-}
-vm_cpu = {
-    "gcp-E2-f_0": 1, "oci-E2-f_0": 2, "oci-E2-f_1": 2,
-    "oci-A1-f_0": 3, "oci-A1-f_1": 1, "oci-A1-p_0": 8,
-}
-vm_ram = {
-    "gcp-E2-f_0": 1, "oci-E2-f_0": 1, "oci-E2-f_1": 1,
-    "oci-A1-f_0": 16, "oci-A1-f_1": 8, "oci-A1-p_0": 32,
-}
+# Mesh address, arch and size are all DECLARED, per VM, in the topology file
+# this script has already opened: vms[*].wg_ip and vms[*].specs.{arch,cpu,ram_gb}.
+# They were restated here as literals under the comment "hardcoded from cloud
+# architecture", and they had drifted in both directions:
+#
+#   - the table listed oci-A1-f_1 (10.0.0.2) and oci-A1-p_0 (10.0.0.7). Both are
+#     real VMs that were DECOMMISSIONED, not typos: their declarations survive in
+#     cloud-infra under b_infra/z_archive/vm_oci-A1-f_1/ (OCI Paid Flex 1, WG
+#     10.0.0.2) and b_infra/z_archive/vm_oci-A1-p_0/ (OCI Paid Flex 2, hostname
+#     oci-apps-2, WG 10.0.0.7). The declared mesh is four VMs.
+#   - it also had oci-A1-f_0 at 3 CPU / 16 GB and gcp-E2-f_0 at 1 CPU, while the
+#     declaration says 4 / 24 and 2. Seeding a knowledge graph from those numbers
+#     put wrong hardware facts into the database that answers questions about it.
+#
+# Deriving costs four lines and cannot drift. A VM with no wg_ip (the on-demand
+# GPU hosts) is simply not in the mesh, which is what the declaration says.
+vms = config["vms"]
+wg_ips  = {k: v["wg_ip"] for k, v in vms.items() if v.get("wg_ip")}
+vm_arch = {k: (v.get("specs") or {}).get("arch") or "" for k, v in vms.items()}
+vm_cpu  = {k: (v.get("specs") or {}).get("cpu") or 0 for k, v in vms.items()}
+vm_ram  = {k: (v.get("specs") or {}).get("ram_gb") or 0 for k, v in vms.items()}
 svc_domains = {
     "authelia": "auth.diegonmarcos.com",
     "vaultwarden": "vault.diegonmarcos.com",
@@ -212,6 +167,7 @@ stmts = []
 counts = {"vms": 0, "vms_skipped": 0, "services": 0, "services_skipped": 0,
           "hosted_on": 0, "hosted_on_skipped": 0}
 skips = []
+created_vms = []
 
 # --- VM nodes ---
 for vm_id, vm in config["vms"].items():
@@ -245,6 +201,7 @@ for vm_id, vm in config["vms"].items():
     updated_at: time::now()
 }};""")
     counts["vms"] += 1
+    created_vms.append(vm_id)
 
 # --- Service nodes ---
 for svc_name, svc in config["services"].items():
@@ -291,7 +248,14 @@ for svc_name, svc in config["services"].items():
     counts["hosted_on"] += 1
 
 # --- connected_to edges (WireGuard mesh: all VMs connected to each other) ---
-wg_vms = [k.replace("-","_") for k in wg_ips.keys()]
+# Only VMs that actually got a node above. Keying this off wg_ips alone is how
+# the two decommissioned ids did real damage: they were never CREATEd as vm:
+# nodes, so every mesh edge naming them RELATEd to a node that does not exist —
+# 15 edges emitted for 6 phantom-inflated VMs where the declared mesh has 4 and
+# needs 6. Deriving wg_ips fixes those two, but a VM that is declared, has a
+# wg_ip and is skipped for having no fixed IP would reintroduce it, so the edge
+# generator now follows what was created rather than what was declared.
+wg_vms = [k.replace("-","_") for k in created_vms if k in wg_ips]
 for i, v1 in enumerate(wg_vms):
     for v2 in wg_vms[i+1:]:
         stmts.append(f"RELATE vm:{v1}->connected_to->vm:{v2};")
