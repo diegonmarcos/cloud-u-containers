@@ -22,6 +22,19 @@ function isDeployed(declared: string[], deployed: string[]): boolean {
     );
 }
 
+// Liveness, not existence (ticket #395): healthDrift() builds its deployed set
+// from `docker ps -a`, which lists Exited, Created and Dead containers too.
+// A declared service counts as deployed only while at least one of its
+// containers is actually running, so only statuses starting with "Up" enter
+// the set. Inline port of the fix in code/shared/libs/health.ts so this test
+// stays runnable without the runtime (config, SSH, docker).
+function isRunning(status: string | undefined): boolean {
+    return (status ?? "").toLowerCase().startsWith("up");
+}
+function runningNames(containers: Array<{ name: string; status?: string }>): string[] {
+    return containers.filter((c) => isRunning(c.status)).map((c) => c.name);
+}
+
 // ── Fixtures: declared container_names from build.json, deployed from docker ps
 const cases: Array<{
     label: string;
@@ -49,7 +62,54 @@ const cases: Array<{
     { label: "no deployed", declared: ["etherpad_app"], deployed: [], expect: false },
 ];
 
+// ── Liveness cases (ticket #395) ──
+// umami: all three declared containers were Exited yet drift said
+// deployed=true status=ok. With the liveness filter they must be RED.
+const livenessCases: Array<{
+    label: string;
+    declared: string[];
+    deployed: Array<{ name: string; status?: string }>;
+    expect: boolean;
+}> = [
+    // The ticket's exact scenario: nothing running, three Exited containers.
+    { label: "umami all Exited", declared: ["umami", "umami-db", "umami-setup"], deployed: [
+        { name: "umami", status: "Exited (143) 49 seconds ago" },
+        { name: "umami-db", status: "Exited (0) 17 seconds ago" },
+        { name: "umami-setup", status: "Exited (1) 8 hours ago" },
+    ], expect: false },
+    { label: "umami only setup Exited (init job)", declared: ["umami", "umami-db", "umami-setup"], deployed: [
+        { name: "umami", status: "Up 8 hours (healthy)" },
+        { name: "umami-db", status: "Up 8 hours (healthy)" },
+        { name: "umami-setup", status: "Exited (1) 8 hours ago" },
+    ], expect: true },
+    { label: "umami app Up, db Exited", declared: ["umami", "umami-db", "umami-setup"], deployed: [
+        { name: "umami", status: "Up 2 minutes (health: starting)" },
+        { name: "umami-db", status: "Exited (0) 1 minute ago" },
+        { name: "umami-setup", status: "Exited (1) 8 hours ago" },
+    ], expect: true },
+    // Long uptime format ("Up 6 weeks") and other non-running states.
+    { label: "caddy-public Up 6 weeks", declared: ["caddy-public"], deployed: [
+        { name: "caddy-public", status: "Up 6 weeks" },
+    ], expect: true },
+    { label: "Created is not running", declared: ["alerts-api"], deployed: [
+        { name: "alerts-api", status: "Created" },
+    ], expect: false },
+    { label: "Dead is not running", declared: ["alerts-api"], deployed: [
+        { name: "alerts-api", status: "Dead" },
+    ], expect: false },
+    { label: "Paused is not running", declared: ["alerts-api"], deployed: [
+        { name: "alerts-api", status: "Paused" },
+    ], expect: false },
+    { label: "Restarting is not running", declared: ["alerts-api"], deployed: [
+        { name: "alerts-api", status: "Restarting (1) 2 seconds ago" },
+    ], expect: false },
+    { label: "empty status is not running", declared: ["alerts-api"], deployed: [
+        { name: "alerts-api", status: "" },
+    ], expect: false },
+];
+
 let failed = 0;
+let passed = 0;
 for (const c of cases) {
     const got = isDeployed(c.declared, c.deployed);
     if (got !== c.expect) {
@@ -57,13 +117,39 @@ for (const c of cases) {
         failed++;
     } else {
         console.log(`  OK: ${c.label}`);
+        passed++;
+    }
+}
+
+// Liveness cases: mirror what healthDrift does — filter docker ps -a output
+// down to running containers FIRST, then apply the same existence matcher.
+for (const c of livenessCases) {
+    const got = isDeployed(c.declared, runningNames(c.deployed));
+    if (got !== c.expect) {
+        console.log(`FAIL: ${c.label} — expected ${c.expect}, got ${got}`);
+        failed++;
+    } else {
+        console.log(`  OK: ${c.label}`);
+        passed++;
     }
 }
 
 // Also confirm the data flow from build.json → declared_names using a real
 // fixture from disk. discoverServicesFromDisk should surface "containers" now.
 import { readFileSync } from "node:fs";
-const photoprism = JSON.parse(readFileSync("/home/diego/git/cloud-infra/a_solutions/aa-sui_photoprism/build.json", "utf-8"));
+// Portable fixture lookup: the fleet moved out of cloud-infra/a_solutions into
+// the cloud-u-containers monorepo (service dirs are siblings of the MCPs).
+function findPhotoprismBuildJson(): string {
+    const candidates = [
+        "/home/diego/git/cloud-infra/a_solutions/aa-sui_photoprism/build.json",
+        "/home/appuser/git/cloud-u-containers/user-media_photoprism/build.json",
+    ];
+    for (const p of candidates) {
+        try { readFileSync(p, "utf-8"); return p; } catch { /* try next */ }
+    }
+    throw new Error("photoprism build.json not found in any known checkout path");
+}
+const photoprism = JSON.parse(readFileSync(findPhotoprismBuildJson(), "utf-8"));
 const ppContainers = Object.values((photoprism.containers ?? {}) as Record<string, { container_name?: string }>)
     .map((c) => c.container_name)
     .filter((n): n is string => typeof n === "string" && n.length > 0);
@@ -73,7 +159,7 @@ assert.deepEqual(ppContainers.sort(), ["photoprism_app", "photoprism_mariadb", "
 console.log("  OK: photoprism build.json yields [" + ppContainers.join(", ") + "]");
 
 if (failed > 0) {
-    console.log(`\nFAIL: ${failed}/${cases.length} cases failed`);
+    console.log(`\nFAIL: ${failed}/${passed + failed} cases failed`);
     process.exit(1);
 }
-console.log(`\nPASS: ${cases.length}/${cases.length} drift matching cases pass`);
+console.log(`\nPASS: ${passed}/${passed + failed} drift matching + liveness cases pass`);

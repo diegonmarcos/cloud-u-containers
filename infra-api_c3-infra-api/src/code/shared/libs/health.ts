@@ -211,7 +211,17 @@ export function healthDrift(): DriftEntry[] {
     try {
       const { containers, ok } = listContainers(vmId, true);
       if (ok) {
-        const names = new Set(containers.map((c) => c.name ?? ""));
+        // Liveness, not existence: docker ps -a lists every container that
+        // still exists, including Exited, Created and Dead ones. A declared
+        // service must only count as deployed while at least one of its
+        // containers is actually running, so only statuses starting with
+        // "Up" enter the deployed set. Before this filter, umami was
+        // reported deployed=true status=ok while all three of its
+        // containers were Exited (ticket #395).
+        const runningNames = containers
+          .filter((c) => c.status?.toLowerCase().startsWith("up"))
+          .map((c) => c.name ?? "");
+        const names = new Set(runningNames);
         deployedByVm.set(vmId, names);
         Array.from(names).forEach((name) => {
           allContainerNames.add(name);
