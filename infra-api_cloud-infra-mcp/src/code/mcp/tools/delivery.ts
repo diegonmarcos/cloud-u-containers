@@ -7,9 +7,10 @@ import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import { exec } from "../../shared/libs/exec.js";
 import { sshExec } from "../../shared/libs/ssh.js";
-import { getConfig, getServiceDir, getServiceFolder, resolveVmId, getVmSshAlias, composeCd } from "../../shared/libs/config.js";
-import { BUILD_SCRIPT, SOLUTIONS_DIR } from "../../shared/libs/paths.js";
+import { getConfig, getServiceDir, getServiceFolder, isSolutionTreeMissing, resolveVmId, getVmSshAlias, composeCd } from "../../shared/libs/config.js";
+import { BUILD_SCRIPT, SOLUTIONS_DIR, getSolutionRoots } from "../../shared/libs/paths.js";
 import { audit } from "../../shared/libs/audit.js";
+import { describeSecretsStatus } from "../../shared/libs/secrets-status.js";
 
 const SAFE_NAME_RE = /^[a-zA-Z0-9_.-]+$/;
 
@@ -197,24 +198,56 @@ export function registerDeliveryTools(server: McpServer) {
 
       const lines: string[] = ["# Secrets Status", ""];
 
+      // "no secrets.yaml" is a CLAIM ABOUT A FILE, and it must only be
+      // reachable once the service directory has been shown to exist. When
+      // this tool could not see the source tree at all it still answered with
+      // that clean negative — for all 76 services at once, every one of which
+      // had a sops-encrypted secrets.yaml on disk. A status tool that cannot
+      // read its subject has to say "could not read": believing the negative
+      // means recreating a secret that already exists, or treating a
+      // configured service as unconfigured.
+      const treeMissing = isSolutionTreeMissing();
+      if (treeMissing) {
+        lines.push(
+          `> Source tree not available under any declared root (${getSolutionRoots().join(", ")}).`,
+          "> Every entry below is UNKNOWN — this is one environment fault, not 76 unconfigured services.",
+          "",
+        );
+      }
+
       for (const [name, svc] of Object.entries(services)) {
         if (!svc) continue;
-        const svcDir = getServiceDir(name);
+
+        let svcDir: string;
+        try {
+          svcDir = getServiceDir(name);
+        } catch (e) {
+          lines.push(`**${name}** (${svc.vm}): UNKNOWN (could not resolve service directory: ${(e as Error).message})`);
+          continue;
+        }
+
+        const serviceDirExists = existsSync(svcDir);
         const secretsYaml = join(svcDir, "src", "secrets.yaml");
         const secretsDir = join(svcDir, "dist", ".secrets");
 
-        let status = "no secrets.yaml";
-        if (existsSync(secretsYaml)) {
+        let secretsYamlContents: string | null = null;
+        let readError: string | null = null;
+        if (serviceDirExists && existsSync(secretsYaml)) {
           try {
-            const content = readFileSync(secretsYaml, "utf-8");
-            const hasSops = content.includes("sops:") || content.includes("ENC[AES256_GCM");
-            status = hasSops ? "encrypted (sops)" : "PLAINTEXT WARNING";
-          } catch {
-            status = "read error";
+            secretsYamlContents = readFileSync(secretsYaml, "utf-8");
+          } catch (e) {
+            readError = (e as Error).message;
           }
         }
 
-        const hasDistSecrets = existsSync(secretsDir);
+        const status = describeSecretsStatus({
+          treeMissing,
+          serviceDir: svcDir,
+          serviceDirExists,
+          secretsYamlContents,
+          readError,
+        });
+        const hasDistSecrets = serviceDirExists && existsSync(secretsDir);
 
         lines.push(`**${name}** (${svc.vm}): ${status}${hasDistSecrets ? " | dist/.secrets exists" : ""}`);
       }

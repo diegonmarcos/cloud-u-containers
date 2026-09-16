@@ -10,6 +10,9 @@
  */
 
 import assert from "node:assert";
+// Imported, not mirrored: this module is pure (no filesystem, no DB, no SSH), so
+// the self-check can exercise the REAL decision instead of a copy of it.
+import { describeSecretsStatus } from "./secrets-status.js";
 
 // ── compareOp (mirrors poller.ts's compareOp — re-implemented here so this
 // file has zero side effects / no DB, no SSH; poller.ts's version is not
@@ -101,4 +104,77 @@ function bucket5m(ts: Date): string {
   assert.strictEqual(c, "2026-01-01T00:05:00.000Z", "00:05:00 should floor to the next bucket");
 }
 
-console.log("selfcheck: all assertions passed (compareOp, alert fire/resolve transitions, rollup avg/min/max/count, weighted-avg merge, bucket5m floor)");
+// ── secrets status wording (secrets-status.ts's describeSecretsStatus) ──
+//
+// The rule under test: "no secrets.yaml" is a claim about a FILE and is only
+// reachable when the service directory exists. Everything else is UNKNOWN.
+// Reporting a clean negative for an unreadable subject is what made this tool
+// announce "no secrets.yaml" for all 76 services while every file was present.
+{
+  const base = {
+    treeMissing: false,
+    serviceDir: "/root/git/cloud-u-containers/infra-obs_matomo",
+    serviceDirExists: true,
+    secretsYamlContents: null as string | null,
+    readError: null as string | null,
+  };
+
+  // A present, sops-encrypted file — the matomo case the tool used to deny.
+  assert.strictEqual(
+    describeSecretsStatus({ ...base, secretsYamlContents: "sops:\n    age: []\n" }),
+    "encrypted (sops)",
+    "a file carrying the sops marker is encrypted",
+  );
+  assert.strictEqual(
+    describeSecretsStatus({ ...base, secretsYamlContents: "TOKEN: ENC[AES256_GCM,data:xx]" }),
+    "encrypted (sops)",
+    "ENC[AES256_GCM values also prove encryption",
+  );
+
+  // Content-checked, never filename-trusted.
+  assert.strictEqual(
+    describeSecretsStatus({ ...base, secretsYamlContents: "TOKEN: hunter2\n" }),
+    "PLAINTEXT WARNING",
+    "a secrets.yaml with no sops marker is plaintext",
+  );
+
+  // The ONLY route to a clean negative: directory present, file absent.
+  assert.strictEqual(
+    describeSecretsStatus(base),
+    "no secrets.yaml",
+    "absent file under an existing service directory is a real negative",
+  );
+
+  // Cannot read → must never be a clean negative.
+  assert.match(
+    describeSecretsStatus({ ...base, serviceDirExists: false, treeMissing: true }),
+    /^UNKNOWN \(source tree not checked out\)$/,
+    "no source tree must report UNKNOWN, not absence",
+  );
+  assert.match(
+    describeSecretsStatus({ ...base, serviceDirExists: false, treeMissing: false }),
+    /^UNKNOWN \(service directory not found: \/root\/git\//,
+    "a missing service directory must report UNKNOWN and name the path probed",
+  );
+  assert.match(
+    describeSecretsStatus({ ...base, secretsYamlContents: null, readError: "EACCES: permission denied" }),
+    /^UNKNOWN \(secrets\.yaml present but unreadable: EACCES/,
+    "an unreadable file must report the error, not absence",
+  );
+
+  // The property that matters, stated once: no unreadable subject may ever
+  // produce the clean negative.
+  for (const unreadable of [
+    { ...base, serviceDirExists: false, treeMissing: true },
+    { ...base, serviceDirExists: false, treeMissing: false },
+    { ...base, readError: "EIO" },
+  ]) {
+    assert.notStrictEqual(
+      describeSecretsStatus(unreadable),
+      "no secrets.yaml",
+      "a subject that could not be read must never report a clean negative",
+    );
+  }
+}
+
+console.log("selfcheck: all assertions passed (compareOp, alert fire/resolve transitions, rollup avg/min/max/count, weighted-avg merge, bucket5m floor, secrets status wording)");
