@@ -19,19 +19,20 @@ GOOSE_CONTEXT_WINDOW: 8192
 GOOSE_TELEMETRY_ENABLED: false
 
 extensions:
+  # ══ BEGIN GENERATED MCP SERVERS — do not edit; derived from cloud-infra/1_cloud-configs/dist/mcp.json + mcp-policy.json by cloud-u-linux da_my-ai/data/claude/gen-mcp-tpl.sh (platform: container-goose) ══
   cloud-cgc-pub-mcp:
     name: Cloud Code Graph Context MCP
     type: streamable_http
     uri: http://10.0.0.6:3105/mcp
     enabled: true
     timeout: 300
-
   cloud-infra-mcp:
     name: Cloud Infra MCP
     type: streamable_http
     uri: http://10.0.0.6:3100/mcp
     enabled: true
     timeout: 300
+  # ══ END GENERATED MCP SERVERS ══
 
   developer:
     enabled: true
