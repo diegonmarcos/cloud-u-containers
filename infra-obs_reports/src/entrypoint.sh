@@ -22,7 +22,8 @@ case "${1:-}" in
     echo "Commands:"
     echo "  all            Run all 5 reports (master + 4 derives)"
     echo "  daily          Master: cloud-health-full-daily (build only — NO email)"
-    echo "  daily-mail     Master: cloud-health-full-daily — build + send via SMTP"
+    echo "  daily-mail     Master: cloud-health-full-daily — build + send via SMTP (guarded)"
+    echo "  analytics-mail Analytics: cloud-analytics-daily — build + send via SMTP (guarded)"
     echo "  mail           Derive: cloud-mail-health-full"
     echo "  url            Derive: cloud-url-health-report (fast)"
     echo "  sec-network    Derive: cloud-sec-network-report"
@@ -33,7 +34,7 @@ case "${1:-}" in
   bash|sh)
     # Interactive shell — setup env but don't dispatch
     ;;
-  all|daily|daily-mail|mail|url|sec-network|sec-data)
+  all|daily|daily-mail|analytics-mail|mail|url|sec-network|sec-data)
     # Handled below after setup
     ;;
   *)
@@ -173,8 +174,17 @@ if [ -n "$CONSOLIDATED" ] && command -v jq >/dev/null 2>&1; then
       continue
     fi
     key_file="$HOME/.ssh/id_${secret}"
-    printf '%s\n' "$key_val" > "$key_file"
-    chmod 600 "$key_file"
+    # Atomic write with the FINAL mode, never a mode inherited from a
+    # pre-existing file: `> file` truncates in place and PRESERVES the old
+    # mode, so a key that ever landed 0644 (ship secrets-decrypt #271) would
+    # stay group/other-readable on every later run that reuses the file. Write
+    # to a fresh temp (umask 077) -> chmod 0600 -> rename, so the mode cannot
+    # come from anywhere but this line.
+    umask 077
+    key_tmp="$HOME/.ssh/.id_${secret}.tmp.$$"
+    printf '%s\n' "$key_val" > "$key_tmp"
+    chmod 600 "$key_tmp"
+    mv -f "$key_tmp" "$key_file"
     cat >> ~/.ssh/config.d.tmp <<EOF
 Host ${alias}
   HostName ${ip}
@@ -197,8 +207,11 @@ EOF
   fi
   fi  # close the writability-probe if/else added for read-only ~/.ssh
 elif [ -n "${SSH_KEY:-}" ]; then
-  echo "$SSH_KEY" > ~/.ssh/id_deploy
-  chmod 600 ~/.ssh/id_deploy
+  umask 077
+  key_tmp="$HOME/.ssh/.id_deploy.tmp.$$"
+  printf '%s\n' "$SSH_KEY" > "$key_tmp"
+  chmod 600 "$key_tmp"
+  mv -f "$key_tmp" "$HOME/.ssh/id_deploy"
   echo "[setup] SSH key from \$SSH_KEY (single-host fallback)"
 elif [ -f ~/.ssh/id_rsa ] || [ -f ~/.ssh/vault_id_rsa ] \
   || [ -f ~/.ssh/id_ed25519 ] || [ -f ~/.ssh/id_deploy ]; then
@@ -530,6 +543,37 @@ if [ ! -f "$REPORTS_DIR/build.sh" ] && [ -f "$PWD/build.sh" ]; then
 fi
 CMD="$1"; shift
 
+# ── 5d. SSH-material gate ────────────────────────────────────────────────
+# A report that probes VMs but has no SSH key material can only produce an
+# all-failed run — and before #391/#392 that all-failed run could still be
+# published, because nothing upstream refused it. Refuse here, with the cause
+# named, so a misconfigured key mount (e.g. an empty /opt/ssh-keys/<dir>)
+# shows as "no SSH key material" instead of a wall of silent SSH timeouts.
+# The `url`/`sec-*` kinds deliberately do NO SSH (cloud-security.yml runs them
+# from outside the mesh on purpose) and must not trip this gate.
+needs_ssh() {
+    case "$1" in
+        all|daily|daily-mail|analytics-mail|mail) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+ssh_material_present() {
+    [ -f ~/.ssh/config ] && grep -q '^Host ' ~/.ssh/config 2>/dev/null && return 0
+    for f in ~/.ssh/*; do
+        [ -f "$f" ] || continue
+        case "${f##*.}" in pub) continue ;; esac
+        return 0
+    done
+    return 1
+}
+if needs_ssh "$CMD" && ! ssh_material_present; then
+    echo "[setup] ERROR: '$CMD' probes VMs over SSH but ~/.ssh holds no key material (no config Host entries, no private keys)." >&2
+    echo "[setup] A probe with no credentials verifies nothing. Provision keys on the host" >&2
+    echo "[setup] (/opt/ssh-keys/<container>/) or pass per-VM key env vars (OCI_SSH_KEY, GCP_PROXY_SSH_KEY ...);" >&2
+    echo "[setup] the entrypoint materialises them 0600. Refusing to dispatch." >&2
+    exit 1
+fi
+
 case "$CMD" in
   all)           exec bash "$REPORTS_DIR/build.sh" all ;;
   daily)         exec bash "$REPORTS_DIR/build.sh" health-full-daily ;;
@@ -541,6 +585,11 @@ case "$CMD" in
   # `&&` means the mail only leaves once the report has evidence behind it.
   daily-mail)    bash "$REPORTS_DIR/build.sh" health-full-daily &&
                  exec bash "$REPORTS_DIR/src/cloud-health-full-daily/build.sh" send ;;
+  # Same guarded split for analytics: `cloud-analytics-daily` runs through
+  # cmd_one (which now also has outcome keys to evaluate — see that crate's
+  # write_run_state) and the send fires only if the run verified something.
+  analytics-mail) bash "$REPORTS_DIR/build.sh" cloud-analytics-daily &&
+                  exec bash "$REPORTS_DIR/src/cloud-analytics-daily/build.sh" send ;;
   mail)          exec bash "$REPORTS_DIR/build.sh" mail-health-full ;;
   url)           exec bash "$REPORTS_DIR/build.sh" url-health ;;
   sec-network)   exec bash "$REPORTS_DIR/build.sh" sec-network ;;
