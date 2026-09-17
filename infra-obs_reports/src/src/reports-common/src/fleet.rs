@@ -125,16 +125,18 @@ pub async fn load(vms: &[FleetVm]) -> FleetState {
 
     let mut out: HashMap<String, VmState> = HashMap::new();
     for vm in vms {
-        let provider = vm.provider.to_lowercase().as_str();
+        // Own the lowered string: to_lowercase() returns a TEMPORARY, and
+        // borrowing it with .as_str() would dangle past the statement (E0716).
+        let provider = vm.provider.to_lowercase();
         let state = classify_vm(
-            provider,
+            provider.as_str(),
             &vm.cloud_name,
-            match provider {
+            match provider.as_str() {
                 "gcp" => &gcp_map,
                 _ => &oci_map, // client providers never read the map
             },
             tcp_map.get(&vm.vm_id).copied(),
-            match provider {
+            match provider.as_str() {
                 "gcp" => gcp_problem.as_ref(),
                 "oci" => oci_problem.as_ref(),
                 _ => None,
