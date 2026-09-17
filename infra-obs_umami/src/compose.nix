@@ -98,6 +98,15 @@ in
     "${setup.container_name}" = {
       image          = setup.image;
       container_name = setup.container_name;
+      # Host networking, exactly like its peers umami and umami-db. Without
+      # this the setup job lands on the default bridge network, where
+      # http://localhost:3006 inside the container refers to ITSELF, not the
+      # app — every auth call gets connection-refused and setup reports
+      # outcome=auth-failed even though the configured password is correct
+      # and the app is healthy. The app binds the host stack (no published
+      # ports; the docker daemon runs iptables=false), so the only way the
+      # one-shot job can reach it is to share that stack.
+      network_mode   = "host";
       env_file       = [ ".secrets" ];
       depends_on.umami = { condition = "service_healthy"; };
       entrypoint     = [ "/bin/sh" "/setup/setup.sh" ];
