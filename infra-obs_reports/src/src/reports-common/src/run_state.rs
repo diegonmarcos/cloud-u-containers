@@ -93,6 +93,13 @@ pub struct RunState {
     pub sec_network: Option<serde_json::Value>,
     #[serde(default)]
     pub sec_data: Option<serde_json::Value>,
+    /// cloud-analytics-daily is a SHELL crate (no Rust binary), so it merges
+    /// its slice with jq rather than via `merge_section`. The field exists so
+    /// the master's Phase-3 re-serialise does not silently drop the analytics
+    /// outcome keys the reach guard evaluates (a top-level key unknown to this
+    /// struct would be discarded on the next Rust round-trip).
+    #[serde(default)]
+    pub analytics: Option<serde_json::Value>,
 
     // ── Optional unique sections ──────────────────────────────────
     #[serde(default)]
@@ -130,6 +137,7 @@ impl RunState {
             url_health: None,
             sec_network: None,
             sec_data: None,
+            analytics: None,
             stack: None,
             health_full_layers: None,
             master_perf: None,

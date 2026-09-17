@@ -562,17 +562,36 @@ pub async fn preflight(
     for (alias, status) in [("oci-mail", &mail_cloud), ("oci-apps", &apps_cloud), ("gcp-proxy", &proxy_cloud)] {
         let ok = status.eq_ignore_ascii_case("RUNNING");
         let cli_unavailable = status == "CLI_UNAVAILABLE";
+        // #392: a check that cannot run is scored as FAILED, never as passed.
+        // cloud_vm_status reports CLI_UNAVAILABLE when the provider CLI is not
+        // installed in this environment; treating that as a pass meant a
+        // lineage of runs on a runner without gcloud/oci mailed "0 issues
+        // found" while every Cloud API row read "unverified — and green".
         checks.push(Check {
             name: format!("Cloud API {}", alias),
-            passed: ok || cli_unavailable,
+            passed: ok,
             details: if cli_unavailable {
                 format!("{}: cloud CLI not installed in this environment (not a VM health signal)", alias)
             } else {
                 format!("{}: {}", alias, status)
             },
             duration_ms: 0,
-            error: if ok || cli_unavailable { None } else { Some(format!("VM not running: {}", status)) },
-            severity: if cli_unavailable { Severity::Info } else if ok { Severity::Info } else { Severity::Critical },
+            error: if ok {
+                None
+            } else if cli_unavailable {
+                Some(format!("cloud CLI not installed — {} cloud state unverifiable, scored as a failure", alias))
+            } else {
+                Some(format!("VM not running: {}", status))
+            },
+            severity: if ok {
+                Severity::Info
+            } else if cli_unavailable {
+                // Tooling gap, not a fleet incident — but the CHECK fails: it
+                // verified nothing and must not read as a pass.
+                Severity::Info
+            } else {
+                Severity::Critical
+            },
         });
     }
 

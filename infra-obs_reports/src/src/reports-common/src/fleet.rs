@@ -105,26 +105,80 @@ pub async fn load(vms: &[FleetVm]) -> FleetState {
     let fut_oci = oci_list();
     let fut_tcp = tcp_liveness_batch(vms);
 
-    let (gcp_map, oci_map, tcp_map) = tokio::join!(
+    // Each element is the per-call deadline wrapping the query's own outcome:
+    // Result<Result<HashMap, reason>, deadline-error>. The OUTER is the 5s
+    // budget; the INNER is the provider CLI's own result.
+    let (gcp_raw, oci_raw, tcp_map) = tokio::join!(
         timeout(Duration::from_secs(5), fut_gcp),
         timeout(Duration::from_secs(5), fut_oci),
         fut_tcp,
     );
-    let gcp_map = gcp_map.unwrap_or_default();
-    let oci_map = oci_map.unwrap_or_default();
+    // A provider query that could not RUN (CLI absent) is a distinct fact from
+    // one that ran and found nothing. The CLI absent case must be an explicit,
+    // named failure — "gcloud CLI not installed" — not the misleading
+    // "not found in gcloud list", which reads as the VM not existing in the
+    // cloud when the truth is the tool is missing (#391).
+    let gcp_problem = provider_problem(gcp_raw.as_ref());
+    let oci_problem = provider_problem(oci_raw.as_ref());
+    let gcp_map = gcp_raw.ok().map(|r| r.unwrap_or_default()).unwrap_or_default();
+    let oci_map = oci_raw.ok().map(|r| r.unwrap_or_default()).unwrap_or_default();
 
     let mut out: HashMap<String, VmState> = HashMap::new();
     for vm in vms {
-        let state = match vm.provider.to_lowercase().as_str() {
-            "gcp" => classify_gcp(&vm.cloud_name, &gcp_map, tcp_map.get(&vm.vm_id).copied()),
-            "oci" => classify_oci(&vm.cloud_name, &oci_map, tcp_map.get(&vm.vm_id).copied()),
-            _ => VmState::Client {
-                tcp_up: tcp_map.get(&vm.vm_id).copied().unwrap_or(false),
+        let provider = vm.provider.to_lowercase().as_str();
+        let state = classify_vm(
+            provider,
+            &vm.cloud_name,
+            match provider {
+                "gcp" => &gcp_map,
+                _ => &oci_map, // client providers never read the map
             },
-        };
+            tcp_map.get(&vm.vm_id).copied(),
+            match provider {
+                "gcp" => gcp_problem.as_ref(),
+                "oci" => oci_problem.as_ref(),
+                _ => None,
+            },
+        );
         out.insert(vm.vm_id.clone(), state);
     }
     FleetState { vms: out }
+}
+
+/// Map a joined provider result to the reason its query could not RUN.
+/// None = the CLI ran and produced a (possibly empty) list. Some = either the
+/// CLI binary is not on PATH (named) or the per-call deadline elapsed.
+fn provider_problem<E>(
+    raw: &std::result::Result<std::result::Result<HashMap<String, String>, String>, E>,
+) -> Option<String> {
+    match raw {
+        Ok(Ok(_)) => None,
+        Ok(Err(reason)) => Some(reason.clone()),
+        Err(_) => Some("provider query timed out".into()),
+    }
+}
+
+/// Classify one VM from its provider's query outcome and the TCP probe.
+/// `tool_problem` carries the reason the provider query could not RUN (CLI
+/// missing); when set, the VM is reported with that named failure instead of a
+/// misleading "not found in <cli> list" (#391).
+fn classify_vm(
+    provider: &str,
+    cloud_name: &str,
+    map: &HashMap<String, String>,
+    tcp_up: Option<bool>,
+    tool_problem: Option<&String>,
+) -> VmState {
+    match tool_problem {
+        Some(reason) => VmState::Unknown { reason: reason.clone() },
+        None => match provider.to_lowercase().as_str() {
+            "gcp" => classify_gcp(cloud_name, map, tcp_up),
+            "oci" => classify_oci(cloud_name, map, tcp_up),
+            _ => VmState::Client {
+                tcp_up: tcp_up.unwrap_or(false),
+            },
+        },
+    }
 }
 
 fn classify_gcp(cloud_name: &str, map: &HashMap<String, String>, tcp_up: Option<bool>) -> VmState {
@@ -179,8 +233,13 @@ fn classify_oci(cloud_name: &str, map: &HashMap<String, String>, tcp_up: Option<
 }
 
 /// Batch-list all GCP compute instances. Returns map of name → status.
-/// Non-fatal: empty map if gcloud absent or auth missing.
-async fn gcloud_list() -> HashMap<String, String> {
+/// Ok(empty map) is non-fatal when the CLI ran but found nothing / auth failed.
+/// Err names the case where the query could not RUN at all — the gcloud CLI is
+/// not installed on this host — so the fleet caller can report that as an
+/// explicit, named failure instead of the misleading "not found in gcloud list"
+/// (#391: every VM read UNKNOWN(not found in gcloud list) on a runner that had
+/// no gcloud at all, which reads as "the VM does not exist in the cloud").
+async fn gcloud_list() -> std::result::Result<HashMap<String, String>, String> {
     let cmd = tokio::process::Command::new("gcloud")
         .args([
             "compute",
@@ -190,31 +249,41 @@ async fn gcloud_list() -> HashMap<String, String> {
         ])
         .output()
         .await;
-    let Ok(out) = cmd else {
-        return HashMap::new();
-    };
-    if !out.status.success() {
-        return HashMap::new();
-    }
-    let stdout = String::from_utf8_lossy(&out.stdout);
-    stdout
-        .lines()
-        .filter_map(|l| {
-            let mut it = l.splitn(2, ',');
-            let name = it.next()?.trim();
-            let status = it.next()?.trim();
-            if name.is_empty() {
-                None
-            } else {
-                Some((name.to_string(), status.to_string()))
+    match cmd {
+        Ok(Ok(out)) => {
+            if !out.status.success() {
+                // Ran, but failed (auth, network, ...) — unchanged non-fatal
+                // behaviour: the TCP probe is the fallback signal.
+                return Ok(HashMap::new());
             }
-        })
-        .collect()
+            let stdout = String::from_utf8_lossy(&out.stdout);
+            Ok(stdout
+                .lines()
+                .filter_map(|l| {
+                    let mut it = l.splitn(2, ',');
+                    let name = it.next()?.trim();
+                    let status = it.next()?.trim();
+                    if name.is_empty() {
+                        None
+                    } else {
+                        Some((name.to_string(), status.to_string()))
+                    }
+                })
+                .collect())
+        }
+        // Spawn failed — the binary is not on PATH. Name it.
+        Ok(Err(_)) => Err("gcloud CLI not installed".into()),
+        Err(_) => Err("gcloud list timed out or failed to start".into()),
+    }
 }
 
 /// Batch-list OCI instances via `oci compute instance list --all`. Returns map
-/// of display-name → lifecycle-state. Non-fatal on auth failure.
-async fn oci_list() -> HashMap<String, String> {
+/// of display-name → lifecycle-state.
+/// Ok(empty map) is non-fatal on auth failure or missing ~/.oci/config (the TCP
+/// probe is the fallback signal). Err names the case where the query could not
+/// RUN at all — the oci CLI is not installed — so the fleet caller can report
+/// that as an explicit, named failure instead of "not found in oci list" (#391).
+async fn oci_list() -> std::result::Result<HashMap<String, String>, String> {
     let home = std::env::var("HOME").unwrap_or_default();
     let config = tokio::fs::read_to_string(format!("{}/.oci/config", home))
         .await
@@ -224,7 +293,7 @@ async fn oci_list() -> HashMap<String, String> {
         .find(|l| l.starts_with("tenancy="))
         .and_then(|l| l.strip_prefix("tenancy="))
     else {
-        return HashMap::new();
+        return Ok(HashMap::new());
     };
     let cmd = tokio::process::Command::new("oci")
         .args([
@@ -241,25 +310,29 @@ async fn oci_list() -> HashMap<String, String> {
         ])
         .output()
         .await;
-    let Ok(out) = cmd else {
-        return HashMap::new();
-    };
-    if !out.status.success() {
-        return HashMap::new();
+    match cmd {
+        Ok(Ok(out)) => {
+            if !out.status.success() {
+                return Ok(HashMap::new());
+            }
+            let stdout = String::from_utf8_lossy(&out.stdout);
+            let parsed: Result<Vec<serde_json::Value>, _> = serde_json::from_str(&stdout);
+            let Ok(items) = parsed else {
+                return Ok(HashMap::new());
+            };
+            Ok(items
+                .into_iter()
+                .filter_map(|v| {
+                    let name = v.get("name")?.as_str()?.to_string();
+                    let state = v.get("state")?.as_str()?.to_string();
+                    Some((name, state))
+                })
+                .collect())
+        }
+        // Spawn failed — the binary is not on PATH. Name it.
+        Ok(Err(_)) => Err("oci CLI not installed".into()),
+        Err(_) => Err("oci instance list timed out or failed to start".into()),
     }
-    let stdout = String::from_utf8_lossy(&out.stdout);
-    let parsed: Result<Vec<serde_json::Value>, _> = serde_json::from_str(&stdout);
-    let Ok(items) = parsed else {
-        return HashMap::new();
-    };
-    items
-        .into_iter()
-        .filter_map(|v| {
-            let name = v.get("name")?.as_str()?.to_string();
-            let state = v.get("state")?.as_str()?.to_string();
-            Some((name, state))
-        })
-        .collect()
 }
 
 /// Per-attempt TCP probe deadline. 500ms was too tight for cold WG —
@@ -329,6 +402,35 @@ mod tests {
         let map: HashMap<String, String> = HashMap::new();
         let s = classify_gcp("missing", &map, None);
         assert!(matches!(s, VmState::Unknown { .. }));
+    }
+
+    #[test]
+    fn cli_missing_is_a_named_failure_not_not_found() {
+        // #391: a runner without the provider CLI used to read
+        // "Unknown (not found in gcloud list)" — as if the VM did not exist in
+        // the cloud — because the missing CLI produced an empty list. The
+        // absent CLI must be named, and it must not count as reachable.
+        let empty: HashMap<String, String> = HashMap::new();
+        let gcp = classify_vm("gcp", "arch-1", &empty, None, Some(&"gcloud CLI not installed".into()));
+        assert!(matches!(gcp, VmState::Unknown { .. }));
+        assert!(gcp.short_reason().contains("gcloud CLI not installed"));
+        assert!(!gcp.short_reason().contains("not found"));
+        assert!(!gcp.is_reachable());
+
+        let oci = classify_vm("oci", "oci-A1-f_0", &empty, None, Some(&"oci CLI not installed".into()));
+        assert!(matches!(oci, VmState::Unknown { .. }));
+        assert!(oci.short_reason().contains("oci CLI not installed"));
+        assert!(!oci.is_reachable());
+    }
+
+    #[test]
+    fn cli_present_but_vm_unlisted_stays_not_found() {
+        // Guard against over-reach: with the CLI RUNNING fine (Ok list), an
+        // absent VM must keep the pre-existing "not found" wording.
+        let empty: HashMap<String, String> = HashMap::new();
+        let s = classify_vm("gcp", "arch-1", &empty, None, None);
+        assert!(s.short_reason().contains("not found in gcloud list"));
+        assert!(!s.is_reachable());
     }
 
     #[test]
