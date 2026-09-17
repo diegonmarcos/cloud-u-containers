@@ -78,8 +78,17 @@ memory:
 
 # AGENT — cap the tool-loop fan-out per message to bound subscription-quota use.
 # Raise (50-100) for heavier autonomous exploration.
+#
+# 100, not 30, because this container is not only a chat gateway: it also runs
+# dispatched engineering tasks via `hermes --yolo -z`, and the contract those
+# tasks are given (read the brief, edit, run the tester, commit, push, then watch
+# the CI run to green) does not fit in 30 tool calls. A task that exhausts the
+# cap ends with a partial answer and no error, which reads downstream as a
+# finished run: wave-3 slot 444 burned 1h57m and exited rc=0 having delivered
+# nothing. The quota argument that set 30 applies to Telegram chat turns, where
+# the fan-out is a handful of calls; it never applied to the dispatch path.
 agent:
-  max_turns: 30
+  max_turns: 100
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Messaging gateway. A platform auto-enables when its token env var is present
