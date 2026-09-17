@@ -264,6 +264,18 @@ export function getSolutionRoots(): string[] {
   const roots = [SOLUTIONS_DIR];
   const standaloneCheckout = REPOS[CONTAINERS_REPO];
   if (standaloneCheckout) roots.push(standaloneCheckout);
+  // REPOS is derived from this service's OWN .runtime.octocode.index_repos,
+  // which infra-api_cloud-infra-mcp does not declare, so in the deployed
+  // container REPOS holds no cloud-u-containers entry at all — even though
+  // the octocode_repos volume carries the full checkout at GIT_BASE. Without
+  // this probe, getServiceDir()/getSecretsStatus() fell back to the
+  // pre-split a_solutions path and sec.secrets_status reported "directory
+  // not found" for every service whose source now lives in cloud-u-containers
+  // (e.g. infra-obs_matomo). Probe the conventional standalone path directly.
+  const baseCheckout = join(GIT_BASE, CONTAINERS_REPO);
+  if (baseCheckout !== standaloneCheckout && existsSync(baseCheckout)) {
+    roots.push(baseCheckout);
+  }
   return roots;
 }
 
