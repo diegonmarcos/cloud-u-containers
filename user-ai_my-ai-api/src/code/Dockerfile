@@ -120,7 +120,6 @@ RUN apt-get update \
     && GH_VER="2.63.2" \
     && curl -fsSL "https://github.com/cli/cli/releases/download/v${GH_VER}/gh_${GH_VER}_linux_${GH_ARCH}.tar.gz" \
        | tar -xz -C /tmp \
-    && install -m 0755 "/tmp/gh_${GH_VER}_linux_${GH_ARCH}/bin/gh" /usr/local/bin/gh \
     && rm -rf "/tmp/gh_${GH_VER}_linux_${GH_ARCH}" \
     && YQ_VER="4.44.6" \
     && curl -fsSL -o /usr/local/bin/yq \
