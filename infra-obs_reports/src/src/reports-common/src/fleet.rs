@@ -118,8 +118,8 @@ pub async fn load(vms: &[FleetVm]) -> FleetState {
     // named failure — "gcloud CLI not installed" — not the misleading
     // "not found in gcloud list", which reads as the VM not existing in the
     // cloud when the truth is the tool is missing (#391).
-    let gcp_problem = provider_problem(gcp_raw.as_ref());
-    let oci_problem = provider_problem(oci_raw.as_ref());
+    let gcp_problem = provider_problem(&gcp_raw);
+    let oci_problem = provider_problem(&oci_raw);
     let gcp_map = gcp_raw.ok().map(|r| r.unwrap_or_default()).unwrap_or_default();
     let oci_map = oci_raw.ok().map(|r| r.unwrap_or_default()).unwrap_or_default();
 
@@ -250,7 +250,7 @@ async fn gcloud_list() -> std::result::Result<HashMap<String, String>, String> {
         .output()
         .await;
     match cmd {
-        Ok(Ok(out)) => {
+        Ok(out) => {
             if !out.status.success() {
                 // Ran, but failed (auth, network, ...) — unchanged non-fatal
                 // behaviour: the TCP probe is the fallback signal.
@@ -272,8 +272,7 @@ async fn gcloud_list() -> std::result::Result<HashMap<String, String>, String> {
                 .collect())
         }
         // Spawn failed — the binary is not on PATH. Name it.
-        Ok(Err(_)) => Err("gcloud CLI not installed".into()),
-        Err(_) => Err("gcloud list timed out or failed to start".into()),
+        Err(_) => Err("gcloud CLI not installed".into()),
     }
 }
 
@@ -311,7 +310,7 @@ async fn oci_list() -> std::result::Result<HashMap<String, String>, String> {
         .output()
         .await;
     match cmd {
-        Ok(Ok(out)) => {
+        Ok(out) => {
             if !out.status.success() {
                 return Ok(HashMap::new());
             }
@@ -330,8 +329,7 @@ async fn oci_list() -> std::result::Result<HashMap<String, String>, String> {
                 .collect())
         }
         // Spawn failed — the binary is not on PATH. Name it.
-        Ok(Err(_)) => Err("oci CLI not installed".into()),
-        Err(_) => Err("oci instance list timed out or failed to start".into()),
+        Err(_) => Err("oci CLI not installed".into()),
     }
 }
 
