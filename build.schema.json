@@ -205,6 +205,24 @@
           "description": "Docker --build-arg key/value pairs passed to the image build.",
           "additionalProperties": { "type": "string" }
         },
+        "agent_toolbelt": {
+          "type": "boolean",
+          "description": "Type-B (wrap upstream image) opt-in (#509): sources apt packages + the gh/yq install from the single fleet-wide _shared/agent-toolbelt.json declaration instead of runtime_packages/runtime_extra_run below, which the engine ignores when this is true."
+        },
+        "runtime_packages": {
+          "type": "object",
+          "description": "Type-B (wrap upstream image) opt-in: extend the image with package-manager installs, with no service-local Dockerfile. Ignored when agent_toolbelt is true.",
+          "additionalProperties": false,
+          "properties": {
+            "apk": { "type": "string", "description": "Space-separated apk packages (Alpine base images)." },
+            "apt": { "type": "string", "description": "Space-separated apt packages (Debian/Ubuntu base images)." }
+          }
+        },
+        "runtime_extra_run": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Type-B (wrap upstream image) opt-in: verbatim shell commands, each emitted as its own RUN line after runtime_packages installs. For tools a package manager cannot deliver (e.g. gh). Ignored when agent_toolbelt is true."
+        },
         "native_build": {
           "type": "object",
           "description": "Build a service-owned image (Type A). Set this to own the Dockerfile/build rather than wrapping an upstream image. Consumed by cloud-ship-container-step-build-docker.sh.",

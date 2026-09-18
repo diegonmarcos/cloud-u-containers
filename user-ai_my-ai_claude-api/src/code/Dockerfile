@@ -64,44 +64,23 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certifi
     && npm cache clean --force \
     && rm -rf /var/lib/apt/lists/*
 
-# Agent toolbelt (#366). This is the image every dispatched agent actually runs
-# in: `claude -p` executes here, and those agents are told to search the shared
-# six-repository checkout, edit it, commit, push, and then prove their own CI
-# went green.
+# Agent toolbelt (#366, extended to full coverage by #509). This is the image
+# every dispatched agent actually runs in: `claude -p` executes here, and those
+# agents are told to search the shared six-repository checkout, edit it, commit,
+# push, and then prove their own CI went green — which needs a process/network/
+# editor toolbelt, not just gh/yq/ripgrep. The package list and the gh/yq
+# install are NOT hand-typed here: both placeholders are substituted by
+# _shared/engine.nix from the single fleet-wide declaration in
+# _shared/agent-toolbelt.json (the same one hermes-agent and my-ai-api consume),
+# so this Dockerfile cannot drift from theirs. Edit that JSON, never this line.
 #
-# gh is the one that mattered. With no `gh`, an agent told to "watch your CI to
-# green" runs `gh run view`, gets `gh: not found`, and reports green having
-# checked nothing — the failure renders identically to success. gh is not in
-# Debian's repositories, so it comes from the upstream release tarball, and the
-# architecture is derived at build time because this image builds for arm64 on
-# oci-apps and amd64 elsewhere.
-#
-# ripgrep and yq: without them an agent falls back to grep and hand-rolled
-# string slicing over JSON and YAML, which is where silently-wrong answers come
-# from. jq and git are already installed in the apt line above.
-#
-# The final line runs each tool once. That is deliberate: if any install step
-# silently produces nothing, the BUILD fails here rather than the container
-# shipping and an agent discovering the absence as a fail-open at dispatch time.
+# jq and git are already installed in the apt line above; the toolbelt's own
+# fail-loud `command -v` probe (baked into @AGENT_TOOLBELT_EXTRA_RUN@) still
+# checks them, so a regression there is caught here too.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ripgrep \
-    && ARCH="$(uname -m)" \
-    && case "$ARCH" in \
-         aarch64|arm64) TOOL_ARCH="arm64" ;; \
-         x86_64|amd64)  TOOL_ARCH="amd64" ;; \
-         *) echo "unsupported architecture: $ARCH" >&2; exit 1 ;; \
-       esac \
-    && GH_VERSION="2.63.2" \
-    && curl -fsSL "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_${TOOL_ARCH}.tar.gz" \
-       | tar -xz -C /tmp \
-    && install -m 0755 "/tmp/gh_${GH_VERSION}_linux_${TOOL_ARCH}/bin/gh" /usr/local/bin/gh \
-    && rm -rf "/tmp/gh_${GH_VERSION}_linux_${TOOL_ARCH}" \
-    && YQ_VERSION="4.44.6" \
-    && curl -fsSL -o /usr/local/bin/yq \
-         "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_${TOOL_ARCH}" \
-    && chmod +x /usr/local/bin/yq \
-    && gh --version && yq --version && jq --version && rg --version && git --version \
+    && apt-get install -y --no-install-recommends @AGENT_TOOLBELT_APT@ \
     && rm -rf /var/lib/apt/lists/*
+RUN @AGENT_TOOLBELT_EXTRA_RUN@
 
 # Python runtime: the installed site-packages (headroom + _core.so + deps) and
 # the `headroom` console script, copied from the builder.

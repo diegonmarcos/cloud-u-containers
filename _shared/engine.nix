@@ -76,6 +76,31 @@ let
   composeDefaults =
     (builtins.fromJSON (builtins.readFile ./compose-defaults.json)).defaults;
 
+  # ──────────────────────────────────────────────────────────────
+  # Agent toolbelt (#509, extends #366/#450) — data-driven from
+  # _shared/agent-toolbelt.json, the ONE declaration every AI agent
+  # container (my-ai_claude-api, my-ai-api, hermes-agent) consumes.
+  # Never hand-write an apt-get/gh/yq install line per service again.
+  # ──────────────────────────────────────────────────────────────
+  agentToolbelt = builtins.fromJSON (builtins.readFile ./agent-toolbelt.json);
+  toolbeltApt    = lib.concatStringsSep " " agentToolbelt.apt_packages;
+  toolbeltVerify = lib.concatStringsSep " " agentToolbelt.binaries;
+  ghT = agentToolbelt.tarballs.gh;
+  yqT = agentToolbelt.tarballs.yq;
+  # {version}/{arch} in the JSON become shell-variable REFERENCES (braced, so
+  # they can't glob into a neighbouring literal like _linux_) — substituted at
+  # nix-eval time, expanded at Docker-build time once ARCH is known.
+  subst = s: lib.replaceStrings [ "{version}" "{arch}" ] [ "\${GH_VERSION}" "\${TOOL_ARCH}" ] s;
+  substY = s: lib.replaceStrings [ "{version}" "{arch}" ] [ "\${YQ_VERSION}" "\${TOOL_ARCH}" ] s;
+  ghDir  = subst ghT.extracted_dir;
+  ghUrl  = subst ghT.url;
+  ghBin  = subst ghT.extracted_bin;
+  yqUrl  = substY yqT.url;
+  # One verbatim shell command (matches the existing runtime_extra_run shape:
+  # semicolon-joined, arch-aware, ends in a fail-loud probe of every declared
+  # binary so a missing tool fails the BUILD, not the dispatch).
+  toolbeltExtraRun = ''set -eu; ARCH="$(uname -m)"; case "$ARCH" in aarch64|arm64) TOOL_ARCH=arm64 ;; x86_64|amd64) TOOL_ARCH=amd64 ;; *) echo "unsupported architecture: $ARCH" >&2; exit 1 ;; esac; GH_VERSION=${ghT.version}; curl -fsSL "${ghUrl}" | tar -xz -C /tmp; install -m 0755 "/tmp/${ghDir}/${ghBin}" /usr/local/bin/gh; rm -rf "/tmp/${ghDir}"; YQ_VERSION=${yqT.version}; curl -fsSL -o /usr/local/bin/yq "${yqUrl}"; chmod +x /usr/local/bin/yq; for t in ${toolbeltVerify}; do command -v "$t" >/dev/null || { echo "agent toolbelt: missing $t" >&2; exit 1; }; done'';
+
   # Deep per-field merge: service field wins if set. Uses recursiveUpdate
   # so nested attrsets (deploy.resources.limits.pids etc.) survive overlay.
   mergeSvc = svc: lib.recursiveUpdate composeDefaults svc;
@@ -324,7 +349,10 @@ let
         pkgs.writeText "Dockerfile" ''
           ${mkBanner "#"}# Type A — service-shipped Dockerfile, arch=${arch}
           # Source: ${toString nativeBuild.dockerfile}
-          ${builtins.readFile nativeBuild.dockerfile}
+          ${lib.replaceStrings
+              [ "@AGENT_TOOLBELT_APT@" "@AGENT_TOOLBELT_EXTRA_RUN@" ]
+              [ toolbeltApt toolbeltExtraRun ]
+              (builtins.readFile nativeBuild.dockerfile)}
         ''
       else
         pkgs.writeText "Dockerfile" ''
@@ -339,11 +367,16 @@ let
     else
       let
         upstream = buildJson.upstream_image or (container.container.image or "alpine:latest");
+        # Declarative opt-in: build.json#docker.agent_toolbelt = true (#509).
+        # Sources apt/extra-run from the ONE fleet-wide _shared/agent-toolbelt.json
+        # declaration instead of a per-service hand-typed list, so hermes-agent
+        # cannot drift from my-ai_claude-api / my-ai-api's toolbelt.
+        wantsToolbelt = (buildJson.docker.agent_toolbelt or false) == true;
         # Declarative opt-in: build.json#docker.runtime_packages = { apk=..; apt=..; }
         # Lets Type B (wrap upstream) extend the image without a service-local Dockerfile.
         rtPkgs   = buildJson.docker.runtime_packages or {};
         apkList  = rtPkgs.apk or "";
-        aptList  = rtPkgs.apt or "";
+        aptList  = if wantsToolbelt then toolbeltApt else (rtPkgs.apt or "");
         # Declarative opt-in: build.json#docker.runtime_extra_run = [ "cmd"; .. ]
         # One list entry becomes one RUN, emitted AFTER the package lines so a
         # command may rely on what runtime_packages just installed.
@@ -359,7 +392,7 @@ let
         # Entries are emitted verbatim, so each one owns its own failure
         # behaviour: end a command with a version probe if you want a missing
         # tool to break the BUILD instead of shipping and failing at runtime.
-        extraRun = buildJson.docker.runtime_extra_run or [];
+        extraRun = if wantsToolbelt then [ toolbeltExtraRun ] else (buildJson.docker.runtime_extra_run or []);
       in
       pkgs.writeText "Dockerfile" ''
         ${mkBanner "#"}# Type B — wrap upstream, arch=${arch}
