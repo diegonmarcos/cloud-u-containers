@@ -29,6 +29,7 @@
             ./code/server.mjs
             ./code/gateway.mjs
             ./code/bots.json
+            ./code/sessions-store.mjs
             ./code/bots
             ./code/mcp.mjs
             ./code/package.json
