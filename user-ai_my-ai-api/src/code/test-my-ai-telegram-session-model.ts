@@ -69,11 +69,18 @@ function bad(label: string) { failures.push(label); console.log(`FAIL: ${label}`
   }
   if (u.includes("/sessions")) {
     // Mirror server.mjs /sessions GET (device listing) and /sessions/<device>/<id> GET.
-    const m = u.match(/\/sessions\/([^/?]+)\/([^/?]+)$/);
+    // The path match must NOT be $-anchored: server.mjs splits the query string off
+    // before routing, so /sessions/<device>/<id>?tail=<bytes> is the same endpoint
+    // (the #513 bound). An anchored stub modelled a server that 404s on any query
+    // and made a correct caller look broken.
+    const m = u.match(/\/sessions\/([^/?]+)\/([^/?]+)(?:\?(.*))?$/);
     if (m) {
       const file = join(TMP, m[1], `${m[2]}.jsonl`);
       if (!existsSync(file)) return { ok: false, status: 404, text: async () => "" };
-      const raw = readFileSync(file, "utf8");
+      const tail = parseInt(new URLSearchParams(m[3] ?? "").get("tail") ?? "0", 10) || 0;
+      // Serve the tail through the REAL reader, so this stub cannot drift into
+      // being a second implementation of the format contract.
+      const raw = store.readTailBytes(file, tail < statSync(file).size ? tail : 0);
       return { ok: true, status: 200, text: async () => raw, json: async () => ({}) };
     }
     const out: any[] = [];
@@ -138,9 +145,14 @@ if (resumeList.includes(sentId) && resumeList.includes("use /resume"))
 else bad(`/sessions stream lists telegram id (got: ${JSON.stringify(resumeList)})`);
 
 const resumed = await cmds.handleCommand("resume", sentId, CHAT, { fromId: "0", allowFrom: ["0"] }, "claude");
-if (resumed.includes("messages loaded"))
+// Assert the STATE, not the wording of the reply: what this check is paid to
+// prove is that the persisted turns are back in the chat's history. (#513 made
+// the reply report what it loaded and skipped, so matching on a fixed phrase was
+// testing the sentence, not the behaviour.)
+const resumedHistory = route.getState(CHAT, "claude").history;
+if (resumed.startsWith("▶️") && resumedHistory.some((m: any) => m.role === "user" && m.content === "first turn"))
   ok("/resume loads the persisted messages into chat state");
-else bad(`/resume loads the persisted messages (got: ${JSON.stringify(resumed)})`);
+else bad(`/resume loads the persisted messages (got: ${JSON.stringify(resumed)}, history=${resumedHistory.length})`);
 
 // ── 3. explicit claude model — never an OpenRouter name ─────────────────────
 // Fresh chat, no per-chat model set (state.model is null). routeToGoose must send

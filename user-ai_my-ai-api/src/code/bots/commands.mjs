@@ -4,6 +4,10 @@
 // gets its own per-chat state via route.mjs's getState, keyed by the
 // conversationKey the caller passes in (which already encodes chat + topic).
 import { getState, routeToGoose, MYAI_LOCAL_URL, HISTORY_CAP, clearChatHistory } from "./route.mjs";
+// The session format contract and the resume bound are declared ONCE, in
+// sessions-store.mjs. /resume parses nothing itself (#513): a second parser
+// here is what made a Claude Code transcript read as "no readable messages".
+import { parseSessionMessages, RESUME_MAX_BYTES, RESUME_MAX_MESSAGES, RESUME_MAX_LISTED } from "../sessions-store.mjs";
 
 // ── Slash commands ───────────────────────────────────────────────────────────
 export const COMMANDS = [
@@ -80,6 +84,21 @@ const jpost = async (url, body) => {
     catch { return { ok: res.ok, status: res.status, text }; }
   } catch (e) { return { ok: false, status: 0, text: String(e.message || e) }; }
 };
+
+// ── Cross-device session listing (#513) ──────────────────────────────────────
+// /sessions already enumerates EVERY device directory under the store and
+// returns {device, id, mtime, size}. The bot used to throw the device away and
+// keep only device === "telegram", so Diego's live Claude Code session — synced
+// in under device "localhost" — was invisible to /resume even though it was
+// sitting right there in the response. There is no fixed device list: whatever
+// directories the store holds are the devices.
+const listSessions = async () => {
+  const r = await jget(`${MYAI_LOCAL_URL}/sessions`);
+  if (!Array.isArray(r.json)) return { error: `sessions list unavailable: ${JSON.stringify(r.json || r.text)}`.slice(0, 300) };
+  return { sessions: r.json.slice().sort((a, b) => b.mtime - a.mtime) };
+};
+
+const fmtBytes = (n) => (n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : n >= 1024 ? `${Math.round(n / 1024)} KB` : `${n} B`);
 
 // WG-only claude-superset-api endpoint (same env the gateway routes chat to).
 const CLAUDE_CLI_BASE = process.env.CLAUDE_CLI_BASE_URL || "";
@@ -172,45 +191,65 @@ export const handleCommand = async (cmdIn, arg, chatKey, meta = {}, defaultAgent
         `(note: this is my-ai-api server's own cumulative accounting, not Claude Code's context window)`;
     }
     case "resume": {
+      const { sessions, error } = await listSessions();
+      if (error) return error;
       if (!arg) {
-        const r = await jget(`${MYAI_LOCAL_URL}/sessions`);
-        if (!Array.isArray(r.json)) return `sessions list unavailable: ${JSON.stringify(r.json || r.text)}`.slice(0, 300);
-        const mine = r.json.filter((s) => s.device === "telegram").sort((a, b) => b.mtime - a.mtime).slice(0, 10);
-        if (mine.length === 0) return "(no saved sessions for this device)";
-        return mine.map((s) => `${s.id} — ${new Date(s.mtime).toISOString()}`).join("\n") + "\n\nuse /resume <id>";
+        if (sessions.length === 0) return "(no saved sessions in the store)";
+        // The device is PART of the listing, not a filter on it — two devices
+        // can hold different sessions with unrelated ids and Diego has to be
+        // able to tell which machine he is resuming.
+        const shown = sessions.slice(0, RESUME_MAX_LISTED);
+        const more = sessions.length - shown.length;
+        return shown
+          .map((s) => `${s.id} — ${s.device} — ${new Date(s.mtime).toISOString()} — ${fmtBytes(s.size)}`)
+          .join("\n") + (more > 0 ? `\n(+${more} older not shown)` : "") + "\n\nuse /resume <id>";
       }
-      const r = await jget(`${MYAI_LOCAL_URL}/sessions/telegram/${encodeURIComponent(arg)}`);
-      if (!r.ok) return `[error] could not load session ${arg}: ${r.status}`;
-      const lines = String(r.text ?? JSON.stringify(r.json ?? "")).split("\n").filter(Boolean);
-      const msgs = [];
-      for (const line of lines) {
-        try {
-          const m = JSON.parse(line);
-          if (m?.role && m?.content !== undefined) msgs.push({ role: m.role, content: m.content });
-        } catch { /* skip malformed line */ }
-      }
-      if (msgs.length === 0) return `session ${arg} had no readable messages`;
-      // Load FULL history (not capped): HISTORY_CAP is only the send window applied
-      // at routeToGoose time, so a resumed then-persisted chat keeps all its loaded
-      // messages rather than truncating the store to ~10 turns on the next turn.
-
+      // Resolve the device FROM the listing. Hardcoding a path segment here was
+      // the second half of the #513 bug: even a correct id from another device
+      // 404'd. Sorted newest-first above, so matches[0] is the newest.
+      const matches = sessions.filter((s) => s.id === arg);
+      if (matches.length === 0) return `no session "${arg}" in the store — /resume with no id lists what is there`;
+      const pick = matches[0];
+      const dupNote = matches.length > 1
+        ? ` (${matches.length} devices hold this id — picked the newest, ${pick.device})`
+        : "";
+      // Ask for the TAIL only. The live store holds a 127 MB transcript; pulling
+      // it whole would be an OOM here and an unusable context upstream.
+      const r = await jget(`${MYAI_LOCAL_URL}/sessions/${encodeURIComponent(pick.device)}/${encodeURIComponent(pick.id)}?tail=${RESUME_MAX_BYTES}`);
+      if (!r.ok) return `[error] could not load session ${arg} from ${pick.device}: ${r.status}`;
+      // A one-line session parses as JSON, so jget hands it back as .json.
+      const raw = r.text !== undefined ? String(r.text) : JSON.stringify(r.json ?? "");
+      const loaded = Buffer.byteLength(raw);
+      // ONE parser, in sessions-store.mjs — it accepts the bot's own flat
+      // {role, content} lines AND Claude Code's {type, message:{role, content}}
+      // records with typed content blocks, and skips the non-message records.
+      const msgs = parseSessionMessages(raw, RESUME_MAX_MESSAGES);
+      if (msgs.length === 0) return `session ${arg} on ${pick.device} had no readable messages in its last ${fmtBytes(loaded)}`;
+      // HISTORY_CAP is only the send window applied at routeToGoose time; the
+      // resumed tail is kept whole in state.history (and re-persisted on the
+      // next turn) rather than truncated to ~10 turns.
       state.history = msgs;
-      return `▶️ resumed session ${arg} (${msgs.length} messages loaded)`;
+      const skipped = Math.max(0, pick.size - loaded);
+      return `▶️ resumed ${pick.id} from ${pick.device}${dupNote} — ${msgs.length} messages ` +
+        `from the last ${fmtBytes(loaded)} of ${fmtBytes(pick.size)} (${fmtBytes(skipped)} older not loaded)`;
     }
     case "sessions": {
       const [sub, ...rest] = (arg || "").split(/\s+/);
-      const r = await jget(`${MYAI_LOCAL_URL}/sessions`);
-      if (!Array.isArray(r.json)) return `sessions list unavailable: ${JSON.stringify(r.json || r.text)}`.slice(0, 300);
-      const mine = r.json.filter((s) => s.device === "telegram").sort((a, b) => b.mtime - a.mtime);
+      // Same store, same listing as /resume — a /sessions that showed only
+      // telegram while /resume offers every device would just be the #513 bug
+      // wearing the other command's name.
+      const { sessions: mine, error } = await listSessions();
+      if (error) return error;
       if (sub === "search") {
         const q = rest.join(" ").trim();
         if (!q) return "usage: /sessions search <q>";
         const matched = mine.filter((s) => s.id.includes(q));
         return matched.length ? matched.map((s) => s.id).join("\n") : `(no matches for "${q}")`;
       }
+      const plain = mine.slice(0, RESUME_MAX_LISTED).map((s) => `${s.id} — ${s.device}`).join("\n");
       if (sub) return "search isn't available for this argument — showing plain list instead:\n" +
-        (mine.length ? mine.slice(0, 10).map((s) => s.id).join("\n") : "(no saved sessions)");
-      return mine.length ? mine.slice(0, 10).map((s) => s.id).join("\n") : "(no saved sessions)";
+        (mine.length ? plain : "(no saved sessions)");
+      return mine.length ? plain : "(no saved sessions)";
     }
     case "compress": {
       const n = state.history.length;
