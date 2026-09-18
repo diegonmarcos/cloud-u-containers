@@ -44,6 +44,7 @@
   },
   "runtime": {
     "model": "deepseek/deepseek-v4-flash-0731",
+    "claude_model": "claude-sonnet-4-6",
     "_model_aliases_comment": "requested-id → OpenRouter slug. Callers pick a model per request; unknown/absent ids fall back to `model` (passthrough also works — OpenRouter accepts arbitrary slugs, so goose can send any OpenRouter model id directly). No Claude aliases here: this stack does not route Claude.",
     "model_aliases": {
       "glm": "z-ai/glm-5",
@@ -80,6 +81,12 @@
       "mattermost_url": "http://10.0.0.6:8065",
       "mattermost_enabled": "true",
       "telegram_allow_from": "6431508617"
+    }
+  },
+  "tests": {
+    "session-model-routing": {
+      "cmd": "node test-my-ai-telegram-session-model.ts",
+      "cwd": "src/code"
     }
   },
   "containers": {

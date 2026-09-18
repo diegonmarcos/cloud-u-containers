@@ -3,7 +3,7 @@
 // Shared across all Telegram bots in the roster (see bots.json) — each bot
 // gets its own per-chat state via route.mjs's getState, keyed by the
 // conversationKey the caller passes in (which already encodes chat + topic).
-import { getState, routeToGoose, MYAI_LOCAL_URL, HISTORY_CAP } from "./route.mjs";
+import { getState, routeToGoose, MYAI_LOCAL_URL, HISTORY_CAP, clearChatHistory } from "./route.mjs";
 
 // ── Slash commands ───────────────────────────────────────────────────────────
 export const COMMANDS = [
@@ -94,6 +94,7 @@ export const handleCommand = async (cmdIn, arg, chatKey, meta = {}, defaultAgent
       return HELP_TEXT;
     case "new":
       state.history = [];
+      clearChatHistory(chatKey); // also drop any persisted copy so /new stays fresh across a restart
       return "🧹 fresh conversation";
     case "health": {
       const r = await jget(`${MYAI_LOCAL_URL}/health`);
@@ -189,7 +190,11 @@ export const handleCommand = async (cmdIn, arg, chatKey, meta = {}, defaultAgent
         } catch { /* skip malformed line */ }
       }
       if (msgs.length === 0) return `session ${arg} had no readable messages`;
-      state.history = msgs.slice(-HISTORY_CAP);
+      // Load FULL history (not capped): HISTORY_CAP is only the send window applied
+      // at routeToGoose time, so a resumed then-persisted chat keeps all its loaded
+      // messages rather than truncating the store to ~10 turns on the next turn.
+
+      state.history = msgs;
       return `▶️ resumed session ${arg} (${msgs.length} messages loaded)`;
     }
     case "sessions": {

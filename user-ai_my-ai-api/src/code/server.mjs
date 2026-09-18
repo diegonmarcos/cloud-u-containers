@@ -21,6 +21,7 @@ import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 import { runAgenticLoop, mcpEnabled, metaTools, MCP_ENABLED, searchTools, getServerCounts } from "./mcp.mjs";
+import { SESSIONS_DIR } from "./sessions-store.mjs";
 
 const PORT          = parseInt(process.env.BRIDGE_PORT || "3217", 10);
 const BIND          = process.env.BRIDGE_BIND || "127.0.0.1";
@@ -49,8 +50,9 @@ const GOOSE_MODEL = process.env.GOOSE_MODEL || DEFAULT_MODEL;
 const HERMES_MODEL = process.env.HERMES_MODEL || "nousresearch/hermes-3-llama-3.1-405b:free";
 
 // ── cross-device session store ─────────────────────────────────────────────
-const SESSIONS_DIR  = process.env.BRIDGE_SESSIONS_DIR ||
-  path.join(process.env.HOME || ".", ".goose-sessions");
+// SESSIONS_DIR is declared ONCE in sessions-store.mjs and shared — this server
+// serves it, route.mjs persists the telegram bots' chat history into it. The
+// SESSIONS_KEEP prune below applies to PUT writes through this endpoint.
 const SESSIONS_KEEP = parseInt(process.env.BRIDGE_SESSIONS_KEEP || "20", 10);
 const safeSeg = (s) => /^[A-Za-z0-9._-]+$/.test(s || "");
 
