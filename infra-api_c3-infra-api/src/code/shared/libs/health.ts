@@ -5,6 +5,9 @@ import { exec } from "./exec.js";
 // 2026-04-27 migrated: cloud-data-configs.json → _cloud-data-consolidated.json[.configs]
 import { getConfigsSlice } from "./paths.js";
 import type { VmConfig, ServiceConfig } from "./types.js";
+// Pure match/liveness helpers — extracted so the tester and the runtime share
+// ONE implementation without either loading the other (ticket #476).
+import { isDeployed, runningNames } from "./health-match.js";
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -218,10 +221,8 @@ export function healthDrift(): DriftEntry[] {
         // "Up" enter the deployed set. Before this filter, umami was
         // reported deployed=true status=ok while all three of its
         // containers were Exited (ticket #395).
-        const runningNames = containers
-          .filter((c) => c.status?.toLowerCase().startsWith("up"))
-          .map((c) => c.name ?? "");
-        const names = new Set(runningNames);
+        const running = runningNames(containers);
+        const names = new Set(running);
         deployedByVm.set(vmId, names);
         Array.from(names).forEach((name) => {
           allContainerNames.add(name);
@@ -271,21 +272,9 @@ export function healthDrift(): DriftEntry[] {
     // '*' or '?') are then checked against deployed names as a fall-through.
     const declaredNames: string[] = serviceContainerNames(svc, serviceName);
 
-    const hasGlob = (pat: string) => pat.includes("*") || pat.includes("?");
-    const globToRegex = (pat: string) =>
-      new RegExp("^" + pat.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".") + "$");
     const deployedList = Array.from(vmContainers);
-    const matchingContainers = deployedList.filter((name) => {
-      for (const pat of declaredNames) {
-        if (!hasGlob(pat)) {
-          if (pat === name) return true;
-        } else if (globToRegex(pat).test(name)) {
-          return true;
-        }
-      }
-      return false;
-    });
-    const isDeployed = matchingContainers.length > 0;
+    const matchingContainers = deployedList.filter((name) => isDeployed(declaredNames, [name]));
+    const deployed = isDeployed(declaredNames, deployedList);
 
     for (const name of matchingContainers) {
       accountedContainers.add(name);
@@ -294,8 +283,8 @@ export function healthDrift(): DriftEntry[] {
     drift.push({
       service: serviceName,
       declared: true,
-      deployed: isDeployed,
-      status: isDeployed ? "ok" : "missing",
+      deployed: deployed,
+      status: deployed ? "ok" : "missing",
     });
   }
 

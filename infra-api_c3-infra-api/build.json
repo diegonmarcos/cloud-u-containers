@@ -50,6 +50,12 @@
   "health": {
     "path": "/c3-infra-api/health"
   },
+  "tests": {
+    "drift-multi-container": {
+      "cmd": "node test-drift-multi-container.ts",
+      "cwd": "src"
+    }
+  },
   "monitoring": {
     "tls_check": true,
     "dns_check": true,
