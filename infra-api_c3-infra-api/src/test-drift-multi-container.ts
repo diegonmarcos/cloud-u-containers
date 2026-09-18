@@ -3,37 +3,17 @@
 // container_name entries are running. Also validates glob-pattern matching
 // (e.g. "photoprism_*") works.
 //
-// Usage: npx tsx test-drift-multi-container.ts
+// Usage: node test-drift-multi-container.ts
 // Expected: exits 0 with PASS, non-zero on failure.
 
 import assert from "node:assert/strict";
 
-// Inline port of the glob matcher from code/shared/libs/health.ts so the test
-// doesn't require the full runtime (config.json, SSH access, etc.) to load.
-function hasGlob(pat: string): boolean { return pat.includes("*") || pat.includes("?"); }
-function globToRegex(pat: string): RegExp {
-    return new RegExp("^" + pat.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".") + "$");
-}
-function isDeployed(declared: string[], deployed: string[]): boolean {
-    return deployed.some((name) =>
-        declared.some((pat) =>
-            hasGlob(pat) ? globToRegex(pat).test(name) : pat === name
-        )
-    );
-}
-
-// Liveness, not existence (ticket #395): healthDrift() builds its deployed set
-// from `docker ps -a`, which lists Exited, Created and Dead containers too.
-// A declared service counts as deployed only while at least one of its
-// containers is actually running, so only statuses starting with "Up" enter
-// the set. Inline port of the fix in code/shared/libs/health.ts so this test
-// stays runnable without the runtime (config, SSH, docker).
-function isRunning(status: string | undefined): boolean {
-    return (status ?? "").toLowerCase().startsWith("up");
-}
-function runningNames(containers: Array<{ name: string; status?: string }>): string[] {
-    return containers.filter((c) => isRunning(c.status)).map((c) => c.name);
-}
+// The five functions under test live in code/shared/libs/health-match.ts —
+// the SAME module the runtime's healthDrift() now uses (ticket #476). It has
+// zero imports, so loading it needs no runtime (config, SSH, docker,
+// filesystem). The old inline port is gone: a copy is what let this test
+// drift from production in the first place.
+import { hasGlob, globToRegex, isDeployed, isRunning, runningNames } from "./code/shared/libs/health-match.ts";
 
 // ── Fixtures: declared container_names from build.json, deployed from docker ps
 const cases: Array<{
@@ -137,17 +117,18 @@ for (const c of livenessCases) {
 // Also confirm the data flow from build.json → declared_names using a real
 // fixture from disk. discoverServicesFromDisk should surface "containers" now.
 import { readFileSync } from "node:fs";
-// Portable fixture lookup: the fleet moved out of cloud-infra/a_solutions into
-// the cloud-u-containers monorepo (service dirs are siblings of the MCPs).
+import { dirname, join } from "node:path";
+// Portable fixture lookup. This tester sits at
+//   <repo>/infra-api_c3-infra-api/src/test-drift-multi-container.ts
+// so two dirname() hops from import.meta.dirname reach the repo root — no
+// hardcoded checkout paths (ticket #476/#479), resolves on the standalone
+// clone and the cloud-infra a_solutions checkout alike.
 function findPhotoprismBuildJson(): string {
-    const candidates = [
-        "/home/diego/git/cloud-infra/a_solutions/aa-sui_photoprism/build.json",
-        "/home/appuser/git/cloud-u-containers/user-media_photoprism/build.json",
-    ];
-    for (const p of candidates) {
-        try { readFileSync(p, "utf-8"); return p; } catch { /* try next */ }
+    const repoRoot = join(dirname(import.meta.dirname), "..");
+    const p = join(repoRoot, "user-media_photoprism", "build.json");
+    try { readFileSync(p, "utf-8"); return p; } catch {
+        throw new Error(`photoprism build.json not found at ${p}`);
     }
-    throw new Error("photoprism build.json not found in any known checkout path");
 }
 const photoprism = JSON.parse(readFileSync(findPhotoprismBuildJson(), "utf-8"));
 const ppContainers = Object.values((photoprism.containers ?? {}) as Record<string, { container_name?: string }>)
