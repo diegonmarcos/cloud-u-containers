@@ -202,13 +202,38 @@ RUN_STATE_BEFORE="$DIST_DIR/.run_state_before.json"
 #                                    its subject fails; it does not skip.
 #
 # KNOWN CEILING, stated rather than hidden: this asserts that SOMETHING
-# answered, not that every class of thing did. `mail` on a mesh-less runner
-# still records a handful of passing local checks (the 2026-09-16 snapshot has
-# three preflight entries that pass with the text "cloud CLI not installed in
-# this environment"), so it would clear this bar while its 23 network probes
-# all failed. Closing that needs per-check severity to reach the exit status
-# inside each derive binary, which is Rust and a different ticket — it is NOT
-# a reason to weaken this one.
+# answered, not that every class of thing did. A run whose ONE class of check
+# happens to pass still clears this bar even if every other class it recorded
+# failed outright — e.g. `mail`'s local disk/mem/load checks (which pass on
+# any working shell regardless of network reachability) would clear this bar
+# even if its ~20 network/SSH probes in the same run all failed. (#392 fixed
+# the adjacent bug where an UNRUNNABLE check — "cloud CLI not installed" —
+# scored as `passed`; see cloud-mail-health-full/src/phases.rs. That closed a
+# false-PASS, not this ceiling: a run can still clear this guard on the
+# strength of one healthy class while every other class it touched is red.)
+#
+# #392 re-examined closing this and chose to defer it again, same call #385
+# made, now with the cost spelled out rather than just named:
+#   COST:  per-check severity needs (a) a data-driven registry of which check
+#          classes each report kind is expected to produce — today this guard
+#          deliberately reads NO target list (see "WHY IT KEEPS NO LIST OF
+#          TARGETS" above) specifically to avoid a hand-maintained list going
+#          stale; a per-class requirement reintroduces that exact problem
+#          unless the classes come from each report kind's own declared
+#          schema, which does not exist yet. (b) threading a class/section tag
+#          through every Check in all 6 Rust derive crates, each emitting ad
+#          hoc Check structs today (a `severity` field exists per-check, see
+#          cloud-mail-health-full/src/phases.rs, but nothing groups checks by
+#          class). (c) moving the assertion into each derive binary's own exit
+#          code, which is Rust, cross-crate, and unbuildable from a shell-only
+#          dispatch context — every iteration would be a CI round-trip rather
+#          than a local compile.
+#   BUYS:  closes the narrower remaining gap where a run answers SOMETHING but
+#          not ENOUGH (distinct from #391/#392's zero-reach and hollow-mail
+#          defects, which were runs that answered NOTHING).
+# Given that cost against a gap this narrow, it stays open as a separate,
+# scoped ticket rather than a same-day Rust refactor across 6 crates with no
+# local build to verify it against.
 #
 # There is deliberately no opt-out environment variable, for the same reason
 # require_hosts_reached has none.

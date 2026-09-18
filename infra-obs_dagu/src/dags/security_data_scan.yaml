@@ -18,6 +18,17 @@ steps:
     # directly, leaving `$GITHUB_TOKEN` as a LITERAL string in the inner
     # container's env (same bug class as report_daily's 401, fixed 2026-06).
     # BEARER_TOKEN: entrypoint §5d fails loud without it (R6 hardening).
+    #
+    # #392 audited this DAG for the same bypass as report_daily/report_analytics
+    # (calling a crate's OWN build.sh directly, skipping both vacuity guards).
+    # It does NOT have that shape: `bash src/build.sh sec` is the reports
+    # ORCHESTRATOR's own build.sh (src/src/build.sh), whose `sec` target is
+    # `cmd_one cloud-sec-data-report all` — already guarded by
+    # require_probe_reached (see that function below in build.sh). It is also
+    # not `daily-mail`/`analytics-mail`'s shape for a second reason: this step
+    # sends no SMTP mail at all (no `send` call anywhere in this DAG) — the
+    # "hollow green mailed to Diego" failure mode #392 is about does not apply
+    # here regardless of the guard question. No change needed.
     command: |
       docker run --rm --network host \
         --pull always \
