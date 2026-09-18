@@ -161,31 +161,6 @@
       "comment": "Spanish + German job-search subject keywords."
     },
     {
-      "id": "route.profile.housing_es_de",
-      "kind": "route",
-      "priority": 100,
-      "when": {
-        "type": "from_domain",
-        "values": [
-          "idealista.com",
-          "fotocasa.es",
-          "pisos.com",
-          "immobilienscout24.de",
-          "immowelt.de"
-        ]
-      },
-      "actions": {
-        "copy_to": "house",
-        "flags": [
-          "Housing_RealEstate"
-        ]
-      },
-      "engines": {
-        "stalwart": "route_only",
-        "maddy": "route_only"
-      }
-    },
-    {
       "id": "route.profile.postal_es",
       "kind": "route",
       "priority": 100,

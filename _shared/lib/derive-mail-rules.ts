@@ -35,6 +35,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
 
 // ── Types ───────────────────────────────────────────────────────────
 
@@ -600,7 +601,11 @@ export function toLegacyJson(merged: Merged): Json {
 
 // ── CLI ─────────────────────────────────────────────────────────────
 
-const ROOT = path.resolve(__dirname, '..', '..');
+// import.meta.url, not __dirname: this file is loaded as ESM (it uses
+// import/export, which Node's type-stripping auto-detects as module scope,
+// where __dirname does not exist) by both tsx and plain `node file.ts`.
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const ROOT = path.resolve(HERE, '..', '..');
 const STALWART = path.join(ROOT, 'user-comm_tools-stalwart');
 const MADDY = path.join(ROOT, 'user-comm_tools-maddy');
 
@@ -687,4 +692,6 @@ function main() {
   }
 }
 
-if (require.main === module) main();
+// ESM equivalent of `require.main === module`: true when this file was
+// invoked directly (`node derive-mail-rules.ts`), false when imported.
+if (import.meta.url === `file://${process.argv[1]}`) main();

@@ -281,5 +281,9 @@
   ],
   "build": {
     "headers_enforced": true
+  },
+  "_doc_tests": "Registered #502 (this repo's tester CI only runs what a build.json's `tests` key names, per .github/scripts/run-service-tests.sh -- an unnamed tester sits in the tree, executable, and reached by nothing, same pattern cloud-u-android's #368 found 44 times over). mail-rules was a golden+structural suite for derive-mail-rules.ts with no build.json anywhere pointing at it, so it had never run in CI despite existing since #269. It pins the declared mail folder tree (parent/child nesting, not just names) and the Sieve/maddy artifact derivation; #502 added the structural assertions for the Alerts/noAlerts split, the 24 House -> F0 move (with real de-dup), and the CLOUD -> 40 C3 renumber.",
+  "tests": {
+    "mail-rules": { "cmd": "bash ../_shared/lib/mail-rules.tests/run-tests.sh" }
   }
 }

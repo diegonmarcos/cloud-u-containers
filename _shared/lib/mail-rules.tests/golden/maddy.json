@@ -404,15 +404,6 @@
           "vattenfall.de",
           "iberdrola.es",
           "endesa.com",
-          "wg-gesucht.de",
-          "nachrichten.immobilienscout24.de",
-          "myplace.de",
-          "kleinanzeigen.de",
-          "idealista.com",
-          "fotocasa.es",
-          "pisos.com",
-          "immobilienscout24.de",
-          "immowelt.de",
           "doctolib.de",
           "doctolib.com"
         ]
@@ -446,6 +437,24 @@
           "42heilbronn.de",
           "42.fr",
           "intra.42.fr"
+        ]
+      }
+    },
+    {
+      "folder": "Fl    🏠 House",
+      "id": "Fl    🏠 House",
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "wg-gesucht.de",
+          "nachrichten.immobilienscout24.de",
+          "myplace.de",
+          "kleinanzeigen.de",
+          "idealista.com",
+          "fotocasa.es",
+          "pisos.com",
+          "immobilienscout24.de",
+          "immowelt.de"
         ]
       }
     },
@@ -833,6 +842,15 @@
                 "vattenfall.de",
                 "iberdrola.es",
                 "endesa.com",
+                "doctolib.de",
+                "doctolib.com"
+              ]
+            }
+          },
+          {
+            "not": {
+              "type": "from_domain",
+              "values": [
                 "wg-gesucht.de",
                 "nachrichten.immobilienscout24.de",
                 "myplace.de",
@@ -841,9 +859,7 @@
                 "fotocasa.es",
                 "pisos.com",
                 "immobilienscout24.de",
-                "immowelt.de",
-                "doctolib.de",
-                "doctolib.com"
+                "immowelt.de"
               ]
             }
           },
