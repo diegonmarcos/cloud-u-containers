@@ -1,0 +1,46 @@
+name: Per-service tests (runs every build.json::tests tester)
+
+# This is cloud-u-containers' TESTER workflow — the sibling of the dispatch
+# courier (dispatch-cloud-infra.yml). The courier is COURIER-ONLY: its green
+# means only that a container-change dispatch was POSTed to cloud-infra, never
+# that anything was built, deployed or tested. That indistinguishability
+# (perfect run vs completely untested commit both record TOTAL=1 PENDING=0
+# NONSUCCESS=0) is the defect ticket #486 exists to remove.
+#
+# This workflow actually EXECUTES the per-service testers declared under each
+# build.json's `tests` key, and enforces the one rule the fleet keeps breaking:
+# a run that executed ZERO testers must NOT look like a run where everything
+# passed. The runner (.github/scripts/run-service-tests.sh) prints how many
+# testers it discovered and how many it executed, and FAILS when that number
+# is zero — zero discovered is a broken discovery step, not a clean repo.
+# Today it discovers exactly one tester (infra-api_c3-infra-api's
+# drift-multi-container, registered by #476) and grows as services declare more.
+#
+# Runs on ubuntu-latest, NOT the self-hosted ship-wg-runner: cgc-db index jobs
+# hold that runner for up to 5.5 hours (#179) and live agents depend on the CI
+# behind it.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Tests are cheap and a newer push supersedes an older one's verdict; cancelling
+# the stale run keeps the runner free.
+concurrency:
+  group: per-service-tests
+  cancel-in-progress: true
+
+jobs:
+  run-service-testers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The declared testers are source-level .ts run via `node`. Node 24 strips
+      # TypeScript natively, so the declared `node <file>.ts` cmd needs no flag.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Discover and execute every declared per-service tester
+        run: bash .github/scripts/run-service-tests.sh

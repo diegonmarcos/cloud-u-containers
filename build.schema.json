@@ -465,6 +465,25 @@
         }
       }
     },
+    "tests": {
+      "type": "object",
+      "description": "Per-service source testers executed by this repo's tester CI (.github/workflows/per-service-tests.yml -> .github/scripts/run-service-tests.sh) on every push to main. Maps a tester name to a command + working directory. The runner FAILS when zero testers are declared — a green run must have executed at least one — and any malformed (non-object) declaration is a config error, not silently ignored.",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["cmd"],
+        "additionalProperties": false,
+        "properties": {
+          "cmd": {
+            "type": "string",
+            "description": "Shell command that runs the tester (e.g. 'node test-drift-multi-container.ts'). Executed from the working directory below. A non-zero exit fails the run."
+          },
+          "cwd": {
+            "type": "string",
+            "description": "Directory to run the tester from, relative to the directory containing this build.json (e.g. 'src' for a tester under <svc>/src). Optional; defaults to the build.json's own directory."
+          }
+        }
+      }
+    },
     "monitoring": {
       "type": "object",
       "description": "Monitoring probe configuration",
