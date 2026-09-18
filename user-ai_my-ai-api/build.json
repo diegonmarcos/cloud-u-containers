@@ -69,7 +69,13 @@
     "_sessions_comment": "Cross-device session store for goose sessions (WG-only). Devices push recent goose session .jsonl here; any device can list/GET them to restore. dir is under container HOME; keep = max sessions retained per device.",
     "sessions": {
       "dir": ".goose-sessions",
-      "keep": 20
+      "keep": 20,
+      "_resume_comment": "Ticket #513: /resume resumes the TAIL of a session, never the whole file. The live store holds a 127 MB Claude Code transcript; reading it whole is an OOM in the bot and an unusable context upstream. max_bytes bounds what server.mjs reads off the end of the file, max_messages bounds how many of the messages in that window land in the chat's history, and max_listed bounds the /resume listing. max_listed must cover the WHOLE store (keep x devices, today 20 x 2 = 40): the listing was hardcoded to 10 and Diego's live session sits at rank 18 by mtime, so the one session the ticket is about was invisible in the very listing meant to offer it. Consumed via compose.nix -> BRIDGE_RESUME_MAX_BYTES / BRIDGE_RESUME_MAX_MESSAGES / BRIDGE_RESUME_MAX_LISTED, read once in sessions-store.mjs.",
+      "resume": {
+        "max_bytes": 1048576,
+        "max_messages": 120,
+        "max_listed": 40
+      }
     },
     "headroom": {
       "enabled": true,
@@ -86,6 +92,10 @@
   "tests": {
     "session-model-routing": {
       "cmd": "node test-my-ai-telegram-session-model.ts",
+      "cwd": "src/code"
+    },
+    "resume-cross-device": {
+      "cmd": "node test-my-ai-resume-cross-device.mjs",
       "cwd": "src/code"
     }
   },

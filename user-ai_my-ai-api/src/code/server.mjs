@@ -21,7 +21,7 @@ import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 import { runAgenticLoop, mcpEnabled, metaTools, MCP_ENABLED, searchTools, getServerCounts } from "./mcp.mjs";
-import { SESSIONS_DIR } from "./sessions-store.mjs";
+import { SESSIONS_DIR, readTailBytes } from "./sessions-store.mjs";
 
 const PORT          = parseInt(process.env.BRIDGE_PORT || "3217", 10);
 const BIND          = process.env.BRIDGE_BIND || "127.0.0.1";
@@ -445,8 +445,21 @@ const server = http.createServer(async (req, res) => {
         const file = path.join(ddir, `${id}.jsonl`);
         if (req.method === "GET") {
           if (!fs.existsSync(file)) return send(404, { error: { message: "no such session" } });
-          res.writeHead(200, { "content-type": "application/x-ndjson" });
-          return res.end(fs.readFileSync(file));
+          // ?tail=<bytes> serves only the END of the file (#513). The store holds
+          // a 127 MB session; readFileSync on it is an OOM, so a client that
+          // cannot use the whole thing must be able to ask for a bound. The
+          // x-session-bytes-* headers let the caller report what it skipped
+          // instead of truncating silently. No tail param = whole file, exactly
+          // as before — this is an extension, not a behaviour change.
+          const st = fs.statSync(file);
+          const tail = parseInt(new URLSearchParams(req.url.split("?")[1] || "").get("tail") || "0", 10) || 0;
+          const body = tail > 0 && tail < st.size ? readTailBytes(file, tail) : fs.readFileSync(file);
+          res.writeHead(200, {
+            "content-type": "application/x-ndjson",
+            "x-session-bytes-total": String(st.size),
+            "x-session-bytes-sent": String(Buffer.byteLength(body)),
+          });
+          return res.end(body);
         }
         if (req.method === "PUT") {
           const body = await readBody(req);

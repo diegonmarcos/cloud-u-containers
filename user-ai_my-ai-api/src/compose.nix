@@ -77,6 +77,14 @@ in
         # different model would be a second declaration of exactly the kind this file
         # exists to avoid (mirrors the GOOSE_MODEL reasoning above).
         CLAUDE_MODEL          = rt.claude_model;
+        # /resume bound (#513). The cross-device store holds a 127 MB Claude
+        # Code transcript; /resume reads only the tail of it. Declared once in
+        # build.json runtime.sessions.resume — no `or` fallback on purpose, for
+        # the same reason as GOOSE_MODEL above: a default here would be a second
+        # declaration of a number that already has one.
+        BRIDGE_RESUME_MAX_BYTES    = toString rt.sessions.resume.max_bytes;
+        BRIDGE_RESUME_MAX_MESSAGES = toString rt.sessions.resume.max_messages;
+        BRIDGE_RESUME_MAX_LISTED   = toString rt.sessions.resume.max_listed;
       };
       volumes = [
         "my_ai_home:/home/appuser"
