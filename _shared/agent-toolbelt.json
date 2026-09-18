@@ -1,0 +1,38 @@
+{
+  "_comment": "ticket #509 — single declaration of the tool belt every AI agent container ships. Extends the #366/#450 gh/yq/ripgrep hook rather than starting a second one. Consumed by _shared/engine.nix, which splices apt_packages + the gh/yq install into: (a) Type-B (wrap upstream image) builds when build.json sets docker.agent_toolbelt=true — see hermes-agent; (b) Type-A (own Dockerfile) builds via the @AGENT_TOOLBELT_APT@ / @AGENT_TOOLBELT_EXTRA_RUN@ placeholders — see my-ai_claude-api and my-ai-api. Add a tool ONCE here, never edit a Dockerfile's apt-get line directly. `containers` enumerates every AI container that must carry this declaration, so 9_others/test-agent-toolbelt.ts can fail when a fourth one is added without opting in.",
+  "_sudo_excluded_comment": "sudo is deliberately NOT in this list. my-ai_claude-api and my-ai-api run as uid 10001, hermes-agent as uid 10001/10000 (see user-ai_hermes-agent/src/compose.nix HERMES_UID/HERMES_GID) — all three are unprivileged by design, and sudo would have no privilege to escalate to. Adding it just to complete a tool-name list would be theatre, not tooling.",
+  "apt_packages": [
+    "curl", "ca-certificates", "jq", "ripgrep",
+    "procps", "htop", "lsof", "psmisc",
+    "wget", "openssh-client", "rsync", "unzip", "zip", "xz-utils",
+    "iproute2", "net-tools", "iputils-ping", "dnsutils", "netcat-openbsd",
+    "tree", "file", "less", "patch", "make", "gcc", "bc",
+    "strace", "tcpdump", "vim", "nano", "sysstat"
+  ],
+  "tarballs": {
+    "gh": {
+      "version": "2.63.2",
+      "url": "https://github.com/cli/cli/releases/download/v{version}/gh_{version}_linux_{arch}.tar.gz",
+      "extracted_dir": "gh_{version}_linux_{arch}",
+      "extracted_bin": "bin/gh"
+    },
+    "yq": {
+      "version": "4.44.6",
+      "url": "https://github.com/mikefarah/yq/releases/download/v{version}/yq_linux_{arch}"
+    }
+  },
+  "binaries": [
+    "ps", "top", "watch", "free", "vmstat", "uptime",
+    "htop", "lsof", "pstree", "killall",
+    "wget", "ssh", "rsync", "unzip", "zip", "xz",
+    "ss", "netstat", "ping", "dig", "host", "nc",
+    "tree", "file", "less", "patch", "make", "gcc", "bc",
+    "strace", "tcpdump", "vim", "nano", "iostat",
+    "gh", "yq", "jq", "rg", "git", "curl"
+  ],
+  "containers": [
+    { "name": "my-ai_claude-api", "dir": "user-ai_my-ai_claude-api", "kind": "type-a", "dockerfile": "src/code/Dockerfile" },
+    { "name": "my-ai-api", "dir": "user-ai_my-ai-api", "kind": "type-a", "dockerfile": "src/code/Dockerfile" },
+    { "name": "hermes-agent", "dir": "user-ai_hermes-agent", "kind": "type-b", "build_json": "build.json" }
+  ]
+}

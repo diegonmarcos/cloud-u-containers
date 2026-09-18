@@ -21,17 +21,18 @@
     "image": "hermes-agent",
     "arch": "arm64",
     "platform": "linux/arm64",
-    "runtime_packages": {
-      "apt": "jq ripgrep wget curl ca-certificates unzip netcat-openbsd patch procps less"
-    },
-    "runtime_extra_run": [
-      "set -eu; ARCH=\"$(uname -m)\"; case \"$ARCH\" in aarch64|arm64) TOOL_ARCH=arm64 ;; x86_64|amd64) TOOL_ARCH=amd64 ;; *) echo \"unsupported architecture: $ARCH\" >&2; exit 1 ;; esac; GH_VERSION=2.63.2; curl -fsSL \"https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_${TOOL_ARCH}.tar.gz\" | tar -xz -C /tmp; install -m 0755 \"/tmp/gh_${GH_VERSION}_linux_${TOOL_ARCH}/bin/gh\" /usr/local/bin/gh; rm -rf \"/tmp/gh_${GH_VERSION}_linux_${TOOL_ARCH}\"; YQ_VERSION=4.44.6; curl -fsSL -o /usr/local/bin/yq \"https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_${TOOL_ARCH}\"; chmod +x /usr/local/bin/yq; gh --version; yq --version"
-    ]
+    "_agent_toolbelt_doc": "ticket #509: agent_toolbelt=true replaces the hand-written runtime_packages/runtime_extra_run pair that used to live here. _shared/engine.nix now derives both from the single fleet-wide declaration in _shared/agent-toolbelt.json (the same one my-ai_claude-api and my-ai-api splice into their own Dockerfiles), so this container's tool list cannot drift from theirs.",
+    "agent_toolbelt": true
   },
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/hermes-agent",
     "compose_flags": "--pull always --force-recreate"
+  },
+  "tests": {
+    "agent-toolbelt-declared": {
+      "cmd": "node ../_shared/test-agent-toolbelt.mjs"
+    }
   },
   "secrets": {
     "escape_dollars": "false"
