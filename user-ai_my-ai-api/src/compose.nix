@@ -70,6 +70,13 @@ in
         TELEGRAM_ALLOW_FROM = gw.telegram_allow_from or "";
         MCP_ENABLED        = "1";
         CLAUDE_CLI_BASE_URL = "http://10.0.0.6:3117";
+        # The claude agent model, sent explicitly by route.mjs so server.mjs never
+        # substitutes its OWN OpenRouter DEFAULT_MODEL (which would make the superset
+        # echo a foreign OpenRouter name back). Single declaration: build.json
+        # runtime.claude_model. No `or` fallback on purpose — a default naming a
+        # different model would be a second declaration of exactly the kind this file
+        # exists to avoid (mirrors the GOOSE_MODEL reasoning above).
+        CLAUDE_MODEL          = rt.claude_model;
       };
       volumes = [
         "my_ai_home:/home/appuser"
