@@ -22,7 +22,7 @@ UPDATE=0
 
 [[ -f "$GENERAL" ]] || { echo "missing: $GENERAL" >&2; exit 1; }
 [[ -f "$PROFILE" ]] || { echo "missing: $PROFILE" >&2; exit 1; }
-command -v tsx             >/dev/null || { echo "tsx required"             >&2; exit 1; }
+command -v node             >/dev/null || { echo "node required"            >&2; exit 1; }
 command -v jq              >/dev/null || { echo "jq required"              >&2; exit 1; }
 
 TMP="$(mktemp -d)"
@@ -32,7 +32,15 @@ trap 'rm -rf "$TMP"' EXIT
 # `nix-instantiate --eval --strict --json | jq -r .sieve`, which is also why
 # the old sieve golden carried a trailing blank line the real file never had:
 # jq -r appends a newline to a string that already ended in one.
-tsx "$DERIVER" --emit "$TMP"
+#
+# Plain `node`, not `tsx`: the CI runner (.github/workflows/per-service-tests.yml)
+# sets up Node 24 and nothing else, and Node's own native TS type-stripping is
+# what the sibling per-service testers already rely on ("declared `node
+# <file>.ts` cmd needs no flag") -- tsx was never installed there, so a `tsx`
+# requirement here meant this suite could only ever fail closed if it were
+# ever wired into CI. derive-mail-rules.ts had to drop __dirname/require.main
+# (ESM-only under native type-stripping) to make this work; see its own diff.
+node "$DERIVER" --emit "$TMP"
 
 mkdir -p "$GOLDEN_DIR"
 
@@ -62,33 +70,43 @@ diff_file maddy.json     "$TMP/maddy.json"     || FAIL=1
 
 assert() { local msg="$1"; shift; if "$@"; then echo "ok: $msg"; else echo "FAIL: $msg" >&2; FAIL=1; fi; }
 
-RULE_COUNT_TOTAL="$(jq '.rules|length' "$GENERAL" "$PROFILE" | awk '{s+=$1} END{print s}')"
 MADDY_RULE_COUNT="$(jq '.rules | length' "$TMP/maddy.json")"
-MADDY_DROPPED="$(jq '[.rules[].engines.maddy] | map(select(.=="drop")) | length' "$GENERAL" "$PROFILE" | awk '{s+=$1} END{print s}')"
 
 # The artifacts are COMMITTED, so nothing forces a regenerate when someone
 # edits a canonical. Without this, a rule change lands in git while the sieve
 # and both mail-rules.json files still describe the previous one -- and the
 # only symptom is mail filed by rules that are no longer in the repo.
-artifacts_current() { tsx "$DERIVER" --check >/dev/null 2>&1; }
-assert "committed artifacts match the canonicals (else: tsx _shared/lib/derive-mail-rules.ts)" \
+artifacts_current() { node "$DERIVER" --check >/dev/null 2>&1; }
+assert "committed artifacts match the canonicals (else: node _shared/lib/derive-mail-rules.ts)" \
   artifacts_current
 
 assert "no duplicate rule ids in general+profile" \
   test "$(jq -r '.rules[].id' "$GENERAL" "$PROFILE" | sort | uniq -d | wc -l)" = 0
 
-assert "maddy rule count = total - dropped" \
-  test "$MADDY_RULE_COUNT" = $(( RULE_COUNT_TOTAL - MADDY_DROPPED ))
+# Stale since the unified-inbox/sender-view redesign (toMaddyJson's own
+# comment: "Deliberately NOT derived from inbox_copy.enabled"). maddy.json's
+# `rules` are the F* SENDER-AXIS VIEWS, not the canonical rules[] filtered by
+# engines.maddy -- that link broke when Maddy stopped routing per-rule and
+# started doing unified-inbox + one COPY per matched sender view. Verified
+# against baseline (HEAD before #502): this was already wrong, 12 actual vs
+# 56 expected under the old formula, for the same reason. The invariant that
+# is still true: one maddy rule per declared sender-axis view.
+SENDER_VIEW_COUNT="$(jq '[.filters.views[] | select(.axis=="sender")] | length' "$GENERAL")"
+assert "maddy rule count = number of declared sender-axis (F*) views ($SENDER_VIEW_COUNT)" \
+  test "$MADDY_RULE_COUNT" = "$SENDER_VIEW_COUNT"
 
 assert "every maddy rule has resolved folder or flags (not both empty)" \
   test "$(jq '[.rules[] | select((.folder == null or .folder == "") and ((.flags // []) | length == 0))] | length' "$TMP/maddy.json")" = 0
 
-assert "every maddy route has a folder that exists in general.folders" \
+# Same stale premise as above, fixed the same way: a maddy rule's folder is a
+# sender-view display name (Fa.../Fl.../Fz...), never a general.folders entry
+# -- those are two different namespaces by design (numeric routes vs. F*
+# sender classification) and always were.
+assert "every maddy route's folder is a declared sender-axis view" \
   test "$(jq --slurpfile g "$GENERAL" '
-    [.rules[] | select(.folder != null)]
-    | map(.folder)
-    | unique
-    | map(. as $f | select( ($g[0].folders | to_entries | map(.value)) | index($f) | not ))
+    ([$g[0].filters.views[] | select(.axis=="sender") | .folder]) as $declared
+    | [.rules[] | select(.folder != null) | .folder] | unique
+    | map(. as $f | select($declared | index($f) | not))
     | length
   ' "$TMP/maddy.json")" = 0
 
@@ -142,8 +160,8 @@ assert "folders spacing: every leaf matches '^AZ  X…'" \
 assert "folders_ui spacing: every parent matches '^AZ X…'" \
   test "$(jq '[.folders_ui[] | select(test("^[0-9A-Za-z]{2} [^ ]") | not)] | length' "$GENERAL")" = 0
 
-assert "folders_ui: exactly 4 parent UI entries" \
-  test "$(jq '.folders_ui | length' "$GENERAL")" = 4
+assert "folders_ui: exactly 7 parent UI entries (#502: +40 C3, +50 BURO, +60 MY-PM, +70 SOCIALS, -30 CLOUD)" \
+  test "$(jq '.folders_ui | length' "$GENERAL")" = 7
 
 # Folder taxonomy and rule set are two sources of truth that can drift apart
 # silently (14/23 were declared with zero routing rules for a while and
@@ -163,8 +181,21 @@ UNREACHABLE_FOLDERS="$(jq -nr --slurpfile g "$GENERAL" --slurpfile p "$PROFILE" 
 assert "every non-fallback, non-archive folder is targeted by at least one route rule (unreachable: ${UNREACHABLE_FOLDERS:-none})" \
   test -z "$UNREACHABLE_FOLDERS"
 
-assert "sieve has inbox-read addflag on routes when inbox_copy.enabled" \
-  test "$(grep -c 'addflag "\\\\Seen"' "$TMP/stalwart.sieve")" -gt 0
+# The assertion's own name was the spec; the body never read inbox_copy.enabled
+# and just demanded the flag unconditionally. That was always wrong for THIS
+# account's actual, deliberate setting -- inbox_copy.enabled is false (its own
+# doc: shared-keywords JMAP objects mean addflag \Seen here marks every
+# category copy read too, defeating unread counts everywhere) -- so verified
+# against baseline this failed on HEAD as well, for the same reason. Branch on
+# the real value instead of asserting one side of it as a constant.
+INBOX_COPY_ENABLED="$(jq -r '.inbox_copy.enabled // false' "$GENERAL")"
+if [[ "$INBOX_COPY_ENABLED" == "true" ]]; then
+  assert "sieve has inbox-read addflag on routes (inbox_copy.enabled=true)" \
+    test "$(grep -c 'addflag "\\\\Seen"' "$TMP/stalwart.sieve")" -gt 0
+else
+  assert "sieve has NO inbox-read addflag on routes (inbox_copy.enabled=false: category copies stay unread)" \
+    test "$(grep -c 'addflag "\\\\Seen"' "$TMP/stalwart.sieve")" = 0
+fi
 
 # ── Folder tree / Sieve path agreement ────────────────────────────
 # In IMAP a mailbox's hierarchy IS its name, so the moment a folder is nested
@@ -274,6 +305,62 @@ DUP_LEAVES="$(jq -r '
 ' "$RULES_JSON")"
 assert "no two managed mailboxes share a leaf name (dupes: ${DUP_LEAVES:-none})" \
   test -z "$DUP_LEAVES"
+
+# ── Ticket #502: declared restructure, proven against the TREE not just names
+#
+# The vacuity trap the ticket itself calls out: "folder X exists" passes on a
+# flat tree with a merely-prefixed name. Every check below reads
+# folder_parents (the REAL resolved tree, walked to root) rather than
+# string-matching a display name, and the de-dup check diffs actual predicate
+# VALUES rather than trusting a comment that says they were removed.
+
+assert "10 _ ADMIN and 20 _ INFORMS are UNCHANGED (#502's destructive half — deleting them — is not authorised)" \
+  test "$(jq -r '(.folders_ui | index("10 _ ADMIN") != null) and (.folders_ui | index("20 _ INFORMS") != null)' "$GENERAL")" = true
+
+assert "'house' (24 House) is retired from the numeric folders map, not left as a second copy of Fl" \
+  test "$(jq '.folders | has("house")' "$GENERAL")" = false
+
+DEDUP_OVERLAP="$(jq -rn --slurpfile r "$RULES_JSON" '
+  ($r[0].filters.views | map(select(.folder | startswith("Fi")))[0].predicate.values // []) as $fi
+  | ($r[0].filters.views | map(select(.folder | startswith("Fl")))[0].predicate.values // []) as $fl
+  | ($fi + $fl | group_by(.) | map(select(length > 1) | .[0]))
+  | join(", ")
+')"
+assert "Fl House and Fi Utilities share no domain (de-dup actually removed the duplicate: ${DEDUP_OVERLAP:-none overlap})" \
+  test -z "$DEDUP_OVERLAP"
+
+FL_PARENT="$(jq -r '
+  (.filters.views[] | select(.folder | startswith("Fl")) | .folder) as $fl
+  | .folder_parents[$fl] // "MISSING"
+' "$RULES_JSON")"
+assert "Fl House's resolved PARENT (folder_parents, not its name) is the F0 sender header (got: $FL_PARENT)" \
+  test "$FL_PARENT" = "F0 _ SENDER"
+
+ALERTS_MATCH="$(jq -n --slurpfile r "$RULES_JSON" '
+  ($r[0].filters.views | map(select(.folder == "00 Inbox - Alerts"))[0].predicate // "MISSING_ALERTS") as $a
+  | ($r[0].filters.views | map(select(.folder == "01 Inbox - noAlerts"))[0].predicate.not // "MISSING_NOALERTS") as $na
+  | $a == $na
+')"
+assert "00 Inbox - Alerts and 01 Inbox - noAlerts split the inbox axis as exact complements" \
+  test "$ALERTS_MATCH" = true
+
+assert "40 _ C3 replaces 30 _ CLOUD in folders_ui" \
+  test "$(jq -r '(.folders_ui | index("40 _ C3") != null) and (.folders_ui | index("30 _ CLOUD") == null)' "$GENERAL")" = true
+
+C3_PARENTS="$(jq -r '
+  [.folder_groups[] | select(.name | test("CI/CD|Reports|VPS")) | .name] as $names
+  | ($names | length) as $n
+  | [$names[] as $g | .folder_parents[$g] // "MISSING"] | unique
+  | if length == 1 and $n == 3 then .[0] else ("MISMATCH:" + (. | tostring)) end
+' "$RULES_JSON")"
+assert "CI/CD, Reports and VPS (all three) resolve to one real parent, 40 _ C3 (got: $C3_PARENTS)" \
+  test "$C3_PARENTS" = "40 _ C3"
+
+assert "BURO, MY-PM and SOCIALS containers are declared, still empty (their content is Diego's call, not a guess)" \
+  test "$(jq -r '
+    ["50 _ BURO","60 _ MY-PM","70 _ SOCIALS"] as $want
+    | ($want - .folders_ui | length == 0)
+  ' "$GENERAL")" = true
 
 # ── Priority axis: the star, and the complement that must track it ─
 # `Ea Important` and `Eb Normal` are hand-tiled -- Normal is NOT(Important)

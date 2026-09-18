@@ -19,25 +19,30 @@
     "career": "21    💼 Career & Network",
     "social": "22    📰 Social & General",
     "government": "23    🧻 Government",
-    "house": "24    🏠 House",
     "others": "91    📬 Others (fallback)",
     "archive": "92    📥 Archive",
     "junk": "93    🚫 Junk"
   },
-  "_folders_doc": "Numeric 1*-9* folders are project-scoped, not sender-scoped -- that's what F0 (filters.views, axis=sender) is for. Logistics (flights/rideshare/postal/food-delivery) and Development (code hosting/SaaS dev tools/learning) were retired as numeric targets: covered by Fh Travel / Fe Dev-Tech in the sender axis instead. Only their housing-search subset survives, as 24 House. 30 CLOUD's GH-Workflows/Cloud-Reports/Rss-Notifications and VPS-Oracle/Google/Git live under `folder_groups` below (31/32 are two-level: a parent + 3 children each), not in this flat map.",
+  "_folders_doc": "Numeric 1*-9* folders are project-scoped, not sender-scoped -- that's what F0 (filters.views, axis=sender) is for. Logistics (flights/rideshare/postal/food-delivery) and Development (code hosting/SaaS dev tools/learning) were retired as numeric targets: covered by Fh Travel / Fe Dev-Tech in the sender axis instead. The housing-search subset (formerly 24 House) moved to F0 as `Fl House` (ticket #502) -- it duplicated Fi Utilities & Services' own housing domains, so the numeric route folder and its two rules are retired rather than kept as a second copy of the same classification. 40 _ C3's CI/CD, Reports and VPS-Oracle/Google/Git live under `folder_groups` below (three two-level groups: a parent + its children each), not in this flat map. `folders_ui` also carries three new empty containers (50 BURO, 60 MY-PM, 70 SOCIALS, ticket #502) with no children yet -- their member domains are Diego's call, not a guess made here; see 4_reports or the dispatch-502 report for the open question.",
   "folder_groups": [
     {
-      "key": "cloud_reports_group",
-      "name": "31    ☁️ Cloud - Reports & CI",
+      "key": "cicd_group",
+      "name": "41    ⚙️ CI/CD",
       "children": {
-        "cloud_gh_workflows": "GH Workflows",
+        "cloud_gh_workflows": "GH Workflows"
+      }
+    },
+    {
+      "key": "reports_group",
+      "name": "42    📊 Reports",
+      "children": {
         "cloud_reports_child": "Cloud Reports",
         "cloud_rss_notifications": "Rss Notifications"
       }
     },
     {
       "key": "vps_group",
-      "name": "32    ☁️ Cloud - VPS Providers",
+      "name": "43    ☁️ VPS",
       "children": {
         "vps_oracle": "VPS Oracle",
         "vps_google": "VPS Google",
@@ -45,11 +50,14 @@
       }
     }
   ],
-  "_folders_ui_doc": "Visual section-headers — flat sibling mailboxes (NOT actual parents) that alphabetically sort just before each numeric block (10_ before 11/12/..., 20_ before 21/..., etc). Maddy creates these via the legacy `folders_ui` schema (see flake.nix line 82) and Stalwart's jmap-sorter now mirrors them so the two engines have identical mailbox listings. They are not routing targets — no rule.copy_to references them.",
+  "_folders_ui_doc": "Visual section-headers — flat sibling mailboxes (NOT actual parents) that alphabetically sort just before each numeric block (10_ before 11/12/..., 20_ before 21/..., etc). Maddy creates these via the legacy `folders_ui` schema (see flake.nix line 82) and Stalwart's jmap-sorter now mirrors them so the two engines have identical mailbox listings. They are not routing targets — no rule.copy_to references them. 50/60/70 (BURO/MY-PM/SOCIALS, #502) are declared with zero children on purpose: inventing routing domains for them would be exactly the guess FIRE RULE #8 forbids, so they wait for Diego to say what belongs in each before any folder_groups entry targets them.",
   "folders_ui": [
     "10 _ ADMIN",
     "20 _ INFORMS",
-    "30 _ CLOUD",
+    "40 _ C3",
+    "50 _ BURO",
+    "60 _ MY-PM",
+    "70 _ SOCIALS",
     "90 _ OTHERS"
   ],
   "routing_default": "others",
@@ -77,8 +85,12 @@
       "Ab    📥 Archive": "92    📥 Archive",
       "Ac    🚫 Junk": "93    🚫 Junk",
       "23    🧻 Goverment": "23    🧻 Government",
-      "AA _ OTHERS": "90 _ OTHERS"
-    }
+      "AA _ OTHERS": "90 _ OTHERS",
+      "30 _ CLOUD": "40 _ C3",
+      "31    ☁️ Cloud - Reports & CI": "41    ⚙️ CI/CD",
+      "32    ☁️ Cloud - VPS Providers": "43    ☁️ VPS"
+    },
+    "_doc_502": "Ticket #502 renumbers 30 CLOUD to 40 C3 and splits its one 'Reports & CI' group into two (41 CI/CD, 42 Reports). 'Cloud Reports' and 'Rss Notifications' keep their own leaf names -- only their PARENT changes (31 -> 42), which is a folder_groups.children move, not a rename, so they need no entry here; the compiler's folderParents() re-derives the new parent from the group declaration and a live run applies it as a Mailbox/set parentId update, same as any other reparent. NOT applied here -- this ticket declares the migration, it does not run it against the live server."
   },
   "folder_options": {
     "_doc": "Per-folder client visibility, applied by jmap-sorter's ensure_mailboxes to EVERY folder it manages -- the numeric 1*-9* folders, folder_group children (Rss Notifications, GH Workflows, VPS *), the A*-F* filter views and the '_' section headers alike. One uniform mechanism, so an RSS folder is configured exactly like a mail folder.",
@@ -100,6 +112,7 @@
       "Fi    🏠 Utilities & Services": { "subscribed": true },
       "Fj    👪 Personal": { "subscribed": true },
       "Fk    🎓 Education": { "subscribed": true },
+      "Fl    🏠 House": { "subscribed": true },
       "Fz    📭 Others": { "subscribed": true },
       "F0 _ SENDER": { "subscribed": true }
     }
@@ -110,6 +123,23 @@
     "section_headers": ["A0 _ SIZE", "B0 _ TIME", "C0 _ STATE", "D0 _ ATTACH", "E0 _ PRIORITY", "F0 _ SENDER"],
     "_axis_doc": "Each view declares its axis and whether it is volatile. A volatile view depends on wall-clock time or read state and must be re-evaluated every poll; a static view is a property of the message itself (size, attachments) and is computed once. The size axis is a PARTITION: its buckets are half-open [lo,hi) and must tile the whole range, so every message lands in exactly one. That invariant is what lets the sorter use size-view membership as the sentinel for 'static views already computed' -- guarded by 9_others/test/test_mail_filter_views_partition.sh.",
     "views": [
+      {
+        "folder": "00 Inbox - Alerts",
+        "axis": "inbox",
+        "volatile": false,
+        "_doc": "Ticket #502's 'split Alerts / noAlerts': the complement of 01 noAlerts below, not a new classification. Exactly GitHub Actions failure notifications -- sender is GitHub AND the subject carries 'Run failed:'. Kept as the verbatim negation of 01's own predicate (drop the outer `not`) so the two views can never drift apart into overlapping or gapped sets; run-tests.sh asserts that identity structurally, not just by re-typing it here. Named with a leading 0, same reasoning as 01: sorts above the numeric category folders and is excluded from `filters.source_folder_regex` (^[1-9]) so it is never treated as a source folder for its own recomputation.",
+        "predicate": {
+          "all_of": [
+            {
+              "any_of": [
+                {"type": "from_domain", "values": ["github.com", "noreply.github.com"]},
+                {"type": "from_domain_suffix", "values": [".github.com"]}
+              ]
+            },
+            {"type": "header_contains", "header": "Subject", "values": ["Run failed:"]}
+          ]
+        }
+      },
       {
         "folder": "01 Inbox - noAlerts",
         "axis": "inbox",
@@ -573,7 +603,7 @@
         "folder": "Fi    🏠 Utilities & Services",
         "axis": "sender",
         "volatile": false,
-        "_doc": "Telecom/Energy/Housing/Health. No energy provider outside DE/ES known yet.",
+        "_doc": "Telecom/Energy/Health. No energy provider outside DE/ES known yet. Housing/real-estate domains moved OUT to `Fl House` (ticket #502, live-count check: 415 of this folder's 416 messages were housing platforms) -- they were a verbatim duplicate of the domains route.lifestyle.housing_rental_de and route.profile.housing_es_de already used to file '24 House', two names for one classification. Do not re-add them here; that is exactly the duplication #502 removed.",
         "predicate": {
           "type": "from_domain",
           "values": [
@@ -592,15 +622,6 @@
             "vattenfall.de",
             "iberdrola.es",
             "endesa.com",
-            "wg-gesucht.de",
-            "nachrichten.immobilienscout24.de",
-            "myplace.de",
-            "kleinanzeigen.de",
-            "idealista.com",
-            "fotocasa.es",
-            "pisos.com",
-            "immobilienscout24.de",
-            "immowelt.de",
             "doctolib.de",
             "doctolib.com"
           ]
@@ -637,6 +658,26 @@
             "42heilbronn.de",
             "42.fr",
             "intra.42.fr"
+          ]
+        }
+      },
+      {
+        "folder": "Fl    🏠 House",
+        "axis": "sender",
+        "volatile": false,
+        "_doc": "Ticket #502: '24 House' moved here, de-duplicated. Same exact domain set the two now-retired route rules (route.lifestyle.housing_rental_de, route.profile.housing_es_de) used to copy_to the numeric '24 House' folder, and the same set this folder's own view predicate is carved out of Fi -- one classification, one place, instead of three. Housing/real-estate: DE listing/search platforms (wg-gesucht.de, kleinanzeigen.de) plus ES/DE property portals (idealista.com, fotocasa.es, pisos.com, immobilienscout24.de + its nachrichten. subdomain, immowelt.de) plus myplace.de (self-storage, filed alongside housing rather than given a bucket of its own for one sender).",
+        "predicate": {
+          "type": "from_domain",
+          "values": [
+            "wg-gesucht.de",
+            "nachrichten.immobilienscout24.de",
+            "myplace.de",
+            "kleinanzeigen.de",
+            "idealista.com",
+            "fotocasa.es",
+            "pisos.com",
+            "immobilienscout24.de",
+            "immowelt.de"
           ]
         }
       },
@@ -1026,6 +1067,15 @@
                   "vattenfall.de",
                   "iberdrola.es",
                   "endesa.com",
+                  "doctolib.de",
+                  "doctolib.com"
+                ]
+              }
+            },
+            {
+              "not": {
+                "type": "from_domain",
+                "values": [
                   "wg-gesucht.de",
                   "nachrichten.immobilienscout24.de",
                   "myplace.de",
@@ -1034,9 +1084,7 @@
                   "fotocasa.es",
                   "pisos.com",
                   "immobilienscout24.de",
-                  "immowelt.de",
-                  "doctolib.de",
-                  "doctolib.com"
+                  "immowelt.de"
                 ]
               }
             },
@@ -1882,28 +1930,6 @@
         "stalwart": "drop",
         "maddy": "route_only"
       }
-    },
-    {
-      "id": "route.lifestyle.housing_rental_de",
-      "kind": "route",
-      "priority": 100,
-      "when": {
-        "type": "from_domain",
-        "values": [
-          "wg-gesucht.de",
-          "nachrichten.immobilienscout24.de",
-          "myplace.de",
-          "kleinanzeigen.de"
-        ]
-      },
-      "actions": {
-        "copy_to": "house"
-      },
-      "engines": {
-        "stalwart": "route_only",
-        "maddy": "route_only"
-      },
-      "comment": "Derived from the live fallback-folder corpus (91 Others): German housing/rental listing platforms — wg-gesucht.de (275 msgs), nachrichten.immobilienscout24.de (2), myplace.de (2), kleinanzeigen.de (1)."
     },
     {
       "id": "route.lifestyle.lodging_extra",
