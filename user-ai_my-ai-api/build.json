@@ -111,6 +111,10 @@
     "resume-by-name": {
       "cmd": "node test-my-ai-resume-by-name.mjs",
       "cwd": "src/code"
+    },
+    "src-dist-parity": {
+      "cmd": "node test-my-ai-src-dist-parity.mjs",
+      "cwd": "src/code"
     }
   },
   "containers": {

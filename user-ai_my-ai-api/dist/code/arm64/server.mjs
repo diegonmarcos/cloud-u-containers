@@ -14,12 +14,14 @@
 //
 // Agent modes (X-Agent-Mode header, or model-name prefix):
 //   claude-cli — forward to claude-superset-api (CLAUDE_CLI_BASE_URL, WG-only)
-//   goose      — invoke goose binary with the prompt (non-stream)
+//   goose      — OpenRouter with GOOSE_MODEL (forwarded like hermes, no local binary)
 //   hermes     — OpenRouter with HERMES_MODEL (Nous Hermes, default nousresearch/hermes-3-llama-3.1-405b)
 //   (default)  — OpenRouter with the requested model
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
+import { runAgenticLoop, mcpEnabled, metaTools, MCP_ENABLED, searchTools, getServerCounts } from "./mcp.mjs";
+import { SESSIONS_DIR, readTailBytes, deriveSessionName } from "./sessions-store.mjs";
 
 const PORT          = parseInt(process.env.BRIDGE_PORT || "3217", 10);
 const BIND          = process.env.BRIDGE_BIND || "127.0.0.1";
@@ -48,8 +50,9 @@ const GOOSE_MODEL = process.env.GOOSE_MODEL || DEFAULT_MODEL;
 const HERMES_MODEL = process.env.HERMES_MODEL || "nousresearch/hermes-3-llama-3.1-405b:free";
 
 // ── cross-device session store ─────────────────────────────────────────────
-const SESSIONS_DIR  = process.env.BRIDGE_SESSIONS_DIR ||
-  path.join(process.env.HOME || ".", ".goose-sessions");
+// SESSIONS_DIR is declared ONCE in sessions-store.mjs and shared — this server
+// serves it, route.mjs persists the telegram bots' chat history into it. The
+// SESSIONS_KEEP prune below applies to PUT writes through this endpoint.
 const SESSIONS_KEEP = parseInt(process.env.BRIDGE_SESSIONS_KEEP || "20", 10);
 const safeSeg = (s) => /^[A-Za-z0-9._-]+$/.test(s || "");
 
@@ -108,8 +111,23 @@ const stats = {
   since: Math.floor(Date.now() / 1000),
 };
 
+// ── per-request plugin toggle overrides ──────────────────────────────────────
+// Request headers x-rtk / x-headroom / x-caveman / x-principles override the
+// corresponding env default when present (on/off/1/0/true/false, case-insensitive).
+// Header absent ⇒ use the existing env default unchanged.
+const TRUE_VALS  = new Set(["on", "1", "true"]);
+const FALSE_VALS = new Set(["off", "0", "false"]);
+const headerBool = (headers, name, envDefault) => {
+  const v = (headers?.[name] || "").toLowerCase().trim();
+  if (TRUE_VALS.has(v)) return true;
+  if (FALSE_VALS.has(v)) return false;
+  return envDefault;
+};
+
 // ── Plugin: Principles — prepend system context ───────────────────────────────
-const injectPrinciples = (messages) => {
+const injectPrinciples = (messages, headers) => {
+  const principlesOn = headerBool(headers, "x-principles", AGENTS_PRINCIPLES_ENABLED || CLOUD_PRINCIPLES_ENABLED);
+  if (!principlesOn) return messages;
   const parts = [];
   if (CLOUD_PRINCIPLES)  parts.push(CLOUD_PRINCIPLES);
   if (AGENTS_PRINCIPLES) parts.push(AGENTS_PRINCIPLES);
@@ -126,8 +144,8 @@ const injectPrinciples = (messages) => {
 
 // ── Plugin: RTK implementation ───────────────────────────────────────────────
 const ANSI_RE = /\x1b\[[0-9;]*[a-zA-Z]/g;
-const applyRTK = (messages) => {
-  if (!RTK_ENABLED || !Array.isArray(messages)) return messages;
+const applyRTK = (messages, headers) => {
+  if (!headerBool(headers, "x-rtk", RTK_ENABLED) || !Array.isArray(messages)) return messages;
   return messages.map((msg) => {
     if (!msg) return msg;
     const isToolMsg = msg.role === "tool" ||
@@ -171,17 +189,18 @@ const getPonytailProfile = (headers) => {
 };
 
 // ── Plugin: Headroom compress (calls Python sidecar) ─────────────────────────
-const compress = async (messages, model, savingsProfile) => {
+const compress = async (messages, model, savingsProfile, headers) => {
   const profile = savingsProfile !== undefined ? savingsProfile : HR_PROFILE;
   if (profile === null) return messages; // Ponytail "off"
-  if (!HR_ENABLED || !Array.isArray(messages) || messages.length === 0) return messages;
+  if (!headerBool(headers, "x-headroom", HR_ENABLED) || !Array.isArray(messages) || messages.length === 0) return messages;
+  const cavemanEnabled = headerBool(headers, "x-caveman", CAVEMAN_ENABLED);
   try {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 30000);
     const r = await fetch(HR_URL, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ messages, model, savings_profile: profile, caveman_enabled: CAVEMAN_ENABLED }),
+      body: JSON.stringify({ messages, model, savings_profile: profile, caveman_enabled: cavemanEnabled }),
       signal: ctrl.signal,
     }).finally(() => clearTimeout(t));
     if (!r.ok) throw new Error(`compress ${r.status}`);
@@ -202,9 +221,9 @@ const compress = async (messages, model, savingsProfile) => {
 
 // ── full plugin pipeline: Principles → RTK → Headroom (Caveman in sidecar) ───
 const pipeline = async (messages, model, headers) => {
-  const withPrinciples = injectPrinciples(messages);
-  const rtkd = applyRTK(withPrinciples);
-  return compress(rtkd, model, getPonytailProfile(headers));
+  const withPrinciples = injectPrinciples(messages, headers);
+  const rtkd = applyRTK(withPrinciples, headers);
+  return compress(rtkd, model, getPonytailProfile(headers), headers);
 };
 
 // ── Agent mode detection ──────────────────────────────────────────────────────
@@ -295,11 +314,28 @@ const callClaudeCLI = async ({ messages, model, extra }) => {
   }
 };
 
+// ── MCP-agentic variant of callOpenRouter: runs the tool_search/tool_call loop ──
+const callOpenRouterAgentic = async ({ messages, model, extra }) => {
+  let lastRaw = null;
+  const callModel = async (msgs, tools) => {
+    const r = await forward({ messages: msgs, model, stream: false, extra: { ...extra, tools } });
+    lastRaw = await r.json();
+    return lastRaw.choices?.[0]?.message ?? { role: "assistant", content: "" };
+  };
+  const msgs = [...messages];
+  const text = await runAgenticLoop({ callModel, messages: msgs });
+  const usage = { input_tokens: lastRaw?.usage?.prompt_tokens ?? 0, output_tokens: lastRaw?.usage?.completion_tokens ?? 0 };
+  stats.calls++;
+  stats.prompt_tokens += usage.input_tokens;
+  stats.completion_tokens += usage.output_tokens;
+  return { text, usage, raw: lastRaw };
+};
+
 // ── Dispatch to the right backend ─────────────────────────────────────────────
 const dispatch = async ({ messages, model, extra, agentMode }) => {
   if (agentMode === "claude-cli") return callClaudeCLI({ messages, model, extra });
-  if (agentMode === "goose")      return callOpenRouter({ messages, model: GOOSE_MODEL, extra });
-  if (agentMode === "hermes")     return callOpenRouter({ messages, model: HERMES_MODEL, extra });
+  if (agentMode === "goose")      return mcpEnabled() ? callOpenRouterAgentic({ messages, model: GOOSE_MODEL, extra }) : callOpenRouter({ messages, model: GOOSE_MODEL, extra });
+  if (agentMode === "hermes")     return mcpEnabled() ? callOpenRouterAgentic({ messages, model: HERMES_MODEL, extra }) : callOpenRouter({ messages, model: HERMES_MODEL, extra });
   return callOpenRouter({ messages, model, extra });
 };
 
@@ -396,8 +432,18 @@ const server = http.createServer(async (req, res) => {
           if (!fs.statSync(ddir).isDirectory()) continue;
           for (const f of fs.readdirSync(ddir)) {
             if (!f.endsWith(".jsonl")) continue;
-            const st = fs.statSync(path.join(ddir, f));
-            out.push({ device, id: f.slice(0, -6), mtime: st.mtimeMs, size: st.size });
+            const full = path.join(ddir, f);
+            const st = fs.statSync(full);
+            // `name` is served HERE (#516) so every consumer gets it from one
+            // declaration: both Telegram bots share bots/commands.mjs, and
+            // anything else on this endpoint is named for free. The bot stays a
+            // formatter and never opens a session file itself — a second reader
+            // next to a call site is the #513 defect. deriveSessionName reads
+            // two BOUNDED windows (never the whole file): the store holds a
+            // 127 MB session, and naming-by-reading would make this listing an
+            // OOM on exactly the sessions worth resuming.
+            const { name, from } = deriveSessionName(full);
+            out.push({ device, id: f.slice(0, -6), mtime: st.mtimeMs, size: st.size, name, name_from: from });
           }
         }
         return send(200, out);
@@ -409,8 +455,21 @@ const server = http.createServer(async (req, res) => {
         const file = path.join(ddir, `${id}.jsonl`);
         if (req.method === "GET") {
           if (!fs.existsSync(file)) return send(404, { error: { message: "no such session" } });
-          res.writeHead(200, { "content-type": "application/x-ndjson" });
-          return res.end(fs.readFileSync(file));
+          // ?tail=<bytes> serves only the END of the file (#513). The store holds
+          // a 127 MB session; readFileSync on it is an OOM, so a client that
+          // cannot use the whole thing must be able to ask for a bound. The
+          // x-session-bytes-* headers let the caller report what it skipped
+          // instead of truncating silently. No tail param = whole file, exactly
+          // as before — this is an extension, not a behaviour change.
+          const st = fs.statSync(file);
+          const tail = parseInt(new URLSearchParams(req.url.split("?")[1] || "").get("tail") || "0", 10) || 0;
+          const body = tail > 0 && tail < st.size ? readTailBytes(file, tail) : fs.readFileSync(file);
+          res.writeHead(200, {
+            "content-type": "application/x-ndjson",
+            "x-session-bytes-total": String(st.size),
+            "x-session-bytes-sent": String(Buffer.byteLength(body)),
+          });
+          return res.end(body);
         }
         if (req.method === "PUT") {
           const body = await readBody(req);
@@ -431,10 +490,24 @@ const server = http.createServer(async (req, res) => {
   if (req.method === "GET" && (req.url === "/health" || req.url === "/readyz" || req.url === "/livez" || req.url === "/"))
     return send(200, {
       status: "ok", active, max: MAX_CONC,
-      plugins: { headroom: HR_ENABLED, rtk: RTK_ENABLED, caveman: CAVEMAN_ENABLED, ponytail: PONYTAIL_DEFAULT, agents_principles: !!AGENTS_PRINCIPLES, cloud_principles: !!CLOUD_PRINCIPLES },
+      plugins: { headroom: HR_ENABLED, rtk: RTK_ENABLED, caveman: CAVEMAN_ENABLED, ponytail: PONYTAIL_DEFAULT, agents_principles: !!AGENTS_PRINCIPLES, cloud_principles: !!CLOUD_PRINCIPLES, mcp: MCP_ENABLED && mcpEnabled() },
       agents: { openrouter: !!UP_KEY, claude_cli: !!CLAUDE_CLI_BASE, goose: GOOSE_MODEL, hermes: HERMES_MODEL },
       stats,
     });
+  if (req.method === "GET" && req.url.startsWith("/v1/mcp/status")) {
+    if (!mcpEnabled()) return send(200, { enabled: false });
+    try { return send(200, await getServerCounts()); }
+    catch (e) { return send(200, { enabled: true, error: String(e.message || e) }); }
+  }
+  if (req.method === "GET" && req.url.startsWith("/v1/mcp/search")) {
+    if (!mcpEnabled()) return send(200, { enabled: false });
+    try {
+      const u = new URL(req.url, "http://localhost");
+      const q = u.searchParams.get("q") || "";
+      const limit = parseInt(u.searchParams.get("limit") || "15", 10);
+      return send(200, await searchTools(q, limit));
+    } catch (e) { return send(200, { enabled: true, error: String(e.message || e) }); }
+  }
   if (req.method === "GET" && req.url.startsWith("/v1/models")) {
     if (!UP_KEY) return send(200, { object: "list", data: [{ id: DEFAULT_MODEL, object: "model", owned_by: "my-ai-api" }] });
     try {
@@ -519,7 +592,7 @@ const server = http.createServer(async (req, res) => {
 
 const handler = server.listeners("request")[0];
 server.listen(PORT, BIND, () =>
-  console.error(`[my-ai-api] API on http://${BIND}:${PORT} (model=${DEFAULT_MODEL}, conc=${MAX_CONC}, headroom=${HR_ENABLED}, rtk=${RTK_ENABLED}, caveman=${CAVEMAN_ENABLED}, ponytail=${PONYTAIL_DEFAULT}, agents=openrouter+${CLAUDE_CLI_BASE ? "claude-cli" : ""}+goose+hermes)`));
+  console.error(`[my-ai-api] API on http://${BIND}:${PORT} (model=${DEFAULT_MODEL}, conc=${MAX_CONC}, headroom=${HR_ENABLED}, rtk=${RTK_ENABLED}, caveman=${CAVEMAN_ENABLED}, ponytail=${PONYTAIL_DEFAULT}, agents=${["openrouter", CLAUDE_CLI_BASE && "claude-cli", "goose", "hermes"].filter(Boolean).join("+")})`));
 
 if (OLLAMA_PORT && !(OLLAMA_BIND === BIND && OLLAMA_PORT === PORT)) {
   const ollama = http.createServer(handler);
