@@ -18,6 +18,15 @@ in
     my-ai-api = {
       image          = binariesImage;
       container_name = app.container_name;
+      # Ticket #545: the container used to start with the fleet-wide restart:no
+      # default, so a host reboot or a killed container left the whole agent
+      # fleet dead until someone noticed. This is the ONE declaration of the
+      # restart policy — engine.nix deep-merges compose-defaults.json, so an
+      # entry here overrides the fleet default for this service. unless-stopped
+      # (not always) so an operator can still `docker stop` intentionally; the
+      # container comes back automatically on daemon/host restart and on any
+      # unexpected exit.
+      restart        = "unless-stopped";
       network_mode   = "host";
       env_file       = [ "./.secrets" ];
       environment    = {

@@ -17,6 +17,86 @@
 import { handleCommand, COMMANDS } from "./commands.mjs";
 import { routeToGoose } from "./route.mjs";
 
+// Telegram caps a single message at 4096 chars and rejects the whole send
+// (ok:false) if you exceed it — a long model reply would otherwise vanish
+// silently. Split on that boundary and send the parts in order.
+export const TELEGRAM_MAX_MESSAGE = 4096;
+
+// ── Delivery core (one per message, fail-LOUD) ─────────────────────────────
+// Sends `text` to `chat_id` in chunks of at most TELEGRAM_MAX_MESSAGE. The
+// tests (test-my-ai-gateway-fail-loud.mjs) prove against THIS function so the
+// anti-silence contract is exercised directly, not only through the poll loop.
+//
+// The contract (ticket #545): a delivery failure must reach the user, never
+// leave them in silence. A bot that can answer must say it answered; a bot
+// that cannot must say it failed. So `delivered:false` is returned (the caller
+// must not log a success marker in that case) AND a visible
+// "[gateway: delivery failed] ..." notice is posted to the chat. tgPost
+// resolves with Telegram's JSON even on a 4xx, and a transport error rejects —
+// both are folded into `ok:false` here so neither path can fall through to a
+// caller that believes it delivered.
+export const deliverChatReply = async ({
+  doSend,
+  chat_id,
+  text,
+  message_thread_id,
+  logLabel = "telegram",
+  maxLength = TELEGRAM_MAX_MESSAGE,
+} = {}) => {
+  const body = text ?? "";
+  const chunks = [];
+  for (let i = 0; i < String(body).length; i += maxLength) chunks.push(String(body).slice(i, i + maxLength));
+  if (chunks.length === 0) chunks.push("[gateway: empty reply]");
+  let delivered = true;
+  let lastFailure = null;
+  for (const chunk of chunks) {
+    // Build the send and swallow transport errors INTO ok:false — a rejected
+    // fetch is the same "the user did not receive it" fact as an ok:false, so
+    // it must drive the same delivered:false + notice path, never an uncaught
+    // throw that leaves the caller thinking the send is pending.
+    const attempt = async (thread) => {
+      try {
+        return await doSend("sendMessage", {
+          chat_id,
+          text: chunk,
+          ...(thread !== undefined ? { message_thread_id: thread } : {}),
+        });
+      } catch (err) {
+        return { ok: false, description: String(err?.message || err) };
+      }
+    };
+    let res = await attempt(message_thread_id);
+    if (res?.ok === false && message_thread_id !== undefined) {
+      // On a thread-scoped failure, retry once unthreaded so the answer still
+      // lands in the chat rather than being lost.
+      console.error(`[gateway] ${logLabel}: sendMessage(thread=${message_thread_id}) failed: ${res.description} — retrying unthreaded`);
+      res = await attempt(undefined);
+    }
+    if (res?.ok !== true) {
+      delivered = false;
+      lastFailure = res?.description || res?.error_code || `HTTP ${res?.status ?? "unknown"}`;
+      console.error(`[gateway] ${logLabel}: sendMessage to ${chat_id} failed: ${lastFailure}`);
+    }
+  }
+  if (!delivered) {
+    // The user must SEE the bot failed — silence is the bug this module exists
+    // to remove. Best-effort; if even the notice fails, log it and move on.
+    try {
+      const notice = await doSend("sendMessage", {
+        chat_id,
+        text: `[gateway: delivery failed] ${lastFailure}. Please try again, or open a support channel.`,
+        ...(message_thread_id !== undefined ? { message_thread_id } : {}),
+      });
+      if (notice?.ok !== true) {
+        console.error(`[gateway] ${logLabel}: even the delivery-failure notice to ${chat_id} was not accepted: ${notice?.description ?? JSON.stringify(notice)}`);
+      }
+    } catch (noticeErr) {
+      console.error(`[gateway] ${logLabel}: even the delivery-failure notice to ${chat_id} failed: ${noticeErr.message}`);
+    }
+  }
+  return { delivered };
+};
+
 export const startTelegram = ({
   tokenEnvVar = "TELEGRAM_BOT_TOKEN",
   chatKeyPrefix = "telegram",
@@ -57,37 +137,17 @@ export const startTelegram = ({
   // message_thread_id threads the reply back into the forum topic the message
   // was asked in; omitted entirely for non-topic chats.
   //
-  // Telegram caps a single message at 4096 chars and rejects the whole send
-  // (ok:false) if you exceed it — a long model reply would otherwise vanish
-  // silently. Split on that boundary and send the parts in order.
-  const TG_MAX = 4096;
-  const sendOne = (chat_id, text, message_thread_id) =>
-    tgPost("sendMessage", {
+  // The delivery logic lives in the exported deliverChatReply core so tests can
+  // prove the anti-silence contract directly. This wrapper threads the real
+  // tgPost in and returns whether every chunk was actually accepted.
+  const sendMessage = (chat_id, text, message_thread_id) =>
+    deliverChatReply({
+      doSend: tgPost,
       chat_id,
       text,
-      ...(message_thread_id !== undefined ? { message_thread_id } : {}),
+      message_thread_id,
+      logLabel,
     });
-
-  // Send, surfacing failures instead of swallowing them. tgPost resolves with
-  // Telegram's JSON even on a 4xx, so an unchecked send fails invisibly — the
-  // bot looks alive, does the work, and the user just never sees a reply.
-  // On a thread-scoped failure, retry once unthreaded so the answer still
-  // lands in the chat rather than being lost.
-  const sendMessage = async (chat_id, text, message_thread_id) => {
-    const chunks = [];
-    for (let i = 0; i < text.length; i += TG_MAX) chunks.push(text.slice(i, i + TG_MAX));
-    if (chunks.length === 0) chunks.push("[gateway: empty reply]");
-    for (const chunk of chunks) {
-      let res = await sendOne(chat_id, chunk, message_thread_id);
-      if (res?.ok === false && message_thread_id !== undefined) {
-        console.error(`[gateway] ${logLabel}: sendMessage(thread=${message_thread_id}) failed: ${res.description} — retrying unthreaded`);
-        res = await sendOne(chat_id, chunk);
-      }
-      if (res?.ok === false) {
-        console.error(`[gateway] ${logLabel}: sendMessage to ${chat_id} failed: ${res.description}`);
-      }
-    }
-  };
 
   tgPost("setMyCommands", { commands: COMMANDS }).catch((err) =>
     console.error(`[gateway] ${logLabel}: setMyCommands failed:`, err.message));
@@ -306,10 +366,31 @@ export const startTelegram = ({
             } else {
               reply = await routeToGoose(text, conversationKey, defaultAgent, platformContext);
             }
-            await sendMessage(msg.chat.id, reply, threadId);
-            console.log(`[gateway] ${logLabel}: handled ${text.startsWith("/") ? text.split(/\s+/)[0] : "message"} from ${from_id} chat=${msg.chat.id}${threadId !== undefined ? ` topic=${threadId}` : ""}`);
+            // Deliver the reply and only then decide whether to claim success.
+            // deliverChatReply returns delivered:false (and posts a visible
+            // "[gateway: delivery failed]" notice to the chat) whenever Telegram
+            // would not accept the message, so this success marker can only fire
+            // when the user actually received a reply. Ticket #545: the old
+            // unconditional "handled ..." log fired after a send that may have
+            // failed silently — a green that verified nothing.
+            const { delivered } = await sendMessage(msg.chat.id, reply, threadId);
+            if (delivered) {
+              console.log(`[gateway] ${logLabel}: delivered "${text.startsWith("/") ? text.split(/\s+/)[0] : "message"}" reply to ${from_id} chat=${msg.chat.id}${threadId !== undefined ? ` topic=${threadId}` : ""}`);
+            } else {
+              // deliverChatReply already posted the failure notice to the chat and
+              // logged the reason; this line records the true outcome of the turn.
+              console.error(`[gateway] ${logLabel}: reply NOT delivered to ${from_id} chat=${msg.chat.id}${threadId !== undefined ? ` topic=${threadId}` : ""} — a failure notice was sent instead of silence`);
+            }
           } catch (innerErr) {
+            // A failure that reaches the user is a working bot; a swallowed one is
+            // the bug #545 exists to remove. Log it AND tell the user in the chat —
+            // never go quiet on a handler error.
             console.error(`[gateway] ${logLabel}: error processing update:`, innerErr.message);
+            try {
+              await sendMessage(msg.chat.id, `[gateway: error] ${innerErr.message}`, threadId);
+            } catch (notifyErr) {
+              console.error(`[gateway] ${logLabel}: could not even send the error notice to ${msg.chat.id}:`, notifyErr.message);
+            }
           }
         }
       } catch (loopErr) {

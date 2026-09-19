@@ -51,5 +51,11 @@ check("C gateway.mjs is byte-identical src == dist", gate === null, gate ?? "");
 const tg = same(src("bots/telegram.mjs"), dist("bots/telegram.mjs"));
 check("D bots/telegram.mjs is byte-identical src == dist", tg === null, tg ?? "");
 
+// #545 extended the guard: start.sh is also staged into dist/code/arm64 and is
+// ALSO the ticket's live code path (the respawn supervision). A fix to start.sh
+// in src alone (never regenerated into dist) would ship nothing.
+const st = same(src("start.sh"), dist("start.sh"));
+check("E start.sh is byte-identical src == dist", st === null, st ?? "");
+
 console.log(failures === 0 ? "ALL GREEN" : `${failures} CHECK(S) FAILED`);
 process.exit(failures === 0 ? 0 : 1);

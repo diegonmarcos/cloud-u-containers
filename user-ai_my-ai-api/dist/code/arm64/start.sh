@@ -17,6 +17,31 @@
 # background jobs — their failure is logged but never takes the container down.
 set -euo pipefail
 
+# respawn — run a long-lived service and restart it whenever it exits, so a
+# crash never leaves a daemon dead inside a live container (ticket #545: the
+# container stays green while the bot is silently down). $1 is a label for the
+# log line; the rest is the command to supervise. The caller backgrounds this
+# function. Backs off on a rapid crash-loop (2s..30s) so a genuinely broken
+# binary cannot spin CPU, but never gives up: the container's lifecycle process
+# (server.mjs, exec'd below) decides when the container itself dies, so a
+# sidecar exit is a fault to recover from, not a request to stop.
+respawn() {
+    local label="$1"; shift
+    local attempt=1
+    local delay=2
+    while true; do
+        if "$@"; then
+            echo "[respawn] ${label}: exited (status 0) — restarting (attempt ${attempt})" >&2
+        else
+            local rc=$?
+            echo "[respawn] ${label}: exited with status ${rc} — restarting (attempt ${attempt})" >&2
+        fi
+        attempt=$(( attempt + 1 ))
+        [ "$attempt" -gt 15 ] && delay=30
+        sleep "$delay"
+    done
+}
+
 HEADROOM_PORT="${HEADROOM_PORT:-8890}"
 GOOSE_PORT="${GOOSE_PORT:-3227}"
 
@@ -72,10 +97,12 @@ else
 fi
 
 # Sidecar: gateway.mjs (messaging bridge).
-# Only launch if at least one messaging platform is configured.
+# Only launch if at least one messaging platform is configured. Supervised by
+# respawn (ticket #545): a dead gateway must restart, never leave a green
+# container with a bot that answers nothing.
 if [ -n "${TELEGRAM_BOT_TOKEN:-}" ] || [ "${MATTERMOST_ENABLED:-}" = "true" ]; then
-  echo "[start] launching gateway (messaging bridge)"
-  ( node /app/gateway.mjs || echo "[gateway] exited — messaging bridge down, container continues" ) &
+  echo "[start] launching gateway (messaging bridge, supervised)"
+  ( respawn gateway node /app/gateway.mjs ) &
 else
   echo "[start] gateway: no messaging configured — skipping"
 fi
