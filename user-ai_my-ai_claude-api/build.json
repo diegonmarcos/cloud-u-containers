@@ -31,9 +31,10 @@
     "app_hub": false
   },
   "runtime": {
-    "model": "claude-sonnet-4-6",
+    "model": "claude-opus-5",
     "_model_aliases_comment": "requested-id → real `claude --model` id. Callers pick a cheaper tier per request (cgc octocode indexing asks for claude-haiku); unknown/absent ids fall back to `model`.",
     "model_aliases": {
+      "claude-opus": "claude-opus-5",
       "claude-sonnet": "claude-sonnet-4-6",
       "claude-haiku": "claude-haiku-4-5"
     },
