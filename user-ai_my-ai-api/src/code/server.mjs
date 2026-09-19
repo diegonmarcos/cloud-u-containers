@@ -293,9 +293,13 @@ const callClaudeCLI = async ({ messages, model, extra }) => {
   // progress, not an outage — retry within the window instead of failing the
   // turn with an instant 502 (the telegram bot surfaced exactly that all night
   // on 2026-09-19). Only connection failures retry; HTTP errors and timeouts
-  // still fail loud. ponytail: fixed 90s/5s window, make it env-driven if a
+  // still fail loud. The window is measured from the FIRST failure, not the
+  // request start: a turn that had already run 77s when the bridge went down
+  // exhausted a request-anchored budget 5s before the bridge came back
+  // (measured 21:42:47Z). ponytail: fixed 150s/5s window, env-driven if a
   // deploy ever legitimately exceeds it.
-  const RETRY_WINDOW_MS = 90_000, RETRY_DELAY_MS = 5_000, t0 = Date.now();
+  const RETRY_WINDOW_MS = 150_000, RETRY_DELAY_MS = 5_000;
+  let firstFail = 0;
   for (;;) {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), CALL_TIMEOUT);
@@ -319,10 +323,13 @@ const callClaudeCLI = async ({ messages, model, extra }) => {
       return { text, usage, raw: j };
     } catch (e) {
       if (e.name === "AbortError") throw new Error("claude-cli timeout");
-      if (e.message === "fetch failed" && Date.now() - t0 < RETRY_WINDOW_MS) {
-        console.error(`[my-ai-api] claude-cli unreachable (bridge deploying?) — retry in ${RETRY_DELAY_MS / 1000}s`);
-        await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
-        continue;
+      if (e.message === "fetch failed") {
+        if (!firstFail) firstFail = Date.now();
+        if (Date.now() - firstFail < RETRY_WINDOW_MS) {
+          console.error(`[my-ai-api] claude-cli unreachable (bridge deploying?) — retry in ${RETRY_DELAY_MS / 1000}s`);
+          await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
+          continue;
+        }
       }
       throw e;
     }
