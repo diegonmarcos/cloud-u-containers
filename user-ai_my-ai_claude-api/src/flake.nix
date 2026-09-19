@@ -38,6 +38,7 @@
             ./code/py
             ./code/server.mjs
             ./code/login.mjs
+            ./code/sessions-store.mjs
             ./code/package.json
             ./code/start.sh
             ./code/claude-config

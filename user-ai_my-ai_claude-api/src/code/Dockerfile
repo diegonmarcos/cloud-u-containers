@@ -93,7 +93,7 @@ COPY --from=builder /usr/local/bin/headroom /usr/local/bin/headroom
 
 # App code.
 WORKDIR /app
-COPY server.mjs login.mjs package.json /app/
+COPY server.mjs login.mjs sessions-store.mjs package.json /app/
 COPY py/ /app/py/
 COPY start.sh /app/start.sh
 RUN chmod +x /app/start.sh

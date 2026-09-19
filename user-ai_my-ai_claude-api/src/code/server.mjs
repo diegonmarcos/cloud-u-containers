@@ -22,6 +22,17 @@ import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { startLogin, submitCode, loginStatus } from "./login.mjs";
+// Cross-device session store — the ONE declaration of the store directory, the
+// session namer and the name→session resolver (#525's resolveResumeAddress).
+// This file is the SAME shared module my-ai-api ships (asserted byte-identical
+// by test-my-ai-sessions-store-parity.mjs): there is exactly one derivation and
+// one resolver in the fleet, and this container reuses it rather than growing a
+// second copy next to a call site.
+import {
+  SESSIONS_DIR,
+  deriveSessionName,
+  resolveResumeAddress,
+} from "./sessions-store.mjs";
 
 const PORT          = parseInt(process.env.BRIDGE_PORT || "3107", 10);
 const BIND          = process.env.BRIDGE_BIND || "127.0.0.1";
@@ -44,14 +55,31 @@ const DEFAULT_MODEL = process.env.BRIDGE_DEFAULT_MODEL || "claude-sonnet-4-6";
 const MODEL_ALIASES = JSON.parse(process.env.BRIDGE_MODEL_ALIASES || "{}");
 
 // ── cross-device session store (per-device .jsonl blobs, WG-only) ─────────────
-// Devices PUT their recent Claude Code sessions here; any device can list/GET
-// them to restore. Lives in the persistent claude_home volume. Data-driven from
-// build.json runtime.sessions (dir under HOME, keep-per-device cap).
-const SESSIONS_DIR  = process.env.BRIDGE_SESSIONS_DIR ||
-  path.join(process.env.HOME || ".", ".claude-sessions");
+// SESSIONS_DIR is imported from sessions-store.mjs — the ONE declaration, the
+// same module my-ai-api serves /sessions from. Devices PUT their recent Claude
+// Code sessions here; any device can list/GET them to restore. Lives in the
+// persistent claude_home volume. Data-driven from build.json runtime.sessions
+// (dir under HOME, keep-per-device cap).
 const SESSIONS_KEEP = parseInt(process.env.BRIDGE_SESSIONS_KEEP || "20", 10);
 // Path components must be a single safe segment (no traversal, no separators).
 const safeSeg = (s) => /^[A-Za-z0-9._-]+$/.test(s || "");
+
+// ── #539: the DECLARED resume target ────────────────────────────────────────
+// :3117 must resume the saved orchestrator session instead of spawning a blank
+// `claude -p` per message (the "Zero tasks" defect: a fresh session has no task
+// store, so absence renders as a plausible number). WHICH session to resume is
+// DECLARED as a NAME in build.json runtime.resume_session.name and exported by
+// compose.nix — never a uuid in source. The name resolves to a session through
+// the #525 resolver (resolveResumeAddress in sessions-store.mjs), the SAME
+// resolver my-ai-api's /resume uses; this file adds no second identity copy.
+// No `or` fallback on purpose: an undeclared target must eval-fail in compose,
+// not silently mean "resume nothing".
+const RESUME_SESSION_NAME = process.env.BRIDGE_RESUME_SESSION_NAME || "";
+// Resolved model ids that must NOT append into the resumed orchestrator
+// session. Bulk indexing (cgc octocode asks for claude-haiku) must keep
+// spawning fresh one-shot sessions; only the agent-facing default path resumes.
+// Data-driven from build.json runtime.resume_session.exclude_models.
+const RESUME_EXCLUDE_MODELS = new Set(JSON.parse(process.env.BRIDGE_RESUME_EXCLUDE_MODELS || "[]"));
 
 const OLLAMA_PORT   = parseInt(process.env.BRIDGE_OLLAMA_PORT || "11434", 10);
 const OLLAMA_BIND   = process.env.BRIDGE_OLLAMA_BIND || "127.0.0.1";
@@ -112,6 +140,31 @@ const compress = async (messages, model) => {
   }
 };
 
+// ── #539: name-served session listing ───────────────────────────────────────
+// /sessions must serve the SAME rows the resolver matches against (#525: the
+// resolver resolves the SERVED name). Mirrors my-ai-api's server.mjs listing,
+// so the name comes from the one derivation (deriveSessionName, bounded reads)
+// and every consumer (the bot, /sessions callers, resolveResumeAddress) sees
+// exactly one identity per session. Unreadable rows are skipped, not fatal.
+const listSessions = () => {
+  const out = [];
+  if (!fs.existsSync(SESSIONS_DIR)) return out;
+  for (const device of fs.readdirSync(SESSIONS_DIR)) {
+    const ddir = path.join(SESSIONS_DIR, device);
+    if (!fs.statSync(ddir).isDirectory()) continue;
+    for (const f of fs.readdirSync(ddir)) {
+      if (!f.endsWith(".jsonl")) continue;
+      const full = path.join(ddir, f);
+      try {
+        const st = fs.statSync(full);
+        const { name, from } = deriveSessionName(full);
+        out.push({ device, id: f.slice(0, -6), mtime: st.mtimeMs, size: st.size, name, name_from: from });
+      } catch { /* unreadable row: skip rather than corrupt the listing */ }
+    }
+  }
+  return out;
+};
+
 // ── messages[] → (system prompt, user prompt) for `claude -p` ─────────────────
 const toPrompt = (messages = []) => {
   const sys = [], turns = [];
@@ -130,6 +183,53 @@ const toPrompt = (messages = []) => {
 // while arbitrary/garbage client ids still land on the default.
 const mapModel = (requested) =>
   MODEL_ALIASES[String(requested || "").replace(/:latest$/, "")] || DEFAULT_MODEL;
+
+// ── #539: resume planning ────────────────────────────────────────────────────
+// One envelope for every request: either the request resumes the DECLARED
+// session, or it does not, or the store is unreachable and the turn must fail
+// with WORDS. A count may only ever be emitted from a store that was actually
+// read; a resolved-but-unreadable store must NEVER fall through to a blank
+// session (that is exactly how absence rendered as "Zero"). The exclude list
+// keeps bulk indexing (haiku) on fresh one-shot sessions: only the agent-facing
+// default-model path appends into the saved orchestrator session.
+const planResume = (model) => {
+  if (!RESUME_SESSION_NAME) return { mode: "none" };
+  const resolved = mapModel(model);
+  if (RESUME_EXCLUDE_MODELS.has(resolved)) return { mode: "none" };
+  const rows = listSessions();
+  const verdict = resolveResumeAddress(rows, RESUME_SESSION_NAME);
+  if (verdict.ok) {
+    return { mode: "resume", sessionId: verdict.session.id, matchedBy: verdict.matchedBy };
+  }
+  // LOUD, worded, numberless. Either the store is unreadable/empty (void),
+  // the name addresses nothing (miss), or it addresses several different
+  // sessions (ambiguous) — all three must reach the user as words.
+  const reason = verdict.ambiguous
+    ? "ambiguous — more than one session shares that name"
+    : (verdict.miss ? "no session matched that name" : "the session store is unreachable");
+  console.error(`[superset] resume refused: target '${RESUME_SESSION_NAME}' ${reason} — refusing to answer from a blank session`);
+  return { mode: "error", reason };
+};
+
+// The exact words the chat sees when the store cannot be read. Deliberately
+// number-free: this string is what the bot relays, and a count may only ever be
+// emitted by a store that was actually read.
+const STORE_ERROR_WORDS = (reason) =>
+  `[task store error] the task store is unreachable — I could not load the saved session, so no task count or status is available. reason: ${reason}`;
+
+// When resuming, the session already holds the whole conversation — only the
+// NEW user turn becomes the prompt. Sending the full history again would inject
+// the conversation into itself as one giant user message.
+const lastUserContent = (messages = []) => {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i];
+    if (m.role !== "user") continue;
+    return Array.isArray(m.content)
+      ? m.content.map((c) => (typeof c === "string" ? c : c.text || "")).join("")
+      : (m.content ?? "");
+  }
+  return "";
+};
 
 // Two ways to be logged in, and the order matters.
 //
@@ -161,9 +261,12 @@ const claudeEnv = () => {
 };
 
 // ── one claude -p invocation ─────────────────────────────────────────────────
-const callClaude = ({ system, prompt, model }) =>
+const callClaude = ({ system, prompt, model, resumeId = null }) =>
   new Promise((resolve, reject) => {
     const args = ["-p", "--output-format", "json", "--max-turns", String(MAX_TURNS), "--model", mapModel(model)];
+    // #539: resume the DECLARED session instead of spawning a blank one. The
+    // id comes from resolveResumeAddress (name → session), never from source.
+    if (resumeId) args.push("--resume", resumeId);
     if (system) args.push("--append-system-prompt", system);
     const child = spawn(CLAUDE_BIN, args, {
       env: { ...claudeEnv(), CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1" },
@@ -217,6 +320,25 @@ const withRetry = async (fn) => { try { return await fn(); } catch { return awai
 
 // run the full pipeline (compress → claude) and tally cost stats
 const run = async (messages, model) => {
+  const plan = planResume(model);
+  // #539: an unresolvable declared target must NEVER fall through to a blank
+  // session — the reply is the WORDED error, never a number, never a plausible
+  // guess. Logged loudly above; the 200 wraps it so the chat relays the words
+  // verbatim instead of prefixing them with a numeric gateway error status.
+  if (plan.mode === "error") {
+    return { text: STORE_ERROR_WORDS(plan.reason), usage: { input_tokens: 0, completion_tokens: 0 } };
+  }
+  // Resumed: the saved session already holds the conversation and its tools, so
+  // only the NEW user turn goes in — no re-compression of history the session
+  // already carries, no re-append of a system prompt it already has.
+  if (plan.mode === "resume") {
+    const prompt = lastUserContent(messages);
+    const { text, usage } = await withRetry(() => callClaude({ system: "", prompt, model, resumeId: plan.sessionId }));
+    stats.calls++;
+    stats.prompt_tokens += usage.input_tokens ?? 0;
+    stats.completion_tokens += usage.output_tokens ?? 0;
+    return { text, usage };
+  }
   const compressed = await compress(messages, model);
   const { system, prompt } = toPrompt(compressed);
   const { text, usage } = await withRetry(() => callClaude({ system, prompt, model }));
@@ -318,24 +440,16 @@ const server = http.createServer(async (req, res) => {
   }
 
   // ── cross-device session store ────────────────────────────────────────────
-  // GET  /sessions                    → [{device,id,mtime,size}]
+  // GET  /sessions                    → [{device,id,mtime,size,name,name_from}]
   // GET  /sessions/<device>/<id>      → raw .jsonl
   // PUT  /sessions/<device>/<id>      → store .jsonl (prunes device to KEEP)
+  // The name on every row is served from the ONE derivation (deriveSessionName)
+  // so the #525 resolver matches against the SAME names /resume advertises.
   if (req.url === "/sessions" || req.url.startsWith("/sessions/")) {
     const parts = req.url.split("?")[0].split("/").filter(Boolean); // ["sessions", device?, id?]
     try {
       if (req.method === "GET" && parts.length === 1) {
-        const out = [];
-        for (const device of fs.existsSync(SESSIONS_DIR) ? fs.readdirSync(SESSIONS_DIR) : []) {
-          const ddir = path.join(SESSIONS_DIR, device);
-          if (!fs.statSync(ddir).isDirectory()) continue;
-          for (const f of fs.readdirSync(ddir)) {
-            if (!f.endsWith(".jsonl")) continue;
-            const st = fs.statSync(path.join(ddir, f));
-            out.push({ device, id: f.slice(0, -6), mtime: st.mtimeMs, size: st.size });
-          }
-        }
-        return send(200, out);
+        return send(200, listSessions());
       }
       if (parts.length === 3) {
         const [, device, id] = parts;

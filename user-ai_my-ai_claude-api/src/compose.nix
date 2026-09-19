@@ -67,6 +67,17 @@ in
         # Cross-device session store (WG-only), persisted in the claude_home volume.
         BRIDGE_SESSIONS_DIR    = "${home}/${(rt.sessions.dir or ".claude-sessions")}";
         BRIDGE_SESSIONS_KEEP   = toString ((rt.sessions.keep or 20));
+        # #539: the DECLARED resume target for agent-model requests — a NAME
+        # resolved to a session id by resolveResumeAddress (#525), never a uuid
+        # in source. build.json runtime.resume_session.name is the ONE
+        # declaration; no `or` fallback on purpose (a default name would be a
+        # second declaration of what to resume, and an undeclared target must
+        # fail eval, not silently mean "resume nothing").
+        BRIDGE_RESUME_SESSION_NAME    = rt.resume_session.name;
+        # Resolved model ids that must NOT append into the resumed orchestrator
+        # session (bulk indexing keeps fresh one-shot sessions). Data-driven
+        # from the same runtime.resume_session block.
+        BRIDGE_RESUME_EXCLUDE_MODELS  = builtins.toJSON (rt.resume_session.exclude_models or [ ]);
         # Compress hop → Python sidecar (vendored Headroom `compress()`).
         # WG-ONLY, fail-closed: the sidecar binds the WireGuard IP (NOT 0.0.0.0 —
         # with host networking 0.0.0.0 would expose /dashboard + /compress on the

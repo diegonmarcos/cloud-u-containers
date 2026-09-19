@@ -7,7 +7,7 @@
 # ║ Rebuild: a_solutions/user-ai_my-ai-api/build.sh ship
 # ╚══════════════════════════════════════════════════════════════════╝
 # Type A — service-shipped Dockerfile, arch=arm64
-# Source: /nix/store/xw7y9cs7c7nmznb6hgjzn91pnj7bhhr6-source/a_solutions/user-ai_my-ai-api/src/code/Dockerfile
+# Source: /nix/store/<nix-sha256>-source/a_solutions/user-ai_my-ai-api/src/code/Dockerfile
 # my-ai-api — polyglot image (Python Headroom sidecar + Node front).
 #
 # Sibling of claude-superset-api. Routes to three agent backends (OpenRouter,
@@ -71,12 +71,20 @@ ENV PYTHONUNBUFFERED=1 \
     AGENTS_PRINCIPLES_ENABLED=1 \
     CLOUD_PRINCIPLES_ENABLED=1
 
-# Node (for server.mjs) + curl (start.sh readiness probe).
+# Node (for server.mjs) + curl (start.sh readiness probe) + git.
+#
+# git is NOT incidental here. This image mounts the shared checkout and runs
+# goose from inside it (see start.sh), which only makes sense if the agent can
+# commit and push what it changes. The runtime stage had no git at all — only
+# the discarded builder stage did — so goose could open every file in six
+# repositories and not run a single git command: `git: not found`. That reads
+# as "the agent chose not to commit" rather than "the agent cannot", which is
+# why it went unnoticed while the tree looked correctly mounted.
 # Also install goose (Block) — the container ships a preconfigured agent so it
 # is self-contained: `docker exec -it my-ai-api goose session` works out of the
 # box, pointed at OpenRouter via the container's OPENROUTER_API_KEY (sops-decrypted
 # at ship time). goose is downloaded as a static binary for the target arch.
-RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates \
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates git \
     && curl -fsSL https://deb.nodesource.com/setup_${NODE_MAJOR}.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
     && ARCH="$(uname -m)" \
@@ -94,6 +102,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certifi
     && npm cache clean --force \
     && rm -rf /var/lib/apt/lists/*
 
+# Agent toolbelt (#366, extended to full coverage by #509). Same reasoning as
+# git above: the agent that runs in this image is expected to search a
+# six-repository checkout, edit it, commit, push, and then prove its own CI
+# went green — which needs a process/network/editor toolbelt, not just
+# gh/yq/ripgrep. The package list and the gh/yq install are NOT hand-typed
+# here: both placeholders are substituted by _shared/engine.nix from the
+# single fleet-wide declaration in _shared/agent-toolbelt.json (the same one
+# hermes-agent and my-ai_claude-api consume), so this Dockerfile cannot drift
+# from theirs. Edit that JSON, never this line.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl ca-certificates jq ripgrep procps htop lsof psmisc wget openssh-client rsync unzip zip xz-utils iproute2 net-tools iputils-ping dnsutils netcat-openbsd tree file less patch make gcc bc strace tcpdump vim nano sysstat \
+    && rm -rf /var/lib/apt/lists/*
+RUN set -eu; ARCH="$(uname -m)"; case "$ARCH" in aarch64|arm64) TOOL_ARCH=arm64 ;; x86_64|amd64) TOOL_ARCH=amd64 ;; *) echo "unsupported architecture: $ARCH" >&2; exit 1 ;; esac; GH_VERSION=2.63.2; curl -fsSL "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_${TOOL_ARCH}.tar.gz" | tar -xz -C /tmp; install -m 0755 "/tmp/gh_${GH_VERSION}_linux_${TOOL_ARCH}/bin/gh" /usr/local/bin/gh; rm -rf "/tmp/gh_${GH_VERSION}_linux_${TOOL_ARCH}"; YQ_VERSION=4.44.6; curl -fsSL -o /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_${TOOL_ARCH}"; chmod +x /usr/local/bin/yq; for t in ps top watch free vmstat uptime htop lsof pstree killall wget ssh rsync unzip zip xz ss netstat ping dig host nc tree file less patch make gcc bc strace tcpdump vim nano iostat gh yq jq rg git curl; do command -v "$t" >/dev/null || { echo "agent toolbelt: missing $t" >&2; exit 1; }; done
+
 # Python runtime: the installed site-packages (headroom + _core.so + deps) and
 # the `headroom` console script, copied from the builder.
 # NOTE: CPython's lib dir is major.minor (python3.13) regardless of the patch
@@ -105,8 +127,10 @@ COPY --from=builder /usr/local/bin/headroom /usr/local/bin/headroom
 
 # App code.
 WORKDIR /app
-COPY server.mjs package.json /app/
+COPY server.mjs mcp.mjs sessions-store.mjs package.json /app/
 COPY gateway.mjs /app/gateway.mjs
+COPY bots.json /app/bots.json
+COPY bots/ /app/bots/
 COPY py/ /app/py/
 COPY start.sh /app/start.sh
 COPY principles/ /app/principles/
@@ -133,4 +157,3 @@ USER appuser
 
 EXPOSE 3217 12436 8890
 CMD ["/app/start.sh"]
-
