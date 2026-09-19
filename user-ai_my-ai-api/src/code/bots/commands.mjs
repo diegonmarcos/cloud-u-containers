@@ -7,7 +7,9 @@ import { getState, routeToGoose, MYAI_LOCAL_URL, HISTORY_CAP, clearChatHistory }
 // The session format contract and the resume bound are declared ONCE, in
 // sessions-store.mjs. /resume parses nothing itself (#513): a second parser
 // here is what made a Claude Code transcript read as "no readable messages".
-import { parseSessionMessages, RESUME_MAX_BYTES, RESUME_MAX_MESSAGES, RESUME_MAX_LISTED } from "../sessions-store.mjs";
+// Same for the ADDRESS (#525): the name is derived and served there, and
+// resolved there too — this module formats the verdict, it never re-derives.
+import { parseSessionMessages, RESUME_MAX_BYTES, RESUME_MAX_MESSAGES, RESUME_MAX_LISTED, resolveResumeAddress } from "../sessions-store.mjs";
 
 // ── Slash commands ───────────────────────────────────────────────────────────
 export const COMMANDS = [
@@ -104,9 +106,12 @@ const fmtBytes = (n) => (n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : n >= 
 // Diego's whole complaint about the #513 listing was that 40 bare UUIDs say
 // nothing about what any session IS ("add the namee!!!!!!"), and that half the
 // store was written inside the same 60 seconds so the timestamp does not tell
-// them apart either. The name leads the row because it is the only field worth
-// scanning; the id follows on its own indented line because it is what
-// /resume <id> takes, and a phone wraps a 150-char single line into mush.
+// them apart either. The name leads the row because it is the ADDRESS now
+// (#525): it is what /resume <name> resolves, so it is the only field worth
+// scanning. The id follows on its own indented line because it is the
+// TIEBREAKER — when two sessions share a name, or the namer could not label one
+// ("(unnamed)"), the id settles which one, and a phone wraps a 150-char single
+// line into mush.
 //
 // The name is NOT derived here. server.mjs's /sessions serves it, from the one
 // normaliser in sessions-store.mjs — this module never opens a session file.
@@ -217,36 +222,50 @@ export const handleCommand = async (cmdIn, arg, chatKey, meta = {}, defaultAgent
         const more = sessions.length - shown.length;
         return shown
           .map(fmtRow)
-          .join("\n") + (more > 0 ? `\n(+${more} older not shown)` : "") + "\n\nuse /resume <id>";
+          .join("\n") + (more > 0 ? `\n(+${more} older not shown)` : "") + "\n\nuse /resume <name>";
       }
-      // Resolve the device FROM the listing. Hardcoding a path segment here was
-      // the second half of the #513 bug: even a correct id from another device
-      // 404'd. Sorted newest-first above, so matches[0] is the newest.
-      const matches = sessions.filter((s) => s.id === arg);
-      if (matches.length === 0) return `no session "${arg}" in the store — /resume with no id lists what is there`;
-      const pick = matches[0];
-      const dupNote = matches.length > 1
-        ? ` (${matches.length} devices hold this id — picked the newest, ${pick.device})`
-        : "";
-      // Ask for the TAIL only. The live store holds a 127 MB transcript; pulling
-      // it whole would be an OOM here and an unusable context upstream.
-      const r = await jget(`${MYAI_LOCAL_URL}/sessions/${encodeURIComponent(pick.device)}/${encodeURIComponent(pick.id)}?tail=${RESUME_MAX_BYTES}`);
-      if (!r.ok) return `[error] could not load session ${arg} from ${pick.device}: ${r.status}`;
-      // A one-line session parses as JSON, so jget hands it back as .json.
-      const raw = r.text !== undefined ? String(r.text) : JSON.stringify(r.json ?? "");
-      const loaded = Buffer.byteLength(raw);
-      // ONE parser, in sessions-store.mjs — it accepts the bot's own flat
-      // {role, content} lines AND Claude Code's {type, message:{role, content}}
-      // records with typed content blocks, and skips the non-message records.
-      const msgs = parseSessionMessages(raw, RESUME_MAX_MESSAGES);
-      if (msgs.length === 0) return `session ${arg} on ${pick.device} had no readable messages in its last ${fmtBytes(loaded)}`;
-      // HISTORY_CAP is only the send window applied at routeToGoose time; the
-      // resumed tail is kept whole in state.history (and re-persisted on the
-      // next turn) rather than truncated to ~10 turns.
-      state.history = msgs;
-      const skipped = Math.max(0, pick.size - loaded);
-      return `▶️ resumed ${pick.id} from ${pick.device}${dupNote} — ${msgs.length} messages ` +
-        `from the last ${fmtBytes(loaded)} of ${fmtBytes(pick.size)} (${fmtBytes(skipped)} older not loaded)`;
+      // #525: the NAME is the address. resolveResumeAddress is the ONE resolver
+      // (sessions-store.mjs): exact name first, then a unique name prefix —
+      // the listing's row is the truncated label, so the only way a phone can
+      // comfortably retype it is by its beginning — then the id as the
+      // tiebreaker for duplicate or unnameable sessions. It dedupes by id
+      // (a session spanning devices or #506-rolled files is ONE target, newest
+      // file wins) and, when an address belongs to several DIFFERENT sessions,
+      // it says so instead of guessing between them.
+      const verdict = resolveResumeAddress(sessions, arg);
+      if (verdict.ok) {
+        const pick = verdict.session;
+        const holderWord = verdict.matchedBy === "id" ? "id" : "session";
+        const dupNote = verdict.deviceCount > 1
+          ? ` (${verdict.deviceCount} devices hold this ${holderWord} — picked the newest, ${pick.device})`
+          : "";
+        // Ask for the TAIL only. The live store holds a 127 MB transcript;
+        // pulling it whole would be an OOM here and an unusable context upstream.
+        const r = await jget(`${MYAI_LOCAL_URL}/sessions/${encodeURIComponent(pick.device)}/${encodeURIComponent(pick.id)}?tail=${RESUME_MAX_BYTES}`);
+        if (!r.ok) return `[error] could not load session ${arg} from ${pick.device}: ${r.status}`;
+        // A one-line session parses as JSON, so jget hands it back as .json.
+        const raw = r.text !== undefined ? String(r.text) : JSON.stringify(r.json ?? "");
+        const loaded = Buffer.byteLength(raw);
+        // ONE parser, in sessions-store.mjs — it accepts the bot's own flat
+        // {role, content} lines AND Claude Code's {type, message:{role, content}}
+        // records with typed content blocks, and skips the non-message records.
+        const msgs = parseSessionMessages(raw, RESUME_MAX_MESSAGES);
+        if (msgs.length === 0) return `session ${arg} on ${pick.device} had no readable messages in its last ${fmtBytes(loaded)}`;
+        // HISTORY_CAP is only the send window applied at routeToGoose time; the
+        // resumed tail is kept whole in state.history (and re-persisted on the
+        // next turn) rather than truncated to ~10 turns.
+        state.history = msgs;
+        const skipped = Math.max(0, pick.size - loaded);
+        const label = pick.name && pick.name !== "(unnamed)" ? pick.name : pick.id;
+        return `▶️ resumed "${label}" from ${pick.device}${dupNote} — ${msgs.length} messages ` +
+          `from the last ${fmtBytes(loaded)} of ${fmtBytes(pick.size)} (${fmtBytes(skipped)} older not loaded)`;
+      }
+      if (verdict.ambiguous) {
+        return `ℹ️ ${verdict.ambiguous.length} sessions are named "${arg}" — say which one:\n` +
+          verdict.ambiguous.map(fmtRow).join("\n") +
+          `\n(${verdict.ambiguous.length} sessions share this name — resume one by its id above)`;
+      }
+      return `no session "${arg}" in the store — /resume with no name lists what is there`;
     }
     case "sessions": {
       const [sub, ...rest] = (arg || "").split(/\s+/);
