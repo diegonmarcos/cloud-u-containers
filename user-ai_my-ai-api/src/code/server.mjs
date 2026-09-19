@@ -21,7 +21,7 @@ import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 import { runAgenticLoop, mcpEnabled, metaTools, MCP_ENABLED, searchTools, getServerCounts } from "./mcp.mjs";
-import { SESSIONS_DIR, readTailBytes } from "./sessions-store.mjs";
+import { SESSIONS_DIR, readTailBytes, deriveSessionName } from "./sessions-store.mjs";
 
 const PORT          = parseInt(process.env.BRIDGE_PORT || "3217", 10);
 const BIND          = process.env.BRIDGE_BIND || "127.0.0.1";
@@ -432,8 +432,18 @@ const server = http.createServer(async (req, res) => {
           if (!fs.statSync(ddir).isDirectory()) continue;
           for (const f of fs.readdirSync(ddir)) {
             if (!f.endsWith(".jsonl")) continue;
-            const st = fs.statSync(path.join(ddir, f));
-            out.push({ device, id: f.slice(0, -6), mtime: st.mtimeMs, size: st.size });
+            const full = path.join(ddir, f);
+            const st = fs.statSync(full);
+            // `name` is served HERE (#516) so every consumer gets it from one
+            // declaration: both Telegram bots share bots/commands.mjs, and
+            // anything else on this endpoint is named for free. The bot stays a
+            // formatter and never opens a session file itself — a second reader
+            // next to a call site is the #513 defect. deriveSessionName reads
+            // two BOUNDED windows (never the whole file): the store holds a
+            // 127 MB session, and naming-by-reading would make this listing an
+            // OOM on exactly the sessions worth resuming.
+            const { name, from } = deriveSessionName(full);
+            out.push({ device, id: f.slice(0, -6), mtime: st.mtimeMs, size: st.size, name, name_from: from });
           }
         }
         return send(200, out);

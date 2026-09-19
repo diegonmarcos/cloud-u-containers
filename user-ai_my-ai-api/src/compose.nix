@@ -85,6 +85,15 @@ in
         BRIDGE_RESUME_MAX_BYTES    = toString rt.sessions.resume.max_bytes;
         BRIDGE_RESUME_MAX_MESSAGES = toString rt.sessions.resume.max_messages;
         BRIDGE_RESUME_MAX_LISTED   = toString rt.sessions.resume.max_listed;
+        # Session naming bound (#516). Every listed session gets a name, and
+        # deriving it must never read a whole file — the same 127 MB transcript
+        # is in the listing /sessions builds on every call. head/tail bound the
+        # two positional reads deriveSessionName does; max_chars is the row
+        # width. Declared once in build.json runtime.sessions.name, no `or`
+        # fallback for the same reason as the resume bounds above.
+        BRIDGE_NAME_HEAD_BYTES     = toString rt.sessions.name.head_bytes;
+        BRIDGE_NAME_TAIL_BYTES     = toString rt.sessions.name.tail_bytes;
+        BRIDGE_NAME_MAX_CHARS      = toString rt.sessions.name.max_chars;
       };
       volumes = [
         "my_ai_home:/home/appuser"
