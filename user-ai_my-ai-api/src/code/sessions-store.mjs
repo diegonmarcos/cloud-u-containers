@@ -297,6 +297,78 @@ export const deriveSessionName = (file, opts = {}) => {
   return { name: "(unnamed)", from: "none" };
 };
 
+// ── Address resolution (#525) ────────────────────────────────────────────────
+// /resume's argument is a NAME, never a UUID: #516 made the name visible, #525
+// makes the name the ADDRESS, and #513 is what became possible once a live
+// session is addressable. This is the ONE place an address resolves to a
+// session. It matches against the `name` field that THIS module derived (see
+// deriveSessionName) and server.mjs serves — never a name the caller computes,
+// so there is exactly one declaration of what a session is called, and no
+// second private copy grows next to a call site.
+//
+// Resolution order, all against the served listing:
+//   1. exact name   — the row Diego saw is the row he gets back.
+//   2. unique prefix — a phone cannot comfortably type a 60-char truncated
+//      label, and the listing's row IS that label, so a prefix of it must
+//      address the same session when ONLY ONE session's name starts with it.
+//   3. id fallback  — the id is not the address, but it is the TIEBREAKER: the
+//      listing shows it on its own line, an ambiguous name is settled with it,
+//      and the few sessions the namer cannot label ("(unnamed)") are only
+//      reachable by it. /resume <id> keeps working exactly as before (#513).
+//
+// A session is an id, not a file. The same id on two devices (or, under #506's
+// rollover, a session whose closed files archive and whose newest file carries
+// the resume forward) is ONE session: same id, newest mtime wins. Two DIFFERENT
+// ids that share a name are different sessions, and they must be surfaced, not
+// guessed between — silently picking is how a resume lands in the wrong
+// conversation. Returns {ok:true, session, matchedBy, deviceCount} when exactly
+// one session matched, {ok:false, ambiguous:[rows]} when a name/prefix belongs
+// to several distinct ids, and {ok:false, miss:true} when nothing did. An empty
+// or whitespace-only address is a miss, never a guess.
+export const resolveResumeAddress = (rows, arg) => {
+  const address = String(arg ?? "").trim();
+  const lowered = address.toLowerCase();
+  const nameOf = (r) => String(r.name ?? "").trim().toLowerCase();
+  if (!lowered) return { ok: false, miss: true };
+
+  let byName = rows.filter((r) => nameOf(r) === lowered);
+  let matchedBy = "name";
+  if (byName.length === 0) {
+    byName = rows.filter((r) => nameOf(r).startsWith(lowered) && nameOf(r) !== lowered);
+    matchedBy = "prefix";
+  }
+  if (byName.length > 0) {
+    // Newest first, one entry per id: a session spread across devices or rolled
+    // files is one target, so the newest file of the session carries it.
+    const newestPerId = new Map();
+    for (const row of [...byName].sort((a, b) => b.mtime - a.mtime)) {
+      if (!newestPerId.has(row.id)) newestPerId.set(row.id, row);
+    }
+    const unique = [...newestPerId.values()];
+    if (unique.length === 1) {
+      const session = unique[0];
+      return {
+        ok: true,
+        session,
+        matchedBy,
+        deviceCount: new Set(byName.filter((r) => r.id === session.id).map((r) => r.device)).size,
+      };
+    }
+    return { ok: false, ambiguous: unique, matchedBy };
+  }
+
+  // No name matched: fall back to the id, the tiebreaker.
+  const byId = rows.filter((r) => r.id === address);
+  if (byId.length === 0) return { ok: false, miss: true };
+  const newest = [...byId].sort((a, b) => b.mtime - a.mtime)[0];
+  return {
+    ok: true,
+    session: newest,
+    matchedBy: "id",
+    deviceCount: new Set(byId.map((r) => r.device)).size,
+  };
+};
+
 // Persist a chat's FULL history, overwriting the previous file. A failed write
 // logs and returns false — callers must continue, never take the turn down.
 export const saveTelegramHistory = (chatKey, history) => {

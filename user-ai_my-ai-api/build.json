@@ -107,6 +107,10 @@
     "resume-session-names": {
       "cmd": "node test-my-ai-resume-session-names.mjs",
       "cwd": "src/code"
+    },
+    "resume-by-name": {
+      "cmd": "node test-my-ai-resume-by-name.mjs",
+      "cwd": "src/code"
     }
   },
   "containers": {
