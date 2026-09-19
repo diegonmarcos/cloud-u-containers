@@ -94,6 +94,44 @@ for (const c of decl.containers ?? []) {
   }
 }
 
+console.log("\n── 2: every declared tool resolves to an install source ──");
+// The #509 core property, asserted on the container side of the dispatch
+// (not just in cloud-infra's 9_others/test/test_agent_toolbelt_declared.sh,
+// which only runs on cloud-infra pushes): every binary the declaration
+// promises must be delivered by one of the declaration's OWN sources — an
+// apt package whose name matches the binary, an apt_provides map entry, a
+// tarball, or the base image. A binary that resolves to NONE of those would
+// fail `command -v` at image build time (engine.nix's toolbeltExtraRun
+// probe) — the declaration is a promise, and an unfulfillable promise is a
+// RED here, not something to skip until a build happens to run.
+const aptProvides = decl.apt_provides ?? {};
+const baseImageBinaries = decl.base_image_binaries ?? [];
+const installSources = new Set();
+for (const pkg of decl.apt_packages ?? []) installSources.add(pkg);
+// An apt_provides entry only counts while ITS package is actually in
+// apt_packages — removing procps must orphan ps, not leave it resolvable.
+for (const [pkg, bins] of Object.entries(aptProvides)) {
+  if ((decl.apt_packages ?? []).includes(pkg) && Array.isArray(bins)) {
+    for (const b of bins) installSources.add(b);
+  }
+}
+for (const t of Object.keys(decl.tarballs ?? {})) installSources.add(t);
+for (const b of baseImageBinaries) installSources.add(b);
+let unresolved = 0;
+for (const b of decl.binaries ?? []) {
+  if (installSources.has(b)) {
+    pass(`binary ${b} resolves to an install source`);
+  } else {
+    fail(`binary ${b} is DECLARED but installed NOWHERE (no apt package, no apt_provides entry, no tarball, no base-image binary) — the build-time command -v probe would fail it; add its source to agent-toolbelt.json or drop it from binaries`);
+    unresolved += 1;
+  }
+}
+if (unresolved > 0) {
+  fail(`${unresolved} declared binary(ies) have no install source — the toolbelt promises tools the images cannot ship`);
+} else {
+  pass("every declared binary resolves to a real install source");
+}
+
 console.log("");
 if (failures.length > 0) {
   console.error(`FAIL — ${failures.length} agent-toolbelt declaration gap(s) found (#509, extends #366/#450)`);

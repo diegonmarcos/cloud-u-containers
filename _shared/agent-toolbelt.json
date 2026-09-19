@@ -1,5 +1,5 @@
 {
-  "_comment": "ticket #509 — single declaration of the tool belt every AI agent container ships. Extends the #366/#450 gh/yq/ripgrep hook rather than starting a second one. Consumed by _shared/engine.nix, which splices apt_packages + the gh/yq install into: (a) Type-B (wrap upstream image) builds when build.json sets docker.agent_toolbelt=true — see hermes-agent; (b) Type-A (own Dockerfile) builds via the @AGENT_TOOLBELT_APT@ / @AGENT_TOOLBELT_EXTRA_RUN@ placeholders — see my-ai_claude-api and my-ai-api. Add a tool ONCE here, never edit a Dockerfile's apt-get line directly. `containers` enumerates every AI container that must carry this declaration, so 9_others/test-agent-toolbelt.ts can fail when a fourth one is added without opting in.",
+  "_comment": "ticket #509 — single declaration of the tool belt every AI agent container ships. Extends the #366/#450 gh/yq/ripgrep hook rather than starting a second one. Consumed by _shared/engine.nix, which splices apt_packages + the gh/yq install into: (a) Type-B (wrap upstream image) builds when build.json sets docker.agent_toolbelt=true — see hermes-agent; (b) Type-A (own Dockerfile) builds via the @AGENT_TOOLBELT_APT@ / @AGENT_TOOLBELT_EXTRA_RUN@ placeholders — see my-ai_claude-api and my-ai-api. Add a tool ONCE here, never edit a Dockerfile's apt-get line directly. `apt_provides` maps a package to the binary names it installs when they differ from the package name (procps -> ps/top/...), and `base_image_binaries` names binaries the base image carries (git); together they let a tester prove every declared binary resolves to an install source. `containers` enumerates every AI container that must carry this declaration, so the guards (cloud-infra's 9_others/test/test_agent_toolbelt_declared.sh and this repo's _shared/test-agent-toolbelt.mjs) can fail when a container is unwired from the toolbelt — a declared container or tool that resolves to nothing is a failure, never a skip.",
   "_sudo_excluded_comment": "sudo is deliberately NOT in this list. my-ai_claude-api and my-ai-api run as uid 10001, hermes-agent as uid 10001/10000 (see user-ai_hermes-agent/src/compose.nix HERMES_UID/HERMES_GID) — all three are unprivileged by design, and sudo would have no privilege to escalate to. Adding it just to complete a tool-name list would be theatre, not tooling.",
   "apt_packages": [
     "curl", "ca-certificates", "jq", "ripgrep",
@@ -9,6 +9,19 @@
     "tree", "file", "less", "patch", "make", "gcc", "bc",
     "strace", "tcpdump", "vim", "nano", "sysstat"
   ],
+  "apt_provides": {
+    "procps": ["ps", "top", "watch", "free", "vmstat", "uptime"],
+    "psmisc": ["pstree", "killall", "fuser"],
+    "iproute2": ["ss", "ip"],
+    "net-tools": ["netstat", "ifconfig", "route"],
+    "iputils-ping": ["ping", "ping6"],
+    "dnsutils": ["dig", "host", "nslookup"],
+    "netcat-openbsd": ["nc", "netcat"],
+    "sysstat": ["iostat", "sar"],
+    "openssh-client": ["ssh", "scp", "sftp", "ssh-keygen"],
+    "xz-utils": ["xz"],
+    "ripgrep": ["rg"]
+  },
   "tarballs": {
     "gh": {
       "version": "2.63.2",
@@ -30,6 +43,7 @@
     "strace", "tcpdump", "vim", "nano", "iostat",
     "gh", "yq", "jq", "rg", "git", "curl"
   ],
+  "base_image_binaries": ["git"],
   "containers": [
     { "name": "my-ai_claude-api", "dir": "user-ai_my-ai_claude-api", "kind": "type-a", "dockerfile": "src/code/Dockerfile" },
     { "name": "my-ai-api", "dir": "user-ai_my-ai-api", "kind": "type-a", "dockerfile": "src/code/Dockerfile" },
