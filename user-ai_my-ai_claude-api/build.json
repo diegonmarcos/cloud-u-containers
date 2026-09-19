@@ -57,6 +57,7 @@
     "resume_session": {
       "_comment": "The session :3117 resumes for every agent-model request. A NAME, resolved to a session id by resolveResumeAddress (#525, sessions-store.mjs) at request time — never a uuid in source. name is the SERVED name of the teleported orchestrator session (verbatim, as /sessions lists it: deriveSessionName last-prompt tag, 60 chars). If the name drifts or the store cannot be read, the chat gets an explicit worded error instead of a blank-session count (#539).",
       "name": "now stop using hermes and goose, and spin up 10 sonnet agen…",
+      "cwd": "/home/appuser/git/_work/orchestrator",
       "exclude_models": [
         "claude-haiku-4-5"
       ]

@@ -74,6 +74,10 @@ in
         # second declaration of what to resume, and an undeclared target must
         # fail eval, not silently mean "resume nothing").
         BRIDGE_RESUME_SESSION_NAME    = rt.resume_session.name;
+        # #548: the resumed session's project cwd, declared beside its name.
+        # No `or` fallback on purpose — a missing cwd would silently resume by
+        # uuid into a blank project, which is the 0-tasks defect one layer up.
+        BRIDGE_RESUME_CWD        = rt.resume_session.cwd;
         # Resolved model ids that must NOT append into the resumed orchestrator
         # session (bulk indexing keeps fresh one-shot sessions). Data-driven
         # from the same runtime.resume_session block.

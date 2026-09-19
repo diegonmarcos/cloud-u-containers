@@ -75,6 +75,15 @@ const safeSeg = (s) => /^[A-Za-z0-9._-]+$/.test(s || "");
 // No `or` fallback on purpose: an undeclared target must eval-fail in compose,
 // not silently mean "resume nothing".
 const RESUME_SESSION_NAME = process.env.BRIDGE_RESUME_SESSION_NAME || "";
+// #548: the project directory the resumed session belongs to. Claude keys its
+// transcript store by BOTH the session uuid AND the cwd slug
+// (~/.claude/projects/<cwd-slug>/<uuid>.jsonl), so `--resume <uuid>` only finds
+// the session's files when the child spawn runs in the SAME cwd as the session.
+// Declared in build.json runtime.resume_session.cwd alongside the name — the
+// spawn below passes it as `cwd` on the child. Without it the resumed session
+// resolves by uuid but reads nothing, which is the same "0 tasks" defect one
+// layer up.
+const RESUME_SESSION_CWD  = process.env.BRIDGE_RESUME_CWD || "";
 // Resolved model ids that must NOT append into the resumed orchestrator
 // session. Bulk indexing (cgc octocode asks for claude-haiku) must keep
 // spawning fresh one-shot sessions; only the agent-facing default path resumes.
@@ -268,9 +277,14 @@ const callClaude = ({ system, prompt, model, resumeId = null }) =>
     // id comes from resolveResumeAddress (name → session), never from source.
     if (resumeId) args.push("--resume", resumeId);
     if (system) args.push("--append-system-prompt", system);
+    // #548: the child must run in the session's project cwd so --resume finds
+    // the transcript under the matching <cwd-slug> (keyed by cwd AND uuid). A
+    // resolved uuid with the wrong cwd finds nothing — same 0-tasks defect.
+    const spawnOpts = { cwd: resumeId && RESUME_SESSION_CWD ? RESUME_SESSION_CWD : undefined };
     const child = spawn(CLAUDE_BIN, args, {
       env: { ...claudeEnv(), CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1" },
       stdio: ["pipe", "pipe", "pipe"],
+      ...spawnOpts,
     });
     let out = "", err = "";
     const timer = setTimeout(() => { child.kill("SIGKILL"); reject(new Error("claude -p timeout")); }, CALL_TIMEOUT);
