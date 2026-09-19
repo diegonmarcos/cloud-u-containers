@@ -20,6 +20,13 @@ import {
   clearTelegramHistory,
   isTelegramChat,
 } from "../sessions-store.mjs";
+import { postJson } from "../http-post.mjs";
+
+// Ceiling for one agent turn as seen by the bot. Must be the LARGEST value in
+// the chain: this (880s) > gateway BRIDGE_CALL_TIMEOUT_MS (860s) > claude
+// bridge call_timeout_ms (840s), so the backend always times out first and
+// the user gets its honest error instead of a bare transport failure.
+const TURN_TIMEOUT_MS = 880_000;
 
 export const MYAI_LOCAL_URL = process.env.MYAI_LOCAL_URL || "http://127.0.0.1:3217";
 
@@ -89,11 +96,9 @@ export const routeToGoose = async (text, chatKey = "default", defaultAgent = "go
     body.model = CLAUDE_MODEL;
   }
   try {
-    const res = await fetch(`${MYAI_LOCAL_URL}/v1/chat/completions`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(body),
-    });
+    // node:http, not fetch — undici's ~300s headers ceiling killed every long
+    // claude turn (group agent orchestration runs 5-10 min). See http-post.mjs.
+    const res = await postJson(`${MYAI_LOCAL_URL}/v1/chat/completions`, headers, body, TURN_TIMEOUT_MS);
     if (!res.ok) {
       // If the upstream failure is claude-cli being logged out, kick off the OAuth
       // login handshake automatically and hand the user the link instead of just

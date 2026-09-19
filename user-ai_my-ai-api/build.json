@@ -55,7 +55,7 @@
       "deepseek": "deepseek/deepseek-chat"
     },
     "max_concurrency": 12,
-    "call_timeout_ms": 290000,
+    "call_timeout_ms": 860000,
     "_upstream_comment": "OpenRouter is the single upstream (start here). The Node front forwards compressed OpenAI-shaped chat requests to https://openrouter.ai/api/v1/chat/completions with the container's OPENROUTER_API_KEY (from src/secrets.yaml). The Anthropic /v1/messages face is a shape-translation shim so ANTHROPIC_BASE_URL=<my-ai-api> clients also land on OpenRouter — NOT Claude.",
     "upstream": {
       "provider": "openrouter",
