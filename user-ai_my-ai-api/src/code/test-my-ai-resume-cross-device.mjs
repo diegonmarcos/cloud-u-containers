@@ -120,7 +120,11 @@ globalThis.fetch = async (url) => {
       for (const f of readdirSync(ddir)) {
         if (!f.endsWith(".jsonl")) continue;
         const st = statSync(join(ddir, f));
-        out.push({ device, id: f.slice(0, -6), mtime: st.mtimeMs, size: st.size });
+        // Same namer server.mjs calls (#516) — this stub must keep mirroring the
+        // real endpoint's row, for the same reason it uses the real readTailBytes
+        // above rather than a second tail reader of its own.
+        const { name, from } = store.deriveSessionName(join(ddir, f));
+        out.push({ device, id: f.slice(0, -6), mtime: st.mtimeMs, size: st.size, name, name_from: from });
       }
     }
     return { ok: true, status: 200, text: async () => JSON.stringify(out), json: async () => out };
@@ -140,7 +144,22 @@ check(!listing.includes("no saved sessions for this device"),
   "/resume no longer answers \"(no saved sessions for this device)\" with a populated store");
 // RED if the listing goes back to a hardcoded slice(0, 10): the target session
 // is the 26th newest here, exactly the position the live store put it in.
-const rank = listing.split("\n").findIndex((l) => l.startsWith(REAL_ID)) + 1;
+//
+// Rank is measured by the ORDER the ids appear in the reply, not by line number:
+// #516 gave each row a name on its own line above the id, and a probe that
+// assumed one line per row would report rank 0 on a listing that is perfectly
+// correct. What this check is about is how DEEP the listing reaches, so it reads
+// order and nothing about layout.
+const rankOf = (text, id) => {
+  const seen = [...new Set([REAL_ID, DUP_ID, TG_ID,
+    ...Array.from({ length: 25 }, (_, i) => `decoy-${String(i).padStart(2, "0")}`)])]
+    .map((x) => ({ x, at: text.indexOf(x) }))
+    .filter((e) => e.at >= 0)
+    .sort((a, b) => a.at - b.at)
+    .map((e) => e.x);
+  return seen.indexOf(id) + 1;
+};
+const rank = rankOf(listing, REAL_ID);
 check(rank > 10, `the listing reaches past the 10 newest — the target session is listed at rank ${rank}`);
 
 // ── B. the parser ────────────────────────────────────────────────────────────

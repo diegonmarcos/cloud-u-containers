@@ -100,6 +100,21 @@ const listSessions = async () => {
 
 const fmtBytes = (n) => (n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : n >= 1024 ? `${Math.round(n / 1024)} KB` : `${n} B`);
 
+// ── ONE row renderer for both /resume and /sessions (#516) ──────────────────
+// Diego's whole complaint about the #513 listing was that 40 bare UUIDs say
+// nothing about what any session IS ("add the namee!!!!!!"), and that half the
+// store was written inside the same 60 seconds so the timestamp does not tell
+// them apart either. The name leads the row because it is the only field worth
+// scanning; the id follows on its own indented line because it is what
+// /resume <id> takes, and a phone wraps a 150-char single line into mush.
+//
+// The name is NOT derived here. server.mjs's /sessions serves it, from the one
+// normaliser in sessions-store.mjs — this module never opens a session file.
+// `name` missing at all (a server older than this commit) degrades to an honest
+// marker instead of silently reprinting the UUID as if it were a name.
+const fmtRow = (s) =>
+  `${s.name || "(unnamed)"}\n   ${s.id} · ${s.device} · ${new Date(s.mtime).toISOString()} · ${fmtBytes(s.size)}`;
+
 // WG-only claude-superset-api endpoint (same env the gateway routes chat to).
 const CLAUDE_CLI_BASE = process.env.CLAUDE_CLI_BASE_URL || "";
 
@@ -201,7 +216,7 @@ export const handleCommand = async (cmdIn, arg, chatKey, meta = {}, defaultAgent
         const shown = sessions.slice(0, RESUME_MAX_LISTED);
         const more = sessions.length - shown.length;
         return shown
-          .map((s) => `${s.id} — ${s.device} — ${new Date(s.mtime).toISOString()} — ${fmtBytes(s.size)}`)
+          .map(fmtRow)
           .join("\n") + (more > 0 ? `\n(+${more} older not shown)` : "") + "\n\nuse /resume <id>";
       }
       // Resolve the device FROM the listing. Hardcoding a path segment here was
@@ -243,10 +258,16 @@ export const handleCommand = async (cmdIn, arg, chatKey, meta = {}, defaultAgent
       if (sub === "search") {
         const q = rest.join(" ").trim();
         if (!q) return "usage: /sessions search <q>";
-        const matched = mine.filter((s) => s.id.includes(q));
-        return matched.length ? matched.map((s) => s.id).join("\n") : `(no matches for "${q}")`;
+        // Match the NAME as well as the id (#516). A listing that shows names
+        // but can only be searched by UUID is half a fix — "search cloud-mail"
+        // has to find the session called cloud-mail.
+        const ql = q.toLowerCase();
+        const matched = mine.filter((s) => s.id.includes(q) || String(s.name || "").toLowerCase().includes(ql));
+        return matched.length ? matched.map(fmtRow).join("\n") : `(no matches for "${q}")`;
       }
-      const plain = mine.slice(0, RESUME_MAX_LISTED).map((s) => `${s.id} — ${s.device}`).join("\n");
+      // Same renderer as /resume: identical rows from identical data, so the two
+      // commands can never drift into showing different things again.
+      const plain = mine.slice(0, RESUME_MAX_LISTED).map(fmtRow).join("\n");
       if (sub) return "search isn't available for this argument — showing plain list instead:\n" +
         (mine.length ? plain : "(no saved sessions)");
       return mine.length ? plain : "(no saved sessions)";

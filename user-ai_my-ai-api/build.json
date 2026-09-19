@@ -75,6 +75,12 @@
         "max_bytes": 1048576,
         "max_messages": 120,
         "max_listed": 40
+      },
+      "_name_comment": "Ticket #516: /resume listed 40 bare UUIDs and Diego could not pick one (\"add the namee!!!!!!\"). Every listed session now carries a name, derived in sessions-store.mjs's deriveSessionName and served by server.mjs's /sessions so both Telegram bots (which share bots/commands.mjs) get it from ONE declaration. Deriving must never READ a session: the store holds a 127,487,011-byte transcript plus two more over 100 MB, and /sessions walks every device directory on every call, so naming-by-reading would make the listing an OOM on exactly the sessions worth resuming. head_bytes bounds the positional read off the FRONT (custom-title, cwd, first message) and tail_bytes the read off the END (last-prompt, the field holding the most recent prompt); max_chars is the row width a phone can scan before wrapping. Measured over all 40 real sessions on 2026-09-19 these bounds name 40/40, with 34 distinct labels: 9 by custom-title, 26 by last-prompt, 4 by the cwd fallback and 1 (a 146-byte bridge-session stub with nothing in it) as \"(unnamed)\". The first-message rung scores 0 on this store and exists for the bot's own flat {role,content} telegram NDJSON, which carries neither of the other two records. Consumed via compose.nix -> BRIDGE_NAME_HEAD_BYTES / BRIDGE_NAME_TAIL_BYTES / BRIDGE_NAME_MAX_CHARS, read once in sessions-store.mjs.",
+      "name": {
+        "head_bytes": 65536,
+        "tail_bytes": 32768,
+        "max_chars": 60
       }
     },
     "headroom": {
@@ -96,6 +102,10 @@
     },
     "resume-cross-device": {
       "cmd": "node test-my-ai-resume-cross-device.mjs",
+      "cwd": "src/code"
+    },
+    "resume-session-names": {
+      "cmd": "node test-my-ai-resume-session-names.mjs",
       "cwd": "src/code"
     }
   },

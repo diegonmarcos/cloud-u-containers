@@ -41,6 +41,24 @@ export const RESUME_MAX_MESSAGES = parseInt(process.env.BRIDGE_RESUME_MAX_MESSAG
 // holds, so the old hardcoded 10 hid the one session #513 exists to offer him.
 export const RESUME_MAX_LISTED = parseInt(process.env.BRIDGE_RESUME_MAX_LISTED || "40", 10);
 
+// ── Naming bounds (#516) ───────────────────────────────────────────────────
+// A listing of 40 UUIDs tells Diego nothing about what any session IS, and half
+// the store is written inside the same 60 seconds so the timestamp does not
+// disambiguate them either. deriveSessionName below gives every row a label.
+//
+// It must NEVER read a whole file: the store holds a 127,487,011-byte session
+// and two others over 100 MB, and /sessions stats every device directory on
+// every call, so naming-by-reading would turn the listing into an OOM on
+// exactly the sessions Diego most wants back. Naming therefore reads at most
+// NAME_HEAD_BYTES off the front plus NAME_TAIL_BYTES off the end, both by
+// positional read — never fs.readFileSync. Declared in build.json
+// runtime.sessions.name and exported by compose.nix, like the resume bounds.
+export const NAME_HEAD_BYTES = parseInt(process.env.BRIDGE_NAME_HEAD_BYTES || "65536", 10);
+export const NAME_TAIL_BYTES = parseInt(process.env.BRIDGE_NAME_TAIL_BYTES || "32768", 10);
+// Row width. A phone shows ~40 chars before wrapping; 40 wrapped rows are a
+// wall, so a long prompt is truncated with an ellipsis rather than folded.
+export const NAME_MAX_CHARS = parseInt(process.env.BRIDGE_NAME_MAX_CHARS || "60", 10);
+
 // Telegram bot chatKeys carry ':' (chat:id and chat:id:thread) which FAIL
 // server.mjs's safeSeg (/^[A-Za-z0-9._-]+$/) on the /sessions/<device>/<id>
 // endpoint. Sanitise deterministically so the same chat maps to the same file
@@ -139,6 +157,144 @@ export const readTailBytes = (file, bytes) => {
   const window = buf.toString("utf8");
   const nl = window.indexOf("\n");
   return nl === -1 ? "" : window.slice(nl + 1);
+};
+
+// Read the FIRST `bytes` of a file, the mirror of readTailBytes and the other
+// half of the #516 bound. The last line of the window is almost always cut in
+// half, so it is dropped and callers only ever see whole NDJSON records.
+// `bytes <= 0` or a window bigger than the file reads the file whole.
+export const readHeadBytes = (file, bytes) => {
+  const size = fs.statSync(file).size;
+  if (!(bytes > 0) || bytes >= size) return fs.readFileSync(file, "utf8");
+  const buf = Buffer.alloc(bytes);
+  const fd = fs.openSync(file, "r");
+  try { fs.readSync(fd, buf, 0, bytes, 0); } finally { fs.closeSync(fd); }
+  const window = buf.toString("utf8");
+  const nl = window.lastIndexOf("\n");
+  return nl === -1 ? "" : window.slice(0, nl);
+};
+
+// ── Session naming (#516) ───────────────────────────────────────────────────
+// Diego's complaint was "add the namee!!!!!!" under a listing of 40 bare UUIDs.
+// A label has to come from the file, and it CANNOT come from reading the file
+// (see the NAME_*_BYTES note above), so it comes from two bounded windows.
+//
+// The rungs below are in this order because of what the REAL store actually
+// holds, measured over all 40 sessions on 2026-09-19 — not because of what the
+// format looks like it should hold:
+//
+//   1. custom-title      7-9 files. Diego TITLED these ("tasks", "cloud-mail",
+//                        "u0_nixos", "qute"). His own word beats anything
+//                        inferred, so it wins outright.
+//   2. last-prompt       28 files. Claude Code writes {"type":"last-prompt",
+//                        "lastPrompt":"..."} — a purpose-built single field
+//                        holding the last thing he typed, with no wrapper
+//                        markup in it. It is at the END of the file, reached by
+//                        one positional read, never a scan.
+//   3. first user message Reached through the ONE normaliser below, so this
+//                        module still has a single parser. This is the rung
+//                        that names the bot's own flat {role,content} telegram
+//                        NDJSON, which has neither of the two records above.
+//   4. cwd basename      Honest, and marked as a fallback so it cannot be
+//                        mistaken for a real title.
+//   5. "(unnamed)"       A 146-byte bridge-session stub has nothing at all.
+//
+// Rung 3 is deliberately BELOW rung 2, which inverts the obvious "name it after
+// the first thing he asked". The head of a real transcript is usually not a
+// prompt: 12 of the 40 files open with a "<local-command-caveat>" wrapper, 7
+// more with "<local-command-stdout>Set model to ...", 2 with "This session is
+// being continued from a previous conversation...", one with a box-drawing TUI
+// dump. Naming from the head alone gives a dozen rows the SAME useless label,
+// which is the bug this ticket is about wearing a different shirt. Chasing that
+// with a blacklist of wrapper prefixes is a list that grows every time upstream
+// adds a markup tag; lastPrompt is one field that is already exactly the answer.
+const ANSI_ESCAPE = /\u001b\[[0-9;?]*[ -/]*[@-~]/g;
+
+// One label -> one scannable line. Strips the terminal escapes and control
+// characters that a pasted prompt carries (the store holds a pasted browser
+// error complete with \r, and TUI dumps full of them) and collapses every run
+// of whitespace, so a multi-line prompt becomes one row instead of forty.
+export const cleanLabel = (s) =>
+  String(s ?? "")
+    .replace(ANSI_ESCAPE, "")
+    .replace(/[\u0000-\u001f\u007f]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+// Is this "user message" actually machine-generated markup rather than something
+// Diego typed? Claude Code injects turns wrapped in an XML-ish envelope —
+// <local-command-caveat>, <local-command-stdout>, <system-reminder>,
+// <command-name> — and they open the transcript far more often than a real
+// prompt does: of the 40 real sessions, 12 open with a caveat wrapper and 7 more
+// with command output. Named from those, a dozen rows would share one
+// meaningless label, which is the bug this ticket is about in a different shirt.
+//
+// This is ONE structural rule, not a list of tag names to keep extending: a
+// prompt a human typed does not begin with a closed markup tag. A new upstream
+// wrapper is therefore handled the day it appears, without touching this file.
+const WRAPPED = /^<[A-Za-z][A-Za-z0-9-]*>/;
+const isWrapped = (s) => WRAPPED.test(cleanLabel(s));
+
+// Truncate to a phone-scannable width, with an ellipsis so a cut label is
+// visibly cut rather than silently misleading.
+export const truncateLabel = (s, max = NAME_MAX_CHARS) => {
+  const t = cleanLabel(s);
+  return max > 0 && t.length > max ? `${t.slice(0, max - 1)}\u2026` : t;
+};
+
+// Derive a label for ONE session file. Returns {name, from} — `from` names the
+// rung that produced it so a fallback is VISIBLE to the caller instead of
+// looking like a title Diego chose. Reads at most NAME_HEAD_BYTES +
+// NAME_TAIL_BYTES and never fs.readFileSync's a bounded file; an unreadable
+// file yields a fallback, never a throw, because one bad file must not take the
+// whole listing down.
+export const deriveSessionName = (file, opts = {}) => {
+  const headBytes = opts.headBytes ?? NAME_HEAD_BYTES;
+  const tailBytes = opts.tailBytes ?? NAME_TAIL_BYTES;
+  const maxChars = opts.maxChars ?? NAME_MAX_CHARS;
+  let head = "", tail = "";
+  try { head = readHeadBytes(file, headBytes); } catch { /* unreadable: fall through */ }
+  try { tail = readTailBytes(file, tailBytes); } catch { /* unreadable: fall through */ }
+
+  const records = (text) => {
+    const out = [];
+    for (const line of String(text ?? "").split("\n")) {
+      if (!line.trim()) continue;
+      try { out.push(JSON.parse(line)); } catch { /* partial/garbage line */ }
+    }
+    return out;
+  };
+
+  let title = null, cwd = null;
+  for (const rec of records(head)) {
+    if (!rec || typeof rec !== "object") continue;
+    if (!title && rec.type === "custom-title" && typeof rec.customTitle === "string" && cleanLabel(rec.customTitle))
+      title = rec.customTitle;
+    if (!cwd && typeof rec.cwd === "string" && rec.cwd) cwd = rec.cwd;
+  }
+  if (title) return { name: truncateLabel(title, maxChars), from: "title" };
+
+  // The LAST last-prompt in the tail window is the most recent one: Claude Code
+  // appends a fresh record per turn (538 of them in the 127 MB file), so the
+  // final one carries the newest prompt.
+  let lastPrompt = null;
+  for (const rec of records(tail)) {
+    if (rec && typeof rec === "object" && rec.type === "last-prompt" &&
+        typeof rec.lastPrompt === "string" && cleanLabel(rec.lastPrompt)) lastPrompt = rec.lastPrompt;
+  }
+  if (lastPrompt) return { name: truncateLabel(lastPrompt, maxChars), from: "last-prompt" };
+
+  // Rung 3 goes through parseSessionMessages — the ONE parser — so the flat
+  // telegram NDJSON and a Claude Code transcript are read by the same code here
+  // as everywhere else in this module. This is the rung that names the bot's own
+  // telegram chats, whose lines are flat {role,content} with neither of the
+  // records above.
+  const firstUser = parseSessionMessages(head)
+    .find((m) => m.role === "user" && cleanLabel(m.content) && !isWrapped(m.content));
+  if (firstUser) return { name: truncateLabel(firstUser.content, maxChars), from: "first-message" };
+
+  if (cwd) return { name: truncateLabel(`${path.basename(cwd)} (no prompt yet)`, maxChars), from: "cwd" };
+  return { name: "(unnamed)", from: "none" };
 };
 
 // Persist a chat's FULL history, overwriting the previous file. A failed write
