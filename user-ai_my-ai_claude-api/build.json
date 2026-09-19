@@ -88,6 +88,10 @@
     "sessions-store-parity": {
       "cmd": "node test-my-ai-sessions-store-parity.mjs",
       "cwd": "src/code"
+    },
+    "resume-task-store-reachability": {
+      "cmd": "node test-claude-resume-store.mjs",
+      "cwd": "src/code"
     }
   }
 }
