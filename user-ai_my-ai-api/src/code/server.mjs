@@ -22,6 +22,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { runAgenticLoop, mcpEnabled, metaTools, MCP_ENABLED, searchTools, getServerCounts } from "./mcp.mjs";
 import { SESSIONS_DIR, readTailBytes, deriveSessionName } from "./sessions-store.mjs";
+import { postJson } from "./http-post.mjs";
 
 const PORT          = parseInt(process.env.BRIDGE_PORT || "3217", 10);
 const BIND          = process.env.BRIDGE_BIND || "127.0.0.1";
@@ -301,15 +302,10 @@ const callClaudeCLI = async ({ messages, model, extra }) => {
   const RETRY_WINDOW_MS = 150_000, RETRY_DELAY_MS = 5_000;
   let firstFail = 0;
   for (;;) {
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), CALL_TIMEOUT);
     try {
-      const r = await fetch(`${CLAUDE_CLI_BASE}${CLAUDE_CLI_CHAT}`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(body),
-        signal: ctrl.signal,
-      }).finally(() => clearTimeout(t));
+      // node:http, not fetch — undici caps waiting for headers at ~300s and
+      // long claude turns run past that (see http-post.mjs).
+      const r = await postJson(`${CLAUDE_CLI_BASE}${CLAUDE_CLI_CHAT}`, { "content-type": "application/json" }, body, CALL_TIMEOUT);
       if (!r.ok) {
         const txt = await r.text().catch(() => "");
         throw new Error(`claude-cli ${r.status}: ${txt.slice(0, 500)}`);
@@ -322,8 +318,10 @@ const callClaudeCLI = async ({ messages, model, extra }) => {
       stats.completion_tokens += usage.output_tokens;
       return { text, usage, raw: j };
     } catch (e) {
-      if (e.name === "AbortError") throw new Error("claude-cli timeout");
-      if (e.message === "fetch failed") {
+      if (e.code === "ETIMEDOUT") throw new Error("claude-cli timeout");
+      // Connection-level failure = bridge down (deploying). node:http surfaces
+      // these as ECONNREFUSED/ECONNRESET/EPIPE, not fetch's "fetch failed".
+      if (["ECONNREFUSED", "ECONNRESET", "EPIPE", "EHOSTUNREACH"].includes(e.code) || e.message === "fetch failed") {
         if (!firstFail) firstFail = Date.now();
         if (Date.now() - firstFail < RETRY_WINDOW_MS) {
           console.error(`[my-ai-api] claude-cli unreachable (bridge deploying?) — retry in ${RETRY_DELAY_MS / 1000}s`);

@@ -40,7 +40,7 @@
     },
     "_max_concurrency_comment": "Demand-led, shedder-enforced. 15 does NOT fit in the free memory on oci-apps and that is deliberate: agents are resumable, so the load shedder culls them under pressure instead of the concurrency being pre-capped to what fits. Requires my-ai_claude-api to be NON-tier1 in the shedder config, and the inference gateway on 10.0.0.6:8789 to be tier1.",
     "max_concurrency": 15,
-    "call_timeout_ms": 280000,
+    "call_timeout_ms": 840000,
     "_max_turns_comment": "Assistant turns per request. Was hardcoded to 1 in server.mjs, which does not mean one answer — a tool call costs a turn, so 1 meant the bot could greet and nothing else, and every question needing Bash or Read came back as 'claude -p exit 1: max_turns'. call_timeout_ms is the real ceiling on a runaway request; this only stops a loop that makes no progress.",
     "max_turns": 30,
     "_sessions_comment": "Cross-device session store: devices push recent Claude Code sessions here (WG-only) so any device can restore them. dir is under container HOME; keep = max sessions retained per device.",

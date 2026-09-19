@@ -196,6 +196,16 @@ export const startTelegram = ({
   // collide.
   const topicNames = new Map(); // "chatId:threadId" -> forum topic name, learned from service messages
 
+  // Per-conversation turn queues. Agent turns used to be awaited INSIDE the
+  // getUpdates loop, so one long turn (group agent orchestration runs 5-10
+  // min) froze every other chat and topic on this bot until it finished —
+  // measured 2026-09-19: a group turn blocked the DM for its whole life.
+  // Chaining on a per-conversation promise keeps strict order within a chat
+  // while different chats/topics run concurrently and the poll loop never
+  // stalls. Entries are overwritten per turn, keys are the handful of chats
+  // this private bot serves — no cleanup needed.
+  const turnQueues = new Map(); // conversationKey -> tail promise
+
   // Registry of chats this bot has seen traffic from, keyed by chat.id —
   // Telegram offers no "list all my chats" API, so this is the only way the
   // bot can answer "what groups/topics am I in". Both maps are deliberately
@@ -364,7 +374,29 @@ export const startTelegram = ({
                 reply = await handleCommand(cmd, arg, conversationKey, { fromId: from_id, allowFrom }, defaultAgent);
               }
             } else {
-              reply = await routeToGoose(text, conversationKey, defaultAgent, platformContext);
+              // Agent turn — do NOT await in the poll loop (see turnQueues).
+              // The queued task owns its own delivery and error notice; the
+              // shared delivery tail below serves only slash commands.
+              const prev = turnQueues.get(conversationKey) ?? Promise.resolve();
+              turnQueues.set(conversationKey, prev.then(async () => {
+                try {
+                  const turnReply = await routeToGoose(text, conversationKey, defaultAgent, platformContext);
+                  const { delivered } = await sendMessage(msg.chat.id, turnReply, threadId);
+                  if (delivered) {
+                    console.log(`[gateway] ${logLabel}: delivered "message" reply to ${from_id} chat=${msg.chat.id}${threadId !== undefined ? ` topic=${threadId}` : ""}`);
+                  } else {
+                    console.error(`[gateway] ${logLabel}: reply NOT delivered to ${from_id} chat=${msg.chat.id}${threadId !== undefined ? ` topic=${threadId}` : ""} — a failure notice was sent instead of silence`);
+                  }
+                } catch (turnErr) {
+                  console.error(`[gateway] ${logLabel}: error processing turn:`, turnErr.message);
+                  try {
+                    await sendMessage(msg.chat.id, `[gateway: error] ${turnErr.message}`, threadId);
+                  } catch (notifyErr) {
+                    console.error(`[gateway] ${logLabel}: could not even send the error notice to ${msg.chat.id}:`, notifyErr.message);
+                  }
+                }
+              }));
+              continue;
             }
             // Deliver the reply and only then decide whether to claim success.
             // deliverChatReply returns delivered:false (and posts a visible
