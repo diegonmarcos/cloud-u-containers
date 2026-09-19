@@ -288,29 +288,44 @@ const callOpenRouter = async ({ messages, model, extra }) => {
 const callClaudeCLI = async ({ messages, model, extra }) => {
   if (!CLAUDE_CLI_BASE) throw new Error("CLAUDE_CLI_BASE_URL unset — set it to your claude-superset-api WG endpoint");
   const body = { ...extra, model, messages, stream: false };
-  const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), CALL_TIMEOUT);
-  try {
-    const r = await fetch(`${CLAUDE_CLI_BASE}${CLAUDE_CLI_CHAT}`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
-      signal: ctrl.signal,
-    }).finally(() => clearTimeout(t));
-    if (!r.ok) {
-      const txt = await r.text().catch(() => "");
-      throw new Error(`claude-cli ${r.status}: ${txt.slice(0, 500)}`);
+  // Every ship recreates the claude bridge (compose down/up + 40s health start
+  // period). A connection-level "fetch failed" in that window is a deploy in
+  // progress, not an outage — retry within the window instead of failing the
+  // turn with an instant 502 (the telegram bot surfaced exactly that all night
+  // on 2026-09-19). Only connection failures retry; HTTP errors and timeouts
+  // still fail loud. ponytail: fixed 90s/5s window, make it env-driven if a
+  // deploy ever legitimately exceeds it.
+  const RETRY_WINDOW_MS = 90_000, RETRY_DELAY_MS = 5_000, t0 = Date.now();
+  for (;;) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), CALL_TIMEOUT);
+    try {
+      const r = await fetch(`${CLAUDE_CLI_BASE}${CLAUDE_CLI_CHAT}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+        signal: ctrl.signal,
+      }).finally(() => clearTimeout(t));
+      if (!r.ok) {
+        const txt = await r.text().catch(() => "");
+        throw new Error(`claude-cli ${r.status}: ${txt.slice(0, 500)}`);
+      }
+      const j = await r.json();
+      const text = j.choices?.[0]?.message?.content ?? "";
+      const usage = { input_tokens: j.usage?.prompt_tokens ?? 0, output_tokens: j.usage?.completion_tokens ?? 0 };
+      stats.calls++;
+      stats.prompt_tokens += usage.input_tokens;
+      stats.completion_tokens += usage.output_tokens;
+      return { text, usage, raw: j };
+    } catch (e) {
+      if (e.name === "AbortError") throw new Error("claude-cli timeout");
+      if (e.message === "fetch failed" && Date.now() - t0 < RETRY_WINDOW_MS) {
+        console.error(`[my-ai-api] claude-cli unreachable (bridge deploying?) — retry in ${RETRY_DELAY_MS / 1000}s`);
+        await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
+        continue;
+      }
+      throw e;
     }
-    const j = await r.json();
-    const text = j.choices?.[0]?.message?.content ?? "";
-    const usage = { input_tokens: j.usage?.prompt_tokens ?? 0, output_tokens: j.usage?.completion_tokens ?? 0 };
-    stats.calls++;
-    stats.prompt_tokens += usage.input_tokens;
-    stats.completion_tokens += usage.output_tokens;
-    return { text, usage, raw: j };
-  } catch (e) {
-    if (e.name === "AbortError") throw new Error("claude-cli timeout");
-    throw e;
   }
 };
 
@@ -531,6 +546,10 @@ const server = http.createServer(async (req, res) => {
     catch { return send(400, { error: { message: "invalid JSON body" } }); }
 
     await acquire();
+    // Hoisted out of the try so the catch can name the agent that actually
+    // failed — every backend error used to be labelled my_ai_openrouter_error,
+    // which pointed a whole night of claude-bridge debugging at OpenRouter.
+    let agentMode = "openrouter";
     try {
       if (req.url.startsWith("/v1/messages")) return await handleAnthropic(payload, res, req.headers);
 
@@ -539,7 +558,7 @@ const server = http.createServer(async (req, res) => {
       const extra = { ...payload };
       delete extra.messages; delete extra.model; delete extra.stream;
       const wantStream = !!payload.stream;
-      const agentMode = getAgentMode(req.headers, model);
+      agentMode = getAgentMode(req.headers, model);
 
       const compressed = await pipeline(payload.messages, model, req.headers);
 
@@ -583,7 +602,8 @@ const server = http.createServer(async (req, res) => {
       }
     } catch (e) {
       stats.errors++;
-      send(502, { error: { message: String(e.message || e), type: "my_ai_openrouter_error" } });
+      console.error(`[my-ai-api] ${agentMode} backend error: ${String(e.message || e)}`);
+      send(502, { error: { message: String(e.message || e), type: `my_ai_${agentMode.replace(/-/g, "_")}_error` } });
     } finally { release(); }
     return;
   }
