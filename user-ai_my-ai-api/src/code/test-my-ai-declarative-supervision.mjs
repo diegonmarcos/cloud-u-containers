@@ -64,6 +64,26 @@ if (defaults) {
     /"restart"\s*:\s*"no"/.test(defaults), "fleet compose default restart is not 'no' — declaration may be a no-op");
 }
 
+// A2) The RESOLVED declaration — the rendered dist compose the runtime docks.
+// compose.nix is the source declaration; the engine renders it (merged over
+// compose-defaults.json) into dist/compose/docker-compose.yml, and THAT is the
+// file the container is actually brought up from. Declaring restart in
+// compose.nix but never regenerating dist means the deployed compose still
+// carries restart:"no" — the #545 dist trap applied to the restart policy. The
+// rendered artifact must resolve to unless-stopped, or this check is red.
+const distComposePath = join(repoRoot, "user-ai_my-ai-api/dist/compose/docker-compose.yml");
+const distCompose = mustRead(distComposePath, "dist/compose/docker-compose.yml");
+if (distCompose) {
+  // The banner (a # comment block) is stripped; the body is one JSON object.
+  const body = distCompose.split("\n").filter((l) => !l.startsWith("#")).join("");
+  let parsed = null;
+  try { parsed = JSON.parse(body); } catch (e) { parsed = null; }
+  const resolvedRestart = parsed?.services?.["my-ai-api"]?.restart;
+  check("A rendered dist compose resolves restart to unless-stopped",
+    resolvedRestart === "unless-stopped",
+    `dist/compose/docker-compose.yml service restart resolves to ${JSON.stringify(resolvedRestart)} — regenerate dist from compose.nix`);
+}
+
 // B) gateway.mjs supervision — declared in start.sh.
 const start = mustRead(startScript, "src/code/start.sh");
 if (start) {
