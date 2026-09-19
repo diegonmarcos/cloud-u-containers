@@ -35,6 +35,12 @@ const OLLAMA2 = OLLAMA + 4000;
 const STORE = join(TMP, "store");
 const DEAD_STORE = join(TMP, "store-missing");
 mkdirSync(STORE, { recursive: true });
+// #548 mounted-task-store fixture: the resume spawn reads the session's task
+// store under HOME/.claude/tasks/<id>/. The resume test runs the REAL server.mjs,
+// so HOME must be a temp dir whose task store is reachable or the reachability
+// guard (deliverable 5) trips and the test asserts the error path, not a resume.
+const TASK_HOME = join(TMP, "taskhome");
+mkdirSync(join(TASK_HOME, ".claude", "tasks", "6f096941-091d-4b8f-a3bd-03c6f7bc8287"), { recursive: true });
 
 // ── fixture store ───────────────────────────────────────────────────────────
 // A real Claude-Code-shaped transcript whose derived name (deriveSessionName,
@@ -138,6 +144,8 @@ const check = (name, ok, detail) => {
     // lookup (keyed on the cwd slug) finds the session. TMP exists on the test
     // host; a production deployment declares the orchestrator's real slug dir.
     BRIDGE_RESUME_CWD: TMP,
+    // #548 reachability guard needs a mounted task store at HOME/.claude/tasks/<id>.
+    HOME: TASK_HOME,
     SHIM_ARGV_FILE: argvFile,
     SHIM_PROMPT_FILE: promptFile,
     SHIM_CALL_FILE: callFile,
@@ -188,6 +196,68 @@ const check = (name, ok, detail) => {
     check("E2 reply contains NO digit anywhere", !/\d/.test(text), `reply=${JSON.stringify(text)}`);
     check("E3 no blank claude was spawned", (existsSync(callFile) ? readFileSync(callFile, "utf8").trim() : "0") === "0",
       `spawn-count=${existsSync(callFile) ? readFileSync(callFile, "utf8").trim() : "(no file)"}`);
+  } finally { child.kill(); }
+}
+
+// ── F1: NAME RESOLVES but the MOUNTED TASK STORE is unreachable → words ───
+// #548's real gap: 547 covered only a name that cannot be resolved. The deeper
+// defect is a RESOLVED name whose ~/.claude/tasks/<id>/ mounted store is absent
+// or unreadable — claude would then spawn into an empty task dir and TaskList
+// would legitimately return 0, rendering absence as a confident number. A count
+// may only be emitted from a store that was READ; this block proves absence of
+// the mounted task store fails loud (mutation: drop the assertTaskStoreReachable
+// call in run() → this block goes RED with a number and a spawn).
+{
+  resetShim();
+  const port = PORT + 3000;
+  // Session store is REACHABLE (the name resolves) but HOME has NO task store.
+  const { child } = await startServer({
+    BRIDGE_SESSIONS_DIR: STORE,
+    BRIDGE_RESUME_SESSION_NAME: "orchestrator live session",
+    BRIDGE_RESUME_CWD: TMP,
+    HOME: join(TMP, "no-task-home"), // exists, but no .claude/tasks/<id>
+    SHIM_ARGV_FILE: argvFile,
+    SHIM_CALL_FILE: callFile,
+  }, port, OLLAMA + 3000);
+  try {
+    const res = await chat(port, {
+      model: "claude-sonnet-4-6",
+      messages: [{ role: "user", content: "how many tasks are open?" }],
+    });
+    const text = res.json?.choices?.[0]?.message?.content ?? "";
+    check("F1 resolved name + unreachable task store → worded error", text.startsWith("[task store error]"), `reply=${JSON.stringify(text)}`);
+    check("F1b reply contains NO digit anywhere", !/\d/.test(text), `reply=${JSON.stringify(text)}`);
+    check("F1c no claude was spawned (no number could be fabricated)",
+      (existsSync(callFile) ? readFileSync(callFile, "utf8").trim() : "0") === "0",
+      `spawn-count=${existsSync(callFile) ? readFileSync(callFile, "utf8").trim() : "(no file)"}`);
+  } finally { child.kill(); }
+}
+
+// ── G1: resolved name + REACHABLE mounted task store → resume succeeds ──────
+// The positive control for F1: the same session, but the task store IS mounted,
+// must resume (--resume with the declared cwd) and return the shim body — NOT
+// the worded error. Together F1/G1 prove the guard discriminates on the mounted
+// task store, the exact #548 before/after control (0 → real count).
+{
+  resetShim();
+  const port = PORT + 4000;
+  const { child } = await startServer({
+    BRIDGE_SESSIONS_DIR: STORE,
+    BRIDGE_RESUME_SESSION_NAME: "orchestrator live session",
+    BRIDGE_RESUME_CWD: TMP,
+    HOME: TASK_HOME, // reachable task store
+    SHIM_ARGV_FILE: argvFile,
+    SHIM_CALL_FILE: callFile,
+  }, port, OLLAMA + 4000);
+  try {
+    const res = await chat(port, {
+      model: "claude-sonnet-4-6",
+      messages: [{ role: "user", content: "second turn, the new message" }],
+    });
+    const argv = existsSync(argvFile) ? readFileSync(argvFile, "utf8").trim().split("\n") : [];
+    const text = res.json?.choices?.[0]?.message?.content ?? "";
+    check("G1 reachable task store → --resume spawns (not the error path)", argv.includes("--resume"), `argv=${JSON.stringify(argv)}`);
+    check("G1b reachable task store → shim reply, no error words", /shim-ok/.test(text), `reply=${JSON.stringify(text)}`);
   } finally { child.kill(); }
 }
 

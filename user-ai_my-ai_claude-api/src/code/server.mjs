@@ -33,6 +33,14 @@ import {
   deriveSessionName,
   resolveResumeAddress,
 } from "./sessions-store.mjs";
+// #548: the ONE place that answers "is the mounted task store reachable?". A
+// name that resolves to a session whose ~/.claude/tasks/<id>/ is NOT reachable
+// must fail with WORDS — never fall through to a `claude -p` whose TaskList
+// would legitimately read zero (the exact defect #548 exists to end). The
+// module is pure: it only builds the argv for a resume spawn from a RESOLVED id
+// and checks the mounted task store. It does NOT resolve names — #525 owns that
+// (above), and reuse, not a second resolver, is the whole point.
+import { assertTaskStoreReachable, countTaskFiles } from "./claude-resume.mjs";
 
 const PORT          = parseInt(process.env.BRIDGE_PORT || "3107", 10);
 const BIND          = process.env.BRIDGE_BIND || "127.0.0.1";
@@ -346,6 +354,17 @@ const run = async (messages, model) => {
   // only the NEW user turn goes in — no re-compression of history the session
   // already carries, no re-append of a system prompt it already has.
   if (plan.mode === "resume") {
+    // #548: the resolved NAME is not enough — its mounted task store must be
+    // readable, or a TaskList read would legitimately see nothing. Resolving a
+    // name proves the session exists in the transcript store; it proves nothing
+    // about the mounted task store this spawn would resume. If the task store
+    // is unreachable, fail with WORDS exactly like the name-error above — never
+    // spawn a claude whose answer would be a confident zero from an empty dir.
+    const claudeHome = process.env.HOME || "/home/appuser";
+    const unreachable = assertTaskStoreReachable({ claudeHome, session: plan.sessionId });
+    if (unreachable) {
+      return { text: STORE_ERROR_WORDS(unreachable.message), usage: { input_tokens: 0, completion_tokens: 0 } };
+    }
     const prompt = lastUserContent(messages);
     const { text, usage } = await withRetry(() => callClaude({ system: "", prompt, model, resumeId: plan.sessionId }));
     stats.calls++;

@@ -37,6 +37,7 @@
             ./code/vendor
             ./code/py
             ./code/server.mjs
+            ./code/claude-resume.mjs
             ./code/login.mjs
             ./code/sessions-store.mjs
             ./code/package.json
