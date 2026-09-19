@@ -64,8 +64,10 @@ const SHIM = join(TMP, "shim-claude.sh");
 const argvFile = join(TMP, "last-argv.txt");
 const promptFile = join(TMP, "last-prompt.txt");
 const callFile = join(TMP, "call-count.txt");
+const cwdFile = join(TMP, "last-cwd.txt");
 writeFileSync(SHIM, `#!/usr/bin/env bash
-printf '%s\\n' "$@" > "\${SHIM_ARGV_FILE:-/tmp/_shim_argv}"
+printf '%s\n' "$@" > "\${SHIM_ARGV_FILE:-/tmp/_shim_argv}"
+printf '%s' "\$PWD" > "\${SHIM_CWD_FILE:-/tmp/_shim_cwd}"
 cat > "\${SHIM_PROMPT_FILE:-/dev/null}"
 n=$(cat "\${SHIM_CALL_FILE:-/dev/null}" 2>/dev/null || echo 0)
 echo $((n + 1)) > "\${SHIM_CALL_FILE:-/dev/null}"
@@ -132,9 +134,14 @@ const check = (name, ok, detail) => {
   const { child } = await startServer({
     BRIDGE_SESSIONS_DIR: STORE,
     BRIDGE_RESUME_SESSION_NAME: "orchestrator live session",
+    // #548: the resume spawn runs in the DECLARED project cwd so the transcript
+    // lookup (keyed on the cwd slug) finds the session. TMP exists on the test
+    // host; a production deployment declares the orchestrator's real slug dir.
+    BRIDGE_RESUME_CWD: TMP,
     SHIM_ARGV_FILE: argvFile,
     SHIM_PROMPT_FILE: promptFile,
     SHIM_CALL_FILE: callFile,
+    SHIM_CWD_FILE: cwdFile,
   }, PORT, OLLAMA);
   try {
     const res = await chat(PORT, {
@@ -146,8 +153,12 @@ const check = (name, ok, detail) => {
     });
     const argv = existsSync(argvFile) ? readFileSync(argvFile, "utf8").trim().split("\n") : [];
     const prompt = existsSync(promptFile) ? readFileSync(promptFile, "utf8") : "";
+    const spawnedCwd = existsSync(cwdFile) ? readFileSync(cwdFile, "utf8") : "";
     check("R1 --resume carries the resolved session id", argv.includes("--resume") && argv[argv.indexOf("--resume") + 1] === FIXTURE_ID,
       `argv=${JSON.stringify(argv)}`);
+    check("R1b #548 resume spawn runs in the DECLARED project cwd (transcript lookup keys on cwd slug)",
+      spawnedCwd === TMP,
+      `spawnedCwd=${JSON.stringify(spawnedCwd)}, TMP=${TMP}`);
     check("R2 resumed prompt is the LAST user turn only (no history echo)",
       prompt.trim() === "second turn, the new message",
       `prompt=${JSON.stringify(prompt)}`);
