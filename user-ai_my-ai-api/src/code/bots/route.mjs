@@ -117,7 +117,18 @@ export const routeToGoose = async (text, chatKey = "default", defaultAgent = "go
       return `[gateway error ${res.status}] ${errText.slice(0, 200)}`;
     }
     const json = await res.json();
-    const reply = json?.choices?.[0]?.message?.content ?? "[gateway: empty reply]";
+    const msg = json?.choices?.[0]?.message ?? {};
+    const content = msg.content ?? "[gateway: empty reply]";
+    // Surface the model's thinking the same way Hermes does: the OpenRouter
+    // response carries the reasoning chain in message.reasoning (and a richer
+    // reasoning_details array on some providers). routeToGoose used to read only
+    // .content, so goose answered but the thinking that produced the answer was
+    // silently dropped. Append it as a labelled block; `none` when absent so the
+    // reply reads the same either way.
+    const think = msg.reasoning ?? "";
+    const reply = think
+      ? `${content}\n\n💭 _thinking:_ ${think}`
+      : content;
     state.history.push({ role: "user", content: text }, { role: "assistant", content: reply });
     // Persist the chat's FULL history (state.history is uncapped; HISTORY_CAP is
     // only the send window above). Failed writes log and continue — a broken

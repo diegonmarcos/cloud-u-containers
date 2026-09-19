@@ -90,6 +90,12 @@ memory:
 agent:
   max_turns: 100
 
+# APPROVALS - AUTO MODE. Never prompt for tool/command approval (equiv --yolo).
+# Does NOT touch secret redaction (independent). Operator 2026-09-19: goose+Hermes
+# default to auto mode, no prompts. modes: manual|smart|off.
+approvals:
+  mode: off
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # Messaging gateway. A platform auto-enables when its token env var is present
 # (TELEGRAM_BOT_TOKEN); `enabled: false` is an explicit override honored even when
