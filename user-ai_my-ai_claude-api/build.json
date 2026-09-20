@@ -107,7 +107,19 @@
       {
         "repo": "front-unity"
       }
-    ]
+    ],
+    "_memory_comment": "The agentic memory system, declared once. It already EXISTED in the shared tree (cloud-data-my-ai-memory/b_projects/home-diego: a 72-line MEMORY.md index over 169 entries) and no agent was ever pointed at it \u2014 a-context-inject-memory.sh is NAMED for memory but injected only the principles checklist, so every oci-apps agent ran with zero recall while a full store sat mounted at its own $HOME/git. dir is resolved inside the container against the shared tree mount. MEMORY.md is the INDEX and the only file injected at session start; entries under memory-entries/<type>/ are read on demand, never preloaded \u2014 a subdirectory that auto-loads turned a 4.5k-token preload into 87k once already.",
+    "memory": {
+      "dir": "git/cloud-data-my-ai-memory/b_projects/home-diego",
+      "index": "MEMORY.md",
+      "entries": "memory-entries",
+      "types": [
+        "feedback",
+        "project",
+        "reference",
+        "user"
+      ]
+    }
   },
   "containers": {
     "app": {
@@ -145,6 +157,10 @@
     },
     "git-tree-owner-repair": {
       "cmd": "node test-git-tree-owner-repair.mjs",
+      "cwd": "src/code"
+    },
+    "agent-memory-system": {
+      "cmd": "node test-agent-memory-system.mjs",
       "cwd": "src/code"
     }
   }

@@ -78,6 +78,16 @@ in
         # No `or` fallback on purpose — a missing cwd would silently resume by
         # uuid into a blank project, which is the 0-tasks defect one layer up.
         BRIDGE_RESUME_CWD        = rt.resume_session.cwd;
+        # #556: the agentic memory system. The store already EXISTED in the
+        # shared tree — a 72-line MEMORY.md index over 169 entries — and no
+        # agent was pointed at it: a-context-inject-memory.sh is NAMED for
+        # memory and injected only the principles checklist, so every agent ran
+        # with zero recall beside a full store it had mounted. Absolute, derived
+        # from the same `home` the tree mounts under, so the hook never guesses.
+        AGENT_MEMORY_DIR      = "${home}/${rt.memory.dir}";
+        AGENT_MEMORY_INDEX    = rt.memory.index;
+        AGENT_MEMORY_ENTRIES  = rt.memory.entries;
+        AGENT_MEMORY_TYPES    = builtins.concatStringsSep " " rt.memory.types;
         # #557: what start.sh clones into the shared agent tree. ONE declaration
         # in build.json; no `or` fallback on purpose — the old hardcoded shell
         # loop WAS a second declaration, and it silently disagreed with the tree

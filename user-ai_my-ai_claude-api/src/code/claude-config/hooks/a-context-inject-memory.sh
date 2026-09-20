@@ -27,6 +27,61 @@
 #                         + c-pretool-guard-warning.sh (advisory patterns)
 # ============================================================================
 
+# ── TIER A.1: the agentic memory system (#556) ──────────────────────────────
+# This script has been called "inject-memory" since it was written and injected
+# no memory whatsoever — only the checklist below. Meanwhile a real store sat
+# mounted in the shared tree at AGENT_MEMORY_DIR: a MEMORY.md index over ~169
+# entries. Every agent that ever ran here started with zero recall, and nothing
+# said so, because the hook's own name made it look handled.
+#
+# ONLY the index is injected. Entries under memory-entries/<type>/ are read on
+# demand with the Read tool, never preloaded — a layout where the entry
+# directory auto-loads has already turned a 4.5k-token preload into 87k once.
+#
+# Absence is LOUD. If the store is unreachable the agent is told, in the same
+# breath, that it is running WITHOUT memory. A hook that silently emits nothing
+# is indistinguishable from a hook whose memory happens to be empty, and that
+# is the failure this whole tier exists to prevent.
+_mem_dir="${AGENT_MEMORY_DIR:-}"
+_mem_index="${AGENT_MEMORY_INDEX:-MEMORY.md}"
+_mem_entries="${AGENT_MEMORY_ENTRIES:-memory-entries}"
+_mem_types="${AGENT_MEMORY_TYPES:-feedback project reference user}"
+
+if [ -z "${_mem_dir}" ]; then
+  echo "## MEMORY: UNAVAILABLE"
+  echo
+  echo "AGENT_MEMORY_DIR is not set, so no memory index could be loaded. You are"
+  echo "running WITHOUT recall of previous sessions. Say so if asked what you"
+  echo "remember — do not answer from the conversation alone as though it were memory."
+elif [ ! -r "${_mem_dir}/${_mem_index}" ]; then
+  echo "## MEMORY: UNREACHABLE"
+  echo
+  echo "The memory index ${_mem_dir}/${_mem_index} could not be read, so you are"
+  echo "running WITHOUT recall of previous sessions. The shared git tree may not be"
+  echo "mounted, or the clone has not happened yet. Say so if asked what you remember."
+else
+  echo "## MEMORY INDEX (loaded from ${_mem_dir}/${_mem_index})"
+  echo
+  echo "This is an INDEX, not the memory itself. Scan it, then Read"
+  echo "\`${_mem_dir}/${_mem_entries}/<type>/<name>.md\` only when an entry is"
+  echo "relevant to the task in front of you. Never bulk-read the entries."
+  echo
+  cat "${_mem_dir}/${_mem_index}"
+  echo
+  echo "### WRITING A NEW MEMORY"
+  echo
+  echo "1. Write the entry to \`${_mem_dir}/${_mem_entries}/<type>/<name>.md\`"
+  echo "   where <type> is one of: ${_mem_types}"
+  echo "2. Add ONE line to \`${_mem_dir}/${_mem_index}\`: \`- [Title](path) — hook\`"
+  echo "3. NEVER put entry content in the index — it is paid for on every session."
+  echo "4. Check for an existing entry covering the same fact and UPDATE it rather"
+  echo "   than creating a near-duplicate."
+  echo
+  echo "Entries recalled this way reflect what was true when written. If one names a"
+  echo "file, flag or container, VERIFY it still exists before acting on it."
+fi
+echo
+
 cat <<'CHECKLIST'
 ## CORE PRINCIPLES (non-negotiable — reinforced at EVERY tier of hook injection)
 
