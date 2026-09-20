@@ -129,21 +129,18 @@ in
       # the image dir (appuser-owned via the Dockerfile) so appuser can write.
       volumes = [
         "claude_home:${home}"
-        # ${home}/git — the same layout every VM has (/home/ubuntu/git/…),
-        # and the same docker volume Gitea mounts at /data/git-gh. One tree,
-        # one checkout per repository, shared by every agent that runs here.
+        # The shared git checkout is NOT listed here any more (#561). This
+        # container was the last one still hand-writing the pair of lines
+        # (service volume + top-level pinned name) that #345 added, while the
+        # other two agents got theirs from _shared/engine.nix's agent.git_tree
+        # flag. Two mechanisms for one mount is how the three containers ended
+        # up with three different paths and nobody noticed hermes was mounting
+        # somewhere its $HOME could not reach.
         #
-        # Before this, each dispatch did its own `git clone` into
-        # ~/w<NNN>-<slug>. Sixty-three of those accumulated: sixty-three
-        # copies of the same repositories, none of which could see the
-        # others' commits, so two agents editing one file never conflicted —
-        # they just overwrote each other at push time and the loser's work
-        # vanished with no error anywhere.
-        #
-        # A shared tree does not by itself stop that; it makes it VISIBLE
-        # (git refuses the second write) and it makes keeping agents on
-        # disjoint files the dispatcher's explicit job.
-        "git_gh:${home}/git"
+        # It now comes from build.json `agent.git_tree` like every other agent
+        # container, at the ONE canonical path the engine declares, published
+        # as AGENT_GIT_TREE. The rendered path is unchanged
+        # (${home}/git), so this is a refactor with no runtime move.
       ];
       healthcheck = {
         test = [
@@ -196,10 +193,11 @@ in
     # — two volumes orphaned by exactly this mistake during earlier renames of this
     # same service. Renaming this is a live data migration, not a rename.
     claude_home = { name = "claude-superset-api-home"; };
-    # Same pinned name as infra-dat_gitea declares. Two compose projects
-    # reach the one docker volume only because both spell the name out;
-    # an undeclared "git_gh" would be scoped per project and give each
-    # service its own empty tree.
-    git_gh = { name = "cloud-git-gh"; };
+    # `git_gh` is NOT declared here. It comes from _shared/engine.nix,
+    # which adds both halves — the service mount and this pinned top-level
+    # name — whenever build.json sets agent.git_tree. Hand-writing it here
+    # was the original of the pair of lines the other two agent containers
+    # never got copies of (#416), and a second declaration is the very
+    # thing #561 removed: one mount, one pattern, one place.
   };
 }

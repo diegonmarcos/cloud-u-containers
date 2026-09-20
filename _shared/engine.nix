@@ -162,16 +162,47 @@ let
   gitTreeKey   = "git_gh";
   gitTreeName  = "cloud-git-gh";
 
-  # No default: a silent fallback path is how a mount lands in the wrong
-  # place and still looks fine. Opting in without saying where is a build
-  # error, not a guess.
-  gitTreeMount =
-    let m = agentSpec.git_tree_mount or ""; in
-    if m != "" then m
-    else throw ("${title}: build.json sets agent.git_tree = true but "
-                + "agent.git_tree_mount is missing. Give the absolute "
-                + "in-container path for the shared checkout "
-                + "(the container's own $HOME/git).");
+  # ONE canonical path, every agent container, no exceptions (#561).
+  #
+  # This used to be a per-container string, `agent.git_tree_mount`, and three
+  # containers grew three different answers:
+  #   my-ai_claude-api  /home/appuser/git   (not even via this flag — it
+  #                                          hand-wrote the volume lines)
+  #   my-ai-api         /home/appuser/git
+  #   hermes-agent      /opt/data/git
+  # The per-container field was documented as "the container's own $HOME/git",
+  # and NOTHING checked that claim. hermes's build.json asserts HOME is
+  # /opt/data (from its passwd entry); measured 2026-09-20 the running
+  # container reports HOME=/root and uid 0, so the tree was mounted at a path
+  # that was not $HOME/git at all. An agent doing the natural `ls $HOME/git`
+  # got "No such file or directory" and reported that the repositories did not
+  # exist — the exact symptom #416 was closed on, returning through a
+  # different door.
+  #
+  # A mount point is not a per-service opinion. One path, declared here, and
+  # the containers stop disagreeing. The path is ALSO published as
+  # AGENT_GIT_TREE so nothing downstream has to infer it from $HOME — which is
+  # what broke, and what a comment cannot prevent.
+  gitTreeMountPath = "/home/appuser/git";
+
+  # Setting the old per-container field is now a BUILD ERROR rather than a
+  # silently-ignored value: a stale string left in a build.json would otherwise
+  # read as the live declaration while the engine used something else, which is
+  # the same "two declarations, one of them lying" shape being removed here.
+  _gitTreeMountGuard =
+    if (agentSpec ? git_tree_mount)
+    then throw ("${title}: agent.git_tree_mount is no longer per-container. "
+                + "The shared checkout mounts at ${gitTreeMountPath} in EVERY "
+                + "agent container (see _shared/engine.nix). Delete the field; "
+                + "the path is published to the container as AGENT_GIT_TREE.")
+    else null;
+
+  # `seq`, not a bare binding. Nix is lazy: a `let` binding nothing references
+  # is NEVER evaluated, so the throw above could not fire and the guard would
+  # have been decoration — a check that passes whether or not the defect is
+  # present. Forcing it here ties it to the one value every git-tree path
+  # already reads.
+  gitTreeMount = builtins.seq _gitTreeMountGuard gitTreeMountPath;
 
   # Read-only unless the container is expected to COMMIT from the shared
   # tree. Extra writers on ONE working tree is a real concurrency
@@ -209,6 +240,12 @@ let
   # literal `${GH_TOKEN}` for git's shell to expand when the helper runs.
   gitTreeGitEnv =
     {
+      # Published so nothing has to INFER the tree's location from $HOME. That
+      # inference is precisely what failed: hermes runs with HOME=/root while
+      # the tree sat at /opt/data/git, so `ls $HOME/git` found nothing and the
+      # agent reported the repositories missing. An env var cannot drift from
+      # the mount — they are the same binding, one line apart.
+      AGENT_GIT_TREE     = gitTreeMount;
       GIT_CONFIG_COUNT   = if gitTreeWritable then "2" else "1";
       GIT_CONFIG_KEY_0   = "safe.directory";
       GIT_CONFIG_VALUE_0 = "*";
@@ -333,6 +370,11 @@ let
   # to this flag does not churn its dist hash — and a dist-hash churn
   # here means a container RECREATE, which kills any agent running in it.
   applyDefaults = spec:
+    # Forced here, not only via gitTreeMount: a build.json that sets the dead
+    # `agent.git_tree_mount` while git_tree is false would otherwise never
+    # evaluate the guard, and the stale string would sit in the declaration
+    # looking live. Every container goes through applyDefaults.
+    builtins.seq _gitTreeMountGuard (
     spec // {
       # The repair is added AFTER the mapAttrs on purpose: it must not receive
       # the git-tree merge (it mounts the volume itself, at its own path, and a
@@ -346,7 +388,7 @@ let
             volumes = (spec.volumes or {})
               // { "${gitTreeKey}" = { name = gitTreeName; }; };
           }
-          else {});
+          else {}));
 
   # ──────────────────────────────────────────────────────────────
   # Arch routing — data-driven from build.json:docker.arch
