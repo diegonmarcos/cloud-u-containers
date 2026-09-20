@@ -117,7 +117,7 @@ COPY --from=builder /usr/local/bin/headroom /usr/local/bin/headroom
 
 # App code.
 WORKDIR /app
-COPY server.mjs mcp.mjs sessions-store.mjs package.json /app/
+COPY server.mjs mcp.mjs sessions-store.mjs http-post.mjs package.json /app/
 COPY gateway.mjs /app/gateway.mjs
 COPY bots.json /app/bots.json
 COPY bots/ /app/bots/
