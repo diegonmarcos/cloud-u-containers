@@ -123,7 +123,7 @@
   },
   "containers": {
     "app": {
-      "container_name": "my-ai_claude-api",
+      "container_name": "cloud-agi-claude",
       "image": "ghcr.io/diegonmarcos/claude-superset-api:latest",
       "port": 3117,
       "port_env": "BRIDGE_PORT",
