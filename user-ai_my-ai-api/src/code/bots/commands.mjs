@@ -36,6 +36,7 @@ export const COMMANDS = [
   { command: "retry",      description: "re-run your last message" },
   { command: "undo",       description: "remove the last user+assistant exchange" },
   { command: "stop",       description: "best-effort ack — interrupt the current turn" },
+  { command: "sendfile",   description: "send a file from this host into the chat: /sendfile <path>" },
   { command: "whoami",     description: "show your Telegram id and access tier" },
   { command: "login",      description: "log the claude agent in — returns an OAuth link" },
   { command: "code",       description: "finish /login by sending the code from the link" },

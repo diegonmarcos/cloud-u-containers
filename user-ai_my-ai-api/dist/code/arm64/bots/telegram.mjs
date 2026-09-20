@@ -14,6 +14,8 @@
 // a group admin who later disables Privacy Mode doesn't turn this bot into a
 // reply-to-everything group member.
 // ship-cover 2026-08-09T18:40Z — batched trigger; see commit message.
+import { readFile } from "node:fs/promises";
+import { basename } from "node:path";
 import { handleCommand, COMMANDS } from "./commands.mjs";
 import { routeToGoose } from "./route.mjs";
 
@@ -97,6 +99,73 @@ export const deliverChatReply = async ({
   return { delivered };
 };
 
+// ── File delivery (#559) ────────────────────────────────────────────────────
+// Until now the bots could TALK about a file but never hand one over: every
+// send in this fleet went through tgPost, which is application/json, and
+// Telegram's sendDocument accepts multipart/form-data ONLY. That is a missing
+// capability, not a failing call — which is why it read as the bot being
+// unhelpful rather than as an error, and why "just retry" never worked.
+//
+// Node 22 has global FormData/Blob/fetch, so this needs no dependency.
+//
+// Telegram refuses a bot upload over 50 MB outright. Checking the size here
+// turns an opaque API rejection into a sentence the user can act on.
+export const TELEGRAM_MAX_DOCUMENT_BYTES = 50 * 1024 * 1024;
+
+// Sends one file, mirroring deliverChatReply's contract: the transport is
+// INJECTED (doUpload) so tests prove this function directly rather than only
+// through the poll loop, and a failure returns delivered:false WITH a reason
+// the caller must surface. It deliberately does NOT post its own failure
+// notice — the caller already owns a working text channel (sendMessage), and a
+// second notice path here would be a second place for the anti-silence
+// contract to drift.
+export const deliverDocument = async ({
+  doUpload,
+  chat_id,
+  filename,
+  bytes,
+  caption,
+  message_thread_id,
+  logLabel = "telegram",
+  maxBytes = TELEGRAM_MAX_DOCUMENT_BYTES,
+} = {}) => {
+  const size = bytes?.byteLength ?? bytes?.length ?? 0;
+  // An empty upload is accepted by nothing and explains nothing; say so before
+  // spending a round trip on it.
+  if (!size) return { delivered: false, reason: `"${filename}" is empty — nothing to send` };
+  if (size > maxBytes) {
+    return {
+      delivered: false,
+      reason: `"${filename}" is ${size} bytes; Telegram refuses a bot upload over ${maxBytes} bytes`,
+    };
+  }
+
+  const attempt = async (thread) => {
+    try {
+      return await doUpload("sendDocument", { chat_id, filename, bytes, caption, message_thread_id: thread });
+    } catch (err) {
+      // A rejected fetch is the same "the user did not receive it" fact as an
+      // ok:false, so it must drive the same path — never an uncaught throw
+      // that leaves the caller believing the send is pending.
+      return { ok: false, description: String(err?.message || err) };
+    }
+  };
+
+  let res = await attempt(message_thread_id);
+  if (res?.ok === false && message_thread_id !== undefined) {
+    // Same thread trap as sendMessage: a stale/invalid message_thread_id makes
+    // Telegram reject the whole send. Retry once unthreaded so the file still
+    // lands in the chat rather than being lost.
+    console.error(`[gateway] ${logLabel}: sendDocument(thread=${message_thread_id}) failed: ${res.description} — retrying unthreaded`);
+    res = await attempt(undefined);
+  }
+  if (res?.ok === true) return { delivered: true };
+
+  const reason = res?.description || res?.error_code || `HTTP ${res?.status ?? "unknown"}`;
+  console.error(`[gateway] ${logLabel}: sendDocument("${filename}") to ${chat_id} failed: ${reason}`);
+  return { delivered: false, reason };
+};
+
 export const startTelegram = ({
   tokenEnvVar = "TELEGRAM_BOT_TOKEN",
   chatKeyPrefix = "telegram",
@@ -133,6 +202,23 @@ export const startTelegram = ({
       headers: { "content-type": "application/json" },
       body: JSON.stringify(body),
     }).then((r) => r.json());
+
+  // File uploads cannot go through tgPost: sendDocument is multipart/form-data
+  // only, and posting it as JSON is silently rejected. Node 22's global
+  // FormData/Blob give us the encoder for free.
+  const tgUpload = (method, { chat_id, filename, bytes, caption, message_thread_id }) => {
+    const form = new FormData();
+    form.set("chat_id", String(chat_id));
+    if (caption !== undefined) form.set("caption", caption);
+    if (message_thread_id !== undefined) form.set("message_thread_id", String(message_thread_id));
+    // The filename is the third argument — without it Telegram names the file
+    // "blob" and Diego gets an extensionless download he cannot open.
+    form.set("document", new Blob([bytes]), filename);
+    // No content-type header on purpose: fetch must set it itself so the
+    // multipart boundary matches the body it generated.
+    return fetch(`https://api.telegram.org/bot${token}/${method}`, { method: "POST", body: form })
+      .then((r) => r.json());
+  };
 
   // message_thread_id threads the reply back into the forum topic the message
   // was asked in; omitted entirely for non-topic chats.
@@ -336,6 +422,44 @@ export const startTelegram = ({
                   if (c.description) lines.push(`description: ${c.description}`);
                   lines.push(`members: ${countRes.ok ? countRes.result : "(unavailable)"}`);
                   reply = lines.join("\n");
+                }
+              } else if (cmd === "sendfile") {
+                // #559: the only way a file reaches the chat. Handled here
+                // rather than in commands.mjs for the same reason the topic
+                // commands are — commands.mjs has no transport and no message
+                // envelope, and giving it one would be a second delivery path.
+                //
+                // Authorization is already settled above: allowFrom is
+                // fail-closed and this line is unreachable for anyone not on
+                // it, so there is no extra gate to add here. That allowlist IS
+                // the trust boundary for reading a path off this host.
+                const target = arg.trim();
+                if (!target) {
+                  reply = "usage: /sendfile <path>";
+                } else {
+                  let bytes = null;
+                  try {
+                    bytes = await readFile(target);
+                  } catch (err) {
+                    // Name the file and the errno: "cannot read" with neither
+                    // is the unhelpful silence this ticket exists to remove.
+                    reply = `cannot read ${target}: ${err.code || err.message}`;
+                  }
+                  if (bytes) {
+                    const { delivered, reason } = await deliverDocument({
+                      doUpload: tgUpload,
+                      chat_id: msg.chat.id,
+                      filename: basename(target),
+                      bytes,
+                      message_thread_id: threadId,
+                      logLabel,
+                    });
+                    // Either way a sentence goes back through the text channel
+                    // below, so a failed upload can never read as silence.
+                    reply = delivered
+                      ? `sent ${basename(target)} (${bytes.length} bytes)`
+                      : `[gateway: file not sent] ${reason}`;
+                  }
                 }
               } else if (cmd === "newtopic") {
                 if (!arg.trim()) {

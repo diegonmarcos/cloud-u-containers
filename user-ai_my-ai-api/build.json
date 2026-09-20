@@ -1,6 +1,6 @@
 {
   "name": "my-ai-api",
-  "description": "my-ai API on oci-apps — one polyglot container: OpenAI /v1 + Ollama /api + Anthropic /v1/messages mimic backed by OpenRouter (no Claude subscription, no metered Anthropic key), with a vendored Headroom (Apache-2.0) compression hop and a savings dashboard. Sibling of claude-superset-api; the agent face for this stack is goose (my-ai wraps goose, claude-superset keeps claude-cli). Internal WG-only sidecar, never public.",
+  "description": "my-ai API on oci-apps \u2014 one polyglot container: OpenAI /v1 + Ollama /api + Anthropic /v1/messages mimic backed by OpenRouter (no Claude subscription, no metered Anthropic key), with a vendored Headroom (Apache-2.0) compression hop and a savings dashboard. Sibling of claude-superset-api; the agent face for this stack is goose (my-ai wraps goose, claude-superset keeps claude-cli). Internal WG-only sidecar, never public.",
   "dns": "my-ai-api.app",
   "ports": {
     "app": 3217,
@@ -16,7 +16,7 @@
     "git_tree_mount": "/home/appuser/git",
     "git_tree_writable": true
   },
-  "_upstream_image_doc": "Top-level upstream_image marks this as a Type-B vendored-Dockerfile build: the ship engine builds src/code/Dockerfile (staged to dist/code/arm64/) natively on the arm64 cloud-builder. It is NOT injected as a FROM-override build-arg — it only selects BUILD_CONTEXT=dist/code/arch. The real multi-stage Dockerfile (builder compiles Headroom, runtime installs node) is preserved. The old docker.native_build:image-wrapper was WRONG: image-wrapper with no cmd made the native block skip AND blocked Type-B auto-detect, so CI silently built nothing and only recreated the stale image.",
+  "_upstream_image_doc": "Top-level upstream_image marks this as a Type-B vendored-Dockerfile build: the ship engine builds src/code/Dockerfile (staged to dist/code/arm64/) natively on the arm64 cloud-builder. It is NOT injected as a FROM-override build-arg \u2014 it only selects BUILD_CONTEXT=dist/code/arch. The real multi-stage Dockerfile (builder compiles Headroom, runtime installs node) is preserved. The old docker.native_build:image-wrapper was WRONG: image-wrapper with no cmd made the native block skip AND blocked Type-B auto-detect, so CI silently built nothing and only recreated the stale image.",
   "upstream_image": "python:3.13-slim",
   "docker": {
     "image": "my-ai-api",
@@ -45,7 +45,7 @@
   "runtime": {
     "model": "deepseek/deepseek-v4-flash-0731",
     "claude_model": "claude-opus-5",
-    "_model_aliases_comment": "requested-id → OpenRouter slug. Callers pick a model per request; unknown/absent ids fall back to `model` (passthrough also works — OpenRouter accepts arbitrary slugs, so goose can send any OpenRouter model id directly). No Claude aliases here: this stack does not route Claude.",
+    "_model_aliases_comment": "requested-id \u2192 OpenRouter slug. Callers pick a model per request; unknown/absent ids fall back to `model` (passthrough also works \u2014 OpenRouter accepts arbitrary slugs, so goose can send any OpenRouter model id directly). No Claude aliases here: this stack does not route Claude.",
     "model_aliases": {
       "glm": "z-ai/glm-5",
       "gpt-4": "openai/gpt-4o",
@@ -56,7 +56,7 @@
     },
     "max_concurrency": 12,
     "call_timeout_ms": 860000,
-    "_upstream_comment": "OpenRouter is the single upstream (start here). The Node front forwards compressed OpenAI-shaped chat requests to https://openrouter.ai/api/v1/chat/completions with the container's OPENROUTER_API_KEY (from src/secrets.yaml). The Anthropic /v1/messages face is a shape-translation shim so ANTHROPIC_BASE_URL=<my-ai-api> clients also land on OpenRouter — NOT Claude.",
+    "_upstream_comment": "OpenRouter is the single upstream (start here). The Node front forwards compressed OpenAI-shaped chat requests to https://openrouter.ai/api/v1/chat/completions with the container's OPENROUTER_API_KEY (from src/secrets.yaml). The Anthropic /v1/messages face is a shape-translation shim so ANTHROPIC_BASE_URL=<my-ai-api> clients also land on OpenRouter \u2014 NOT Claude.",
     "upstream": {
       "provider": "openrouter",
       "base_url": "https://openrouter.ai/api/v1",
@@ -122,6 +122,10 @@
     },
     "declarative-supervision": {
       "cmd": "node test-my-ai-declarative-supervision.mjs",
+      "cwd": "src/code"
+    },
+    "telegram-sendfile": {
+      "cmd": "node test-my-ai-telegram-sendfile.mjs",
       "cwd": "src/code"
     }
   },
