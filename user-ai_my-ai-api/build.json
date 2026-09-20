@@ -127,6 +127,10 @@
     "telegram-sendfile": {
       "cmd": "node test-my-ai-telegram-sendfile.mjs",
       "cwd": "src/code"
+    },
+    "flake-copies-complete": {
+      "cmd": "node test-my-ai-flake-copies-complete.mjs",
+      "cwd": "src/code"
     }
   },
   "containers": {
