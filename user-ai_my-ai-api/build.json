@@ -134,11 +134,15 @@
     "bots-lifetime-split": {
       "cmd": "node test-bots-lifetime-split.mjs",
       "cwd": "src/code"
+    },
+    "agi-container-naming": {
+      "cmd": "node ../../_shared/test-agi-container-naming.mjs",
+      "cwd": "_shared"
     }
   },
   "containers": {
     "app": {
-      "container_name": "my-ai-api",
+      "container_name": "cloud-agi-goose",
       "image": "ghcr.io/diegonmarcos/my-ai-api:latest",
       "port": 3217,
       "port_env": "BRIDGE_PORT",
