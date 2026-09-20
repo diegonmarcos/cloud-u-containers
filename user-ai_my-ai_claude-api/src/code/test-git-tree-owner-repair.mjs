@@ -50,15 +50,36 @@ check("R4 the repair chowns to the declared owner uid",
 check("R5 the owner uid is 10001 (the uid that owns the tree)",
   /gitTreeOwnerUid\s*=\s*"10001"/.test(engine), "gitTreeOwnerUid is not 10001");
 
+// R6 — the bug that took the telegram bots down on 2026-09-20.
+// Compose interpolates `$VAR` in its OWN config before the container sees it,
+// so a bare `$bad` in this command becomes the empty string and the script
+// silently turns into `[ "" -eq 0 ]`, which errors and exits 1. Via
+// service_completed_successfully that blocks every agent container from
+// starting: my-ai-api sat in `created` state and both bots were unreachable,
+// while the only evidence was a compose warning nobody reads:
+//   warning: The "bad" variable is not set. Defaulting to a blank string.
+// Every `$` in the command must be `$$` (compose's escape, reaching the shell
+// as one `$`) — the same escape the credential.helper above already uses.
+{
+  const start = engine.indexOf("gitTreeRepairSvc");
+  const block = engine.slice(start, engine.indexOf("gitTreeDependsOn"))
+    .split("\n").filter((l) => !/^\s*#/.test(l)).join("\n");
+  // A `$` that is NOT doubled and NOT a nix antiquotation `${...}`.
+  const bare = [...block.matchAll(/(?<![$])\$(?![${])/g)];
+  check("R6 every `$` in the repair command is escaped as `$$` for compose",
+    start !== -1 && bare.length === 0,
+    `${bare.length} bare $ found — compose will blank them and the repair exits 1, blocking every agent`);
+}
+
 // ── F: fail-closed. A partial repair must not read as success ───────────────
 // This is the whole lesson of the ticket: the original defect was invisible
 // because a failure to write reported as a success.
 check("F1 the repair exits non-zero if any path is still wrong",
-  /\[ \\"\$left\\" -eq 0 \] \|\|[\s\S]{0,200}?exit 1/.test(engine),
+  /\[ \\"\$\$left\\" -eq 0 \] \|\|[\s\S]{0,200}?exit 1/.test(engine),
   "the repair can finish with paths still mis-owned and still exit 0");
 
 check("F2 the repair reports before/after counts to the deploy log",
-  /paths not owned by \$\{gitTreeOwnerUid\}: before=\$bad after=\$left/.test(engine),
+  /paths not owned by \$\{gitTreeOwnerUid\}: before=\$\$bad after=\$\$left/.test(engine),
   "no before/after line — the deploy log would not show whether it did anything");
 
 // ── W: the agents actually wait for it ──────────────────────────────────────
