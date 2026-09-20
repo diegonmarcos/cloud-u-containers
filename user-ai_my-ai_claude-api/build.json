@@ -142,6 +142,10 @@
     "bootstrap-repos-declared": {
       "cmd": "node test-bootstrap-repos-declared.mjs",
       "cwd": "src/code"
+    },
+    "git-tree-owner-repair": {
+      "cmd": "node test-git-tree-owner-repair.mjs",
+      "cwd": "src/code"
     }
   }
 }

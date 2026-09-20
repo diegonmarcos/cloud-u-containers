@@ -233,6 +233,56 @@ let
   gitTreeIsWorkingDirectory =
     (agentSpec.git_tree_is_working_directory or false) == true;
 
+  # ── Ownership repair, declared (#558) ───────────────────────────────────
+  # The tree has ONE owner, 10001 (see the safe.directory block above). When
+  # something writes into it as another uid, every agent silently loses the
+  # tree: git dies with "detected dubious ownership" or "insufficient
+  # permission for adding an object" deep inside a subprocess, and the turn
+  # still reports success. Measured 2026-09-20: 260 root-owned paths across
+  # four repos — including .git/config, ~117 object fanout dirs and a whole
+  # c_tasks/ — which is why the backlog went stale and #540's session sync
+  # kept "failing" for reasons that were never sync bugs.
+  #
+  # The writer was gitea (a rw mount it never used, running as root); that
+  # mount is gone. This is the other half: the tree REPAIRS ITSELF on every
+  # deploy, so no one has to shell into the box — and a future root writer
+  # costs one deploy instead of a day of misread failures.
+  #
+  # Agents cannot do this themselves. They run as 10001 and chown on a
+  # root-owned path is EPERM, which is exactly why a fix living in an agent's
+  # own start.sh could never have worked.
+  #
+  # Fail-closed: if any path is still wrong afterwards the service exits
+  # non-zero, and depends_on(service_completed_successfully) stops the agents
+  # from starting into a tree they cannot write. A silent partial repair is
+  # the failure this whole ticket is about.
+  gitTreeOwnerUid   = "10001";
+  gitTreeOwnerGid   = "999";
+  gitTreeRepairKey  = "git-tree-owner-repair";
+  gitTreeRepairSvc = {
+    # busybox is multi-arch and ~4MB; find/xargs/chown is all this needs.
+    image   = "busybox:1.37";
+    user    = "0:0";                  # the whole point — only root can chown
+    restart = "no";
+    volumes = [ "${gitTreeKey}:/git-tree" ];
+    command = [
+      "sh" "-c"
+      (lib.concatStringsSep "\n" [
+        "set -eu"
+        "bad=$(find /git-tree ! -uid ${gitTreeOwnerUid} 2>/dev/null | wc -l)"
+        "find /git-tree ! -uid ${gitTreeOwnerUid} -print0 2>/dev/null | xargs -0 -r chown ${gitTreeOwnerUid}:${gitTreeOwnerGid} 2>/dev/null || true"
+        "left=$(find /git-tree ! -uid ${gitTreeOwnerUid} 2>/dev/null | wc -l)"
+        "echo \"[git-tree-repair] paths not owned by ${gitTreeOwnerUid}: before=$bad after=$left\""
+        # Loud, not silent: the deploy log is the only place anyone sees this.
+        "[ \"$left\" -eq 0 ] || { echo \"[git-tree-repair] ERROR: $left path(s) still wrong — agents would fail to commit\" >&2; exit 1; }"
+      ])
+    ];
+  };
+
+  # Every container sharing the tree waits for the repair. Without this the
+  # agent and the repair race, and the agent wins often enough to look fine.
+  gitTreeDependsOn = { "${gitTreeRepairKey}" = { condition = "service_completed_successfully"; }; };
+
   mergeGitTreeInto = svc:
     if !wantsGitTree then svc
     else svc // {
@@ -246,6 +296,20 @@ let
       environment =
         let e = svc.environment or {}; in
         if builtins.isAttrs e then gitTreeGitEnv // e else e;
+      # Compose accepts depends_on in two shapes and will NOT mix them. The
+      # short LIST form only waits for the dependency to START, which for a
+      # one-shot repair means "wait for it to begin chowning" — useless. So an
+      # existing list is converted to the long form (preserving its entries as
+      # service_started, the semantics it already had) before ours is added
+      # with service_completed_successfully.
+      depends_on =
+        let d = svc.depends_on or null; in
+        if d == null then gitTreeDependsOn
+        else if builtins.isList d
+          then (lib.listToAttrs
+                 (map (n: { name = n; value = { condition = "service_started"; }; }) d))
+               // gitTreeDependsOn
+          else d // gitTreeDependsOn;
     } // (if gitTreeIsWorkingDirectory
           then { working_dir = gitTreeMount; }
           else {});
@@ -258,9 +322,13 @@ let
   # here means a container RECREATE, which kills any agent running in it.
   applyDefaults = spec:
     spec // {
-      services = lib.mapAttrs
+      # The repair is added AFTER the mapAttrs on purpose: it must not receive
+      # the git-tree merge (it mounts the volume itself, at its own path, and a
+      # depends_on pointing at itself would deadlock the project).
+      services = (lib.mapAttrs
         (_: svc: mergeSecretsInto (mergeGitTreeInto (mergeSvc svc)))
-        (spec.services or {});
+        (spec.services or {}))
+        // (if wantsGitTree then { "${gitTreeRepairKey}" = gitTreeRepairSvc; } else {});
     } // (if wantsGitTree
           then {
             volumes = (spec.volumes or {})
