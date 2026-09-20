@@ -35,28 +35,32 @@ in
       };
       volumes = [
         "gitea_data:/data"
-        # The ONE central working tree every agent container mounts.
+        # DELIBERATELY NOT MOUNTED HERE: cloud-git-gh, the agents' shared
+        # working tree. It used to be mounted at /data/git-gh, and that mount
+        # was the root writer.
         #
-        # Gitea's own repositories under /data/gitea-repositories are pull
-        # mirrors of GitHub: they refuse a push by design, so no agent can
-        # ever work in them. Agents were therefore each doing a private
-        # `git clone` from GitHub, which produced sixty-three independent
-        # checkouts of the same repositories in one container — nobody could
-        # see anybody else's work, and the same file was edited in parallel
-        # with no way to notice.
+        # Gitea never used it. Every reference to /data/git-gh in this repo is
+        # a COMMENT — Gitea serves its own repositories out of
+        # /data/gitea-repositories and has no code path that reads or writes
+        # /data/git-gh. The mount existed for filing reasons alone ("Gitea is
+        # the fleet's git host and this is git data").
         #
-        # git-gh is the writable counterpart: real working clones whose
-        # origin is still GitHub (that is the "gh" in the name, and why this
-        # is not yet a migration to Gitea). It lives inside Gitea because
-        # Gitea is the fleet's git host and this is git data; it is a
-        # separate named volume rather than a directory inside gitea_data so
-        # that a deploy which recreates the compose project cannot take the
-        # working trees with it.
+        # What it cost: this container sets no `user` and the Gitea image
+        # inits its supervision tree as root, so it was the ONLY root-capable
+        # process holding the agents' tree read-write. Measured 2026-09-20:
+        # 260 root-owned entries across four repos — cloud-data-my-ai-memory
+        # (247, including .git/config, .git/HEAD, ~117 object fanout dirs, all
+        # of c_tasks/ and the whole a_sessions/galaxy/ tree), cloud-infra (8),
+        # cloud-data (4), cloud-u-linux (1). Agents run as uid 10001 and
+        # cannot write root-owned paths, so their commits failed deep inside a
+        # subprocess with "insufficient permission for adding an object" and
+        # the turn still reported success. That is why the c_tasks backlog
+        # went stale and why #540's session sync kept failing on
+        # a_sessions/galaxy — not a sync bug, a permission denial nobody saw.
         #
-        # Keeping two agents off the same file is the dispatcher's job, not
-        # this mount's — the mount only guarantees there is one file to
-        # collide on instead of sixty-three copies that silently diverge.
-        "git_gh:/data/git-gh"
+        # The chown is the repair; removing this mount is the fix. Do not add
+        # it back: Gitea gains nothing from it and is the one process here
+        # that can poison the tree for everyone else.
         "/etc/timezone:/etc/timezone:ro"
         "/etc/localtime:/etc/localtime:ro"
       ];
@@ -70,11 +74,10 @@ in
   };
   volumes = {
     gitea_data = {};
-    # Pinned name, declared identically here and in user-ai_my-ai_claude-api.
-    # Compose scopes an undeclared volume to its own project, so two projects
-    # asking for "git_gh" would silently get two different volumes and the
-    # single central tree would be two trees again. The explicit `name` is
-    # what makes both projects resolve to the one docker volume.
-    git_gh = { name = "cloud-git-gh"; };
+    # git_gh is gone on purpose — see the volumes list above. Declaring a
+    # volume this project no longer mounts would be dead code that invites
+    # someone to "restore the missing mount". The pinned-name declaration
+    # still lives in user-ai_my-ai_claude-api and _shared/engine.nix, which
+    # are the projects that actually use the tree.
   };
 }
