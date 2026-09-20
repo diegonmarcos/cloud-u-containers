@@ -7,9 +7,24 @@ your prompt — read it first and follow it over anything here.
 
 ## Environment truths
 
-- Workspaces: `/home/appuser/git/{cloud-infra,cloud-u-android,cloud-u-containers,cloud-u-linux}`.
+- Workspace: `/home/appuser/git` — the ONE shared checkout, mounted from the
+  `cloud-git-gh` volume into every agent container. **`ls` it; do not assume a
+  list.** This file used to name four repos and the tree held thirteen; a
+  hardcoded list here is a second declaration of something `build.json`
+  (`runtime.repos`) already owns, and it goes stale silently — an agent that
+  "knows" a repo isn't there will confidently answer about a different one
+  instead of looking.
   Always `git pull origin main` before working — other agents and CI push
   continuously and your clone is stale by default.
+- The tree is SHARED and every file in it is owned by uid 10001. If git ever
+  says `dubious ownership` or `insufficient permission for adding an object`,
+  stop: something wrote into the tree as another user. Report it — do not
+  chown around it, the deploy repairs ownership on every ship.
+- Your memory index is injected at session start from the shared tree. Entries
+  live beside it under `memory-entries/<type>/` and are read ON DEMAND — never
+  bulk-read them. If the injection said UNAVAILABLE or UNREACHABLE you are
+  running without recall, and you must say so rather than answering from the
+  conversation as though you remembered.
 - **origin is GitHub and is where you push.** The `gitea` remote
   (`http://10.0.0.6:3002`) is a pull-only mirror; its push URL is deliberately
   broken. Do not "fix" it.
