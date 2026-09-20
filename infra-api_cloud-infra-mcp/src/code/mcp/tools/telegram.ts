@@ -12,6 +12,8 @@
 // semantics and traps documented there — see the comments below for the
 // Telegram-API-specific reasoning copied from that file.
 
+import { readFile } from "node:fs/promises";
+import { basename } from "node:path";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
@@ -63,6 +65,39 @@ async function tgPost(method: string, body: Record<string, unknown>): Promise<Te
   });
   return (await response.json()) as TelegramApiResult;
 }
+
+// #559: sendDocument is multipart/form-data ONLY — tgPost above is JSON and
+// cannot carry a file, which is why no tool in this fleet could put a file in
+// the chat. That was a missing capability, not a failing call, so it read as
+// the bot being unhelpful rather than as an error. Node 22's global
+// FormData/Blob provide the encoder with no dependency.
+//
+// No Content-Type header on purpose: fetch must set it itself so the multipart
+// boundary matches the body it generated.
+async function tgUpload(
+  method: string,
+  fields: { chat_id: string; filename: string; bytes: Uint8Array; caption?: string; thread_id?: number }
+): Promise<TelegramApiResult> {
+  const form = new FormData();
+  form.set("chat_id", fields.chat_id);
+  if (fields.caption !== undefined) form.set("caption", fields.caption);
+  if (fields.thread_id !== undefined) form.set("message_thread_id", String(fields.thread_id));
+  // The filename is the third argument — without it Telegram names the upload
+  // "blob" and the operator gets an extensionless download they cannot open.
+  form.set("document", new Blob([fields.bytes]), fields.filename);
+  const response = await fetch(apiUrl(method), {
+    method: "POST",
+    body: form,
+    // Uploads are slower than a text send; the 15s tgPost budget would abort
+    // a perfectly healthy multi-megabyte transfer.
+    signal: AbortSignal.timeout(120_000),
+  });
+  return (await response.json()) as TelegramApiResult;
+}
+
+// Telegram refuses a bot upload over 50 MB outright. Checking first turns an
+// opaque API rejection into a sentence the operator can act on.
+const TELEGRAM_DOCUMENT_LIMIT = 50 * 1024 * 1024;
 
 // Telegram caps a single message at 4096 chars and rejects the whole send
 // (ok:false) if you exceed it — a long reply would otherwise vanish
@@ -320,6 +355,64 @@ export function registerTelegramTools(server: McpServer) {
           : textResult(`Telegram error: ${result.description ?? "unknown error"}`, true);
       } catch (e) {
         return textResult(`Telegram send failed: ${e instanceof Error ? e.message : String(e)}`, true);
+      }
+    }
+  );
+
+  server.tool(
+    "devops.telegram.send_file",
+    "Send a FILE from this host to the operator (Diego) over the dedicated @Cloud_bot_C3_Infra_bot Telegram channel. Use this whenever you have produced a report, export, log or build artifact the operator should actually receive — a path in a text message is not a delivery. Defaults to the configured operator chat; pass chat_id/thread_id to target a different group or forum topic.",
+    {
+      path: z.string().describe("Absolute path of the file to send, as visible to this container"),
+      caption: z.string().optional().describe("Optional caption shown under the file"),
+      filename: z.string().optional().describe("Override the name shown in Telegram (default: the path's basename)"),
+      chat_id: z.string().optional().describe("Target chat id (default: C3_TELEGRAM_CHAT_ID)"),
+      thread_id: z.number().int().optional().describe("Forum topic (message_thread_id) to send into, if any"),
+    },
+    async ({ path, caption, filename, chat_id, thread_id }) => {
+      ensurePollerStarted();
+      if (!botToken()) return missingTokenResult();
+
+      const targetChatId = chat_id ?? chatId();
+      let bytes: Uint8Array;
+      try {
+        bytes = await readFile(path);
+      } catch (e) {
+        // Name the path AND the errno. "Could not send the file" with neither
+        // is the unhelpful silence this tool exists to remove.
+        return textResult(`Cannot read ${path}: ${e instanceof Error ? e.message : String(e)}`, true);
+      }
+
+      if (bytes.byteLength === 0) {
+        return textResult(`${path} is empty — nothing to send`, true);
+      }
+      if (bytes.byteLength > TELEGRAM_DOCUMENT_LIMIT) {
+        return textResult(
+          `${path} is ${bytes.byteLength} bytes; Telegram refuses a bot upload over ${TELEGRAM_DOCUMENT_LIMIT} bytes`,
+          true
+        );
+      }
+
+      const name = filename ?? basename(path);
+      try {
+        let result = await tgUpload("sendDocument", {
+          chat_id: targetChatId,
+          filename: name,
+          bytes,
+          caption,
+          thread_id,
+        });
+        if (!result.ok && thread_id !== undefined) {
+          // Same thread trap as sendMessage: a stale/invalid message_thread_id
+          // makes Telegram reject the whole send. Retry once unthreaded so the
+          // file still lands in the chat rather than being lost.
+          result = await tgUpload("sendDocument", { chat_id: targetChatId, filename: name, bytes, caption });
+        }
+        return result.ok
+          ? textResult(`Sent ${name} (${bytes.byteLength} bytes)`)
+          : textResult(`Telegram error: ${result.description ?? "sendDocument failed"}`, true);
+      } catch (e) {
+        return textResult(`Telegram send_file failed: ${e instanceof Error ? e.message : String(e)}`, true);
       }
     }
   );
