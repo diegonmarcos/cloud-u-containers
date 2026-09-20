@@ -267,14 +267,26 @@ let
     volumes = [ "${gitTreeKey}:/git-tree" ];
     command = [
       "sh" "-c"
+      # EVERY `$` here MUST be written `$$`. Compose interpolates `$VAR` in its
+      # own config BEFORE the container ever sees it, so a bare `$bad` is
+      # replaced with the empty string and the script silently becomes
+      # `[ "" -eq 0 ]` — which errors, exits 1, and (via
+      # service_completed_successfully) blocks every agent container from
+      # starting. That is exactly what happened on 2026-09-20: this repair took
+      # the telegram bots down and left my-ai-api in `created` state, because
+      # the failure surfaced as compose warnings nobody reads:
+      #   warning: The "bad" variable is not set. Defaulting to a blank string.
+      # `$$` is compose's escape and reaches the shell as a single `$` — the
+      # same escape the credential.helper above already uses for GH_TOKEN.
+      # test-git-tree-owner-repair.mjs now fails on any unescaped `$` here.
       (lib.concatStringsSep "\n" [
         "set -eu"
-        "bad=$(find /git-tree ! -uid ${gitTreeOwnerUid} 2>/dev/null | wc -l)"
+        "bad=$$(find /git-tree ! -uid ${gitTreeOwnerUid} 2>/dev/null | wc -l)"
         "find /git-tree ! -uid ${gitTreeOwnerUid} -print0 2>/dev/null | xargs -0 -r chown ${gitTreeOwnerUid}:${gitTreeOwnerGid} 2>/dev/null || true"
-        "left=$(find /git-tree ! -uid ${gitTreeOwnerUid} 2>/dev/null | wc -l)"
-        "echo \"[git-tree-repair] paths not owned by ${gitTreeOwnerUid}: before=$bad after=$left\""
+        "left=$$(find /git-tree ! -uid ${gitTreeOwnerUid} 2>/dev/null | wc -l)"
+        "echo \"[git-tree-repair] paths not owned by ${gitTreeOwnerUid}: before=$$bad after=$$left\""
         # Loud, not silent: the deploy log is the only place anyone sees this.
-        "[ \"$left\" -eq 0 ] || { echo \"[git-tree-repair] ERROR: $left path(s) still wrong — agents would fail to commit\" >&2; exit 1; }"
+        "[ \"$$left\" -eq 0 ] || { echo \"[git-tree-repair] ERROR: $$left path(s) still wrong — agents would fail to commit\" >&2; exit 1; }"
       ])
     ];
   };
