@@ -77,6 +77,12 @@ in
         MATTERMOST_URL     = gw.mattermost_url     or "";
         MATTERMOST_ENABLED = gw.mattermost_enabled  or "false";
         TELEGRAM_ALLOW_FROM = gw.telegram_allow_from or "";
+        # #542 lifetime split. This container is an AGENT RUNTIME: every deploy
+        # recreates it, which kills any in-flight `goose run`. The bots are a
+        # long-lived SERVICE and must not share that fate — on 2026-09-20 a
+        # single evicted deploy left this container in `created` and took BOTH
+        # telegram bots down with it. The gateway now lives in cloud-agi-bots.
+        GATEWAY_ENABLED    = "false";
         MCP_ENABLED        = "1";
         CLAUDE_CLI_BASE_URL = "http://10.0.0.6:3117";
         # The claude agent model, sent explicitly by route.mjs so server.mjs never
@@ -113,6 +119,51 @@ in
         timeout  = "5s";
         retries  = 3;
       };
+    };
+
+    # ── cloud-agi-bots — the messaging gateway, split out by LIFETIME (#542) ──
+    # Same image, different process and different reason to restart. my-ai-api
+    # above is an agent runtime that every deploy recreates; these bots are a
+    # service that must stay up across deploys. They shared one container until
+    # today, so shipping goose took Telegram down — measured 2026-09-20, an
+    # evicted deploy left my-ai-api in `created` and both bots were unreachable
+    # for ~30 minutes.
+    #
+    # `entrypoint`, not `command`: the image's ENTRYPOINT is start.sh, which
+    # execs server.mjs as its lifecycle process. A `command` override would be
+    # passed to start.sh as arguments and ignored, and this container would
+    # silently become a SECOND full API — two servers racing for port 3217.
+    #
+    # No ports, no healthcheck port: gateway.mjs only makes outbound calls and
+    # long-polls Telegram. It still needs network_mode host to reach my-ai-api
+    # on the WG address below.
+    #
+    # Supervision moves from the in-container `respawn` loop (#545) to docker's
+    # own restart policy — one less supervisor, and a crash-looping gateway is
+    # now visible in `docker ps` instead of hidden inside a healthy container.
+    cloud-agi-bots = {
+      image          = binariesImage;
+      container_name = "cloud-agi-bots";
+      restart        = "unless-stopped";
+      network_mode   = "host";
+      env_file       = [ "./.secrets" ];
+      entrypoint     = [ "node" "/app/gateway.mjs" ];
+      environment    = {
+        GATEWAY_ENABLED     = "true";
+        # The gateway calls the /v1 API in my-ai-api over the WG bind, exactly
+        # as it did when both lived in one container. Same expression as above
+        # so the two cannot drift to different addresses.
+        MYAI_LOCAL_URL      = "http://${rt.wg_bind or "10.0.0.6"}:${toString (ports.app or 3217)}";
+        CLAUDE_CLI_BASE_URL = "http://10.0.0.6:3117";
+        CLAUDE_MODEL        = rt.claude_model;
+        MATTERMOST_URL      = gw.mattermost_url      or "";
+        MATTERMOST_ENABLED  = gw.mattermost_enabled  or "false";
+        TELEGRAM_ALLOW_FROM = gw.telegram_allow_from or "";
+      };
+      # Start order only: compose cannot wait for the API to be ready here
+      # without a healthcheck condition, and the gateway retries its first call
+      # anyway. This stops the bots racing the API on a cold boot.
+      depends_on = [ "my-ai-api" ];
     };
   };
 
