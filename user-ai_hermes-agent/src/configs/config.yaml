@@ -151,7 +151,6 @@ mcp_servers:
   cloud-cgc-pub-mcp:
     type: http
     url: http://10.0.0.6:3105/mcp
-  cloud-infra-mcp:
-    type: http
-    url: http://10.0.0.6:3100/mcp
+  # names-only (NOT loaded — run tools/list on demand):
+  #   cloud-infra-mcp: http://10.0.0.6:3100/mcp
 # ══ END GENERATED MCP SERVERS ══
