@@ -56,8 +56,8 @@
       "proxy_backend": "anthropic"
     },
     "resume_session": {
-      "_comment": "The session :3117 resumes for every agent-model request. A NAME, resolved to a session id by resolveResumeAddress (#525, sessions-store.mjs) at request time — never a uuid in source. name is the SERVED name of the teleported orchestrator session (verbatim, as /sessions lists it: deriveSessionName last-prompt tag, 60 chars). If the name drifts or the store cannot be read, the chat gets an explicit worded error instead of a blank-session count (#539).",
-      "name": "now stop using hermes and goose, and spin up 10 sonnet agen…",
+      "_comment": "The session :3117 resumes for every agent-model request. cwd is the ADDRESS: at request time deriveResumeSession (claude-resume.mjs) picks, among the sessions whose transcript lives under this project cwd, the one holding the fullest mounted task store — the same fullest-store heuristic the backlog display uses. #545: name used to be the address and that was wrong at the root. A SERVED name is derived from the newest last-prompt record and Claude Code writes one every turn, so the declared string went stale the moment Diego typed — measured 2026-09-20, the orchestrator session's served name had become the literal word 'go' while this file still carried a days-old prompt tag, and every request missed. name is now an OPTIONAL PIN: leave it EMPTY unless you have something stable to pin (a custom-title). When set it is resolved by resolveResumeAddress (#525) and wins; when it matches nothing the target is derived anyway; when it is ambiguous the turn fails with words rather than guessing a session. Nothing addressable at all = an explicit worded error, never a blank-session count (#539).",
+      "name": "",
       "cwd": "/home/appuser/git/_work/orchestrator",
       "exclude_models": [
         "claude-haiku-4-5"

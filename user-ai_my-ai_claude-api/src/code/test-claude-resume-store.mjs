@@ -17,6 +17,17 @@
 //   M4  RED when a session is pasted by uuid/name instead of resolved via
 //       #525 — buildClaudeArgv refuses a non-resolved-id session ref.
 //
+// Ticket #545 added two more, for the defect one layer up: the store was
+// REACHABLE and the bot still failed, because the declared resume ADDRESS was a
+// served name — content Claude Code rewrites every single turn.
+//
+//   M5  RED when the target is a declared string instead of derived — the
+//       address must be the session under the declared cwd holding the fullest
+//       mounted task store, and a session with zero task files is never it.
+//   M6  RED when an addressing MISS prints "the task store is unreachable".
+//       That sentence is a claim about IO the code never made, and it was
+//       printed in the same breath as "no session matched that name".
+//
 // Run from the service src/code dir:  node test-claude-resume-store.mjs
 // exit 0 = PASS (all mutations defeated), non-zero = FAIL.
 import fs from "node:fs";
@@ -29,6 +40,9 @@ import {
   assertTaskStoreReachable,
   taskStoreUnreachableReason,
   isResolvedSessionId,
+  cwdSlug,
+  deriveResumeSession,
+  RESUME_ERROR_WORDS,
 } from "./claude-resume.mjs";
 
 const __dir = path.dirname(fileURLToPath(import.meta.url));
@@ -109,6 +123,88 @@ const base = fs.mkdtempSync(path.join(os.tmpdir(), "claude-resume-tst-"));
   check(garbRefused, "M4: garbage / un-resolved refs are refused, never silently trusted");
   check(isResolvedSessionId(SESSION) === true, "M4: resolver ids pass isResolvedSessionId");
   check(isResolvedSessionId("cloud-mail") === false, "M4: names fail isResolvedSessionId");
+}
+
+// ── M5 (#545): the address is DERIVED, so a stale declared name cannot break it ─
+// The live defect: build.json declared the session's SERVED name, which is built
+// from the newest last-prompt record and therefore rewritten every turn. Measured
+// 2026-09-20 the served name had become the literal word "go". Nothing about the
+// declaration can be allowed to drift — the target is the session under the
+// declared cwd holding the fullest mounted task store.
+{
+  const home = path.join(base, "m5");
+  const CWD = "/home/appuser/git/_work/orchestrator";
+  const SLUG = "-home-appuser-git--work-orchestrator";
+  check(cwdSlug(CWD) === SLUG, `M5: cwd slugs forward exactly as Claude writes it (got ${cwdSlug(CWD)})`);
+
+  const proj = path.join(home, ".claude", "projects", SLUG);
+  fs.mkdirSync(proj, { recursive: true });
+  const FULL  = "6f096941-091d-4b8f-a3bd-03c6f7bc8287"; // the real orchestrator session
+  const THIN  = "11111111-2222-3333-4444-555555555555";
+  const BLANK = "99999999-8888-7777-6666-555555555555"; // the #548 blank session
+  for (const id of [FULL, THIN, BLANK]) fs.writeFileSync(path.join(proj, `${id}.jsonl`), "{}\n");
+  // a rolled shard (#506) sits beside the live transcript and must not be a target
+  fs.writeFileSync(path.join(proj, `${FULL}.part2.jsonl`), "{}\n");
+  const seed = (id, n) => {
+    const d = path.join(home, ".claude", "tasks", id);
+    fs.mkdirSync(d, { recursive: true });
+    for (let i = 0; i < n; i++) fs.writeFileSync(path.join(d, `${i}.json`), "{}");
+  };
+  seed(FULL, 510);
+  seed(THIN, 4);
+  seed(BLANK, 0); // reachable but EMPTY — resuming it is how absence rendered as a number
+
+  const got = deriveResumeSession(home, CWD);
+  check(got && got.id === FULL, `M5: the fullest mounted task store wins (got ${got && got.id})`);
+  check(got && got.taskCount === 510, `M5: the derivation reports the real count (got ${got && got.taskCount})`);
+  // A blank session must be REJECTED, not merely out-scored. Asserting `!== BLANK`
+  // against the set above proves nothing: FULL wins on 510 task files whether or
+  // not the blank is eligible, so the assertion holds even with the rejection
+  // removed. The guard only fails when the blank is the ONLY candidate — that is
+  // the #548 shape, a project whose one session carries no tasks, where an
+  // eligible blank IS returned and its zero renders as an answer.
+  const ONLY_BLANK = "/home/appuser/git/_work/blank-only";
+  const bproj = path.join(home, ".claude", "projects", cwdSlug(ONLY_BLANK));
+  fs.mkdirSync(bproj, { recursive: true });
+  const LONE = "00000000-1111-2222-3333-444444444444";
+  fs.writeFileSync(path.join(bproj, `${LONE}.jsonl`), "{}\n");
+  seed(LONE, 0);
+  check(deriveResumeSession(home, ONLY_BLANK) === null,
+        "M5: a session with ZERO task files is never the resume target, even as the only candidate (#548)");
+  // A cwd nobody has a transcript under must be null — NOT a guess at some other
+  // project's session, which would answer from the wrong conversation.
+  check(deriveResumeSession(home, "/home/appuser/git/_work/nothing") === null,
+        "M5: an unknown project cwd derives nothing, never another project's session");
+  check(deriveResumeSession(path.join(base, "does-not-exist"), CWD) === null,
+        "M5: an unmounted claude home derives nothing");
+}
+
+// ── M6 (#545): a MISS must not claim the store was unreachable ──────────────
+// The pasted failure was one sentence contradicting itself: "the task store is
+// unreachable … reason: no session matched that name". The store had just been
+// read (40 sessions, hundreds of task files). One sentence per verdict, and no
+// verdict sentence may carry a digit.
+{
+  for (const [kind, words] of Object.entries(RESUME_ERROR_WORDS)) {
+    check(!/\d/.test(words), `M6: ${kind} wording carries no digit (absence may never render as a number)`);
+    check(/no task count or status is available/.test(words),
+          `M6: ${kind} wording says plainly that no count is available`);
+  }
+  check(!/unreachable/i.test(RESUME_ERROR_WORDS.unaddressed),
+        "M6: an addressing miss does NOT claim the task store was unreachable");
+  check(!/unreachable/i.test(RESUME_ERROR_WORDS.ambiguous),
+        "M6: an ambiguous name does NOT claim the task store was unreachable");
+  check(/ambiguous/i.test(RESUME_ERROR_WORDS.ambiguous), "M6: the ambiguous verdict says ambiguous");
+  check(/session store/i.test(RESUME_ERROR_WORDS.session_store_void),
+        "M6: a void session listing names the SESSION store, not the task store");
+  // The declaration must not re-introduce a drifting address: a served name is
+  // rewritten every turn, so build.json's pin is empty unless something stable
+  // (a custom-title) is deliberately pinned.
+  const bj = JSON.parse(fs.readFileSync(path.join(__dir, "..", "..", "build.json"), "utf8"));
+  const rs = bj.runtime.resume_session;
+  check(typeof rs.cwd === "string" && rs.cwd.length > 0,
+        "M6: build.json declares the project cwd — the address the target is derived from");
+  check(rs.name === "", "M6: build.json pins no session NAME (a served name drifts every turn — #545)");
 }
 
 // ── GREEN end-to-end: reachable store counts real files ─────────────────────
