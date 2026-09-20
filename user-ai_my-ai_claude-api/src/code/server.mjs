@@ -40,7 +40,12 @@ import {
 // module is pure: it only builds the argv for a resume spawn from a RESOLVED id
 // and checks the mounted task store. It does NOT resolve names — #525 owns that
 // (above), and reuse, not a second resolver, is the whole point.
-import { assertTaskStoreReachable, countTaskFiles } from "./claude-resume.mjs";
+import {
+  assertTaskStoreReachable,
+  countTaskFiles,
+  deriveResumeSession,
+  RESUME_ERROR_WORDS,
+} from "./claude-resume.mjs";
 
 const PORT          = parseInt(process.env.BRIDGE_PORT || "3107", 10);
 const BIND          = process.env.BRIDGE_BIND || "127.0.0.1";
@@ -72,16 +77,19 @@ const SESSIONS_KEEP = parseInt(process.env.BRIDGE_SESSIONS_KEEP || "20", 10);
 // Path components must be a single safe segment (no traversal, no separators).
 const safeSeg = (s) => /^[A-Za-z0-9._-]+$/.test(s || "");
 
-// ── #539: the DECLARED resume target ────────────────────────────────────────
+// ── #539/#545: the resume target ────────────────────────────────────────────
 // :3117 must resume the saved orchestrator session instead of spawning a blank
 // `claude -p` per message (the "Zero tasks" defect: a fresh session has no task
-// store, so absence renders as a plausible number). WHICH session to resume is
-// DECLARED as a NAME in build.json runtime.resume_session.name and exported by
-// compose.nix — never a uuid in source. The name resolves to a session through
-// the #525 resolver (resolveResumeAddress in sessions-store.mjs), the SAME
-// resolver my-ai-api's /resume uses; this file adds no second identity copy.
-// No `or` fallback on purpose: an undeclared target must eval-fail in compose,
-// not silently mean "resume nothing".
+// store, so absence renders as a plausible number).
+//
+// #545: the target used to be DECLARED as a name in build.json — the session's
+// SERVED name, as /sessions lists it. That was wrong at the root: a served name
+// is derived from the newest `last-prompt` record and Claude Code writes one
+// every turn, so the declared address went stale the moment Diego typed. It is
+// now an OPTIONAL PIN: when it is declared AND still resolves through the #525
+// resolver, it wins (set it only to something stable, e.g. a custom-title).
+// Empty or stale, the target is DERIVED from the mounted task store instead —
+// see deriveResumeSession in claude-resume.mjs.
 const RESUME_SESSION_NAME = process.env.BRIDGE_RESUME_SESSION_NAME || "";
 // #548: the project directory the resumed session belongs to. Claude keys its
 // transcript store by BOTH the session uuid AND the cwd slug
@@ -97,6 +105,11 @@ const RESUME_SESSION_CWD  = process.env.BRIDGE_RESUME_CWD || "";
 // spawning fresh one-shot sessions; only the agent-facing default path resumes.
 // Data-driven from build.json runtime.resume_session.exclude_models.
 const RESUME_EXCLUDE_MODELS = new Set(JSON.parse(process.env.BRIDGE_RESUME_EXCLUDE_MODELS || "[]"));
+// The mounted claude home — root of BOTH stores (transcripts under
+// .claude/projects/<cwd-slug>/, task files under .claude/tasks/<uuid>/). One
+// constant: the derivation and the reachability guard must read the same tree,
+// or the resume would be addressed from one store and verified against another.
+const CLAUDE_HOME = process.env.HOME || "/home/appuser";
 
 const OLLAMA_PORT   = parseInt(process.env.BRIDGE_OLLAMA_PORT || "11434", 10);
 const OLLAMA_BIND   = process.env.BRIDGE_OLLAMA_BIND || "127.0.0.1";
@@ -209,28 +222,56 @@ const mapModel = (requested) =>
 // session (that is exactly how absence rendered as "Zero"). The exclude list
 // keeps bulk indexing (haiku) on fresh one-shot sessions: only the agent-facing
 // default-model path appends into the saved orchestrator session.
+//
+// #545: the address is PIN → DERIVE → words, in that order.
+//   1. PIN    — a declared name, resolved through #525's resolver. Optional, and
+//              only worth declaring for something that does not drift (a
+//              custom-title). A pin that matches nothing is NOT fatal: it falls
+//              through, because a stale pin is exactly the failure being fixed.
+//   2. DERIVE — the session under the declared project cwd holding the fullest
+//              mounted task store. Nothing to go stale; self-corrects when the
+//              orchestrator session rotates.
+//   3. WORDS  — nothing addressable. One sentence per verdict, from the single
+//              RESUME_ERROR_WORDS table, and never the word "unreachable" for
+//              what was only an addressing miss.
+// An AMBIGUOUS pin is the one pin failure that does NOT fall through: the user
+// named several sessions, and deriving a different one instead would silently
+// answer from a conversation they did not ask for.
 const planResume = (model) => {
-  if (!RESUME_SESSION_NAME) return { mode: "none" };
+  if (!RESUME_SESSION_NAME && !RESUME_SESSION_CWD) return { mode: "none" };
   const resolved = mapModel(model);
   if (RESUME_EXCLUDE_MODELS.has(resolved)) return { mode: "none" };
   const rows = listSessions();
-  const verdict = resolveResumeAddress(rows, RESUME_SESSION_NAME);
-  if (verdict.ok) {
-    return { mode: "resume", sessionId: verdict.session.id, matchedBy: verdict.matchedBy };
+
+  if (RESUME_SESSION_NAME) {
+    const verdict = resolveResumeAddress(rows, RESUME_SESSION_NAME);
+    if (verdict.ok) {
+      return { mode: "resume", sessionId: verdict.session.id, matchedBy: verdict.matchedBy };
+    }
+    if (verdict.ambiguous) {
+      console.error(`[superset] resume refused: pin '${RESUME_SESSION_NAME}' is ambiguous — refusing to guess between sessions`);
+      return { mode: "error", kind: "ambiguous" };
+    }
+    console.error(`[superset] declared pin '${RESUME_SESSION_NAME}' matched no session — deriving the target from the mounted task store instead`);
   }
-  // LOUD, worded, numberless. Either the store is unreadable/empty (void),
-  // the name addresses nothing (miss), or it addresses several different
-  // sessions (ambiguous) — all three must reach the user as words.
-  const reason = verdict.ambiguous
-    ? "ambiguous — more than one session shares that name"
-    : (verdict.miss ? "no session matched that name" : "the session store is unreachable");
-  console.error(`[superset] resume refused: target '${RESUME_SESSION_NAME}' ${reason} — refusing to answer from a blank session`);
-  return { mode: "error", reason };
+
+  const derived = RESUME_SESSION_CWD ? deriveResumeSession(CLAUDE_HOME, RESUME_SESSION_CWD) : null;
+  if (derived) return { mode: "resume", sessionId: derived.id, matchedBy: "task-store" };
+
+  // Nothing addressable. Say WHICH store came up empty — the session listing or
+  // the task store — because they fail for different reasons and send an
+  // operator to different halves of the system.
+  const kind = rows.length === 0 ? "session_store_void" : "unaddressed";
+  console.error(`[superset] resume refused: ${kind} (pin='${RESUME_SESSION_NAME}' cwd='${RESUME_SESSION_CWD}' sessions=${rows.length}) — refusing to answer from a blank session`);
+  return { mode: "error", kind };
 };
 
-// The exact words the chat sees when the store cannot be read. Deliberately
-// number-free: this string is what the bot relays, and a count may only ever be
-// emitted by a store that was actually read.
+// The exact words the chat sees when the TASK STORE itself could not be read —
+// a genuine IO failure on a session that WAS addressed. Addressing failures get
+// RESUME_ERROR_WORDS instead; conflating the two is what told Diego the store
+// was unreachable in the same sentence as "no session matched that name".
+// Deliberately number-free: a count may only ever be emitted by a store that
+// was actually read.
 const STORE_ERROR_WORDS = (reason) =>
   `[task store error] the task store is unreachable — I could not load the saved session, so no task count or status is available. reason: ${reason}`;
 
@@ -348,7 +389,10 @@ const run = async (messages, model) => {
   // guess. Logged loudly above; the 200 wraps it so the chat relays the words
   // verbatim instead of prefixing them with a numeric gateway error status.
   if (plan.mode === "error") {
-    return { text: STORE_ERROR_WORDS(plan.reason), usage: { input_tokens: 0, completion_tokens: 0 } };
+    // #545: one sentence per verdict, looked up — not one sentence with the
+    // verdict pasted into it. The old form said "the task store is unreachable"
+    // for an addressing miss, which is a claim about IO the code never made.
+    return { text: RESUME_ERROR_WORDS[plan.kind] ?? RESUME_ERROR_WORDS.unaddressed, usage: { input_tokens: 0, completion_tokens: 0 } };
   }
   // Resumed: the saved session already holds the conversation and its tools, so
   // only the NEW user turn goes in — no re-compression of history the session
@@ -360,8 +404,7 @@ const run = async (messages, model) => {
     // about the mounted task store this spawn would resume. If the task store
     // is unreachable, fail with WORDS exactly like the name-error above — never
     // spawn a claude whose answer would be a confident zero from an empty dir.
-    const claudeHome = process.env.HOME || "/home/appuser";
-    const unreachable = assertTaskStoreReachable({ claudeHome, session: plan.sessionId });
+    const unreachable = assertTaskStoreReachable({ claudeHome: CLAUDE_HOME, session: plan.sessionId });
     if (unreachable) {
       return { text: STORE_ERROR_WORDS(unreachable.message), usage: { input_tokens: 0, completion_tokens: 0 } };
     }

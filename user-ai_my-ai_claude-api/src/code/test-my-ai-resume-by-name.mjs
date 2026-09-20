@@ -192,7 +192,10 @@ const check = (name, ok, detail) => {
       messages: [{ role: "user", content: "how many tasks are open?" }],
     });
     const text = res.json?.choices?.[0]?.message?.content ?? "";
-    check("E1 reply is the worded store error", text.startsWith("[task store error]"), `reply=${JSON.stringify(text)}`);
+    // #545: the SESSION store is what is dead here, not the task store. The two
+    // failures now carry different prefixes on purpose — "[task store error]" is
+    // reserved for a task store that was actually reached and could not be read.
+    check("E1 reply is the worded session-store error", text.startsWith("[resume error]"), `reply=${JSON.stringify(text)}`);
     check("E2 reply contains NO digit anywhere", !/\d/.test(text), `reply=${JSON.stringify(text)}`);
     check("E3 no blank claude was spawned", (existsSync(callFile) ? readFileSync(callFile, "utf8").trim() : "0") === "0",
       `spawn-count=${existsSync(callFile) ? readFileSync(callFile, "utf8").trim() : "(no file)"}`);
@@ -275,7 +278,7 @@ const check = (name, ok, detail) => {
       messages: [{ role: "user", content: "how many tasks are open?" }],
     });
     const text = res.json?.choices?.[0]?.message?.content ?? "";
-    check("M1 unresolvable name → worded error", text.startsWith("[task store error]") && /no session matched/.test(text), `reply=${JSON.stringify(text)}`);
+    check("M1 unresolvable name → worded error", text.startsWith("[resume error]") && /no session matched/.test(text), `reply=${JSON.stringify(text)}`);
   } finally { child.kill(); }
 }
 
@@ -295,7 +298,7 @@ const check = (name, ok, detail) => {
       messages: [{ role: "user", content: "how many tasks are open?" }],
     });
     const text = res.json?.choices?.[0]?.message?.content ?? "";
-    check("A1 ambiguous name → worded error", text.startsWith("[task store error]") && /ambiguous/.test(text), `reply=${JSON.stringify(text)}`);
+    check("A1 ambiguous name → worded error", text.startsWith("[resume error]") && /ambiguous/.test(text), `reply=${JSON.stringify(text)}`);
     check("A1b ambiguous reply contains NO digit", !/\d/.test(text), `reply=${JSON.stringify(text)}`);
     check("A1c no blank claude was spawned", (existsSync(callFile) ? readFileSync(callFile, "utf8").trim() : "0") === "0",
       `spawn-count=${existsSync(callFile) ? readFileSync(callFile, "utf8").trim() : "(no file)"}`);
