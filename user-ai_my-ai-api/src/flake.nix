@@ -32,6 +32,15 @@
             ./code/sessions-store.mjs
             ./code/bots
             ./code/mcp.mjs
+            # http-post.mjs was added to src and hand-copied into dist/, but
+            # never added HERE — and this list, not the committed dist/, is what
+            # becomes the docker build context ("Building nix flake -> dist/").
+            # The committed copy was therefore overwritten by a flake output
+            # that omitted it, and `COPY ... http-post.mjs` failed with
+            # "/http-post.mjs: not found" the moment that layer was not cached.
+            # test-my-ai-flake-copies-complete.mjs now fails if any file the
+            # Dockerfile COPYs is missing from this list.
+            ./code/http-post.mjs
             ./code/package.json
             ./code/start.sh
             ./code/principles

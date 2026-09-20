@@ -67,30 +67,64 @@ fi
 #   cloud-data, cloud-data-lfs, cloud-data-my-ai-memory, cloud-notes, dev,
 #   front-galaxy-gaia, front-unity, lecole42, cloud-mykonsole-dtk, cloud-vault.
 #   Those can ONLY come from GitHub.
+# #557: the repo list is DECLARED in build.json (runtime.repos) and arrives as
+# JSON in BRIDGE_BOOTSTRAP_REPOS. It used to be a hardcoded shell loop naming
+# four repos while the tree actually held seven — three had been cloned by hand
+# and would have disappeared on the next volume recreate, and the whole `front`
+# family was missing so every agent asked about it was working blind.
+#
+# These clones run as appuser (uid 10001) because that is who this container is
+# (Dockerfile: USER appuser). That matters: gitea used to hold a read-write
+# mount on this same volume and ran its supervision tree as root, which left 260
+# root-owned paths no agent could write (#558). Cloning from HERE is what keeps
+# the tree owned by the uid that has to work in it.
 bootstrap_repos() {
   mkdir -p "${HOME}/git"
   cd "${HOME}/git" || return 0
-  for repo in cloud-infra cloud-u-containers cloud-u-android cloud-u-linux; do
-    if [ -d "${repo}/.git" ]; then
-      echo "[bootstrap] ${repo} already present; leaving it alone" >&2
+
+  # Flatten the declaration to TSV so the loop below stays a shell loop:
+  #   repo <TAB> dir <TAB> submodules
+  local plan
+  if ! plan="$(printf '%s' "${BRIDGE_BOOTSTRAP_REPOS:-}" | python3 -c '
+import json, os, sys
+raw = sys.stdin.read().strip()
+if not raw:
+    sys.exit("BRIDGE_BOOTSTRAP_REPOS is empty")
+for e in json.loads(raw):
+    print("\t".join([e["repo"], e.get("dir") or e["repo"], "1" if e.get("submodules") else ""]))
+' 2>&1)"; then
+    # Absence must be LOUD. A silent skip here leaves every agent with an empty
+    # ~/git and nothing anywhere says why.
+    echo "[bootstrap] ERROR: cannot read BRIDGE_BOOTSTRAP_REPOS (${plan}) — NO repos bootstrapped" >&2
+    return 0
+  fi
+  if [ -z "${plan}" ]; then
+    echo "[bootstrap] ERROR: BRIDGE_BOOTSTRAP_REPOS declared zero repos — NO repos bootstrapped" >&2
+    return 0
+  fi
+
+  printf '%s\n' "${plan}" | while IFS="$(printf '\t')" read -r repo dir subs; do
+    [ -n "${repo}" ] || continue
+    if [ -d "${dir}/.git" ]; then
+      echo "[bootstrap] ${dir} already present; leaving it alone" >&2
       continue
     fi
-    echo "[bootstrap] cloning ${repo} from GitHub" >&2
+    echo "[bootstrap] cloning ${repo} -> ${dir} from GitHub" >&2
     # cloud-infra without --recurse-submodules leaves a_solutions empty and the
     # tree structurally broken (the build-*.json symlinks all dangle).
     extra=""
-    [ "${repo}" = "cloud-infra" ] && extra="--recurse-submodules"
+    [ -n "${subs}" ] && extra="--recurse-submodules"
     # shellcheck disable=SC2086
-    if git clone ${extra} "https://github.com/diegonmarcos/${repo}.git" "${repo}"; then
+    if git clone ${extra} "https://github.com/diegonmarcos/${repo}.git" "${dir}"; then
       # Belt and braces: --recurse-submodules can fail without failing the
       # clone, leaving a_solutions empty. Re-run it explicitly and say so.
-      if [ "${repo}" = "cloud-infra" ]; then
-        git -C "${repo}" submodule update --init --recursive \
-          || echo "[bootstrap] WARN: submodule init failed; a_solutions may be empty" >&2
+      if [ -n "${subs}" ]; then
+        git -C "${dir}" submodule update --init --recursive \
+          || echo "[bootstrap] WARN: ${dir} submodule init failed; a_solutions may be empty" >&2
       fi
-      git -C "${repo}" remote add gitea "http://10.0.0.6:3002/diego/${repo}.git" 2>/dev/null || true
+      git -C "${dir}" remote add gitea "http://10.0.0.6:3002/diego/${repo}.git" 2>/dev/null || true
       # Belt and braces: even if someone runs `git push gitea`, refuse it.
-      git -C "${repo}" remote set-url --push gitea DISABLED_pull_only_mirror
+      git -C "${dir}" remote set-url --push gitea DISABLED_pull_only_mirror
     else
       echo "[bootstrap] WARN: ${repo} clone failed; continuing" >&2
     fi

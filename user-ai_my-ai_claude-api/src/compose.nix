@@ -78,6 +78,13 @@ in
         # No `or` fallback on purpose — a missing cwd would silently resume by
         # uuid into a blank project, which is the 0-tasks defect one layer up.
         BRIDGE_RESUME_CWD        = rt.resume_session.cwd;
+        # #557: what start.sh clones into the shared agent tree. ONE declaration
+        # in build.json; no `or` fallback on purpose — the old hardcoded shell
+        # loop WAS a second declaration, and it silently disagreed with the tree
+        # (it named four repos while seven were present). An undeclared list must
+        # fail eval, not quietly mean "bootstrap nothing", because "no repos" is
+        # indistinguishable from a healthy container until an agent needs one.
+        BRIDGE_BOOTSTRAP_REPOS = builtins.toJSON rt.repos;
         # Resolved model ids that must NOT append into the resumed orchestrator
         # session (bulk indexing keeps fresh one-shot sessions). Data-driven
         # from the same runtime.resume_session block.
