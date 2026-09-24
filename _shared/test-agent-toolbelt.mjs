@@ -14,7 +14,7 @@
 //
 // Registered via user-ai_hermes-agent/build.json#tests (ticket #486's
 // per-service runner); run it directly with `node _shared/test-agent-toolbelt.mjs`.
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
@@ -130,6 +130,49 @@ if (unresolved > 0) {
   fail(`${unresolved} declared binary(ies) have no install source — the toolbelt promises tools the images cannot ship`);
 } else {
   pass("every declared binary resolves to a real install source");
+}
+
+console.log("\n── 3: the container list is DISCOVERED, not trusted ──");
+// Sections 1-2 only ever look at containers agent-toolbelt.json already names.
+// That is the hollow-green shape #509 exists to kill: a FOURTH agent container
+// added tomorrow and never wired to the toolbelt would make this tester print
+// a full green while shipping an image with no `ps` — the exact failure the
+// ticket was opened on (`ps aux | grep claude` answered 0 on a LIVE fleet
+// because procps was absent, so a missing tool failed OPEN into a confidently
+// wrong answer). So derive the truth set from the repo instead: a service whose
+// build.json sets agent.git_tree=true mounts the shared checkout and IS an
+// agent container by definition — it must be in the declaration. Both
+// directions are a failure: undeclared (silently toolbelt-less) and
+// over-declared (a dir that is no longer an agent container).
+const discovered = readdirSync(REPO_ROOT, { withFileTypes: true })
+  .filter((e) => e.isDirectory() && !e.name.startsWith("."))
+  .filter((e) => existsSync(path.join(REPO_ROOT, e.name, "build.json")))
+  .filter((e) => {
+    try {
+      return JSON.parse(readFileSync(path.join(REPO_ROOT, e.name, "build.json"), "utf8"))
+        ?.agent?.git_tree === true;
+    } catch { return false; }
+  })
+  .map((e) => e.name)
+  .sort();
+
+if (discovered.length === 0) {
+  fail("no service declares agent.git_tree=true — discovery is broken, not a clean repo (a zero-result scan must never pass this guard)");
+} else {
+  pass(`discovered ${discovered.length} agent container(s) from build.json#agent.git_tree: ${discovered.join(", ")}`);
+}
+const declaredDirs = new Set((decl.containers ?? []).map((c) => c.dir));
+for (const dir of discovered) {
+  if (declaredDirs.has(dir)) {
+    pass(`${dir}: agent container is wired into agent-toolbelt.json#containers`);
+  } else {
+    fail(`${dir} mounts the agent git tree (build.json#agent.git_tree=true) but is ABSENT from agent-toolbelt.json#containers — it ships without the toolbelt and sections 1-2 would never notice`);
+  }
+}
+for (const dir of declaredDirs) {
+  if (!discovered.includes(dir)) {
+    fail(`agent-toolbelt.json#containers declares ${dir}, but its build.json no longer sets agent.git_tree=true — the declaration is guarding a container that no longer exists as an agent`);
+  }
 }
 
 console.log("");
