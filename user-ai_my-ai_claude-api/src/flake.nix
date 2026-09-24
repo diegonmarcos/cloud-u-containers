@@ -8,7 +8,16 @@
 
     # ── Data sources (declarative JSON) ────────────────────────────
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
-    container = builtins.fromJSON (builtins.readFile ./build-my-ai_claude-api.json);
+    # build-cloud-agi-claude.json, not build-my-ai_claude-api.json: the #542
+    # rename changed containers.app.container_name to cloud-agi-claude, and
+    # cloud-infra's config emitter derives this generated file's NAME from that
+    # value. So the rename silently moved the target — 1_cloud-configs/dist/
+    # now holds build-cloud-agi-{claude,goose,hermes}.json and no longer holds
+    # the old spellings. The symlink beside this file kept naming the old one,
+    # which nix reports as "Path ... does not exist in Git repository" and which
+    # failed Ship run 35995862469. A container rename is therefore NOT a
+    # one-field change: it moves this filename too.
+    container = builtins.fromJSON (builtins.readFile ./build-cloud-agi-claude.json);
 
     engine = import ../../_shared/engine.nix;
     nb = buildJson.docker.native_build;
