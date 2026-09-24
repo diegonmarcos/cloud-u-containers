@@ -42,6 +42,12 @@
         "git_tree_writable": {
           "type": "boolean",
           "description": "Mount read-write instead of read-only. Default false. True only for a container expected to COMMIT from the shared tree: extra writers on one working tree is a concurrency decision, not an inherited default."
+        },
+        "services": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "description": "#359: the compose services in this project that ARE agents. Only these get the shared tree, /run/secrets and GH_TOKEN; every other service keeps the .secrets env_file with GH_TOKEN blanked. Unset = every service (the pre-#359 behaviour). A name the project does not have fails the build. See _shared/agent-credential.nix."
         }
       }
     },

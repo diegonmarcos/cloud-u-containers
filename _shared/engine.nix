@@ -145,6 +145,13 @@ let
       volumes  = lib.unique ((svc.volumes  or []) ++ secretsVolumes);
     };
 
+  # #359: a service that is NOT an agent (build.json agent.services) keeps the
+  # env_file but not the /run/secrets mounts, which hold every key including
+  # the push credential; agentCredential.withhold blanks it in the env.
+  mergeSecretsEnvOnly = svc:
+    if !hasSecrets then svc
+    else svc // { env_file = lib.unique ((svc.env_file or []) ++ secretsEnvFile); };
+
   # ──────────────────────────────────────────────────────────────
   # Conditional shared git-tree auto-mount (agent containers).
   #
@@ -169,6 +176,7 @@ let
   # indistinguishable from the bug this exists to fix.
   # ──────────────────────────────────────────────────────────────
   agentSpec    = buildJson.agent or {};
+  agentCredential = import ./agent-credential.nix { inherit agentSpec; };
   wantsGitTree = (agentSpec.git_tree or false) == true;
   gitTreeKey   = "git_gh";
   gitTreeName  = "cloud-git-gh";
@@ -406,6 +414,7 @@ let
     # evaluate the guard, and the stale string would sit in the declaration
     # looking live. Every container goes through applyDefaults.
     builtins.seq _gitTreeMountGuard (
+    builtins.seq (agentCredential.checkNames (builtins.attrNames (spec.services or {}))) (
     spec // {
       # The repair is added AFTER the mapAttrs on purpose: it must not receive
       # the git-tree merge (it mounts the volume itself, at its own path, and a
@@ -414,7 +423,11 @@ let
       # container the engine adds is still a container, and the one that got
       # away is exactly how uncapped stays reachable.
       services = applyMemoryCeiling ((lib.mapAttrs
-        (_: svc: mergeSecretsInto (mergeGitTreeInto (mergeSvc svc)))
+        (name: svc:
+          if agentCredential.isAgent name
+          then mergeSecretsInto (mergeGitTreeInto (mergeSvc svc))
+          # #359: not an agent — no tree, no /run/secrets, token blanked.
+          else agentCredential.withhold (mergeSecretsEnvOnly (mergeSvc svc)))
         (spec.services or {}))
         // (if wantsGitTree then { "${gitTreeRepairKey}" = gitTreeRepairSvc; } else {}));
     } // (if wantsGitTree
@@ -422,7 +435,7 @@ let
             volumes = (spec.volumes or {})
               // { "${gitTreeKey}" = { name = gitTreeName; }; };
           }
-          else {}));
+          else {})));
 
   # ──────────────────────────────────────────────────────────────
   # Arch routing — data-driven from build.json:docker.arch
