@@ -147,9 +147,22 @@ require_hosts_reached() {
                             or (type == "object" and .Client.tcp_up == true))]
                   | length' "$RUN_STATE" 2>/dev/null || true)
     total=$(jq '(.fleet_state.vms // {}) | length' "$RUN_STATE" 2>/dev/null || true)
+    # Reach is not collection. RunningUnverified means only that TCP :22
+    # answered, and the fault #391 was filed for — OpenSSH refusing on "Bad
+    # owner or permissions on /root/.ssh/config" — fails on the RUNNER before
+    # any connection is made, while :22 on every target still answers. On
+    # 2026-09-24 (cloud-data run 36022330282) this guard printed "hosts
+    # reached: 4 of 4" in a run that logged "L3 Platform: ssh=0/4" and recorded
+    # oci-mail with an empty uptime, disk and container list. So the run must
+    # ALSO have collected something over SSH from at least one host: a
+    # non-empty .vms[].uptime, which only the remote `uptime` fills. This is a
+    # second, independent condition — the reachable-variant jq above is the
+    # fleet.rs mirror and stays exactly as test-fleet-reach-mirror.sh expects.
+    collected=$(jq '[.vms[]? | select((.uptime // "") != "")] | length' "$RUN_STATE" 2>/dev/null || true)
     case "$reached" in ''|*[!0-9]*) reached=-1 ;; esac
     case "$total"   in ''|*[!0-9]*) total=-1   ;; esac
-    if [ "$reached" -lt 0 ] || [ "$total" -lt 0 ]; then
+    case "$collected" in ''|*[!0-9]*) collected=-1 ;; esac
+    if [ "$reached" -lt 0 ] || [ "$total" -lt 0 ] || [ "$collected" -lt 0 ]; then
         echo "✗ reach guard: could not read .fleet_state.vms out of $RUN_STATE" >&2
         return 1
     fi
@@ -165,7 +178,16 @@ require_hosts_reached() {
         return 1
     fi
 
-    echo "✓ hosts reached: $reached of $total"
+    if [ "$collected" -eq 0 ]; then
+        echo "✗ hosts reached: $reached of $total, but data collected from 0 — this report verified NOTHING" >&2
+        echo "  :22 answered, yet no host returned a single SSH-collected field" >&2
+        echo "  (.vms[].uptime is empty everywhere). That is the runner failing to" >&2
+        echo "  use SSH — a key or config it refuses, e.g. \"Bad owner or" >&2
+        echo "  permissions on /root/.ssh/config\" — not a healthy fleet." >&2
+        return 1
+    fi
+
+    echo "✓ hosts reached: $reached of $total (data collected from $collected)"
     return 0
 }
 
