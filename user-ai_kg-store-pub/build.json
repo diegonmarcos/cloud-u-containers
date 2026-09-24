@@ -21,7 +21,12 @@
       "port": 8002,
       "protocol": "http",
       "db_engine": "surrealdb",
-      "image": "ghcr.io/diegonmarcos/kg-store-pub:latest"
+      "image": "ghcr.io/diegonmarcos/kg-store-pub:latest",
+      "resources": {
+        "_comment": "THE ONE DECLARATION of this container's memory budget — see user-ai_kg-store/build.json for the full note. src/compose.nix derives both the cgroup ceiling and SurrealDB's RocksDB cache budget from this single value; no literal is written in compose.nix. Measured resident set on oci-apps 2026-09-24: 131.1MiB.",
+        "mem_limit": "1G",
+        "mem_reservation": "128M"
+      }
     }
   },
   "docker": {
