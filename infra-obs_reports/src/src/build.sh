@@ -122,10 +122,28 @@ require_hosts_reached() {
     fi
 
     # Mirrors fleet::VmState::is_reachable — Running | Provisioning |
-    # Client{tcp_up:true}. serde renders the unit variants as bare strings
-    # and Client as {"Client":{"tcp_up":<bool>}}.
+    # RunningUnverified{..} | Client{tcp_up:true}. serde renders the unit
+    # variants as bare strings and the data-carrying ones as
+    # {"<Variant>":{...}}.
+    #
+    # This jq is the SHELL HALF of a two-place mirror: the authority is
+    # is_reachable() in reports-common/src/fleet.rs, and nothing links them but
+    # agreement. A variant added there and forgotten here silently shrinks the
+    # reachable set, which turns the guard below into a check that fails on a
+    # healthy fleet; dropped the other way it turns into a check that passes on
+    # a dead one. test-fleet-reach-mirror.sh asserts the two halves list the
+    # same variants, and running_unverified_serialises_as_the_guard_expects()
+    # pins the serde rendering the jq is written against. Change one half and
+    # the tester tells you to change the other.
+    #
+    # RunningUnverified means :22 answered while the cloud provider could not be
+    # asked (no gcloud/oci CLI, no credentials, VM not in the list). #391: that
+    # state used to be Unknown, so a runner without the provider CLIs reported
+    # `Fleet: 0/4 reachable` and this guard failed the run, in the same run that
+    # logged `L2 WG Mesh: 4/4` and `SSH oci-apps OK (16483 bytes)`.
     reached=$(jq '[.fleet_state.vms // {} | .[]
                    | select(. == "Running" or . == "Provisioning"
+                            or (type == "object" and has("RunningUnverified"))
                             or (type == "object" and .Client.tcp_up == true))]
                   | length' "$RUN_STATE" 2>/dev/null || true)
     total=$(jq '(.fleet_state.vms // {}) | length' "$RUN_STATE" 2>/dev/null || true)
