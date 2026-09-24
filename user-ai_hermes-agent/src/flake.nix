@@ -8,7 +8,16 @@
 
     # ── Data sources (declarative JSON) ────────────────────────────
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
-    container = builtins.fromJSON (builtins.readFile ./build-hermes-agent.json);
+    # build-cloud-agi-hermes.json, not build-hermes-agent.json: #542 renamed
+    # containers.app.container_name to cloud-agi-hermes, and cloud-infra's
+    # emitter derives this generated file's NAME from that value
+    # (1_cloud-configs/src/derive/cloud-data-config-derive.ts — `build-${containerName}.json`).
+    # So the rename MOVED the target: dist holds build-cloud-agi-hermes.json and
+    # no longer holds build-hermes-agent.json. Nix reads from git, so the old
+    # spelling reads as "Path ... does not exist in Git repository" — the exact
+    # failure claude-api hit in Ship run 35995862469, latent here until hermes
+    # next shipped. Guarded now by test_build_json_targets_resolve.
+    container = builtins.fromJSON (builtins.readFile ./build-cloud-agi-hermes.json);
 
     engine = import ../../_shared/engine.nix;
 

@@ -7,7 +7,31 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
-    container  = builtins.fromJSON (builtins.readFile ./build-my-ai-api.json);
+    # build-cloud-agi-goose.json, and a SYMLINK into cloud-infra's dist rather
+    # than the 52,827-byte regular file that used to sit here. #542 renamed
+    # containers.app.container_name to cloud-agi-goose, which moves this
+    # generated file's NAME (the emitter writes `build-${containerName}.json`),
+    # so the old name is gone from dist. claude-api failed loudly on that same
+    # rename (run 35995862469); this service did NOT — because the copy here was
+    # frozen, not linked, so it kept building from a pre-rename config with no
+    # error at all. Measured staleness in that frozen copy: secret_env_vars was
+    # missing GH_TOKEN, runtime.call_timeout_ms was 180000 not 860000,
+    # runtime.claude_model and runtime.sessions.{name,resume} were absent
+    # entirely, and .services still named four retired services
+    # (c3-infra-mcp, c3-services-mcp, claude-superset-api, cloud-cgc-mcp) while
+    # missing ten live ones.
+    #
+    # Switching to the link changes NOTHING the build actually consumes, which
+    # is why it is safe to do here and was worth verifying rather than assuming:
+    # compose.nix reads `buildJson.runtime` / `buildJson.containers.app` from
+    # ../build.json, never this file, and _shared/engine.nix touches this file
+    # only as `container.container.image` — a fallback for
+    # buildJson.upstream_image, which is declared ("python:3.13-slim"), and the
+    # two .container.image values are byte-identical anyway. The only field
+    # whose VALUE moves is .container.container_name (my-ai-api →
+    # cloud-agi-goose), read by nothing in this flake. What the link buys is
+    # that the staleness above can never silently return.
+    container  = builtins.fromJSON (builtins.readFile ./build-cloud-agi-goose.json);
 
     engine = import ../../_shared/engine.nix;
     nb     = buildJson.docker.native_build;
