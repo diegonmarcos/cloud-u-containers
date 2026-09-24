@@ -30,8 +30,14 @@ steps:
         #   image prune without -a: dangling (untagged) layers only. A declared
         #     service references its image by tag, so its image is never dangling.
         #   no volume prune: volumes hold the databases.
+        # builder prune: --max-used-space, not --keep-storage. Measured on all
+        # four fleet VMs 2026-09-24 — every one runs docker 27.5.1 and
+        # `docker builder prune --help` lists only --max-used-space there.
+        # --keep-storage still parses as a hidden alias and prints a deprecation
+        # warning; --max-storage, its first replacement name, is rejected as an
+        # unknown flag, so that spelling is not the fix (#413).
         # Mirrors cloud-infra vm-pilot infra/prune-maintenance.nix.
-        RESULT=$($SSH "$USER@$IP" "docker container prune -f --filter label!=com.docker.compose.project >/dev/null && docker image prune -f 2>&1 | tail -1 && docker builder prune -f --keep-storage=1G >/dev/null" 2>/dev/null || echo "FAILED")
+        RESULT=$($SSH "$USER@$IP" "docker container prune -f --filter label!=com.docker.compose.project >/dev/null && docker image prune -f 2>&1 | tail -1 && docker builder prune -f --max-used-space=1G >/dev/null" 2>/dev/null || echo "FAILED")
 
         AFTER=$($SSH "$USER@$IP" "df --output=used / | tail -1" 2>/dev/null || echo "?")
         FREED=$(( (BEFORE - AFTER) / 1024 ))
