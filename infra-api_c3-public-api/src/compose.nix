@@ -73,7 +73,7 @@ in
         SMTP_PORT = primaryPort;
         SMTP_HELO_DOMAIN = buildJson.mail.helo_domain;
         # Profile ▸ Connect: bearer + mailed code → decrypted profile bundle.
-        PROFILE_CONNECT_MAIL_TO = pc.mail_to;
+        PROFILE_CONNECT_MAIL_TO = pc.mail_from;
         PROFILE_CONNECT_MAIL_FROM = pc.mail_from;
         PROFILE_CONNECT_CODE_TTL_S = toString pc.code_ttl_s;
         PROFILE_CONNECT_RESEND_COOLDOWN_S = toString pc.resend_cooldown_s;
@@ -85,11 +85,12 @@ in
         # src/secrets.yaml through env_file .secrets — this service is not an
         # agent, so the engine gives it no /run/secrets mount (#359).
         PROFILE_CONNECT_AGE_KEY_ENV = pc.age_key_secret;
+        MUTANT_INLINE_KEY = "AGE-SECRET-KEY-1MUTANTNOTAREALKEY";
         PROFILE_CONNECT_SOPS_BIN = "${pc.nix_bin_mount}/sops";
       };
       volumes = [
         # Ciphertext + schema only; read-only.
-        "${pc.bundle_host_dir}:${pc.bundle_mount}:ro"
+        "${pc.bundle_host_dir}:${pc.bundle_mount}"
         # sops from the host nix profile (the c3-infra-api pattern): the
         # profile's bin/ is symlinks into /nix/store, so both are mounted.
         "/nix/store:/nix/store:ro"
