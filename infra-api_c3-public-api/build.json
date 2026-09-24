@@ -97,6 +97,29 @@
     "helo_domain": "c3-public-api.diegonmarcos.com",
     "default_user_env": "SMTP_USER"
   },
+  "profile_connect": {
+    "_doc": "Superapp Configs>Profile>Connect (#566). POST /profile/connect/start mails a one-time code to mail_to over the same maddy:25 delivery as /mail/http-to-smtp; POST /profile/connect/fetch {code} decrypts cloud-vault configs/<bundle_file> at request time with the server's own age key and returns {schema, bundle}. Bearer (Caddy mkProtected + in-app X-Auth-User check) AND the mailed code are both required. Nothing here is a secret: the age key (a single AGE-SECRET-KEY-1 line) arrives from src/secrets.yaml under the name age_key_secret, through env_file .secrets (a non-agent service gets no /run/secrets mount, #359).",
+    "mail_to": "me@diegonmarcos.com",
+    "mail_from": "superapp-connect@diegonmarcos.com",
+    "code_ttl_s": 600,
+    "resend_cooldown_s": 60,
+    "max_attempts": 5,
+    "_doc_bundle": "bundle_host_dir is the cloud-vault configs/ directory ON oci-analytics, mounted read-only at bundle_mount. It holds only sops ciphertext (configs/profile-secrets.json) and the schema.",
+    "bundle_host_dir": "/home/ubuntu/git/cloud-vault/configs",
+    "bundle_mount": "/profile-bundle",
+    "bundle_file": "profile-secrets.json",
+    "schema_file": "schema.json",
+    "age_key_secret": "PROFILE_BUNDLE_AGE_KEY",
+    "_doc_sops": "sops comes from the host's nix profile (oci-analytics system-packages declares sops+age), mounted the way c3-infra-api mounts it; the image stays node:22-bookworm-slim.",
+    "host_nix_profile_bin": "/home/ubuntu/.nix-profile/bin",
+    "nix_bin_mount": "/usr/local/nix-bin"
+  },
+  "tests": {
+    "profile-connect": {
+      "cmd": "nix shell nixpkgs#sops nixpkgs#age --command node test-profile-connect.ts",
+      "cwd": "src"
+    }
+  },
   "backends": {
     "matomo": {
       "service": "matomo",
@@ -129,7 +152,7 @@
   "api": {
     "type": "custom-rest",
     "base_path": "/pub",
-    "endpoint_count": 5,
+    "endpoint_count": 7,
     "display_name": "C3 Public API",
     "description": "Single public-edge API on oci-analytics. /mail/http-to-smtp (Bearer) bridges CF Worker -> Maddy over WG (Maddy dual-writes to Stalwart). /analytics/{matomo|umami|openobserve}/* (public) passes through to first-party analytics backends.",
     "auth": "mixed"

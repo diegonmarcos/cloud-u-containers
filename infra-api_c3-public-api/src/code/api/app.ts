@@ -11,6 +11,7 @@ import { registerHealth } from "./routes/health.js";
 import { registerAnalytics } from "./routes/analytics.js";
 import { registerMail } from "./routes/mail.js";
 import { registerSuperapp } from "./routes/superapp.js";
+import { registerProfileConnect } from "./routes/profileConnect.js";
 
 export async function buildApp(): Promise<{ app: FastifyInstance; cfg: AppConfig }> {
   const cfg = loadConfig();
@@ -82,6 +83,10 @@ export async function buildApp(): Promise<{ app: FastifyInstance; cfg: AppConfig
   // build.json's proxy.primary.public_paths[], so mkProtected requires a valid
   // Authelia bearer via introspect-proxy before the request ever arrives.
   await registerSuperapp(app);
+
+  // Same Caddy bearer gate as /superapp/*, plus an in-app X-Auth-User check
+  // and a mailed one-time code (see routes/profileConnect.ts).
+  await registerProfileConnect(app, cfg);
 
   // Bearer-gated — auth plugin is registered inside this scope.
   await registerMail(app, cfg);

@@ -1,3 +1,5 @@
+import type { ProfileConnectCfg } from "./profile-connect.js";
+
 // Runtime config for c3-public-api.
 // Nothing is hardcoded: every URL, port, and limit comes from build.json
 // -> 1_cloud-configs/dist/build-c3-public-api.json -> compose.nix env vars.
@@ -30,6 +32,7 @@ export interface MailCfg {
 }
 
 export interface AppConfig {
+  profileConnect: ProfileConnectCfg;
   host: string;
   port: number;
   basePath: string;
@@ -88,7 +91,26 @@ export function loadConfig(): AppConfig {
     defaultUser: process.env.SMTP_USER ?? "cloudflare@localhost",
   };
 
+  // Profile ▸ Connect — every value comes from build.json#profile_connect via
+  // compose.nix. An unset value is reported by missingParts() as a named 503,
+  // never defaulted to something that would look configured.
+  const profileConnect: ProfileConnectCfg = {
+    mailTo: process.env.PROFILE_CONNECT_MAIL_TO ?? "",
+    mailFrom: process.env.PROFILE_CONNECT_MAIL_FROM ?? "",
+    codeTtlS: readInt("PROFILE_CONNECT_CODE_TTL_S", 600),
+    resendCooldownS: readInt("PROFILE_CONNECT_RESEND_COOLDOWN_S", 60),
+    maxAttempts: readInt("PROFILE_CONNECT_MAX_ATTEMPTS", 5),
+    bundleDir: process.env.PROFILE_CONNECT_BUNDLE_DIR ?? "",
+    bundleFile: process.env.PROFILE_CONNECT_BUNDLE_FILE ?? "profile-secrets.json",
+    schemaFile: process.env.PROFILE_CONNECT_SCHEMA_FILE ?? "schema.json",
+    // PROFILE_CONNECT_AGE_KEY_ENV names the variable (from src/secrets.yaml via
+    // env_file .secrets) that holds the key — the name is data, the key is not.
+    ageKey: (process.env[process.env.PROFILE_CONNECT_AGE_KEY_ENV ?? ""] ?? "").trim(),
+    sopsBin: process.env.PROFILE_CONNECT_SOPS_BIN ?? "",
+  };
+
   return {
+    profileConnect,
     host: process.env.HOST ?? "0.0.0.0",
     port: readInt("PORT", 8087),
     basePath: process.env.BASE_PATH ?? "/c3-public-api",
