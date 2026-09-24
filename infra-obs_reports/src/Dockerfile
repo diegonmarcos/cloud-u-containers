@@ -14,6 +14,12 @@ RUN cargo build --release
 # --nocapture so the loud ::error:: timeout line is visible in the build log.
 # --release reuses the artefacts the line above just built.
 RUN cargo test --release --bin cloud-health-full-daily health_full2::tests -- --nocapture
+# fleet::tests decide which VMs the reach guard counts (#391: VmState,
+# RunningUnverified, is_reachable). 6768921d added them and said they would
+# "run for the first time in CI" — but the line above is scoped to
+# health_full2, so the image build compiled them and executed none ("11
+# filtered out", run 36016356510). Same name-scoping, same reason.
+RUN cargo test --release -p reports-common fleet::tests -- --nocapture
 
 FROM debian:bookworm-slim
 # WireGuard stack: wireguard-tools provides wg/wg-quick; iproute2 provides ip
