@@ -43,7 +43,7 @@
 # is indistinguishable from a hook whose memory happens to be empty, and that
 # is the failure this whole tier exists to prevent.
 _mem_dir="${AGENT_MEMORY_DIR:-}"
-_mem_index="${AGENT_MEMORY_INDEX:-MEMORY.md}"
+_mem_index="${AGENT_MEMORY_INDEX:-memory/MEMORY.md}"
 _mem_entries="${AGENT_MEMORY_ENTRIES:-memory-entries}"
 _mem_types="${AGENT_MEMORY_TYPES:-feedback project reference user}"
 
@@ -65,6 +65,8 @@ else
   echo "This is an INDEX, not the memory itself. Scan it, then Read"
   echo "\`${_mem_dir}/${_mem_entries}/<type>/<name>.md\` only when an entry is"
   echo "relevant to the task in front of you. Never bulk-read the entries."
+  echo "Pointers below are relative to the index's own directory, so"
+  echo "\`../${_mem_entries}/<type>/<name>.md\` means \`${_mem_dir}/${_mem_entries}/<type>/<name>.md\`."
   echo
   cat "${_mem_dir}/${_mem_index}"
   echo
@@ -72,8 +74,11 @@ else
   echo
   echo "1. Write the entry to \`${_mem_dir}/${_mem_entries}/<type>/<name>.md\`"
   echo "   where <type> is one of: ${_mem_types}"
-  echo "2. Add ONE line to \`${_mem_dir}/${_mem_index}\`: \`- [Title](path) — hook\`"
+  echo "2. Add ONE line to \`${_mem_dir}/${_mem_index}\`:"
+  echo "   \`- [Title](../${_mem_entries}/<type>/<name>.md) — hook\` (relative to the index)"
   echo "3. NEVER put entry content in the index — it is paid for on every session."
+  echo "   NEVER put any other file or subdirectory beside the index: everything"
+  echo "   under a subdirectory there is auto-loaded (~4.5k -> ~87k tokens, measured)."
   echo "4. Check for an existing entry covering the same fact and UPDATE it rather"
   echo "   than creating a near-duplicate."
   echo

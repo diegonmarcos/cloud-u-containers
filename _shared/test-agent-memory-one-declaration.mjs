@@ -32,7 +32,7 @@
 // Usage: node _shared/test-agent-memory-one-declaration.mjs   (cwd anywhere)
 import { readFileSync, existsSync } from "node:fs";
 import { execFileSync } from "node:child_process";
-import { join, dirname } from "node:path";
+import { join, dirname, posix } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const SHARED = dirname(fileURLToPath(import.meta.url));
@@ -135,8 +135,8 @@ check("D4 the entry types are an enumerated list, not free text",
 check("L1 entries are a SIBLING of the index, never nested under it",
   !base.entries.includes("/") && !base.entries.startsWith(base.index),
   `entries=${base.entries} — a path under the index's directory is auto-loaded`);
-check("L2 the briefing FORBIDS a subdirectory beside the index",
-  /NEVER create a subdirectory beside the index/.test(base.briefing),
+check("L2 the briefing FORBIDS anything else beside the index",
+  /NEVER put anything else in memory\/ — above all no subdirectory/.test(base.briefing),
   "the agent is the thing that would recreate the blowup");
 check("L3 the briefing carries the MEASUREMENT, not just the rule",
   /4\.5k/.test(base.briefing) && /87k/.test(base.briefing),
@@ -154,6 +154,25 @@ check("L7 recalled entries are flagged as possibly stale",
 check("L8 the write rule travels with the read rule",
   /Add ONE line/.test(base.briefing) && /NEVER put entry content in the index/.test(base.briefing),
   "an agent that can read but not write the store accumulates nothing");
+
+// ── X: ONE pointer convention (#556 second pass) ────────────────────────────
+// The index used to be read from the store root while every pointer in it was
+// written ../memory-entries/... (relative to a memory/ dir, the shape the
+// devices see through ~/.claude/projects/<slug>/memory). From the store root
+// that pointer resolved to a directory that does not exist, and the hook taught
+// a third form. So: the index has its own directory, and the pointer the agents
+// are TAUGHT, resolved from that directory, must land in the entries dir.
+// Derived from the evaluated module, so a mutated index or pointer goes red.
+check("X1 the index sits in its own directory, not at the store root",
+  posix.dirname(base.index) !== "." && !posix.dirname(base.index).includes("/"),
+  `index=${base.index}`);
+check("X2 the taught pointer, resolved from the index's directory, lands in the entries",
+  posix.normalize(posix.join(posix.dirname(base.index), base.pointer)).startsWith(`${base.entries}/`),
+  `${base.pointer} from ${posix.dirname(base.index)}/ -> ${posix.normalize(posix.join(posix.dirname(base.index), base.pointer))}`);
+check("X3 the briefing teaches exactly that pointer for new entries",
+  base.briefing.includes(`[Title](${base.pointer})`));
+check("X4 the entries are NOT under the index's directory",
+  !base.entries.startsWith(`${posix.dirname(base.index)}/`) && base.entries !== posix.dirname(base.index));
 
 // ── R: every agent container is actually reached ─────────────────────────────
 // Derived, not a literal roster: every container declaring agent.git_tree gets

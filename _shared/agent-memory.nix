@@ -49,9 +49,16 @@ let
   # per container.
   repoPath = "cloud-data-my-ai-memory/b_projects/home-diego";
 
+  # The index sits in memory/ and the entries beside memory/, which is the
+  # ~/.claude/projects/<slug>/ shape every device sees through its symlinks.
+  # Pointers are written relative to memory/ (../memory-entries/<type>/<name>.md),
+  # so they resolve the same way here and on the devices. The index used to be
+  # read from ${repoPath}/MEMORY.md, where every such pointer resolved to a
+  # directory that does not exist.
   dir     = "${gitTreeMount}/${repoPath}";
-  index   = "MEMORY.md";
+  index   = "memory/MEMORY.md";
   entries = "memory-entries";
+  pointer = "../${entries}/<type>/<name>.md";
   types   = [ "feedback" "project" "reference" "user" ];
 
   typesStr = builtins.concatStringsSep " " types;
@@ -74,6 +81,8 @@ let
     "      the index — one pointer line per entry. READ THIS FIRST, every session."
     "  ${dir}/${entries}/<type>/<name>.md"
     "      the entries, where <type> is one of: ${typesStr}"
+    "      Pointers in the index are relative to the index's own directory:"
+    "      `${pointer}` means the path above."
     "      Read one ONLY when it is relevant to the task in front of you."
     ""
     "NEVER bulk-read the entries directory. It is ~170 files; loading it costs"
@@ -81,10 +90,10 @@ let
     ""
     "To record something worth keeping:"
     "  1. Write the entry to ${entries}/<type>/<name>.md under the path above."
-    "  2. Add ONE line to ${index}: `- [Title](relative/path) — the hook`."
+    "  2. Add ONE line to ${index}: `- [Title](${pointer}) — the hook`."
     "  3. NEVER put entry content in the index — it is paid for on every session."
-    "  4. NEVER create a subdirectory beside the index, and never move the"
-    "     entries into one. Claude Code auto-loads every .md under a"
+    "  4. NEVER put anything else in memory/ — above all no subdirectory, and"
+    "     never move the entries into one. Claude Code auto-loads every .md under a"
     "     subdirectory of the index's directory: that layout took session"
     "     preload from ~4.5k to ~87k tokens when it was tried, on every session"
     "     on the box, and it looks like nothing is wrong."
@@ -114,7 +123,7 @@ let
 
 in
 {
-  inherit dir index entries types briefing;
+  inherit dir index entries pointer types briefing;
 
   # The env block engine.nix splices into every git-tree container. `seq` on the
   # guard, not a bare binding: Nix is lazy, so a throw nothing forces is
