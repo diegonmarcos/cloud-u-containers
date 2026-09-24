@@ -10,5 +10,11 @@
     "image": "cloud-data-reports",
     "dockerfile": "Dockerfile",
     "arch": "amd64,arm64"
+  },
+  "tests": {
+    "fleet-reach-mirror": {
+      "cmd": "bash test-fleet-reach-mirror.sh",
+      "cwd": "src"
+    }
   }
 }

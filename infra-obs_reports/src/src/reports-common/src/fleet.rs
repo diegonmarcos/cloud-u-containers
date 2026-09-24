@@ -33,6 +33,20 @@ pub enum VmState {
     Provisioning,
     /// Cloud API reports the VM exists but status is unknown; or probe failed.
     Unknown { reason: String },
+    /// TCP :22 answered, but the cloud API could not be asked (CLI absent, no
+    /// credentials, query failed) or did not list this VM. The host is
+    /// demonstrably up; only the provider's own view of it is unestablished.
+    ///
+    /// #391: without this state, a runner with no `gcloud`/`oci` CLI classified
+    /// every VM `Unknown`, `Unknown` is not reachable, and the fleet gate read
+    /// `Fleet: 0/4 reachable` while the SAME run reported `L2 WG Mesh: 4/4`,
+    /// `L3 Platform: ssh=4/4 docker=4/4` and `SSH oci-apps OK (16483 bytes)`.
+    /// The vacuity guard then failed the run for reaching no host, on a fleet
+    /// that was entirely reachable — the guard was right about its input and
+    /// the input was wrong. The module header has always documented the
+    /// intended rule, "cloud-provider state OR TCP liveness OR Unknown"; the
+    /// TCP term was simply never consulted once the provider term was absent.
+    RunningUnverified { reason: String },
     /// Not a cloud VM (bare-metal, client) — use TCP liveness only.
     Client { tcp_up: bool },
 }
@@ -41,7 +55,10 @@ impl VmState {
     pub fn is_reachable(&self) -> bool {
         matches!(
             self,
-            VmState::Running | VmState::Provisioning | VmState::Client { tcp_up: true }
+            VmState::Running
+                | VmState::Provisioning
+                | VmState::RunningUnverified { .. }
+                | VmState::Client { tcp_up: true }
         )
     }
 
@@ -51,6 +68,9 @@ impl VmState {
             VmState::Terminated { reason } => format!("TERMINATED ({})", reason),
             VmState::Provisioning => "PROVISIONING".into(),
             VmState::Unknown { reason } => format!("UNKNOWN ({})", reason),
+            VmState::RunningUnverified { reason } => {
+                format!("RUNNING-UNVERIFIED ({})", reason)
+            }
             VmState::Client { tcp_up: true } => "CLIENT-UP".into(),
             VmState::Client { tcp_up: false } => "CLIENT-DOWN".into(),
         }
@@ -172,7 +192,17 @@ fn classify_vm(
     tool_problem: Option<&String>,
 ) -> VmState {
     match tool_problem {
-        Some(reason) => VmState::Unknown { reason: reason.clone() },
+        // The provider query could not RUN. That says nothing about whether the
+        // host is up, and the TCP :22 probe already answered that question — so
+        // answer it, instead of discarding the one signal we do have (#391).
+        // tcp_up == None (no wg_ip declared, probe never attempted) stays
+        // Unknown: there is genuinely no evidence either way.
+        Some(reason) => match tcp_up {
+            Some(true) => VmState::RunningUnverified {
+                reason: format!("{}; TCP :22 up", reason),
+            },
+            _ => VmState::Unknown { reason: reason.clone() },
+        },
         None => match provider.to_lowercase().as_str() {
             "gcp" => classify_gcp(cloud_name, map, tcp_up),
             "oci" => classify_oci(cloud_name, map, tcp_up),
@@ -202,8 +232,20 @@ fn classify_gcp(cloud_name: &str, map: &HashMap<String, String>, tcp_up: Option<
         Some(other) => VmState::Unknown {
             reason: format!("gcloud={}", other),
         },
-        None => VmState::Unknown {
-            reason: "not found in gcloud list".into(),
+        // The CLI ran and this VM is not in its output. On a runner with no
+        // credentials that is what an auth failure looks like (gcloud_list maps
+        // a non-zero exit to an empty list), so it is the MAJORITY case, not an
+        // edge one — and it reached Unknown by the same route the missing-CLI
+        // case did. If :22 answered, say so and name why the provider view is
+        // missing; a name drift between the declaration and the cloud is then
+        // visible in the reason rather than as a phantom outage.
+        None => match tcp_up {
+            Some(true) => VmState::RunningUnverified {
+                reason: "not found in gcloud list; TCP :22 up".into(),
+            },
+            _ => VmState::Unknown {
+                reason: "not found in gcloud list".into(),
+            },
         },
     }
 }
@@ -228,8 +270,17 @@ fn classify_oci(cloud_name: &str, map: &HashMap<String, String>, tcp_up: Option<
         Some(other) => VmState::Unknown {
             reason: format!("oci={}", other),
         },
-        None => VmState::Unknown {
-            reason: "not found in oci list".into(),
+        // Same as classify_gcp: oci_list returns an EMPTY list both when
+        // ~/.oci/config is absent and when the query fails, so "not listed" is
+        // what a credential-less runner sees for every OCI VM. Three of the
+        // four fleet VMs are OCI, which is most of the 0/4 (#391).
+        None => match tcp_up {
+            Some(true) => VmState::RunningUnverified {
+                reason: "not found in oci list; TCP :22 up".into(),
+            },
+            _ => VmState::Unknown {
+                reason: "not found in oci list".into(),
+            },
         },
     }
 }
@@ -254,9 +305,24 @@ async fn gcloud_list() -> std::result::Result<HashMap<String, String>, String> {
     match cmd {
         Ok(out) => {
             if !out.status.success() {
-                // Ran, but failed (auth, network, ...) — unchanged non-fatal
-                // behaviour: the TCP probe is the fallback signal.
-                return Ok(HashMap::new());
+                // Ran, but failed (auth, network, ...). Returning an empty list
+                // here made every VM read "not found in gcloud list" — the
+                // wording for "this VM does not exist in the cloud" — when the
+                // truth was that the question was never answered. Name it, so
+                // the report says why the provider view is missing (#391). The
+                // TCP probe is still the fallback signal; it is consulted by
+                // classify_vm's tool_problem branch.
+                let err = String::from_utf8_lossy(&out.stderr);
+                let first = err.lines().find(|l| !l.trim().is_empty()).unwrap_or("");
+                return Err(format!(
+                    "gcloud query failed (exit {}){}",
+                    out.status.code().unwrap_or(-1),
+                    if first.is_empty() {
+                        String::new()
+                    } else {
+                        format!(": {}", first.trim())
+                    }
+                ));
             }
             let stdout = String::from_utf8_lossy(&out.stdout);
             Ok(stdout
@@ -294,7 +360,14 @@ async fn oci_list() -> std::result::Result<HashMap<String, String>, String> {
         .find(|l| l.starts_with("tenancy="))
         .and_then(|l| l.strip_prefix("tenancy="))
     else {
-        return Ok(HashMap::new());
+        // No ~/.oci/config (or no tenancy in it) means the query cannot even be
+        // FORMED. This returned an empty map, so all three OCI VMs read
+        // "not found in oci list" on every CI runner — the single largest
+        // contributor to `Fleet: 0/4 reachable` (#391). Name the real cause.
+        return Err(format!(
+            "oci CLI has no usable credentials (no tenancy= in {}/.oci/config)",
+            home
+        ));
     };
     let cmd = tokio::process::Command::new("oci")
         .args([
@@ -314,12 +387,22 @@ async fn oci_list() -> std::result::Result<HashMap<String, String>, String> {
     match cmd {
         Ok(out) => {
             if !out.status.success() {
-                return Ok(HashMap::new());
+                let err = String::from_utf8_lossy(&out.stderr);
+                let first = err.lines().find(|l| !l.trim().is_empty()).unwrap_or("");
+                return Err(format!(
+                    "oci query failed (exit {}){}",
+                    out.status.code().unwrap_or(-1),
+                    if first.is_empty() {
+                        String::new()
+                    } else {
+                        format!(": {}", first.trim())
+                    }
+                ));
             }
             let stdout = String::from_utf8_lossy(&out.stdout);
             let parsed: Result<Vec<serde_json::Value>, _> = serde_json::from_str(&stdout);
             let Ok(items) = parsed else {
-                return Ok(HashMap::new());
+                return Err("oci query returned output that is not JSON".into());
             };
             Ok(items
                 .into_iter()
@@ -431,6 +514,101 @@ mod tests {
         let s = classify_vm("gcp", "arch-1", &empty, None, None);
         assert!(s.short_reason().contains("not found in gcloud list"));
         assert!(!s.is_reachable());
+    }
+
+    #[test]
+    fn cli_missing_but_port_22_up_is_reachable() {
+        // #391, the whole of it. On a runner with neither `gcloud` nor `oci`,
+        // every VM classified Unknown and Unknown is not reachable, so the
+        // fleet gate printed `Fleet: 0/4 reachable` and the vacuity guard
+        // failed the run — in the SAME run that logged `L2 WG Mesh: 4/4
+        // reachable`, `L3 Platform: ssh=4/4 docker=4/4` and `SSH oci-apps OK
+        // (16483 bytes)`. A host whose :22 answers is up; the missing CLI means
+        // only that the PROVIDER's view is unestablished.
+        let empty: HashMap<String, String> = HashMap::new();
+        for (provider, name, problem) in [
+            ("gcp", "arch-1", "gcloud CLI not installed"),
+            ("oci", "oci-A1-f_0", "oci CLI not installed"),
+        ] {
+            let s = classify_vm(provider, name, &empty, Some(true), Some(&problem.to_string()));
+            assert!(
+                matches!(s, VmState::RunningUnverified { .. }),
+                "{provider}: expected RunningUnverified, got {s:?}"
+            );
+            assert!(s.is_reachable(), "{provider}: :22 up must count as reached");
+            // The reason must still name the tool problem — reachable is not a
+            // licence to hide WHY the provider could not be asked.
+            assert!(s.short_reason().contains(problem), "{provider}: {}", s.short_reason());
+            assert!(s.short_reason().contains("TCP :22 up"));
+        }
+    }
+
+    #[test]
+    fn cli_missing_and_port_22_silent_is_still_unreachable() {
+        // The other half: no provider answer AND no TCP answer is no evidence,
+        // and no evidence must never count as reached. If this ever flips, the
+        // vacuity guard becomes a check that cannot fail.
+        let empty: HashMap<String, String> = HashMap::new();
+        for tcp in [None, Some(false)] {
+            let s = classify_vm("gcp", "arch-1", &empty, tcp, Some(&"gcloud CLI not installed".into()));
+            assert!(matches!(s, VmState::Unknown { .. }), "tcp={tcp:?} -> {s:?}");
+            assert!(!s.is_reachable(), "tcp={tcp:?} must not be reachable");
+        }
+    }
+
+    #[test]
+    fn vm_unlisted_but_port_22_up_is_reachable_and_names_why() {
+        // gcloud_list/oci_list map an auth failure to an EMPTY list, so
+        // "not listed" is exactly what a credential-less runner sees for every
+        // VM. Three of the four fleet VMs are OCI, so this branch — not the
+        // missing-binary branch — carried most of the 0/4.
+        let empty: HashMap<String, String> = HashMap::new();
+        let g = classify_gcp("arch-1", &empty, Some(true));
+        assert!(g.is_reachable());
+        assert!(g.short_reason().contains("not found in gcloud list"));
+        assert!(g.short_reason().contains("TCP :22 up"));
+
+        let o = classify_oci("oci-A1-f_0", &empty, Some(true));
+        assert!(o.is_reachable());
+        assert!(o.short_reason().contains("not found in oci list"));
+    }
+
+    #[test]
+    fn terminated_beats_a_live_port() {
+        // Guard against over-reach in the opposite direction: a positive
+        // TERMINATED from the cloud must keep winning, whatever :22 says, or
+        // the collectors resume burning SSH deadlines on powered-off spot VMs
+        // — the cost this module was written to remove.
+        let mut map = HashMap::new();
+        map.insert("ollama-spot-gpu".to_string(), "TERMINATED".to_string());
+        let s = classify_gcp("ollama-spot-gpu", &map, Some(true));
+        assert!(matches!(s, VmState::Terminated { .. }));
+        assert!(!s.is_reachable());
+    }
+
+    #[test]
+    fn running_unverified_serialises_as_the_guard_expects() {
+        // build.sh's require_hosts_reached() re-implements is_reachable() in
+        // jq, against this enum's serde rendering. That mirror can only be
+        // checked if the rendering is pinned, so pin it here: externally
+        // tagged, {"RunningUnverified":{"reason":"..."}}. The shell-side half of
+        // the mirror is asserted by test-fleet-reach-mirror.sh.
+        let j = serde_json::to_string(&VmState::RunningUnverified {
+            reason: "oci CLI not installed; TCP :22 up".into(),
+        })
+        .unwrap();
+        assert!(j.starts_with("{\"RunningUnverified\":{"), "{j}");
+        assert!(j.contains("\"reason\""), "{j}");
+        // And the three already-reachable renderings the guard also matches.
+        assert_eq!(serde_json::to_string(&VmState::Running).unwrap(), "\"Running\"");
+        assert_eq!(
+            serde_json::to_string(&VmState::Provisioning).unwrap(),
+            "\"Provisioning\""
+        );
+        assert_eq!(
+            serde_json::to_string(&VmState::Client { tcp_up: true }).unwrap(),
+            "{\"Client\":{\"tcp_up\":true}}"
+        );
     }
 
     #[test]
