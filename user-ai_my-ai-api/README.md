@@ -95,7 +95,7 @@ user-ai_my-ai-api/
 ├── README.md
 └── src/
     ├── build.json                   # (mirror; engine reads this)
-    ├── build-my-ai-api.json         # per-container config
+    ├── build-cloud-agi-goose.json   # per-container config (symlink → cloud-infra dist; named after container_name)
     ├── secrets.yaml.example         # OPENROUTER_API_KEY (sops-encrypt → secrets.yaml)
     └── code/
         ├── Dockerfile               # 2-stage: Rust wheel (headroom) → Python+Node runtime
