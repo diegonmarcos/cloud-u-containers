@@ -94,6 +94,23 @@ const _loadPrinciple = (name) => { try { return fs.readFileSync(path.join(PRINCI
 const AGENTS_PRINCIPLES = AGENTS_PRINCIPLES_ENABLED ? _loadPrinciple("agents.md") : "";
 const CLOUD_PRINCIPLES  = CLOUD_PRINCIPLES_ENABLED  ? _loadPrinciple("cloud.md")  : "";
 
+// ── #556: the agentic memory system ──────────────────────────────────────────
+// The goose and hermes modes here are OpenRouter forwards, so this system
+// message is the ONLY context surface they have — there is no session hook and
+// no CLAUDE.md on this path. The briefing is NOT written here: it comes from
+// AGENT_MEMORY_BRIEFING, declared once in _shared/engine.nix and published to
+// every container with agent.git_tree. Retyping the store's path into this file
+// would recreate the defect the ticket is about (measured 2026-09-24: claude had
+// AGENT_MEMORY_DIR, goose and hermes had nothing).
+//
+// The POINTER, never the index. The index is ~170 pointer lines and is read on
+// demand with the tools the agentic path has; pasting it into every chat request
+// is the same bulk-load that took a session preload from 4.5k to 87k tokens.
+const AGENT_MEMORY_BRIEFING = (process.env.AGENT_MEMORY_BRIEFING || "").trim();
+if (!AGENT_MEMORY_BRIEFING) {
+  console.warn("[my-ai] WARNING: AGENT_MEMORY_BRIEFING unset — goose/hermes modes answer WITHOUT recall of previous sessions");
+}
+
 // ── concurrency semaphore ────────────────────────────────────────────────────
 let active = 0;
 const waiters = [];
@@ -132,6 +149,9 @@ const injectPrinciples = (messages, headers) => {
   const parts = [];
   if (CLOUD_PRINCIPLES)  parts.push(CLOUD_PRINCIPLES);
   if (AGENTS_PRINCIPLES) parts.push(AGENTS_PRINCIPLES);
+  // #556 — travels with the principles: the same x-principles toggle, because a
+  // request that opts out of injected context should not silently keep one half.
+  if (AGENT_MEMORY_BRIEFING) parts.push(AGENT_MEMORY_BRIEFING);
   if (parts.length === 0) return messages;
   const principles = parts.join("\n\n---\n\n");
   const sys = messages.find((m) => m.role === "system");

@@ -17,6 +17,20 @@
 //   from one whose memory is merely empty. The agent must be TOLD it has no
 //   recall, or it will answer from the conversation as though it did.
 //
+// SCOPE (narrowed by the second half of #556). The DECLARATION and the WIRING
+// used to be checked here, against this container's own build.json
+// runtime.memory and compose.nix. Both moved: the memory system is declared
+// once in _shared/agent-memory.nix and published by engine.nix to EVERY
+// container with agent.git_tree, because while it lived here it reached claude
+// and NOT goose or hermes (measured 2026-09-24 inside the running containers:
+// only cloud-agi-claude had AGENT_MEMORY_*). Those checks, plus the per-runtime
+// consumption paths, now live in _shared/test-agent-memory-one-declaration.mjs,
+// which EVALUATES the declaration and mutation-proves it.
+//
+// What stays here is the part that is genuinely claude's: the SessionStart hook
+// is the only one of the three surfaces that injects the index ITSELF, so it is
+// the only one that can bulk-read the entry tree by accident.
+//
 // Usage: node test-agent-memory-system.mjs   (cwd = <repo>/user-ai_my-ai_claude-api/src/code)
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -29,30 +43,17 @@ const check = (name, cond, detail = "") => {
 };
 
 const here = process.cwd();
-const build = JSON.parse(readFileSync(join(here, "../../build.json"), "utf8"));
-const compose = readFileSync(join(here, "../compose.nix"), "utf8");
 const hook = readFileSync(join(here, "claude-config/hooks/a-context-inject-memory.sh"), "utf8");
-const mem = build?.runtime?.memory;
 
-// ── D: the declaration ──────────────────────────────────────────────────────
-check("D1 build.json declares runtime.memory", !!mem && typeof mem === "object", JSON.stringify(mem));
-for (const k of ["dir", "index", "entries"]) {
-  check(`D2:${k} is declared`, typeof mem?.[k] === "string" && mem[k].length > 0, JSON.stringify(mem?.[k]));
-}
-check("D3 the entry types are an enumerated list",
-  Array.isArray(mem?.types) && mem.types.length > 0, JSON.stringify(mem?.types));
-check("D4 the store lives in the SHARED tree, not a private path",
-  /^git\//.test(mem?.dir || ""), `dir=${mem?.dir} — must be under the mounted git tree`);
-
-// ── W: the wiring ───────────────────────────────────────────────────────────
-check("W1 compose.nix emits AGENT_MEMORY_DIR", /AGENT_MEMORY_DIR\s*=/.test(compose));
-check("W2 the path is DERIVED from the declaration, not retyped",
-  /AGENT_MEMORY_DIR\s*=\s*"\$\{home\}\/\$\{rt\.memory\.dir\}"/.test(compose),
-  "a hardcoded path here would be a second declaration of where memory lives");
-for (const v of ["AGENT_MEMORY_INDEX", "AGENT_MEMORY_ENTRIES", "AGENT_MEMORY_TYPES"]) {
-  check(`W3:${v} is emitted`, new RegExp(`${v}\\s*=`).test(compose));
-}
-check("W4 the hook reads the declaration", /AGENT_MEMORY_DIR/.test(hook));
+// ── W: the hook consumes the declaration, it does not restate it ────────────
+// The path itself is asserted (and mutation-proved) in
+// _shared/test-agent-memory-one-declaration.mjs. What matters here is that this
+// hook takes it from the environment: a literal path baked into the hook would
+// be the second declaration that left goose and hermes with nothing.
+check("W1 the hook reads AGENT_MEMORY_DIR from the environment", /AGENT_MEMORY_DIR/.test(hook));
+check("W2 the hook never retypes the store path",
+  !/b_projects\/home-diego/.test(hook),
+  "a path literal here can drift from _shared/agent-memory.nix without anything failing");
 
 // ── I: index only ───────────────────────────────────────────────────────────
 check("I1 the hook cats the INDEX", /cat "\$\{_mem_dir\}\/\$\{_mem_index\}"/.test(hook));
