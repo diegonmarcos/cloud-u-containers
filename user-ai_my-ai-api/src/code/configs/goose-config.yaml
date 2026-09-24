@@ -21,16 +21,70 @@ GOOSE_TELEMETRY_ENABLED: false
 extensions:
   # ══ BEGIN GENERATED MCP SERVERS — do not edit; derived from cloud-infra/1_cloud-configs/dist/mcp.json + mcp-policy.json by cloud-u-linux da_my-ai/data/claude/gen-mcp-tpl.sh (platform: container-goose) ══
   cloud-cgc-pub-mcp:
-    name: Cloud Code Graph Context MCP
+    name: cloud-cgc-pub-mcp
     type: streamable_http
     uri: http://10.0.0.6:3105/mcp
     enabled: true
     timeout: 300
+  cloud-cgc-pvt-mcp:
+    name: cloud-cgc-pvt-mcp
+    type: streamable_http
+    uri: http://10.0.0.6:3107/mcp
+    enabled: true
+    timeout: 300
+  cloud-drive-mcp:
+    name: cloud-drive-mcp
+    type: streamable_http
+    uri: http://10.0.0.6:3109/mcp
+    enabled: true
+    timeout: 300
   cloud-infra-mcp:
-    name: Cloud Infra MCP
+    name: cloud-infra-mcp
     type: streamable_http
     uri: http://10.0.0.6:3100/mcp
-    enabled: false
+    enabled: true
+    timeout: 300
+  cloud-mail-mcp:
+    name: cloud-mail-mcp
+    type: streamable_http
+    uri: http://10.0.0.6:3103/mcp
+    enabled: true
+    timeout: 300
+  cloud-mattermost-mcp:
+    name: cloud-mattermost-mcp
+    type: streamable_http
+    uri: http://10.0.0.6:3102/mcp
+    enabled: true
+    timeout: 300
+  cloud-services-mcp:
+    name: cloud-services-mcp
+    type: streamable_http
+    uri: http://10.0.0.6:3101/mcp
+    enabled: true
+    timeout: 300
+  cloud-superapp-mcp:
+    name: cloud-superapp-mcp
+    type: streamable_http
+    uri: http://10.0.0.6:3110/mcp
+    enabled: true
+    timeout: 300
+  cloud-vault-mcp:
+    name: cloud-vault-mcp
+    type: streamable_http
+    uri: http://10.0.0.6:3111/mcp
+    enabled: true
+    timeout: 300
+  google-personal-mcp:
+    name: google-personal-mcp
+    type: streamable_http
+    uri: http://10.0.0.6:3106/mcp
+    enabled: true
+    timeout: 300
+  google-workspace-mcp:
+    name: google-workspace-mcp
+    type: streamable_http
+    uri: http://10.0.0.6:3104/mcp
+    enabled: true
     timeout: 300
   # ══ END GENERATED MCP SERVERS ══
 
