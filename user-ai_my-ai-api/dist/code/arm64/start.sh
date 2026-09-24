@@ -52,6 +52,30 @@ GOOSE_PORT="${GOOSE_PORT:-3227}"
 export HOME="${HOME:-/home/appuser}"
 export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-/app/.config}"
 
+# ── #556: point goose at the agentic memory system ──────────────────────────
+# goose has no session hook and no CLAUDE.md. Its one declarative context
+# surface is a .goosehints file (goose 1.44 CONTEXT_FILE_NAMES), read from
+# $XDG_CONFIG_HOME/goose/ globally and from the session cwd locally.
+#
+# It is WRITTEN here rather than baked beside config.yaml in the Dockerfile
+# on purpose: baking it would retype the store's path into a source file, and
+# a second copy of that path is exactly how cloud-agi-claude ended up with
+# AGENT_MEMORY_DIR while goose and hermes had nothing. The text comes from
+# AGENT_MEMORY_BRIEFING, which _shared/engine.nix derives from the same
+# binding as the git-tree mount the store lives under.
+#
+# Absence is LOUD, as in claude's hook: a hints file that silently does not
+# exist is indistinguishable from an agent whose memory happens to be empty,
+# and the agent then answers from the conversation as though it had recall.
+_goose_hints="${XDG_CONFIG_HOME}/goose/.goosehints"
+if [ -n "${AGENT_MEMORY_BRIEFING:-}" ]; then
+  mkdir -p "${XDG_CONFIG_HOME}/goose"
+  printf '%s\n' "${AGENT_MEMORY_BRIEFING}" > "${_goose_hints}"
+  echo "[start] goose memory hints written to ${_goose_hints} (${AGENT_MEMORY_DIR:-?})"
+else
+  echo "[start] WARNING: AGENT_MEMORY_BRIEFING is unset — goose will run WITHOUT recall of previous sessions. _shared/engine.nix publishes it to every container with agent.git_tree; if it is missing here, that merge did not reach this service." >&2
+fi
+
 # Sidecar: compress_service (Headroom tokens-optimization plugin, :HEADROOM_PORT).
 # Best-effort — if it exits for any reason, log and continue.
 echo "[start] launching compress_service on :${HEADROOM_PORT}"

@@ -12,7 +12,9 @@
     "git_tree": true,
     "git_tree_writable": true,
     "_comment_working_directory": "Hermes' main process is an s6-supervised idle holder; the real work arrives as `docker exec`, which starts at the image WorkingDir (/opt/hermes) — outside the checkout. The agent then sees zero repositories and answers as if the code did not exist. Starting it in the tree is the point of mounting the tree.",
-    "git_tree_is_working_directory": true
+    "git_tree_is_working_directory": true,
+    "_memory_briefing_env_doc": "#556. The memory system itself is declared once in _shared/agent-memory.nix and published by engine.nix as AGENT_MEMORY_DIR/_INDEX/_ENTRIES/_TYPES/_BRIEFING. hermes reads no AGENT_* var: its system-prompt extension is HERMES_EPHEMERAL_SYSTEM_PROMPT, which gateway/run_config_loaders.py resolves BEFORE display.personality / agent.system_prompt (neither is set in src/configs/config.yaml) and agent/turn_context.py APPENDS to the base prompt at API-call time, so the tool instructions hermes needs are not replaced. What is declared here is the env var NAME, never the briefing text — a second copy of the text is how claude, goose and hermes came to be told three different things. NOTE: HERMES_WRITE_SAFE_ROOT=/opt/data is an image default, so hermes must write entries with the terminal toolset; its file toolset is sandboxed away from the shared tree.",
+    "memory_briefing_env": "HERMES_EPHEMERAL_SYSTEM_PROMPT"
   },
   "upstream_image": "ghcr.io/diegonmarcos/hermes-agent:latest",
   "docker": {

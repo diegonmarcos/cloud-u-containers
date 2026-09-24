@@ -215,6 +215,17 @@ let
   # already reads.
   gitTreeMount = builtins.seq _gitTreeMountGuard gitTreeMountPath;
 
+  # ── The agentic memory system (#556) ─────────────────────────────────────
+  # Declared once in _shared/agent-memory.nix — see that file for the whole
+  # story. It lives beside gitTreeMount because the store's absolute path is
+  # DERIVED from the mount: keeping them one binding apart is what stops them
+  # drifting, which is exactly what happened while the path was retyped in a
+  # per-container build.json and only one of the three agents ever got it.
+  agentMemory = import ./agent-memory.nix {
+    gitTreeMount = gitTreeMountPath;
+    inherit buildJson title;
+  };
+
   # Read-only unless the container is expected to COMMIT from the shared
   # tree. Extra writers on ONE working tree is a real concurrency
   # decision, not a default to inherit: git refuses the second write, so
@@ -260,7 +271,16 @@ let
       GIT_CONFIG_COUNT   = if gitTreeWritable then "2" else "1";
       GIT_CONFIG_KEY_0   = "safe.directory";
       GIT_CONFIG_VALUE_0 = "*";
-    } // (if gitTreeWritable
+    }
+    # #556. EVERY container that mounts the tree is told where the store
+    # inside it is. This splice is the fix: while the declaration lived in
+    # one container's build.json, claude had the memory and goose and hermes
+    # had none, and nothing anywhere said so.
+    // agentMemory.env
+    # ...and, for a runtime whose binary reads a name of its own, the same
+    # briefing under that name. build.json declares the NAME, never the text.
+    // (agentMemory.aliasEnv agentSpec)
+    // (if gitTreeWritable
           then {
             GIT_CONFIG_KEY_1   = "credential.helper";
             GIT_CONFIG_VALUE_1 =
