@@ -135,6 +135,10 @@
       "cmd": "node test-bots-lifetime-split.mjs",
       "cwd": "src/code"
     },
+    "bot-auth-required-workflow": {
+      "cmd": "node test-bot-auth-required-workflow.mjs",
+      "cwd": "src/code"
+    },
     "agi-container-naming": {
       "cmd": "node ../../_shared/test-agi-container-naming.mjs",
       "cwd": "_shared"

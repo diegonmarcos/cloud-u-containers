@@ -3,7 +3,10 @@
 // Shared across all Telegram bots in the roster (see bots.json) — each bot
 // gets its own per-chat state via route.mjs's getState, keyed by the
 // conversationKey the caller passes in (which already encodes chat + topic).
-import { getState, routeToGoose, MYAI_LOCAL_URL, HISTORY_CAP, clearChatHistory } from "./route.mjs";
+// oauthLoginWorkflow: the re-login instructions are worded ONCE, in route.mjs,
+// because the automatic auth-required recovery there hands out the same text.
+// Two copies had already drifted (#546).
+import { getState, routeToGoose, MYAI_LOCAL_URL, HISTORY_CAP, clearChatHistory, oauthLoginWorkflow } from "./route.mjs";
 // The session format contract and the resume bound are declared ONCE, in
 // sessions-store.mjs. /resume parses nothing itself (#513): a second parser
 // here is what made a Claude Code transcript read as "no readable messages".
@@ -337,7 +340,7 @@ export const handleCommand = async (cmdIn, arg, chatKey, meta = {}, defaultAgent
       const r = await jpost(`${CLAUDE_CLI_BASE}/auth/login/start`, {});
       const j = r.json || {};
       if (!r.ok || !j.url) return `login failed: ${j.error || r.text || r.status}${j.output ? `\n${j.output}` : ""}`;
-      return `Open this link, approve, then send the code back as:\n/code <the-code>\n\n${j.url}\n\n(the link expires in a few minutes — the login process is held open until then)`;
+      return oauthLoginWorkflow(j.url);
     }
     case "code": {
       if (!CLAUDE_CLI_BASE) return "CLAUDE_CLI_BASE_URL unset — cannot reach claude-superset-api";

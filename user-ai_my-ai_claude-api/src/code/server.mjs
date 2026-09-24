@@ -21,7 +21,10 @@ import http from "node:http";
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { startLogin, submitCode, loginStatus } from "./login.mjs";
+// isAuthRequired / AUTH_REQUIRED_SIGNATURES: the single declared list of
+// dead-credential signatures. Declared next to the OAuth handshake that cures
+// them (login.mjs) so the symptom and the remedy cannot drift.
+import { startLogin, submitCode, loginStatus, isAuthRequired } from "./login.mjs";
 // Cross-device session store — the ONE declaration of the store directory, the
 // session namer and the name→session resolver (#525's resolveResumeAddress).
 // This file is the SAME shared module my-ai-api ships (asserted byte-identical
@@ -365,7 +368,8 @@ const callClaude = ({ system, prompt, model, resumeId = null }) =>
         // Expiry belongs in here too, not just revocation: a web login whose refresh
         // token has run out fails exactly like never having logged in, and the bot
         // only offers its /login link when it recognises the failure as an auth one.
-        if (/not logged in|please run \/login|token has (been revoked|expired)|refresh token|invalid[_ ]api[_ ]key|401/i.test(both)) {
+        // The signatures are declared ONCE in login.mjs — never inline here.
+        if (isAuthRequired(both)) {
           return reject(new Error(`claude-cli auth required — run 'claude setup-token' and refresh the container's oauth-token: ${tail}`));
         }
         return reject(new Error(`claude -p exit ${code}: ${tail}`));
@@ -605,7 +609,11 @@ const server = http.createServer(async (req, res) => {
       // downstream callers (e.g. the telegram bot) can detect it and auto-send the
       // OAuth login link instead of treating it as a generic upstream failure.
       const message = String(e.message || e);
-      if (/auth required/i.test(message)) {
+      // Same ONE declared list as the spawn classifier above (login.mjs): an
+      // error that reaches here un-normalized — e.g. the CLI's own "Failed to
+      // authenticate: OAuth session expired and could not be refreshed" — must
+      // still come out as 401 auth_required, not a generic 502 JSON blob.
+      if (isAuthRequired(message)) {
         send(401, { error: { message, type: "superset_claude_auth_required" } });
       } else {
         send(502, { error: { message, type: "superset_claude_error" } });

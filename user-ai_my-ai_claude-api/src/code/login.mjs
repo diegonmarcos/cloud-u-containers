@@ -201,3 +201,36 @@ export const submitCode = (code) =>
   });
 
 export const loginStatus = () => ({ pending: Boolean(pending), session_id: pending?.id ?? null });
+
+// ── "this container has no usable credential" — the ONE declared list ───────
+// Every auth classification in this service reads THIS list; no code path tests
+// these strings inline. It lives in login.mjs because this module owns the cure
+// (the browser OAuth handshake above), so the symptom and its remedy cannot
+// drift apart.
+//
+// The families, and what each looks like coming out of the `claude` CLI:
+//   never logged in ....... "Not logged in · Please run /login"
+//   revoked / expired ..... "token has been revoked", "token has expired"
+//   refresh failed ........ "Failed to authenticate: OAuth session expired and
+//                            could not be refreshed · api_error"
+//   bad / absent key ...... "invalid_api_key", a raw 401
+// A session whose refresh failed is the SAME class of problem as never having
+// logged in — both need a human at a browser — so they classify together. That
+// family was the gap: it matched none of the old inline tests, so an expired
+// OAuth session reached the user as a generic 502 with a nested JSON blob
+// instead of the /login → /code workflow.
+export const AUTH_REQUIRED_SIGNATURES = [
+  /not logged in/i,
+  /please run \/login/i,
+  /token has (been revoked|expired)/i,
+  /refresh token/i,
+  /oauth session expired/i,
+  /could not be refreshed/i,
+  /failed to authenticate/i,
+  /invalid[_ ]api[_ ]key/i,
+  /\b401\b/,
+  /auth required/i, // our own normalized wording, re-classified on the way out
+];
+
+export const isAuthRequired = (text) =>
+  AUTH_REQUIRED_SIGNATURES.some((re) => re.test(String(text ?? "")));
