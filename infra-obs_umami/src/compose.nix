@@ -107,6 +107,15 @@ in
       # ports; the docker daemon runs iptables=false), so the only way the
       # one-shot job can reach it is to share that stack.
       network_mode   = "host";
+      # Root, because the job's one durable output is /output/site_id on the
+      # named volume umami_config, and docker creates a named volume root:root
+      # 0755. curlimages/curl runs as curl_user (uid 100), so after the site
+      # was finally verified (a53333fc) setup died on the very next line —
+      # "can't create /output/site_id: Permission denied", measured on
+      # oci-analytics 2026-09-24T16:23Z — and configured stayed 0. Same
+      # resolution as user-ai_cloud-cgc-pub-mcp's writer. One-shot job, host
+      # network, no published port, no-new-privileges still applied.
+      user           = "0:0";
       env_file       = [ ".secrets" ];
       depends_on.umami = { condition = "service_healthy"; };
       entrypoint     = [ "/bin/sh" "/setup/setup.sh" ];
