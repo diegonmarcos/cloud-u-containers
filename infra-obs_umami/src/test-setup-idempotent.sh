@@ -129,3 +129,36 @@ fi
 
 echo "PASS: no masked credential literal, all bearer headers use \$TOKEN,"
 echo "      and the site-verification call is authenticated"
+
+# Seventh invariant: the setup job can WRITE the marker it exists to write.
+# #396's third fault, found only after the Bearer fix let verification pass:
+#     Site verified via the API: 937cbde7-...
+#     /setup/setup.sh: line 209: can't create /output/site_id: Permission denied
+# The marker path comes from build.json (containers.setup.idempotent_marker),
+# its directory is a named volume, and docker creates named volumes
+# root:root 0755 — so the service mounting it must run as root, or the
+# durable outcome can never be recorded however correct the script is.
+BUILD_JSON="$SCRIPT_DIR/../build.json"
+COMPOSE_NIX="$SCRIPT_DIR/compose.nix"
+MARKER=$(jq -r '.containers.setup.idempotent_marker // empty' "$BUILD_JSON")
+[ -n "$MARKER" ] || { echo "FAIL: build.json declares no containers.setup.idempotent_marker"; exit 1; }
+MARKER_DIR=$(dirname "$MARKER")
+SETUP_BLOCK=$(awk '/"\$\{setup\.container_name\}" = \{/{f=1} f{print} f&&/^    \};/{exit}' "$COMPOSE_NIX")
+[ -n "$SETUP_BLOCK" ] || { echo "FAIL: could not locate the setup service in $COMPOSE_NIX"; exit 1; }
+VOL=$(printf '%s\n' "$SETUP_BLOCK" | grep -oE "\"[A-Za-z0-9_.-]+:$MARKER_DIR(:rw)?\"" | head -1 | tr -d '"' | cut -d: -f1)
+if [ -z "$VOL" ]; then
+    echo "FAIL: the setup service mounts nothing at $MARKER_DIR (marker $MARKER)"
+    exit 1
+fi
+case "$VOL" in
+    ./*|/*) echo "PASS: $MARKER_DIR is a bind mount ($VOL) — ownership is the host's, not asserted here" ;;
+    *)
+        if printf '%s\n' "$SETUP_BLOCK" | grep -qE '^[[:space:]]*user[[:space:]]*=[[:space:]]*"(0|0:0|root|root:root)";'; then
+            echo "PASS: setup runs as root, so it can write $MARKER on named volume $VOL"
+        else
+            echo "FAIL: setup writes $MARKER onto named volume $VOL (created root:root 0755)"
+            echo "      but declares no root user — curlimages/curl runs as uid 100 and"
+            echo "      gets 'Permission denied', so configured stays 0 forever."
+            exit 1
+        fi ;;
+esac
