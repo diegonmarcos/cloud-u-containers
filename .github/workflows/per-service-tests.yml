@@ -42,5 +42,14 @@ jobs:
         with:
           node-version: '24'
 
+      # Some testers EVALUATE the declarative source instead of grepping it —
+      # _shared/test-kg-store-memory-ceiling.mjs renders each compose.nix (a
+      # pure function of { buildJson, container }, so no nixpkgs is fetched)
+      # and re-renders it with a mutated build.json to prove the rendered value
+      # actually follows the declaration. Grepping could not tell that apart
+      # from a hardcoded literal. The tester FAILS rather than skips when
+      # nix-instantiate is absent, so this step is load-bearing, not optional.
+      - uses: cachix/install-nix-action@v27
+
       - name: Discover and execute every declared per-service tester
         run: bash .github/scripts/run-service-tests.sh
