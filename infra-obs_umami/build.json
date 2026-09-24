@@ -157,5 +157,11 @@
     "display_name": "Umami Analytics API",
     "description": "Lightweight privacy-focused web analytics with tracking API and admin interface.",
     "auth": "bearer"
+  },
+  "tests": {
+    "setup-idempotent-and-credentials": {
+      "cmd": "sh test-setup-idempotent.sh",
+      "cwd": "src"
+    }
   }
 }

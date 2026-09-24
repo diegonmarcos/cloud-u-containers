@@ -179,8 +179,18 @@ fi
 # exactly the hollow "configured but nothing collected" state this job
 # exists to prevent. Re-fetch the site by id and confirm the API returns
 # it before we write a record claiming setup is complete.
+# The Authorization header here carried the literal string "Bearer ***" —
+# a log line with GitHub secret-masking applied, pasted back into the source
+# when this verification step was written (d2b1f13e). Umami answered 401 to
+# it every time, curl -sf therefore exited non-zero, VERIFY came back empty
+# and the grep below could NEVER match. The step could not pass, so setup
+# exited 1 on every run and the marker was never written, while auth had in
+# fact succeeded and the website had existed since 2026-03-17
+# (site_id 937cbde7-..., 1131 events recorded, newest 2026-09-24 13:07Z).
+# A verifier that cannot pass reports the subject broken forever: #396 read
+# as "no tracking site has ever existed" when the truth was one masked token.
 VERIFY=$(curl -sf "$UMAMI_URL/api/websites/$SITE_ID" \
-  -H "Authorization: Bearer ***" 2>/dev/null || echo "")
+  -H "Authorization: Bearer $TOKEN" 2>/dev/null || echo "")
 if ! printf '%s' "$VERIFY" | grep -q "$SITE_ID"; then
   echo "[umami-setup] ERROR: site_id=$SITE_ID not confirmed by the API — NOT writing a configured marker." >&2
   echo "[umami-setup] SUMMARY revision=${SHIP_REVISION:-unknown} outcome=site-unverified site_id=$SITE_ID configured=0"

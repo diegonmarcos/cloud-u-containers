@@ -79,3 +79,53 @@ fi
 
 echo ""
 echo "PASS: idempotency guard works correctly"
+
+# ── Fourth invariant: no masked credential literal anywhere ─────────────
+# #396: the site-verification step shipped with the header
+#     -H "Authorization: Bearer ***"
+# — a log line with GitHub's secret masking applied, pasted back into the
+# source. Umami answered 401, `curl -sf` exited non-zero, the response was
+# empty, and the grep that follows could never match. The verifier could not
+# pass, so setup exited 1 on every single run and never wrote the marker,
+# while authentication had in fact succeeded and the tracking website had
+# existed since 2026-03-17 with events still arriving. #396 was therefore
+# read as "no tracking site has ever existed" for months.
+#
+# Masking renders as three or more asterisks. Any run of them inside the
+# built script is a secret that was round-tripped through a log, and such a
+# value is never a working credential. Asserted against the BUILT artifact,
+# because that is the file the container executes.
+# Comment lines are exempt: this file documents the defect by quoting it.
+CODE_ONLY=$(grep -vE '^[[:space:]]*#' "$DIST_SETUP")
+if printf '%s\n' "$CODE_ONLY" | grep -qE '\*\*\*+'; then
+    echo "FAIL: masked-secret literal (***) present in $DIST_SETUP:"
+    printf '%s\n' "$CODE_ONLY" | grep -nE '\*\*\*+'
+    echo "  A value that came back out of a masked log is not a credential."
+    exit 1
+fi
+
+# Fifth invariant: every Authorization header uses the token variable.
+# Narrower than the asterisk rule above and it survives a different typo —
+# a hardcoded token, a stale constant, an empty header. The only legitimate
+# bearer value in this script is $TOKEN, obtained from /api/auth/login.
+BAD_AUTH=$(grep -n 'Authorization: Bearer' "$DIST_SETUP" \
+           | grep -v 'Authorization: Bearer \$TOKEN' || true)
+if [ -n "$BAD_AUTH" ]; then
+    echo "FAIL: Authorization header not using \$TOKEN in $DIST_SETUP:"
+    echo "$BAD_AUTH"
+    exit 1
+fi
+
+# Sixth invariant: the verification call is actually authenticated. A verify
+# step is the last gate before the durable marker is written; if its request
+# carries no Authorization header at all it 401s and fails closed forever,
+# which is the same outcome as the masked token, reached a different way.
+if ! grep -A3 'api/websites/\$SITE_ID' "$DIST_SETUP" | grep -q 'Authorization: Bearer \$TOKEN'; then
+    echo "FAIL: the site-verification request to /api/websites/\$SITE_ID"
+    echo "      does not carry 'Authorization: Bearer \$TOKEN' within 3 lines."
+    echo "      Unauthenticated, it 401s and the marker is never written."
+    exit 1
+fi
+
+echo "PASS: no masked credential literal, all bearer headers use \$TOKEN,"
+echo "      and the site-verification call is authenticated"
