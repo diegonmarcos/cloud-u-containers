@@ -166,6 +166,10 @@
     "git-tree-one-mount-pattern": {
       "cmd": "node test-git-tree-one-mount-pattern.mjs",
       "cwd": "src/code"
+    },
+    "auth-required-classifier": {
+      "cmd": "node test-claude-auth-required-classifier.mjs",
+      "cwd": "src/code"
     }
   },
   "agent": {

@@ -30,6 +30,23 @@ const TURN_TIMEOUT_MS = 880_000;
 
 export const MYAI_LOCAL_URL = process.env.MYAI_LOCAL_URL || "http://127.0.0.1:3217";
 
+// ── The OAuth re-login workflow, worded ONCE ────────────────────────────────
+// Two callers hand this to the user: the explicit /login command
+// (commands.mjs) and the automatic auth-required recovery in routeToGoose
+// below. It was written out twice and the two copies had already drifted; a
+// single formatter is what keeps the instructions Diego actually follows
+// identical whichever way he arrives at them.
+export const oauthLoginWorkflow = (url) =>
+  `Open this link, approve, then send the code back as:\n/code <the-code>\n\n${url}\n\n(the link is held open for a few minutes — if it expires, run /login for a fresh one)`;
+
+// The whole user-facing reply for the auth-required case, so the bot never
+// relays the upstream's nested JSON error for a failure the user can fix. Pure
+// and exported so the tester can assert on the exact text the user sees.
+export const authRequiredReply = (login) =>
+  login?.url
+    ? `🔑 the claude backend's OAuth credential has expired — re-authenticate:\n\n${oauthLoginWorkflow(login.url)}`
+    : `🔑 the claude backend's OAuth credential has expired and starting the login automatically failed: ${login?.error || "no url returned"} — run /login to retry.`;
+
 // ── Per-chat state ──────────────────────────────────────────────────────────
 // null in toggles/model/ponytail means "use server default" (no header sent).
 //
@@ -104,7 +121,11 @@ export const routeToGoose = async (text, chatKey = "default", defaultAgent = "go
       // login handshake automatically and hand the user the link instead of just
       // surfacing the opaque gateway error.
       const errText = (await res.text()).slice(0, 300);
-      if (/superset_claude_auth_required|auth required|not logged in/i.test(errText)) {
+      // 401 is the declared contract for "a human must redo the browser OAuth"
+      // (claude-api server.mjs classifies it from the ONE signature list in its
+      // login.mjs). Trust the status first; the type/wording match is the
+      // fallback for an older backend that still answers 502.
+      if (res.status === 401 || /superset_claude_auth_required|auth required|not logged in/i.test(errText)) {
         // The claude backend address comes from the ONE declaration — the
         // CLAUDE_CLI_BASE_URL env in the service's compose.nix (#539). No
         // literal fallback here: a backend whose address is undeclared must
@@ -113,10 +134,9 @@ export const routeToGoose = async (text, chatKey = "default", defaultAgent = "go
         if (!base) return "claude backend is logged out but CLAUDE_CLI_BASE_URL is unset — the claude backend address is not declared. Check the my-ai-api compose.nix declaration and redeploy.";
         try {
           const login = await fetch(`${base}/auth/login/start`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" }).then((r) => r.json());
-          if (login?.url) return `claude backend is logged out. Open this link, approve, then send the code back as:\n/code <the-code>\n\n${login.url}\n\n(link expires in a few minutes)`;
-          return `claude backend is logged out and auto-login failed: ${login?.error || "no url"} — try /login`;
+          return authRequiredReply(login);
         } catch (loginErr) {
-          return `claude backend is logged out and auto-login failed: ${loginErr.message} — try /login`;
+          return authRequiredReply({ error: loginErr.message });
         }
       }
       return `[gateway error ${res.status}] ${errText.slice(0, 200)}`;
