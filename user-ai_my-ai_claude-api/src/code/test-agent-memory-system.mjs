@@ -80,6 +80,30 @@ check("R4 recalled entries are flagged as possibly stale",
   /VERIFY it still exists/.test(hook),
   "a memory naming a deleted file must not be acted on blind");
 
+// ── X: one pointer convention, one memory system ────────────────────────────
+// The hook injects an index whose pointers are ../memory-entries/... relative
+// to the index's own directory; the agent must be told that, and told to
+// write new pointers the same way, or it invents a second convention.
+check("X1 the hook states pointers are relative to the index's directory",
+  /relative to the index's own directory/.test(hook)
+  && /\.\.\/\$\{_mem_entries\}\/<type>\/<name>\.md/.test(hook));
+check("X2 the hook forbids any other file or subdirectory beside the index",
+  /NEVER put any other file or subdirectory beside the index/.test(hook));
+// Claude Code's NATIVE auto-memory is a second, private store at
+// ~/.claude/projects/<cwd-slug>/memory/ — per dispatch cwd, inside the
+// container, never committed. Left on, every dispatched agent is told to write
+// memories THERE (flat files beside a MEMORY.md), so what it records dies with
+// the workdir and the shared store never sees it. autoMemoryEnabled:false
+// (verified in the 2.1.281 binary: "When false, Claude will not read from or
+// write to the auto-memory directory") leaves the hook's store as the only one.
+const settings = JSON.parse(readFileSync(join(here, "claude-config/settings.json"), "utf8"));
+check("N1 Claude Code's private per-cwd auto-memory is OFF",
+  settings.autoMemoryEnabled === false,
+  `autoMemoryEnabled=${JSON.stringify(settings.autoMemoryEnabled)} — agents would write memory into a throwaway per-workdir dir`);
+check("N2 no autoMemoryDirectory redirects native memory into the store",
+  !("autoMemoryDirectory" in settings),
+  "native memory writes entries beside MEMORY.md — pointed at the store it would fill memory/ with entry files");
+
 console.log(`\n${pass} PASS, ${fail} FAIL`);
 if (fail > 0) { console.error("NOT GREEN"); process.exit(1); }
 console.log("ALL GREEN");

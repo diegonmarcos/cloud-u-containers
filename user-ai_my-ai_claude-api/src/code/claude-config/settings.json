@@ -1,4 +1,5 @@
 {
+  "autoMemoryEnabled": false,
   "permissions": {
     "_doc": "2026-09-06: mirrors the fleet SoT decision (cloud-u-linux ae77a8f 'pre-approve the control plane'). Headless `claude -p` cannot answer permission prompts — every unlisted tool call is silently DENIED, which left the 15-agent runner able to read but not write (verified live: Write to /tmp refused). Allow rules bypass the prompt entirely, so the runner gets exactly the control plane: shell and file tools. NOT --dangerously-skip-permissions: deny rules and hooks (c-pretool-guard-*) stay in force. The mcp__<server> grants are DELIBERATELY ABSENT here and injected at boot by render-mcp.mjs from the same mcp.tpl.json the servers themselves come from. They used to be restated here by hand under keys this container invented (mcp__cloud-infra, mcp__cloud-services, mcp__mattermost), so renaming a server to the fleet's canonical key would have silently dropped its grant and made the server look down to every agent. A grant list that cannot disagree with the server list is the only version of this that stays correct.",
     "allow": [

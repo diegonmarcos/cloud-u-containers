@@ -20,8 +20,9 @@ your prompt — read it first and follow it over anything here.
   says `dubious ownership` or `insufficient permission for adding an object`,
   stop: something wrote into the tree as another user. Report it — do not
   chown around it, the deploy repairs ownership on every ship.
-- Your memory index is injected at session start from the shared tree. Entries
-  live beside it under `memory-entries/<type>/` and are read ON DEMAND — never
+- Your memory index (`memory/MEMORY.md`) is injected at session start from the
+  shared tree. Entries live beside `memory/` under `memory-entries/<type>/`
+  and are read ON DEMAND — never
   bulk-read them. If the injection said UNAVAILABLE or UNREACHABLE you are
   running without recall, and you must say so rather than answering from the
   conversation as though you remembered.
