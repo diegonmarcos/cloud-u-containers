@@ -1,7 +1,8 @@
 #!/bin/sh
 # Shared fire scaffolding — ONE declaration of everything a dispatch workspace needs.
 #
-# Every fire script used to restate this block: clone-with-abort, declare the `github` remote,
+# Every fire script used to restate this block: workspace-with-abort (a detached worktree since
+# #487), declare the `github` remote,
 # chown for the engine, then write the provenance lines. Restating it per ticket is how the
 # fleet ends up with fire scripts that have quietly drifted apart — #482 was fired at a
 # workspace that did not exist for 104 minutes because ONE copy was missing the abort.
@@ -85,45 +86,69 @@ if [ -n "$BRIEF" ]; then
   echo "prep brief=$(stat -c '%u:%g %a' "$BRIEF")" >> "$M"
 fi
 
-# #482: a failed clone MUST abort.
-# #484: --local, NOT --shared. _work is ONE host dir mounted at two different paths
-# (/opt/data/git here, /home/appuser/git in goose); --shared writes an ABSOLUTE alternates
-# path that is invalid in the other container and then degrades quietly. And --local copies
-# the SOURCE's own alternates verbatim, so do not "simplify" this to --shared either.
-# #510: --no-hardlinks. A bare --local HARDLINKS every object, and fs.protected_hardlinks=1
-# refuses a link to a file you do not own. cloud-infra carries root-owned objects (#558), so
-# every cloud-infra dispatch died here — `failed to create link .../objects/48/2ff3cd61...:
-# Operation not permitted` (_logs/claude-391.marker, 2026-09-24) — and was worked around by
-# hand. Copying costs the object store's size once per workspace (cloud-infra ~575MB).
-if [ ! -d "$W/.git" ]; then
-  git clone --local --no-hardlinks "$SRC" "$W" >> "$M" 2>&1
+# #487/#488/#558 → WORKTREES (Diego's decision, 2026-09-24). The slot is a `git worktree add
+# --detach` of $SRC main, not a clone. A clone was one of three bad things: --shared wrote an
+# ABSOLUTE alternates path (#487 measured all 20 under _work engine-bound, ZERO readable from both),
+# --local hardlinked objects and died with EPERM on cloud-infra's root-owned objects (#558), and
+# --no-hardlinks copied ~575MB per slot. A worktree has NO object store of its own: its .git is a
+# one-line FILE pointing at $SRC/.git/worktrees/<id>, and every object lives in $SRC/.git/objects.
+# Nothing to link, nothing to copy, no alternates.
+#
+# Its paths are still ABSOLUTE (git 2.47 has no relative worktree paths), so a worktree made here
+# is only valid in THIS engine's mount (#484's lesson again). Consequence for prune: from goose, a
+# hermes worktree's gitdir (/opt/data/git/...) looks MISSING, and a bare `git worktree prune`
+# would delete its metadata out from under a running hermes agent. So every dispatch worktree is
+# added LOCKED, and prune first unlocks only the ones under THIS engine's $ROOT whose directory is
+# really gone. Another engine's worktrees are never ours to judge.
+#
+# #482: a failed add MUST abort.
+prune_own() {
+  for G in "$SRC"/.git/worktrees/*/gitdir; do
+    [ -f "$G" ] || continue
+    P=$(dirname "$(cat "$G")")
+    case "$P" in
+      "$ROOT"/_work/*) [ -e "$P" ] || git -C "$SRC" worktree unlock "$P" >> "$M" 2>&1 ;;
+    esac
+  done
+  git -C "$SRC" worktree prune -v >> "$M" 2>&1
+}
+
+if [ ! -e "$W/.git" ]; then
+  prune_own
+  # Hooks OFF for the add: the source's own core.hooksPath applies to a worktree (a clone never
+  # inherited it), and cloud-infra's post-checkout then ran a submodule SSH clone inside prep —
+  # measured on the first real cloud-infra worktree. prep runs as root in production; it must
+  # not execute repo-tracked hook code. Command scope is fine here: it is not safe.directory.
+  git -C "$SRC" -c core.hooksPath=/dev/null worktree add --detach --lock --reason "dispatch slot $SLOT root=$ROOT" "$W" main >> "$M" 2>&1
   RC=$?
-  echo "prep cloned rc=$RC" >> "$M"
-  if [ "$RC" -ne 0 ]; then
-    echo "prep: ABORT — clone failed rc=$RC, refusing to fire an agent with no workspace" >> "$M"
+  echo "prep worktree rc=$RC" >> "$M"
+  # After: the fresh worktree is locked, so it MUST survive a prune. If it does not, the lock is
+  # not protecting it from the other engine either — refuse the slot.
+  prune_own
+  if [ "$RC" -ne 0 ] || ! git -C "$W" rev-parse --git-dir > /dev/null 2>&1; then
+    echo "prep: ABORT — worktree add failed rc=$RC, refusing to fire an agent with no workspace" >> "$M"
     exit 2
   fi
 fi
+GITDIR=$(git -C "$W" rev-parse --absolute-git-dir)
 
-# #485 papercut 2: a --local clone gets ONE remote (origin -> the local tree) and does NOT
-# inherit the source's remotes, so `git fetch github` would die. Declare it. Idempotent.
+# A worktree shares $SRC/.git/config. Everything below writes it only when it would change, so
+# an idle prep never rewrites the shared config file (a root rewrite hands it to root:root).
+# #485 papercut 2: declare `github` — the agents are told to push to it. Idempotent.
 URL=https://github.com/diegonmarcos/$REPO.git
-git -C "$W" remote add github "$URL" 2>/dev/null || git -C "$W" remote set-url github "$URL"
-
-# #485 root cause: `docker exec hermes-agent` is uid=0(root) but the hermes gateway — and so
-# every file the agent writes — is uid=10001(hermes). An unchowned clone hands the agent a
-# workspace it cannot write to; it then silently clones a `-h` sibling it owns and works there
-# (_work/476 and _work/477 both did exactly that). goose and claude need no chown: both
-# `docker exec my-ai-api` and `docker exec my-ai_claude-api` are already uid=10001(appuser).
-if [ "$ENGINE" = hermes ]; then
-  chown -R hermes:hermes "$W" 2>/dev/null || true
+if [ "$(git -C "$SRC" remote get-url github 2>/dev/null)" != "$URL" ]; then
+  git -C "$SRC" remote add github "$URL" 2>/dev/null || git -C "$SRC" remote set-url github "$URL"
 fi
 
 # #481: agents have pushed deliberate mutation commits to shared main. A mutation is a proof
 # step, never a deliverable. Install a pre-push hook that refuses them.
 # PREFIX, never substring: "MUTATION: drop the guard" is refused, but a legitimate subject like
 # "fix the MUTATION guard so it cannot be bypassed" MUST still push.
-HOOKS=$W/.git/dispatch-hooks
+# PER-WORKTREE: core.hooksPath in the SHARED config would repoint hooks for the main checkout and
+# every other slot, and cloud-infra/cloud-u-android already set it there (0_git/dist/hooks). So
+# the hooks live in this worktree's own metadata dir (pruned with it) and are wired through
+# extensions.worktreeConfig, which only $GITDIR/config.worktree sees.
+HOOKS=$GITDIR/dispatch-hooks
 mkdir -p "$HOOKS"
 cat > "$HOOKS/pre-push" <<'HOOK'
 #!/bin/sh
@@ -147,13 +172,21 @@ done
 exit 0
 HOOK
 chmod 755 "$HOOKS/pre-push"
-git -C "$W" config core.hooksPath "$HOOKS"
-if [ "$ENGINE" = hermes ]; then
-  chown -R hermes:hermes "$HOOKS" 2>/dev/null || true
+[ "$(git -C "$SRC" config --bool extensions.worktreeConfig)" = true ] \
+  || git -C "$SRC" config extensions.worktreeConfig true
+git -C "$W" config --worktree core.hooksPath "$HOOKS"
+
+# #485 root cause: `docker exec` is uid=0(root), but every engine runs as 10001:999 (#488
+# measured hermes and appuser NUMERICALLY identical). Everything root just created — the slot,
+# the worktree metadata in the SHARED $SRC/.git, and the shared config if it was rewritten — goes
+# to the owner of $SRC, or the agent gets a workspace it cannot write to (_work/476 and 477
+# silently cloned a `-h` sibling and worked there).
+if [ "$(id -u)" = 0 ]; then
+  chown -R --reference="$SRC" "$ROOT/_work/$SLOT" "$SRC/.git/worktrees" "$SRC/.git/config" >> "$M" 2>&1
 fi
 
 echo "prep owner=$(stat -c %U "$W" 2>/dev/null || echo unknown)" >> "$M"
-echo "prep at $(git -C "$W" rev-parse --short HEAD 2>/dev/null || echo unknown)" >> "$M"
+echo "prep at $(git -C "$W" rev-parse --short HEAD 2>/dev/null || echo unknown) gitdir=$GITDIR" >> "$M"
 echo "prep dirty=$(git -C "$W" --no-optional-locks status --porcelain 2>/dev/null | wc -l)" >> "$M"
 echo "prep hooksPath=$(git -C "$W" config core.hooksPath 2>/dev/null || echo NONE)" >> "$M"
 exit 0
