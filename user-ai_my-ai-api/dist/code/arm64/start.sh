@@ -100,7 +100,15 @@ fi
 # Only launch if at least one messaging platform is configured. Supervised by
 # respawn (ticket #545): a dead gateway must restart, never leave a green
 # container with a bot that answers nothing.
-if [ -n "${TELEGRAM_BOT_TOKEN:-}" ] || [ "${MATTERMOST_ENABLED:-}" = "true" ]; then
+# GATEWAY_ENABLED=false is the #542 split: the bots now run in their own
+# container (cloud-agi-bots) with their own lifetime, so this one must NOT
+# start a second copy. An explicit opt-out is required rather than relying on
+# the token check below — both containers load the SAME sops .secrets, so
+# TELEGRAM_BOT_TOKEN is set in both and the condition alone would launch two
+# gateways long-polling one bot, which Telegram answers with 409 Conflict.
+if [ "${GATEWAY_ENABLED:-auto}" = "false" ]; then
+  echo "[start] gateway: disabled by declaration — runs in its own container (#542)"
+elif [ -n "${TELEGRAM_BOT_TOKEN:-}" ] || [ "${MATTERMOST_ENABLED:-}" = "true" ]; then
   echo "[start] launching gateway (messaging bridge, supervised)"
   ( respawn gateway node /app/gateway.mjs ) &
 else

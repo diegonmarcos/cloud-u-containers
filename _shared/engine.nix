@@ -73,8 +73,19 @@ let
   # Fleet-wide compose defaults — data-driven from
   # _shared/compose-defaults.json. Per-service fields override.
   # ──────────────────────────────────────────────────────────────
-  composeDefaults =
-    (builtins.fromJSON (builtins.readFile ./compose-defaults.json)).defaults;
+  composeDefaultsFile = builtins.fromJSON (builtins.readFile ./compose-defaults.json);
+  composeDefaults     = composeDefaultsFile.defaults;
+
+  # Memory ceiling — see _shared/memory-ceiling.nix for the whole story.
+  # Applied to the FINAL services attrset (below), so nothing the engine itself
+  # injects escapes it either.
+  applyMemoryCeiling = services:
+    import ./memory-ceiling.nix {
+      policy   = composeDefaultsFile.memory_limit;
+      category = buildJson.category or null;
+      title    = title;
+      inherit services;
+    };
 
   # ──────────────────────────────────────────────────────────────
   # Agent toolbelt (#509, extends #366/#450) — data-driven from
@@ -379,10 +390,13 @@ let
       # The repair is added AFTER the mapAttrs on purpose: it must not receive
       # the git-tree merge (it mounts the volume itself, at its own path, and a
       # depends_on pointing at itself would deadlock the project).
-      services = (lib.mapAttrs
+      # applyMemoryCeiling wraps the WHOLE set, git-tree repair included: a
+      # container the engine adds is still a container, and the one that got
+      # away is exactly how uncapped stays reachable.
+      services = applyMemoryCeiling ((lib.mapAttrs
         (_: svc: mergeSecretsInto (mergeGitTreeInto (mergeSvc svc)))
         (spec.services or {}))
-        // (if wantsGitTree then { "${gitTreeRepairKey}" = gitTreeRepairSvc; } else {});
+        // (if wantsGitTree then { "${gitTreeRepairKey}" = gitTreeRepairSvc; } else {}));
     } // (if wantsGitTree
           then {
             volumes = (spec.volumes or {})

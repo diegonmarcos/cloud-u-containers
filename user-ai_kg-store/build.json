@@ -21,7 +21,12 @@
       "port": 8001,
       "protocol": "http",
       "db_engine": "surrealdb",
-      "image": "ghcr.io/diegonmarcos/kg-store:latest"
+      "image": "ghcr.io/diegonmarcos/kg-store:latest",
+      "resources": {
+        "_comment": "THE ONE DECLARATION of this container's memory budget. src/compose.nix reads mem_limit twice off this single value: once as the cgroup ceiling (deploy.resources.limits.memory) and once to size SurrealDB's own RocksDB caches (SURREAL_ROCKSDB_BLOCK_CACHE_SIZE = half of it, SURREAL_ROCKSDB_WRITE_BUFFER_SIZE = an eighth). Both halves are required: the cgroup alone converts the leak into an OOM kill, and the engine budget alone leaves nothing enforcing it. Change this number and BOTH move — no literal is written in compose.nix. Sized from measurement: kg-store's resident set on oci-apps 2026-09-24 was 140.6MiB, so 1G is ~7x headroom, against the ~10.6GB it held uncapped.",
+        "mem_limit": "1G",
+        "mem_reservation": "128M"
+      }
     }
   },
   "docker": {
@@ -34,6 +39,11 @@
   "data_path": "/opt/data/surrealdb",
   "build": {
     "headers_enforced": true
+  },
+  "tests": {
+    "memory-ceiling": {
+      "cmd": "node ../_shared/test-kg-store-memory-ceiling.mjs"
+    }
   },
   "kg": {
     "namespace": "infra",
