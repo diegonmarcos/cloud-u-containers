@@ -151,6 +151,34 @@ mcp_servers:
   cloud-cgc-pub-mcp:
     type: http
     url: http://10.0.0.6:3105/mcp
-  # names-only (NOT loaded — run tools/list on demand):
-  #   cloud-infra-mcp: http://10.0.0.6:3100/mcp
+  cloud-cgc-pvt-mcp:
+    type: http
+    url: http://10.0.0.6:3107/mcp
+  cloud-drive-mcp:
+    type: http
+    url: http://10.0.0.6:3109/mcp
+  cloud-infra-mcp:
+    type: http
+    url: http://10.0.0.6:3100/mcp
+  cloud-mail-mcp:
+    type: http
+    url: http://10.0.0.6:3103/mcp
+  cloud-mattermost-mcp:
+    type: http
+    url: http://10.0.0.6:3102/mcp
+  cloud-services-mcp:
+    type: http
+    url: http://10.0.0.6:3101/mcp
+  cloud-superapp-mcp:
+    type: http
+    url: http://10.0.0.6:3110/mcp
+  cloud-vault-mcp:
+    type: http
+    url: http://10.0.0.6:3111/mcp
+  google-personal-mcp:
+    type: http
+    url: http://10.0.0.6:3106/mcp
+  google-workspace-mcp:
+    type: http
+    url: http://10.0.0.6:3104/mcp
 # ══ END GENERATED MCP SERVERS ══
