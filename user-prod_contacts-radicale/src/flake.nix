@@ -14,10 +14,16 @@
 
     svc = container.services;
 
+    # IMAP auth goes to Stalwart (the live IMAPS store since the 2026-09-02
+    # migration), not maddy. Port is looked up by its declared service label in
+    # stalwart's extra_ports, so a renumbered listener follows its declaration.
+    stalwartImapPort = builtins.head (builtins.attrNames
+      (nixpkgs.lib.filterAttrs (_: ep: (ep.service or "") == "imap_ssl") svc.stalwart.extra_ports));
+
     configVars = {
       APP_PORT        = toString buildJson.ports.app;
-      MADDY_IP        = svc.maddy.ip;
-      MADDY_IMAP_PORT = toString svc.maddy.ports.imap;
+      IMAP_HOST       = svc.stalwart.ip;
+      IMAP_PORT       = stalwartImapPort;
     };
 
   in {

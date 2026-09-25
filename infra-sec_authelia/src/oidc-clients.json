@@ -19,24 +19,6 @@
       "pkce_challenge_method": "S256"
     },
     {
-      "client_id": "nocodb",
-      "secret_var": "AUTHELIA_OIDC_CLIENT_NOCODB_SECRET",
-      "client_name": "NocoDB Database",
-      "consent_mode": "explicit",
-      "public": false,
-      "authorization_policy": "two_factor",
-      "redirect_uris": [
-        "https://db.@BASE_DOMAIN@/api/v1/auth/oidc/callback",
-        "https://db.@BASE_DOMAIN@/api/v2/auth/oidc/callback"
-      ],
-      "scopes": ["openid", "profile", "email"],
-      "userinfo_signed_response_alg": "none",
-      "token_endpoint_auth_method": "client_secret_basic",
-      "require_pushed_authorization_requests": true,
-      "require_pkce": true,
-      "pkce_challenge_method": "S256"
-    },
-    {
       "client_id": "cloudflare-health-c3-api",
       "secret_var": "AUTHELIA_OIDC_CLIENT_CLOUDFLARE_SECRET",
       "client_name": "Cloudflare Worker Health Check",
