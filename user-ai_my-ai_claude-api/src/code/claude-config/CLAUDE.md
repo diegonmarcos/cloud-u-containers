@@ -21,7 +21,8 @@ your prompt — read it first and follow it over anything here.
   stop: something wrote into the tree as another user. Report it — do not
   chown around it, the deploy repairs ownership on every ship.
 - Your memory index (`memory/MEMORY.md`) is injected at session start from the
-  shared tree. Entries live beside `memory/` under `memory-entries/<type>/`
+  shared tree. Entries live beside `memory/` under
+  `memory-entries/<repo>/<child>/<type>_<name>.md` (`<type>` is a file-name prefix, not a directory)
   and are read ON DEMAND — never
   bulk-read them. If the injection said UNAVAILABLE or UNREACHABLE you are
   running without recall, and you must say so rather than answering from the

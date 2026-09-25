@@ -51,14 +51,27 @@ let
 
   # The index sits in memory/ and the entries beside memory/, which is the
   # ~/.claude/projects/<slug>/ shape every device sees through its symlinks.
-  # Pointers are written relative to memory/ (../memory-entries/<type>/<name>.md),
-  # so they resolve the same way here and on the devices. The index used to be
-  # read from ${repoPath}/MEMORY.md, where every such pointer resolved to a
-  # directory that does not exist.
+  # Pointers are written relative to memory/
+  # (../memory-entries/<repo>/<child>/<type>_<name>.md), so they resolve the same
+  # way here and on the devices. The index used to be read from
+  # ${repoPath}/MEMORY.md, where every such pointer resolved to a directory that
+  # does not exist.
+  #
+  # BY REPO, NOT BY TYPE (#546 landed 2026-09-24, cloud-data-my-ai-memory
+  # 1877a7d). This module first taught memory-entries/<type>/<name>.md. #546
+  # moved every entry to b_projects/<repo>/<child>/<type>_<name>.md, and
+  # <home>/memory-entries/ became a VIEW of one relative symlink per repo, so an
+  # agent following the by-type text would write a real memory-entries/<type>/
+  # directory, which check-memory-layout.sh M6 fails RED. <type> is still one of
+  # `types`, but it is now the FILE-NAME PREFIX and the entry's frontmatter, not
+  # a directory. A new <repo> or <child> is declared in that repo's
+  # 4___ASSETS___/4.2.Config/layout.json "memory" AND created on disk (the guard
+  # fails on either alone); `_repo` is the child for what concerns a whole repo.
   dir     = "${gitTreeMount}/${repoPath}";
   index   = "memory/MEMORY.md";
   entries = "memory-entries";
-  pointer = "../${entries}/<type>/<name>.md";
+  layout  = "4___ASSETS___/4.2.Config/layout.json";
+  pointer = "../${entries}/<repo>/<child>/<type>_<name>.md";
   types   = [ "feedback" "project" "reference" "user" ];
 
   typesStr = builtins.concatStringsSep " " types;
@@ -79,32 +92,33 @@ let
     ""
     "  ${dir}/${index}"
     "      the index — one pointer line per entry. READ THIS FIRST, every session."
-    "  ${dir}/${entries}/<type>/<name>.md"
-    "      the entries, where <type> is one of: ${typesStr}"
-    "      Pointers in the index are relative to the index's own directory:"
-    "      `${pointer}` means the path above."
-    "      Read one ONLY when it is relevant to the task in front of you."
+    "  ${dir}/${entries}/<repo>/<child>/<type>_<name>.md"
+    "      the entries: <repo> a repo under ~/git, <child> a container / apk /"
+    "      project in it (`_repo` = whole repo), <type> one of: ${typesStr}"
+    "      Index pointers are relative to the index's directory: `${pointer}`"
+    "      means the path above. Read one ONLY when relevant to your task."
     ""
-    "NEVER bulk-read the entries directory. It is ~170 files; loading it costs"
-    "more than the whole task. The index exists so that you do not have to."
+    "NEVER bulk-read the entries directory: ~170 files, more than the whole task."
+    "The index exists so that you do not have to."
     ""
     "To record something worth keeping:"
-    "  1. Write the entry to ${entries}/<type>/<name>.md under the path above."
+    "  1. Write ${entries}/<repo>/<child>/<type>_<name>.md under the path above."
+    "     <type> is a file-name PREFIX, never a directory (a real"
+    "     ${entries}/<type>/ fails the layout guard). A new <repo> or <child> is"
+    "     first declared in the memory repo's ${layout} \"memory\" AND created."
     "  2. Add ONE line to ${index}: `- [Title](${pointer}) — the hook`."
     "  3. NEVER put entry content in the index — it is paid for on every session."
     "  4. NEVER put anything else in memory/ — above all no subdirectory, and"
     "     never move the entries into one. Claude Code auto-loads every .md under a"
     "     subdirectory of the index's directory: that layout took session"
-    "     preload from ~4.5k to ~87k tokens when it was tried, on every session"
-    "     on the box, and it looks like nothing is wrong."
-    "  5. Update an existing entry covering the same fact rather than adding a"
-    "     near-duplicate."
+    "     preload from ~4.5k to ~87k tokens when it was tried."
+    "  5. Update an existing entry for the same fact rather than adding a copy."
     ""
-    "An entry reflects what was true when it was written. If one names a file,"
-    "flag or container, VERIFY it still exists before acting on it."
+    "An entry may be stale. If it names a file, flag or container, VERIFY it still"
+    "exists before acting on it."
     ""
-    "If the index above cannot be read, SAY SO: you are running WITHOUT recall,"
-    "and that is a different thing from having nothing to remember."
+    "If the index cannot be read, SAY SO: you are running WITHOUT recall, which is"
+    "not the same as having nothing to remember."
   ];
 
   # Same shape, same reason, as engine.nix's git_tree_mount guard: a stale

@@ -174,6 +174,20 @@ check("X3 the briefing teaches exactly that pointer for new entries",
 check("X4 the entries are NOT under the index's directory",
   !base.entries.startsWith(`${posix.dirname(base.index)}/`) && base.entries !== posix.dirname(base.index));
 
+// ── Y: entries are filed BY REPO (#546), the layout guard's shape ───────────
+// b_projects/<repo>/<child>/<type>_<name>.md, reached through the per-repo
+// symlinks of <home>/memory-entries/. The first pass taught
+// memory-entries/<type>/<name>.md; an agent following it writes a real
+// memory-entries/<type>/ directory and check-memory-layout.sh M6 goes RED.
+check("Y1 the taught pointer is <repo>/<child>/<type>_<name>.md",
+  base.pointer === "../memory-entries/<repo>/<child>/<type>_<name>.md", base.pointer);
+check("Y2 the briefing teaches NO by-type directory",
+  !/<type>\/<name>/.test(base.briefing) && /file-name PREFIX, never a directory/.test(base.briefing),
+  "an agent taught memory-entries/<type>/ creates the directory M6 rejects");
+check("Y3 the briefing names where a new repo/child is declared",
+  /4\.2\.Config\/layout\.json/.test(base.briefing) && /AND created/.test(base.briefing),
+  "the guard fails on a repo or child declared on only one side");
+
 // ── R: every agent container is actually reached ─────────────────────────────
 // Derived, not a literal roster: every container declaring agent.git_tree gets
 // the env, so the set this covers cannot silently stop matching the fleet.

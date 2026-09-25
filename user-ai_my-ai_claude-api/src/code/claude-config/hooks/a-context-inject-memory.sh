@@ -34,7 +34,7 @@
 # entries. Every agent that ever ran here started with zero recall, and nothing
 # said so, because the hook's own name made it look handled.
 #
-# ONLY the index is injected. Entries under memory-entries/<type>/ are read on
+# ONLY the index is injected. Entries under memory-entries/<repo>/<child>/ are read on
 # demand with the Read tool, never preloaded — a layout where the entry
 # directory auto-loads has already turned a 4.5k-token preload into 87k once.
 #
@@ -63,19 +63,23 @@ else
   echo "## MEMORY INDEX (loaded from ${_mem_dir}/${_mem_index})"
   echo
   echo "This is an INDEX, not the memory itself. Scan it, then Read"
-  echo "\`${_mem_dir}/${_mem_entries}/<type>/<name>.md\` only when an entry is"
+  echo "\`${_mem_dir}/${_mem_entries}/<repo>/<child>/<type>_<name>.md\` only when an entry is"
   echo "relevant to the task in front of you. Never bulk-read the entries."
   echo "Pointers below are relative to the index's own directory, so"
-  echo "\`../${_mem_entries}/<type>/<name>.md\` means \`${_mem_dir}/${_mem_entries}/<type>/<name>.md\`."
+  echo "\`../${_mem_entries}/<repo>/<child>/<type>_<name>.md\` means"
+  echo "\`${_mem_dir}/${_mem_entries}/<repo>/<child>/<type>_<name>.md\`."
   echo
   cat "${_mem_dir}/${_mem_index}"
   echo
   echo "### WRITING A NEW MEMORY"
   echo
-  echo "1. Write the entry to \`${_mem_dir}/${_mem_entries}/<type>/<name>.md\`"
-  echo "   where <type> is one of: ${_mem_types}"
+  echo "1. Write the entry to \`${_mem_dir}/${_mem_entries}/<repo>/<child>/<type>_<name>.md\`"
+  echo "   <repo> is a repo under ~/git, <child> a container / apk / project in it"
+  echo "   (\`_repo\` = the whole repo), <type> one of: ${_mem_types} — a file-name"
+  echo "   PREFIX, never a directory. A new <repo> or <child> must first be declared in the"
+  echo "   memory repo's 4___ASSETS___/4.2.Config/layout.json \"memory\" AND created on disk."
   echo "2. Add ONE line to \`${_mem_dir}/${_mem_index}\`:"
-  echo "   \`- [Title](../${_mem_entries}/<type>/<name>.md) — hook\` (relative to the index)"
+  echo "   \`- [Title](../${_mem_entries}/<repo>/<child>/<type>_<name>.md) — hook\` (relative to the index)"
   echo "3. NEVER put entry content in the index — it is paid for on every session."
   echo "   NEVER put any other file or subdirectory beside the index: everything"
   echo "   under a subdirectory there is auto-loaded (~4.5k -> ~87k tokens, measured)."
