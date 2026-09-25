@@ -32,10 +32,10 @@ in
         # entry under an agent's /tmp must have gone untouched before it counts
         # as scrap. AGENT_CONTAINERS is the allow-list; keep it in sync with the
         # agent fleet.
-        SCHEDULE         = "\\${SCHEDULE:-0 */2 * * *}";
-        STALE_MINUTES    = "\\${STALE_MINUTES:-180}";
-        SCRUB_ROOT       = "\\${SCRUB_ROOT:-/tmp}";
-        AGENT_CONTAINERS = "\\${AGENT_CONTAINERS:-hermes-agent my-ai-api my-ai_claude-api kg-store kg-store-pub session-memory cloud-cgc-pub-mcp}";
+        SCHEDULE         = "\${SCHEDULE:-0 */2 * * *}";
+        STALE_MINUTES    = "\${STALE_MINUTES:-180}";
+        SCRUB_ROOT       = "\${SCRUB_ROOT:-/tmp}";
+        AGENT_CONTAINERS = "\${AGENT_CONTAINERS:-hermes-agent my-ai-api my-ai_claude-api kg-store kg-store-pub session-memory cloud-cgc-pub-mcp}";
       };
       # Read-only host docker socket so the reaper can `docker exec` into the
       # agent containers and clean the /tmp that lives in their writable layers.

@@ -2631,7 +2631,7 @@ export class JMAPClient implements IJMAPClient {
 
       const sort = [{ property: "receivedAt", isAscending: false }];
       const viewKey = emailQueryViewKey(targetAccountId, filter, sort, limit);
-      const query = (page: QueryPage) => this.request([
+      const runQuery = (page: QueryPage) => this.request([
         ["Email/query", {
           accountId: targetAccountId,
           filter,
@@ -2649,9 +2649,9 @@ export class JMAPClient implements IJMAPClient {
 
       // Anchored paging (see pageFor): search results shift under the same
       // arrivals and deletions a folder does.
-      let response = await query(this.pageAnchors.pageFor(viewKey, position));
+      let response = await runQuery(this.pageAnchors.pageFor(viewKey, position));
       if (queryErrorType(response) === "anchorNotFound") {
-        response = await query(this.pageAnchors.forget(viewKey, position));
+        response = await runQuery(this.pageAnchors.forget(viewKey, position));
       }
 
       const queryResponse = response.methodResponses?.[0]?.[1];
