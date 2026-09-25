@@ -30,7 +30,15 @@
   "deploy": {
     "host": "oci-analytics",
     "remote_path": "/opt/containers/c3-public-api",
-    "compose_flags": "--build"
+    "compose_flags": "--build",
+    "host_sync": {
+      "_doc": "#586 Vault files the ship copies to a host path OUTSIDE remote_path, for a bind mount compose.nix declares from this same entry (engine: cloud-infra cloud-ship-container-step-deploy-rsync.sh step_host_sync). Before this nothing put the profile bundle on oci-analytics: docker pre-created the mount source as an empty root-owned stub and Profile > Connect served an empty bundle dir since #566 while every ship went green. Only the listed files travel; the vault never lands on this public-edge VM. Missing source = the ship FAILS, never skips.",
+      "profile_bundle": {
+        "vault_dir": "E0_configs",
+        "host_dir": "/home/ubuntu/git/cloud-vault/E0_configs",
+        "files": ["profile-secrets.json", "schema.json"]
+      }
+    }
   },
   "proxy": {
     "_doc": "Mixed-auth service. Default for base_path = Bearer-gated via introspect-proxy (same as c3-infra-api write routes). The /health, /ready, /analytics/* sub-paths are public — declared via the engine-supported public_paths[] array (9_others/src/engine/cloud-data-config-derive.ts:507 → caddyfile.nix:432 emits a pre-auth `handle <pp>` block per entry that strip_prefix base_path then reverse_proxy upstream).",
@@ -98,14 +106,13 @@
     "default_user_env": "SMTP_USER"
   },
   "profile_connect": {
-    "_doc": "Superapp Configs>Profile>Connect (#566). POST /profile/connect/start mails a one-time code to mail_to over the same maddy:25 delivery as /mail/http-to-smtp; POST /profile/connect/fetch {code} decrypts cloud-vault configs/<bundle_file> at request time with the server's own age key and returns {schema, bundle}. Bearer (Caddy mkProtected + in-app X-Auth-User check) AND the mailed code are both required. Nothing here is a secret: the age key (a single AGE-SECRET-KEY-1 line) arrives from src/secrets.yaml under the name age_key_secret, through env_file .secrets (a non-agent service gets no /run/secrets mount, #359).",
+    "_doc": "Superapp Configs>Profile>Connect (#566). POST /profile/connect/start mails a one-time code to mail_to over the same maddy:25 delivery as /mail/http-to-smtp; POST /profile/connect/fetch {code} decrypts cloud-vault E0_configs/<bundle_file> at request time with the server's own age key and returns {schema, bundle}. Bearer (Caddy mkProtected + in-app X-Auth-User check) AND the mailed code are both required. Nothing here is a secret: the age key (a single AGE-SECRET-KEY-1 line) arrives from src/secrets.yaml under the name age_key_secret, through env_file .secrets (a non-agent service gets no /run/secrets mount, #359).",
     "mail_to": "me@diegonmarcos.com",
     "mail_from": "superapp-connect@diegonmarcos.com",
     "code_ttl_s": 600,
     "resend_cooldown_s": 60,
     "max_attempts": 5,
-    "_doc_bundle": "bundle_host_dir is the cloud-vault configs/ directory ON oci-analytics, mounted read-only at bundle_mount. It holds only sops ciphertext (configs/profile-secrets.json) and the schema.",
-    "bundle_host_dir": "/home/ubuntu/git/cloud-vault/configs",
+    "_doc_bundle": "The bundle dir on oci-analytics is deploy.host_sync.profile_bundle.host_dir (#586: cloud-vault E0_configs/, was configs/): the ONE declaration compose.nix mounts read-only at bundle_mount and the engine fills. bundle_file and schema_file name the files inside that mount; test-profile-connect.ts F5 pins that host_sync ships exactly them.",
     "bundle_mount": "/profile-bundle",
     "bundle_file": "profile-secrets.json",
     "schema_file": "schema.json",
