@@ -86,7 +86,16 @@ check("R4 recalled entries are flagged as possibly stale",
 // write new pointers the same way, or it invents a second convention.
 check("X1 the hook states pointers are relative to the index's directory",
   /relative to the index's own directory/.test(hook)
-  && /\.\.\/\$\{_mem_entries\}\/<type>\/<name>\.md/.test(hook));
+  && /\.\.\/\$\{_mem_entries\}\/<repo>\/<child>\/<type>_<name>\.md/.test(hook));
+// #546 moved the entries BY REPO; <home>/memory-entries/ is now a view of one
+// symlink per repo. The by-type form this hook first taught would write a real
+// memory-entries/<type>/ directory, which check-memory-layout.sh M6 fails RED.
+check("X3 the hook teaches NO by-type entries directory (memory-entries/<type>/)",
+  !/_mem_entries\}\/<type>\//.test(hook) && !/memory-entries\/<type>\//.test(hook),
+  "entries are filed b_projects/<repo>/<child>/<type>_<name>.md; <type> is a file-name prefix");
+check("X4 the hook says a new repo/child is declared in layout.json AND created",
+  /layout\.json/.test(hook) && /AND created on disk/.test(hook),
+  "the layout guard fails on a repo or child declared on only one side");
 check("X2 the hook forbids any other file or subdirectory beside the index",
   /NEVER put any other file or subdirectory beside the index/.test(hook));
 // Claude Code's NATIVE auto-memory is a second, private store at
