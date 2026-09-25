@@ -34,7 +34,10 @@
       "termux-share": { "wg_ip": "10.1.0.10", "wg_ipv6": "fd0c:1d01::10", "role": "client",
                         "_doc": "Shareable wg-public credential held on Diego's phone. Separate keypair from 'termux' (vault dir termux-share-public/) so rotating/revoking this one doesn't affect personal admin access. Designed for handout: someone gets ONLY wg-public access (10.1.0.0/24), never wg0." },
       "health-runner": { "wg_ip": "10.1.0.11", "wg_ipv6": "fd0c:1d01::11", "role": "client",
-                        "_doc": "URL-health prober (cloud-data reports container in GHA). Joins wg-public as a spoke so it can probe hub-bound services (e.g. cf-worker-bridge on 10.1.0.1:8092) — its wg0 identity (gha-runner, 10.0.0.200) only routes 10.0.0.0/24. Keypair: vault dir health-runner-public/; private key mirrored to the cloud-data repo GHA secret WG_PUBLIC_PRIVATE_KEY consumed by reports/entrypoint.sh wg1 block." }
+                        "_doc": "URL-health prober (cloud-data reports container in GHA). Joins wg-public as a spoke so it can probe hub-bound services (e.g. cf-worker-bridge on 10.1.0.1:8092) — its wg0 identity (gha-runner, 10.0.0.200) only routes 10.0.0.0/24. Keypair: vault dir health-runner-public/; private key mirrored to the cloud-data repo GHA secret WG_PUBLIC_PRIVATE_KEY consumed by reports/entrypoint.sh wg1 block." },
+      "samsung-a37":  { "wg_ip": "10.1.0.12", "wg_ipv6": "fd0c:1d01::12", "role": "client",
+                        "_doc": "#582 Diego's second phone (Samsung Galaxy A37), declared exactly like 'termux' (the S21+): same X25519 identity as its wg0 row (config.json native.wireguard.clients.samsung-a37), vault dir samsung-a37-public/ mirrors the pubkey from samsung-a37/. Its four wg-quick profiles are derived from these two rows by cloud-vault A0_keys/providers/wireguard/derive-phone-profiles.py.",
+                        "extra_allowed_ips": ["10.0.0.10/32"] }
     }
   }
 }
