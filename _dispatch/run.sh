@@ -50,6 +50,12 @@ ENGINE=$1
 SLOT=$2
 PROMPT=$3
 LOG=$4
+# #510 fix: LOG (and everything derived from it — .raw, .preflight, .outer) must survive the
+# later `cd _work/$SLOT`. A relative logs/ path resolved post-cd lands in the worktree, the
+# preflight redirect fails (rc=2), and the auth guard misreads its own broken pen as a dead
+# login — four slots refused on 2026-09-25 with auth fully alive. Absolutize at entry.
+case "$LOG" in /*) ;; *) LOG=$PWD/$LOG ;; esac
+mkdir -p "$(dirname "$LOG")"
 MODEL=${5:-sonnet}
 
 echo "=== $ENGINE $SLOT START $(date -u +%FT%TZ)"
