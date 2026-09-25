@@ -36,8 +36,9 @@
       "health-runner": { "wg_ip": "10.1.0.11", "wg_ipv6": "fd0c:1d01::11", "role": "client",
                         "_doc": "URL-health prober (cloud-data reports container in GHA). Joins wg-public as a spoke so it can probe hub-bound services (e.g. cf-worker-bridge on 10.1.0.1:8092) — its wg0 identity (gha-runner, 10.0.0.200) only routes 10.0.0.0/24. Keypair: vault dir health-runner-public/; private key mirrored to the cloud-data repo GHA secret WG_PUBLIC_PRIVATE_KEY consumed by reports/entrypoint.sh wg1 block." },
       "samsung-a37":  { "wg_ip": "10.1.0.12", "wg_ipv6": "fd0c:1d01::12", "role": "client",
-                        "_doc": "#582 Diego's second phone (Samsung Galaxy A37), declared exactly like 'termux' (the S21+): same X25519 identity as its wg0 row (config.json native.wireguard.clients.samsung-a37), vault dir samsung-a37-public/ mirrors the pubkey from samsung-a37/. Its four wg-quick profiles are derived from these two rows by cloud-vault A0_keys/providers/wireguard/derive-phone-profiles.py.",
-                        "extra_allowed_ips": ["10.0.0.10/32"] }
+                        "_doc": "#582 Diego's second phone (Samsung Galaxy A37), declared exactly like 'termux' (the S21+): same X25519 identity as its wg0 row (config.json native.wireguard.clients.samsung-a37), vault dir samsung-a37-public/ mirrors the pubkey from samsung-a37/. Its four wg-quick profiles are derived from these two rows by cloud-vault A0_keys/providers/wireguard/derive-phone-profiles.py. The public key is carried here as well (as on its wg0 row) because CI has no vault checkout when it derives, and a client whose key the consolidator cannot see is emitted with wg_public_key null and left out of the hub's [Peer] blocks.",
+                        "extra_allowed_ips": ["10.0.0.10/32"],
+                        "wg_public_key": "QGsfrpC4acH0YRSyO5y1SiU+Du26glI9B3V8KwkTuz8=" }
     }
   }
 }
