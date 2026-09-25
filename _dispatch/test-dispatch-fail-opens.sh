@@ -8,7 +8,7 @@
 #   90 auth expired (2026-09-24: seven agents, rc=1, ~190-byte logs, 9s each)
 #   90 session limit already hit at pre-flight
 #   89 brief unreadable (2026-09-24: uid 1001 mode 0600 briefs, agents exited rc=0)
-#   88 ended awaiting a wakeup (slot 498/500)   87 session limit mid-run (#508)
+#   88 ended awaiting a wakeup (slots 498/500, #562 first run)   87 session limit mid-run (#508)
 #   86 goose max-turns marker (wave-3 slot 444)
 # and, for prep.sh (#487 worktree conversion): the workspace is a detached worktree on the
 # SOURCE's object store — a .git FILE, kilobytes, nothing hardlinked or copied (#558) — its
@@ -102,6 +102,8 @@ ck "(b) unreadable brief refused for goose too"         "$(run goose b2)" "rc=89
 chmod 0644 "$BRIEF"
 MAIN_OUT="I'll pause here and wait for the CI polling task to complete or the scheduled wakeup to fire."
 ck "awaited wakeup (slot 498): rc 88"                   "$(run claude w1)" "rc=88 calls=2"
+MAIN_OUT="CI is still running on 56f57e334. The poller will wake me when it finishes."
+ck "awaited wakeup, #562's first run (no wait/wakeup/polling words): rc 88" "$(run claude w2)" "rc=88 calls=2"
 MAIN_OUT="Claude AI usage limit reached|1790000000"
 ck "session limit mid-run (#508): rc 87"                "$(run claude s1)" "rc=87 calls=2"
 MAIN_OUT="I've reached the maximum number of actions I can do without user input"
