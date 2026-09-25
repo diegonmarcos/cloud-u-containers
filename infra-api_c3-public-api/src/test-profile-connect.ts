@@ -41,6 +41,8 @@ const t = (name: string, fn: () => void) => {
 
 const bj = JSON.parse(readFileSync("../build.json", "utf8"));
 const pc = bj.profile_connect;
+const hs = bj.deploy?.host_sync?.profile_bundle;
+assert.ok(hs && typeof hs === "object", "build.json has no deploy.host_sync.profile_bundle — nothing would put the bundle on the VM (#586)");
 assert.ok(pc && typeof pc === "object", "build.json has no profile_connect block");
 
 // ── A. identity ────────────────────────────────────────────────────────────
@@ -167,11 +169,11 @@ try {
     const server = mint();
     const other = mint();
 
-    // A bundle shaped like cloud-vault configs/profile-secrets.json: nested,
+    // A bundle shaped like cloud-vault E0_configs/profile-secrets.json: nested,
     // with the keyless-readable root keys the emitter leaves in clear.
     const plain = {
       schema_version: 1,
-      _generated: { by: "configs/emit.py", tree_sha256: "x" },
+      _generated: { by: "E0_configs/emit.py", tree_sha256: "x" },
       mesh: { profiles: { "wg-v4-full": "[Interface]\nPrivateKey = k\n" } },
       about: { name: "N", phone: { pending: true, source: "s", reason: "r" } },
       autocomplete: { lists: ["Personal Data", "Cloud Keys"] },
@@ -275,7 +277,7 @@ if (haveNix) {
   t("F2 the key is passed by NAME only — no key material in the rendered compose", () =>
     assert.ok(!JSON.stringify(svc).includes("AGE-SECRET-KEY"), "age key material in compose"));
   t("F3 the bundle dir is mounted READ-ONLY at the declared mount, sops beside it", () => {
-    assert.ok(vols.includes(`${pc.bundle_host_dir}:${pc.bundle_mount}:ro`), vols.join(" | "));
+    assert.ok(vols.includes(`${hs.host_dir}:${pc.bundle_mount}:ro`), vols.join(" | "));
     assert.ok(vols.includes(`${pc.host_nix_profile_bin}:${pc.nix_bin_mount}:ro`), vols.join(" | "));
     assert.ok(vols.includes("/nix/store:/nix/store:ro"), vols.join(" | "));
   });
@@ -284,7 +286,11 @@ if (haveNix) {
     assert.equal(m.environment.PROFILE_CONNECT_MAIL_TO, "mutant@example.invalid");
     assert.equal(m.environment.PROFILE_CONNECT_BUNDLE_DIR, "/mutant");
     assert.equal(m.environment.PROFILE_CONNECT_MAX_ATTEMPTS, "97");
-    assert.ok((m.volumes as string[]).includes(`${pc.bundle_host_dir}:/mutant:ro`));
+    assert.ok((m.volumes as string[]).includes(`${hs.host_dir}:/mutant:ro`));
+  });
+  t("F5 host_sync ships exactly the files the app reads from the mount (#586)", () => {
+    assert.deepEqual([...hs.files].sort(), [pc.bundle_file, pc.schema_file].sort(), JSON.stringify(hs.files));
+    assert.ok(hs.host_dir.endsWith(`/${hs.vault_dir}`), `${hs.host_dir} does not end in /${hs.vault_dir}`);
   });
 }
 

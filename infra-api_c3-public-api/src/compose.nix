@@ -88,8 +88,9 @@ in
         PROFILE_CONNECT_SOPS_BIN = "${pc.nix_bin_mount}/sops";
       };
       volumes = [
-        # Ciphertext + schema only; read-only.
-        "${pc.bundle_host_dir}:${pc.bundle_mount}:ro"
+        # Ciphertext + schema only; read-only. The source is the SAME entry the
+        # ship's step_host_sync fills (#586) — one declaration, no drift.
+        "${buildJson.deploy.host_sync.profile_bundle.host_dir}:${pc.bundle_mount}:ro"
         # sops from the host nix profile (the c3-infra-api pattern): the
         # profile's bin/ is symlinks into /nix/store, so both are mounted.
         "/nix/store:/nix/store:ro"
