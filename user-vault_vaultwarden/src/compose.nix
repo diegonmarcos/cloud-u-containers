@@ -32,7 +32,7 @@ in
         ROCKET_ADDRESS      = svc.vaultwarden.ip;           # bind to WG IP
         ROCKET_PORT         = toString buildJson.ports.app;
         DOMAIN              = "https://${buildJson.domain}";
-        SIGNUPS_ALLOWED     = "true";
+        SIGNUPS_ALLOWED     = "false";
         INVITATIONS_ALLOWED = "true";
         SHOW_PASSWORD_HINT  = "false";
         WEBSOCKET_ENABLED   = "true";

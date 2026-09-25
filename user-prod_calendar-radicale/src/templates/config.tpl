@@ -3,7 +3,7 @@ hosts = 0.0.0.0:@APP_PORT@
 
 [auth]
 type = imap
-imap_host = @MADDY_IP@:@MADDY_IMAP_PORT@
+imap_host = @IMAP_HOST@:@IMAP_PORT@
 imap_security = tls
 
 [storage]
