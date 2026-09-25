@@ -335,6 +335,9 @@ let
   gitTreeOwnerUid   = "10001";
   gitTreeOwnerGid   = "999";
   gitTreeRepairKey  = "git-tree-owner-repair";
+  # uid AND gid: the ticket's contract is 10001:999, and a path that is 10001:0
+  # was passing a uid-only check while still being group-unwritable.
+  gitTreeWrong      = "\\( ! -uid ${gitTreeOwnerUid} -o ! -gid ${gitTreeOwnerGid} \\)";
   gitTreeRepairSvc = {
     # busybox is multi-arch and ~4MB; find/xargs/chown is all this needs.
     image   = "busybox:1.37";
@@ -357,10 +360,10 @@ let
       # test-git-tree-owner-repair.mjs now fails on any unescaped `$` here.
       (lib.concatStringsSep "\n" [
         "set -eu"
-        "bad=$$(find /git-tree ! -uid ${gitTreeOwnerUid} 2>/dev/null | wc -l)"
-        "find /git-tree ! -uid ${gitTreeOwnerUid} -print0 2>/dev/null | xargs -0 -r chown ${gitTreeOwnerUid}:${gitTreeOwnerGid} 2>/dev/null || true"
-        "left=$$(find /git-tree ! -uid ${gitTreeOwnerUid} 2>/dev/null | wc -l)"
-        "echo \"[git-tree-repair] paths not owned by ${gitTreeOwnerUid}: before=$$bad after=$$left\""
+        "bad=$$(find /git-tree ${gitTreeWrong} 2>/dev/null | wc -l)"
+        "find /git-tree ${gitTreeWrong} -print0 2>/dev/null | xargs -0 -r chown ${gitTreeOwnerUid}:${gitTreeOwnerGid} 2>/dev/null || true"
+        "left=$$(find /git-tree ${gitTreeWrong} 2>/dev/null | wc -l)"
+        "echo \"[git-tree-repair] paths not owned by ${gitTreeOwnerUid}:${gitTreeOwnerGid}: before=$$bad after=$$left\""
         # Loud, not silent: the deploy log is the only place anyone sees this.
         "[ \"$$left\" -eq 0 ] || { echo \"[git-tree-repair] ERROR: $$left path(s) still wrong — agents would fail to commit\" >&2; exit 1; }"
       ])
