@@ -160,8 +160,14 @@ case "$ENGINE" in
     # and the noun are matched with a gap between them, and "notify me" — the other half of the
     # same false belief, that something will call back — is matched in its own right.
     TAIL=$(tail -c 400 "$OUT" 2>/dev/null | tr '\n' ' ')
-    if echo "$TAIL" | grep -qiE '(pause|wait|stand(s|ing)? by|check back|will continue)' \
-       && echo "$TAIL" | grep -qiE 'wakeup|wake-up|re-invok|next turn|resumed later|notif(y|ies) me|(background|polling|scheduled|async)[^.]{0,40}(task|job|run|watch)'; then
+    #
+    # WIDENED AGAIN after #562's first run walked through this guard too. It ended:
+    #   "CI is still running on 56f57e334. The poller will wake me ..."
+    # No "pause"/"wait" and no "wakeup"/"polling" — the promise is "wakes me" and the mechanism
+    # is a "poller". Same false belief, third spelling. "wakes? me" and "poller" now count on their
+    # own side of the pair; a report that merely mentions a poller still needs a promise beside it.
+    if echo "$TAIL" | grep -qiE '(pause|wait|stand(s|ing)? by|check back|will continue|wakes? me)' \
+       && echo "$TAIL" | grep -qiE 'wakeup|wake-up|wakes? me|poller|re-invok|next turn|resumed later|notif(y|ies) me|(background|polling|scheduled|async)[^.]{0,40}(task|job|run|watch)'; then
       echo
       echo "################################################################"
       echo "##  ENDED AWAITING A WAKEUP THAT NEVER FIRES — claude $SLOT (rc=$RC, ${SZ} bytes)"
