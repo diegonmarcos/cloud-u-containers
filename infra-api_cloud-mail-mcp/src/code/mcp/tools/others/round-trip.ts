@@ -52,6 +52,7 @@ import { getServer, getAccount, DOMAIN } from "../../shared/config.js";
 const DEADLINE_MILLISECONDS = 180_000;
 const POLL_MILLISECONDS = 15_000;
 const SWEEP_LOOKBACK_MILLISECONDS = 7 * 86_400_000;
+const POLL_LOOKBACK_MILLISECONDS = 2 * 86_400_000;
 // Stalwart stamps receivedAt with its own clock; start the poll window a few
 // minutes before the send so clock skew between the VMs cannot hide the message.
 const CLOCK_SKEW_MILLISECONDS = 300_000;
@@ -88,16 +89,25 @@ async function awaitAndRemove<T extends { messageId: string }>(
 }
 
 // Folder rules move mail at delivery time, so the message can be in any
-// mailbox. The header search narrows, the fetched envelope decides.
-async function maddyTestMessages(client: ImapFlow): Promise<{ path: string; uid: number; messageId: string }[]> {
-  const since = new Date(Date.now() - SWEEP_LOOKBACK_MILLISECONDS);
+// mailbox: every selectable one is walked and the fetched envelope decides.
+// The search is SINCE only. A HEADER Message-ID search makes maddy scan every
+// message body: on the 11.7k-message INBOX it ran past withImap's 60s
+// socketTimeout, imapflow emitted an unhandled 'error' and node died with a
+// stack trace (#581) — the probe never reached a verdict. SINCE alone answers
+// in seconds; the poll uses a two-day window (SINCE is date-granular, and the
+// extra day absorbs a send near midnight), the removal sweep the full lookback.
+async function maddyTestMessages(client: ImapFlow, lookbackMilliseconds: number): Promise<{ path: string; uid: number; messageId: string }[]> {
+  const since = new Date(Date.now() - lookbackMilliseconds);
   const found: { path: string; uid: number; messageId: string }[] = [];
   for (const box of await client.list()) {
     if (box.flags?.has("\\Noselect")) continue;
     const lock = await client.getMailboxLock(box.path);
     try {
-      const uids = await client.search({ since, header: { "message-id": TEST_DOMAIN } }, { uid: true });
-      if (!Array.isArray(uids) || uids.length === 0) continue;
+      const uids = await client.search({ since }, { uid: true });
+      // A closed connection makes imapflow answer `false`, not throw: reading
+      // that as "no mail" would report a dead read as "not received".
+      if (!Array.isArray(uids)) throw new Error(`IMAP SEARCH returned no result set for ${box.path}`);
+      if (uids.length === 0) continue;
       for await (const message of client.fetch(uids, { uid: true, envelope: true }, { uid: true })) {
         const id = message.envelope?.messageId;
         if (id && isTestMessage(id)) found.push({ path: box.path, uid: message.uid, messageId: bare(id) });
@@ -111,10 +121,12 @@ async function maddyTestMessages(client: ImapFlow): Promise<{ path: string; uid:
 
 function maddyRoundTrip(messageId: string, sentAt: number): Promise<StoreResult> {
   return withImap("maddy", "me", (client) =>
-    awaitAndRemove(messageId, sentAt, () => maddyTestMessages(client), async (found) => {
+    awaitAndRemove(messageId, sentAt, () => maddyTestMessages(client, POLL_LOOKBACK_MILLISECONDS), async () => {
+      // Sweep the full lookback so copies earlier failed runs left are taken too.
+      const leftovers = await maddyTestMessages(client, SWEEP_LOOKBACK_MILLISECONDS);
       let removed = 0;
-      for (const path of new Set(found.map((message) => message.path))) {
-        const uids = found.filter((message) => message.path === path).map((message) => message.uid);
+      for (const path of new Set(leftovers.map((message) => message.path))) {
+        const uids = leftovers.filter((message) => message.path === path).map((message) => message.uid);
         const lock = await client.getMailboxLock(path);
         try {
           if (await client.messageDelete(uids, { uid: true })) removed += uids.length;
