@@ -14,10 +14,11 @@
     "arch": "arm64",
     "native_build": {
       "type": "image-wrapper",
-      "cmd": "apk add --no-cache bash docker-cli tzdata && chmod +x /usr/local/bin/entrypoint.sh",
-      "entrypoint": "/usr/local/bin/entrypoint.sh",
+      "cmd": "apk add --no-cache bash docker-cli tzdata && chmod +x /app/entrypoint.sh",
+      "entrypoint": "/app/entrypoint.sh",
       "base_image": "alpine:3.19",
-      "app_dir": "code"
+      "app_dir": "code",
+      "user": "root"
     }
   },
   "containers": {
