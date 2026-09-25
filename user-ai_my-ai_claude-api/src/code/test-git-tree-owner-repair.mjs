@@ -71,6 +71,13 @@ check("R5 the owner uid is 10001 (the uid that owns the tree)",
     `${bare.length} bare $ found — compose will blank them and the repair exits 1, blocking every agent`);
 }
 
+// R7 — the check is uid AND gid. A uid-only find let 10001:0 paths read as repaired.
+check("R7 the wrong-owner predicate tests both uid and gid, and every find uses it",
+  /gitTreeWrong\s*=\s*"[^"]*-uid \$\{gitTreeOwnerUid\}[^"]*-o[^"]*-gid \$\{gitTreeOwnerGid\}/.test(engine)
+  && (engine.match(/find \/git-tree \$\{gitTreeWrong\}/g) || []).length === 3
+  && !/find \/git-tree ! -uid/.test(engine),
+  "a find in the repair still checks uid only");
+
 // ── F: fail-closed. A partial repair must not read as success ───────────────
 // This is the whole lesson of the ticket: the original defect was invisible
 // because a failure to write reported as a success.
@@ -79,7 +86,7 @@ check("F1 the repair exits non-zero if any path is still wrong",
   "the repair can finish with paths still mis-owned and still exit 0");
 
 check("F2 the repair reports before/after counts to the deploy log",
-  /paths not owned by \$\{gitTreeOwnerUid\}: before=\$\$bad after=\$\$left/.test(engine),
+  /paths not owned by \$\{gitTreeOwnerUid\}:\$\{gitTreeOwnerGid\}: before=\$\$bad after=\$\$left/.test(engine),
   "no before/after line — the deploy log would not show whether it did anything");
 
 // ── W: the agents actually wait for it ──────────────────────────────────────
