@@ -86,7 +86,8 @@
         "repo": "cloud-data-my-ai-memory"
       },
       {
-        "repo": "cloud-vault"
+        "repo": "cloud-me_vault",
+        "dir": "cloud-vault"
       },
       {
         "repo": "ffront"
