@@ -2438,7 +2438,7 @@
             "private": true
           },
           "vault": {
-            "upstream": "https://github.com/diegonmarcos/cloud-vault.git",
+            "upstream": "https://github.com/diegonmarcos/cloud-me_vault.git",
             "private": true
           },
           "tools": {

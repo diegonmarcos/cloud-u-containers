@@ -69,9 +69,14 @@ check("F7 diegonmarcos.github.io checks out as front-diegonmarcos (ffront/repos.
 // Including the three that were only ever cloned by hand. Dropping one here
 // would delete it from the tree on the next volume recreate, silently.
 for (const r of ["cloud-infra", "cloud-u-containers", "cloud-u-android", "cloud-u-linux",
-                 "cloud-data", "cloud-data-my-ai-memory", "cloud-vault"]) {
+                 "cloud-data", "cloud-data-my-ai-memory", "cloud-me_vault"]) {
   check(`C:${r} is declared`, names.has(r), `runtime.repos has no "${r}"`);
 }
+// The vault repo was renamed diegonmarcos/cloud-vault -> cloud-me_vault (#592),
+// but everything on the box reads ~/git/cloud-vault, so it keeps that dir.
+const vault = repos.find((r) => r.repo === "cloud-me_vault");
+check("C-vault cloud-me_vault checks out as cloud-vault (dir override)",
+  vault?.dir === "cloud-vault", JSON.stringify(vault));
 check("C8 cloud-infra clones with submodules (a_solutions is empty without it)",
   repos.find((r) => r.repo === "cloud-infra")?.submodules === true);
 
