@@ -72,7 +72,7 @@ in
         SMTP_HOST = primarySvc.ip;
         SMTP_PORT = primaryPort;
         SMTP_HELO_DOMAIN = buildJson.mail.helo_domain;
-        # Profile ▸ Connect: bearer + mailed code → decrypted profile bundle.
+        # Profile ▸ Connect: bearer + mailed code → the plaintext profile bundle (#589).
         PROFILE_CONNECT_MAIL_TO = pc.mail_to;
         PROFILE_CONNECT_MAIL_FROM = pc.mail_from;
         PROFILE_CONNECT_CODE_TTL_S = toString pc.code_ttl_s;
@@ -81,20 +81,11 @@ in
         PROFILE_CONNECT_BUNDLE_DIR = pc.bundle_mount;
         PROFILE_CONNECT_BUNDLE_FILE = pc.bundle_file;
         PROFILE_CONNECT_SCHEMA_FILE = pc.schema_file;
-        # NAME of the env var holding the key. The value arrives from
-        # src/secrets.yaml through env_file .secrets — this service is not an
-        # agent, so the engine gives it no /run/secrets mount (#359).
-        PROFILE_CONNECT_AGE_KEY_ENV = pc.age_key_secret;
-        PROFILE_CONNECT_SOPS_BIN = "${pc.nix_bin_mount}/sops";
       };
       volumes = [
-        # Ciphertext + schema only; read-only. The source is the SAME entry the
-        # ship's step_host_sync fills (#586) — one declaration, no drift.
+        # Bundle (plaintext, #589) + schema only; read-only. The source is the
+        # SAME entry the ship's step_host_sync fills (#586) — one declaration.
         "${buildJson.deploy.host_sync.profile_bundle.host_dir}:${pc.bundle_mount}:ro"
-        # sops from the host nix profile (the c3-infra-api pattern): the
-        # profile's bin/ is symlinks into /nix/store, so both are mounted.
-        "/nix/store:/nix/store:ro"
-        "${pc.host_nix_profile_bin}:${pc.nix_bin_mount}:ro"
       ];
       healthcheck = {
         test = [

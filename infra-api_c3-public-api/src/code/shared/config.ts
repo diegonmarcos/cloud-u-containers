@@ -103,10 +103,6 @@ export function loadConfig(): AppConfig {
     bundleDir: process.env.PROFILE_CONNECT_BUNDLE_DIR ?? "",
     bundleFile: process.env.PROFILE_CONNECT_BUNDLE_FILE ?? "profile-secrets.json",
     schemaFile: process.env.PROFILE_CONNECT_SCHEMA_FILE ?? "schema.json",
-    // PROFILE_CONNECT_AGE_KEY_ENV names the variable (from src/secrets.yaml via
-    // env_file .secrets) that holds the key — the name is data, the key is not.
-    ageKey: (process.env[process.env.PROFILE_CONNECT_AGE_KEY_ENV ?? ""] ?? "").trim(),
-    sopsBin: process.env.PROFILE_CONNECT_SOPS_BIN ?? "",
   };
 
   return {

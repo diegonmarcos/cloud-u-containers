@@ -22,8 +22,8 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import nodemailer from "nodemailer";
 import type { AppConfig } from "../../shared/config.js";
 import {
+  BundleError,
   CodeStore,
-  DecryptError,
   codeMail,
   identity,
   loadBundle,
@@ -108,9 +108,9 @@ export async function registerProfileConnect(app: FastifyInstance, cfg: AppConfi
       req.log.info({ user }, "profile_connect.bundle_served");
       return reply.code(200).type("application/json").send(out);
     } catch (e) {
-      if (e instanceof DecryptError) {
-        req.log.error({ err: e.message }, "profile_connect.decrypt_failed");
-        return reply.code(502).send({ error: "decrypt_failed" });
+      if (e instanceof BundleError) {
+        req.log.error({ err: e.message }, "profile_connect.bundle_unreadable");
+        return reply.code(502).send({ error: "bundle_unreadable", detail: e.message });
       }
       throw e;
     }
