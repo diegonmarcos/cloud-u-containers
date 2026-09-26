@@ -1,7 +1,7 @@
 // Tester: Profile ▸ Connect (#566) — POST /profile/connect/{start,fetch}.
 //
 // Usage (registered in ../build.json#tests, run by per-service-tests.yml):
-//   nix shell nixpkgs#sops nixpkgs#age --command node test-profile-connect.ts
+//   node test-profile-connect.ts
 //
 // What it proves, reading DERIVED values rather than literals written here:
 //   A  identity: no Caddy-stamped X-Auth-User/Remote-User → no identity.
@@ -9,22 +9,22 @@
 //      a code is single-use, bound to the identity that asked, and burns.
 //   C  the mail: goes to build.json's mail_to, carries the code, masks on reply.
 //   D  missingParts names exactly the absent piece, never "ok" by default.
-//   E  REAL sops/age round trip with a throwaway key minted here: the declared
-//      key decrypts; a wrong key fails; an ambient SOPS_AGE_KEY_FILE that WOULD
-//      decrypt is ignored (only the declared identity may be used).
+//   E  the bundle is served AS IS (#589: plaintext in the private vault) — and a
+//      file that is still sops-encrypted is REFUSED, because it is exactly the
+//      file the phone cannot read (#585); no key, no sops anywhere here.
 //   F  compose.nix RENDERED by nix-instantiate carries build.json#profile_connect
-//      (env + read-only bundle mount + sops mount), and re-rendering with a
-//      mutated build.json moves the rendered value — it tracks, not coincides.
+//      (env + read-only bundle mount, no key, no sops mount), and re-rendering
+//      with a mutated build.json moves the rendered value — it tracks, not coincides.
 //
-// Missing sops/age/nix-instantiate FAILS — this tester never skips.
+// Missing nix-instantiate FAILS — this tester never skips.
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  BundleError,
   CodeStore,
-  DecryptError,
   codeMail,
   identity,
   loadBundle,
@@ -145,94 +145,63 @@ t("C2 the reply masks the declared mailbox: first char + domain only", () => {
   if (local.length > 1) assert.ok(!m.includes(local), "local part leaked");
 });
 
-// ── D/E. bundle — real sops + age ──────────────────────────────────────────
+// ── D/E. bundle — served as is, ciphertext refused ─────────────────────────
 const need = (bin: string, args: string[]) => {
   try { execFileSync(bin, args, { stdio: "pipe" }); return true; } catch { return false; }
 };
-const haveSops = need("sops", ["--version"]);
-const haveAge = need("age-keygen", ["--help"]) || need("age", ["--version"]);
-t("E0 sops and age are on PATH (a missing tool fails, it never skips)", () => {
-  assert.ok(haveSops, "sops not on PATH");
-  assert.ok(haveAge, "age not on PATH");
-});
 
 const work = mkdtempSync(join(tmpdir(), "profile-connect-"));
 try {
-  if (haveSops && haveAge) {
-    const sopsBin = execFileSync("sh", ["-c", "command -v sops"], { encoding: "utf8" }).trim();
-    const mint = () => {
-      const out = execFileSync("age-keygen", [], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
-      const secret = out.split("\n").find((l) => l.startsWith("AGE-SECRET-KEY-1"))!;
-      const pub = /public key: (age1[0-9a-z]+)/.exec(out)![1];
-      return { secret, pub };
-    };
-    const server = mint();
-    const other = mint();
+  // A bundle shaped like cloud-vault E0_configs/profile-secrets.json (#589: plaintext).
+  const plain = {
+    schema_version: 1,
+    mesh: { profiles: { "wg-v4-full": "[Interface]\nPrivateKey = k\n" } },
+    about: { name: "N", phone: { pending: true, source: "s", reason: "r" } },
+    autocomplete: { lists: ["Personal Data", "Cloud Keys"] },
+    _generated: { emitter: "E0_configs/emit.py", tree_sha256: "x" },
+  };
+  const schema = { schema_version: 1, sections: [{ id: "mesh", label: "Mesh" }] };
+  writeFileSync(join(work, pc.bundle_file), JSON.stringify(plain));
+  writeFileSync(join(work, pc.schema_file), JSON.stringify(schema));
 
-    // A bundle shaped like cloud-vault E0_configs/profile-secrets.json: nested,
-    // with the keyless-readable root keys the emitter leaves in clear.
-    const plain = {
-      schema_version: 1,
-      _generated: { by: "E0_configs/emit.py", tree_sha256: "x" },
-      mesh: { profiles: { "wg-v4-full": "[Interface]\nPrivateKey = k\n" } },
-      about: { name: "N", phone: { pending: true, source: "s", reason: "r" } },
-      autocomplete: { lists: ["Personal Data", "Cloud Keys"] },
-    };
-    const schema = { schema_version: 1, sections: [{ id: "mesh", label: "Mesh" }] };
-    writeFileSync(join(work, "plain.json"), JSON.stringify(plain));
-    const enc = execFileSync(sopsBin, [
-      "-e", "--age", server.pub, "--unencrypted-regex", "^(schema_version|_generated)$",
-      "--input-type", "json", "--output-type", "json", join(work, "plain.json"),
-    ], { encoding: "utf8", env: { PATH: process.env.PATH ?? "" } });
-    rmSync(join(work, "plain.json"));
-    writeFileSync(join(work, pc.bundle_file), enc);
-    writeFileSync(join(work, pc.schema_file), JSON.stringify(schema));
+  const cfg: ProfileConnectCfg = {
+    mailTo: pc.mail_to, mailFrom: pc.mail_from, codeTtlS: pc.code_ttl_s,
+    resendCooldownS: pc.resend_cooldown_s, maxAttempts: pc.max_attempts,
+    bundleDir: work, bundleFile: pc.bundle_file, schemaFile: pc.schema_file,
+  };
 
-    const cfg: ProfileConnectCfg = {
-      mailTo: pc.mail_to, mailFrom: pc.mail_from, codeTtlS: pc.code_ttl_s,
-      resendCooldownS: pc.resend_cooldown_s, maxAttempts: pc.max_attempts,
-      bundleDir: work, bundleFile: pc.bundle_file, schemaFile: pc.schema_file,
-      ageKey: server.secret, sopsBin,
-    };
-
-    t("E1 the fixture really is ciphertext at rest", () => {
-      assert.ok(enc.includes("ENC[AES256_GCM"), "sops did not encrypt");
-      assert.ok(!enc.includes("PrivateKey = k"), "plaintext leaked into the ciphertext file");
+  t("D1 fully configured → nothing missing", () => assert.deepEqual(missingParts(cfg), []));
+  t("D2 each absent part is named, alone", () => {
+    assert.deepEqual(missingParts({ ...cfg, bundleFile: "absent.json" }), ["bundle"]);
+    assert.deepEqual(missingParts({ ...cfg, schemaFile: "absent.json" }), ["schema"]);
+    assert.deepEqual(missingParts({ ...cfg, mailTo: "" }), ["mail_to"]);
+    assert.deepEqual(missingParts({ ...cfg, bundleDir: "" }), ["bundle", "schema"]);
+  });
+  t("E1 the plaintext bundle is served exactly as written, with the schema beside it", () => {
+    const out = loadBundle(cfg);
+    assert.deepEqual(out.bundle, plain);
+    assert.deepEqual(out.schema, schema);
+  });
+  t("E2 a still-encrypted bundle (sops root) is refused — that file is the #585 silent import", () => {
+    const enc = { ...plain, mesh: { profiles: { "wg-v4-full": "ENC[AES256_GCM,data:AAAA,iv:AAAA,tag:AAAA,type:str]" } },
+      sops: { age: [{ recipient: "age1x", enc: "" }], mac: "ENC[AES256_GCM,data:AAAA,type:str]" } };
+    writeFileSync(join(work, "enc.json"), JSON.stringify(enc));
+    assert.throws(() => loadBundle({ ...cfg, bundleFile: "enc.json" }), (e) => {
+      assert.ok(e instanceof BundleError, `expected BundleError, got ${(e as Error).constructor.name}`);
+      assert.match((e as Error).message, /sops-encrypted/);
+      return true;
     });
-    t("D1 fully configured → nothing missing", () => assert.deepEqual(missingParts(cfg), []));
-    t("D2 each absent part is named, alone", () => {
-      assert.deepEqual(missingParts({ ...cfg, ageKey: "" }), ["age_key"]);
-      assert.deepEqual(missingParts({ ...cfg, ageKey: "not-a-key" }), ["age_key"]);
-      assert.deepEqual(missingParts({ ...cfg, bundleFile: "absent.json" }), ["bundle"]);
-      assert.deepEqual(missingParts({ ...cfg, schemaFile: "absent.json" }), ["schema"]);
-      assert.deepEqual(missingParts({ ...cfg, sopsBin: join(work, "no-sops") }), ["sops"]);
-      assert.deepEqual(missingParts({ ...cfg, mailTo: "" }), ["mail_to"]);
-      assert.deepEqual(missingParts({ ...cfg, bundleDir: "" }), ["bundle", "schema"]);
-    });
-    t("E2 the declared server key decrypts to exactly the bundle, with the schema beside it", () => {
-      const out = loadBundle(cfg);
-      assert.deepEqual(out.bundle, plain);
-      assert.deepEqual(out.schema, schema);
-    });
-    t("E3 a different key cannot decrypt (DecryptError, no plaintext)", () => {
-      assert.throws(() => loadBundle({ ...cfg, ageKey: other.secret }), (e) => {
-        assert.ok(e instanceof DecryptError, `expected DecryptError, got ${(e as Error).constructor.name}`);
-        assert.ok(!(e as Error).message.includes("PrivateKey = k"), "plaintext in the error");
-        return true;
-      });
-    });
-    t("E4 an ambient SOPS_AGE_KEY_FILE that WOULD decrypt is ignored", () => {
-      const kf = join(work, "ambient-keys.txt");
-      writeFileSync(kf, server.secret + "\n", { mode: 0o600 });
-      const prev = process.env.SOPS_AGE_KEY_FILE;
-      process.env.SOPS_AGE_KEY_FILE = kf;
-      try {
-        assert.throws(() => loadBundle({ ...cfg, ageKey: other.secret }), DecryptError);
-      } finally {
-        if (prev === undefined) delete process.env.SOPS_AGE_KEY_FILE; else process.env.SOPS_AGE_KEY_FILE = prev;
-      }
-    });
-  }
+  });
+  t("E3 a bundle without schema_version, or not JSON, is refused with BundleError", () => {
+    writeFileSync(join(work, "nover.json"), JSON.stringify({ mesh: {} }));
+    assert.throws(() => loadBundle({ ...cfg, bundleFile: "nover.json" }), BundleError);
+    writeFileSync(join(work, "junk.json"), "not json");
+    assert.throws(() => loadBundle({ ...cfg, bundleFile: "junk.json" }), BundleError);
+  });
+  t("E4 nothing about a key or sops is declared any more (#589)", () => {
+    for (const k of ["age_key_secret", "nix_bin_mount", "host_nix_profile_bin"]) assert.ok(!(k in pc), `${k} still declared`);
+    assert.ok(!(readFileSync("./code/shared/profile-connect.ts", "utf8").includes("SOPS_AGE_KEY")), "the app still reaches for an age key");
+  });
 } finally {
   rmSync(work, { recursive: true, force: true });
 }
@@ -271,15 +240,14 @@ if (haveNix) {
     assert.equal(env.PROFILE_CONNECT_BUNDLE_DIR, pc.bundle_mount);
     assert.equal(env.PROFILE_CONNECT_BUNDLE_FILE, pc.bundle_file);
     assert.equal(env.PROFILE_CONNECT_SCHEMA_FILE, pc.schema_file);
-    assert.equal(env.PROFILE_CONNECT_AGE_KEY_ENV, pc.age_key_secret);
-    assert.equal(env.PROFILE_CONNECT_SOPS_BIN, `${pc.nix_bin_mount}/sops`);
   });
-  t("F2 the key is passed by NAME only — no key material in the rendered compose", () =>
-    assert.ok(!JSON.stringify(svc).includes("AGE-SECRET-KEY"), "age key material in compose"));
-  t("F3 the bundle dir is mounted READ-ONLY at the declared mount, sops beside it", () => {
+  t("F2 no key, no sops in the rendered compose (#589)", () => {
+    const r = JSON.stringify(svc);
+    assert.ok(!r.includes("AGE-SECRET-KEY") && !r.includes("AGE_KEY") && !/sops/i.test(r), "key or sops wiring still rendered");
+  });
+  t("F3 the bundle dir is mounted READ-ONLY at the declared mount, and nothing else is", () => {
     assert.ok(vols.includes(`${hs.host_dir}:${pc.bundle_mount}:ro`), vols.join(" | "));
-    assert.ok(vols.includes(`${pc.host_nix_profile_bin}:${pc.nix_bin_mount}:ro`), vols.join(" | "));
-    assert.ok(vols.includes("/nix/store:/nix/store:ro"), vols.join(" | "));
+    assert.ok(!vols.some((v) => v.includes("/nix/")), `nix mounts still rendered: ${vols.join(" | ")}`);
   });
   t("F4 mutating build.json moves the rendered values (tracks, not coincides)", () => {
     const m = render(`{ mail_to = "mutant@example.invalid"; bundle_mount = "/mutant"; max_attempts = 97; }`)["c3-public-api"];
