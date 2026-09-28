@@ -110,6 +110,17 @@ let
   # One verbatim shell command (matches the existing runtime_extra_run shape:
   # semicolon-joined, arch-aware, ends in a fail-loud probe of every declared
   # binary so a missing tool fails the BUILD, not the dispatch).
+  # The npm half of the belt (the claude CLI). ONE declaration, TWO consumers:
+  # this string installs it at BUILD time (@AGENT_TOOLBELT_NPM@ below), and
+  # toolbeltNpmEnv hands the same declaration to the container so start.sh can
+  # re-install it at BOOT time. Both are needed: the build-time install is the
+  # floor that guarantees a usable CLI in a fresh image, and the boot-time one is
+  # what stops a cached layer freezing that floor into a stale pin for weeks.
+  # `channel` is a dist-tag, so nothing here carries a version to go stale.
+  toolbeltNpm      = agentToolbelt.npm_globals;
+  toolbeltNpmSpecs = lib.mapAttrsToList (p: v: "${p}@${v.channel or "latest"}") toolbeltNpm;
+  toolbeltNpmRun   = "npm install -g ${lib.concatStringsSep " " toolbeltNpmSpecs} && npm cache clean --force";
+  toolbeltNpmEnv   = { AGENT_NPM_GLOBALS = builtins.toJSON toolbeltNpm; };
   toolbeltExtraRun = ''set -eu; ARCH="$(uname -m)"; case "$ARCH" in aarch64|arm64) TOOL_ARCH=arm64 ;; x86_64|amd64) TOOL_ARCH=amd64 ;; *) echo "unsupported architecture: $ARCH" >&2; exit 1 ;; esac; GH_VERSION=${ghT.version}; curl -fsSL "${ghUrl}" | tar -xz -C /tmp; install -m 0755 "/tmp/${ghDir}/${ghBin}" /usr/local/bin/gh; rm -rf "/tmp/${ghDir}"; YQ_VERSION=${yqT.version}; curl -fsSL -o /usr/local/bin/yq "${yqUrl}"; chmod +x /usr/local/bin/yq; for t in ${toolbeltVerify}; do command -v "$t" >/dev/null || { echo "agent toolbelt: missing $t" >&2; exit 1; }; done'';
 
   # Deep per-field merge: service field wins if set. Uses recursiveUpdate
@@ -285,6 +296,11 @@ let
     # one container's build.json, claude had the memory and goose and hermes
     # had none, and nothing anywhere said so.
     // agentMemory.env
+    # The npm-delivered tool belt (the claude CLI), same reasoning as the memory
+    # splice: the declaration reaches the container instead of being retyped in
+    # its start script, so the version the image baked cannot become a second,
+    # silently older declaration of which CLI the agents run.
+    // toolbeltNpmEnv
     # ...and, for a runtime whose binary reads a name of its own, the same
     # briefing under that name. build.json declares the NAME, never the text.
     // (agentMemory.aliasEnv agentSpec)
@@ -522,8 +538,8 @@ let
           ${mkBanner "#"}# Type A — service-shipped Dockerfile, arch=${arch}
           # Source: ${toString nativeBuild.dockerfile}
           ${lib.replaceStrings
-              [ "@AGENT_TOOLBELT_APT@" "@AGENT_TOOLBELT_EXTRA_RUN@" ]
-              [ toolbeltApt toolbeltExtraRun ]
+              [ "@AGENT_TOOLBELT_APT@" "@AGENT_TOOLBELT_EXTRA_RUN@" "@AGENT_TOOLBELT_NPM@" ]
+              [ toolbeltApt toolbeltExtraRun toolbeltNpmRun ]
               (builtins.readFile nativeBuild.dockerfile)}
         ''
       else

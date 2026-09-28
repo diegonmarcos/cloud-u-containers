@@ -48,6 +48,14 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     HOME=/home/appuser
 
+# The claude CLI itself is NOT installed by a line in this file: it arrives from
+# _shared/agent-toolbelt.json#npm_globals through the @AGENT_TOOLBELT_NPM@
+# placeholder, the same single declaration start.sh re-installs from on every
+# boot. A hand-typed `npm install -g @anthropic-ai/claude-code` here is how the
+# CLI went stale in the first place — whatever version the last build fetched got
+# frozen into a cached layer, and the agents ended up refusing model ids that
+# build.json declares. Edit that JSON, never this line.
+#
 # Node (for server.mjs + the claude CLI) + curl (start.sh readiness probe) +
 # jq (the c-* PreToolUse guard hooks parse the hook JSON with jq).
 # bsdutils/util-linux provide `script`, which login.mjs uses to allocate a pty
@@ -60,8 +68,7 @@ ENV PYTHONUNBUFFERED=1 \
 RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates jq bsdutils util-linux git \
     && curl -fsSL https://deb.nodesource.com/setup_${NODE_MAJOR}.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
-    && npm install -g @anthropic-ai/claude-code \
-    && npm cache clean --force \
+    && @AGENT_TOOLBELT_NPM@ \
     && rm -rf /var/lib/apt/lists/*
 
 # Agent toolbelt (#366, extended to full coverage by #509). This is the image
@@ -114,7 +121,20 @@ COPY claude-config /app/claude-config
 # anything pointing at this line.
 RUN useradd -r -m -u 10001 appuser \
     && mkdir -p /home/appuser/.claude /home/appuser/.headroom /home/appuser/git \
+                /home/appuser/.npm-global/bin \
     && chown -R appuser:appuser /home/appuser /app
+
+# The boot-time claude CLI refresh (start.sh) runs as appuser, and the build-time
+# install above lives under root-owned /usr/lib/node_modules — an unprivileged
+# `npm install -g` into that tree fails. So global installs are redirected into an
+# appuser-owned prefix INSIDE the persisted home volume, and its bin comes FIRST
+# on PATH so the refreshed CLI wins over the one the image baked. The baked copy
+# stays as the floor: if the refresh cannot reach the registry, `claude` still
+# resolves (to the older version, loudly reported) instead of vanishing.
+# Set AFTER the build-time install on purpose — moving this ENV above that RUN
+# would put the floor inside the volume, where a pre-existing volume hides it.
+ENV NPM_CONFIG_PREFIX=/home/appuser/.npm-global \
+    PATH=/home/appuser/.npm-global/bin:${PATH}
 USER appuser
 
 EXPOSE 3117 11436 8788 8789

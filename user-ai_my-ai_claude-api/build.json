@@ -31,10 +31,11 @@
     "app_hub": false
   },
   "runtime": {
-    "model": "claude-opus-5",
+    "_model_comment": "The newest Opus the claude CLI actually offers. Verified against the installed CLI's own model table (claude 2.1.283): claude-opus-5-5 and claude-opus-5-5[1m] are real ids there, and the CLI gates them on >= 2.1.280 — which is why _shared/agent-toolbelt.json#npm_globals declares that exact version as the boot-time floor. Bumping this id WITHOUT the CLI refresh is what produced 'Update to 2.1.280+ to use newer models': the model list and the CLI that has to accept it are two halves of one change.",
+    "model": "claude-opus-5-5",
     "_model_aliases_comment": "requested-id → real `claude --model` id. Callers pick a cheaper tier per request (cgc octocode indexing asks for claude-haiku); unknown/absent ids fall back to `model`.",
     "model_aliases": {
-      "claude-opus": "claude-opus-5",
+      "claude-opus": "claude-opus-5-5",
       "claude-sonnet": "claude-sonnet-4-6",
       "claude-haiku": "claude-haiku-4-5"
     },
@@ -158,6 +159,10 @@
     },
     "git-tree-one-mount-pattern": {
       "cmd": "node test-git-tree-one-mount-pattern.mjs",
+      "cwd": "src/code"
+    },
+    "claude-cli-autoupdate": {
+      "cmd": "node test-claude-cli-autoupdate.mjs",
       "cwd": "src/code"
     },
     "auth-required-classifier": {

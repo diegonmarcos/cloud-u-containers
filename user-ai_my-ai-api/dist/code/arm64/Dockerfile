@@ -70,6 +70,11 @@ ENV PYTHONUNBUFFERED=1 \
 # repositories and not run a single git command: `git: not found`. That reads
 # as "the agent chose not to commit" rather than "the agent cannot", which is
 # why it went unnoticed while the tree looked correctly mounted.
+# The claude CLI in the RUN below is NOT a line of this file: @AGENT_TOOLBELT_NPM@
+# is substituted by _shared/engine.nix from the ONE fleet declaration in
+# _shared/agent-toolbelt.json (npm_globals). It used to be typed out here, which
+# installed whatever version that build fetched and then froze it in a cached
+# layer — the CLI aged out and started refusing model ids the fleet declares.
 # Also install goose (Block) — the container ships a preconfigured agent so it
 # is self-contained: `docker exec -it my-ai-api goose session` works out of the
 # box, pointed at OpenRouter via the container's OPENROUTER_API_KEY (sops-decrypted
@@ -88,8 +93,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certifi
        | tar -xz -C /usr/local/bin ./goose \
     && chmod +x /usr/local/bin/goose \
     && goose --version \
-    && npm install -g @anthropic-ai/claude-code \
-    && npm cache clean --force \
+    && @AGENT_TOOLBELT_NPM@ \
     && rm -rf /var/lib/apt/lists/*
 
 # Agent toolbelt (#366, extended to full coverage by #509). Same reasoning as

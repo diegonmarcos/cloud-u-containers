@@ -26,6 +26,62 @@ else
   echo "[start] AUTHELIA_OIDC_TOKEN_CLAUDE_ADMIN unset; skipping MCP servers" >&2
 fi
 
+# ── claude CLI refresh ───────────────────────────────────────────────────
+# ONE declaration: _shared/agent-toolbelt.json#npm_globals, handed to this
+# container by _shared/engine.nix as AGENT_NPM_GLOBALS (package -> channel +
+# min_version). Nothing here names a package or a version: a literal would be a
+# second, quietly older declaration of which CLI the agents run, which is exactly
+# the defect — the image install pins whatever the last build fetched and a cached
+# layer froze it, so `claude -p` started answering "Update to 2.1.255+/2.1.280+ to
+# use newer models" for models build.json declares, with nothing saying the CLI
+# was the problem.
+#
+# Runs on EVERY boot, so a `--force-recreate` deploy is enough to pick up a new
+# CLI — no image rebuild. Idempotent: npm re-resolves the dist-tag and does
+# nothing when the installed version already matches. Writes into
+# $NPM_CONFIG_PREFIX (appuser-owned, inside the persisted home volume).
+#
+# NEVER fatal, NEVER silent: an old CLI still answers, and killing PID1 over a
+# registry hiccup would be the worse outage — but every outcome prints, and a
+# version below the declared floor prints ERROR rather than serving models the
+# declaration claims exist.
+refresh_npm_globals() {
+  local plan pkg channel floor have prefix
+  prefix="${NPM_CONFIG_PREFIX:-}"
+  if [ -z "${AGENT_NPM_GLOBALS:-}" ]; then
+    echo "[claude-cli] ERROR: AGENT_NPM_GLOBALS undeclared — NOT refreshed; running whatever the image baked ($(claude --version 2>/dev/null || echo 'no claude'))" >&2
+    return 0
+  fi
+  if ! plan="$(printf '%s' "${AGENT_NPM_GLOBALS}" | python3 -c '
+import json, sys
+for pkg, spec in json.loads(sys.stdin.read()).items():
+    print("\t".join([pkg, spec.get("channel") or "latest", spec.get("min_version") or ""]))
+' 2>&1)"; then
+    echo "[claude-cli] ERROR: AGENT_NPM_GLOBALS unreadable (${plan}) — NOT refreshed" >&2
+    return 0
+  fi
+
+  printf '%s\n' "${plan}" | while IFS="$(printf '\t')" read -r pkg channel floor; do
+    [ -n "${pkg}" ] || continue
+    echo "[claude-cli] installing ${pkg}@${channel} into ${prefix:-npm default prefix}"
+    # Bounded: this is on the boot path, so a registry that accepts the
+    # connection and then stalls must not keep the container from ever starting.
+    if ! timeout 300 npm install -g --no-fund --no-audit "${pkg}@${channel}"; then
+      echo "[claude-cli] ERROR: ${pkg}@${channel} install FAILED — continuing on the baked version" >&2
+    fi
+    have="$(node -p "require('${prefix}/lib/node_modules/${pkg}/package.json').version" 2>/dev/null || true)"
+    if [ -z "${have}" ]; then
+      echo "[claude-cli] ERROR: ${pkg} version unreadable after install — declared floor ${floor:-none} UNVERIFIED" >&2
+    elif [ -n "${floor}" ] \
+      && [ "$(printf '%s\n%s\n' "${floor}" "${have}" | sort -V | head -n1)" != "${floor}" ]; then
+      echo "[claude-cli] ERROR: ${pkg} ${have} is BELOW the declared floor ${floor} — the declared models will be REJECTED" >&2
+    else
+      echo "[claude-cli] ${pkg} ${have} (floor ${floor:-none}) OK"
+    fi
+  done
+}
+refresh_npm_globals
+
 # ── Git identity + agent workspace ───────────────────────────────────────
 # The token is delivered by the .secrets env_file (sops -> GH_TOKEN), never
 # baked into the image. It is handed to git by a credential helper that reads
