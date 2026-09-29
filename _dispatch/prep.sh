@@ -60,6 +60,76 @@ G=$ROOT/_dispatch/gitconfig
 GIT_CONFIG_GLOBAL=$G
 export GIT_CONFIG_GLOBAL
 
+# #633: STAGING DISCIPLINE, enforced instead of requested. On 2026-09-29 an agent's in-progress
+# FleetIdentity.kt and Fleet.kt were swept into a SIBLING's commit (ad211a7f8) because something
+# staged wholesale. The worktree below removes most of that blast radius, but not all of it — the
+# shared tree stays readable and reachable from inside the slot — and "stage by path" has been
+# prose in the container's CLAUDE.md all along, which is not enforcement. So declare a `git`
+# front-end that REFUSES the three wholesale forms and passes everything else through untouched;
+# run.sh puts this directory first on the engine's PATH and refuses the slot if it is missing.
+# ONE copy, here, for the same reason this whole file exists: a per-ticket copy is the defect.
+# It locates the real git by walking PATH past its own directory, so no path is baked in, and it
+# is written via a temp + rename so an agent cannot exec a half-written shim.
+B=$ROOT/_dispatch/bin
+mkdir -p "$B" || { echo "prep: cannot create $B" >> "$M"; exit 65; }
+cat > "$B/git.$$" <<'SHIM' 2>> "$M"
+#!/bin/sh
+# Dispatch git front-end (#633). Refuses wholesale staging; everything else is real git.
+SELF=$(cd "$(dirname "$0")" && pwd)
+REAL=
+OIFS=$IFS; IFS=:
+for d in $PATH; do
+  [ -n "$d" ] || d=.
+  case "$(cd "$d" 2>/dev/null && pwd)" in "$SELF") continue ;; esac
+  [ -x "$d/git" ] && { REAL=$d/git; break; }
+done
+IFS=$OIFS
+[ -n "$REAL" ] || { echo "dispatch git shim: no real git on PATH" >&2; exit 127; }
+
+# The subcommand, stepping over git's own global options and their values.
+sub=; skip=0
+for a in "$@"; do
+  [ "$skip" = 1 ] && { skip=0; continue; }
+  case "$a" in
+    -C|-c|--git-dir|--work-tree|--namespace|--exec-path) skip=1 ;;
+    -*) ;;
+    *) sub=$a; break ;;
+  esac
+done
+
+refuse() {
+  echo "DISPATCH REFUSED: $1 (#633)." >&2
+  echo "Stage by explicit path instead: git add -- <paths>" >&2
+  echo "Wholesale staging is how one agent's in-progress files landed in a sibling's commit." >&2
+  exit 1
+}
+seen=0
+for a in "$@"; do
+  if [ "$seen" = 0 ]; then [ "$a" = "$sub" ] && seen=1; continue; fi
+  case "$sub" in
+    add)
+      case "$a" in
+        -A|--all|--no-ignore-removal|.|:/|:/*) refuse "git add $a stages every change in the tree" ;;
+      esac ;;
+    commit)
+      # --amend / --author must pass; only -a and --all stage on their own. A cluster that
+      # contains an 'a' (-am, -va) is -a with company.
+      case "$a" in
+        --all) refuse "git commit --all stages every tracked change" ;;
+        --*) ;;
+        -*a*) refuse "git commit $a includes -a, which stages every tracked change" ;;
+      esac ;;
+  esac
+done
+exec "$REAL" "$@"
+SHIM
+chmod 755 "$B/git.$$" 2>> "$M" && mv "$B/git.$$" "$B/git" 2>> "$M"
+rm -f "$B/git.$$"
+if [ ! -x "$B/git" ]; then
+  echo "prep: ABORT — cannot declare the staging guard at $B/git" >> "$M"
+  exit 68
+fi
+
 mkdir -p "$(dirname "$W")" || { echo "prep: cannot create _work/$SLOT" >> "$M"; exit 65; }
 
 if [ ! -d "$SRC/.git" ]; then
@@ -185,6 +255,8 @@ if [ "$(id -u)" = 0 ]; then
   chown -R --reference="$SRC" "$ROOT/_work/$SLOT" "$SRC/.git/worktrees" "$SRC/.git/config" >> "$M" 2>&1
 fi
 
+echo "prep workspace=$W" >> "$M"
+echo "prep staging-guard=$B/git" >> "$M"
 echo "prep owner=$(stat -c %U "$W" 2>/dev/null || echo unknown)" >> "$M"
 echo "prep at $(git -C "$W" rev-parse --short HEAD 2>/dev/null || echo unknown) gitdir=$GITDIR" >> "$M"
 echo "prep dirty=$(git -C "$W" --no-optional-locks status --porcelain 2>/dev/null | wc -l)" >> "$M"

@@ -32,7 +32,7 @@
 #
 # Exit codes — every one of them means "this run did NOT do its work; do not read it as done":
 #   86 MAX_TURNS_EXHAUSTED  87 SESSION_LIMIT  88 AWAITED_WAKEUP
-#   89 BRIEF_UNREADABLE     90 AUTH_PREFLIGHT_FAILED
+#   89 BRIEF_UNREADABLE     90 AUTH_PREFLIGHT_FAILED  91 NOT_ISOLATED
 #
 # Usage: run.sh <hermes|goose|claude> <slot> <prompt-file> <log-file> [model]
 # The caller must redirect this script's own output into <log-file>:
@@ -57,6 +57,16 @@ LOG=$4
 case "$LOG" in /*) ;; *) LOG=$PWD/$LOG ;; esac
 mkdir -p "$(dirname "$LOG")"
 MODEL=${5:-sonnet}
+
+# Same resolution prep.sh uses, so both halves of a dispatch agree on where the slot lives.
+# #508: `claude` shares goose's ROOT on purpose — both containers mount the same cloud-git-gh
+# volume at the same path. The tester points DISPATCH_ROOT at a scratch tree; nothing in
+# production sets it.
+case "$ENGINE" in
+  hermes) ROOT=/opt/data/git ;;
+  *)      ROOT=/home/appuser/git ;;
+esac
+ROOT=${DISPATCH_ROOT:-$ROOT}
 
 echo "=== $ENGINE $SLOT START $(date -u +%FT%TZ)"
 
@@ -102,7 +112,67 @@ case "$ENGINE" in
     # Recorded because a slot's model is otherwise unrecoverable after the fact, and "which
     # engine actually ran this?" is a question I have had to answer from log shape alone.
     echo "--- claude model=$MODEL effort=high"
-    cd /home/appuser/git/_work/"$SLOT" 2>/dev/null || true
+    # #633 — ISOLATION. This used to be one fail-open line, two defects in twelve words:
+    #     cd /home/appuser/git/_work/"$SLOT" 2>/dev/null || true
+    # The path is the SLOT directory, one level ABOVE the workspace prep.sh actually creates
+    # ($ROOT/_work/$SLOT/<repo>), so the cd "succeeded" into a directory that is not a checkout
+    # at all; and `|| true` forgave it when even that was missing. Either way the agent started
+    # outside any worktree, read its brief's absolute ~/git/<repo> path, and worked in the
+    # SHARED tree beside every sibling. Three collisions were measured on 2026-09-29: an
+    # agent's edits vanished when a sibling's `./build.sh workflow` regenerated ~27 dist files
+    # wholesale, another agent's in-progress FleetIdentity.kt and Fleet.kt were swept into a
+    # SIBLING's commit (ad211a7f8, so those files are attributed to the wrong ticket), and
+    # .git/index.lock contended twice.
+    #
+    # prep.sh has made these slots detached, LOCKED worktrees since #487. The isolation was
+    # already built and simply never entered. So enter it — and REFUSE the slot when what is
+    # there is not a linked worktree. The test is exact: a linked worktree's own git dir lives
+    # under <source>/.git/worktrees/, which the shared checkout's never does. That is what
+    # makes two agents in one tree unfireable rather than merely discouraged.
+    #
+    # Nothing here relaxes a guard. `worktree add --detach` creates NO branch, so the
+    # no-branches rule and the branch guard are untouched; the per-worktree pre-push hook
+    # (#481) and the source repo's own hooks still apply inside the workspace.
+    WS=; N=0
+    for c in "$ROOT"/_work/"$SLOT"/*; do
+      [ -e "$c/.git" ] || continue
+      WS=$c; N=$((N + 1))
+    done
+    GD=
+    [ -n "$WS" ] && GD=$(git -C "$WS" rev-parse --absolute-git-dir 2>/dev/null)
+    REASON=
+    case "$N" in
+      0) REASON="no workspace under $ROOT/_work/$SLOT — prep.sh never made one" ;;
+      1) ;;
+      *) REASON="$N candidate workspaces under $ROOT/_work/$SLOT — ambiguous; one repo per slot" ;;
+    esac
+    if [ -z "$REASON" ]; then
+      case "$GD" in
+        */.git/worktrees/*) ;;
+        *) REASON="$WS is not a linked worktree (git dir: ${GD:-none}); an agent there would share a tree with its siblings" ;;
+      esac
+    fi
+    # The staging guard is part of the workspace, so a missing one refuses the slot too —
+    # otherwise the enforcement below would fail open exactly the way this cd did.
+    SHIMBIN=$ROOT/_dispatch/bin
+    if [ -z "$REASON" ] && [ ! -x "$SHIMBIN/git" ]; then
+      REASON="no staging guard at $SHIMBIN/git — prep.sh declares it; re-run prep for this slot"
+    fi
+    [ -n "$REASON" ] || cd "$WS" || REASON="cannot enter $WS"
+    if [ -n "$REASON" ]; then
+      echo
+      echo "################################################################"
+      echo "##  NOT ISOLATED — claude $SLOT NOT FIRED"
+      echo "##  $REASON"
+      echo "##  Two agents in one tree wipe each other's edits and commit"
+      echo "##  each other's files (#633). Nothing was spent. Run prep.sh"
+      echo "##  for this slot, then re-fire."
+      echo "################################################################"
+      echo "=== $ENGINE $SLOT END rc=91 NOT_ISOLATED $(date -u +%FT%TZ)"
+      exit 91
+    fi
+    PATH=$SHIMBIN:$PATH
+    export PATH
     # #510 (a): PRE-FLIGHT the credential before spending the slot. 2026-09-24 the OAuth login
     # had expired and seven agents each died in 9 seconds with rc=1 and a ~190-byte log; it was
     # seen only because Diego read the logs by hand. One tiny haiku turn with no MCP servers
@@ -128,9 +198,15 @@ case "$ENGINE" in
     # trailing positional is parsed as one more directory and claude then dies with
     # "Input must be provided either through stdin or as a prompt argument" — measured on the
     # first #508 smoke test (slot 497, rc=1 in 2 seconds). stdin has no such ambiguity.
-    printf '%s' "Read $PROMPT in full and carry out exactly what it specifies. That file is your complete instruction set." \
+    #
+    # #633: the workspace and the staging rules travel WITH every dispatch, from here, once.
+    # They are NOT per-brief prose: prose is not enforcement, a hand-written brief names its
+    # repo by the SHARED path (~/git/<repo>), and an agent that reads only that walks straight
+    # back out of the worktree it was just placed in. The refusals themselves are enforced by
+    # the git front-end prep.sh declares; this tells the agent why, so it does not thrash.
+    printf '%s' "Your workspace is $WS — do ALL of your work there. It is this slot's own git worktree of the repo your brief names, so any path in the brief of the form ~/git/<repo>, or the bare repo name, means THIS directory. $ROOT/<repo> is the SHARED tree that other agents are editing right now: read it if you must, never edit or commit in it. Stage by explicit path only, 'git add -- <paths>'; 'git add -A', 'git add .' and 'git commit -a' are refused outright, because that is how one agent's in-progress files ended up inside a sibling's commit. Never touch a file that appears in 'git status' unless you authored it. Now read $PROMPT in full and carry out exactly what it specifies. That file is your complete instruction set." \
       | claude -p --model "$MODEL" --effort high --permission-mode bypassPermissions \
-          --add-dir /home/appuser/git \
+          --add-dir "$ROOT" \
       > "$OUT" 2>&1
     RC=$?
     cat "$OUT"
