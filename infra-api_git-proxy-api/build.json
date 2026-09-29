@@ -30,7 +30,8 @@
   "deploy": {
     "host": "oci-analytics",
     "remote_path": "/opt/containers/git-proxy-api",
-    "compose_flags": "--build",
+    "_compose_flags_doc": "--no-build, NOT the --build that most siblings declare. oci-analytics has 954MB of RAM and the host's docker wrapper (/home/ubuntu/.local/bin/docker, first on the non-interactive SSH PATH the ship uses) hard-refuses `compose --build` under 2GB: 'BLOCKED: docker compose --build on a small VM (954MB < 2GB)', exit 1. That is what failed run 36565748851 — files and .secrets landed, the GHCR image was public and pullable, and no container was ever created. --no-build is also simply correct here: the image is built on the GHA runner and pushed to GHCR, so it must never be rebuilt on the target.",
+    "compose_flags": "--no-build --pull always --force-recreate",
     "_host_doc": "oci-analytics, NOT oci-apps, for two reasons. (1) It is the public-edge VM that already terminates api.diegonmarcos.com/pub (c3-public-api), so the phone reaches /git OFF-MESH — which is the whole point of route 3 versus the `gh` fallback. (2) An oci-apps ship recreates my-ai_claude-api and kills every running agent; this service has no reason to go there."
   },
   "proxy": {
