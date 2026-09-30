@@ -21,10 +21,10 @@
     "registry": "ghcr.io/diegonmarcos",
     "arch": "arm64",
     "native_build": {
-      "_comment": "type image-wrapper (2026-07-03): type 'app' made the Dockerfile generator treat the whole entrypoint string as a binary to COPY — the image shipped with NO uv and no app code, dying with 'exec uv failed'. image-wrapper is the working sibling pattern (google-personal-mcp). base_image = official uv+python image so `uv sync`/`uv run` exist.",
+      "_comment": "type image-wrapper (2026-07-03): type 'app' made the Dockerfile generator treat the whole entrypoint string as a binary to COPY — the image shipped with NO uv and no app code, dying with 'exec uv failed'. image-wrapper is the working sibling pattern (google-personal-mcp). base_image = official uv+python image so `uv sync`/`uv run` exist. entrypoint uses `uv run --no-sync` (2026-09-30): plain `uv run` re-synced the venv (dev group incl. ruff) at every start; deps are baked by `cmd` at build. Guarded by src/test-startup-contract.mjs.",
       "type": "image-wrapper",
       "cmd": "uv sync --frozen --no-dev --extra disk",
-      "entrypoint": "uv run main.py --transport streamable-http --tool-tier complete",
+      "entrypoint": "uv run --no-sync main.py --transport streamable-http --tool-tier complete",
       "base_image": "ghcr.io/astral-sh/uv:python3.11-bookworm-slim",
       "apt": "curl",
       "app_dir": "code"
@@ -81,5 +81,11 @@
     "description": "Gmail, Calendar, Drive, Docs, Sheets, Forms, Slides, Chat, Tasks, Contacts, Search, Apps Script via OAuth 2.0/2.1.",
     "auth": "oidc",
     "sdk": "fastmcp@3.1.1"
+  },
+  "tests": {
+    "startup-contract": {
+      "cmd": "node test-startup-contract.mjs",
+      "cwd": "src"
+    }
   }
 }

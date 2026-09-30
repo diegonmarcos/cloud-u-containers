@@ -22,4 +22,4 @@ ENV HOME=/home/appuser
 
 LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
 ENTRYPOINT []
-CMD ["uv","run","main.py","--transport","streamable-http","--tool-tier","complete"]
+CMD ["uv","run","--no-sync","main.py","--transport","streamable-http","--tool-tier","complete"]

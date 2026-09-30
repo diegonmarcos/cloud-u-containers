@@ -59,12 +59,9 @@ def safe_print(text):
     if _CLI_MODE:
         return
 
-    # Don't print to stderr when running as MCP server via uvx to avoid JSON parsing errors
-    # Check if we're running as MCP server (no TTY and uvx in process name)
-    if not sys.stderr.isatty():
-        # Running as MCP server, suppress output to avoid JSON parsing errors
-        logger.debug(f"[MCP Server] {text}")
-        return
+    # Always stderr, TTY or not: the MCP stdio protocol only owns stdout, and a
+    # non-TTY gate here muted every fatal startup message in a container (e.g.
+    # "Port ... is already in use" before sys.exit(1)), leaving a bare exit 1.
 
     try:
         print(text, file=sys.stderr)
