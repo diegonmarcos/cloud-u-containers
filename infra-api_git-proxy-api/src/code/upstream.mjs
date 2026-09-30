@@ -90,3 +90,52 @@ export function validRef(s) {
   if (s.includes('..') || s.startsWith('-') || s.startsWith('/')) return false;
   return /^[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(s);
 }
+
+// ── Read-only feeds: recent commits / workflow runs of a DECLARED repo ─────
+// The allow-list is runtime.feeds.repos in build.json; these helpers only
+// consult what they are handed.
+
+/** GitHub names are case-insensitive, so the allow-list is too. */
+export function repoDeclared(repos, owner, repo) {
+  const want = `${owner}/${repo}`.toLowerCase();
+  return (repos || []).some((r) => typeof r === 'string' && r.toLowerCase() === want);
+}
+
+/** `per_page` from the query, clamped to 1..max; default 5 (what the Store asks for). */
+export function clampPerPage(raw, max) {
+  const n = Number.parseInt(raw ?? '', 10);
+  if (!Number.isFinite(n)) return Math.min(5, max);
+  return Math.min(Math.max(n, 1), max);
+}
+
+export const FEED_KINDS = {
+  commits: { path: 'commits', list: (body) => body, project: projectCommit },
+  runs: { path: 'actions/runs', list: (body) => body?.workflow_runs, project: projectRun },
+};
+
+export function feedUrl(apiBase, owner, repo, kind, perPage) {
+  const seg = [owner, repo].map((s) => encodeURIComponent(s)).join('/');
+  return `${apiBase}/repos/${seg}/${FEED_KINDS[kind].path}?per_page=${perPage}`;
+}
+
+export function projectCommit(c) {
+  return {
+    sha: c.sha,
+    message: c.commit?.message,
+    author: c.commit?.author?.name,
+    date: c.commit?.author?.date,
+    html_url: c.html_url,
+  };
+}
+
+export function projectRun(r) {
+  return {
+    name: r.name,
+    display_title: r.display_title,
+    status: r.status,
+    conclusion: r.conclusion,
+    created_at: r.created_at,
+    html_url: r.html_url,
+    path: r.path,
+  };
+}

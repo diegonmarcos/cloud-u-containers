@@ -32,6 +32,16 @@ export function loadRuntime(buildJsonPath) {
       throw new Error(`endpoint ${e.path} does not sit under base_path ${rt.base_path}`);
     }
   }
+  // The commits/runs allow-list. Checked here so a malformed block refuses to
+  // start instead of 500ing the first feed request.
+  const f = rt.feeds;
+  if (!f || !Array.isArray(f.repos) || f.repos.length === 0
+      || !f.repos.every((r) => typeof r === 'string' && /^[^/]+\/[^/]+$/.test(r))) {
+    throw new Error('build.json runtime.feeds.repos must be a non-empty list of "owner/repo"');
+  }
+  if (!(f.cache_ttl_s > 0) || !Number.isInteger(f.max_per_page) || f.max_per_page < 1 || f.max_per_page > 100) {
+    throw new Error('build.json runtime.feeds needs cache_ttl_s > 0 and max_per_page in 1..100');
+  }
   return rt;
 }
 

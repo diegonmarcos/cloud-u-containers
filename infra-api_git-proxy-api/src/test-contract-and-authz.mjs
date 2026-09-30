@@ -14,6 +14,9 @@
 //      token back in an error body, which is the hardest case.
 //   C. NO DRIFT. The served route table and build.json's declared contract are
 //      the same set, in both directions (#371).
+//   F. FEEDS. commits/runs refuse any repo not in runtime.feeds.repos without
+//      dialling GitHub, are served from a TTL cache shared by concurrent
+//      callers, never cache a failure, and never turn one into an empty 200.
 //
 // Zero dependencies and zero secrets: node:crypto mints a throwaway RSA keypair,
 // this file serves its own JWKS and its own fake api.github.com, and the real
@@ -23,14 +26,18 @@
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:http';
 import { generateKeyPairSync, createSign, randomUUID } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { decideAuth, scopesOf } from './code/authz.mjs';
 import { loadRuntime, localPath } from './code/contract.mjs';
 import { buildTable, match, toRegex } from './code/router.mjs';
-import { redactSecrets, upstreamHeaders, reposUrl, tarballUrl, projectRepo, validName, validRef, REDACTED } from './code/upstream.mjs';
+import {
+  redactSecrets, upstreamHeaders, reposUrl, tarballUrl, projectRepo, validName, validRef, REDACTED,
+  repoDeclared, clampPerPage, feedUrl, projectCommit, projectRun,
+} from './code/upstream.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const BUILD_JSON = join(HERE, '..', 'build.json');
@@ -221,6 +228,42 @@ function testContract() {
 
 function threw(fn) { try { fn(); return false; } catch { return true; } }
 
+// ══ F. The commits/runs feeds: allow-list is data, projection is a whitelist ═
+function testFeedsUnit() {
+  console.log('\nF. feeds: allow-list, per_page bounds, projection, contract validation');
+  const list = RT.feeds.repos;
+  ok(repoDeclared(list, 'diegonmarcos', 'cloud-infra'), 'a declared repo is allowed');
+  ok(repoDeclared(list, 'DiegoNMarcos', 'Cloud-Infra'), 'the allow-list is case-insensitive, like GitHub');
+  ok(!repoDeclared(list, 'diegonmarcos', 'cloud-infra-x'), 'a repo that merely PREFIXES a declared one is refused');
+  ok(!repoDeclared(list, 'torvalds', 'linux'), 'an undeclared repo is refused');
+  ok(!repoDeclared(list, 'diegonmarcos', 'cloud-vault'), 'the private vault repo is not a feed');
+
+  const max = RT.feeds.max_per_page;
+  for (const [raw, want] of [[undefined, 5], ['abc', 5], ['3', 3], ['0', 1], ['-4', 1], ['999', max]]) {
+    eq(clampPerPage(raw, max), want, `clampPerPage(${JSON.stringify(raw)}) -> ${want}`);
+  }
+  eq(feedUrl('https://x', 'o', 'r', 'commits', 20), 'https://x/repos/o/r/commits?per_page=20', 'commits URL');
+  eq(feedUrl('https://x', 'o', 'r', 'runs', 20), 'https://x/repos/o/r/actions/runs?per_page=20', 'runs URL');
+  ok(!('smuggled' in projectCommit({ sha: 'a', commit: {}, smuggled: 1 })), 'projectCommit drops unknown fields');
+  ok(!('smuggled' in projectRun({ name: 'a', smuggled: 1 })), 'projectRun drops unknown fields');
+
+  // loadRuntime must REFUSE a contract whose feeds block is missing/malformed,
+  // so the service cannot start and 500 on the first feed request instead.
+  const raw = JSON.parse(readFileSync(BUILD_JSON, 'utf8'));
+  const dir = mkdtempSync(join(tmpdir(), 'gpa-'));
+  const withFeeds = (feeds) => {
+    const f = join(dir, `b${checks}.json`);
+    writeFileSync(f, JSON.stringify({ ...raw, runtime: { ...raw.runtime, feeds } }));
+    return () => loadRuntime(f);
+  };
+  ok(!threw(withFeeds(raw.runtime.feeds)), 'loadRuntime accepts the declared feeds block');
+  ok(threw(withFeeds(undefined)), 'loadRuntime THROWS when runtime.feeds is missing');
+  ok(threw(withFeeds({ ...raw.runtime.feeds, repos: [] })), 'loadRuntime THROWS on an empty allow-list');
+  ok(threw(withFeeds({ ...raw.runtime.feeds, repos: ['no-slash'] })), 'loadRuntime THROWS on a malformed repo entry');
+  ok(threw(withFeeds({ ...raw.runtime.feeds, cache_ttl_s: 0 })), 'loadRuntime THROWS on a zero cache TTL');
+  ok(threw(withFeeds({ ...raw.runtime.feeds, max_per_page: 101 })), 'loadRuntime THROWS on max_per_page > 100');
+}
+
 // ══ D. End-to-end against the REAL server, stubbed dependencies ════════════
 // The pure checks above can only prove what the functions do. This boots the
 // actual index.mjs and drives it over HTTP, because "the service refuses" and
@@ -257,7 +300,34 @@ async function testLive() {
   const impostorPub = JSON.parse(JSON.stringify(
     generateKeyPairSync('rsa', { modulusLength: 2048 }).publicKey.export({ format: 'jwk' }),
   ));
+  const upstreamHits = {};
   const upstream = createServer((req, res) => {
+    const bare = req.url.split('?')[0];
+    upstreamHits[bare] = (upstreamHits[bare] || 0) + 1;
+    if (bare === '/repos/diegonmarcos/cloud-infra/commits') {
+      res.writeHead(200, { 'content-type': 'application/json' });
+      return res.end(JSON.stringify(Array.from({ length: 7 }, (_, i) => ({
+        sha: `sha${i}`, html_url: `https://github.com/c/${i}`,
+        commit: { message: `msg ${i}`, author: { name: 'diego', date: '2026-09-29T00:00:00Z' } },
+        smuggled: FAKE_TOKEN,
+      }))));
+    }
+    if (bare === '/repos/diegonmarcos/cloud-infra/actions/runs') {
+      // Slow on purpose, so concurrent callers genuinely overlap the miss.
+      return setTimeout(() => {
+        res.writeHead(200, { 'content-type': 'application/json' });
+        res.end(JSON.stringify({ total_count: 1, workflow_runs: [{
+          name: 'ship', display_title: 't', status: 'completed', conclusion: 'success',
+          created_at: '2026-09-29T00:00:00Z', html_url: 'https://github.com/r/1',
+          path: '.github/workflows/ship.yml', smuggled: FAKE_TOKEN,
+        }] }));
+      }, 150);
+    }
+    if (bare === '/repos/diegonmarcos/cloud-u-linux/commits') {
+      // Upstream fails and quotes our credential back — must not be cached, must not leak.
+      res.writeHead(500, { 'content-type': 'text/plain' });
+      return res.end(`upstream exploded with ${req.headers.authorization}`);
+    }
     if (req.url === '/jwks.json') {
       res.writeHead(200, { 'content-type': 'application/json' });
       return res.end(JSON.stringify({ keys: [
@@ -377,7 +447,8 @@ async function testLive() {
     ['tampered payload, original signature', tampered, 401, 'invalid_token'],
     ['missing scope', noScope, 403, 'insufficient_scope'],
   ]) {
-    for (const path of ['/repos', '/endpoints', '/repos/diegonmarcos/cloud-infra/tarball']) {
+    for (const path of ['/repos', '/endpoints', '/repos/diegonmarcos/cloud-infra/tarball',
+      '/repos/diegonmarcos/cloud-infra/commits', '/repos/diegonmarcos/cloud-infra/runs']) {
       const r = await req(path, tok);
       ok(r.status === wantStatus && r.json?.code === wantCode,
         `${path} with ${label} -> ${wantStatus} ${wantCode}`, `got ${r.status} ${r.text.slice(0, 120)}`);
@@ -429,8 +500,46 @@ async function testLive() {
       `got ${r.status} ${r.text.slice(0, 120)}`);
   }
 
+  // ── Feeds (commits / runs) ──
+  const refusedUpstream = upstreamHits['/repos/diegonmarcos/cloud-infra/commits'] || 0;
+  eq(refusedUpstream, 0, 'the refused (unauthenticated) feed requests dialled GitHub ZERO times');
+
+  const c1 = await req('/repos/diegonmarcos/cloud-infra/commits?per_page=2', good);
+  ok(c1.status === 200 && c1.json?.commits?.length === 2 && c1.json.commits[0].sha === 'sha0',
+    'GET commits returns the projected list, sliced to per_page', `got ${c1.status} ${c1.text.slice(0, 200)}`);
+  ok(c1.json?.commits && !('smuggled' in c1.json.commits[0]), 'an unknown upstream commit field is dropped');
+  ok(typeof c1.json?.cached_at === 'string', 'the response says when it was fetched (cached_at)');
+  const c2 = await req('/repos/DiegoNMarcos/Cloud-Infra/commits?per_page=50', good);
+  ok(c2.status === 200 && c2.json?.commits?.length === 7, 'per_page above max still returns what upstream had');
+  eq(upstreamHits['/repos/diegonmarcos/cloud-infra/commits'], 1,
+    'a second request (different case, different per_page) is served from CACHE — one upstream call');
+
+  const runs = await Promise.all(Array.from({ length: 5 }, () => req('/repos/diegonmarcos/cloud-infra/runs', good)));
+  ok(runs.every((r) => r.status === 200 && r.json?.runs?.[0]?.conclusion === 'success'),
+    'GET runs returns the projected run with its conclusion', `got ${runs[0].status} ${runs[0].text.slice(0, 200)}`);
+  ok(!('smuggled' in (runs[0].json?.runs?.[0] || {})), 'an unknown upstream run field is dropped');
+  eq(upstreamHits['/repos/diegonmarcos/cloud-infra/actions/runs'], 1,
+    'five CONCURRENT misses share ONE upstream call');
+
+  const undeclared = await req('/repos/torvalds/linux/commits', good);
+  ok(undeclared.status === 403 && undeclared.json?.code === 'repo_not_declared',
+    'an undeclared repo is a 403 repo_not_declared', `got ${undeclared.status} ${undeclared.text.slice(0, 120)}`);
+  eq(upstreamHits['/repos/torvalds/linux/commits'], undefined, 'and GitHub was never dialled for it');
+  const badFeed = await req('/repos/-x/cloud-infra/runs', good);
+  ok(badFeed.status === 400 && badFeed.json?.code === 'bad_repo', 'a malformed owner on a feed is 400 bad_repo');
+
+  const f1 = await req('/repos/diegonmarcos/cloud-u-linux/commits', good);
+  ok(f1.status === 502 && f1.json?.code === 'upstream_error',
+    'an upstream feed failure is a 502 upstream_error — never a 200 with an empty list', `got ${f1.status} ${f1.text.slice(0, 120)}`);
+  await req('/repos/diegonmarcos/cloud-u-linux/commits', good);
+  eq(upstreamHits['/repos/diegonmarcos/cloud-u-linux/commits'], 2, 'a FAILED upstream answer is not cached — the next call retries');
+  const nf = await req('/repos/diegonmarcos/front-data/runs', good);
+  ok(nf.status === 404 && nf.json?.code === 'not_found', 'an upstream 404 on a declared repo is forwarded as 404 not_found',
+    `got ${nf.status} ${nf.text.slice(0, 120)}`);
+
   // Wrong method on a real path must be 405 — not 404, and above all not 200.
-  for (const [method, path] of [['POST', '/repos'], ['DELETE', '/endpoints'], ['PUT', '/health']]) {
+  for (const [method, path] of [['POST', '/repos'], ['DELETE', '/endpoints'], ['PUT', '/health'],
+    ['POST', '/repos/diegonmarcos/cloud-infra/runs']]) {
     const r = await fetch(`${base}${path}`, { method, headers: { authorization: `Bearer ${good}` } });
     const text = await r.text();
     seen.push({ path: `${method} ${path}`, status: r.status, text });
@@ -495,6 +604,7 @@ console.log('git-proxy-api tester (#647) — refusal, no-leak, no-drift');
 await testRefusal();
 testRedactionUnit();
 testContract();
+testFeedsUnit();
 await testLive();
 
 console.log(`\n${checks - failures}/${checks} checks passed`);

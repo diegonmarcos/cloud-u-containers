@@ -29,6 +29,7 @@ import { buildTable, match } from './router.mjs';
 import {
   upstreamHeaders, redactSecrets, reposUrl, tarballUrl,
   projectRepo, validName, validRef,
+  repoDeclared, clampPerPage, feedUrl, FEED_KINDS,
 } from './upstream.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -159,6 +160,58 @@ function ghFetch(url, accept) {
   });
 }
 
+// ── Feed cache (commits / runs of a declared repo) ──────────────────────────
+// Keyed by (repo, kind) and always fetched at max_per_page, so the key space
+// is bounded by the allow-list and the fleet's polling costs at most
+// 2 x len(feeds.repos) upstream calls per TTL. The in-flight promise is what is
+// cached, so concurrent misses share ONE upstream call. Failures are evicted,
+// never cached: the next caller retries instead of being served a stale error.
+const FEEDS = RT.feeds;
+const FEED_CACHE = new Map();
+
+function cachedFeed(owner, repo, kind) {
+  const key = `${owner}/${repo}`.toLowerCase() + `:${kind}`;
+  const hit = FEED_CACHE.get(key);
+  if (hit && Date.now() - hit.at < FEEDS.cache_ttl_s * 1000) return hit.p;
+  const p = (async () => {
+    const r = await ghFetch(feedUrl(API_BASE, owner, repo, kind, FEEDS.max_per_page));
+    if (!r.ok) {
+      const e = new Error(`GitHub returned ${r.status} for ${kind}`);
+      e.upstreamStatus = r.status;
+      throw e;
+    }
+    const list = FEED_KINDS[kind].list(await r.json());
+    if (!Array.isArray(list)) throw new Error(`GitHub returned a non-list for ${kind}`);
+    return { items: list.map(FEED_KINDS[kind].project), cached_at: new Date().toISOString() };
+  })();
+  FEED_CACHE.set(key, { p, at: Date.now() });
+  p.catch(() => { if (FEED_CACHE.get(key)?.p === p) FEED_CACHE.delete(key); });
+  return p;
+}
+
+function feedHandler(kind) {
+  return async (_req, res, { params, query }) => {
+    const { owner, repo } = params;
+    if (!validName(owner) || !validName(repo)) {
+      return sendError(res, 400, 'bad_repo', 'owner and repo must be valid GitHub names');
+    }
+    // Checked BEFORE anything is dialled: an undeclared repo costs no quota.
+    if (!repoDeclared(FEEDS.repos, owner, repo)) {
+      return sendError(res, 403, 'repo_not_declared', `${owner}/${repo} is not in runtime.feeds.repos`);
+    }
+    let feed;
+    try {
+      feed = await cachedFeed(owner, repo, kind);
+    } catch (err) {
+      if (err.upstreamStatus === undefined) throw err; // timeout -> 504 in serve()
+      const notFound = err.upstreamStatus === 404;
+      return sendError(res, notFound ? 404 : 502, notFound ? 'not_found' : 'upstream_error', err.message);
+    }
+    const n = clampPerPage(query.get('per_page'), FEEDS.max_per_page);
+    return sendJson(res, 200, { repo: `${owner}/${repo}`, [kind]: feed.items.slice(0, n), cached_at: feed.cached_at });
+  };
+}
+
 // ── Handlers, keyed by the DECLARED path in build.json runtime.endpoints ───
 const HANDLERS = {
   '/git/health': async (_req, res) => sendJson(res, 200, { status: 'ok', service: 'git-proxy-api' }),
@@ -226,6 +279,9 @@ const HANDLERS = {
       src.pipe(res).on('finish', resolve).on('error', reject);
     });
   },
+
+  '/git/repos/:owner/:repo/commits': feedHandler('commits'),
+  '/git/repos/:owner/:repo/runs': feedHandler('runs'),
 };
 
 // Throws if build.json and HANDLERS disagree in EITHER direction — the service

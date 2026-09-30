@@ -19,7 +19,7 @@
     "native_build": {
       "type": "image-wrapper",
       "_cmd_doc": "There are NO npm dependencies — the service is stdlib-only ESM on node:22 (http + WebCrypto for the JWKS/RS256 verify). RUN is unconditional in the image-wrapper generator, so it is spent on a syntax check of our own entrypoint: a parse error fails the BUILD instead of crash-looping a deployed container. Nothing outside this service's own source can fail its release (#254).",
-      "cmd": "node --check index.mjs && node --check authz.mjs && node --check upstream.mjs && node --check contract.mjs",
+      "cmd": "node --check index.mjs && node --check authz.mjs && node --check upstream.mjs && node --check contract.mjs && node --check router.mjs",
       "entrypoint": "node index.mjs",
       "base_image": "node:22-bookworm-slim",
       "_apt_doc": "ca-certificates only, and it is load-bearing: both outbound dependencies are HTTPS (auth.diegonmarcos.com/jwks.json for the bearer verify, api.github.com for the work). A missing trust store would not fail the build — it would 502 every request in production. No curl: the healthcheck probes with node.",
@@ -118,8 +118,35 @@
         "path": "/git/repos/:owner/:repo/tarball",
         "auth": "authelia_bearer",
         "description": "Streamed gzip tarball of :ref (query `ref`, default the repo's default branch). Proxied straight from GitHub's codeload redirect to the caller — nothing is written to disk, which is deliberate: oci disks have sat at 87-97% and an unscoped prune has destroyed services twice (#353/#393)."
+      },
+      {
+        "method": "GET",
+        "path": "/git/repos/:owner/:repo/commits",
+        "auth": "authelia_bearer",
+        "description": "Recent commits of a repo in runtime.feeds.repos (query `per_page`, 1..feeds.max_per_page, default 5). Returns {repo,commits:[{sha,message,author,date,html_url}],cached_at} — a projection, not the upstream body. Undeclared repo -> 403 repo_not_declared; nothing is dialled for it. ADOPTION RULE: this route is a quota optimisation for PUBLIC data, never a dependency. The service is sheddable and the phone cannot assume it is up, so a client must treat any failure here (unreachable, 5xx, 504) as a cue to fall back to the direct public api.github.com call, and must surface that fallback's own error if it also fails — never render an empty list in place of an error."
+      },
+      {
+        "method": "GET",
+        "path": "/git/repos/:owner/:repo/runs",
+        "auth": "authelia_bearer",
+        "description": "Recent GitHub Actions workflow runs of a repo in runtime.feeds.repos (query `per_page`, same bounds). Returns {repo,runs:[{name,display_title,status,conclusion,created_at,html_url,path}],cached_at}. Read-only; there is no re-run or dispatch route. ADOPTION RULE: this route is a quota optimisation for PUBLIC data, never a dependency. The service is sheddable and the phone cannot assume it is up, so a client must treat any failure here (unreachable, 5xx, 504) as a cue to fall back to the direct public api.github.com call, and must surface that fallback's own error if it also fails — never render an empty list in place of an error."
       }
     ],
+    "feeds": {
+      "_doc": "The allow-list for the commits/runs routes is DATA, here, not code: the server refuses any owner/repo not listed, so a caller cannot spend the server-side credential's quota on arbitrary repositories. Seeded from the repos the superapp Store's GitHub commits and workflow-run panels declare (cloud-u-android aa_cloud-superapp build.json ui.sections stack_observability). Every successful upstream answer is cached in memory for cache_ttl_s, keyed by (repo, kind) and always fetched at max_per_page then sliced, so the whole fleet polling costs at most 2 x len(repos) upstream calls per TTL window, however many phones ask.",
+      "cache_ttl_s": 120,
+      "max_per_page": 20,
+      "repos": [
+        "diegonmarcos/cloud-infra",
+        "diegonmarcos/cloud-infra-desktop",
+        "diegonmarcos/cloud-u-android",
+        "diegonmarcos/cloud-u-containers",
+        "diegonmarcos/cloud-u-linux",
+        "diegonmarcos/diegonmarcos.github.io",
+        "diegonmarcos/front-assets-cdn",
+        "diegonmarcos/front-data"
+      ]
+    },
     "upstream": {
       "api_base": "https://api.github.com",
       "timeout_ms": 20000,
@@ -137,9 +164,9 @@
   "api": {
     "type": "custom-rest",
     "base_path": "/git",
-    "endpoint_count": 4,
+    "endpoint_count": 6,
     "display_name": "Git Proxy API",
-    "description": "Authelia-fronted read path to GitHub: list repos and stream a tarball. The GitHub credential stays server-side; the caller only ever presents an Authelia bearer.",
+    "description": "Authelia-fronted read path to GitHub: list repos, stream a tarball, and read recent commits / workflow runs of declared repos (cached, to keep the Store's feeds off the anonymous quota). The GitHub credential stays server-side; the caller only ever presents an Authelia bearer.",
     "auth": "mixed"
   },
   "tests": {
