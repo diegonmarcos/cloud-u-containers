@@ -2,7 +2,7 @@
     handle @bearer {
   @BEARER_BLOCK@
       reverse_proxy @UPSTREAM@ {
-        header_up X-Real-IP {http.request.remote.host}
+        header_up X-Real-IP {http.request.remote.host}@BEARER_HEADER_UP@
 @EMPTY_GUARD@
       }
     }

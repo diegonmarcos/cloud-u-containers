@@ -151,20 +151,34 @@ let
   # a truthful 502 that handle_errors renders, instead of a silent false green.
   emptyGuard = stripTrail (readTpl "35-empty-body-guard.caddy.tpl");
 
-  mkProtected = upstream: subst {
-    "@BEARER_BLOCK@"   = bearer;
-    "@AUTHELIA_BLOCK@" = authelia;
-    "@UPSTREAM@"       = upstream;
-    "@EMPTY_GUARD@"    = emptyGuard;
-  } protectedTpl;
+  # route.strip_authorization (service build.json proxy.primary): withhold the
+  # fleet bearer from the upstream once introspect-proxy has validated it.
+  # Without it, an upstream with its OWN Authorization scheme (gitea) reads
+  # the fleet JWT as one of its tokens and 401s a request the gate already
+  # passed — no bearer client could reach gitea's API or clone through the
+  # edge. Bearer branch only: the Authelia branch never carries a fleet
+  # bearer, and a Basic header there is the upstream's own credential.
+  bearerHeaderUp = opts:
+    if opts.strip_authorization or false then "\n        header_up -Authorization" else "";
 
-  mkProtectedCustom = upstreamUrl: transportBlock: subst {
-    "@BEARER_BLOCK@"    = bearer;
-    "@AUTHELIA_BLOCK@"  = authelia;
-    "@UPSTREAM@"        = upstreamUrl;
-    "@TRANSPORT_BLOCK@" = transportBlock;
-    "@EMPTY_GUARD@"     = emptyGuard;
+  mkProtectedOpt = opts: upstream: subst {
+    "@BEARER_BLOCK@"     = bearer;
+    "@BEARER_HEADER_UP@" = bearerHeaderUp opts;
+    "@AUTHELIA_BLOCK@"   = authelia;
+    "@UPSTREAM@"         = upstream;
+    "@EMPTY_GUARD@"      = emptyGuard;
+  } protectedTpl;
+  mkProtected = mkProtectedOpt {};
+
+  mkProtectedCustomOpt = opts: upstreamUrl: transportBlock: subst {
+    "@BEARER_BLOCK@"     = bearer;
+    "@BEARER_HEADER_UP@" = bearerHeaderUp opts;
+    "@AUTHELIA_BLOCK@"   = authelia;
+    "@UPSTREAM@"         = upstreamUrl;
+    "@TRANSPORT_BLOCK@"  = transportBlock;
+    "@EMPTY_GUARD@"      = emptyGuard;
   } protectedCustomTpl;
+  mkProtectedCustom = mkProtectedCustomOpt {};
 
   # ── WG-only gates (fail-closed posture; route.wg_only from build.json
   #    proxy.primary, defaulted true unless wg_only:false — see derive engine) ──
@@ -315,6 +329,9 @@ ${plainOut}${sniMuxBlock}
 
   mkSubdomainRoute = route:
     let
+      # Shadow the shared builders with this route's per-vhost options.
+      mkProtected       = mkProtectedOpt route;
+      mkProtectedCustom = mkProtectedCustomOpt route;
       isNoAuth = (route.auth or null) == "none";
       # The derive engine emits wg_only:true ONLY for private routes and OMITS the
       # field for public ones (wgOnly ?? true at the source). So "absent" reliably

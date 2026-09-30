@@ -20,7 +20,9 @@
     "primary": {
       "domain": "git.diegonmarcos.com",
       "wg_only": false,
-      "auth": "two_factor"
+      "auth": "two_factor",
+      "strip_authorization": true,
+      "_strip_authorization_doc": "The edge withholds the fleet bearer from gitea after introspect-proxy validates it. Gitea reads any Authorization header as one of ITS OWN tokens, so forwarding the fleet JWT got a 401 from gitea on a request the gate had already passed — no bearer client could reach the API or clone, even a public repo. Gitea then serves the request anonymously (public repos only); private-repo access through the edge needs a fleet-identity -> gitea-user mapping (reverse-proxy auth), which is not configured."
     }
   },
   "health": {
@@ -96,6 +98,12 @@
   "upstream_image": "gitea/gitea:latest",
   "build": {
     "headers_enforced": true
+  },
+  "tests": {
+    "edge-bearer-strip": {
+      "cmd": "node test-edge-bearer-strip.ts",
+      "cwd": "src"
+    }
   },
   "api": {
     "type": "openapi",

@@ -28,6 +28,12 @@ in
         GITEA__server__SSH_LISTEN_HOST               = buildJson.ssh_listen_host;
         GITEA__server__DISABLE_SSH                   = "false";
         GITEA__server__ROOT_URL                      = "https://${domain}";
+        # Gitea >=1.24 defaults to "auto": it builds clone_url/html_url from the
+        # request's Host, so a mesh caller of 10.0.0.6:3002 was handed
+        # http://10.0.0.6:3002/... — unreachable off-mesh, and indistinguishable
+        # from the service being down for a client that honours the listing.
+        # "never" makes ROOT_URL (the public edge) the only projection.
+        GITEA__server__PUBLIC_URL_DETECTION          = "never";
         GITEA__server__SSH_DOMAIN                    = domain;
         GITEA__mirror__DEFAULT_INTERVAL              = giteaConfig.mirror_interval;
         GITEA__repository__ENABLE_PUSH_CREATE_USER   = "true";
