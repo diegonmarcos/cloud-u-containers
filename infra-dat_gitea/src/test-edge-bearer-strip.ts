@@ -29,7 +29,7 @@ for (const tpl of ["23-protected.caddy.tpl", "24-protected-custom.caddy.tpl"]) {
 //    and the subdomain route builder feeds its own route options in.
 const nix = read("../../infra-sec_caddy/src/caddyfile.nix");
 t("caddyfile.nix substitutes @BEARER_HEADER_UP@ in both builders",
-  (nix.match(/"@BEARER_HEADER_UP@"\s*=\s*bearerHeaderUp opts;/g) || []).length === 2);
+  (nix.match(/"@BEARER_HEADER_UP@"\s*=\s*bearerHeaderUp opts\b/g) || []).length === 2);
 t("caddyfile.nix emits header_up -Authorization on strip_authorization",
   /strip_authorization or false then "\\n\s+header_up -Authorization"/.test(nix));
 t("mkSubdomainRoute shadows mkProtected with the route's options",

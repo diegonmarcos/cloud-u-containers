@@ -22,7 +22,17 @@
       "wg_only": false,
       "auth": "two_factor",
       "strip_authorization": true,
-      "_strip_authorization_doc": "The edge withholds the fleet bearer from gitea after introspect-proxy validates it. Gitea reads any Authorization header as one of ITS OWN tokens, so forwarding the fleet JWT got a 401 from gitea on a request the gate had already passed — no bearer client could reach the API or clone, even a public repo. Gitea then serves the request anonymously (public repos only); private-repo access through the edge needs a fleet-identity -> gitea-user mapping (reverse-proxy auth), which is not configured."
+      "_strip_authorization_doc": "The edge withholds the fleet bearer from gitea after introspect-proxy validates it. Gitea reads any Authorization header as one of ITS OWN tokens, so forwarding the fleet JWT got a 401 from gitea on a request the gate had already passed — no bearer client could reach the API or clone, even a public repo. The identity the gate validated reaches gitea through `identity` below instead.",
+      "identity": {
+        "header": "X-WEBAUTH-USER",
+        "bearer": {
+          "claude-admin": "diego"
+        },
+        "session": {
+          "me@diegonmarcos.com": "diego"
+        },
+        "_doc": "Which gitea user each identity the edge validated acts as (gitea reverse-proxy authentication). `bearer` is keyed by the fleet client_id introspect-proxy returns in X-Auth-User; `session` by the Authelia username forward_auth returns in Remote-User — the cloud-drive app reaches gitea with the Authelia session cookie, never a bearer, so without that row the phone could not see a private repo. The hub caddy strips any inbound `header` before forward_auth, sets it only from these tables, and answers 403 for a validated identity that has no row: an unmapped client never falls through to anonymous or to a default user. `diego` is the only human gitea account and owns every repo. Add a row here, not anywhere else."
+      }
     }
   },
   "health": {

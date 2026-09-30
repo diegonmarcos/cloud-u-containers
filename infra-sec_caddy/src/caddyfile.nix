@@ -161,22 +161,34 @@ let
   bearerHeaderUp = opts:
     if opts.strip_authorization or false then "\n        header_up -Authorization" else "";
 
-  mkProtectedOpt = opts: upstream: subst {
-    "@BEARER_BLOCK@"     = bearer;
-    "@BEARER_HEADER_UP@" = bearerHeaderUp opts;
-    "@AUTHELIA_BLOCK@"   = authelia;
-    "@UPSTREAM@"         = upstream;
-    "@EMPTY_GUARD@"      = emptyGuard;
+  # route.identity (service build.json proxy.primary.identity): map the
+  # identity the gate validated to the upstream's own user and send it in the
+  # upstream's reverse-proxy-auth header. All of it lives in identity.nix;
+  # every route without the key renders byte-identical to before.
+  identityOf = import ./identity.nix;
+
+  mkProtectedOpt = opts: upstream: let id = identityOf opts; in subst {
+    "@BEARER_BLOCK@"       = bearer;
+    "@BEARER_IDENTITY@"    = id.bearer;
+    "@BEARER_HEADER_UP@"   = bearerHeaderUp opts + id.bearerHeaderUp;
+    "@AUTHELIA_BLOCK@"     = authelia;
+    "@AUTHELIA_IDENTITY@"  = id.session;
+    "@AUTHELIA_HEADER_UP@" = id.sessionHeaderUp;
+    "@UPSTREAM@"           = upstream;
+    "@EMPTY_GUARD@"        = emptyGuard;
   } protectedTpl;
   mkProtected = mkProtectedOpt {};
 
-  mkProtectedCustomOpt = opts: upstreamUrl: transportBlock: subst {
-    "@BEARER_BLOCK@"     = bearer;
-    "@BEARER_HEADER_UP@" = bearerHeaderUp opts;
-    "@AUTHELIA_BLOCK@"   = authelia;
-    "@UPSTREAM@"         = upstreamUrl;
-    "@TRANSPORT_BLOCK@"  = transportBlock;
-    "@EMPTY_GUARD@"      = emptyGuard;
+  mkProtectedCustomOpt = opts: upstreamUrl: transportBlock: let id = identityOf opts; in subst {
+    "@BEARER_BLOCK@"       = bearer;
+    "@BEARER_IDENTITY@"    = id.bearer;
+    "@BEARER_HEADER_UP@"   = bearerHeaderUp opts + id.bearerHeaderUp;
+    "@AUTHELIA_BLOCK@"     = authelia;
+    "@AUTHELIA_IDENTITY@"  = id.session;
+    "@AUTHELIA_HEADER_UP@" = id.sessionHeaderUp;
+    "@UPSTREAM@"           = upstreamUrl;
+    "@TRANSPORT_BLOCK@"    = transportBlock;
+    "@EMPTY_GUARD@"        = emptyGuard;
   } protectedCustomTpl;
   mkProtectedCustom = mkProtectedCustomOpt {};
 
@@ -501,7 +513,7 @@ ${plainOut}${sniMuxBlock}
     # ${route.comment or route.domain}
     ${route.domain} {
   ${publicBindLine}
-  ${secLine}${uploadBlock}
+  ${secLine}${uploadBlock}${(identityOf route).siteStrip}
   ${wgBlock}
   ${bypassBlock}${landingBlock}
   ${rootJsonBlock}

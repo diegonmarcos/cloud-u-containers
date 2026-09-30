@@ -1,6 +1,6 @@
     @bearer header Authorization Bearer*
     handle @bearer {
-  @BEARER_BLOCK@
+  @BEARER_BLOCK@@BEARER_IDENTITY@
       reverse_proxy @UPSTREAM@ {
         header_up X-Real-IP {http.request.remote.host}@BEARER_HEADER_UP@
         @TRANSPORT_BLOCK@
@@ -8,9 +8,9 @@
       }
     }
     handle {
-  @AUTHELIA_BLOCK@
+  @AUTHELIA_BLOCK@@AUTHELIA_IDENTITY@
       reverse_proxy @UPSTREAM@ {
-        header_up X-Real-IP {http.request.remote.host}
+        header_up X-Real-IP {http.request.remote.host}@AUTHELIA_HEADER_UP@
         @TRANSPORT_BLOCK@
 @EMPTY_GUARD@
       }
