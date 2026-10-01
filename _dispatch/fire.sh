@@ -88,3 +88,11 @@ IFS=$OIFS
 # shell does not survive to write it (#717).
 DISPATCH_REPOS=$REPO sh "$D/run.sh" "$ENGINE" "$SLOT" "$PROMPT" "$L/dispatch-$SLOT.outer" "$MODEL" \
   > "$L/dispatch-$SLOT.outer" 2>&1
+RC=$?
+
+# #742: the agent is gone (run.sh has written its exit line), so its worktrees go too — every
+# one of them used to stay forever, and 24 such slots filled oci-apps' disk. reap.sh keeps any
+# worktree with uncommitted or unpushed work and says why in this marker. A fire.sh that never
+# gets here (SIGKILL) leaves its slot to prep.sh's low-disk sweep.
+sh "$(dirname "$0")/reap.sh" "$ENGINE" "$SLOT" >> "$M" 2>&1
+exit "$RC"

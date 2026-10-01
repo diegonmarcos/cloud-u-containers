@@ -8,7 +8,8 @@
 # workspace that did not exist for 104 minutes because ONE copy was missing the abort.
 #
 # Usage: prep.sh <hermes|goose|claude> <slot> <repo-name> <marker-file> [brief-file]
-#   Writes provenance to <marker-file>. Exits non-zero if the workspace cannot be prepared,
+#   Writes provenance to <marker-file>. Exits non-zero if the workspace cannot be prepared
+#   (69: disk below dispatch.json's min_free_mb even after reaping finished slots, #742),
 #   and the caller MUST treat that as fatal — never fire an agent at a workspace that failed.
 #   [brief-file] (#510): make the brief readable by the engine, or abort. See below.
 #
@@ -183,7 +184,33 @@ prune_own() {
   git -C "$SRC" worktree prune -v >> "$M" 2>&1
 }
 
+# #742: DISK PRE-FLIGHT, before the one step here that costs real disk. 2026-10-01 oci-apps sat at
+# 185MB free under 24 never-removed slots and two fires died mid-checkout with ENOSPC. The floor is
+# DECLARED in dispatch.json beside this file. Below it, reap the finished slots first (reap.sh
+# keeps any worktree holding work); still below it, refuse the slot loudly. An unreadable floor or
+# an unreadable df reads as zero free: the guard fails closed, never open.
+free_mb() {
+  F=$(df -Pm "$ROOT/_work" 2>/dev/null | awk 'NR==2 {print $4}')
+  case "$F" in ''|*[!0-9]*) echo 0 ;; *) echo "$F" ;; esac
+}
+disk_preflight() {
+  MIN=$(sed -n 's/.*"min_free_mb"[[:space:]]*:[[:space:]]*\([0-9][0-9]*\).*/\1/p' "$(dirname "$0")/dispatch.json" 2>/dev/null)
+  if [ -z "$MIN" ]; then
+    echo "prep: ABORT — no min_free_mb declared in $(dirname "$0")/dispatch.json; the disk guard cannot run" >> "$M"
+    exit 69
+  fi
+  F=$(free_mb)
+  [ "$F" -ge "$MIN" ] && return 0
+  echo "prep: disk ${F}MB free < ${MIN}MB declared — reaping finished slots first" >> "$M"
+  sh "$(dirname "$0")/reap.sh" "$ENGINE" --sweep "$SLOT" >> "$M" 2>&1
+  F=$(free_mb)
+  [ "$F" -ge "$MIN" ] && { echo "prep: disk ${F}MB free after reaping" >> "$M"; return 0; }
+  echo "prep: ABORT — DISK FULL: ${F}MB free on $ROOT/_work after reaping every finished slot, ${MIN}MB declared (dispatch.json). Slots kept above hold work; settle them, then re-fire." >> "$M"
+  exit 69
+}
+
 if [ ! -e "$W/.git" ]; then
+  disk_preflight
   prune_own
   # Hooks OFF for the add: the source's own core.hooksPath applies to a worktree (a clone never
   # inherited it), and cloud-infra's post-checkout then ran a submodule SSH clone inside prep —

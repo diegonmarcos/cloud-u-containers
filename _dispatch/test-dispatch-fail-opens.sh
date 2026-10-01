@@ -15,11 +15,17 @@
 # pre-push hook is wired per-worktree without touching the shared config, a prune never takes
 # another engine's worktree, root chowns the shared metadata, and the brief is made 0644 or the
 # slot aborts before any workspace is made.
+# #742: fire.sh reaps a finished slot's clean worktrees and KEEPS any with uncommitted or unpushed
+# work; prep.sh, below dispatch.json's min_free_mb, sweeps finished slots (never a live one, never
+# another engine's) and then refuses rc 69 if still short.
 #
 # Usage: sh test-dispatch-fail-opens.sh
 # Registered in cloud-infra 9_others/test-registry.json (path a_solutions/_dispatch/...), run by
 # lint-pipeline's registered-testers job — see run.sh's header for why not a service build.json.
 set -u
+# A dispatch slot exports DISPATCH_REPOS for its own agent; run from inside one, it would steer
+# every run.sh case here at the wrong workspace.
+unset DISPATCH_REPOS
 HERE=$(cd "$(dirname "$0")" && pwd)
 pass=0; fail=0
 ck() { if [ "$2" = "$3" ]; then pass=$((pass+1)); echo "  ok   $1"; \
@@ -53,7 +59,7 @@ IN=$(cat); printf '%s\n' "$IN" >> "${STDINLOG:-/dev/null}"
 case " $* " in *" --max-turns 1 "*) printf '%s' "$PROBE_OUT"; exit "${PROBE_RC:-0}" ;; esac
 case " $* " in
   *" --resume "*) OUT=$RESUME_OUT; W=${RESUME_WRITES:-} ;;
-  *) OUT=$MAIN_OUT; W=${MAIN_WRITES:-}; sleep "${MAIN_SLEEP:-0}" ;;
+  *) OUT=$MAIN_OUT; W=${MAIN_WRITES:-}; sleep "${MAIN_SLEEP:-0}"; [ -n "${MAIN_SH:-}" ] && sh -c "$MAIN_SH" ;;
 esac
 R=$(printf '%s' "$IN" | grep -o '/[^ ]*/report-[^ ]*\.md' | head -1)
 [ -n "$W" ] && [ -n "$R" ] && printf '%s\n' "$W" > "$R"
@@ -387,9 +393,77 @@ git init -q -b main "$T/demo2"; echo two > "$T/demo2/f"; git -C "$T/demo2" add f
 git -C "$T/demo2" -c user.name=t -c user.email=t@t commit -qm init
 : > "$T/pwds"
 ck "(#658) fire: two repos, rc 0"                        "$(PWDLOG="$T/pwds" fire f3 demo2,demo)" "FIRE exit rc=0"
+# Read from prep's own provenance, not the tree: #742 reaps a finished slot's clean worktrees.
 ck "(#658) fire: EVERY repo got its own worktree in the slot" \
-   "$(for r in demo2 demo; do git -C "$T/_work/f3/$r" rev-parse --absolute-git-dir 2>/dev/null | grep -c '/.git/worktrees/'; done | tr -d '\n')" "11"
-ck "(#658) fire: the agent started in the first one"    "$(tail -1 "$T/pwds")" "$(cd "$T/_work/f3/demo2" && pwd -P)"
+   "$(for r in demo2 demo; do grep -c "^prep at .* gitdir=$T/$r/.git/worktrees/" "$T/_dispatch/logs/dispatch-f3.marker"; done | tr -d '\n')" "11"
+ck "(#658) fire: the agent started in the first one"    "$(tail -1 "$T/pwds")" "$(cd "$T" && pwd -P)/_work/f3/demo2"
+
+echo "── #742 a finished slot's worktrees are reaped; work is never destroyed"
+# Through the real fire.sh, against the root whose repo HAS an origin — "pushed" is judged
+# against the remotes, so the reaper needs one to call anything safe.
+for f in fire.sh prep.sh run.sh; do printf '%s\n' "$SHIM" > "$RT/_dispatch/$f"; done
+mkdir -p "$RT/cloud-u-containers"; ln -s "$HERE" "$RT/cloud-u-containers/_dispatch"
+rfire() { # rfire <slot> -> the slot's marker path
+  cp "$BRIEF" "$RT/_dispatch/dispatch-$1.md"
+  DISPATCH_ROOT=$RT PATH="$T/bin:$PATH" CALLS="$T/calls" sh "$RT/_dispatch/fire.sh" claude "$1" demo >/dev/null 2>&1
+  echo "$RT/_dispatch/logs/dispatch-$1.marker"
+}
+wts() { git -C "$RT/demo" worktree list --porcelain | grep -c "^worktree $RT/_work/$1/"; }
+MK=$(rfire g1)
+ck "(#742) finished, clean slot: its worktree is gone after fire.sh returns" \
+   "$([ -e "$RT/_work/g1" ] && echo present || echo gone)/$(wts g1)" "gone/0"
+ck "(#742) ...after the exit line, and the marker says so" \
+   "$(grep -o 'FIRE exit rc=0\|reap: removed worktree' "$MK" | tr '\n' '|')" "FIRE exit rc=0|reap: removed worktree|"
+MK=$(MAIN_SH='echo wip > uncommitted' rfire g2)
+ck "(#742) a slot with uncommitted work is KEPT, file intact" \
+   "$(cat "$RT/_work/g2/demo/uncommitted" 2>/dev/null)/$(wts g2)" "wip/1"
+ck "(#742) ...and the marker says why" "$(grep -c 'reap: KEPT .*uncommitted path' "$MK")" "1"
+MK=$(MAIN_SH='git -c user.name=t -c user.email=t@t commit -q --allow-empty -m local' rfire g3)
+ck "(#742) a slot whose HEAD has a commit no remote has is KEPT" \
+   "$(git -C "$RT/_work/g3/demo" log -1 --format=%s 2>/dev/null)/$(wts g3)" "local/1"
+ck "(#742) ...and the marker says why" "$(grep -c "reap: KEPT .*commit(s) on HEAD" "$MK")" "1"
+
+echo "── #742 prep.sh disk pre-flight against dispatch.json's min_free_mb"
+# df is stubbed: it reports 1MB free while $DF_FULL_WHILE exists, plenty once it is gone — so
+# "the reap freed the disk" is observable without filling one.
+mkdir -p "$T/dfbin"
+cat > "$T/dfbin/df" <<'EOF2'
+#!/bin/sh
+A=99999999; [ -e "${DF_FULL_WHILE:-/nonexistent}" ] && A=1
+printf 'Filesystem 1M-blocks Used Available Capacity Mounted\nstub 1 1 %s 1%% /\n' "$A"
+EOF2
+/bin/chmod 755 "$T/dfbin/df"
+dprep() { # dprep <slot> -> rc  (marker at logs/dispatch-<slot>.marker, as fire.sh names it)
+  DISPATCH_ROOT=$RT PATH="$T/dfbin:$PATH" sh "$RT/_dispatch/prep.sh" claude "$1" demo "$RT/_dispatch/logs/dispatch-$1.marker" >/dev/null 2>&1
+  echo $?
+}
+# z1: a slot whose agent was SIGKILLed — marker names the engine, no exit line, no process.
+echo "FIRE start 2026-10-01T00:00:00Z engine=claude slot=z1 repo=demo model=opus" > "$RT/_dispatch/logs/dispatch-z1.marker"
+dprep z1 > /dev/null
+ck "(#742) low disk: prep reaps the finished slot first, then proceeds (rc 0)" \
+   "$(DF_FULL_WHILE=$RT/_work/z1 dprep z2)/$([ -e "$RT/_work/z1" ] && echo z1-present || echo z1-gone)/$(wts z2)" "0/z1-gone/1"
+ck "(#742) ...and logs both the shortage and the reap" \
+   "$(Z=$RT/_dispatch/logs/dispatch-z2.marker; echo "$(grep -c 'reaping finished slots first' "$Z")/$(grep -c "reap: removed worktree $RT/_work/z1/demo" "$Z")/$(grep -c 'free after reaping' "$Z")")" "1/1/1"
+# z3: live — a fire.sh for it is running. A slot of another engine (z4) is not ours to judge.
+echo "FIRE start 2026-10-01T00:00:00Z engine=claude slot=z3 repo=demo model=opus" > "$RT/_dispatch/logs/dispatch-z3.marker"
+dprep z3 > /dev/null
+echo "FIRE start 2026-10-01T00:00:00Z engine=goose slot=z4 repo=demo model=x" > "$RT/_dispatch/logs/dispatch-z4.marker"
+dprep z4 > /dev/null
+sh -c 'sleep 30; :' "$RT/_dispatch/fire.sh" claude z3 demo &
+LP=$!
+i=0; until grep -q 'fire.sh' "/proc/$LP/cmdline" 2>/dev/null || [ $i -ge 50 ]; do sleep 0.1; i=$((i+1)); done
+ck "(#742) still short after reaping: prep REFUSES the slot, rc 69, no workspace made" \
+   "$(DF_FULL_WHILE=$RT/_work dprep z5)/$([ -e "$RT/_work/z5/demo" ] && echo made || echo none)" "69/none"
+ck "(#742) ...loudly, in the marker" "$(grep -c 'ABORT — DISK FULL' "$RT/_dispatch/logs/dispatch-z5.marker")" "1"
+ck "(#742) the sweep never touched the LIVE slot" "$(wts z3)/$(grep -c 'skip z3 — agent alive' "$RT/_dispatch/logs/dispatch-z5.marker")" "1/1"
+ck "(#742) ...nor another engine's" "$(wts z4)/$(grep -c 'skip z4 — fired by goose' "$RT/_dispatch/logs/dispatch-z5.marker")" "1/1"
+ck "(#742) ...and kept the dirty slot from the fire above" "$(wts g2)" "1"
+kill "$LP" 2>/dev/null; wait "$LP" 2>/dev/null
+# A floor that cannot be read is no floor: fail closed.
+mkdir -p "$T/nofloor/cloud-u-containers/_dispatch" "$T/nofloor/_dispatch/logs"
+for f in prep.sh reap.sh live.sh; do cp "$HERE/$f" "$T/nofloor/cloud-u-containers/_dispatch/"; done
+ck "(#742) no min_free_mb declared: prep refuses, rc 69" \
+   "$(DISPATCH_ROOT=$RT sh "$T/nofloor/cloud-u-containers/_dispatch/prep.sh" claude z6 demo "$T/nofloor/m" >/dev/null 2>&1; echo $?)/$(grep -c 'no min_free_mb declared' "$T/nofloor/m")" "69/1"
 
 echo "--- $pass passed, $fail failed"
 [ "$fail" -eq 0 ]
