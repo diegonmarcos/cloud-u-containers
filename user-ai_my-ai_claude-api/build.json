@@ -22,7 +22,14 @@
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/my-ai_claude-api",
-    "compose_flags": "--pull always --force-recreate"
+    "compose_flags": "--pull always --force-recreate",
+    "drain": {
+      "_doc": "This container RUNS the dispatched agents, and a recreate SIGKILLs every one of them mid-task — three ordinary ships did that on 2026-10-01, the last taking six agents at once. With drain declared, the ship engine (cloud-ship-container-step-deploy-drain.sh) asks probe for the live agents first: none -> recreates now; some -> names them in the ship log, leaves the recreate to a waiter on the VM that runs it once they finish (or at max_wait_seconds, naming whom it kills), and fire.sh refuses new agents meanwhile. probe is relative to this dir and runs INSIDE the container as exec_user (the owner of the shared tree — root would leave root-owned files in it). SHIP_DRAIN_FORCE=1 in the ship's env overrides the wait.",
+      "probe": "../_dispatch/live.sh",
+      "max_wait_seconds": 14400,
+      "poll_seconds": 60,
+      "exec_user": "appuser"
+    }
   },
   "secrets": {
     "escape_dollars": "false"

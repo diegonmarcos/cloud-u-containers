@@ -119,6 +119,19 @@
         "wrangler": {
           "type": ["string", "boolean"],
           "description": "When true, deploy via Cloudflare Wrangler CLI instead of SSH"
+        },
+        "drain": {
+          "type": "object",
+          "description": "For a container that runs dispatched agents: the ship recreates it only when probe reports no live agent, deferring to a waiter on the VM otherwise (cloud-ship-container-step-deploy-drain.sh).",
+          "required": ["probe", "max_wait_seconds", "poll_seconds", "exec_user"],
+          "properties": {
+            "_doc": { "type": "string" },
+            "probe": { "type": "string", "description": "Path, relative to the service dir, of the live-agent probe piped into the container (sh -s -- list|hold|release)" },
+            "max_wait_seconds": { "type": "integer", "minimum": 0, "description": "Longest the recreate waits; after it, it runs over the agents still live and names them" },
+            "poll_seconds": { "type": "integer", "minimum": 1 },
+            "exec_user": { "type": "string", "description": "User the probe runs as inside the container — the owner of the dispatch tree" }
+          },
+          "additionalProperties": false
         }
       }
     },
