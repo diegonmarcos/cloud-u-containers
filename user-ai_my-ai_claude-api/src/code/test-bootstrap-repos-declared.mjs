@@ -14,8 +14,10 @@
 // literal repo loop comes back into the shell.
 //
 // Usage: node test-bootstrap-repos-declared.mjs   (cwd = <repo>/user-ai_my-ai_claude-api/src/code)
-import { readFileSync } from "node:fs";
+import { readFileSync, mkdtempSync, existsSync } from "node:fs";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { spawnSync } from "node:child_process";
 
 let pass = 0;
 let fail = 0;
@@ -44,11 +46,11 @@ check("D3 no duplicate checkout directories", new Set(dirs).size === dirs.length
   JSON.stringify(dirs));
 
 // ── F: the front family, which is the whole point of the ticket ──────────────
-// Sourced from ffront/repos.json, the front registry index — these are its five
-// members plus the index itself. Pinned by name so a reshuffle cannot silently
+// Sourced from front/repos.json, the front registry index — these are its five
+// members plus the index itself (GitHub repo `front`, formerly `ffront`). Pinned by name so a reshuffle cannot silently
 // drop one and leave agents blind to that project again.
 const FRONT = [
-  "ffront",
+  "front",
   "diegonmarcos.github.io",
   "front-assets-cdn",
   "front-data",
@@ -62,8 +64,39 @@ for (const f of FRONT) {
 // front members are checked out as front-<thing>; the site repo is the one whose
 // GitHub name does not follow that, so it carries an explicit dir.
 const site = repos.find((r) => r.repo === "diegonmarcos.github.io");
-check("F7 diegonmarcos.github.io checks out as front-diegonmarcos (ffront/repos.json)",
+check("F7 diegonmarcos.github.io checks out as front-diegonmarcos (front/repos.json)",
   site?.dir === "front-diegonmarcos", JSON.stringify(site));
+
+// ── R: #731 upstream rename ffront -> front ─────────────────────────────────
+// The index repo was renamed on GitHub. The live tree holds ~/git/ffront, so the
+// declaration must say so, or bootstrap clones a SECOND copy as ~/git/front and
+// the stale ffront checkout lingers beside it.
+const front = repos.find((r) => r.repo === "front");
+check("R1 front declares renamed_from [\"ffront\"]",
+  Array.isArray(front?.renamed_from) && front.renamed_from.includes("ffront"), JSON.stringify(front));
+check("R2 the old name is no longer declared as its own repo", !names.has("ffront"));
+
+// R3 behaviour, not text: run start.sh's own bootstrap_repos against a scratch
+// HOME holding an old-name checkout, and require it to be MOVED and repointed.
+{
+  const fn = start.match(/^bootstrap_repos\(\) \{[\s\S]*?^\}$/m)?.[0];
+  check("R3a start.sh defines bootstrap_repos", !!fn);
+  const home = mkdtempSync(join(tmpdir(), "boot731-"));
+  const sh = `set -e; mkdir -p "$HOME/git/ffront"; cd "$HOME/git/ffront"; git init -q .;
+    git remote add origin https://github.com/diegonmarcos/ffront.git;
+    git remote add gitea http://10.0.0.6:3002/diego/ffront.git; cd /;
+    ${fn}
+    bootstrap_repos; git -C "$HOME/git/front" remote get-url origin; git -C "$HOME/git/front" remote get-url gitea`;
+  const r = spawnSync("bash", ["-c", sh], { encoding: "utf8",
+    // GIT_ALLOW_PROTOCOL=file: a fallback clone from GitHub must not be able to fake a pass.
+    env: { ...process.env, HOME: home, GIT_ALLOW_PROTOCOL: "file", BRIDGE_BOOTSTRAP_REPOS: JSON.stringify([{ repo: "front", renamed_from: ["ffront"] }]) } });
+  const out = (r.stdout || "").trim().split("\n");
+  check("R3b the old-name checkout is moved to the declared dir",
+    r.status === 0 && existsSync(join(home, "git/front/.git")) && !existsSync(join(home, "git/ffront")),
+    `status=${r.status} stderr=${(r.stderr || "").slice(-400)}`);
+  check("R3c origin is repointed at the new name", out.includes("https://github.com/diegonmarcos/front.git"), JSON.stringify(out));
+  check("R3d the gitea mirror remote is repointed too", out.includes("http://10.0.0.6:3002/diego/front.git"), JSON.stringify(out));
+}
 
 // ── C: the pre-#557 repos are still declared ─────────────────────────────────
 // Including the three that were only ever cloned by hand. Dropping one here

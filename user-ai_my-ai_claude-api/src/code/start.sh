@@ -139,7 +139,9 @@ bootstrap_repos() {
   cd "${HOME}/git" || return 0
 
   # Flatten the declaration to TSV so the loop below stays a shell loop:
-  #   repo <TAB> dir <TAB> submodules
+  #   repo <TAB> dir <TAB> submodules(1|0) <TAB> renamed_from (space-separated)
+  # No field may be empty: tab is IFS whitespace, so `read` collapses an empty
+  # field and shifts every later one left.
   local plan
   if ! plan="$(printf '%s' "${BRIDGE_BOOTSTRAP_REPOS:-}" | python3 -c '
 import json, os, sys
@@ -147,7 +149,7 @@ raw = sys.stdin.read().strip()
 if not raw:
     sys.exit("BRIDGE_BOOTSTRAP_REPOS is empty")
 for e in json.loads(raw):
-    print("\t".join([e["repo"], e.get("dir") or e["repo"], "1" if e.get("submodules") else ""]))
+    print("\t".join([e["repo"], e.get("dir") or e["repo"], "1" if e.get("submodules") else "0", " ".join(e.get("renamed_from") or [])]))
 ' 2>&1)"; then
     # Absence must be LOUD. A silent skip here leaves every agent with an empty
     # ~/git and nothing anywhere says why.
@@ -159,8 +161,25 @@ for e in json.loads(raw):
     return 0
   fi
 
-  printf '%s\n' "${plan}" | while IFS="$(printf '\t')" read -r repo dir subs; do
+  printf '%s\n' "${plan}" | while IFS="$(printf '\t')" read -r repo dir subs olds; do
     [ -n "${repo}" ] || continue
+    # An upstream RENAME (`renamed_from`, e.g. ffront -> front): the checkout under
+    # the old name is MOVED to the declared dir and its remotes repointed, so the
+    # tree never holds a stale old-name clone beside a fresh one. Only when the new
+    # dir is absent — an existing checkout is never overwritten.
+    for old in ${olds}; do
+      if [ ! -e "${dir}" ] && [ -d "${old}/.git" ]; then
+        if mv "${old}" "${dir}"; then
+          git -C "${dir}" remote set-url origin "https://github.com/diegonmarcos/${repo}.git"
+          git -C "${dir}" remote set-url gitea "http://10.0.0.6:3002/diego/${repo}.git" 2>/dev/null || true
+          echo "[bootstrap] renamed ${old} -> ${dir} (upstream rename) and repointed its remotes" >&2
+        else
+          echo "[bootstrap] WARN: could not move ${old} -> ${dir}" >&2
+        fi
+      elif [ -d "${old}/.git" ]; then
+        echo "[bootstrap] WARN: both ${old} and ${dir} exist; leaving the old-name checkout for a human" >&2
+      fi
+    done
     if [ -d "${dir}/.git" ]; then
       echo "[bootstrap] ${dir} already present; leaving it alone" >&2
       continue
@@ -169,12 +188,12 @@ for e in json.loads(raw):
     # cloud-infra without --recurse-submodules leaves a_solutions empty and the
     # tree structurally broken (the build-*.json symlinks all dangle).
     extra=""
-    [ -n "${subs}" ] && extra="--recurse-submodules"
+    [ "${subs}" = 1 ] && extra="--recurse-submodules"
     # shellcheck disable=SC2086
     if git clone ${extra} "https://github.com/diegonmarcos/${repo}.git" "${dir}"; then
       # Belt and braces: --recurse-submodules can fail without failing the
       # clone, leaving a_solutions empty. Re-run it explicitly and say so.
-      if [ -n "${subs}" ]; then
+      if [ "${subs}" = 1 ]; then
         git -C "${dir}" submodule update --init --recursive \
           || echo "[bootstrap] WARN: ${dir} submodule init failed; a_solutions may be empty" >&2
       fi

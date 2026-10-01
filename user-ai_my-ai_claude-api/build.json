@@ -64,7 +64,7 @@
         "claude-haiku-4-5"
       ]
     },
-    "_repos_comment": "The ONE declaration of what lands in the shared agent tree (docker volume cloud-git-gh, mounted at $HOME/git in EVERY agi container by _shared/engine.nix). bootstrap_repos() in src/code/start.sh iterates THIS list; it used to carry a hardcoded four-repo shell loop, which is why the tree had drifted to seven — cloud-data, cloud-data-my-ai-memory and cloud-vault were cloned by hand and would have vanished on the next volume recreate. They are declared here now. Clones run as appuser (uid 10001), NOT as root: gitea used to hold a rw mount on this same tree and its root-owned writes left 260 unwritable paths (#558). `dir` overrides the checkout directory when it differs from the repo name — the front family names its members front-<thing>, so diegonmarcos.github.io is checked out as front-diegonmarcos exactly as ffront/repos.json (the front registry index) declares. `submodules` is only for cloud-infra, whose a_solutions is empty without it.",
+    "_repos_comment": "The ONE declaration of what lands in the shared agent tree (docker volume cloud-git-gh, mounted at $HOME/git in EVERY agi container by _shared/engine.nix). bootstrap_repos() in src/code/start.sh iterates THIS list; it used to carry a hardcoded four-repo shell loop, which is why the tree had drifted to seven — cloud-data, cloud-data-my-ai-memory and cloud-vault were cloned by hand and would have vanished on the next volume recreate. They are declared here now. Clones run as appuser (uid 10001), NOT as root: gitea used to hold a rw mount on this same tree and its root-owned writes left 260 unwritable paths (#558). `dir` overrides the checkout directory when it differs from the repo name — the front family names its members front-<thing>, so diegonmarcos.github.io is checked out as front-diegonmarcos exactly as front/repos.json (the front registry index, the repo formerly named ffront) declares. `renamed_from` lists the names a repo was checked out under before an upstream rename: bootstrap_repos MOVES such a checkout to the declared dir and repoints its remotes, so the tree never keeps a stale old-name clone beside a fresh one. `submodules` is only for cloud-infra, whose a_solutions is empty without it.",
     "_repos_size_warning": "front-assets-cdn is ~1.4GB and front-diegonmarcos ~460MB. oci-apps root was at 94% after #492 reclaimed 5.3GB. If the volume runs out, DROP A LINE HERE rather than hand-deleting a checkout — a hand-deleted repo is re-cloned on the next boot.",
     "repos": [
       {
@@ -91,7 +91,8 @@
         "dir": "cloud-vault"
       },
       {
-        "repo": "ffront"
+        "repo": "front",
+        "renamed_from": ["ffront"]
       },
       {
         "repo": "diegonmarcos.github.io",
