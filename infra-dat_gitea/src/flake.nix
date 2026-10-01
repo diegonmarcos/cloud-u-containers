@@ -116,6 +116,7 @@
         srcDir = ./.;
         templates = [
           { name = "init-mirrors.sh"; vars = initMirrorsVars; }
+          { name = "gate.Caddyfile"; text = import ./gate.nix buildJson; }
         ];
         composeSpec = import ./compose.nix { inherit buildJson container; };
         title = "Gitea — self-hosted Git service";

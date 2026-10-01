@@ -57,7 +57,16 @@
       ],
       "_exclude_doc": "Repo names to skip entirely (exact match against github-repos.json .repos[].name — see expandGiteaMirrors in 1_cloud-configs/src/derive/cloud-data-config-consolidated.ts). Empty = mirror every non-fork repo in the inventory. cloud-vault is hard-excluded as defense in depth: mirror privacy otherwise depends solely on the inventory's private:true flag, and that same derived-flag mechanism already republished cloud-data (also private) as a public mirror once before it existed (see _mirrors_doc above). A credential store must not depend on a single flag being right every time."
     },
-    "mirror_interval": "1h"
+    "mirror_interval": "1h",
+    "gate": {
+      "image": "caddy:2.11.2-alpine",
+      "socket": "/run/gitea-http/gitea.sock",
+      "trusted_proxies": [
+        "10.0.0.1"
+      ],
+      "_trusted_proxies_doc": "MEASURED 2026-09-30 on oci-apps: `ss -tn sport = :3002` during a bearer request through git.diegonmarcos.com showed exactly one peer, [::ffff:10.0.0.1] — the hub caddy on gcp-proxy dialling 10.0.0.6:3002 over wg0. The public edge (oci-analytics) never connects: it L4-passes this SNI to the hub. gcp-proxy masquerades only its docker bridges (172.16.0.0/12) and ens4 egress, so a mesh peer forwarded through the hub keeps its own source address and is NOT 10.0.0.1. Exact addresses only — never a CIDR, never *.",
+      "_doc": "Gitea honours its reverse-proxy user header from ANY peer: REVERSE_PROXY_TRUSTED_PROXIES only feeds the X-Forwarded-For rewrite (gitea v28.0.0 routers/common/middleware.go:33); services/auth/reverseproxy.go never checks the source. With 0.0.0.0:3002 reachable from every wg0/wg-public peer and ~40 host-network containers on oci-apps, enabling reverse-proxy auth on that listener would let any of them become `diego` with one header. So gitea listens only on a unix socket in a tmpfs volume that no other container mounts, and this caddy owns :3002: it forwards `identity.header` (and X-Real-IP) only when the peer is in trusted_proxies AND the Host is this service's domain — the .app catalog routes the hub also serves from 10.0.0.1 carry Host gitea.app, so they cannot mint an identity either. Everything else reaches gitea exactly as before, anonymous."
+    }
   },
   "backup": {
     "enabled": true,
@@ -110,8 +119,8 @@
     "headers_enforced": true
   },
   "tests": {
-    "edge-bearer-strip": {
-      "cmd": "node test-edge-bearer-strip.ts",
+    "reverse-proxy-auth": {
+      "cmd": "node test-reverse-proxy-auth.ts",
       "cwd": "src"
     }
   },
