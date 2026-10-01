@@ -17,6 +17,15 @@
     base_domain =
       lib.concatStringsSep "." (lib.drop 1 (lib.splitString "." buildJson.domain));
 
+    # Appservice registrations this homeserver installs at startup. Each entry
+    # names a bridge's service dir; its registration is the file that bridge's
+    # own deploy renders from ITS sops pair (mautrix pre-hook → data/), so the
+    # tokens are declared once and never copied here.
+    registrations = map (d:
+      (builtins.fromJSON (builtins.readFile (../.. + "/${d}/build.json"))).deploy.remote_path
+        + "/data/registration.yaml"
+    ) (buildJson.appservices or []);
+
   in {
     packages = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
@@ -24,7 +33,11 @@
       default = engine {
         inherit pkgs buildJson container;
         srcDir = ./.;
-        templates = [];
+        templates = [
+          { name = "appservice-registrations.list";
+            text = lib.concatMapStrings (r: r + "\n") registrations; }
+        ];
+        extraAssets = [ ./assets/compose-pre-hook.sh ];
         composeSpec = import ./compose.nix { inherit buildJson container base_domain; };
         title = "Continuwuity Matrix Homeserver";
       };

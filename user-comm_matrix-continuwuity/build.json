@@ -16,6 +16,12 @@
     ],
     "compose_flags": "--build"
   },
+  "compose": {
+    "pre_hook": "assets/compose-pre-hook.sh"
+  },
+  "appservices": [
+    "user-comm_matrix-mautrix-whatsapp"
+  ],
   "secrets": {
     "escape_dollars": true
   },
@@ -87,5 +93,11 @@
     "display_name": "Matrix (Continuwuity)",
     "description": "Matrix client-server + federation API served by the Continuwuity homeserver.",
     "auth": "bearer"
+  },
+  "tests": {
+    "appservice-registration-render": {
+      "cmd": "bash test-compose-pre-hook.sh",
+      "cwd": "src"
+    }
   }
 }

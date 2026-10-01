@@ -42,8 +42,13 @@ in
         CONTINUWUITY_WELL_KNOWN         = "{ client=https://${delegated}, server=${delegated}:443 }";
         CONTINUWUITY_ALLOW_PUBLIC_ROOM_DIRECTORY_OVER_FEDERATION = "false";
         CONTINUWUITY_TRUSTED_SERVERS    = "[\"matrix.org\"]";
+        # Appservice registrations (admin_execute), rendered by the pre-hook.
+        CONTINUWUITY_CONFIG             = "/etc/continuwuity/appservices.toml";
       };
-      volumes = [ "continuwuity_data:/var/lib/continuwuity" ];
+      volumes = [
+        "continuwuity_data:/var/lib/continuwuity"
+        "./data/appservices.toml:/etc/continuwuity/appservices.toml:ro"
+      ];
         # mem_limit/mem_reservation are optional in build.json (only
         # mem_reservation is declared fleet-wide today). Reading them
         # unconditionally fails eval with "attribute ... missing".
