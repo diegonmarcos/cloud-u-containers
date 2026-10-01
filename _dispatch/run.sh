@@ -33,8 +33,12 @@
 # Exit codes — every one of them means "this run did NOT do its work; do not read it as done":
 #   86 MAX_TURNS_EXHAUSTED  87 SESSION_LIMIT  88 AWAITED_WAKEUP
 #   89 BRIEF_UNREADABLE     90 AUTH_PREFLIGHT_FAILED  91 NOT_ISOLATED
+#   92 NO_FINAL_REPORT
 #
 # Usage: run.sh <hermes|goose|claude> <slot> <prompt-file> <log-file> [model]
+#   env DISPATCH_REPOS=<repo>[,<repo>...]  (set by fire.sh) the slot's worktrees; the FIRST is
+#       where the agent starts. Unset = exactly one worktree in the slot, as before.
+#   env DISPATCH_RESUME_ROUNDS=<n>  (default 3) see #717 at the claude resume loop.
 # The caller must redirect this script's own output into <log-file>:
 #   docker exec -d C sh -c "run.sh hermes 444 /…/hermes-444.md /…/hermes-444.log \
 #                             > /…/hermes-444.log 2>&1"
@@ -69,6 +73,19 @@ esac
 ROOT=${DISPATCH_ROOT:-$ROOT}
 
 echo "=== $ENGINE $SLOT START $(date -u +%FT%TZ)"
+
+# #717: the exit line in the slot's marker is written HERE, by trap, on every way out — the
+# early refusals, the normal end, and a TERM/INT/HUP (the trap runs once the engine child has
+# exited). It used to be written by the caller after this script returned, and the hand-typed
+# fire one-liners in use on 2026-10-01 wrote it only if their shell survived. A SIGKILL (a
+# container recreate) still cannot be trapped; then the marker holds a "RUN start pid=" line
+# with no exit line, which is itself the verdict: killed, not finished.
+MARK=$(dirname "$LOG")/dispatch-$SLOT.marker
+echo "RUN start pid=$$ $(date -u +%FT%TZ)" >> "$MARK"
+trap 'echo "FIRE exit rc=$? $(date -u +%FT%TZ)" >> "$MARK"' EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 # #510 (b): the engine cannot read its brief. 2026-09-24 the briefs were docker-cp'd in as uid
 # 1001 mode 0600 while every agent runs as 10001: each agent read "Permission denied", said so
@@ -133,25 +150,34 @@ case "$ENGINE" in
     # Nothing here relaxes a guard. `worktree add --detach` creates NO branch, so the
     # no-branches rule and the branch guard are untouched; the per-worktree pre-push hook
     # (#481) and the source repo's own hooks still apply inside the workspace.
-    WS=; N=0
+    #
+    # #717/#658: one worktree PER REPO. A brief that spans repos used to get a slot for one of
+    # them and the SHARED checkout for the rest — and the shared index is where staged work was
+    # swept into a sibling's commit, where an aborted rebase's autostash went dangling and took
+    # 15 files with it, and where a stale index nearly reverted a shipped feature. fire.sh now
+    # preps every repo it is given into this slot and names them in DISPATCH_REPOS; EVERY
+    # workspace here must be a linked worktree, and the first named is where the agent starts.
+    WS=; WSL=; N=0; REASON=
     for c in "$ROOT"/_work/"$SLOT"/*; do
       [ -e "$c/.git" ] || continue
-      WS=$c; N=$((N + 1))
-    done
-    GD=
-    [ -n "$WS" ] && GD=$(git -C "$WS" rev-parse --absolute-git-dir 2>/dev/null)
-    REASON=
-    case "$N" in
-      0) REASON="no workspace under $ROOT/_work/$SLOT — prep.sh never made one" ;;
-      1) ;;
-      *) REASON="$N candidate workspaces under $ROOT/_work/$SLOT — ambiguous; one repo per slot" ;;
-    esac
-    if [ -z "$REASON" ]; then
+      N=$((N + 1)); WSL="$WSL $c"
+      GD=$(git -C "$c" rev-parse --absolute-git-dir 2>/dev/null)
       case "$GD" in
         */.git/worktrees/*) ;;
-        *) REASON="$WS is not a linked worktree (git dir: ${GD:-none}); an agent there would share a tree with its siblings" ;;
+        *) REASON="$c is not a linked worktree (git dir: ${GD:-none}); an agent there would share a tree with its siblings" ;;
       esac
-    fi
+    done
+    OIFS=$IFS; IFS=,
+    for r in ${DISPATCH_REPOS:-}; do
+      [ -n "$WS" ] || WS=$ROOT/_work/$SLOT/$r
+      [ -e "$ROOT/_work/$SLOT/$r/.git" ] || REASON="no workspace for $r under $ROOT/_work/$SLOT — prep.sh never made one"
+    done
+    IFS=$OIFS
+    case "$N" in
+      0) REASON="no workspace under $ROOT/_work/$SLOT — prep.sh never made one" ;;
+      1) [ -n "$WS" ] || WS=${WSL# } ;;
+      *) [ -n "$WS" ] || REASON="$N candidate workspaces under $ROOT/_work/$SLOT and no DISPATCH_REPOS naming where to start — ambiguous" ;;
+    esac
     # The staging guard is part of the workspace, so a missing one refuses the slot too —
     # otherwise the enforcement below would fail open exactly the way this cd did.
     SHIMBIN=$ROOT/_dispatch/bin
@@ -173,6 +199,22 @@ case "$ENGINE" in
     fi
     PATH=$SHIMBIN:$PATH
     export PATH
+    # #717: start each workspace from what is SHIPPED. prep.sh adds the worktree at the shared
+    # checkout's LOCAL main, which is exactly as stale as that checkout — measured 2026-10-01: 8
+    # commits behind origin, its pull refused by siblings' dirty files. An agent building on that
+    # base re-ships the old content of every file it touches: the stale-base revert of #658.
+    # Moved ONLY when the workspace is clean and the move is a fast-forward, so a re-fired slot
+    # never loses work. A failed fetch is logged, not fatal — the agent is still isolated.
+    for w in $WSL; do
+      B="not refreshed"
+      if [ -z "$(git -C "$w" status --porcelain 2>/dev/null)" ] \
+         && git -C "$w" fetch -q origin main 2>/dev/null \
+         && git -C "$w" merge-base --is-ancestor HEAD origin/main 2>/dev/null \
+         && git -C "$w" checkout -q --detach origin/main 2>/dev/null; then
+        B="origin/main"
+      fi
+      echo "--- workspace $w at $(git -C "$w" rev-parse --short HEAD 2>/dev/null) ($B)"
+    done
     # #510 (a): PRE-FLIGHT the credential before spending the slot. 2026-09-24 the OAuth login
     # had expired and seven agents each died in 9 seconds with rc=1 and a ~190-byte log; it was
     # seen only because Diego read the logs by hand. One tiny haiku turn with no MCP servers
@@ -204,22 +246,53 @@ case "$ENGINE" in
     # repo by the SHARED path (~/git/<repo>), and an agent that reads only that walks straight
     # back out of the worktree it was just placed in. The refusals themselves are enforced by
     # the git front-end prep.sh declares; this tells the agent why, so it does not thrash.
-    printf '%s' "Your workspace is $WS — do ALL of your work there. It is this slot's own git worktree of the repo your brief names, so any path in the brief of the form ~/git/<repo>, or the bare repo name, means THIS directory. $ROOT/<repo> is the SHARED tree that other agents are editing right now: read it if you must, never edit or commit in it. Stage by explicit path only, 'git add -- <paths>'; 'git add -A', 'git add .' and 'git commit -a' are refused outright, because that is how one agent's in-progress files ended up inside a sibling's commit. Never touch a file that appears in 'git status' unless you authored it. Now read $PROMPT in full and carry out exactly what it specifies. That file is your complete instruction set." \
-      | claude -p --model "$MODEL" --effort high --permission-mode bypassPermissions \
-          --add-dir "$ROOT" \
-      > "$OUT" 2>&1
+    # #717: the run must END WITH A REPORT, and an agent that stops without one is resumed in
+    # the SAME session. On 2026-10-01 about eight agents ended their one-shot turn with "waiting
+    # on the background poll, will report when it finishes" while CI was still running; nothing
+    # ever finished it, so their verdicts and analysis were lost. The guard below (rc=88) only
+    # NAMED that. Now the slot's contract is a file: $REPORT, whose last line reads exactly
+    # 'STATUS: FINAL', written after the pre-flight (so a previous fire's report cannot pass).
+    # Missing it, the session is resumed by id with a fixed nudge, at most $ROUNDS times. The
+    # session id is minted here, not discovered with --continue: --continue picks the most
+    # recent session for the directory, and a re-fired slot shares its directory with the last.
+    SID=$(cat /proc/sys/kernel/random/uuid)
+    REPORT=$(dirname "$LOG")/report-$SLOT.md
+    ROUNDS=${DISPATCH_RESUME_ROUNDS:-3}
+    final_report() { [ "$REPORT" -nt "$PF" ] && grep -v '^[[:space:]]*$' "$REPORT" | tail -n 1 | grep -qx 'STATUS: FINAL'; }
+    ALSO=
+    for w in $WSL; do [ "$w" = "$WS" ] || ALSO="$ALSO $w"; done
+    [ -z "$ALSO" ] || ALSO=" This slot also has its own worktrees of the other repos it was given:$ALSO — for those repos, ~/git/<repo> means $ROOT/_work/$SLOT/<repo>."
+    REPORTRULE="When your work is completely finished — every CI verdict in hand, not pending — write your final report to $REPORT and make its LAST line read exactly 'STATUS: FINAL'. claude -p is one-shot: nothing wakes you later and no background watcher reports for you, so poll CI inline in the foreground until it concludes. If you stop without that report, this same session is resumed (at most $ROUNDS times) and told to finish."
+    NUDGE="You ended your turn without the final report: $REPORT does not exist or its last line is not 'STATUS: FINAL'. Your CI is still running — nothing will wake you. Poll it inline, in the foreground, to a verdict now; then write the final report and end it with the line 'STATUS: FINAL'."
+    engine() { # engine <claude session args...>  (prompt on stdin) — the one shape every round uses
+      claude -p "$@" --model "$MODEL" --effort high --permission-mode bypassPermissions \
+        --add-dir "$ROOT"
+    }
+    printf '%s' "Your workspace is $WS — do ALL of your work there. It is this slot's own git worktree of the repo your brief names, so any path in the brief of the form ~/git/<repo>, or the bare repo name, means THIS directory.$ALSO $ROOT/<repo> is the SHARED tree that other agents are editing right now: read it if you must, never edit or commit in it. Stage by explicit path only, 'git add -- <paths>'; 'git add -A', 'git add .' and 'git commit -a' are refused outright, because that is how one agent's in-progress files ended up inside a sibling's commit. Never touch a file that appears in 'git status' unless you authored it. $REPORTRULE Now read $PROMPT in full and carry out exactly what it specifies. That file is your complete instruction set." \
+      | engine --session-id "$SID" > "$OUT" 2>&1
     RC=$?
     cat "$OUT"
-    SZ=$(wc -c < "$OUT")
-    if [ "$SZ" -lt 400 ] && grep -qiE 'limit reached|usage limit|session limit' "$OUT"; then
+    ROUND=$OUT; I=0
+    while :; do
+      SZ=$(wc -c < "$ROUND")
+      if [ "$SZ" -lt 400 ] && grep -qiE 'limit reached|usage limit|session limit' "$ROUND"; then
+        echo
+        echo "################################################################"
+        echo "##  SESSION LIMIT — claude $SLOT stopped in round $I (rc=$RC, ${SZ} bytes)"
+        echo "##  Nothing above is a finished answer. Re-fire this slot after the reset."
+        echo "################################################################"
+        echo "=== $ENGINE $SLOT END rc=87 SESSION_LIMIT $(date -u +%FT%TZ)"
+        exit 87
+      fi
+      final_report && break
+      [ "$I" -lt "$ROUNDS" ] || break
+      I=$((I + 1)); ROUND=$OUT.resume$I
       echo
-      echo "################################################################"
-      echo "##  SESSION LIMIT — claude $SLOT NEVER RAN (rc=$RC, ${SZ} bytes)"
-      echo "##  Nothing above is an answer. Re-fire this slot after the reset."
-      echo "################################################################"
-      echo "=== $ENGINE $SLOT END rc=87 SESSION_LIMIT $(date -u +%FT%TZ)"
-      exit 87
-    fi
+      echo "--- #717 resume $I/$ROUNDS session=$SID: no 'STATUS: FINAL' report at $REPORT (rc=$RC)"
+      printf '%s' "$NUDGE" | engine --resume "$SID" > "$ROUND" 2>&1
+      RC=$?
+      cat "$ROUND"
+    done
     # #510: a FOURTH fail-open, and the quietest yet. Slot 498's ENTIRE run was 94 bytes:
     #   "I'll pause here and wait for the CI polling task to complete or the scheduled wakeup
     #    to fire."
@@ -241,25 +314,36 @@ case "$ENGINE" in
     # are separated by the command name. Twenty-one minutes, rc=0, nothing done. So the qualifier
     # and the noun are matched with a gap between them, and "notify me" — the other half of the
     # same false belief, that something will call back — is matched in its own right.
-    TAIL=$(tail -c 400 "$OUT" 2>/dev/null | tr '\n' ' ')
+    # Applied to the LAST round only, and only when no final report came of the resumes.
     #
     # WIDENED AGAIN after #562's first run walked through this guard too. It ended:
     #   "CI is still running on 56f57e334. The poller will wake me ..."
     # No "pause"/"wait" and no "wakeup"/"polling" — the promise is "wakes me" and the mechanism
     # is a "poller". Same false belief, third spelling. "wakes? me" and "poller" now count on their
     # own side of the pair; a report that merely mentions a poller still needs a promise beside it.
-    if echo "$TAIL" | grep -qiE '(pause|wait|stand(s|ing)? by|check back|will continue|wakes? me)' \
-       && echo "$TAIL" | grep -qiE 'wakeup|wake-up|wakes? me|poller|re-invok|next turn|resumed later|notif(y|ies) me|(background|polling|scheduled|async)[^.]{0,40}(task|job|run|watch)'; then
+    if ! final_report; then
+      TAIL=$(tail -c 400 "$ROUND" 2>/dev/null | tr '\n' ' ')
+      if echo "$TAIL" | grep -qiE '(pause|wait|stand(s|ing)? by|check back|will continue|wakes? me)' \
+         && echo "$TAIL" | grep -qiE 'wakeup|wake-up|wakes? me|poller|re-invok|next turn|resumed later|notif(y|ies) me|(background|polling|scheduled|async)[^.]{0,40}(task|job|run|watch)'; then
+        echo
+        echo "################################################################"
+        echo "##  ENDED AWAITING A WAKEUP THAT NEVER FIRES — claude $SLOT (rc=$RC, ${SZ} bytes)"
+        echo "##  \`claude -p\` is one-shot: there is no next turn. This agent"
+        echo "##  stopped mid-task expecting to be resumed, and $I resume(s)"
+        echo "##  did not get a final report out of it. NOT finished. Re-fire."
+        echo "##  Last words: $(echo "$TAIL" | tail -c 160)"
+        echo "################################################################"
+        echo "=== $ENGINE $SLOT END rc=88 AWAITED_WAKEUP $(date -u +%FT%TZ)"
+        exit 88
+      fi
       echo
       echo "################################################################"
-      echo "##  ENDED AWAITING A WAKEUP THAT NEVER FIRES — claude $SLOT (rc=$RC, ${SZ} bytes)"
-      echo "##  \`claude -p\` is one-shot: there is no next turn. This agent"
-      echo "##  stopped mid-task expecting to be resumed. Its work is NOT"
-      echo "##  finished and its CI was NEVER watched. Re-fire this slot."
-      echo "##  Last words: $(echo "$TAIL" | tail -c 160)"
+      echo "##  NO FINAL REPORT — claude $SLOT (rc=$RC, $I resume(s))"
+      echo "##  $REPORT is missing or its last line is not 'STATUS: FINAL'."
+      echo "##  Whatever is above is not a declared result. Read it, re-fire."
       echo "################################################################"
-      echo "=== $ENGINE $SLOT END rc=88 AWAITED_WAKEUP $(date -u +%FT%TZ)"
-      exit 88
+      echo "=== $ENGINE $SLOT END rc=92 NO_FINAL_REPORT $(date -u +%FT%TZ)"
+      exit 92
     fi
     # $OUT is deliberately KEPT. It is the engine's own output with none of this script's
     # banners around it, and it is the only copy that survives if the outer log is truncated.

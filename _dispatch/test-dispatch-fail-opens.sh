@@ -44,12 +44,20 @@ for f in fire.sh prep.sh run.sh; do printf '%s\n' "$SHIM" > "$T/_dispatch/$f"; d
 # run from separate env knobs.
 # The stub also records the directory it was STARTED IN (#633): that is the only observable
 # that distinguishes an agent isolated in its slot from one loose in the shared tree.
+# #717: the main run and each resume answer from their own knobs, and either may write the
+# report — to the path run.sh TOLD it on stdin, so a runner that stops naming it fails here.
 cat > "$T/bin/claude" <<'EOF'
 #!/bin/sh
 echo "$*" >> "$CALLS"; [ -n "${PWDLOG:-}" ] && pwd -P >> "$PWDLOG"
-cat >> "${STDINLOG:-/dev/null}"
+IN=$(cat); printf '%s\n' "$IN" >> "${STDINLOG:-/dev/null}"
 case " $* " in *" --max-turns 1 "*) printf '%s' "$PROBE_OUT"; exit "${PROBE_RC:-0}" ;; esac
-printf '%s' "$MAIN_OUT"; exit "${MAIN_RC:-0}"
+case " $* " in
+  *" --resume "*) OUT=$RESUME_OUT; W=${RESUME_WRITES:-} ;;
+  *) OUT=$MAIN_OUT; W=${MAIN_WRITES:-}; sleep "${MAIN_SLEEP:-0}" ;;
+esac
+R=$(printf '%s' "$IN" | grep -o '/[^ ]*/report-[^ ]*\.md' | head -1)
+[ -n "$W" ] && [ -n "$R" ] && printf '%s\n' "$W" > "$R"
+printf '%s' "$OUT"; exit "${MAIN_RC:-0}"
 EOF
 cat > "$T/bin/goose" <<'EOF'
 #!/bin/sh
@@ -88,6 +96,8 @@ GUARD
 
 BRIEF=$T/_dispatch/dispatch-t510.md
 OKREPORT="Done. Committed abc123, CI run 42 green. Nothing left unfinished."
+FINAL="$OKREPORT
+STATUS: FINAL"
 
 # #633: run.sh now REFUSES a claude slot that is not an isolated worktree, so the run.sh cases
 # get a dispatch root of their own — kept apart from $T/demo so the worktree-list assertions in
@@ -96,6 +106,13 @@ RT=$T/rt
 mkdir -p "$RT/_dispatch/logs"
 git init -q -b main "$RT/demo"; echo hi > "$RT/demo/f"; git -C "$RT/demo" add f
 git -C "$RT/demo" -c user.name=t -c user.email=t@t commit -qm init
+# #717: origin is one commit AHEAD of the shared checkout's local main — the state measured on
+# 2026-10-01, when the shared tree could not pull. A slot must start from origin, not from that.
+git clone -q --bare "$RT/demo" "$RT/origin.git"; git -C "$RT/demo" remote add origin "$RT/origin.git"
+git clone -q "$RT/origin.git" "$T/pusher"; echo shipped > "$T/pusher/shipped"; git -C "$T/pusher" add shipped
+git -C "$T/pusher" -c user.name=t -c user.email=t@t commit -qm shipped; git -C "$T/pusher" push -q origin HEAD:main
+git init -q -b main "$RT/demo2"; echo two > "$RT/demo2/f"; git -C "$RT/demo2" add f
+git -C "$RT/demo2" -c user.name=t -c user.email=t@t commit -qm init
 
 # run <engine> <slot>  (env PROBE_*/MAIN_* set by caller) -> "rc=<n> calls=<n>"
 # Each slot is prepped first — with no brief, so the unreadable-brief cases still reach run.sh.
@@ -112,8 +129,8 @@ AUTH_ERR="Failed to authenticate: OAuth session expired and could not be refresh
 
 echo "── run.sh"
 printf 'do the thing\n' > "$BRIEF"; chmod 0644 "$BRIEF"
-export PROBE_OUT PROBE_RC MAIN_OUT MAIN_RC
-PROBE_OUT=OK PROBE_RC=0 MAIN_OUT=$OKREPORT MAIN_RC=0
+export PROBE_OUT PROBE_RC MAIN_OUT MAIN_RC MAIN_WRITES RESUME_OUT RESUME_WRITES MAIN_SLEEP
+PROBE_OUT=OK PROBE_RC=0 MAIN_OUT=$OKREPORT MAIN_RC=0 MAIN_WRITES=$FINAL RESUME_OUT= RESUME_WRITES= MAIN_SLEEP=0
 : > "$T/pwds"
 ck "healthy run: probe + real run, rc 0"                "$(run claude h1)" "rc=0 calls=2"
 # #633: the collision that started this. The old cd targeted _work/$SLOT — the slot directory,
@@ -149,12 +166,92 @@ chmod 000 "$BRIEF"
 ck "(b) unreadable brief: rc 89, no engine started (not even the probe)" "$(run claude b1)" "rc=89 calls=0"
 ck "(b) unreadable brief refused for goose too"         "$(run goose b2)" "rc=89 calls=0"
 chmod 0644 "$BRIEF"
+# An agent that never writes its report is resumed the default 3 times (calls = probe + main
+# + 3), and only then is the wakeup shape named.
+MAIN_WRITES=
 MAIN_OUT="I'll pause here and wait for the CI polling task to complete or the scheduled wakeup to fire."
-ck "awaited wakeup (slot 498): rc 88"                   "$(run claude w1)" "rc=88 calls=2"
+RESUME_OUT=$MAIN_OUT
+ck "awaited wakeup (slot 498), never reports: 3 resumes, then rc 88" "$(run claude w1)" "rc=88 calls=5"
 MAIN_OUT="CI is still running on 56f57e334. The poller will wake me when it finishes."
-ck "awaited wakeup, #562's first run (no wait/wakeup/polling words): rc 88" "$(run claude w2)" "rc=88 calls=2"
+RESUME_OUT=$MAIN_OUT
+ck "awaited wakeup, #562's first run (no wait/wakeup/polling words): rc 88" "$(run claude w2)" "rc=88 calls=5"
 MAIN_OUT="Claude AI usage limit reached|1790000000"
-ck "session limit mid-run (#508): rc 87"                "$(run claude s1)" "rc=87 calls=2"
+ck "session limit mid-run (#508): rc 87, and never resumed into the same wall" "$(run claude s1)" "rc=87 calls=2"
+
+echo "── #717 the run ends with a FINAL report, or the same session is resumed"
+# The incident itself: the one-shot turn ended on a promise while CI ran. Resumed once, it
+# finishes and reports — rc 0, exactly one resume.
+MAIN_OUT="Pushed. Waiting on the background poll, will report when it finishes." RESUME_OUT=$OKREPORT RESUME_WRITES=$FINAL
+ck "(#717) stopped mid-CI, resumed, reported: rc 0 after ONE resume" "$(run claude r1)" "rc=0 calls=3"
+SIDM=$(grep -- '--session-id' "$T/calls" | grep -o -- '--session-id [0-9a-f-]*' | cut -d' ' -f2)
+SIDR=$(grep -- '--resume' "$T/calls" | grep -o -- '--resume [0-9a-f-]*' | cut -d' ' -f2)
+ck "(#717) the resume is the SAME session the run was started with, by id" \
+   "$([ -n "$SIDM" ] && [ "$SIDM" = "$SIDR" ] && echo same || echo "main=$SIDM resume=$SIDR")" "same"
+ck "(#717) ...not --continue, which picks whatever ran last in the directory" "$(grep -c -- '--continue' "$T/calls")" "0"
+ck "(#717) the resume carries the nudge on stdin" \
+   "$(grep -c 'Poll it inline, in the foreground, to a verdict now' "$T/stdin")" "1"
+ck "(#717) the first prompt names the report path and the FINAL line" \
+   "$(grep -c "write your final report to $RT/_dispatch/logs/report-r1.md and make its LAST line read exactly 'STATUS: FINAL'" "$T/stdin")" "1"
+ck "(#717) the resume keeps the run's permissions and model (or it stalls on a prompt)" \
+   "$(grep -- '--resume' "$T/calls" | grep -c -- '--permission-mode bypassPermissions')" "1"
+# A report that exists but does not declare itself FINAL is not a result.
+MAIN_OUT=$OKREPORT RESUME_OUT=$OKREPORT MAIN_WRITES="Draft: CI pending
+STATUS: in progress" RESUME_WRITES=
+ck "(#717) report without the FINAL line: resumed 3x, then rc 92" "$(run claude r2)" "rc=92 calls=5"
+ck "(#717) ...and the banner says why" "$(grep -c 'NO FINAL REPORT' "$RT/_dispatch/logs/r-r2.log")" "1"
+# A FINAL report left by an EARLIER fire of the same slot must not pass for this one.
+MAIN_WRITES=
+printf '%s\n' "$FINAL" > "$RT/_dispatch/logs/report-r3.md"; touch -d '1 hour ago' "$RT/_dispatch/logs/report-r3.md"
+ck "(#717) a previous fire's FINAL report does not count: rc 92" "$(run claude r3)" "rc=92 calls=5"
+# Trailing blank lines after the FINAL line are still FINAL — an agent's editor adds them.
+MAIN_WRITES="$FINAL
+
+"
+ck "(#717) FINAL followed by blank lines is accepted"   "$(run claude r4)" "rc=0 calls=2"
+# The bound is real and configurable.
+MAIN_WRITES=
+ck "(#717) DISPATCH_RESUME_ROUNDS=1 bounds it to one resume" "$(DISPATCH_RESUME_ROUNDS=1 run claude r5)" "rc=92 calls=3"
+# A session limit inside a resume stops the loop instead of burning the remaining rounds.
+RESUME_OUT="Claude AI usage limit reached|1790000000"
+ck "(#717) session limit during a resume: rc 87, no further rounds" "$(run claude r6)" "rc=87 calls=3"
+MAIN_WRITES=$FINAL RESUME_OUT= RESUME_WRITES=
+
+echo "── #717 the exit marker is always written"
+mk() { grep -o 'FIRE exit rc=[0-9]*' "$RT/_dispatch/logs/dispatch-$1.marker" 2>/dev/null | tail -1; }
+ck "(#717) healthy run leaves 'FIRE exit rc=0' in its marker"       "$(mk h1)" "FIRE exit rc=0"
+ck "(#717) a refused-at-preflight run leaves its rc too"           "$(mk a1)" "FIRE exit rc=90"
+ck "(#717) a no-report run leaves rc 92"                           "$(mk r2)" "FIRE exit rc=92"
+# Killed while the engine runs (a stop, a ^C on the operator's shell): still marked.
+DISPATCH_ROOT=$RT sh "$T/_dispatch/prep.sh" claude k1 demo "$RT/_dispatch/logs/p-k1.marker" > /dev/null 2>&1
+KL=$RT/_dispatch/logs/r-k1.log; : > "$T/calls"
+MAIN_SLEEP=2 PATH="$T/bin:$PATH" CALLS="$T/calls" DISPATCH_ROOT=$RT \
+  sh "$T/_dispatch/run.sh" claude k1 "$BRIEF" "$KL" > "$KL" 2>&1 &
+KP=$!
+i=0; until grep -q -- '--session-id' "$T/calls" 2>/dev/null && [ "$(grep -c . "$T/calls")" -ge 2 ] || [ $i -ge 50 ]; do sleep 0.1; i=$((i+1)); done
+: > "$T/calls"; kill -TERM "$KP"; wait "$KP"
+ck "(#717) TERM mid-run: marker still gets 'FIRE exit rc=143'"     "$(mk k1)" "FIRE exit rc=143"
+ck "(#717) ...and its start line names the pid that was killed"   "$(grep -c "RUN start pid=$KP " "$RT/_dispatch/logs/dispatch-k1.marker")" "1"
+
+echo "── #717/#658 one worktree per repo, started from origin"
+WH1=$RT/_work/h1/demo
+ck "(#717) a clean slot starts at origin/main, not the shared checkout's stale main" \
+   "$(git -C "$WH1" rev-parse HEAD)" "$(git -C "$RT/origin.git" rev-parse main)"
+DISPATCH_ROOT=$RT sh "$T/_dispatch/prep.sh" claude d1 demo "$RT/_dispatch/logs/p-d1.marker" > /dev/null 2>&1
+echo wip > "$RT/_work/d1/demo/wip"
+run claude d1 > /dev/null
+ck "(#717) ...but a slot with work in it is never moved" \
+   "$(git -C "$RT/_work/d1/demo" rev-parse HEAD)/$(cat "$RT/_work/d1/demo/wip")" "$(git -C "$RT/demo" rev-parse main)/wip"
+for r in demo demo2; do
+  DISPATCH_ROOT=$RT sh "$T/_dispatch/prep.sh" claude mr "$r" "$RT/_dispatch/logs/p-mr.marker" > /dev/null 2>&1
+done
+: > "$T/pwds"; : > "$T/stdin"
+ck "(#658) two repos, DISPATCH_REPOS names the start: rc 0" "$(DISPATCH_REPOS=demo2,demo run claude mr)" "rc=0 calls=2"
+ck "(#658) ...the agent started in the FIRST named repo's worktree" "$(tail -1 "$T/pwds")" "$(cd "$RT/_work/mr/demo2" && pwd -P)"
+ck "(#658) ...and was told the other repo's worktree, not the shared tree" \
+   "$(grep -c "own worktrees of the other repos it was given: $RT/_work/mr/demo " "$T/stdin")" "1"
+ck "(#658) two worktrees and nothing naming the start: refused rc 91" "$(run claude mr)" "rc=91 calls=0"
+ck "(#658) a named repo with no worktree in the slot: refused rc 91" \
+   "$(DISPATCH_REPOS=demo2,demo,demo3 run claude mr)" "rc=91 calls=0"
 MAIN_OUT="I've reached the maximum number of actions I can do without user input"
 ck "goose max-turns marker: rc 86"                      "$(run goose m1)" "rc=86 calls=1"
 MAIN_OUT=$OKREPORT
@@ -273,9 +370,9 @@ ck "(b) ...before spending a workspace on it"                "$([ -d "$T/_work/p
 rm -f "$T/bin/chmod"; /bin/chmod 0644 "$BRIEF"
 
 echo "── fire.sh (end to end, through the shims)"
-fire() { # fire <slot> -> "FIRE exit rc=<n>" line from the marker
+fire() { # fire <slot> [repos] -> "FIRE exit rc=<n>" line from the marker
   cp "$BRIEF" "$T/_dispatch/dispatch-$1.md"; /bin/chmod 0600 "$T/_dispatch/dispatch-$1.md"
-  DISPATCH_ROOT=$T PATH="$T/bin:$PATH" CALLS="$T/calls" sh "$T/_dispatch/fire.sh" claude "$1" demo >/dev/null 2>&1
+  DISPATCH_ROOT=$T PATH="$T/bin:$PATH" CALLS="$T/calls" sh "$T/_dispatch/fire.sh" claude "$1" "${2:-demo}" >/dev/null 2>&1
   grep -o 'FIRE exit rc=[0-9]*' "$T/_dispatch/logs/dispatch-$1.marker"
 }
 : > "$T/calls"; PROBE_OUT=OK PROBE_RC=0
@@ -283,6 +380,16 @@ ck "fire: healthy slot"                                  "$(fire f1)" "FIRE exit
 ck "fire: handed the brief to prep, which made it 0644"  "$(stat -c %a "$T/_dispatch/dispatch-f1.md")" "644"
 PROBE_OUT=$AUTH_ERR PROBE_RC=1
 ck "fire: expired auth surfaces as rc 90, not 0 or 1"    "$(fire f2)" "FIRE exit rc=90"
+ck "fire: the exit line is written once, not by both fire.sh and run.sh" \
+   "$(grep -c 'FIRE exit' "$T/_dispatch/logs/dispatch-f2.marker")" "1"
+PROBE_OUT=OK PROBE_RC=0
+git init -q -b main "$T/demo2"; echo two > "$T/demo2/f"; git -C "$T/demo2" add f
+git -C "$T/demo2" -c user.name=t -c user.email=t@t commit -qm init
+: > "$T/pwds"
+ck "(#658) fire: two repos, rc 0"                        "$(PWDLOG="$T/pwds" fire f3 demo2,demo)" "FIRE exit rc=0"
+ck "(#658) fire: EVERY repo got its own worktree in the slot" \
+   "$(for r in demo2 demo; do git -C "$T/_work/f3/$r" rev-parse --absolute-git-dir 2>/dev/null | grep -c '/.git/worktrees/'; done | tr -d '\n')" "11"
+ck "(#658) fire: the agent started in the first one"    "$(tail -1 "$T/pwds")" "$(cd "$T/_work/f3/demo2" && pwd -P)"
 
 echo "--- $pass passed, $fail failed"
 [ "$fail" -eq 0 ]

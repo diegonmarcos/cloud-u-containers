@@ -6,7 +6,7 @@
 # ONE copy was missing the abort. A 10-agent fleet (#508) would have meant ten more copies.
 # The ticket number is an ARGUMENT, not a new file.
 #
-# Usage: fire.sh <hermes|goose|claude> <slot> <repo-name> [model]
+# Usage: fire.sh <hermes|goose|claude> <slot> <repo-name>[,<repo-name>...] [model]
 #
 # #510: VERSIONED at cloud-u-containers/_dispatch/fire.sh; ~/git/_dispatch/fire.sh is a
 # shim that execs it. Tester: test-dispatch-fail-opens.sh beside this file.
@@ -48,13 +48,22 @@ if [ ! -f "$PROMPT" ]; then
 fi
 
 # #510: the brief is passed so prep can make it readable by the engine, or abort.
-sh "$D/prep.sh" "$ENGINE" "$SLOT" "$REPO" "$M" "$PROMPT"
-RC=$?
-if [ "$RC" -ne 0 ]; then
-  echo "FIRE ABORT: prep failed rc=$RC" >> "$M"
-  exit "$RC"
-fi
+# #717/#658: <repo> may be a comma list — EVERY repo the brief touches gets its own worktree in
+# this slot, so no part of the agent's work happens in a shared index. The first is where the
+# agent starts. One prep failure aborts the whole fire: half an isolated slot is not one.
+OIFS=$IFS; IFS=,
+for R in $REPO; do
+  IFS=$OIFS
+  sh "$D/prep.sh" "$ENGINE" "$SLOT" "$R" "$M" "$PROMPT"
+  RC=$?
+  if [ "$RC" -ne 0 ]; then
+    echo "FIRE ABORT: prep $R failed rc=$RC" >> "$M"
+    exit "$RC"
+  fi
+done
+IFS=$OIFS
 
-sh "$D/run.sh" "$ENGINE" "$SLOT" "$PROMPT" "$L/dispatch-$SLOT.outer" "$MODEL" \
+# run.sh writes the "FIRE exit rc=" line into $M itself, by trap, so it lands even when this
+# shell does not survive to write it (#717).
+DISPATCH_REPOS=$REPO sh "$D/run.sh" "$ENGINE" "$SLOT" "$PROMPT" "$L/dispatch-$SLOT.outer" "$MODEL" \
   > "$L/dispatch-$SLOT.outer" 2>&1
-echo "FIRE exit rc=$? $(date -u +%FT%TZ)" >> "$M"
