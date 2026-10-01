@@ -41,6 +41,27 @@ mkdir -p "$L"
 : > "$M"
 echo "FIRE start $(date -u +%FT%TZ) engine=$ENGINE slot=$SLOT repo=$REPO model=$MODEL" >> "$M"
 
+# #738: register this agent for its whole life — live.sh beside this file is the one reader,
+# and the ship engine asks it before recreating the container. Removed on every way out except
+# SIGKILL; live.sh checks the pid is still this fire.sh, so a killed container's leftovers are
+# not agents. Registered BEFORE the admission check, never after: live.sh writes the hold
+# before it lists, so a fire racing a drain is either listed or refused, never neither.
+REG=$L/live/$SLOT
+mkdir -p "$L/live"
+echo "slot=$SLOT engine=$ENGINE repo=$REPO model=$MODEL pid=$$ start=$(date -u +%FT%TZ)" > "$REG"
+trap 'rm -f "$REG"' EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
+UNTIL=$(cat "$L/live/.draining" 2>/dev/null)
+case "$UNTIL" in
+  ''|*[!0-9]*) ;;
+  *) if [ "$(date +%s)" -lt "$UNTIL" ]; then
+       echo "FIRE ABORT: draining — a ship is waiting to recreate this container (hold until $(date -u -d "@$UNTIL" +%FT%TZ 2>/dev/null || echo "$UNTIL")); re-fire after it" >> "$M"
+       exit 75
+     fi ;;
+esac
+
 PROMPT=$D/dispatch-$SLOT.md
 if [ ! -f "$PROMPT" ]; then
   echo "FIRE ABORT: no ticket at $PROMPT" >> "$M"
