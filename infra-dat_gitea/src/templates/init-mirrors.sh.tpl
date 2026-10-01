@@ -57,14 +57,56 @@ trap 'rm -rf "$TALLY_DIR"' EXIT
 tally()       { echo "$2" >> "$TALLY_DIR/$1"; }
 tally_count() { _c=$(cat "$TALLY_DIR/$1" 2>/dev/null | wc -l | tr -d ' '); echo "${_c:-0}"; }
 
-# Step 1: Create admin user (idempotent)
-echo "-- Bootstrapping admin user --"
-docker exec "$CONTAINER" gitea admin user create \
-  --username "${GITEA_ADMIN_USER}" \
-  --password "${GITEA_ADMIN_PASSWORD}" \
-  --email "${GITEA_ADMIN_EMAIL}" \
-  --admin \
-  --must-change-password=false 2>&1 | grep -v "already exists" || true
+# Admin credentials go to curl as a config on stdin (-K -), never as -u in
+# argv, where every process on the VM can read them.
+admin_curl() {
+  printf 'user = "%s:%s"\n' \
+    "$(printf '%s' "$GITEA_ADMIN_USER" | sed 's/[\\"]/\\&/g')" \
+    "$(printf '%s' "$GITEA_ADMIN_PASSWORD" | sed 's/[\\"]/\\&/g')" | curl -K - "$@"
+}
+admin_auth_code() { admin_curl -s -o /dev/null -w '%{http_code}' "$API/user"; }
+# gitea refuses to run its CLI as root (mustNotRunAsRoot), which is what a bare
+# `docker exec` is, so every CLI call runs as the image's `git` user.
+gitea_user() { docker exec -u git "$CONTAINER" gitea admin user "$@"; }
+
+# Step 1: Converge the admin user to the declared credential (idempotent)
+# The create used to run as root and pipe through `grep -v "already exists" ||
+# true`, so gitea's root refusal was swallowed and nothing ever applied
+# GITEA_ADMIN_PASSWORD: the live password had drifted from the declared one and
+# no ship noticed. Now the declared password is checked against the live API
+# and, if it is rejected, applied with change-password and checked again. A
+# rotation is a sops edit plus a ship, and a ship cannot go green while
+# declared != live.
+echo "-- Converging admin user --"
+if ! out=$(gitea_user create \
+    --username "${GITEA_ADMIN_USER}" \
+    --password "${GITEA_ADMIN_PASSWORD}" \
+    --email "${GITEA_ADMIN_EMAIL}" \
+    --admin \
+    --must-change-password=false 2>&1); then
+  case "$out" in
+    *"already exists"*) ;;
+    *) echo "[init-mirrors] FAILED: admin user create: $(printf '%s' "$out" | head -c 200)" >&2; exit 1 ;;
+  esac
+fi
+if [ "$(admin_auth_code)" = 200 ]; then
+  echo "  admin password matches the declared value"
+else
+  echo "  admin password differs from the declared value -- applying it"
+  if ! gitea_user change-password \
+      --username "${GITEA_ADMIN_USER}" \
+      --password "${GITEA_ADMIN_PASSWORD}" \
+      --must-change-password=false >/dev/null 2>&1; then
+    echo "[init-mirrors] FAILED: gitea admin user change-password exited non-zero" >&2
+    exit 1
+  fi
+  code=$(admin_auth_code)
+  if [ "$code" != 200 ]; then
+    echo "[init-mirrors] FAILED: declared admin password still rejected after change-password (HTTP $code)" >&2
+    exit 1
+  fi
+  echo "  admin password applied and verified"
+fi
 
 # Step 2: Get or create API token
 echo "-- Obtaining API token --"
@@ -74,8 +116,7 @@ TOKEN_FILE="$(cd "$(dirname "$0")/.." && pwd)/.gitea-token"
 if [ -f "$TOKEN_FILE" ]; then
   TOKEN=$(cat "$TOKEN_FILE")
 else
-  TOKEN=$(curl -sf -X POST "$API/users/${GITEA_ADMIN_USER}/tokens" \
-    -u "${GITEA_ADMIN_USER}:${GITEA_ADMIN_PASSWORD}" \
+  TOKEN=$(admin_curl -sf -X POST "$API/users/${GITEA_ADMIN_USER}/tokens" \
     -H "Content-Type: application/json" \
     -d '{"name":"init-mirrors","scopes":["all"]}' | jq -r '.sha1') || true
   if [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ]; then

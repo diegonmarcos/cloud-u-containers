@@ -20,6 +20,11 @@
 //   G5 a populated mirror is left alone (no DELETE, no migrate)
 //   G6 secrets.yaml declares GITHUB_MIRROR_TOKEN (G2 would fail every ship otherwise)
 //   G7 every name in build.json exclude gets a remove_excluded call
+//   G8 live admin password != declared -> change-password as `git`, then exit 0 with live == declared
+//   G9 change-password that does not take effect -> exit 1 (was: never checked)
+//   G10 live == declared -> no change-password call (idempotent)
+//   G11 the declared password never reaches curl argv nor the script's output
+//   G12 admin create failing for any reason but "already exists" -> exit 1 (was: swallowed)
 import { execFileSync, spawnSync } from "node:child_process";
 import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, chmodSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -61,19 +66,27 @@ function render(mirrors: Mirror[]): string {
 
 // Stub gitea. state/<repo>.json = the repo as GET returns it. Every mutating
 // call is appended to calls.log. MIGRATE_EMPTY=1 makes a migrate return empty.
+// The admin password lives in state/.live-pw; GET /user answers 200 only for a
+// `-K -` config carrying it. argv of every curl call goes to curl-argv.log.
 const CURL = `#!/usr/bin/env bash
-method=GET; data=""; url=""
+printf '%s\\n' "$*" >> "$STATE/../curl-argv.log"
+method=GET; data=""; url=""; fmt=""; cfg=""
 while [ $# -gt 0 ]; do
   case "$1" in
     -X) method="$2"; shift 2 ;;
     -d) data="$2"; shift 2 ;;
-    -H|-u) shift 2 ;;
+    -K) [ "$2" = - ] && cfg=$(cat); shift 2 ;;
+    -w) fmt="$2"; shift 2 ;;
+    -H|-u|-o) shift 2 ;;
     -*) shift ;;
     *) url="$1"; shift ;;
   esac
 done
 path="\${url#*/api/v1}"
 case "$method $path" in
+  "GET /user")
+    code=401; [ "$cfg" = "user = \\"diego:$(cat "$STATE/.live-pw")\\"" ] && code=200
+    [ -n "$fmt" ] && printf '%s' "$code"; [ "$code" = 200 ] || exit 22 ;;
   "POST /users/"*"/tokens") echo '{"sha1":"stub-admin-token"}' ;;
   "GET /users/"*) echo '{}' ;;
   "GET /repos/"*)
@@ -92,15 +105,36 @@ case "$method $path" in
 esac
 `;
 
-type Run = { code: number; out: string; calls: string[] };
+// Stub `docker exec`: gitea's CLI refuses root, so a call without `-u git`
+// fails as the real one does. change-password writes state/.live-pw unless
+// CHPW_NOOP=1. `create` reports the existing admin.
+const DOCKER = `#!/usr/bin/env bash
+echo "$*" >> "$STATE/../docker.log"
+[ "$1 $2 $3" = "exec -u git" ] || { echo "Gitea is not supposed to be run as root" >&2; exit 1; }
+shift 4
+case "$1 $2 $3" in
+  "gitea admin user")
+    case "$4" in
+      create)
+        [ "\${CREATE_FAIL:-0}" = 1 ] && { echo "database is locked" >&2; exit 1; }
+        echo "user already exists [name: diego]" >&2; exit 1 ;;
+      change-password)
+        pw=""; while [ $# -gt 0 ]; do [ "$1" = --password ] && pw="$2"; shift; done
+        [ "\${CHPW_NOOP:-0}" = 1 ] || printf '%s' "$pw" > "$STATE/.live-pw" ;;
+    esac ;;
+esac
+`;
+const DECLARED_PW = "Decl4redPw-sentinel";
+type Run = { code: number; out: string; calls: string[]; docker: string[]; curlArgv: string[]; livePw: string };
 function run(mirrors: Mirror[], existing: Record<string, object>, env: Record<string, string>): Run {
   const dir = mkdtempSync(join(tmpdir(), "init-mirrors-"));
   const bin = join(dir, "bin"), state = join(dir, "state"), configs = join(dir, "configs");
   for (const d of [bin, state, configs]) mkdirSync(d);
   writeFileSync(join(bin, "curl"), CURL); chmodSync(join(bin, "curl"), 0o755);
-  writeFileSync(join(bin, "docker"), "#!/bin/sh\nexit 0\n"); chmodSync(join(bin, "docker"), 0o755);
+  writeFileSync(join(bin, "docker"), DOCKER); chmodSync(join(bin, "docker"), 0o755);
+  writeFileSync(join(state, ".live-pw"), env.LIVE_PW ?? DECLARED_PW);
   for (const [n, meta] of Object.entries(existing)) writeFileSync(join(state, `${n}.json`), JSON.stringify(meta));
-  writeFileSync(join(dir, ".secrets"), "GITEA_ADMIN_USER=diego\nGITEA_ADMIN_PASSWORD=x\nGITEA_ADMIN_EMAIL=x@y\n");
+  writeFileSync(join(dir, ".secrets"), `GITEA_ADMIN_USER=diego\nGITEA_ADMIN_PASSWORD=${DECLARED_PW}\nGITEA_ADMIN_EMAIL=x@y\n`);
   const script = join(configs, "init-mirrors.sh");
   writeFileSync(script, render(mirrors)); chmodSync(script, 0o755);
   const calls = join(dir, "calls.log"); writeFileSync(calls, "");
@@ -108,8 +142,10 @@ function run(mirrors: Mirror[], existing: Record<string, object>, env: Record<st
     encoding: "utf8",
     env: { PATH: `${bin}:${process.env.PATH}`, STATE: state, CALLS: calls, ...env },
   });
-  return { code: r.status ?? -1, out: r.stdout + r.stderr,
-           calls: readFileSync(calls, "utf8").split("\n").filter(Boolean) };
+  const lines = (f: string) => existsSync(f) ? readFileSync(f, "utf8").split("\n").filter(Boolean) : [];
+  return { code: r.status ?? -1, out: r.stdout + r.stderr, calls: lines(calls),
+           docker: lines(join(dir, "docker.log")), curlArgv: lines(join(dir, "curl-argv.log")),
+           livePw: readFileSync(join(state, ".live-pw"), "utf8") };
 }
 
 const up = (n: string) => `https://github.com/diegonmarcos/${n}.git`;
@@ -165,6 +201,44 @@ const TOKEN = { GITHUB_MIRROR_TOKEN: "stub-github-token" };
   const s = render([]);
   t("G7 every exclude entry renders a remove_excluded call",
     exclude.length > 0 && exclude.every((n) => s.includes(`remove_excluded ${q(n)}`)));
+}
+
+// G8
+{
+  const r = run([pub("back-api")], { "back-api": { empty: false, private: false } }, { LIVE_PW: "leaked-old" });
+  const chpw = r.docker.filter((c) => c.includes(" change-password "));
+  t("G8 drifted admin password: change-password applied", chpw.length === 1, r.docker.join("|"));
+  t("G8 ... as git, with must-change-password off",
+    chpw.length === 1 && chpw[0].startsWith("exec -u git gitea gitea admin user change-password ")
+      && chpw[0].includes("--must-change-password=false"), chpw.join("|"));
+  t("G8 ... and live == declared, exit 0", r.livePw === DECLARED_PW && r.code === 0, `code=${r.code} ${r.out.slice(-300)}`);
+}
+// G9
+{
+  const r = run([pub("back-api")], { "back-api": { empty: false, private: false } }, { LIVE_PW: "leaked-old", CHPW_NOOP: "1" });
+  t("G9 change-password that does not take effect: exit 1", r.code === 1, `code=${r.code}`);
+  t("G9 ... with the declared-still-rejected verdict", /still rejected after change-password/.test(r.out), r.out.slice(-300));
+}
+// G10
+{
+  const r = run([pub("back-api")], { "back-api": { empty: false, private: false } }, {});
+  t("G10 live == declared: no change-password call",
+    r.code === 0 && !r.docker.some((c) => c.includes(" change-password ")), r.docker.join("|"));
+}
+// G11 — includes a run that mints the API token with the password
+{
+  const r = run([pub("back-api")], { "back-api": { empty: false, private: false } }, { LIVE_PW: "leaked-old" });
+  t("G11 the token POST ran (covers the password-bearing path)",
+    r.curlArgv.some((a) => a.includes("/tokens")), r.curlArgv.join("|"));
+  t("G11 password absent from curl argv", !r.curlArgv.some((a) => a.includes(DECLARED_PW)),
+    r.curlArgv.filter((a) => a.includes(DECLARED_PW)).join("|").replaceAll(DECLARED_PW, "<PW>"));
+  t("G11 password absent from hook output", !r.out.includes(DECLARED_PW));
+}
+
+// G12
+{
+  const r = run([pub("back-api")], { "back-api": { empty: false, private: false } }, { CREATE_FAIL: "1" });
+  t("G12 admin create failing for another reason: exit 1", r.code === 1 && /admin user create/.test(r.out), `code=${r.code}`);
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);
