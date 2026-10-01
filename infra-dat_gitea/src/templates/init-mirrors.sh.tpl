@@ -12,18 +12,13 @@
 # Idempotent: safe to run multiple times
 #
 # PRIVATE mirrors need auth_token in the migrate payload (anonymous clone of
-# a private repo yields a bare/empty mirror). Read at runtime from the
-# GITHUB_MIRROR_TOKEN env var — populate it by adding a GITHUB_MIRROR_TOKEN
-# key (fine-grained GitHub PAT, contents:read, scoped to the mirrored repos)
-# to a_solutions/infra-dat_gitea/src/secrets.yaml via:
-#   sops a_solutions/infra-dat_gitea/src/secrets.yaml
-# then re-run `build.sh build && build.sh ship` (never edit dist/ directly).
-# Absent that key, each private mirror WARNs and falls back to the previous
-# anonymous-clone behaviour — nothing regresses, the gap just stays visible.
-# That token is offered ONLY to the repos in the migrate block below, which is
-# the derived inventory MINUS mirror_policy.exclude, and excluded repos are
-# actively DELETED from Gitea by step 3.5 before any migrate is attempted —
-# so adding it cannot sweep an excluded repo in through an orphan mirror.
+# a private repo yields an empty mirror). Read at runtime from the
+# GITHUB_MIRROR_TOKEN key of infra-dat_gitea/src/secrets.yaml (sops), whose
+# _credentials.github_mirror record names its vault source. A private mirror
+# that is, or would be, empty without it fails this script (see Verdict).
+# The token is offered ONLY to converge_mirror calls for names NOT in
+# mirror_policy.exclude, and excluded repos are DELETED by step 3.5 before any
+# migrate is attempted — so it cannot sweep an excluded repo in.
 set -uo pipefail
 API="http://localhost:@PORT_HTTP@/api/v1"
 CONTAINER="@CONTAINER_NAME@"
@@ -73,7 +68,9 @@ docker exec "$CONTAINER" gitea admin user create \
 
 # Step 2: Get or create API token
 echo "-- Obtaining API token --"
-TOKEN_FILE="/opt/containers/gitea/.gitea-token"
+# Beside .secrets in the deploy dir (the same <DEPLOY_PATH> the post-hook
+# runs from), not a second hardcoded copy of deploy.remote_path.
+TOKEN_FILE="$(cd "$(dirname "$0")/.." && pwd)/.gitea-token"
 if [ -f "$TOKEN_FILE" ]; then
   TOKEN=$(cat "$TOKEN_FILE")
 else
@@ -92,6 +89,98 @@ else
 fi
 
 api() { curl -sf -H "Authorization: token $TOKEN" -H "Content-Type: application/json" "$@"; }
+
+EXCLUDE_NAMES="@EXCLUDE_NAMES@"
+is_excluded() { case " $EXCLUDE_NAMES " in *" $1 "*) return 0 ;; esac; return 1; }
+
+# remove_excluded <name> — mirror_policy.exclude, enforced by DELETION.
+remove_excluded() {
+  local n="$1" meta
+  if meta=$(api "$API/repos/@ORG@/$n" 2>/dev/null); then
+    echo "REMOVING excluded repo @ORG@/$n (empty=$(printf '%s' "$meta" | jq -r '.empty'), size=$(printf '%s' "$meta" | jq -r '.size'), mirror=$(printf '%s' "$meta" | jq -r '.mirror'))"
+    if api -X DELETE "$API/repos/@ORG@/$n" >/dev/null 2>&1; then
+      echo "  REMOVED $n"
+      tally mirrors_removed "$n"
+    else
+      echo "  FAIL removing excluded repo $n" >&2
+      tally mirrors_remove_failed "$n: declared in mirror_policy.exclude but still present in Gitea"
+    fi
+  else
+    echo "ABSENT @ORG@/$n (excluded)"
+  fi
+}
+
+# converge_mirror <name> <upstream> <private:true|false>
+#
+# EXISTS used to be the end of it, so a private mirror first created by an
+# anonymous clone stayed empty forever and was counted as healthy: 13 private
+# mirrors sat at empty=true, mirror_updated=0001-01-01 while the SUMMARY said
+# mirrors_exists=34 mirrors_degraded=0. Gitea cannot attach credentials to an
+# existing mirror, and an empty repo holds nothing to lose, so it is deleted
+# and migrated again with the token.
+converge_mirror() {
+  local name="$1" upstream="$2" private="$3" meta auth out
+  # The derived set comes from cloud-infra's inventory, which lags a
+  # build.json exclude edit by a whole consolidate; without this the
+  # exclusion step would delete a repo and this step re-create it, now
+  # WITH the token, in the same run.
+  if is_excluded "$name"; then
+    echo "SKIP $name (mirror_policy.exclude; still in the derived set)"
+    return 0
+  fi
+  if meta=$(api "$API/repos/@ORG@/$name" 2>/dev/null); then
+    if [ "$private" != true ] || [ "$(printf '%s' "$meta" | jq -r '.empty')" != true ]; then
+      echo "EXISTS @ORG@/$name"
+      tally mirrors_exists "$name"
+      return 0
+    fi
+    if [ -z "${GITHUB_MIRROR_TOKEN:-}" ]; then
+      echo "  WARN: $name is private, EMPTY, and GITHUB_MIRROR_TOKEN is not set"
+      tally mirrors_degraded "$name: private, empty, no GITHUB_MIRROR_TOKEN"
+      return 0
+    fi
+    echo "REPAIRING empty private mirror @ORG@/$name"
+    if ! api -X DELETE "$API/repos/@ORG@/$name" >/dev/null 2>&1; then
+      echo "  FAIL $name: could not delete the empty mirror for re-migrate" >&2
+      tally mirrors_failed "$name: empty private mirror, delete for re-migrate failed"
+      return 0
+    fi
+  fi
+
+  echo "Creating mirror: @ORG@/$name <- $upstream"
+  auth="{}"
+  if [ "$private" = true ]; then
+    if [ -z "${GITHUB_MIRROR_TOKEN:-}" ]; then
+      echo "  WARN: $name is private and GITHUB_MIRROR_TOKEN is not set -- an anonymous clone yields an EMPTY mirror"
+      tally mirrors_degraded "$name: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
+    else
+      auth=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
+    fi
+  fi
+  PAYLOAD=$(jq -n \
+    --arg clone_addr "$upstream" \
+    --arg repo_name "$name" \
+    --arg repo_owner "@ORG@" \
+    --arg mirror_interval "@MIRROR_INTERVAL@" \
+    --argjson private "$private" \
+    --argjson auth "$auth" \
+    '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
+  # Every outcome lands in exactly one tally; the SUMMARY decides the exit
+  # code. The migrate is synchronous and answers with the repo, so a private
+  # mirror that came back empty WITH a token is a failure, not an OK.
+  if out=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
+    if [ "$auth" != "{}" ] && [ "$(printf '%s' "$out" | jq -r '.empty' 2>/dev/null)" != false ]; then
+      echo "  FAIL $name: migrated with GITHUB_MIRROR_TOKEN but the mirror is still empty" >&2
+      tally mirrors_failed "$name: private mirror empty after authenticated migrate"
+    else
+      echo "  OK $name"
+      tally mirrors_created "$name"
+    fi
+  else
+    echo "  FAIL $name: $(printf '%s' "$out" | head -c 200)" >&2
+    tally mirrors_failed "$name: $(printf '%s' "$out" | head -c 120)"
+  fi
+}
 
 # Step 3: Ensure the mirror OWNER exists
 # The create used to discard its exit status (no `set -e` in this script), so a
@@ -141,12 +230,11 @@ echo "-- Enforcing mirror_policy.exclude --"
 # ── Verdict ───────────────────────────────────────────────────────────
 # One machine-readable line, then the exit code.
 #
-# `degraded` is reported but NOT fatal: a private repo with no
-# GITHUB_MIRROR_TOKEN yields an empty mirror, which is a known, documented gap
-# with a known remedy (add the key to secrets.yaml). Failing on it would block
-# every Gitea ship on a PAT nobody has generated yet — a policy change, not a
-# bug fix. It is counted and named so the gap stays visible instead of scrolling
-# past as one WARN among 29 lines.
+# `degraded` (a private mirror that is or will be empty for want of
+# GITHUB_MIRROR_TOKEN) is FATAL. It was a tolerated gap while no token was
+# declared; secrets.yaml now declares one, so reaching this state means the key
+# went missing from the deploy, and a phone cloning such a mirror gets an empty
+# repo. That is a failed ship, not a WARN.
 MIRRORS_CREATED=$(tally_count mirrors_created)
 MIRRORS_EXISTS=$(tally_count mirrors_exists)
 MIRRORS_FAILED=$(tally_count mirrors_failed)
@@ -156,11 +244,15 @@ MIRRORS_REMOVE_FAILED=$(tally_count mirrors_remove_failed)
 echo "[init-mirrors] SUMMARY revision=${SHIP_REVISION:-unknown} org=@ORG@ mirrors_created=$MIRRORS_CREATED mirrors_exists=$MIRRORS_EXISTS mirrors_failed=$MIRRORS_FAILED mirrors_degraded=$MIRRORS_DEGRADED mirrors_removed=$MIRRORS_REMOVED mirrors_remove_failed=$MIRRORS_REMOVE_FAILED"
 
 # An excluded repo that is still present is the exact failure this step exists
-# to prevent, so it is fatal — unlike `degraded`, there is no missing PAT to
-# wait on and no policy question to settle.
+# to prevent, so it is fatal.
 if [ "$MIRRORS_REMOVE_FAILED" -gt 0 ]; then
   echo "[init-mirrors] FAILED: $MIRRORS_REMOVE_FAILED excluded repo(s) still exist in Gitea:" >&2
   sed 's|^|[init-mirrors]   |' "$TALLY_DIR/mirrors_remove_failed" >&2
+  exit 1
+fi
+if [ "$MIRRORS_DEGRADED" -gt 0 ]; then
+  echo "[init-mirrors] FAILED: $MIRRORS_DEGRADED private mirror(s) empty for want of GITHUB_MIRROR_TOKEN:" >&2
+  sed 's|^|[init-mirrors]   |' "$TALLY_DIR/mirrors_degraded" >&2
   exit 1
 fi
 if [ "$MIRRORS_FAILED" -gt 0 ]; then

@@ -13,98 +13,36 @@
     engine = import ../../_shared/engine.nix;
     lib    = nixpkgs.lib;
 
-    # ── Mirror block — pre-rendered bash for init-mirrors.sh ─────
-    giteaConfig   = buildJson.gitea;
-    mirrorInterval = giteaConfig.mirror_interval;
-    org           = giteaConfig.org;
-    mirrors       = container.gitea.mirrors;
-    mirrorNames   = builtins.attrNames mirrors;
-    mirrorEntries = map (name: {
-      inherit name;
-      upstream = mirrors.${name}.upstream;
-      private  = mirrors.${name}.private or false;
-    }) mirrorNames;
-
-    # PRIVATE repos need a GitHub auth_token in the migrate payload — anonymous
-    # clone of a private repo yields a bare (empty) mirror. The token is read
-    # at RUNTIME from $GITHUB_MIRROR_TOKEN (bash env), sourced from the
-    # GITHUB_MIRROR_TOKEN key in a_solutions/infra-dat_gitea/src/secrets.yaml
-    # (sops-encrypted, same dotenv pipeline as GITEA_ADMIN_*). That key does
-    # NOT exist yet — nobody has generated the fine-grained GitHub PAT. Until
-    # it does, private mirrors degrade to the same anonymous-clone behaviour
-    # as before (empty mirror) but now WARN per-repo so the gap is visible in
-    # init-mirrors output instead of silently swallowed.
-    mkMirrorEntry = m: let
-      privateStr = if m.private then "true" else "false";
-    in ''
-      if ! api "$API/repos/${org}/${m.name}" >/dev/null 2>&1; then
-        echo "Creating mirror: ${org}/${m.name} <- ${m.upstream}"
-        AUTH_JSON="{}"
-        if [ "${privateStr}" = "true" ] && [ -n "''${GITHUB_MIRROR_TOKEN:-}" ]; then
-          AUTH_JSON=$(jq -n --arg t "$GITHUB_MIRROR_TOKEN" '{auth_token:$t}')
-        elif [ "${privateStr}" = "true" ]; then
-          echo "  WARN: ${m.name} is private and GITHUB_MIRROR_TOKEN is not set -- anonymous clone yields an EMPTY mirror. To fix, put a fine-grained GitHub PAT (contents:read) in the GITHUB_MIRROR_TOKEN key of a_solutions/infra-dat_gitea/src/secrets.yaml (sops). WHAT THAT EXPOSES: that PAT is what makes private GitHub repositories actually copy into Gitea, so scope it to the mirrored repos only -- anything else it can read becomes mirrorable the moment that repo enters the inventory. It is offered ONLY to the repos in this migrate block, which is the inventory MINUS mirror_policy.exclude (${excludeDoc}); excluded repos are deleted from Gitea by the exclusion step before any migrate runs, so the token cannot reach one through a leftover mirror."
-          tally mirrors_degraded "${m.name}: private, no GITHUB_MIRROR_TOKEN — mirror will be empty"
-        fi
-        PAYLOAD=$(jq -n \
-          --arg clone_addr "${m.upstream}" \
-          --arg repo_name "${m.name}" \
-          --arg repo_owner "${org}" \
-          --arg mirror_interval "${mirrorInterval}" \
-          --argjson private ${privateStr} \
-          --argjson auth "$AUTH_JSON" \
-          '{clone_addr:$clone_addr, repo_name:$repo_name, repo_owner:$repo_owner, mirror:true, mirror_interval:$mirror_interval, private:$private, service:"github"} + $auth')
-        # Was `&& echo " OK" || echo " FAIL"` — which printed FAIL and exited 0.
-        # Now every outcome lands in exactly one tally, and the SUMMARY at the
-        # bottom of init-mirrors.sh is what decides this script's exit code.
-        if MIGRATE_ERR=$(api -X POST "$API/repos/migrate" -d "$PAYLOAD" 2>&1); then
-          echo "  OK ${m.name}"
-          tally mirrors_created "${m.name}"
-        else
-          echo "  FAIL ${m.name}: $(printf '%s' "$MIGRATE_ERR" | head -c 200)" >&2
-          tally mirrors_failed "${m.name}: $(printf '%s' "$MIGRATE_ERR" | head -c 120)"
-        fi
-      else
-        echo "EXISTS ${org}/${m.name}"
-        tally mirrors_exists "${m.name}"
-      fi
-    '';
-    mirrorBlock = lib.concatMapStringsSep "\n" mkMirrorEntry mirrorEntries;
-
-    # ── Exclusion block — mirror_policy.exclude, enforced by DELETION ────
+    # ── init-mirrors.sh data — the logic lives in the template ───
+    # This used to pre-render ~60 lines of bash PER repo inside nix strings,
+    # which nothing could run without nixpkgs, so no test ever exercised it —
+    # and the shipped script counted 13 empty private mirrors as healthy.
+    # Nix now emits only data (one function call per repo); converge_mirror /
+    # remove_excluded in templates/init-mirrors.sh.tpl hold the behaviour, and
+    # test-init-mirrors.ts runs that template against a stub gitea.
+    giteaConfig    = buildJson.gitea;
+    org            = giteaConfig.org;
+    mirrors        = container.gitea.mirrors;
     # Read from build.json directly (not from the derived container json):
     # the deriver consumes `exclude` to omit repos from gitea.mirrors, so by
-    # the time it reaches build-gitea.json the excluded names are gone. That
-    # omission is the whole bug — it prevents creation and never removes a
-    # mirror that predates the policy, which is how diego/cloud-vault stayed.
-    excludeNames = giteaConfig.mirror_policy.exclude or [];
-    excludeDoc   = if excludeNames == []
-                   then "empty"
-                   else builtins.concatStringsSep ", " excludeNames;
-    mkExcludeEntry = n: ''
-      if EXCLUDED_META=$(api "$API/repos/${org}/${n}" 2>/dev/null); then
-        echo "REMOVING excluded repo ${org}/${n} (empty=$(printf '%s' "$EXCLUDED_META" | jq -r '.empty'), size=$(printf '%s' "$EXCLUDED_META" | jq -r '.size'), mirror=$(printf '%s' "$EXCLUDED_META" | jq -r '.mirror'))"
-        if api -X DELETE "$API/repos/${org}/${n}" >/dev/null 2>&1; then
-          echo "  REMOVED ${n}"
-          tally mirrors_removed "${n}"
-        else
-          echo "  FAIL removing excluded repo ${n}" >&2
-          tally mirrors_remove_failed "${n}: declared in mirror_policy.exclude but still present in Gitea"
-        fi
-      else
-        echo "ABSENT ${org}/${n} (excluded)"
-      fi
-    '';
-    excludeBlock = if excludeNames == []
-                   then ''echo "  mirror_policy.exclude is empty — nothing to remove"''
-                   else lib.concatMapStringsSep "\n" mkExcludeEntry excludeNames;
+    # the time it reaches build-gitea.json the excluded names are gone.
+    excludeNames   = giteaConfig.mirror_policy.exclude or [];
+    q              = lib.escapeShellArg;
+    mirrorBlock    = lib.concatMapStringsSep "\n"
+      (name: "converge_mirror ${q name} ${q mirrors.${name}.upstream} ${
+        if mirrors.${name}.private or false then "true" else "false"}")
+      (builtins.attrNames mirrors);
+    excludeBlock   = lib.concatMapStringsSep "\n"
+      (n: "remove_excluded ${q n}") excludeNames;
 
     initMirrorsVars = {
-      PORT_HTTP      = toString buildJson.ports.app;
-      CONTAINER_NAME = buildJson.containers.app.container_name;
-      ORG            = org;
-      EXCLUDE_BLOCK  = excludeBlock;
-      MIRROR_BLOCK   = mirrorBlock;
+      PORT_HTTP       = toString buildJson.ports.app;
+      CONTAINER_NAME  = buildJson.containers.app.container_name;
+      ORG             = org;
+      MIRROR_INTERVAL = giteaConfig.mirror_interval;
+      EXCLUDE_NAMES   = lib.concatStringsSep " " excludeNames;
+      EXCLUDE_BLOCK   = excludeBlock;
+      MIRROR_BLOCK    = mirrorBlock;
     };
 
   in {

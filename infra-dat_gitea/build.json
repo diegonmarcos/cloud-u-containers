@@ -53,9 +53,10 @@
       "include_forks": false,
       "_include_forks_doc": "FairEmail and octocode are upstream forks; mirroring them copies other people's code with no backup value. Flip to true to include them.",
       "exclude": [
-        "cloud-vault"
+        "cloud-vault",
+        "cloud-me_vault"
       ],
-      "_exclude_doc": "Repo names to skip entirely (exact match against github-repos.json .repos[].name — see expandGiteaMirrors in 1_cloud-configs/src/derive/cloud-data-config-consolidated.ts). Empty = mirror every non-fork repo in the inventory. cloud-vault is hard-excluded as defense in depth: mirror privacy otherwise depends solely on the inventory's private:true flag, and that same derived-flag mechanism already republished cloud-data (also private) as a public mirror once before it existed (see _mirrors_doc above). A credential store must not depend on a single flag being right every time."
+      "_exclude_doc": "Repo names to skip entirely (exact match against github-repos.json .repos[].name — see expandGiteaMirrors in 1_cloud-configs/src/derive/cloud-data-config-consolidated.ts). Empty = mirror every non-fork repo in the inventory. cloud-vault is hard-excluded as defense in depth: mirror privacy otherwise depends solely on the inventory's private:true flag, and that same derived-flag mechanism already republished cloud-data (also private) as a public mirror once before it existed (see _mirrors_doc above). A credential store must not depend on a single flag being right every time. cloud-me_vault is the SAME credential store under its current GitHub name: api.github.com/repos/diegonmarcos/cloud-vault answers 301 to repository id 1138187048, which is cloud-me_vault (measured 2026-10-01). Excluding only the old name let the renamed vault back into the derived mirror set as an empty private mirror, and GITHUB_MIRROR_TOKEN would have filled it. A rename must update this list; the flake also drops excluded names from the derived set, so a stale inventory cannot re-create one."
     },
     "mirror_interval": "1h",
     "gate": {
@@ -121,6 +122,10 @@
   "tests": {
     "reverse-proxy-auth": {
       "cmd": "node test-reverse-proxy-auth.ts",
+      "cwd": "src"
+    },
+    "init-mirrors": {
+      "cmd": "node test-init-mirrors.ts",
       "cwd": "src"
     }
   },
