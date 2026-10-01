@@ -62,6 +62,39 @@ export async function decideAuth(authHeader, verify, requiredScope) {
   return { ok: true, claims };
 }
 
+/**
+ * The SESSION path, for a caller that holds an Authelia portal login rather
+ * than a bearer — cloud-drive's `authelia_web` sign-in yields a cookie, never a
+ * token, so without this every phone request here was a 401. Same rule as the
+ * bearer path: the edge's word is not enough. `verify` asks Authelia itself
+ * whether the cookie is a live session its access rules admit for this route,
+ * and the user it names must be declared (runtime.authelia.session.users).
+ *
+ * @param {string|undefined} cookie  raw Cookie header
+ * @param {(cookie: string) => Promise<string>} verify  resolves to the Authelia
+ *        username; throws code 'session_unavailable' when Authelia cannot answer,
+ *        anything else for a dead or insufficient session
+ * @param {string[]} users
+ */
+export async function decideSession(cookie, verify, users) {
+  if (typeof cookie !== 'string' || cookie === '') {
+    return refuse(401, 'missing_authorization', 'Authorization header or an Authelia session required');
+  }
+  let user;
+  try {
+    user = await verify(cookie);
+  } catch (err) {
+    if (err && err.code === 'session_unavailable') {
+      return refuse(503, 'session_unavailable', 'Cannot reach the session verifier');
+    }
+    return refuse(401, 'invalid_session', 'The Authelia session is not valid for this route');
+  }
+  if (!Array.isArray(users) || !users.includes(user)) {
+    return refuse(403, 'user_not_allowed', 'This Authelia user is not declared for this service');
+  }
+  return { ok: true, user };
+}
+
 /** Authelia puts scopes in `scp` (array); tolerate the `scope` string form too. */
 export function scopesOf(claims) {
   if (!claims || typeof claims !== 'object') return [];

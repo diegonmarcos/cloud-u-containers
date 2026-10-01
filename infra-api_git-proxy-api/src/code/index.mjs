@@ -23,12 +23,12 @@ import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { decideAuth } from './authz.mjs';
+import { decideAuth, decideSession } from './authz.mjs';
 import { loadRuntime } from './contract.mjs';
 import { buildTable, match } from './router.mjs';
 import {
   upstreamHeaders, redactSecrets, reposUrl, tarballUrl,
-  projectRepo, validName, validRef,
+  projectRepo, validName, validRef, gitUpstreamHeaders, gitUrl,
   repoDeclared, clampPerPage, feedUrl, FEED_KINDS,
 } from './upstream.mjs';
 
@@ -59,6 +59,11 @@ const AUTH = {
   issuer: process.env.ISSUER || RT.authelia.issuer,
 };
 const API_BASE = process.env.GITHUB_API_BASE || RT.upstream.api_base;
+const GIT_BASE = process.env.GITHUB_GIT_BASE || RT.upstream.git_base;
+const SESSION = {
+  ...RT.authelia.session,
+  verify_url: process.env.AUTHELIA_VERIFY_URL || RT.authelia.session.verify_url,
+};
 const UPSTREAM_TIMEOUT_MS = Number(process.env.UPSTREAM_TIMEOUT_MS || RT.upstream.timeout_ms);
 
 const PORT = Number(process.env.PORT || 8123);
@@ -68,7 +73,8 @@ const GITHUB_TOKEN = process.env.GITHUB_TOKEN || '';
 // Every secret this process knows. Any string that reaches a client is passed
 // through redactSecrets(_, SECRETS) first — unconditionally, not only on the
 // paths that look risky.
-const SECRETS = [GITHUB_TOKEN].filter(Boolean);
+const SECRETS = [GITHUB_TOKEN, GITHUB_TOKEN && Buffer.from(`x-access-token:${GITHUB_TOKEN}`).toString('base64')]
+  .filter(Boolean);
 
 // ── Authelia bearer verification (RS256 over Authelia's JWKS) ──────────────
 // Mirrors infra-sec_introspect-proxy's checks exactly — same jwks_url, issuer
@@ -132,6 +138,35 @@ async function verifyAutheliaBearer(token) {
   if (typeof claims.exp === 'number' && claims.exp <= now) throw new Error('expired');
   if (typeof claims.nbf === 'number' && claims.nbf > now + 60) throw new Error('not yet valid');
   return claims;
+}
+
+// ── Authelia session verification (the cookie path) ────────────────────────
+// Asks Authelia's auth-request endpoint the question the edge's forward_auth
+// asks: is this cookie a live session its access rules admit for this URL?
+// auth-request reads X-Original-URL, which the hub's auth vhost passes through
+// untouched (forward-auth reads X-Forwarded-Host, which that proxy rewrites to
+// auth.* — the wrong rule). Never cached: a logout must take effect at once.
+async function verifyAutheliaSession(cookie, method, path) {
+  let r;
+  try {
+    r = await fetch(SESSION.verify_url, {
+      headers: {
+        cookie,
+        'x-original-url': `${SESSION.public_url}${RT.base_path}${path}`,
+        'x-original-method': method,
+        accept: 'application/json',
+      },
+      redirect: 'manual',
+      signal: AbortSignal.timeout(SESSION.timeout_ms),
+    });
+  } catch {
+    const e = new Error('session verifier unreachable'); e.code = 'session_unavailable'; throw e;
+  }
+  const user = r.status === 200 ? r.headers.get('remote-user') : null;
+  if (user) return user;
+  const e = new Error(`session refused (${r.status})`);
+  if (r.status >= 500) e.code = 'session_unavailable';
+  throw e;
 }
 
 // ── Responses ─────────────────────────────────────────────────────────────
@@ -212,6 +247,44 @@ function feedHandler(kind) {
   };
 }
 
+async function proxyGit(req, res, { owner, repo }, suffix) {
+  const name = repo.replace(/\.git$/, '');
+  if (!validName(owner) || !validName(name)) {
+    return sendError(res, 400, 'bad_repo', 'owner and repo must be valid GitHub names');
+  }
+  // The deadline covers GitHub's HEADERS only; a pack may stream for minutes.
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(new DOMException('timeout', 'TimeoutError')), UPSTREAM_TIMEOUT_MS);
+  let r;
+  try {
+    r = await fetch(gitUrl(GIT_BASE, owner, name, suffix), {
+      method: req.method,
+      headers: gitUpstreamHeaders(GITHUB_TOKEN, req.headers),
+      ...(req.method === 'POST' ? { body: req, duplex: 'half' } : {}),
+      redirect: 'follow',
+      signal: ac.signal,
+    });
+  } finally {
+    clearTimeout(timer);
+  }
+  if (!r.ok || !r.body) {
+    const notFound = r.status === 404;
+    return sendError(res, notFound ? 404 : 502, notFound ? 'not_found' : 'upstream_error',
+      `GitHub returned ${r.status} for ${owner}/${name}`);
+  }
+  res.writeHead(200, {
+    'content-type': r.headers.get('content-type') || 'application/octet-stream',
+    'cache-control': 'no-cache',
+  });
+  res.on('close', () => { if (!res.writableFinished) ac.abort(); });
+  await new Promise((resolve, reject) => {
+    const src = Readable.fromWeb(r.body);
+    src.on('error', reject);
+    res.on('close', resolve);
+    src.pipe(res).on('finish', resolve).on('error', reject);
+  });
+}
+
 // ── Handlers, keyed by the DECLARED path in build.json runtime.endpoints ───
 const HANDLERS = {
   '/git/health': async (_req, res) => sendJson(res, 200, { status: 'ok', service: 'git-proxy-api' }),
@@ -280,6 +353,17 @@ const HANDLERS = {
     });
   },
 
+  // Clone/fetch over git smart-HTTP, upload-pack only: the phone gets a
+  // private repository with a working origin and the credential never leaves
+  // this process. There is no receive-pack route, so nothing can push.
+  '/git/clone/:owner/:repo/info/refs': async (req, res, ctx) => {
+    if (ctx.query.get('service') !== 'git-upload-pack') {
+      return sendError(res, 403, 'service_not_allowed', 'only git-upload-pack (clone/fetch) is proxied');
+    }
+    return proxyGit(req, res, ctx.params, 'info/refs?service=git-upload-pack');
+  },
+  '/git/clone/:owner/:repo/git-upload-pack': async (req, res, ctx) => proxyGit(req, res, ctx.params, 'git-upload-pack'),
+
   '/git/repos/:owner/:repo/commits': feedHandler('commits'),
   '/git/repos/:owner/:repo/runs': feedHandler('runs'),
 };
@@ -306,7 +390,12 @@ async function serve(req, res, url) {
   }
 
   if (hit.route.auth !== 'none') {
-    const decision = await decideAuth(req.headers.authorization, verifyAutheliaBearer, AUTH.required_scope);
+    // A presented bearer is authoritative — a bad one is refused, never
+    // retried as a cookie. Only a request with no Authorization header at all
+    // is judged on its Authelia session.
+    const decision = (req.headers.authorization || !req.headers.cookie)
+      ? await decideAuth(req.headers.authorization, verifyAutheliaBearer, AUTH.required_scope)
+      : await decideSession(req.headers.cookie, (c) => verifyAutheliaSession(c, req.method, path), SESSION.users);
     if (!decision.ok) return sendJson(res, decision.status, decision.body);
   }
 

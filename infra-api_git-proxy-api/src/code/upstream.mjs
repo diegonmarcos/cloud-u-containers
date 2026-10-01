@@ -25,6 +25,29 @@ export function upstreamHeaders(token) {
 }
 
 /**
+ * Outbound headers for GitHub's smart-HTTP git endpoint (clone/fetch only).
+ * GitHub takes a token as the Basic password there. Only the git protocol
+ * headers are carried over from the caller — never its Cookie or its fleet
+ * bearer, which are ours to verify and nobody's to forward.
+ */
+export const GIT_PASS_HEADERS = ['content-type', 'accept', 'git-protocol', 'content-encoding', 'user-agent'];
+export function gitUpstreamHeaders(token, reqHeaders = {}) {
+  if (!token) throw new Error('gitUpstreamHeaders: no GITHUB_TOKEN configured');
+  const out = {};
+  for (const h of GIT_PASS_HEADERS) if (reqHeaders[h]) out[h] = reqHeaders[h];
+  out['user-agent'] ??= 'git-proxy-api';
+  out['accept-encoding'] = 'identity';
+  out.authorization = `Basic ${Buffer.from(`x-access-token:${token}`).toString('base64')}`;
+  return out;
+}
+
+/** https://github.com/<owner>/<repo>.git/<suffix> — suffix is fixed by the route, never the caller. */
+export function gitUrl(gitBase, owner, repo, suffix) {
+  const seg = [owner, repo].map((s) => encodeURIComponent(s)).join('/');
+  return `${gitBase}/${seg}.git/${suffix}`;
+}
+
+/**
  * Remove every configured secret from a string before it can reach a client.
  *
  * Applied to EVERY response body this service emits, not just the ones that

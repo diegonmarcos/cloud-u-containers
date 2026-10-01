@@ -42,6 +42,16 @@ export function loadRuntime(buildJsonPath) {
   if (!(f.cache_ttl_s > 0) || !Number.isInteger(f.max_per_page) || f.max_per_page < 1 || f.max_per_page > 100) {
     throw new Error('build.json runtime.feeds needs cache_ttl_s > 0 and max_per_page in 1..100');
   }
+  // The session path admits exactly the declared users; an empty or missing
+  // list must stop the service, not quietly admit nobody (or everybody).
+  const s = rt.authelia?.session;
+  if (!s || !/^https:\/\//.test(s.verify_url || '') || !/^https:\/\/[^/]+$/.test(s.public_url || '')
+      || !Array.isArray(s.users) || s.users.length === 0 || !(s.timeout_ms > 0)) {
+    throw new Error('build.json runtime.authelia.session needs verify_url, public_url (origin), users[] and timeout_ms');
+  }
+  if (!/^https:\/\/[^/]+$/.test(rt.upstream?.git_base || '')) {
+    throw new Error('build.json runtime.upstream.git_base must be an https origin');
+  }
   return rt;
 }
 

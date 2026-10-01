@@ -31,11 +31,12 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { decideAuth, scopesOf } from './code/authz.mjs';
+import { decideAuth, decideSession, scopesOf } from './code/authz.mjs';
 import { loadRuntime, localPath } from './code/contract.mjs';
 import { buildTable, match, toRegex } from './code/router.mjs';
 import {
   redactSecrets, upstreamHeaders, reposUrl, tarballUrl, projectRepo, validName, validRef, REDACTED,
+  gitUpstreamHeaders, gitUrl,
   repoDeclared, clampPerPage, feedUrl, projectCommit, projectRun,
 } from './code/upstream.mjs';
 
@@ -101,6 +102,27 @@ async function testRefusal() {
   eq(scopesOf({ scp: 'a b' }), ['a', 'b'], 'scopesOf tolerates the scp string form');
   eq(scopesOf({ scope: 'a b' }), ['a', 'b'], 'scopesOf tolerates the scope string form');
   eq(scopesOf(null), [], 'scopesOf(null) is empty, never permissive');
+
+  console.log('\nA2. an Authelia SESSION is judged by Authelia, then by the declared user list');
+  const USERS = RT.authelia.session.users;
+  const owner = async () => USERS[0];
+  const stranger = async () => 'guest@example.invalid';
+  const dead = async () => { throw new Error('401'); };
+  const down = async () => { const e = new Error('down'); e.code = 'session_unavailable'; throw e; };
+  for (const [cookie, verify, wantStatus, wantCode] of [
+    [undefined, owner, 401, 'missing_authorization'],
+    ['', owner, 401, 'missing_authorization'],
+    ['authelia_session=x', dead, 401, 'invalid_session'],
+    ['authelia_session=x', down, 503, 'session_unavailable'],
+    ['authelia_session=x', stranger, 403, 'user_not_allowed'],
+  ]) {
+    const d = await decideSession(cookie, verify, USERS);
+    ok(!d.ok && d.status === wantStatus && d.body.code === wantCode,
+      `session ${JSON.stringify(cookie)} -> ${wantStatus} ${wantCode}`, `got ${JSON.stringify(d)}`);
+  }
+  const s = await decideSession('authelia_session=x', owner, USERS);
+  ok(s.ok === true && s.user === USERS[0], 'a live session of a declared user is ACCEPTED');
+  ok(!(await decideSession('authelia_session=x', owner, [])).ok, 'an empty user list admits NOBODY');
 }
 
 // ══ B. The GitHub token cannot reach a response ════════════════════════════
@@ -129,6 +151,18 @@ function testRedactionUnit() {
   console.log('\nB2. the credential is used ONLY as an outbound request header');
   const h = upstreamHeaders(FAKE_TOKEN);
   ok(h.authorization === `Bearer ${FAKE_TOKEN}`, 'upstreamHeaders carries the token');
+  const g = gitUpstreamHeaders(FAKE_TOKEN, {
+    authorization: 'Bearer fleet-jwt', cookie: 'authelia_session=s', 'git-protocol': 'version=2',
+    'content-type': 'application/x-git-upload-pack-request', 'x-forwarded-for': '1.2.3.4',
+  });
+  ok(g.authorization === `Basic ${Buffer.from(`x-access-token:${FAKE_TOKEN}`).toString('base64')}`,
+    'gitUpstreamHeaders sends the token to GitHub as the Basic password');
+  ok(!('cookie' in g) && !JSON.stringify(g).includes('fleet-jwt') && !('x-forwarded-for' in g),
+    "gitUpstreamHeaders never forwards the caller's cookie, fleet bearer or other headers");
+  ok(g['git-protocol'] === 'version=2' && g['content-type'] === 'application/x-git-upload-pack-request',
+    'gitUpstreamHeaders keeps the git protocol headers');
+  eq(gitUrl('https://github.com', 'o', 'r', 'info/refs?service=git-upload-pack'),
+    'https://github.com/o/r.git/info/refs?service=git-upload-pack', 'gitUrl builds the smart-HTTP URL');
   for (const [name, fn] of [
     ['reposUrl', () => reposUrl('https://api.github.com', 1)],
     ['tarballUrl', () => tarballUrl('https://api.github.com', 'o', 'r', 'main')],
@@ -180,7 +214,7 @@ function testContract() {
     'proxy public_paths is exactly the set of auth:none endpoints');
   eq(raw.containers.app.proxy.public_paths, open, 'the container proxy copy agrees');
   for (const e of RT.endpoints.filter((x) => x.auth !== 'none')) {
-    ok(e.auth === 'authelia_bearer', `${e.path} requires authelia_bearer`, `declares ${e.auth}`);
+    ok(e.auth === 'authelia', `${e.path} requires authelia (bearer or session)`, `declares ${e.auth}`);
   }
   eq(raw.health.path, '/git/health', 'health.path is the pre-auth route');
   eq(raw.containers.app.healthcheck, localPath('/git/health', RT.base_path),
@@ -210,6 +244,7 @@ function testContract() {
   }
   ok(match(table, 'GET', '/nope') === null, 'an unknown path does not match (-> 404, never 200)');
   ok(match(table, 'GET', '/repos/a/b/tarball/extra') === null, 'a deeper path does not match');
+  ok(match(table, 'POST', '/clone/a/b/git-receive-pack') === null, 'there is no receive-pack route — the clone path cannot push');
   const wrongMethod = match(table, 'POST', '/repos');
   ok(wrongMethod && wrongMethod.route === null && wrongMethod.allowed.includes('GET'),
     'a known path with the wrong method reports 405, not 404 and not 200');
@@ -262,6 +297,14 @@ function testFeedsUnit() {
   ok(threw(withFeeds({ ...raw.runtime.feeds, repos: ['no-slash'] })), 'loadRuntime THROWS on a malformed repo entry');
   ok(threw(withFeeds({ ...raw.runtime.feeds, cache_ttl_s: 0 })), 'loadRuntime THROWS on a zero cache TTL');
   ok(threw(withFeeds({ ...raw.runtime.feeds, max_per_page: 101 })), 'loadRuntime THROWS on max_per_page > 100');
+  const withRt = (patch) => {
+    const f = join(dir, `s${checks}.json`);
+    writeFileSync(f, JSON.stringify({ ...raw, runtime: patch(structuredClone(raw.runtime)) }));
+    return () => loadRuntime(f);
+  };
+  ok(threw(withRt((rt) => { delete rt.authelia.session; return rt; })), 'loadRuntime THROWS when authelia.session is missing');
+  ok(threw(withRt((rt) => { rt.authelia.session.users = []; return rt; })), 'loadRuntime THROWS on an empty session user list');
+  ok(threw(withRt((rt) => { rt.upstream.git_base = 'http://github.com'; return rt; })), 'loadRuntime THROWS on a non-https git_base');
 }
 
 // ══ D. End-to-end against the REAL server, stubbed dependencies ════════════
@@ -301,6 +344,10 @@ async function testLive() {
     generateKeyPairSync('rsa', { modulusLength: 2048 }).publicKey.export({ format: 'jwk' }),
   ));
   const upstreamHits = {};
+  const sessionHits = [];
+  const gitHits = [];
+  const gitBodies = [];
+  const GIT_ADVERT = '001e# service=git-upload-pack\n0000advert-sentinel';
   const upstream = createServer((req, res) => {
     const bare = req.url.split('?')[0];
     upstreamHits[bare] = (upstreamHits[bare] || 0) + 1;
@@ -327,6 +374,26 @@ async function testLive() {
       // Upstream fails and quotes our credential back — must not be cached, must not leak.
       res.writeHead(500, { 'content-type': 'text/plain' });
       return res.end(`upstream exploded with ${req.headers.authorization}`);
+    }
+    if (bare === '/api/authz/auth-request') {
+      sessionHits.push({ url: req.headers['x-original-url'], method: req.headers['x-original-method'] });
+      const c = req.headers.cookie || '';
+      if (c === 'authelia_session=owner') { res.writeHead(200, { 'remote-user': RT.authelia.session.users[0] }); return res.end(); }
+      if (c === 'authelia_session=guest') { res.writeHead(200, { 'remote-user': 'guest@example.invalid' }); return res.end(); }
+      res.writeHead(401); return res.end('Unauthorized');
+    }
+    if (bare.startsWith('/diegonmarcos/cloud-infra.git/')) {
+      gitHits.push({ path: req.url, method: req.method, authz: req.headers.authorization || '', cookie: req.headers.cookie || '' });
+      if (bare.endsWith('/info/refs')) {
+        res.writeHead(200, { 'content-type': 'application/x-git-upload-pack-advertisement' });
+        return res.end(GIT_ADVERT);
+      }
+      let body = ''; req.on('data', (d) => { body += d; });
+      return req.on('end', () => {
+        gitBodies.push(body);
+        res.writeHead(200, { 'content-type': 'application/x-git-upload-pack-result' });
+        res.end(`PACK-for:${body}`);
+      });
     }
     if (req.url === '/jwks.json') {
       res.writeHead(200, { 'content-type': 'application/json' });
@@ -365,6 +432,8 @@ async function testLive() {
       BIND_HOST: '127.0.0.1',
       GITHUB_TOKEN: FAKE_TOKEN,
       GITHUB_API_BASE: upstreamBase,
+      GITHUB_GIT_BASE: upstreamBase,
+      AUTHELIA_VERIFY_URL: `${upstreamBase}/api/authz/auth-request`,
       JWKS_URL: `${upstreamBase}/jwks.json`,
       ISSUER: 'https://auth.diegonmarcos.com',
       UPSTREAM_TIMEOUT_MS: '5000',
@@ -448,6 +517,7 @@ async function testLive() {
     ['missing scope', noScope, 403, 'insufficient_scope'],
   ]) {
     for (const path of ['/repos', '/endpoints', '/repos/diegonmarcos/cloud-infra/tarball',
+      '/clone/diegonmarcos/cloud-infra/info/refs?service=git-upload-pack',
       '/repos/diegonmarcos/cloud-infra/commits', '/repos/diegonmarcos/cloud-infra/runs']) {
       const r = await req(path, tok);
       ok(r.status === wantStatus && r.json?.code === wantCode,
@@ -537,6 +607,61 @@ async function testLive() {
   ok(nf.status === 404 && nf.json?.code === 'not_found', 'an upstream 404 on a declared repo is forwarded as 404 not_found',
     `got ${nf.status} ${nf.text.slice(0, 120)}`);
 
+  // ── Session (cookie) path ──
+  async function reqH(path, headers, init = {}) {
+    const r = await fetch(`${base}${path}`, { headers, ...init });
+    const text = await r.text();
+    seen.push({ path, status: r.status, text, ctype: r.headers.get('content-type') });
+    return { status: r.status, text, json: safeJson(text), ctype: r.headers.get('content-type') };
+  }
+  const sOwner = await reqH('/repos', { cookie: 'authelia_session=owner' });
+  ok(sOwner.status === 200 && sOwner.json?.count === 1, "the phone's Authelia session lists repos (no bearer anywhere)",
+    `got ${sOwner.status} ${sOwner.text.slice(0, 160)}`);
+  ok(sessionHits.at(-1)?.url === `${RT.authelia.session.public_url}${RT.base_path}/repos` && sessionHits.at(-1)?.method === 'GET',
+    'Authelia was asked about THIS route (X-Original-URL/Method), not the portal', JSON.stringify(sessionHits.at(-1)));
+  const sGuest = await reqH('/repos', { cookie: 'authelia_session=guest' });
+  ok(sGuest.status === 403 && sGuest.json?.code === 'user_not_allowed', 'a live session of an UNDECLARED user is 403',
+    `got ${sGuest.status} ${sGuest.text.slice(0, 120)}`);
+  const sDead = await reqH('/repos', { cookie: 'authelia_session=expired' });
+  ok(sDead.status === 401 && sDead.json?.code === 'invalid_session', 'a session Authelia refuses is 401 invalid_session',
+    `got ${sDead.status} ${sDead.text.slice(0, 120)}`);
+  const sBearerWins = await reqH('/repos', { cookie: 'authelia_session=owner', authorization: 'Bearer not-a-jwt' });
+  ok(sBearerWins.status === 401 && sBearerWins.json?.code === 'invalid_token',
+    'a bad bearer is refused even next to a good cookie — never retried as a session', `got ${sBearerWins.status}`);
+
+  // ── Clone over smart HTTP: the token goes to GitHub and nowhere else ──
+  const before = gitHits.length;
+  const adv = await reqH('/clone/diegonmarcos/cloud-infra.git/info/refs?service=git-upload-pack',
+    { authorization: `Bearer ${good}`, 'git-protocol': 'version=2' });
+  ok(adv.status === 200 && adv.text === GIT_ADVERT && adv.ctype === 'application/x-git-upload-pack-advertisement',
+    'info/refs streams GitHub\'s advertisement through byte-exact', `got ${adv.status} ${adv.ctype} ${adv.text.slice(0, 80)}`);
+  const hitA = gitHits[before];
+  ok(hitA?.authz === `Basic ${Buffer.from(`x-access-token:${FAKE_TOKEN}`).toString('base64')}`,
+    'GitHub received the server credential as Basic', `got ${hitA?.authz}`);
+  ok(hitA && !hitA.authz.includes(good) && hitA.cookie === '', "GitHub never saw the caller's fleet bearer or cookie");
+  const advS = await reqH('/clone/diegonmarcos/cloud-infra/info/refs?service=git-upload-pack', { cookie: 'authelia_session=owner' });
+  ok(advS.status === 200 && advS.text === GIT_ADVERT, 'the phone\'s session can clone too (no .git suffix works)', `got ${advS.status}`);
+  ok(gitHits.at(-1)?.cookie === '', 'and its cookie did not travel to GitHub');
+  const pack = await reqH('/clone/diegonmarcos/cloud-infra/git-upload-pack',
+    { authorization: `Bearer ${good}`, 'content-type': 'application/x-git-upload-pack-request' },
+    { method: 'POST', body: '0032want deadbeef\n00000009done\n' });
+  ok(pack.status === 200 && pack.text === 'PACK-for:0032want deadbeef\n00000009done\n'
+    && gitBodies.at(-1) === '0032want deadbeef\n00000009done\n',
+    'git-upload-pack streams the negotiation up and the pack down', `got ${pack.status} ${pack.text.slice(0, 80)}`);
+  const hitsBeforePush = gitHits.length;
+  const push = await reqH('/clone/diegonmarcos/cloud-infra/info/refs?service=git-receive-pack', { authorization: `Bearer ${good}` });
+  ok(push.status === 403 && push.json?.code === 'service_not_allowed', 'service=git-receive-pack is 403 — nothing can push',
+    `got ${push.status} ${push.text.slice(0, 120)}`);
+  const pushPost = await reqH('/clone/diegonmarcos/cloud-infra/git-receive-pack', { authorization: `Bearer ${good}` }, { method: 'POST', body: 'x' });
+  ok(pushPost.status === 404 && pushPost.json?.code === 'no_such_route', 'POST git-receive-pack has no route (404)', `got ${pushPost.status}`);
+  eq(gitHits.length, hitsBeforePush, 'and GitHub was never dialled for a push');
+  const nf2 = await reqH('/clone/diegonmarcos/no-such-repo/info/refs?service=git-upload-pack', { authorization: `Bearer ${good}` });
+  ok(nf2.status === 404 && nf2.json?.code === 'not_found', 'an unknown repo clones to 404 not_found', `got ${nf2.status}`);
+  const badClone = await reqH('/clone/-x/cloud-infra/info/refs?service=git-upload-pack', { authorization: `Bearer ${good}` });
+  ok(badClone.status === 400 && badClone.json?.code === 'bad_repo', 'a malformed owner on the clone route is 400 bad_repo');
+  const anonClone = await reqH('/clone/diegonmarcos/cloud-infra/info/refs?service=git-upload-pack', {});
+  ok(anonClone.status === 401, 'an anonymous clone is refused 401', `got ${anonClone.status}`);
+
   // Wrong method on a real path must be 405 — not 404, and above all not 200.
   for (const [method, path] of [['POST', '/repos'], ['DELETE', '/endpoints'], ['PUT', '/health'],
     ['POST', '/repos/diegonmarcos/cloud-infra/runs']]) {
@@ -551,6 +676,8 @@ async function testLive() {
 
   // THE headline assertion: across every response this run produced — bodies
   // and headers, success and failure — the credential appears nowhere.
+  const basicForm = Buffer.from(`x-access-token:${FAKE_TOKEN}`).toString('base64');
+  ok(!JSON.stringify(seen).includes(basicForm), 'the Basic-encoded credential appears in no response either');
   const everything = JSON.stringify(seen);
   ok(!everything.includes(FAKE_TOKEN),
     `the GitHub credential appears in NONE of the ${seen.length} responses collected`,
