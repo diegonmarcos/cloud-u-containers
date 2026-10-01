@@ -34,8 +34,8 @@
     "host_sync": {
       "_doc": "#586 Vault files the ship copies to a host path OUTSIDE remote_path, for a bind mount compose.nix declares from this same entry (engine: cloud-infra cloud-ship-container-step-deploy-rsync.sh step_host_sync). Before this nothing put the profile bundle on oci-analytics: docker pre-created the mount source as an empty root-owned stub and Profile > Connect served an empty bundle dir since #566 while every ship went green. Only the listed files travel; the vault never lands on this public-edge VM. Missing source = the ship FAILS, never skips.",
       "profile_bundle": {
-        "vault_dir": "E0_configs",
-        "host_dir": "/home/ubuntu/git/cloud-vault/E0_configs",
+        "vault_dir": "C_A1-configs",
+        "host_dir": "/home/ubuntu/git/cloud-vault/C_A1-configs",
         "files": [
           "profile-secrets.json",
           "schema.json"
@@ -115,7 +115,7 @@
     "code_ttl_s": 600,
     "resend_cooldown_s": 60,
     "max_attempts": 5,
-    "_doc_bundle": "The bundle dir on oci-analytics is deploy.host_sync.profile_bundle.host_dir (#586: cloud-vault E0_configs/, was configs/): the ONE declaration compose.nix mounts read-only at bundle_mount and the engine fills. bundle_file and schema_file name the files inside that mount; test-profile-connect.ts F5 pins that host_sync ships exactly them.",
+    "_doc_bundle": "The bundle dir on oci-analytics is deploy.host_sync.profile_bundle.host_dir (cloud-vault C_A1-configs/: was configs/, then E0_configs/ until vault 6c0aab8 renamed the sections; cloud-infra host-sync-declaration.test.sh #7 checks every vault_dir/file against the vault checkout, so the next rename goes red in CI instead of on the ship): the ONE declaration compose.nix mounts read-only at bundle_mount and the engine fills. bundle_file and schema_file name the files inside that mount; test-profile-connect.ts F5 pins that host_sync ships exactly them.",
     "bundle_mount": "/profile-bundle",
     "bundle_file": "profile-secrets.json",
     "schema_file": "schema.json"
