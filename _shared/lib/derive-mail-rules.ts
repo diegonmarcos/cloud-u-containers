@@ -578,6 +578,26 @@ export function toLegacyJson(merged: Merged): Json {
     };
   };
 
+  // F0's sender folders must hold each message at most once (#502), but
+  // views are additive: Fb and Fd both claimed linkedin.com, and Fg's promo
+  // subjects re-caught Travel mail, so 39 live messages sat in two F folders.
+  // First declared view wins: each sender view gets AND NOT(every earlier
+  // one). Derived, not restated -- moving an overlapping domain is a
+  // reorder of `views`, never a second hand-kept exclusion list.
+  // ponytail: O(n^2) predicate size, fine for ~13 views.
+  const senderPartition = (f: Json): Json => {
+    const earlier: Json[] = [];
+    return {
+      ...f,
+      views: (f.views ?? []).map((v: Json) => {
+        if ((v.axis ?? null) !== 'sender') return v;
+        const out = earlier.length ? { ...v, predicate: { all_of: [v.predicate, { not: { any_of: [...earlier] } }] } } : v;
+        earlier.push(v.predicate);
+        return out;
+      }),
+    };
+  };
+
   return {
     account: merged.account,
     sieve_require: merged.sieve_require,
@@ -592,7 +612,7 @@ export function toLegacyJson(merged: Merged): Json {
     // one artifact, no drift between the two engines.
     folder_parents: folderParents(merged),
     routing_default: defFolder,
-    filters: junkMirror(curatedCarveOut(merged.filters ?? { views: [], section_headers: [] })),
+    filters: junkMirror(curatedCarveOut(senderPartition(merged.filters ?? { views: [], section_headers: [] }))),
     folder_renames: merged.folder_renames ?? { map: {} },
     folder_options: merged.folder_options ?? {},
     routing,

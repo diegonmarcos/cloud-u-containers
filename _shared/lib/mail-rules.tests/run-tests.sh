@@ -337,23 +337,77 @@ assert "Fl House's resolved PARENT (folder_parents, not its name) is the F0 send
   test "$FL_PARENT" = "F0 _ SENDER"
 
 ALERTS_MATCH="$(jq -n --slurpfile r "$RULES_JSON" '
-  ($r[0].filters.views | map(select(.folder == "00 Inbox - Alerts"))[0].predicate // "MISSING_ALERTS") as $a
+  ($r[0].filters.views | map(select(.folder == "01 Inbox - Alerts"))[0].predicate // "MISSING_ALERTS") as $a
   | ($r[0].filters.views | map(select(.folder == "01 Inbox - noAlerts"))[0].predicate.not // "MISSING_NOALERTS") as $na
   | $a == $na
 ')"
-assert "00 Inbox - Alerts and 01 Inbox - noAlerts split the inbox axis as exact complements" \
+assert "01 Inbox - Alerts and 01 Inbox - noAlerts split the inbox axis as exact complements" \
   test "$ALERTS_MATCH" = true
+
+# Structural identity above proves "complement"; it cannot prove the RIGHT
+# mail is on each side. Feed fixture messages through the derived view
+# predicates with the sorter's own semantics (crate/src/filters.rs
+# email_matches: header_contains = case-insensitive substring, from_domain =
+# exact lowercase, from_domain_suffix = ends_with) and count landings.
+# Every fixture must hit exactly ONE inbox view and exactly ONE F0 folder --
+# a message filed into both, or neither, is the failure.
+VIEW_LANDINGS="$(node --input-type=module -e '
+import fs from "node:fs";
+const views = JSON.parse(fs.readFileSync(process.argv[1], "utf8")).filters.views;
+const ev = (p, m) => {
+  if ("any_of" in p) return p.any_of.some((c) => ev(c, m));
+  if ("all_of" in p) return p.all_of.every((c) => ev(c, m));
+  if ("not" in p) return !ev(p.not, m);
+  const d = m.from.split("@")[1].toLowerCase();
+  if (p.type === "from_domain") return p.values.some((v) => d === v.toLowerCase());
+  if (p.type === "from_domain_suffix") return p.values.some((v) => d.endsWith(v.toLowerCase()));
+  if (p.type === "header_contains") { const h = (m.headers[p.header] ?? null); return h !== null && p.values.some((v) => h.toLowerCase().includes(v.toLowerCase())); }
+  return false;
+};
+const fx = [
+  ["wg-gesucht",  "inbox", "01 Inbox - Alerts",   { from: "x@wg-gesucht.de", headers: { Subject: "Neue Anzeige" } }],
+  ["immoscout24", "inbox", "01 Inbox - Alerts",   { from: "x@nachrichten.immobilienscout24.de", headers: { Subject: "Suchauftrag" } }],
+  ["ci-failure",  "inbox", "01 Inbox - Alerts",   { from: "notifications@github.com", headers: { Subject: "[o/r] Run failed: ci - main" } }],
+  ["github-pr",   "inbox", "01 Inbox - noAlerts", { from: "notifications@github.com", headers: { Subject: "[o/r] PR opened" } }],
+  ["normal",      "inbox", "01 Inbox - noAlerts", { from: "friend@example.org", headers: { Subject: "hi" } }],
+  ["linkedin",    "sender", null,                  { from: "x@linkedin.com", headers: { Subject: "new message" } }],
+  ["travel-sale", "sender", null,                  { from: "x@booking.com", headers: { Subject: "Flash sale" } }],
+];
+const out = [];
+for (const [name, axis, want, m] of fx) {
+  for (const ax of ["inbox", "sender"]) {
+    const hits = views.filter((v) => v.axis === ax && ev(v.predicate, m)).map((v) => v.folder);
+    const ok = hits.length === 1 && (ax !== axis || want === null || hits[0] === want);
+    if (!ok) out.push(`${name}/${ax}=[${hits.join("|")}]`);
+  }
+}
+console.log(out.join(" "));
+' "$RULES_JSON")"
+assert "each fixture lands in exactly one inbox view (wg-gesucht/immoscout24/CI-failure -> Alerts, rest -> noAlerts) and exactly one F0 folder (bad: ${VIEW_LANDINGS:-none})" \
+  test -z "$VIEW_LANDINGS"
+
+# '/' is the IMAP/Sieve hierarchy separator: a name carrying one is split into
+# extra levels at delivery (41 CI/CD -> 41 CI > CD), which the sorter then
+# reaps as stale every poll.
+SLASH_NAMES="$(jq -r '
+  [ (.folders // {} | to_entries | map(.value)[]),
+    (.folder_groups // [] | .[] | .name, (.children // {} | to_entries | map(.value)[])),
+    (.folders_ui // [])[], (.filters.section_headers // [])[], (.filters.views // [] | .[].folder) ]
+  | map(select(contains("/"))) | unique | join(", ")
+' "$RULES_JSON")"
+assert "no declared folder name contains '/' (got: ${SLASH_NAMES:-none})" \
+  test -z "$SLASH_NAMES"
 
 assert "40 _ C3 replaces 30 _ CLOUD in folders_ui" \
   test "$(jq -r '(.folders_ui | index("40 _ C3") != null) and (.folders_ui | index("30 _ CLOUD") == null)' "$GENERAL")" = true
 
 C3_PARENTS="$(jq -r '
-  [.folder_groups[] | select(.name | test("CI/CD|Reports|VPS")) | .name] as $names
+  [.folder_groups[] | select(.name | test("CI & CD|Reports|VPS")) | .name] as $names
   | ($names | length) as $n
   | [$names[] as $g | .folder_parents[$g] // "MISSING"] | unique
   | if length == 1 and $n == 3 then .[0] else ("MISMATCH:" + (. | tostring)) end
 ' "$RULES_JSON")"
-assert "CI/CD, Reports and VPS (all three) resolve to one real parent, 40 _ C3 (got: $C3_PARENTS)" \
+assert "CI & CD, Reports and VPS (all three) resolve to one real parent, 40 _ C3 (got: $C3_PARENTS)" \
   test "$C3_PARENTS" = "40 _ C3"
 
 assert "BURO, MY-PM and SOCIALS containers are declared, still empty (their content is Diego's call, not a guess)" \

@@ -59,7 +59,7 @@ if address :domain :is "From" ["ing.es", "ing.de", "commerzbank.de", "deutscheba
 
 # route.cloud_workflows.github_ci
 if anyof(header :contains "X-GitHub-Reason" "ci_activity", header :contains "Subject" ["Run failed:", "workflow run"]) {
-  fileinto :copy :create "40 _ C3/41    ⚙️ CI/CD/GH Workflows";
+  fileinto :copy :create "40 _ C3/41    ⚙️ CI & CD/GH Workflows";
   stop;
 }
 

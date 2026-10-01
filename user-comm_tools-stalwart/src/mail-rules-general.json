@@ -27,7 +27,7 @@
   "folder_groups": [
     {
       "key": "cicd_group",
-      "name": "41    ⚙️ CI/CD",
+      "name": "41    ⚙️ CI & CD",
       "children": {
         "cloud_gh_workflows": "GH Workflows"
       }
@@ -87,9 +87,12 @@
       "23    🧻 Goverment": "23    🧻 Government",
       "AA _ OTHERS": "90 _ OTHERS",
       "30 _ CLOUD": "40 _ C3",
-      "31    ☁️ Cloud - Reports & CI": "41    ⚙️ CI/CD",
-      "32    ☁️ Cloud - VPS Providers": "43    ☁️ VPS"
+      "31    ☁️ Cloud - Reports & CI": "41    ⚙️ CI & CD",
+      "32    ☁️ Cloud - VPS Providers": "43    ☁️ VPS",
+      "41    ⚙️ CI/CD": "41    ⚙️ CI & CD",
+      "00 Inbox - Alerts": "01 Inbox - Alerts"
     },
+    "_doc_slash": "No managed folder name may contain '/': Sieve fileinto and IMAP read it as the hierarchy separator, so `40 _ C3/41 CI/CD/GH Workflows` created 41 CI > CD > GH Workflows, which the sorter then reaped as stale every poll while re-filing the mail it had just misfiled. Same fix as the F* names before it: '/' becomes '&'. run-tests.sh rejects any declared name carrying one.",
     "_doc_502": "Ticket #502 renumbers 30 CLOUD to 40 C3 and splits its one 'Reports & CI' group into two (41 CI/CD, 42 Reports). 'Cloud Reports' and 'Rss Notifications' keep their own leaf names -- only their PARENT changes (31 -> 42), which is a folder_groups.children move, not a rename, so they need no entry here; the compiler's folderParents() re-derives the new parent from the group declaration and a live run applies it as a Mailbox/set parentId update, same as any other reparent. NOT applied here -- this ticket declares the migration, it does not run it against the live server."
   },
   "folder_options": {
@@ -124,40 +127,18 @@
     "_axis_doc": "Each view declares its axis and whether it is volatile. A volatile view depends on wall-clock time or read state and must be re-evaluated every poll; a static view is a property of the message itself (size, attachments) and is computed once. The size axis is a PARTITION: its buckets are half-open [lo,hi) and must tile the whole range, so every message lands in exactly one. That invariant is what lets the sorter use size-view membership as the sentinel for 'static views already computed' -- guarded by 9_others/test/test_mail_filter_views_partition.sh.",
     "views": [
       {
-        "folder": "00 Inbox - Alerts",
+        "folder": "01 Inbox - Alerts",
         "axis": "inbox",
         "volatile": false,
-        "_doc": "Ticket #502's 'split Alerts / noAlerts': the complement of 01 noAlerts below, not a new classification. Exactly GitHub Actions failure notifications -- sender is GitHub AND the subject carries 'Run failed:'. Kept as the verbatim negation of 01's own predicate (drop the outer `not`) so the two views can never drift apart into overlapping or gapped sets; run-tests.sh asserts that identity structurally, not just by re-typing it here. Named with a leading 0, same reasoning as 01: sorts above the numeric category folders and is excluded from `filters.source_folder_regex` (^[1-9]) so it is never treated as a source folder for its own recomputation.",
-        "predicate": {
-          "all_of": [
-            {
-              "any_of": [
-                {"type": "from_domain", "values": ["github.com", "noreply.github.com"]},
-                {"type": "from_domain_suffix", "values": [".github.com"]}
-              ]
-            },
-            {"type": "header_contains", "header": "Subject", "values": ["Run failed:"]}
-          ]
-        }
+        "_doc": "Ticket #502: everything 01 noAlerts excludes, and nothing else -- `predicates.inbox_alerts` verbatim, while noAlerts is its `not`. One declared tree, two views, so the pair is a partition by construction: no message in both, none in neither. Excluded from `filters.source_folder_regex` (^[1-9]) for the same reason as noAlerts.",
+        "predicate": {"ref": "inbox_alerts"}
       },
       {
         "folder": "01 Inbox - noAlerts",
         "axis": "inbox",
         "volatile": false,
-        "_doc": "Everything in scope EXCEPT GitHub Actions failure notifications — the inbox with the CI noise removed. A view, not a route: membership is maintained over the mail that is already filed, so it backfills over the existing 10k+ messages instead of only applying to new deliveries. The excluded set is deliberately narrow: sender is GitHub AND the subject carries 'Run failed:' (e.g. '[diegonmarcos/cloud-infra] Run failed: Health Mail Full - main (3cc7464)'). Successful-run notifications and ordinary GitHub mail (issues, PRs, releases) stay in. The sender half is the same predicate as `predicates.github_any`, inlined because view predicates are evaluated by the Rust sorter, which has no `ref` resolution (see Fz Others, which inlines for the same reason). Named with a leading 0 so it sorts above the numeric category folders; `filters.source_folder_regex` was narrowed from ^[0-9] to ^[1-9] at the same time so this folder is NOT itself a source folder — otherwise its own members would count as in-scope forever and keep stale view membership after leaving their numeric category.",
-        "predicate": {
-          "not": {
-            "all_of": [
-              {
-                "any_of": [
-                  {"type": "from_domain", "values": ["github.com", "noreply.github.com"]},
-                  {"type": "from_domain_suffix", "values": [".github.com"]}
-                ]
-              },
-              {"type": "header_contains", "header": "Subject", "values": ["Run failed:"]}
-            ]
-          }
-        }
+        "_doc": "The inbox minus `predicates.inbox_alerts` (CI failure notifications, flat-hunting alerts). A view, not a route: membership is recomputed over the whole store every poll, so a change to inbox_alerts backfills existing mail and never deletes any -- the message stays in Inbox, only its label moves. Named with a leading 0 so it sorts above the numeric category folders; `filters.source_folder_regex` is ^[1-9] so this folder is NOT itself a source folder -- otherwise its own members would count as in-scope forever.",
+        "predicate": {"not": {"ref": "inbox_alerts"}}
       },
       {"folder": "Aa    📏 Large (≥10MB)",       "axis": "size",   "volatile": false, "predicate": {"type": "size_min", "bytes": 10485760}},
       {"folder": "Ab    📏 Medium (1–10MB)",      "axis": "size",   "volatile": false, "predicate": {"type": "size_range", "min": 1048576, "max": 10485760}},
@@ -1122,6 +1103,18 @@
     "partition_axis": "size"
   },
   "predicates": {
+    "inbox_alerts": {
+      "_doc": "What 01 Inbox - Alerts holds and 01 Inbox - noAlerts excludes (ticket #502). GitHub Actions failures (sender is GitHub AND subject carries 'Run failed:'), plus the two flat-hunting alert senders, WG-Gesucht and ImmoScout24 -- the exact from-domains measured live on oci-mail (wg-gesucht.de; immobilienscout24.de and its nachrichten. subdomain). Those senders also stay in Fl House on the sender axis: the inbox axis is a separate partition, not a second copy of the F0 one.",
+      "any_of": [
+        {
+          "all_of": [
+            {"ref": "github_any"},
+            {"type": "header_contains", "header": "Subject", "values": ["Run failed:"]}
+          ]
+        },
+        {"type": "from_domain", "values": ["wg-gesucht.de", "immobilienscout24.de", "nachrichten.immobilienscout24.de"]}
+      ]
+    },
     "important_flags": {
       "_doc": "What puts a message in 'Ea    \u2b50 Important'. Referenced by the Ea view and negated by Eb, so the priority axis stays a partition no matter what is added here. `$flagged` is the IANA keyword (RFC 8621 4.1.1) the app writes when the owner taps the star -- filing is done HERE, by the sorter, because a view's membership is recomputed from this predicate every poll and any mailboxIds the app wrote itself would be removed on the next one.",
       "any_of": [
