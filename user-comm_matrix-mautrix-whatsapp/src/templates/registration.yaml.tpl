@@ -1,7 +1,9 @@
 # Appservice registration for the Continuwuity homeserver. as_token / hs_token
-# are ${PLACEHOLDERS} injected from .secrets by the deploy pre_hook. After
-# deploy, register this (rendered) file once via the homeserver admin room:
-#   !admin appservices register   (paste the rendered registration.yaml body)
+# are ${PLACEHOLDERS} injected from .secrets by the deploy pre_hook. The
+# homeserver installs the rendered file itself on every start
+# (matrix-continuwuity build.json `appservices` -> admin_execute), so this
+# sops pair is the only place the tokens are declared. Deploy this bridge
+# before the homeserver when rotating them.
 id: whatsapp
 url: @APPSERVICE_ADDRESS@
 as_token: "${AS_TOKEN}"

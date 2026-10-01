@@ -68,5 +68,11 @@
   },
   "api": {
     "type": "no-api"
+  },
+  "tests": {
+    "token-pair-follows-sops": {
+      "cmd": "bash test-compose-pre-hook.sh",
+      "cwd": "src"
+    }
   }
 }
