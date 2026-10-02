@@ -59,7 +59,7 @@ services:
       - MYSQL_ROOT_PASSWORD=REDACTED
       - MYSQL_DATABASE=matomo
       - MYSQL_USER=matomo
-      - MYSQL_PASSWORD=REDACTED
+      - MYSQL_PASSWORD=${MATOMO_DB_PASSWORD:?MATOMO_DB_PASSWORD not set}
     volumes:
       - ./db:/var/lib/mysql
 
@@ -74,7 +74,7 @@ services:
       - MATOMO_DATABASE_ADAPTER=mysql
       - MATOMO_DATABASE_TABLES_PREFIX=matomo_
       - MATOMO_DATABASE_USERNAME=matomo
-      - MATOMO_DATABASE_PASSWORD=REDACTED
+      - MATOMO_DATABASE_PASSWORD=${MATOMO_DB_PASSWORD:?MATOMO_DB_PASSWORD not set}
       - MATOMO_DATABASE_DBNAME=matomo
     volumes:
       - ./matomo:/var/www/html
@@ -164,7 +164,7 @@ echo "📝 Database credentials (for Matomo setup):"
 echo "   Database Server:  mariadb"
 echo "   Database Name:    matomo"
 echo "   Database User:    matomo"
-echo "   Database Password: REDACTED"
+echo "   Database Password: (MATOMO_DB_PASSWORD, from sops)"
 echo ""
 echo "🔐 Nginx Proxy Manager default login:"
 echo "   URL:      http://${SERVER_IP}:${NPM_PORT}"

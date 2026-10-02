@@ -76,7 +76,7 @@ in
       environment = {
         MATOMO_DATABASE_HOST     = "localhost";
         MATOMO_DATABASE_USERNAME = "\${MATOMO_DB_USER:-matomo}";
-        MATOMO_DATABASE_PASSWORD = "\${MATOMO_DB_PASSWORD:-REDACTED}";
+        MATOMO_DATABASE_PASSWORD = "\${MATOMO_DB_PASSWORD:?MATOMO_DB_PASSWORD missing from .secrets}";
         MATOMO_DATABASE_DBNAME   = "\${MATOMO_DB_NAME:-matomo}";
         MATOMO_API_TOKEN         = "\${MATOMO_API_TOKEN}";
       };

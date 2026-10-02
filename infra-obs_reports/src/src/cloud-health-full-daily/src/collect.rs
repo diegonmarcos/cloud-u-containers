@@ -655,12 +655,12 @@ pub async fn fetch_repos() -> Vec<GithubRepo> {
 
 /// Fetch Matomo analytics via MariaDB on oci-apps (SSH)
 pub async fn fetch_matomo_analytics() -> Vec<MatomoSite> {
-    // Matomo runs on oci-apps, MariaDB embedded in matomo-hybrid container
-    let db_pass = std::env::var("MATOMO_DB_PASSWORD")
-        .unwrap_or_else(|_| "REDACTED".to_string());
-
-    let sql = format!(
-        r#"mysql -u matomo -p{} matomo -N -B -e "
+    // Matomo runs on oci-apps, MariaDB embedded in matomo-hybrid container.
+    // The password is expanded INSIDE that container, from the env its compose
+    // gives it out of sops: this process never holds it, and nothing here can
+    // fall back to a literal one (#760 — a fallback here published it).
+    let sql = String::from(
+        r#"mysql -u matomo -p"$MATOMO_DATABASE_PASSWORD" matomo -N -B -e "
 SELECT idsite, name, main_url FROM matomo_site;
 SELECT '---VISITS---';
 SELECT DATE_FORMAT(visit_first_action_time, '%Y-%m') AS m, COUNT(*) FROM matomo_log_visit GROUP BY m ORDER BY m;
@@ -670,7 +670,6 @@ SELECT '---TOTALS---';
 SELECT COUNT(*) FROM matomo_log_visit;
 SELECT COUNT(*) FROM matomo_log_link_visit_action;
 " 2>/dev/null"#,
-        db_pass
     );
 
     let ssh_cmd = format!("docker exec matomo-hybrid sh -c '{}'", sql.replace('\'', "'\\''"));
