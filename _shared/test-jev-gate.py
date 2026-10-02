@@ -39,11 +39,14 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
         Mock.bodies.append({"body": body, "auth": self.headers.get("Authorization")})
+        # Snapshot the scripted reply on ARRIVAL: the timeout case sleeps past the
+        # client's deadline, and by the time it wakes a later case has re-scripted Mock.
+        reply, raw = Mock.reply, Mock.raw
         time.sleep(Mock.delay)
-        if Mock.raw is not None:
-            out = Mock.raw
+        if raw is not None:
+            out = raw
         else:
-            answers = Mock.reply(body) if callable(Mock.reply) else Mock.reply
+            answers = reply(body) if callable(reply) else reply
             out = json.dumps({"id": "gen-dec-test", "model": "typesafe/jev-1.13-test", "answers": answers,
                               "usage": {"input_tokens": 1, "output_tokens": 1, "cost": 0.0000001}}).encode()
         try:
