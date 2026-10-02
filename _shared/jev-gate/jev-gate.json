@@ -1,11 +1,11 @@
 {
-  "_doc": "#764 — the ONE declaration of the Jev pre-flight gate shared by the claude, goose and hermes agent CLIs. jev_gate.py (beside this file) is the only implementation; every CLI reaches it through its own real hook mechanism (claude: PermissionRequest command hook in claude-config/settings.json; goose 1.44: PreToolUse plugin hook in hooks/hooks.json; hermes: llm_request middleware registered by __init__.py). Jev is TypeSafe's structured decision model behind OpenRouter's Decisions API (docs: openrouter.ai/docs/guides/community/jev, /jev-tutorial). Every failure path — no key, timeout, HTTP error, malformed answer, a probability outside [0,1] — behaves exactly as if the gate did not exist.",
+  "_doc": "#764 — the ONE declaration of the Jev pre-flight gate shared by the claude, goose and hermes agent CLIs. jev_gate.py (beside this file) is the only implementation; every CLI reaches it through its own real hook mechanism (claude: PermissionRequest + UserPromptSubmit command hooks in claude-config/settings.json; goose 1.44: PreToolUse + UserPromptSubmit plugin hooks in hooks/hooks.json; hermes: llm_request middleware + pre_llm_call hook registered by __init__.py). #765 adds code-graph context: Jev routes each prompt to a cloud-cgc lookup (or none) and the gate injects the result, and the safety state carries the touched files' code-graph impact. Jev is TypeSafe's structured decision model behind OpenRouter's Decisions API (docs: openrouter.ai/docs/guides/community/jev, /jev-tutorial). Every failure path — no key, timeout, HTTP error, malformed answer, a probability outside [0,1] — behaves exactly as if the gate did not exist.",
 
   "endpoint": "https://openrouter.ai/api/alpha/decisions",
   "model": "typesafe/jev-1.13",
   "_model_doc": "Pinned release, not the ~typesafe/jev-latest alias: the thresholds below were chosen against 1.13, and the docs recommend pinning when thresholds must stay stable.",
   "timeout_s": 6,
-  "_timeout_doc": "Below every host's own hook timeout (claude registration: 10s, goose default: 30s), so the gate always answers 'no opinion' itself instead of being killed mid-request.",
+  "_timeout_doc": "Per Decisions call, and never more than what is left of a code_graph budget. Below every host's own hook timeout (claude registrations: 12s PermissionRequest / 25s UserPromptSubmit; goose: 12s / 25s), so the gate always answers 'no opinion' itself instead of being killed mid-request.",
   "key_env": ["OPENROUTER_API_KEY"],
   "_key_env_doc": "Env var NAMES only. The value is the sops-encrypted OPENROUTER_API_KEY in each service's src/secrets.yaml, delivered through .secrets like every other AI key (cloud-vault C_A1-configs/ai/sources.json records the stores). No key in the environment = gate off for that call, logged as no_key.",
   "log_path": "~/.local/state/jev-gate/decisions.jsonl",
@@ -34,6 +34,91 @@
       "max_options": 400,
       "description_chars": 100,
       "_doc": "hermes llm_request middleware. On the FIRST API call of a turn (api_call_count == 1) Jev picks one of the offered tool names or 'none' from the latest user message; P(choice) >= threshold -> only that tool's schema is sent ('none' -> no tools, but only when the history carries no tool traffic a provider could reject). Below threshold, any later call of the turn, an unlisted api_mode, more than max_options tools, or on_error=all_tools -> the request is untouched. on_error=no_tools is the fail-closed alternative."
+    },
+    "code_context": {
+      "enabled": true,
+      "threshold": 0.75,
+      "_doc": "#765. Per user prompt (claude UserPromptSubmit, goose UserPromptSubmit -> tom file, hermes pre_llm_call), Jev picks one of code_graph.route.options or 'none'. P(choice) >= threshold and not 'none' -> the gate runs that lookup against the cloud-cgc MCP server the CLI's own config already declares and injects the size-capped text. 'none', below threshold, no key, no endpoint, a timeout or any error -> nothing is fetched or injected, exactly as without the gate."
+    }
+  },
+
+  "code_graph": {
+    "_doc": "#765 — how the gate reaches the code graph. Jev cannot call tools; the gate does: one streamable-HTTP MCP session (initialize -> notifications/initialized -> tools/list|tools/call) against the first of `servers` that the CLI's OWN MCP config declares (client_configs), with that entry's own headers, so the bearer gate is whatever the CLI already sends. A header naming an unset ${VAR} skips that server rather than sending a literal placeholder. Results are cached per CLI session id (cache_dir, at most cache_max_entries keys per session); failures are never cached.",
+    "servers": [
+      "cloud-cgc-pvt-mcp",
+      "cloud-cgc-pub-mcp"
+    ],
+    "_servers_doc": "Preference order, by the fleet's canonical MCP keys. pvt first: it indexes the private repos the agents work in and is unauthenticated on the mesh; pub is the fallback.",
+    "client_configs": {
+      "claude": {
+        "path": "~/.claude.json",
+        "servers_key": "mcpServers"
+      },
+      "goose": {
+        "path": "${XDG_CONFIG_HOME:-~/.config}/goose/config.yaml",
+        "servers_key": "extensions"
+      },
+      "hermes": {
+        "path": "${HERMES_HOME:-~/.hermes}/config.yaml",
+        "servers_key": "mcp_servers"
+      }
+    },
+    "_client_configs_doc": "Where each CLI keeps the MCP server list it already uses (claude: ~/.claude.json rendered by render-mcp.mjs; goose: config.yaml extensions; hermes: config.yaml mcp_servers). A server entry's url (or goose's uri) and headers are read as-is. *.json is parsed as JSON, anything else with the gate's minimal block-YAML reader.",
+    "protocol_version": "2025-03-26",
+    "max_response_bytes": 1048576,
+    "cache_dir": "~/.cache/jev-gate",
+    "cache_max_entries": 64,
+    "route": {
+      "budget_s": 20,
+      "_budget_doc": "Wall-clock budget for the whole prompt path (Jev route + optional repo question + MCP session). Sized from live measurements on 2026-10-02: Jev route ~0.6s, cgc.octocode.search ~5.4s, cgc.octocode.graphrag ~9.0s (octocode reloads its whole graph per call). Below every registration's timeout (claude UserPromptSubmit 25s, goose 25s, hermes plugins.hook_callback_timeout 30s). Only a routed prompt pays it, once per session per prompt.",
+      "instructions": "Which code-graph lookup, if any, would give useful repository context for answering `request`? Pick none unless the request is about code, configuration or architecture in one of our repositories.",
+      "none_criterion": "No repository context is needed: conversation, general knowledge, or the request already names the exact files to open.",
+      "repo_instructions": "Which one of our repositories is `request` about?",
+      "query_arg": "query",
+      "repo_arg": "repo",
+      "query_chars": 400,
+      "max_inject_chars": 4000,
+      "options": {
+        "graphrag": {
+          "criterion": "The request is about how files, modules or services relate: what depends on, wires up or connects to what (architecture, call paths, where something is plugged in).",
+          "tool": "cgc.octocode.graphrag",
+          "args": {
+            "operation": "search",
+            "format": "text"
+          }
+        },
+        "semantic_search": {
+          "criterion": "The request needs specific code, config or docs located by meaning: where X is implemented, declared or documented.",
+          "tool": "cgc.octocode.search",
+          "args": {
+            "mode": "all",
+            "format": "text"
+          }
+        }
+      },
+      "drop_lines": [
+        "^Loading \\d+ GraphRAG ",
+        "^\\s*Deduplicated \\d+",
+        "^Loaded GraphRAG ",
+        "^Searching for: "
+      ],
+      "_drop_lines_doc": "Progress lines octocode prints before its results; they cost context and say nothing."
+    },
+    "impact": {
+      "enabled": true,
+      "budget_s": 3,
+      "_budget_doc": "Wall-clock budget for the impact lookups of one tool call. 3s + Jev's 6s stays under the 12s claude PermissionRequest and goose PreToolUse registrations.",
+      "tool": "cgc.codegraph.impact_analysis",
+      "args": {
+        "depth": 2
+      },
+      "target_arg": "target",
+      "node_key": "file:{repo}/{path}",
+      "_node_key_doc": "cgc.codegraph's file node key: the repo directory name plus the path inside it (worktrees keep the repo name as their directory name).",
+      "max_paths": 3,
+      "max_chars": 1200,
+      "no_match": "^No node matches",
+      "_doc": "For Edit/Write (path_fields) and shell commands naming existing files inside a git repo, the gate adds the touched files' downstream dependents to the safety state as `impact`. Any failure, no match, or a state that would no longer fit max_state_chars -> the state is sent without it, exactly as before."
     }
   },
 

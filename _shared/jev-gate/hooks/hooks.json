@@ -4,7 +4,22 @@
       {
         "matcher": "^(shell|write|edit)$",
         "hooks": [
-          { "type": "command", "command": "python3 \"$PLUGIN_ROOT/jev_gate.py\" goose", "timeout": 10 }
+          {
+            "type": "command",
+            "command": "python3 \"$PLUGIN_ROOT/jev_gate.py\" goose",
+            "timeout": 12
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$PLUGIN_ROOT/jev_gate.py\" goose-prompt",
+            "timeout": 25
+          }
         ]
       }
     ]

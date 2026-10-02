@@ -88,6 +88,11 @@ mkdir -p "${HOME}/.agents/plugins" \
   && cp -r /app/jev-gate "${HOME}/.agents/plugins/jev-gate" \
   && echo "[start] jev-gate goose plugin installed at ${HOME}/.agents/plugins/jev-gate" \
   || echo "[start] WARNING: jev-gate goose plugin not installed — goose runs ungated" >&2
+# #765: the gate's UserPromptSubmit hook (goose-prompt) writes the code-graph
+# context Jev routed the prompt to into this file, and goose's tom extension
+# (declared in configs/goose-config.yaml) injects it into the turn. Exported
+# before goosed starts so the daemon and the hooks it spawns share the path.
+export GOOSE_MOIM_MESSAGE_FILE="${HOME}/.local/state/jev-gate/goose-context.md"
 
 # Sidecar: compress_service (Headroom tokens-optimization plugin, :HEADROOM_PORT).
 # Best-effort — if it exits for any reason, log and continue.

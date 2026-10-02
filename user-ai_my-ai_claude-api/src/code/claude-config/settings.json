@@ -21,7 +21,7 @@
           {
             "type": "command",
             "command": "python3 /app/jev-gate/jev_gate.py claude",
-            "timeout": 10
+            "timeout": 12
           }
         ]
       }
@@ -56,6 +56,11 @@
             "type": "command",
             "command": "node \"$HOME\"/.claude/ponytail/hooks/ponytail-mode-tracker.js",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "python3 /app/jev-gate/jev_gate.py claude",
+            "timeout": 25
           }
         ]
       }

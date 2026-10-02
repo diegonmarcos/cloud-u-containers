@@ -106,6 +106,20 @@ extensions:
     bundled: true
     available_tools: []
 
+  # #765: tom ("Top Of Mind") injects $GOOSE_MOIM_MESSAGE_FILE into every model call of a turn. It is
+  # goose 1.44's only per-turn context channel — a UserPromptSubmit hook's output is discarded — so the
+  # jev-gate goose-prompt hook writes the code-graph context there (start.sh exports the path).
+  # Declared rather than left to goose's default_enabled migration, which only runs if it may rewrite
+  # this baked file. description/display_name match the built-in definition so no migration rewrites it.
+  tom:
+    enabled: true
+    type: platform
+    name: tom
+    description: Inject custom context into every turn via GOOSE_MOIM_MESSAGE_TEXT and GOOSE_MOIM_MESSAGE_FILE environment variables
+    display_name: Top Of Mind
+    bundled: true
+    available_tools: []
+
 providers:
   openai:
     enabled: true
