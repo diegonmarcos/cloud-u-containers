@@ -52,6 +52,17 @@ jobs:
   dispatch:
     runs-on: ubuntu-latest
     steps:
+      # #760: a stale clone's merge re-publishes history a secret purge removed,
+      # and this courier would then SHIP it. Refuse before dispatching. The gate
+      # and its markers are fleet-emitted (.githooks/, from cloud-infra
+      # 0_apps/src/githooks); full history because the check is ancestry.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: false
+      - name: Refuse purged history (history-gate)
+        run: sh .githooks/history-gate HEAD
+
       - name: Notify cloud-infra of the pushed range
         id: notify
         env:

@@ -251,7 +251,16 @@ cat > "$HOOKS/pre-push" <<'HOOK'
 #!/bin/sh
 # Refuse to push any commit whose SUBJECT LINE BEGINS with MUTATION.
 # Prefix only — a subject that merely mentions the word is legitimate and must pass.
-while read -r _local_ref local_sha _remote_ref remote_sha; do
+# Read the ref list ONCE: the purged-history gate below needs it too.
+REFS=$(cat)
+# #760: this hooksPath replaces the repo's own hooks, so the fleet gate that
+# refuses history a secret purge removed (.githooks/history-gate) would never
+# run for an agent. Chain to it; a repo without it has nothing purged.
+GATE="$(git rev-parse --show-toplevel)/.githooks/history-gate"
+if [ -f "$GATE" ]; then
+  printf '%s\n' "$REFS" | sh "$GATE" --pre-push || exit 1
+fi
+printf '%s\n' "$REFS" | while read -r _local_ref local_sha _remote_ref remote_sha; do
   [ "$local_sha" = "0000000000000000000000000000000000000000" ] && continue
   if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
     RANGE=$local_sha
@@ -265,7 +274,7 @@ while read -r _local_ref local_sha _remote_ref remote_sha; do
     echo "A mutation is a proof step. Show it red locally, restore, then push the real fix." >&2
     exit 1
   fi
-done
+done || exit 1
 exit 0
 HOOK
 chmod 755 "$HOOKS/pre-push"
