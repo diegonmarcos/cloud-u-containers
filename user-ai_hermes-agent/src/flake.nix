@@ -21,6 +21,18 @@
 
     engine = import ../../_shared/engine.nix;
 
+    # #764: the ONE Jev gate shared by claude, goose and hermes. hermes is a
+    # Type-B wrap (no COPY step of ours), so the plugin travels the same way
+    # config.yaml does: emitted into dist/configs/plugins/jev-gate/ and
+    # bind-mounted read-only at /opt/data/plugins/jev-gate by compose.nix.
+    # Every regular file of the shared directory is emitted (derived, not
+    # listed), so a file added there cannot be forgotten here. hooks/ is the
+    # goose registration and is not a regular file at this level.
+    jevGateDir = ../../_shared/jev-gate;
+    jevGateTemplates = map
+      (f: { name = "plugins/jev-gate/${f}"; text = builtins.readFile (jevGateDir + "/${f}"); })
+      (builtins.attrNames (nixpkgs.lib.filterAttrs (_: t: t == "regular") (builtins.readDir jevGateDir)));
+
   in {
     packages = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
@@ -51,7 +63,7 @@
             text = builtins.replaceStrings
               [ "@HERMES_MODEL@" ] [ buildJson.runtime.model ]
               (builtins.readFile ./configs/config.yaml); }
-        ];
+        ] ++ jevGateTemplates;
         composeSpec = import ./compose.nix { inherit buildJson container; };
         title = "Hermes Agent";
       };

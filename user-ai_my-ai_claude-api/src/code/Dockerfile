@@ -108,6 +108,8 @@ RUN chmod +x /app/start.sh
 # Baked under /app (NOT ~/.claude): the claude_home volume mounts over the whole
 # home and only seeds once, so start.sh re-syncs from here on every boot.
 COPY claude-config /app/claude-config
+# #764 shared Jev gate — claude-config/settings.json runs it as a PermissionRequest hook.
+COPY jev-gate/ /app/jev-gate/
 
 # Non-root appuser; HOME holds the persisted Claude login + ~/.headroom ledger
 # (mounted as the claude_home named volume at runtime).

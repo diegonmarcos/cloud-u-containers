@@ -1,0 +1,4 @@
+name: jev-gate
+version: 1.0.0
+description: "#764 Jev tool-selection gate: on the first API call of a turn, send only the tool Jev picks (all tools when it is unsure). Config: jev-gate.json beside this file."
+author: diegonmarcos

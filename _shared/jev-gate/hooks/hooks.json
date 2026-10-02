@@ -1,0 +1,12 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "^(shell|write|edit)$",
+        "hooks": [
+          { "type": "command", "command": "python3 \"$PLUGIN_ROOT/jev_gate.py\" goose", "timeout": 10 }
+        ]
+      }
+    ]
+  }
+}

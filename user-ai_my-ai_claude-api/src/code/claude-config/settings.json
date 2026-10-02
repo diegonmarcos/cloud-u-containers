@@ -14,6 +14,18 @@
     "deny": []
   },
   "hooks": {
+    "PermissionRequest": [
+      {
+        "matcher": "Bash|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /app/jev-gate/jev_gate.py claude",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
     "SessionStart": [
       {
         "matcher": "",

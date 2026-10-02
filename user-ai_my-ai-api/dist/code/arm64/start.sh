@@ -76,6 +76,19 @@ else
   echo "[start] WARNING: AGENT_MEMORY_BRIEFING is unset — goose will run WITHOUT recall of previous sessions. _shared/engine.nix publishes it to every container with agent.git_tree; if it is missing here, that merge did not reach this service." >&2
 fi
 
+# ── #764: Jev pre-flight gate as a goose PreToolUse plugin ───────────────────
+# goose 1.44 loads hooks from every subdirectory of ~/.agents/plugins/ (no
+# config.yaml key; enabled by default). HOME is the my_ai_home volume, so the
+# image cannot place it there — it is re-copied from the baked /app/jev-gate on
+# every boot, the same reason claude-api re-syncs its claude-config. The plugin
+# IS the shared gate directory: hooks/hooks.json runs jev_gate.py beside it.
+# Fail-safe: if the copy fails goose simply runs without the gate.
+mkdir -p "${HOME}/.agents/plugins" \
+  && rm -rf "${HOME}/.agents/plugins/jev-gate" \
+  && cp -r /app/jev-gate "${HOME}/.agents/plugins/jev-gate" \
+  && echo "[start] jev-gate goose plugin installed at ${HOME}/.agents/plugins/jev-gate" \
+  || echo "[start] WARNING: jev-gate goose plugin not installed — goose runs ungated" >&2
+
 # Sidecar: compress_service (Headroom tokens-optimization plugin, :HEADROOM_PORT).
 # Best-effort — if it exits for any reason, log and continue.
 echo "[start] launching compress_service on :${HEADROOM_PORT}"

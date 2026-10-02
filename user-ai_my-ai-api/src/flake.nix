@@ -67,6 +67,9 @@
             ./code/http-post.mjs
             ./code/package.json
             ./code/start.sh
+            # #764: the ONE Jev gate shared by claude, goose and hermes. Staged
+            # by basename, so the Dockerfile COPYs it as jev-gate/.
+            ../../_shared/jev-gate
             ./code/principles
             ./code/configs
           ];

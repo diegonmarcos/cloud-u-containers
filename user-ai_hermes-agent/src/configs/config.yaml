@@ -90,6 +90,14 @@ memory:
 agent:
   max_turns: 100
 
+# PLUGINS — opt-in list (hermes_cli/plugins_discovery.py skips any user plugin not
+# named here). jev-gate (#764) is the shared Jev gate in _shared/jev-gate, mounted at
+# /opt/data/plugins/jev-gate by compose.nix: an llm_request middleware that, on the
+# first API call of each turn, sends only the tool Jev picks (all tools when Jev is
+# unsure, errors, or has no OPENROUTER_API_KEY). Tunables: _shared/jev-gate/jev-gate.json.
+plugins:
+  enabled: [jev-gate]
+
 # APPROVALS - AUTO MODE. Never prompt for tool/command approval (equiv --yolo).
 # Does NOT touch secret redaction (independent). Operator 2026-09-19: goose+Hermes
 # default to auto mode, no prompts. modes: manual|smart|off.

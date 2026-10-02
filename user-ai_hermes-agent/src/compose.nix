@@ -94,6 +94,10 @@ in
         # dist/ never contained a configs/ directory at all. Keep flake.nix
         # emitting this file.
         "./configs/config.yaml:/opt/data/config.yaml:ro"
+        # #764 Jev tool-selection gate, emitted by flake.nix from _shared/jev-gate
+        # and enabled by config.yaml's plugins.enabled. Same silent-empty-dir
+        # caveat as above if flake.nix ever stops emitting it.
+        "./configs/plugins/jev-gate:/opt/data/plugins/jev-gate:ro"
       ];
       # NO healthcheck: the Hermes gateway subcommand exposes no HTTP health
       # endpoint when the API server is disabled (command = "gateway run").

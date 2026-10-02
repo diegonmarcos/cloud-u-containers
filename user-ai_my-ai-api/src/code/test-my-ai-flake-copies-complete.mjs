@@ -34,9 +34,15 @@ const dockerfile = readFileSync(join(here, "Dockerfile"), "utf8");
 const flake = readFileSync(join(here, "../flake.nix"), "utf8");
 
 // The flake's staged set, as written. Paths are nix path literals (./code/x).
-const extraFiles = new Set(
-  [...flake.matchAll(/^\s*\.\/code\/([^\s#]+)\s*$/gm)].map((m) => m[1].replace(/\/$/, ""))
+// Staged entries are ./code/<x> or (#764) ../../_shared/<x>; the engine stages
+// both by basename, so the COPY source is the basename. Path kept for F5.
+const staged = new Map(
+  [...flake.matchAll(/^\s*(\.\/code|\.\.\/\.\.\/_shared)\/([^\s#]+)\s*$/gm)].map((m) => {
+    const rel = m[2].replace(/\/$/, "");
+    return [rel, m[1] === "./code" ? join(here, rel) : join(here, "../../../_shared", rel)];
+  })
 );
+const extraFiles = new Set(staged.keys());
 check("F1 the flake declares a non-empty extraFiles list", extraFiles.size > 0,
   "no ./code/* entries parsed from src/flake.nix");
 
@@ -73,7 +79,7 @@ check("F4 http-post.mjs is staged (the #559 build failure)",
 
 // A staged path that does not exist on disk stages nothing and fails the same
 // way, just one step earlier — catch that too.
-const missingOnDisk = [...extraFiles].filter((f) => !existsSync(join(here, f)));
+const missingOnDisk = [...staged].filter(([, p]) => !existsSync(p)).map(([f]) => f);
 check("F5 every staged path exists in src/code",
   missingOnDisk.length === 0,
   `declared in flake but absent on disk: ${missingOnDisk.join(", ")}`);

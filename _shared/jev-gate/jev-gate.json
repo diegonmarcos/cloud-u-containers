@@ -1,0 +1,110 @@
+{
+  "_doc": "#764 — the ONE declaration of the Jev pre-flight gate shared by the claude, goose and hermes agent CLIs. jev_gate.py (beside this file) is the only implementation; every CLI reaches it through its own real hook mechanism (claude: PermissionRequest command hook in claude-config/settings.json; goose 1.44: PreToolUse plugin hook in hooks/hooks.json; hermes: llm_request middleware registered by __init__.py). Jev is TypeSafe's structured decision model behind OpenRouter's Decisions API (docs: openrouter.ai/docs/guides/community/jev, /jev-tutorial). Every failure path — no key, timeout, HTTP error, malformed answer, a probability outside [0,1] — behaves exactly as if the gate did not exist.",
+
+  "endpoint": "https://openrouter.ai/api/alpha/decisions",
+  "model": "typesafe/jev-1.13",
+  "_model_doc": "Pinned release, not the ~typesafe/jev-latest alias: the thresholds below were chosen against 1.13, and the docs recommend pinning when thresholds must stay stable.",
+  "timeout_s": 6,
+  "_timeout_doc": "Below every host's own hook timeout (claude registration: 10s, goose default: 30s), so the gate always answers 'no opinion' itself instead of being killed mid-request.",
+  "key_env": ["OPENROUTER_API_KEY"],
+  "_key_env_doc": "Env var NAMES only. The value is the sops-encrypted OPENROUTER_API_KEY in each service's src/secrets.yaml, delivered through .secrets like every other AI key (cloud-vault C_A1-configs/ai/sources.json records the stores). No key in the environment = gate off for that call, logged as no_key.",
+  "log_path": "~/.local/state/jev-gate/decisions.jsonl",
+  "_log_doc": "JSONL, one line per decision: use, verdict, probabilities, latency, Jev request id, usage.cost and a short sha256 of the state. Never the state text itself, so nothing a redaction pattern missed can reach the log. JEV_GATE_LOG overrides the path.",
+
+  "uses": {
+    "claude_permission": {
+      "enabled": true,
+      "threshold": 0.85,
+      "on_error": "defer",
+      "_doc": "Claude Code PermissionRequest hook (Bash|Edit|Write). Every asked noul >= threshold -> {decision:{behavior:allow}}. Anything else -> no output, so the normal prompt (or headless auto-deny) happens exactly as without the gate. Never denies. Deny and ask rules are evaluated by Claude Code regardless of a hook's allow."
+    },
+    "goose_pretool": {
+      "enabled": true,
+      "threshold": 0.85,
+      "on_error": "defer",
+      "on_unsafe": "log",
+      "_doc": "goose 1.44 PreToolUse plugin hook. It runs AFTER goose's own permission stage and can only block or pass — there is no allow/ask channel — so 'safe -> allow, else defer to the normal flow' is a pass in both branches. on_unsafe=log records Jev's verdict and passes; on_unsafe=block refuses a call only when every asked noul <= 1 - threshold (confidently unsafe), with an explicit reason the model sees. log is the default because blocking turns Jev's opinion into an automatic deny of dispatched work (git push scores low on reversibility by design)."
+    },
+    "hermes_tool_select": {
+      "enabled": true,
+      "threshold": 0.75,
+      "on_error": "all_tools",
+      "first_call_only": true,
+      "api_modes": ["chat_completions"],
+      "max_options": 400,
+      "description_chars": 100,
+      "_doc": "hermes llm_request middleware. On the FIRST API call of a turn (api_call_count == 1) Jev picks one of the offered tool names or 'none' from the latest user message; P(choice) >= threshold -> only that tool's schema is sent ('none' -> no tools, but only when the history carries no tool traffic a provider could reject). Below threshold, any later call of the turn, an unlisted api_mode, more than max_options tools, or on_error=all_tools -> the request is untouched. on_error=no_tools is the fail-closed alternative."
+    }
+  },
+
+  "questions": {
+    "_doc": "Noul questions for the safety verdict. All asked ones must clear the threshold. `needs` names a state field that must be present for the question to be asked (the cookbook's serves_task needs a task; without one only reversibility is asked).",
+    "reversible": {
+      "type": "noul",
+      "instructions": "The tool call in `tool` with arguments `input` only reads, or only changes files inside `project` in a way git or a rerun can undo. It does not push, publish, deploy, delete files outside the project, escalate privileges, change system settings, touch credentials, or send data to a network service."
+    },
+    "serves_task": {
+      "type": "noul",
+      "needs": "task",
+      "instructions": "Running the tool call in `tool` with arguments `input` is a reasonable next step toward `task`."
+    }
+  },
+
+  "tool_pick_instructions": "Which single tool, if any, is needed for the first step of answering `request`? Pick none when the request can be answered directly in text.",
+
+  "max_state_chars": 8000,
+  "_max_state_doc": "A state that does not fit is NOT truncated and sent: Jev can only clear what it can see, so an oversized edit or command is left to the normal flow without a call.",
+
+  "shell_tools": ["Bash", "developer__shell", "shell"],
+  "path_fields": ["file_path", "path", "notebook_path"],
+
+  "never_auto_approve": {
+    "_doc": "Static list evaluated BEFORE Jev, adapted from OpenRouter's auto-approve cookbook. A match means no Decisions call and no approval — the host's normal flow decides. This list, not the threshold, is the security boundary: Jev only sees the text it is sent.",
+    "opaque_shell": "\\$\\(|[<>]\\(|`|\\\\\\r?\\n",
+    "split": "\\s*(?:&&|\\|\\||;|\\||&|\\n|[(){}])\\s*",
+    "normalize": [
+      "^(if|then|elif|else|fi|while|until|do|done|for|in|case|esac|!)\\s+",
+      "^(command|builtin|exec|env|nohup|time|timeout|nice|watch|npx|bunx|pnpx)\\s+",
+      "^[A-Za-z_][A-Za-z0-9_]*=[^\\s'\"\\\\$]*\\s+",
+      "^\\\\",
+      "^[^\\s'\"\\\\$]*/"
+    ],
+    "commands": [
+      "^(\\S*['\"\\\\=$]|[-0-9])",
+      "^(sudo|doas|su)\\b",
+      "^(bash|sh|zsh|fish|eval|xargs|source|\\.)\\b",
+      "^(node|bun|python3?|perl|ruby)\\s+(-\\S+\\s+)*(-c|-e|-p|--eval)\\b",
+      "^rm\\s+(-\\S*[rRf]\\S*\\s+)+",
+      "^git\\b.*\\b(push|reset\\s+--hard|clean\\s+-\\S*[fd]|branch\\s+-D|filter-repo|filter-branch)\\b",
+      "^(npm|pnpm|yarn|bun)\\s+publish\\b",
+      "^(wrangler|vercel|fly|flyctl)\\s+deploy\\b|^terraform\\s+(apply|destroy)\\b|^kubectl\\s+(delete|apply)\\b",
+      "^(docker|podman)\\s+(rm|rmi|system\\s+prune|volume\\s+rm)\\b",
+      "^(ssh|scp|rsync|curl|wget|nc)\\b",
+      "^(sops|age|gpg|rbw|bw)\\b",
+      "^(chmod|chown)\\s+(-\\S*R)",
+      "^(dd|mkfs\\S*|shutdown|reboot|kill|pkill|killall)\\b"
+    ],
+    "paths": "\\.env\\b|\\.ssh\\b|\\.aws\\b|\\.npmrc\\b|\\.netrc\\b|\\.git/|credentials|secrets?\\.ya?ml|\\.secrets\\b|\\.age\\b|\\.pem\\b|\\.key\\b|cloud-vault|/etc/|\\.github/workflows/",
+    "_paths_doc": "Applied to every shell command and to the path fields of file tools. cloud-vault is here so vault contents never become Jev state."
+  },
+
+  "redact": {
+    "_doc": "Applied to every string before it becomes Jev state. Pattern list first, then exact values of any environment variable whose NAME looks secret, so a key the patterns do not know is still masked if it is live in this process.",
+    "mask": "[REDACTED]",
+    "patterns": [
+      {"re": "-----BEGIN [A-Z ]*PRIVATE KEY-----[\\s\\S]*?(-----END [A-Z ]*PRIVATE KEY-----|$)", "sub": "[REDACTED]"},
+      {"re": "AGE-SECRET-KEY-[0-9A-Z]+", "sub": "[REDACTED]"},
+      {"re": "ENC\\[AES256_GCM,[^\\]]*\\]", "sub": "[REDACTED]"},
+      {"re": "\\bsk-(or|ant|proj)?-?[A-Za-z0-9_-]{16,}", "sub": "[REDACTED]"},
+      {"re": "\\b(ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{20,}|\\bgithub_pat_[A-Za-z0-9_]{20,}", "sub": "[REDACTED]"},
+      {"re": "\\b(AKIA|ASIA)[0-9A-Z]{16}\\b", "sub": "[REDACTED]"},
+      {"re": "\\bxox[abprs]-[A-Za-z0-9-]{10,}", "sub": "[REDACTED]"},
+      {"re": "\\beyJ[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}", "sub": "[REDACTED]"},
+      {"re": "(?i)(authorization\\s*:\\s*(bearer|basic|token)\\s+)\\S+", "sub": "\\1[REDACTED]"},
+      {"re": "(?i)\\b([A-Z0-9_]*(api[_-]?key|token|secret|passw(or)?d|private[_-]?key|credential)[A-Z0-9_]*[\"']?\\s*[:=]\\s*[\"']?)[^\\s\"']{4,}", "sub": "\\1[REDACTED]"},
+      {"re": "(://[^/\\s:@]+:)[^@\\s]+@", "sub": "\\1[REDACTED]@"}
+    ],
+    "env_name": "(?i)(KEY|TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIAL)",
+    "env_min_len": 8
+  }
+}

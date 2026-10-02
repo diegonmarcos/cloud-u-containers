@@ -138,6 +138,10 @@
     }
   },
   "tests": {
+    "jev-gate": {
+      "cmd": "python3 test-jev-gate.py",
+      "cwd": "../_shared"
+    },
     "resume-by-name": {
       "cmd": "node test-my-ai-resume-by-name.mjs",
       "cwd": "src/code"

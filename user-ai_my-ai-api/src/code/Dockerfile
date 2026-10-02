@@ -128,6 +128,8 @@ COPY bots/ /app/bots/
 COPY py/ /app/py/
 COPY start.sh /app/start.sh
 COPY principles/ /app/principles/
+# #764 shared Jev gate (goose PreToolUse plugin; installed into ~/.agents/plugins by start.sh).
+COPY jev-gate/ /app/jev-gate/
 RUN chmod +x /app/start.sh
 
 # Non-root appuser; HOME holds the persisted session store + ~/.headroom ledger

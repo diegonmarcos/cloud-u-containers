@@ -96,6 +96,10 @@
     }
   },
   "tests": {
+    "jev-gate": {
+      "cmd": "python3 test-jev-gate.py",
+      "cwd": "../_shared"
+    },
     "session-model-routing": {
       "cmd": "node test-my-ai-telegram-session-model.ts",
       "cwd": "src/code"

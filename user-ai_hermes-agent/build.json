@@ -31,6 +31,10 @@
     "compose_flags": "--pull always --force-recreate"
   },
   "tests": {
+    "jev-gate": {
+      "cmd": "python3 test-jev-gate.py",
+      "cwd": "../_shared"
+    },
     "agent-toolbelt-declared": {
       "cmd": "node ../_shared/test-agent-toolbelt.mjs"
     }
