@@ -38,6 +38,7 @@ import {
   redactSecrets, upstreamHeaders, reposUrl, tarballUrl, projectRepo, validName, validRef, REDACTED,
   gitUpstreamHeaders, gitUrl,
   repoDeclared, clampPerPage, feedUrl, projectCommit, projectRun,
+  inCidr, isDirectMesh, validTag, validRange, releaseByTagUrl, releaseAssetUrl,
 } from './code/upstream.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -213,7 +214,14 @@ function testContract() {
   eq(raw.proxy.primary.public_paths, open,
     'proxy public_paths is exactly the set of auth:none endpoints');
   eq(raw.containers.app.proxy.public_paths, open, 'the container proxy copy agrees');
-  for (const e of RT.endpoints.filter((x) => x.auth !== 'none')) {
+  // #837 exactly one endpoint is `mesh` (credential-free ONLY on a direct wg0
+  // dial), it is the release-asset mirror, and it is NOT a public_path, so the
+  // edge's forward_auth still gates it off-mesh.
+  const mesh = RT.endpoints.filter((e) => e.auth === 'mesh').map((e) => e.path);
+  eq(mesh, ['/git/releases/:owner/:repo/:tag/assets/:name'], 'exactly one endpoint is auth:mesh, the release-asset mirror');
+  ok(!raw.proxy.primary.public_paths.some((p) => p.startsWith('/git/releases')), 'the mesh route is not an edge public_path');
+  eq(RT.mesh?.cidrs, ['10.0.0.0/24', 'fd0c:1d00::/64'], 'runtime.mesh.cidrs mirrors the Caddy wg_cidrs (both families)');
+  for (const e of RT.endpoints.filter((x) => x.auth !== 'none' && x.auth !== 'mesh')) {
     ok(e.auth === 'authelia', `${e.path} requires authelia (bearer or session)`, `declares ${e.auth}`);
   }
   eq(raw.health.path, '/git/health', 'health.path is the pre-auth route');
@@ -311,6 +319,29 @@ function testFeedsUnit() {
   ok(threw(withRt((rt) => { rt.upstream.git_base = 'http://github.com'; return rt; })), 'loadRuntime THROWS on a non-https git_base');
 }
 
+// ══ G. #837 release-asset mirror: mesh gate + validation (pure) ═══════════
+function testReleaseUnit() {
+  console.log('\nG. release assets: mesh gate and validation');
+  const C = RT.mesh.cidrs;
+  ok(isDirectMesh('10.0.0.7', {}, C), 'a wg0 IPv4 peer dialling directly is the mesh');
+  ok(isDirectMesh('::ffff:10.0.0.7', {}, C), 'the v4-mapped form of a wg0 peer is the mesh');
+  ok(isDirectMesh('fd0c:1d00::5', {}, C), 'a wg0 IPv6 peer is the mesh');
+  ok(!isDirectMesh('10.0.1.7', {}, C), '10.0.1.x is outside 10.0.0.0/24');
+  ok(!isDirectMesh('fd0c:1d01::5', {}, C), 'fd0c:1d01:: is outside fd0c:1d00::/64');
+  ok(!isDirectMesh('203.0.113.9', {}, C), 'a public address is not the mesh');
+  for (const h of ['x-forwarded-for', 'x-forwarded-host', 'x-real-ip', 'forwarded', 'via']) {
+    ok(!isDirectMesh('10.0.0.1', { [h]: '1.2.3.4' }, C), `a request relayed by a proxy (${h}) is never the mesh, even from a wg0 hop`);
+  }
+  ok(!isDirectMesh('10.0.0.7', {}, []), 'no declared cidrs means nothing is the mesh');
+  ok(!inCidr('garbage', '10.0.0.0/24') && !inCidr('10.0.0.1', 'nonsense'), 'malformed addresses never match');
+  ok(validTag('latest') && validTag('v1.2.3'), 'plain tags are valid');
+  ok(!validTag('') && !validTag('a/b') && !validTag('..') && !validTag('-x'), 'empty, slashed, traversal and dash tags are refused');
+  ok(validRange('bytes=0-') && validRange('bytes=100-199') && validRange('bytes=-500'), 'single byte ranges are accepted');
+  ok(!validRange('bytes=0-1,5-9') && !validRange('items=0-1') && !validRange('bytes=x-'), 'multi-range and non-byte ranges are refused');
+  eq(releaseByTagUrl('https://api.github.com', 'o', 'r', 'latest'), 'https://api.github.com/repos/o/r/releases/tags/latest', 'release-by-tag URL');
+  eq(releaseAssetUrl('https://api.github.com', 'o', 'r', 42), 'https://api.github.com/repos/o/r/releases/assets/42', 'release-asset URL');
+}
+
 // ══ D. End-to-end against the REAL server, stubbed dependencies ════════════
 // The pure checks above can only prove what the functions do. This boots the
 // actual index.mjs and drives it over HTTP, because "the service refuses" and
@@ -352,6 +383,32 @@ async function testLive() {
   const gitHits = [];
   const gitBodies = [];
   const GIT_ADVERT = '001e# service=git-upload-pack\n0000advert-sentinel';
+  // #837 the asset bytes, on a separate origin like GitHub's object store, so
+  // the tester can see whether our credential followed the redirect.
+  const ASSET = Buffer.from(Array.from({ length: 1000 }, (_, i) => i % 251));
+  const SIDECARS = { 12: 'a'.repeat(64) + '  App.apk\n', 13: 'sha=deadbeef run=1\n' };
+  const assetHits = [];
+  const cdnHits = [];
+  const cdn = createServer((req, res) => {
+    const id = req.url.split('/').pop();
+    cdnHits.push({ id, authz: req.headers.authorization || '', range: req.headers.range || '' });
+    if (id !== '11') { res.writeHead(200, { 'content-type': 'text/plain' }); return res.end(SIDECARS[id] || ''); }
+    const m = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range || '');
+    if (!m) {
+      res.writeHead(200, { 'content-type': 'application/octet-stream', 'content-length': ASSET.length, 'accept-ranges': 'bytes', etag: '"e1"' });
+      return res.end(ASSET);
+    }
+    const start = m[1] === '' ? ASSET.length - Number(m[2]) : Number(m[1]);
+    const end = m[1] === '' || m[2] === '' ? ASSET.length - 1 : Math.min(Number(m[2]), ASSET.length - 1);
+    if (start >= ASSET.length) {
+      res.writeHead(416, { 'content-range': `bytes */${ASSET.length}` }); return res.end();
+    }
+    res.writeHead(206, { 'content-type': 'application/octet-stream', 'content-length': end - start + 1,
+      'content-range': `bytes ${start}-${end}/${ASSET.length}`, 'accept-ranges': 'bytes', etag: '"e1"' });
+    return res.end(ASSET.subarray(start, end + 1));
+  });
+  await new Promise((r) => cdn.listen(0, '127.0.0.1', r));
+  const cdnBase = `http://localhost:${cdn.address().port}`;
   const upstream = createServer((req, res) => {
     const bare = req.url.split('?')[0];
     upstreamHits[bare] = (upstreamHits[bare] || 0) + 1;
@@ -374,6 +431,24 @@ async function testLive() {
         }] }));
       }, 150);
     }
+    // #837 release metadata + asset redirect to a CDN on ANOTHER origin.
+    if (bare === '/repos/diegonmarcos/cloud-u-android/releases/tags/latest') {
+      res.writeHead(200, { 'content-type': 'application/json' });
+      return res.end(JSON.stringify({ tag_name: 'latest', assets: [
+        { id: 11, name: 'App.apk', size: ASSET.length },
+        { id: 12, name: 'App.apk.sha256', size: 80 },
+        { id: 13, name: 'App.apk.source', size: 40 },
+        { id: 14, name: 'Gone.apk', size: 1 },
+      ] }));
+    }
+    const am = /^\/repos\/diegonmarcos\/cloud-u-android\/releases\/assets\/(\d+)$/.exec(bare);
+    if (am) {
+      assetHits.push({ id: am[1], accept: req.headers.accept, range: req.headers.range || '' });
+      if (am[1] === '14') { res.writeHead(404); return res.end('{}'); }
+      res.writeHead(302, { location: `${cdnBase}/blob/${am[1]}` });
+      return res.end();
+    }
+    if (bare === '/repos/diegonmarcos/cloud-u-android/releases/tags/nope') { res.writeHead(404); return res.end('{}'); }
     if (bare === '/repos/diegonmarcos/cloud-u-linux/commits') {
       // Upstream fails and quotes our credential back — must not be cached, must not leak.
       res.writeHead(500, { 'content-type': 'text/plain' });
@@ -666,6 +741,88 @@ async function testLive() {
   const anonClone = await reqH('/clone/diegonmarcos/cloud-infra/info/refs?service=git-upload-pack', {});
   ok(anonClone.status === 401, 'an anonymous clone is refused 401', `got ${anonClone.status}`);
 
+  // ── #837 release assets ──
+  const REL = '/releases/diegonmarcos/cloud-u-android/latest/assets';
+  async function bin(path, headers = {}, b = base) {
+    const r = await fetch(`${b}${path}`, { headers });
+    const buf = Buffer.from(await r.arrayBuffer());
+    seen.push({ path, status: r.status, text: buf.toString('latin1') });
+    return { status: r.status, buf, h: r.headers, json: safeJson(buf.toString('utf8')) };
+  }
+  const offMesh = await bin(`${REL}/App.apk`);
+  ok(offMesh.status === 401 && offMesh.json?.code === 'missing_authorization',
+    'off the mesh (this server has no mesh cidrs) the asset route is Authelia-gated like any other', `got ${offMesh.status}`);
+  eq(assetHits.length, 0, 'and the refused request dialled GitHub zero times');
+  const authed = await bin(`${REL}/App.apk`, { authorization: `Bearer ${good}` });
+  ok(authed.status === 200 && authed.buf.equals(ASSET), 'with a fleet bearer the asset streams byte-exact', `got ${authed.status} ${authed.buf.length}`);
+  ok(cdnHits.at(-1)?.authz === '', 'the GitHub credential did NOT follow the redirect to the object store');
+  ok(assetHits.at(-1)?.accept === 'application/octet-stream', 'the asset was asked for as octet-stream');
+
+  // A second server that counts 127.0.0.0/8 as "the mesh" (MESH_CIDRS is the
+  // tester-only override; production reads runtime.mesh.cidrs).
+  const meshPort = port + 2;
+  const meshChild = spawn(process.execPath, [join(HERE, 'code', 'index.mjs')], {
+    env: { ...process.env, PORT: String(meshPort), BIND_HOST: '127.0.0.1', GITHUB_TOKEN: FAKE_TOKEN,
+      GITHUB_API_BASE: upstreamBase, GITHUB_GIT_BASE: upstreamBase, JWKS_URL: `${upstreamBase}/jwks.json`,
+      AUTHELIA_VERIFY_URL: `${upstreamBase}/api/authz/auth-request`, ISSUER: 'https://auth.diegonmarcos.com',
+      UPSTREAM_TIMEOUT_MS: '5000', BUILD_JSON_PATH: BUILD_JSON, MESH_CIDRS: '127.0.0.0/8' },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  meshChild.stdout.on('data', (d) => { childLog += d; });
+  meshChild.stderr.on('data', (d) => { childLog += d; });
+  const mbase = `http://127.0.0.1:${meshPort}`;
+  try {
+    await waitFor(async () => (await fetch(`${mbase}/health`)).ok, 8000);
+    const full = await bin(`${REL}/App.apk`, {}, mbase);
+    ok(full.status === 200 && full.buf.equals(ASSET), 'a direct mesh dial with NO credential streams the asset byte-exact',
+      `got ${full.status} ${full.buf.length} ${full.buf.toString().slice(0, 120)}`);
+    eq(full.h.get('content-length'), String(ASSET.length), 'Content-Length passes through');
+    eq(full.h.get('accept-ranges'), 'bytes', 'Accept-Ranges: bytes is advertised');
+    eq(full.h.get('etag'), '"e1"', 'ETag passes through');
+    const part = await bin(`${REL}/App.apk`, { range: 'bytes=100-199' }, mbase);
+    ok(part.status === 206 && part.buf.equals(ASSET.subarray(100, 200)), 'Range bytes=100-199 is a 206 with exactly those bytes',
+      `got ${part.status} ${part.buf.length}`);
+    eq(part.h.get('content-range'), `bytes 100-199/${ASSET.length}`, 'Content-Range passes through');
+    eq(cdnHits.at(-1)?.range, 'bytes=100-199', 'the Range reached the object store');
+    const resume = await bin(`${REL}/App.apk`, { range: 'bytes=900-' }, mbase);
+    ok(resume.status === 206 && resume.buf.equals(ASSET.subarray(900)), 'an open-ended resume range returns the tail');
+    const past = await bin(`${REL}/App.apk`, { range: 'bytes=5000-' }, mbase);
+    ok(past.status === 416 && past.json?.code === 'range_not_satisfiable', 'a range past the end is 416 range_not_satisfiable',
+      `got ${past.status} ${past.buf.toString().slice(0, 120)}`);
+    eq(past.h.get('content-range'), `bytes */${ASSET.length}`, 'and says the real length');
+    const multi = await bin(`${REL}/App.apk`, { range: 'bytes=0-1,5-9' }, mbase);
+    ok(multi.status === 400 && multi.json?.code === 'bad_range', 'a multi-range is 400 bad_range');
+    const sha = await bin(`${REL}/App.apk.sha256`, {}, mbase);
+    ok(sha.status === 200 && sha.buf.toString() === SIDECARS[12], 'the .sha256 sidecar passes through verbatim');
+    const src = await bin(`${REL}/App.apk.source`, {}, mbase);
+    ok(src.status === 200 && src.buf.toString() === SIDECARS[13], 'the .source sidecar passes through verbatim');
+    const relayed = await bin(`${REL}/App.apk`, { 'x-forwarded-for': '203.0.113.9' }, mbase);
+    ok(relayed.status === 401, 'a request relayed by the public edge (X-Forwarded-For) still needs Authelia, even from a mesh hop',
+      `got ${relayed.status}`);
+    const before837 = assetHits.length;
+    const undecl = await bin('/releases/torvalds/linux/latest/assets/x.apk', {}, mbase);
+    ok(undecl.status === 403 && undecl.json?.code === 'repo_not_declared', 'an undeclared repo is 403 repo_not_declared');
+    eq(assetHits.length, before837, 'and GitHub was never dialled for it');
+    const noAsset = await bin(`${REL}/Missing.apk`, {}, mbase);
+    ok(noAsset.status === 404 && noAsset.json?.code === 'not_found', 'an asset not on the release is 404 not_found');
+    const gone = await bin(`${REL}/Gone.apk`, {}, mbase);
+    ok(gone.status === 404 && gone.json?.code === 'not_found', 'an asset GitHub 404s is forwarded as 404 not_found');
+    const noRel = await bin('/releases/diegonmarcos/cloud-u-android/nope/assets/App.apk', {}, mbase);
+    ok(noRel.status === 404 && noRel.json?.code === 'not_found', 'an unknown release tag is 404 not_found');
+    const badName = await bin(`${REL}/..%2Fsecrets`, {}, mbase);
+    ok(badName.status === 400 && badName.json?.code === 'bad_asset', 'a traversal asset name is 400 bad_asset');
+    const badOwner = await bin('/releases/-x/cloud-u-android/latest/assets/App.apk', {}, mbase);
+    ok(badOwner.status === 400 && badOwner.json?.code === 'bad_repo', 'a malformed owner is 400 bad_repo');
+    const otherMesh = await bin('/repos', {}, mbase);
+    ok(otherMesh.status === 401, 'the mesh exemption is ONLY the asset route: /repos on the mesh still 401s');
+    ok(cdnHits.every((h) => h.authz === ''), 'the credential never reached the object store on any request');
+  } catch (e) {
+    ok(false, 'the mesh server ran the release checks', `${e.message} ${childLog.slice(-600)}`);
+  } finally {
+    meshChild.kill('SIGTERM');
+    cdn.close();
+  }
+
   // Wrong method on a real path must be 405 — not 404, and above all not 200.
   for (const [method, path] of [['POST', '/repos'], ['DELETE', '/endpoints'], ['PUT', '/health'],
     ['POST', '/repos/diegonmarcos/cloud-infra/runs']]) {
@@ -736,6 +893,7 @@ await testRefusal();
 testRedactionUnit();
 testContract();
 testFeedsUnit();
+testReleaseUnit();
 await testLive();
 
 console.log(`\n${checks - failures}/${checks} checks passed`);

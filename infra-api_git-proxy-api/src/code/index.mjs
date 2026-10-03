@@ -30,6 +30,7 @@ import {
   upstreamHeaders, redactSecrets, reposUrl, tarballUrl,
   projectRepo, validName, validRef, gitUpstreamHeaders, gitUrl,
   repoDeclared, clampPerPage, feedUrl, FEED_KINDS,
+  releaseByTagUrl, releaseAssetUrl, validTag, validRange, ASSET_PASS_HEADERS, isDirectMesh,
 } from './upstream.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -64,6 +65,11 @@ const SESSION = {
   ...RT.authelia.session,
   verify_url: process.env.AUTHELIA_VERIFY_URL || RT.authelia.session.verify_url,
 };
+// #837 the wg0 source ranges a direct mesh dial comes from (same list as the
+// Caddy wg_only gate). MESH_CIDRS overrides only so the tester can call itself
+// "the mesh" on 127.0.0.1; nothing in production sets it.
+const MESH_CIDRS = (process.env.MESH_CIDRS || (RT.mesh?.cidrs || []).join(' '))
+  .split(/[\s,]+/).filter(Boolean);
 const UPSTREAM_TIMEOUT_MS = Number(process.env.UPSTREAM_TIMEOUT_MS || RT.upstream.timeout_ms);
 
 const PORT = Number(process.env.PORT || 8123);
@@ -247,6 +253,113 @@ function feedHandler(kind) {
   };
 }
 
+// ── Release assets (#837) ─────────────────────────────────────────────────
+// Release metadata (asset name -> id) is cached like the feeds, keyed by
+// (repo, tag); the asset BYTES are never cached or staged — they stream.
+const RELEASE_CACHE = new Map();
+
+function cachedRelease(owner, repo, tag) {
+  const key = `${owner}/${repo}`.toLowerCase() + `@${tag}`;
+  const hit = RELEASE_CACHE.get(key);
+  if (hit && Date.now() - hit.at < FEEDS.cache_ttl_s * 1000) return hit.p;
+  const p = (async () => {
+    const r = await ghFetch(releaseByTagUrl(API_BASE, owner, repo, tag));
+    if (!r.ok) {
+      const e = new Error(`GitHub returned ${r.status} for release ${tag}`);
+      e.upstreamStatus = r.status;
+      throw e;
+    }
+    const body = await r.json();
+    const assets = new Map();
+    for (const a of (Array.isArray(body?.assets) ? body.assets : [])) {
+      if (a && typeof a.name === 'string' && a.id !== undefined) assets.set(a.name, { id: a.id, size: a.size });
+    }
+    return assets;
+  })();
+  RELEASE_CACHE.set(key, { p, at: Date.now() });
+  p.catch(() => { if (RELEASE_CACHE.get(key)?.p === p) RELEASE_CACHE.delete(key); });
+  return p;
+}
+
+async function releaseAsset(req, res, { params }) {
+  const { owner, repo, tag, name } = params;
+  if (!validName(owner) || !validName(repo)) {
+    return sendError(res, 400, 'bad_repo', 'owner and repo must be valid GitHub names');
+  }
+  if (!validTag(tag)) return sendError(res, 400, 'bad_tag', 'tag is not a valid release tag');
+  if (!validName(name)) return sendError(res, 400, 'bad_asset', 'asset name is not valid');
+  // Checked BEFORE anything is dialled: an undeclared repo costs no quota.
+  if (!repoDeclared(FEEDS.repos, owner, repo)) {
+    return sendError(res, 403, 'repo_not_declared', `${owner}/${repo} is not in runtime.feeds.repos`);
+  }
+  const range = req.headers.range;
+  if (range !== undefined && !validRange(range)) {
+    return sendError(res, 400, 'bad_range', 'only a single bytes=a-b range is supported');
+  }
+
+  // One retry with fresh metadata: `latest` is re-published on every ship, so
+  // a cached asset id can go stale inside the TTL.
+  let r;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    let assets;
+    try {
+      assets = await cachedRelease(owner, repo, tag);
+    } catch (err) {
+      if (err.upstreamStatus === undefined) throw err;
+      const notFound = err.upstreamStatus === 404;
+      return sendError(res, notFound ? 404 : 502, notFound ? 'not_found' : 'upstream_error', err.message);
+    }
+    const asset = assets.get(name);
+    if (!asset) {
+      if (attempt === 0) { RELEASE_CACHE.delete(`${owner}/${repo}`.toLowerCase() + `@${tag}`); continue; }
+      return sendError(res, 404, 'not_found', `${name} is not an asset of ${owner}/${repo}@${tag}`);
+    }
+    const headers = upstreamHeaders(GITHUB_TOKEN);
+    headers.accept = 'application/octet-stream';
+    if (range) headers.range = range.trim();
+    // The deadline covers GitHub's HEADERS only; a 400 MB APK streams for minutes.
+    const ac = new AbortController();
+    const timer = setTimeout(() => ac.abort(new DOMException('timeout', 'TimeoutError')), UPSTREAM_TIMEOUT_MS);
+    try {
+      // fetch drops Authorization on the cross-origin redirect to GitHub's
+      // object store, so the credential never reaches the CDN either.
+      r = await fetch(releaseAssetUrl(API_BASE, owner, repo, asset.id), { headers, redirect: 'follow', signal: ac.signal });
+    } finally {
+      clearTimeout(timer);
+    }
+    if (r.status === 404 && attempt === 0) {
+      RELEASE_CACHE.delete(`${owner}/${repo}`.toLowerCase() + `@${tag}`);
+      continue;
+    }
+    res.on('close', () => { if (!res.writableFinished) ac.abort(); });
+    break;
+  }
+
+  if (r.status === 416) {
+    const cr = r.headers.get('content-range');
+    if (cr) res.setHeader('content-range', cr);
+    return sendError(res, 416, 'range_not_satisfiable', `range ${range} is outside ${name}`);
+  }
+  if ((r.status !== 200 && r.status !== 206) || !r.body) {
+    const notFound = r.status === 404;
+    return sendError(res, notFound ? 404 : 502, notFound ? 'not_found' : 'upstream_error',
+      `GitHub returned ${r.status} for ${name}`);
+  }
+  const out = {
+    'content-type': r.headers.get('content-type') || 'application/octet-stream',
+    'cache-control': 'no-store',
+  };
+  for (const h of ASSET_PASS_HEADERS) { const v = r.headers.get(h); if (v) out[h] = v; }
+  out['accept-ranges'] ??= 'bytes';
+  res.writeHead(r.status, out);
+  await new Promise((resolve, reject) => {
+    const src = Readable.fromWeb(r.body);
+    src.on('error', reject);
+    res.on('close', resolve);
+    src.pipe(res).on('finish', resolve).on('error', reject);
+  });
+}
+
 async function proxyGit(req, res, { owner, repo }, suffix) {
   const name = repo.replace(/\.git$/, '');
   if (!validName(owner) || !validName(name)) {
@@ -366,6 +479,8 @@ const HANDLERS = {
 
   '/git/repos/:owner/:repo/commits': feedHandler('commits'),
   '/git/repos/:owner/:repo/runs': feedHandler('runs'),
+
+  '/git/releases/:owner/:repo/:tag/assets/:name': releaseAsset,
 };
 
 // Throws if build.json and HANDLERS disagree in EITHER direction — the service
@@ -389,7 +504,11 @@ async function serve(req, res, url) {
     return sendError(res, 405, 'method_not_allowed', `${path} accepts ${hit.allowed.join(', ')}`);
   }
 
-  if (hit.route.auth !== 'none') {
+  // #837 auth "mesh": a direct wg0 dial needs no credential (the Store's
+  // downloader has none); anything relayed by the public edge is judged as an
+  // `authelia` route below, so off-mesh access is exactly what it was.
+  const meshDirect = hit.route.auth === 'mesh' && isDirectMesh(req.socket.remoteAddress, req.headers, MESH_CIDRS);
+  if (hit.route.auth !== 'none' && !meshDirect) {
     // A presented bearer is authoritative — a bad one is refused, never
     // retried as a cookie. Only a request with no Authorization header at all
     // is judged on its Authelia session.

@@ -142,6 +142,12 @@
         "path": "/git/repos/:owner/:repo/runs",
         "auth": "authelia",
         "description": "Recent GitHub Actions workflow runs of a repo in runtime.feeds.repos (query `per_page`, same bounds). Returns {repo,runs:[{name,display_title,status,conclusion,created_at,html_url,path}],cached_at}. Read-only; there is no re-run or dispatch route. ADOPTION RULE: this route is a quota optimisation for PUBLIC data, never a dependency. The service is sheddable and the phone cannot assume it is up, so a client must treat any failure here (unreachable, 5xx, 504) as a cue to fall back to the direct public api.github.com call, and must surface that fallback's own error if it also fails — never render an empty list in place of an error."
+      },
+      {
+        "method": "GET",
+        "path": "/git/releases/:owner/:repo/:tag/assets/:name",
+        "auth": "mesh",
+        "description": "#837 mesh mirror leg for fleet APKs. Streams the named asset of release :tag of a repo in runtime.feeds.repos (same allow-list as commits/runs; undeclared -> 403 repo_not_declared, nothing dialled) from GitHub with the server-side credential. Range: a single `bytes=a-b` request header is forwarded and answered 206 with Content-Range (416 when unsatisfiable); Content-Length/Accept-Ranges/ETag pass through; bytes are streamed, never staged. The ship engine's sidecars are ordinary assets and pass through by name (<asset>.sha256, <asset>.source). Errors {error,code}: 400 bad_repo/bad_tag/bad_asset/bad_range, 403 repo_not_declared, 404 not_found (no such release or asset), 502 upstream_error, 504 upstream_timeout. AUTH `mesh`: a DIRECT wg0 dial (source in runtime.mesh.cidrs, no X-Forwarded-*/Forwarded/Via header) needs no credential, because the Store's downloader has none and the bytes are the fleet's own release assets; a request relayed by the public edge is judged exactly like an `authelia` route, so off-mesh access is unchanged (edge forward_auth + in-service check). Client: cloud-u-android MeshMirrorSource, third ApkSource after release and ghcr, dialling http://git-proxy-api.app:8123/releases/..."
       }
     ],
     "feeds": {
@@ -181,14 +187,21 @@
         "_doc": "The second credential every `authelia` route takes: an Authelia SESSION cookie, which is all cloud-drive's authelia_web sign-in ever yields (libs:auth's WebAuthDialog returns bearer=\"\" plus the cookie) — so until this existed the phone's fleet rung was a guaranteed 401 missing_authorization. Verified HERE, not trusted from the edge: the service asks Authelia's auth-request endpoint (reached over the mesh through the hub's auth vhost, the same path jwks_url takes) whether the cookie is a live session its access rules admit for https://api.diegonmarcos.com/git/<route>, and the Remote-User it answers with must be listed in `users`. auth-request, not forward-auth: forward-auth reads X-Forwarded-Host, which the hub's proxy rewrites to auth.*, so it would judge the portal's rule instead of this route's. A request that carries any Authorization header is judged as a bearer only; a cookie is consulted only when there is no Authorization at all."
       },
       "_doc": "Same three values infra-sec_introspect-proxy validates on, so a token minted for ANY existing Authelia client (cli, cloud-admin, claude-*) works here unchanged. Verified in-service as well as at the Caddy edge: the edge gate does not exist when the service is dialled directly over the mesh, and the tester has to be able to assert a refusal."
+    },
+    "mesh": {
+      "_doc": "#837 source ranges that count as a direct mesh dial for auth `mesh` routes. Mirrors infra-sec_caddy build.json wg_cidrs (config.json wireguard.subnet + subnet_v6); keep both families or IPv6-preferring peers miss the gate. The service binds only to oci-analytics' wg0 address (compose.nix BIND_HOST), so nothing off-mesh can open a socket here in the first place.",
+      "cidrs": [
+        "10.0.0.0/24",
+        "fd0c:1d00::/64"
+      ]
     }
   },
   "api": {
     "type": "custom-rest",
     "base_path": "/git",
-    "endpoint_count": 8,
+    "endpoint_count": 9,
     "display_name": "Git Proxy API",
-    "description": "Authelia-fronted read path to GitHub: list repos, stream a tarball, clone/fetch over smart HTTP, and read recent commits / workflow runs of declared repos (cached, to keep the Store's feeds off the anonymous quota). The GitHub credential stays server-side; the caller presents an Authelia bearer or an Authelia session cookie.",
+    "description": "Authelia-fronted read path to GitHub: list repos, stream a tarball, clone/fetch over smart HTTP, and read recent commits / workflow runs of declared repos (cached, to keep the Store's feeds off the anonymous quota). The GitHub credential stays server-side; the caller presents an Authelia bearer or an Authelia session cookie. Fleet APK release assets (Range-capable, sha256/source sidecars) are also mirrored for direct mesh callers without a credential (#837).",
     "auth": "mixed"
   },
   "tests": {
