@@ -6,7 +6,9 @@
 # 94-95% and a manual image prune was the only thing that bought room.
 #
 # The POLICY is declared here as env so it is reviewable in source:
-#   MODE                 dry-run (report only) | enforce (delete)
+#   MODE                 dry-run (report only) | enforce (delete). Enforce since
+#                        the first live dry-run pass (2026-10-03) selected only
+#                        6 anonymous volumes and kept all 6 dirty _work slots.
 #   IMAGE_MIN_AGE_HOURS  an unused image must be at least this old
 #   IMAGE_KEEP_PER_REPO  newest K images per repository are always kept
 #   BUILD_CACHE_MIN_AGE_HOURS  builder cache older than this is pruned
@@ -34,7 +36,7 @@ in
       environment = {
         TZ                        = buildJson.timezone;
         SCHEDULE                  = "\${SCHEDULE:-17 */3 * * *}";
-        MODE                      = "\${MODE:-dry-run}";
+        MODE                      = "\${MODE:-enforce}";
         IMAGE_MIN_AGE_HOURS       = "\${IMAGE_MIN_AGE_HOURS:-48}";
         IMAGE_KEEP_PER_REPO       = "\${IMAGE_KEEP_PER_REPO:-2}";
         BUILD_CACHE_MIN_AGE_HOURS = "\${BUILD_CACHE_MIN_AGE_HOURS:-48}";
