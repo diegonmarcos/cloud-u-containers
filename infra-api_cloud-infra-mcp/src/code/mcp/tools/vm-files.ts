@@ -20,15 +20,24 @@ const CONTAINER_RE = /^[a-zA-Z0-9_.-]+$/;
 type Out = { content: { type: "text"; text: string }[]; isError?: boolean };
 const err = (text: string): Out => ({ content: [{ type: "text", text }], isError: true });
 
-/** Wrap a shell snippet so it runs on the VM, or inside `container` on it. */
+/**
+ * Wrap a shell snippet so it runs on the VM, or inside `container` on it.
+ * The snippet travels base64 (alphabet has no quotes): the remote LOGIN shell
+ * is fish on some VMs, and fish treats \' inside single quotes as an escape,
+ * so nested '\'' quoting of paths breaks there. Decoding on the far side means
+ * no shell but bash/sh ever parses the snippet.
+ */
 function where(snippet: string, container?: string, user?: string, stdin = false): string {
-  if (!container) return snippet;
-  return `docker exec${stdin ? " -i" : ""}${user ? ` -u ${shq(user)}` : ""} ${shq(container)} sh -c ${shq(snippet)}`;
+  const b64 = Buffer.from(snippet, "utf8").toString("base64");
+  const decoded = `"$(echo ${b64} | base64 -d)"`;
+  if (!container) return `sh -c ${decoded}`;
+  if (!CONTAINER_RE.test(container) || (user && !CONTAINER_RE.test(user))) throw new Error("invalid container/user name");
+  return `docker exec${stdin ? " -i" : ""}${user ? ` -u ${user}` : ""} ${container} sh -c ${decoded}`;
 }
 
 /** Remote realpath + type + size; refuses before any content is read. */
 function stat(vmId: string, path: string, container?: string) {
-  const r = sshExec(vmId, where(`p=$(realpath -e ${shq(path)}) && printf '%s\\n' "$p" && stat -c '%F|%s' "$p"`, container), 15_000);
+  const r = sshExec(vmId, where(`p=$(readlink -f ${shq(path)}) && [ -e "$p" ] && printf '%s\\n' "$p" && stat -c '%F|%s' "$p" || { echo "no such file: ${path.replace(/[^A-Za-z0-9_./ -]/g, "?")}" >&2; exit 1; }`, container), 15_000);
   if (!r.ok) return { ok: false as const, why: (r.stderr || r.stdout).trim() || `exit ${r.exitCode}` };
   const [real, info] = r.stdout.trim().split("\n");
   const [type, size] = (info ?? "").split("|");
@@ -136,14 +145,14 @@ export function registerVmFilesTools(server: McpServer) {
       // symlink at the target, honour overwrite, then write from stdin.
       const script = [
         `mkdir -p ${shq(dir)}`,
-        `rd=$(realpath -e ${shq(dir)}) || exit 10`,
+        `rd=$(readlink -f ${shq(dir)}) && [ -d "$rd" ] || exit 10`,
         `case "$rd" in ${shq(t.root.root)}|${shq(t.root.root)}/*) ;; *) echo "ESCAPE $rd" >&2; exit 11;; esac`,
         `[ -L ${shq(p)} ] && { echo SYMLINK >&2; exit 12; }`,
         overwrite ? "true" : `[ -e ${shq(p)} ] && { echo EXISTS >&2; exit 13; }`,
         `base64 -d > ${shq(p)}`,
         `stat -c %s ${shq(p)}`,
       ].join(" && ");
-      const cmd = `printf %s ${shq(data.toString("base64"))} | ${where(script, container, t.root.user, true)}`;
+      const cmd = `echo ${data.toString("base64")} | ${where(script, container, t.root.user, true)}`;
       const r = sshExec(vmId, cmd, 30_000);
       if (!r.ok) {
         const codes: Record<number, string> = { 10: "parent dir unresolvable", 11: "parent resolves outside the work root", 12: "target is a symlink", 13: "file exists (pass overwrite=true)" };
