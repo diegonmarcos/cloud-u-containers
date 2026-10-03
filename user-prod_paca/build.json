@@ -1,6 +1,7 @@
 {
   "name": "paca",
   "description": "Paca — AI-native open-source project management (Jira/Trello alternative). Core stack: Go API + React web + Socket.IO realtime + Postgres + Valkey, behind an nginx gateway. MinIO + ai-agent intentionally dropped (S3 = OCI; no LLM agent in v1).",
+  "_upstream_source_doc": "pacaai/paca-{api,web,realtime} are built from https://github.com/Paca-AI/paca (Apache-2.0); running images 0.18.4 = commit b0d1e01d75c2b8efb5730b0e30f351e0f180f57b per their OCI labels (#839).",
   "category": "app",
   "domain": "paca.diegonmarcos.com",
   "ports": {

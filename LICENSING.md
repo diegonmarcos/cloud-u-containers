@@ -53,14 +53,15 @@ upstream counterpart, so "new" is an upper bound on what the owner wrote.
 
 | Module | Upstream @ pin | Licence | Files verbatim / modified / new | % lines upstream-derived |
 |---|---|---|---|---|
-| cloud-webmail | bulwarkmail/webmail @ `2f1192bb` (1.9.2) | AGPL-3.0-only | 832 / 7 / 2 | 99.8 |
+| cloud-webmail | bulwarkmail/webmail @ `2f1192bb` (1.9.2) | AGPL-3.0-only | 829 / 10 / 2 | 99.8 |
 | headroom-my-ai-api | chopratejas/headroom @ `9f7f3adf` (0.26.0) | Apache-2.0 | 576 / 1 / 1 | 100.0 |
 | headroom-claude-api | same | Apache-2.0 | 576 / 1 / 1 | 100.0 |
-| google-workspace-mcp | taylorwilsdon/google_workspace_mcp, **no pin recorded** | MIT | not measured | — |
-| ponytail | **no upstream URL or pin recorded** | MIT | not measured | — |
+| google-workspace-mcp | taylorwilsdon/google_workspace_mcp @ `92b4a784` (v1.14.3, inferred from `pyproject.toml`) | MIT | 89 / 22 / 6 | 92.0 |
+| ponytail | DietrichGebert/ponytail, **no pin recorded** | MIT | not measured | — |
 
 The webmail changes are owner-authored edits to the composer, identities, mail app, JMAP client
-and settings store (+2 new JMAP paging files); the Headroom change is one line in
+and settings store (+2 new JMAP paging files), plus the AGPL §13 source-offer link (login footer,
+About, `next.config.ts`); the Headroom change is one line in
 `headroom/copilot_auth.py` plus `VENDORED.md`. Every modified file stays under its upstream
 licence.
 
@@ -96,14 +97,35 @@ changed by this inventory.
 | # | Finding | Evidence | Fix |
 |---|---|---|---|
 | 1 | No `LICENSE`: the own code is public but unlicensed | repo root | decide #815, then add `LICENSE` |
-| 2 | Bulwark webmail is AGPL-3.0 and **modified** (6 files edited, 2 added), served to network users as webmail.diegonmarcos.com: AGPL §13 requires offering those users the modified source. `VENDOR.md` still says "vendored verbatim (no code edits)" | `licenses/provenance/cloud-webmail.tsv` | add a source link (this repository's path) in the webmail UI / about box; correct `VENDOR.md` |
-| 3 | `infra-db_redis` pulls the untagged `redis:alpine`, which floats to Redis 8 (RSALv2 / SSPLv1 / AGPLv3, at the user's choice) while other services pin `redis:7-*` (BSD-3-Clause) | `infra-db_redis/build.json` | pin `redis:7-alpine`, or move to `valkey/valkey` (BSD-3-Clause) as `user-prod_paca` already does |
+| 2 | Bulwark webmail is AGPL-3.0 and **modified** (6 files edited, 2 added), served to network users as webmail.diegonmarcos.com: AGPL §13 requires offering those users the modified source. `VENDOR.md` still says "vendored verbatim (no code edits)" | `licenses/provenance/cloud-webmail.tsv` | add a source link (this repository's path) in the webmail UI / about box; correct `VENDOR.md` **Status #839:** done — VENDOR.md corrected (7 owner edits + 3 source-offer edits, 2 added), source link in UI (6a). |
+| 3 | `infra-db_redis` pulls the untagged `redis:alpine`, which floats to Redis 8 (RSALv2 / SSPLv1 / AGPLv3, at the user's choice) while other services pin `redis:7-*` (BSD-3-Clause) | `infra-db_redis/build.json` | pin `redis:7-alpine`, or move to `valkey/valkey` (BSD-3-Clause) as `user-prod_paca` already does **Status #839:** blocked — live container runs Redis 8.10.2, whose RDB/AOF a 7.2 image cannot load; pinning 7.2 would be a format downgrade. Owner: migrate data to valkey (dump/restore) or pin `redis:8.x` under its AGPLv3 option. |
 | 4 | SurrealDB is BUSL-1.1 (kg-store, kg-store-pub): self-hosted use is permitted, offering it as a database service to third parties is not | `docker:surrealdb/surrealdb` | keep kg-store internal / owner-only; record the decision |
 | 5 | Own images on GHCR (`*-binaries`, e.g. matrix-element, mautrix-whatsapp, mail-puller) redistribute GPL/AGPL software built by this fleet | `docker:ghcr.io/diegonmarcos/*` entries | keep each image's build recipe public (it is) and add an OCI `org.opencontainers.image.source` / licence label naming the upstream |
 | 6 | `user-data_scrappers-api` depends on gallery-dl (GPL-2.0-only); the own service image that bundles it is then a GPL-2.0 combination when distributed | `pypi:gallery-dl` | invoke gallery-dl as a separate program, or accept GPL-2.0 for that image |
-| 7 | Vendored trees without a recorded pin: google_workspace_mcp (repo known, revision not), ponytail (neither) | `licenses/upstreams.json` (`measure: false`) | write a `VENDORED.md` with repo + commit beside each, then run the provenance script |
-| 8 | Paca images (`pacaai/paca-api`, `-realtime`, `-web`) have no recorded source repository, so no licence could be read | `NOASSERTION` in the inventory | record the source repo in `user-prod_paca/build.json`, then the licence in `curated.json::docker_licences` |
+| 7 | Vendored trees without a recorded pin: google_workspace_mcp (repo known, revision not), ponytail (neither) | `licenses/upstreams.json` (`measure: false`) | write a `VENDORED.md` with repo + commit beside each, then run the provenance script **Status #839:** google_workspace_mcp pinned (VENDORED.md, measured); ponytail repo URL recorded, revision unknown. |
+| 8 | Paca images (`pacaai/paca-api`, `-realtime`, `-web`) have no recorded source repository, so no licence could be read | `NOASSERTION` in the inventory | record the source repo in `user-prod_paca/build.json`, then the licence in `curated.json::docker_licences` **Status #839:** done — Paca-AI/paca, Apache-2.0, recorded in curated.json and build.json. |
 | 9 | Distribution base images and the rootfs packages carry per-package licences that are not itemised | `rootfs_packages` | needed only if images are distributed to third parties: generate an SBOM (e.g. syft) per image then |
+
+## 6a. Source offers (#839)
+
+- **Bulwark webmail (AGPL-3.0, modified, network-served):** `VENDOR.md` now lists every edited and
+  added file against `2f1192bb`, and the served UI links (login footer "Source code (AGPL-3.0)",
+  Settings → About) to `user-comm_cloud-webmail/src/code/arm64/webapp` in this repository
+  (`ARG SOURCE_URL` in its Dockerfile).
+- **GPL/AGPL software in own `*-binaries` images** (e.g. matrix-element, mautrix-whatsapp,
+  mail-puller and any image whose inventory entry is GPL/AGPL): each image is built only from
+  this public repository plus the upstream it names; for every such image the corresponding source
+  is (a) the upstream project at the version the service's `build.json` / Dockerfile pins and
+  (b) the build recipe in this repository at the commit the image was built from. Anyone who
+  received such an image can request the same source from the owner (via an issue on this repository) for
+  three years after the image was published.
+- **gallery-dl in `user-data_scrappers-api` (GPL-2.0-only):** the image installs gallery-dl
+  unmodified from PyPI at the version declared in that service; its source is the matching
+  release at https://github.com/mikf/gallery-dl (and the PyPI sdist). Same written offer as above
+  applies to anyone the image is distributed to.
+
+Whether to keep these combinations, separate the processes, or relicense is the owner's policy
+(conflicts 4-6).
 
 ## 7. Keeping it true
 

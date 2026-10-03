@@ -492,6 +492,18 @@
    "licence": "MIT AND LicenseRef-OS-Distribution",
    "note": "Node.js runtime MIT; the base distribution's packages keep their own licences."
   },
+  "pacaai/paca-api": {
+   "licence": "Apache-2.0",
+   "note": "Source https://github.com/Paca-AI/paca (OCI labels source/revision on the running image, 0.18.4 @ b0d1e01d75c2b8efb5730b0e30f351e0f180f57b); LICENSE at that revision read 2026-10-03 (#839)."
+  },
+  "pacaai/paca-realtime": {
+   "licence": "Apache-2.0",
+   "note": "Source https://github.com/Paca-AI/paca (OCI labels source/revision on the running image, 0.18.4 @ b0d1e01d75c2b8efb5730b0e30f351e0f180f57b); LICENSE at that revision read 2026-10-03 (#839)."
+  },
+  "pacaai/paca-web": {
+   "licence": "Apache-2.0",
+   "note": "Source https://github.com/Paca-AI/paca (OCI labels source/revision on the running image, 0.18.4 @ b0d1e01d75c2b8efb5730b0e30f351e0f180f57b); LICENSE at that revision read 2026-10-03 (#839)."
+  },
   "photoprism/photoprism": {
    "licence": "AGPL-3.0-only"
   },

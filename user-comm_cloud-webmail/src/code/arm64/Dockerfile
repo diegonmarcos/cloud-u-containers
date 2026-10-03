@@ -15,6 +15,10 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # next.config.ts's `git rev-parse` fallback can't run — pass the pin explicitly.
 ARG GIT_COMMIT=2f1192b
 ENV GIT_COMMIT=$GIT_COMMIT
+# AGPL-3.0 §13: link to the exact corresponding source of this MODIFIED build
+# (this repo path at the commit that last changed webapp/). Bump with webapp/.
+ARG SOURCE_URL=https://github.com/diegonmarcos/cloud-u-containers/tree/main/user-comm_cloud-webmail/src/code/arm64/webapp
+ENV SOURCE_URL=$SOURCE_URL
 # Bulwark's package.json build script uses --turbopack, but its Dockerfile
 # pins --webpack for the production image; match that.
 RUN npx next build --webpack
@@ -22,7 +26,7 @@ RUN npx next build --webpack
 FROM node:24-alpine AS runner
 LABEL org.opencontainers.image.title="Cloud Webmail"
 LABEL org.opencontainers.image.description="Cloud Webmail — Stalwart-native JMAP webmail (build of bulwarkmail/webmail)"
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-u-containers"
 LABEL org.opencontainers.image.licenses="AGPL-3.0-only"
 LABEL cloud.diegonmarcos.upstream="bulwarkmail/webmail@1.9.2"
 WORKDIR /app

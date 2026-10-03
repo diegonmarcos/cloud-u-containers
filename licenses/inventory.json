@@ -22,13 +22,12 @@
   },
   "docker": {
    "LicenseRef-NoLicenseGranted": 43,
-   "Apache-2.0": 6,
+   "Apache-2.0": 9,
    "AGPL-3.0-only": 5,
    "MIT": 5,
    "GPL-3.0-only": 4,
    "LicenseRef-OS-Distribution": 4,
    "BSD-3-Clause": 3,
-   "NOASSERTION": 3,
    "GPL-2.0-only": 2,
    "GPL-3.0-only AND MIT": 2,
    "MIT OR Apache-2.0": 2,
@@ -3780,8 +3779,9 @@
    ],
    "version": "pacaai/paca-api:latest",
    "scope": "runtime",
-   "licence": "NOASSERTION",
-   "licence_source": "registries publish no reliable licence metadata for images; add to licenses/curated.json::docker_licences"
+   "licence": "Apache-2.0",
+   "licence_source": "licenses/curated.json::docker_licences[pacaai/paca-api]",
+   "note": "Source https://github.com/Paca-AI/paca (OCI labels source/revision on the running image, 0.18.4 @ b0d1e01d75c2b8efb5730b0e30f351e0f180f57b); LICENSE at that revision read 2026-10-03 (#839)."
   },
   "docker:pacaai/paca-realtime": {
    "kind": "docker",
@@ -3791,8 +3791,9 @@
    ],
    "version": "pacaai/paca-realtime:latest",
    "scope": "runtime",
-   "licence": "NOASSERTION",
-   "licence_source": "registries publish no reliable licence metadata for images; add to licenses/curated.json::docker_licences"
+   "licence": "Apache-2.0",
+   "licence_source": "licenses/curated.json::docker_licences[pacaai/paca-realtime]",
+   "note": "Source https://github.com/Paca-AI/paca (OCI labels source/revision on the running image, 0.18.4 @ b0d1e01d75c2b8efb5730b0e30f351e0f180f57b); LICENSE at that revision read 2026-10-03 (#839)."
   },
   "docker:pacaai/paca-web": {
    "kind": "docker",
@@ -3802,8 +3803,9 @@
    ],
    "version": "pacaai/paca-web:latest",
    "scope": "runtime",
-   "licence": "NOASSERTION",
-   "licence_source": "registries publish no reliable licence metadata for images; add to licenses/curated.json::docker_licences"
+   "licence": "Apache-2.0",
+   "licence_source": "licenses/curated.json::docker_licences[pacaai/paca-web]",
+   "note": "Source https://github.com/Paca-AI/paca (OCI labels source/revision on the running image, 0.18.4 @ b0d1e01d75c2b8efb5730b0e30f351e0f180f57b); LICENSE at that revision read 2026-10-03 (#839)."
   },
   "docker:photoprism/photoprism": {
    "kind": "docker",

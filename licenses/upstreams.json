@@ -34,19 +34,19 @@
    "upstream": "google_workspace_mcp (Taylor Wilsdon)",
    "licence": "MIT",
    "repo": "https://github.com/taylorwilsdon/google_workspace_mcp.git",
-   "ref": "",
-   "measure": false,
-   "_doc_measure": "No vendored revision is recorded anywhere in the tree, so there is no base to measure against; pin it (a VENDORED.md with the commit) and set measure: true."
+   "ref": "92b4a7847fa78713e98ffe9562a5adee2c926ec7",
+   "measure": true,
+   "pin_doc": "infra-api_google-workspace-mcp/src/code/VENDORED.md (tag v1.14.3, inferred from pyproject.toml version; #839)"
   },
   {
    "id": "ponytail",
    "path": "user-ai_my-ai_claude-api/src/code/claude-config/ponytail",
    "upstream": "ponytail (Claude Code hooks + skills, DietrichGebert)",
    "licence": "MIT",
-   "repo": "",
+   "repo": "https://github.com/DietrichGebert/ponytail.git",
    "ref": "",
    "measure": false,
-   "_doc_measure": "Neither the upstream repository URL nor a revision is recorded in the tree (LICENSE names the copyright holder only); not measured, never guessed."
+   "_doc_measure": "Upstream URL recorded from skills/ponytail-help/SKILL.md (#839). The vendored revision is NOT recorded anywhere (no version file); not measured, never guessed."
   }
  ]
 }

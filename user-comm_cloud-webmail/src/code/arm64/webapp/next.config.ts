@@ -57,6 +57,8 @@ const nextConfig: NextConfig = {
   },
   env: {
     NEXT_PUBLIC_GIT_COMMIT: gitCommitHash,
+    // AGPL-3.0 §13 corresponding-source offer (link shown on login + About).
+    NEXT_PUBLIC_SOURCE_URL: process.env.SOURCE_URL?.trim() || "https://github.com/diegonmarcos/cloud-u-containers/tree/main/user-comm_cloud-webmail/src/code/arm64/webapp",
     NEXT_PUBLIC_APP_VERSION: appVersion,
     NEXT_PUBLIC_BASE_PATH: basePath,
     NEXT_PUBLIC_DEV_MOCK_JMAP: process.env.DEV_MOCK_JMAP ?? "",

@@ -164,6 +164,15 @@ export function AboutDataSettings() {
           >
             GitHub <ExternalLink className="w-3 h-3" />
           </a>
+          <a
+            href={process.env.NEXT_PUBLIC_SOURCE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-agpl-source-offer
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Source of this modified build (AGPL-3.0) <ExternalLink className="w-3 h-3" />
+          </a>
         </div>
       </div>
 

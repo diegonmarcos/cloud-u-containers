@@ -872,7 +872,9 @@ export default function LoginPage() {
                 )}
               </div>
             )}
-            {loginShowVersion && <VersionBadge />}
+            <a href={process.env.NEXT_PUBLIC_SOURCE_URL} target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors" data-agpl-source-offer>Source code (AGPL-3.0)</a>
+            <a href={process.env.NEXT_PUBLIC_SOURCE_URL} target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors" data-agpl-source-offer>Source code (AGPL-3.0)</a>
+          {loginShowVersion && <VersionBadge />}
           </div>
         </div>
       </div>

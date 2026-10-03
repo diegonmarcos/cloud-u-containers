@@ -10,7 +10,7 @@ user-comm_cloud-webmail/src/code/arm64/webapp/app/(main)/[locale]/contacts/[[...
 user-comm_cloud-webmail/src/code/arm64/webapp/app/(main)/[locale]/error.tsx	verbatim		48	0	txt
 user-comm_cloud-webmail/src/code/arm64/webapp/app/(main)/[locale]/files/[[...segments]]/page.tsx	verbatim		11	0	txt
 user-comm_cloud-webmail/src/code/arm64/webapp/app/(main)/[locale]/layout.tsx	verbatim		54	0	txt
-user-comm_cloud-webmail/src/code/arm64/webapp/app/(main)/[locale]/login/page.tsx	verbatim		1307	0	txt
+user-comm_cloud-webmail/src/code/arm64/webapp/app/(main)/[locale]/login/page.tsx	modified	app/(main)/[locale]/login/page.tsx	1306	3	txt
 user-comm_cloud-webmail/src/code/arm64/webapp/app/(main)/[locale]/mail/[[...segments]]/page.tsx	verbatim		19	0	txt
 user-comm_cloud-webmail/src/code/arm64/webapp/app/(main)/[locale]/page.tsx	verbatim		7	0	txt
 user-comm_cloud-webmail/src/code/arm64/webapp/app/(main)/[locale]/pro/page.tsx	verbatim		508	0	txt
@@ -263,7 +263,7 @@ user-comm_cloud-webmail/src/code/arm64/webapp/components/service-worker-registra
 user-comm_cloud-webmail/src/code/arm64/webapp/components/settings/__tests__/keyword-settings.test.tsx	verbatim		296	0	txt
 user-comm_cloud-webmail/src/code/arm64/webapp/components/settings/__tests__/message-list-order-settings.test.tsx	verbatim		105	0	txt
 user-comm_cloud-webmail/src/code/arm64/webapp/components/settings/__tests__/settings-section.test.tsx	verbatim		51	0	txt
-user-comm_cloud-webmail/src/code/arm64/webapp/components/settings/about-data-settings.tsx	verbatim		203	0	txt
+user-comm_cloud-webmail/src/code/arm64/webapp/components/settings/about-data-settings.tsx	modified	components/settings/about-data-settings.tsx	203	9	txt
 user-comm_cloud-webmail/src/code/arm64/webapp/components/settings/account-security-settings.tsx	verbatim		1046	0	txt
 user-comm_cloud-webmail/src/code/arm64/webapp/components/settings/account-settings.tsx	verbatim		403	0	txt
 user-comm_cloud-webmail/src/code/arm64/webapp/components/settings/address-book-management-settings.tsx	verbatim		320	0	txt
@@ -731,7 +731,7 @@ user-comm_cloud-webmail/src/code/arm64/webapp/locales/sk/common.json	verbatim		3
 user-comm_cloud-webmail/src/code/arm64/webapp/locales/tr/common.json	verbatim		3495	0	txt
 user-comm_cloud-webmail/src/code/arm64/webapp/locales/uk/common.json	verbatim		3495	0	txt
 user-comm_cloud-webmail/src/code/arm64/webapp/locales/zh/common.json	verbatim		3495	0	txt
-user-comm_cloud-webmail/src/code/arm64/webapp/next.config.ts	verbatim		62	0	txt
+user-comm_cloud-webmail/src/code/arm64/webapp/next.config.ts	modified	next.config.ts	62	2	txt
 user-comm_cloud-webmail/src/code/arm64/webapp/package-lock.json	verbatim		10502	0	txt
 user-comm_cloud-webmail/src/code/arm64/webapp/package.json	verbatim		113	0	txt
 user-comm_cloud-webmail/src/code/arm64/webapp/postcss.config.mjs	verbatim		4	0	txt

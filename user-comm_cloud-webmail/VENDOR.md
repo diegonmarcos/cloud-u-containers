@@ -15,11 +15,44 @@ prebuilt ghcr image and this is NOT a GitHub fork.
 | Vendored at | `src/code/arm64/webapp/` |
 | Our image | `ghcr.io/diegonmarcos/cloud-webmail-binaries:latest` (Type A) |
 
-## Branding / config (env only — source unmodified)
+## Modifications vs the pin (AGPL-3.0 §5) — this is a MODIFIED build
 
-The upstream source is vendored **verbatim** (no code edits). All naming and
-behaviour are set at runtime through env in `src/compose.nix`, which Bulwark
-reads (see `webapp/.env.example`):
+The tree is **not** verbatim. Against `2f1192bb` (measured by
+`.github/scripts/licence-provenance.py`, per file in
+`licenses/provenance/cloud-webmail.tsv`) these files differ, all under the
+upstream AGPL-3.0-only licence:
+
+Edited (owner changes — composer, identities, mail app, JMAP paging, settings):
+- `components/email/email-composer.tsx`
+- `components/identity/identity-form.tsx`
+- `components/identity/identity-manager-modal.tsx`
+- `components/mail/mail-app.tsx`
+- `lib/jmap/client.ts`
+- `stores/settings-store.ts`
+- `locales/en/common.json` (strings for the above)
+
+Edited (AGPL §13 source offer, #839):
+- `next.config.ts` (`NEXT_PUBLIC_SOURCE_URL`)
+- `app/(main)/[locale]/login/page.tsx` (footer link "Source code (AGPL-3.0)")
+- `components/settings/about-data-settings.tsx` (About link)
+
+Added:
+- `lib/jmap/page-anchors.ts`
+- `lib/jmap/__tests__/query-anchor.test.ts`
+
+## AGPL-3.0 §13 source offer
+
+Users interacting with webmail.diegonmarcos.com get a visible link (login
+footer and Settings → About) to the corresponding source: this directory in
+`github.com/diegonmarcos/cloud-u-containers`
+(`user-comm_cloud-webmail/src/code/arm64/webapp`), set by `ARG SOURCE_URL` in
+`src/code/arm64/Dockerfile`. Keep that URL pointing at the repo path (and,
+when bumped, a commit) that matches what is deployed.
+
+## Branding / config (env)
+
+Naming and behaviour are set at runtime through env in `src/compose.nix`,
+which Bulwark reads (see `webapp/.env.example`):
 
 - `APP_NAME="Cloud Webmail"`, `APP_SHORT_NAME`, `APP_DESCRIPTION`
 - `JMAP_SERVER_URL=https://jmap.diegonmarcos.com` (default Stalwart server)
@@ -40,7 +73,7 @@ is the alternative, configurable from the admin dashboard.
 
 ## Refreshing the vendor
 
-Anonymous clone at the new tag, replace `src/code/arm64/webapp/` wholesale,
+Anonymous clone at the new tag, replace `src/code/arm64/webapp/` wholesale (then re-apply the modifications listed above),
 update the tag + commit here and in `build.json._doc.upstream` + the Dockerfile
 comment/`ARG GIT_COMMIT`/label, then re-ship:
 

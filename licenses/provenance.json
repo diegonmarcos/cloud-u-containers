@@ -4,20 +4,20 @@
     "cloud-webmail": {
       "detected_base": null,
       "files": {
-        "modified": 7,
+        "modified": 10,
         "new": 2,
         "total": 841,
-        "verbatim": 832
+        "verbatim": 829
       },
       "git": {
         "commits_touching": 6,
         "first_added": "f874a2a 2026-09-03"
       },
       "lines": {
-        "new": 461,
+        "new": 475,
         "pct_upstream_derived": 99.8,
-        "total": 277595,
-        "upstream_derived": 277134
+        "total": 277608,
+        "upstream_derived": 277133
       },
       "measured_on": "2026-10-03",
       "measured_sha": "2f1192bb3285dea2c8b8ece461d52967fe0e6706",
@@ -25,20 +25,39 @@
       "pin": "2f1192bb3285dea2c8b8ece461d52967fe0e6706",
       "pin_source": "user-comm_cloud-webmail/VENDOR.md (tag 1.9.2)",
       "repo": "https://github.com/bulwarkmail/webmail.git",
-      "tree_measured_at": "afac71b89",
+      "tree_measured_at": "d8ce024bb",
       "upstream": "Bulwark Webmail (fork lineage root-fr/jmap-webmail, MIT)",
       "upstream_files_not_in_tree": 62,
       "upstream_licence": "AGPL-3.0-only"
     },
     "google-workspace-mcp": {
-      "measured": false,
+      "detected_base": null,
+      "files": {
+        "modified": 22,
+        "new": 7,
+        "total": 118,
+        "verbatim": 89
+      },
+      "git": {
+        "commits_touching": 8,
+        "first_added": "81ed282 2026-08-20"
+      },
+      "lines": {
+        "new": 2769,
+        "pct_upstream_derived": 92.0,
+        "total": 34529,
+        "upstream_derived": 31760
+      },
+      "measured_on": "2026-10-03",
+      "measured_sha": "92b4a7847fa78713e98ffe9562a5adee2c926ec7",
       "path": "infra-api_google-workspace-mcp/src/code",
-      "pin": "",
-      "pin_source": "licenses/upstreams.json",
+      "pin": "92b4a7847fa78713e98ffe9562a5adee2c926ec7",
+      "pin_source": "infra-api_google-workspace-mcp/src/code/VENDORED.md (tag v1.14.3, inferred from pyproject.toml version; #839)",
       "repo": "https://github.com/taylorwilsdon/google_workspace_mcp.git",
+      "tree_measured_at": "d8ce024bb",
       "upstream": "google_workspace_mcp (Taylor Wilsdon)",
-      "upstream_licence": "MIT",
-      "why": "No vendored revision is recorded anywhere in the tree, so there is no base to measure against; pin it (a VENDORED.md with the commit) and set measure: true."
+      "upstream_files_not_in_tree": 25,
+      "upstream_licence": "MIT"
     },
     "headroom-claude-api": {
       "detected_base": null,
@@ -64,7 +83,7 @@
       "pin": "9f7f3adfea03710d5e67c4c630b3c8061ff6d161",
       "pin_source": "user-ai_my-ai_claude-api/src/code/vendor/headroom/VENDORED.md (upstream 0.26.0)",
       "repo": "https://github.com/chopratejas/headroom.git",
-      "tree_measured_at": "afac71b89",
+      "tree_measured_at": "d8ce024bb",
       "upstream": "Headroom (context compression engine)",
       "upstream_files_not_in_tree": 2690,
       "upstream_licence": "Apache-2.0"
@@ -79,7 +98,7 @@
       },
       "git": {
         "commits_touching": 1,
-        "first_added": "2f03e34 2026-08-19"
+        "first_added": "81ed282 2026-08-20"
       },
       "lines": {
         "new": 45,
@@ -93,7 +112,7 @@
       "pin": "9f7f3adfea03710d5e67c4c630b3c8061ff6d161",
       "pin_source": "user-ai_my-ai-api/src/code/vendor/headroom/VENDORED.md (upstream 0.26.0)",
       "repo": "https://github.com/chopratejas/headroom.git",
-      "tree_measured_at": "afac71b89",
+      "tree_measured_at": "d8ce024bb",
       "upstream": "Headroom (context compression engine)",
       "upstream_files_not_in_tree": 2690,
       "upstream_licence": "Apache-2.0"
@@ -103,10 +122,10 @@
       "path": "user-ai_my-ai_claude-api/src/code/claude-config/ponytail",
       "pin": "",
       "pin_source": "licenses/upstreams.json",
-      "repo": "",
+      "repo": "https://github.com/DietrichGebert/ponytail.git",
       "upstream": "ponytail (Claude Code hooks + skills, DietrichGebert)",
       "upstream_licence": "MIT",
-      "why": "Neither the upstream repository URL nor a revision is recorded in the tree (LICENSE names the copyright holder only); not measured, never guessed."
+      "why": "Upstream URL recorded from skills/ponytail-help/SKILL.md (#839). The vendored revision is NOT recorded anywhere (no version file); not measured, never guessed."
     }
   }
 }
