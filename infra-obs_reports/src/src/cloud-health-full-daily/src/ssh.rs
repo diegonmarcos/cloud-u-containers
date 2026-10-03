@@ -274,6 +274,8 @@ timeout 10 sh -c 'docker ps -a --format "{{{{.Names}}}}" 2>/dev/null | while rea
   mounts=$(docker inspect "$ctr" --format "{{{{range .Mounts}}}}{{{{.Name}}}}={{{{.Destination}}}} {{{{end}}}}" 2>/dev/null | tr -d "\n")
   [ -n "$mounts" ] && echo "$ctr|$mounts"
 done' 2>/dev/null || echo ""
+echo "===DISK_JANITOR==="
+docker exec disk-janitor cat /var/log/disk-janitor/metrics.json 2>/dev/null | head -1 || echo ""
 echo "===KERNEL==="
 uname -r 2>/dev/null || echo "?"
 echo "===WG_TRANSFER==="
@@ -598,6 +600,9 @@ echo "===END==="
             }
         }
     }
+
+    // disk-janitor (#811): last pass metrics JSON (one line), empty when absent
+    data.disk_janitor = section(&raw, "DISK_JANITOR", "KERNEL").trim().to_string();
 
     // Kernel version
     data.kernel = section(&raw, "KERNEL", "WG_TRANSFER");

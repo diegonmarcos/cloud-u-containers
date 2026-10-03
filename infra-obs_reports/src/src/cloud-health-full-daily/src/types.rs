@@ -234,6 +234,9 @@ pub struct VmData {
     pub swap: String,
     pub swap_pct: u32,
     pub log_errors: Vec<(String, u32)>,
+    /// #811: raw metrics.json line of the disk-janitor's last pass ("" if not deployed)
+    #[serde(default)]
+    pub disk_janitor: String,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]

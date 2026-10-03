@@ -1376,6 +1376,9 @@ fn render_docker_disk(h: &mut String, data: &ReportData) {
                 td(&format!("reclaimable: {}", df.reclaimable), C_DIM, "11px", "right"),
             ).unwrap();
         }
+        if !vm.disk_janitor.is_empty() {
+            write!(h, r#"<tr><td colspan="4" style="padding:4px 8px;color:{C_DIM};font-size:11px;font-family:{FONT};">disk-janitor last pass: {}</td></tr>"#, html_escape_janitor(&vm.disk_janitor)).unwrap();
+        }
     }
     section_end(h);
 }
@@ -3470,4 +3473,9 @@ fn render_appendix(h: &mut String, data: &ReportData) {
         )
         .unwrap();
     }
+}
+
+/// #811: the janitor line is JSON from a container; escape it before embedding.
+fn html_escape_janitor(s: &str) -> String {
+    s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;")
 }
