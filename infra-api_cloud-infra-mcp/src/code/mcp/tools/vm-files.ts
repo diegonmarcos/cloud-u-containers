@@ -146,14 +146,15 @@ export function registerVmFilesTools(server: McpServer) {
       // is (a symlinked component could point out of the root), refuse a
       // symlink at the target, honour overwrite, then write from stdin.
       const script = [
+        "set -e",
         `mkdir -p ${shq(dir)}`,
-        `rd=$(readlink -f ${shq(dir)}) && [ -d "$rd" ] || exit 10`,
-        `case "$rd" in ${shq(t.root.root)}|${shq(t.root.root)}/*) ;; *) echo "ESCAPE $rd" >&2; exit 11;; esac`,
-        `[ -L ${shq(p)} ] && { echo SYMLINK >&2; exit 12; }`,
-        overwrite ? "true" : `[ -e ${shq(p)} ] && { echo EXISTS >&2; exit 13; }`,
+        `rd=$(readlink -f ${shq(dir)}); [ -d "$rd" ] || exit 10`,
+        `case "$rd" in ${shq(t.root.root)}|${shq(t.root.root)}/*) ;; *) exit 11;; esac`,
+        `if [ -L ${shq(p)} ]; then exit 12; fi`,
+        overwrite ? ":" : `if [ -e ${shq(p)} ]; then exit 13; fi`,
         `base64 -d > ${shq(p)}`,
         `stat -c %s ${shq(p)}`,
-      ].join(" && ");
+      ].join("\n");
       const cmd = `echo ${data.toString("base64")} | ${where(script, container, t.root.user, true)}`;
       const r = sshExec(vmId, cmd, 30_000);
       if (!r.ok) {
