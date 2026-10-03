@@ -311,5 +311,11 @@
     "image": "caddy",
     "dockerfile": "Dockerfile",
     "arch": "amd64"
+  },
+  "tests": {
+    "authelia-rd-keeps-prefix": {
+      "cmd": "bash test/test-authelia-rd-keeps-prefix.sh",
+      "cwd": "src"
+    }
   }
 }
