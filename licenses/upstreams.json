@@ -1,0 +1,52 @@
+{
+ "_doc": "Upstream projects whose source is held IN this tree (vendored copies), with the pinned revision they are measured against (.github/scripts/licence-provenance.py -> licenses/provenance.json). The pin is copied from the in-tree vendoring record named in pin_doc; a module whose vendoring recorded no revision is NOT measured (measure: false) - a base is never guessed. Every directory carrying a foreign LICENSE must sit under a module here or be declared in licenses/curated.json::directories.",
+ "modules": [
+  {
+   "id": "headroom-my-ai-api",
+   "path": "user-ai_my-ai-api/src/code/vendor/headroom",
+   "upstream": "Headroom (context compression engine)",
+   "licence": "Apache-2.0",
+   "repo": "https://github.com/chopratejas/headroom.git",
+   "ref": "9f7f3adfea03710d5e67c4c630b3c8061ff6d161",
+   "pin_doc": "user-ai_my-ai-api/src/code/vendor/headroom/VENDORED.md (upstream 0.26.0)"
+  },
+  {
+   "id": "headroom-claude-api",
+   "path": "user-ai_my-ai_claude-api/src/code/vendor/headroom",
+   "upstream": "Headroom (context compression engine)",
+   "licence": "Apache-2.0",
+   "repo": "https://github.com/chopratejas/headroom.git",
+   "ref": "9f7f3adfea03710d5e67c4c630b3c8061ff6d161",
+   "pin_doc": "user-ai_my-ai_claude-api/src/code/vendor/headroom/VENDORED.md (upstream 0.26.0)"
+  },
+  {
+   "id": "cloud-webmail",
+   "path": "user-comm_cloud-webmail/src/code/arm64/webapp",
+   "upstream": "Bulwark Webmail (fork lineage root-fr/jmap-webmail, MIT)",
+   "licence": "AGPL-3.0-only",
+   "repo": "https://github.com/bulwarkmail/webmail.git",
+   "ref": "2f1192bb3285dea2c8b8ece461d52967fe0e6706",
+   "pin_doc": "user-comm_cloud-webmail/VENDOR.md (tag 1.9.2)"
+  },
+  {
+   "id": "google-workspace-mcp",
+   "path": "infra-api_google-workspace-mcp/src/code",
+   "upstream": "google_workspace_mcp (Taylor Wilsdon)",
+   "licence": "MIT",
+   "repo": "https://github.com/taylorwilsdon/google_workspace_mcp.git",
+   "ref": "",
+   "measure": false,
+   "_doc_measure": "No vendored revision is recorded anywhere in the tree, so there is no base to measure against; pin it (a VENDORED.md with the commit) and set measure: true."
+  },
+  {
+   "id": "ponytail",
+   "path": "user-ai_my-ai_claude-api/src/code/claude-config/ponytail",
+   "upstream": "ponytail (Claude Code hooks + skills, DietrichGebert)",
+   "licence": "MIT",
+   "repo": "",
+   "ref": "",
+   "measure": false,
+   "_doc_measure": "Neither the upstream repository URL nor a revision is recorded in the tree (LICENSE names the copyright holder only); not measured, never guessed."
+  }
+ ]
+}

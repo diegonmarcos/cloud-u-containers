@@ -1,0 +1,564 @@
+{
+ "_doc": "Hand-curated half of the licence inventory (#827). Read by .github/scripts/licence-inventory.py. directories: licence of every top-level directory and of every directory carrying a LICENSE/COPYING/NOTICE file that is not an upstream module (licenses/upstreams.json). *_licences: licences of dependencies the registries do not publish machine-readably (container images, flake inputs) - each read from the upstream project's LICENSE file on the date below, never guessed; an image with no entry stays NOASSERTION. Where only a LICENSE file was read, a GPL-family licence is recorded as -only: the 'or later' grant lives in source-file headers, which were not checked. Not legal advice.",
+ "_curated_on": "2026-10-03",
+ "_own_code": "Own code. This repository has no LICENSE file, so no licence is granted today; PROPOSED (owner decides, #815): PolyForm-Noncommercial-1.0.0, the licence cloud-infra already carries.",
+ "scan_skip_prefixes": [
+  "z_archive/"
+ ],
+ "asset_extensions": [
+  ".so",
+  ".jar",
+  ".aar",
+  ".ttf",
+  ".otf",
+  ".woff",
+  ".woff2",
+  ".onnx",
+  ".bin",
+  ".wasm",
+  ".a",
+  ".gguf",
+  ".tflite",
+  ".exe",
+  ".dll",
+  ".dylib",
+  ".apk"
+ ],
+ "maven_repos": [],
+ "directories": {
+  ".githooks": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  ".github": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "_dispatch": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "_shared": {
+   "licence": "LicenseRef-NoLicenseGranted",
+   "note": "Own code. This repository has no LICENSE file, so no licence is granted today; PROPOSED (owner decides, #815): PolyForm-Noncommercial-1.0.0, the licence cloud-infra already carries."
+  },
+  "ab-mic_vaultwarden": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "bc-obs_alerts-api": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-ai_languagetool": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-api_c3-infra-api": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-api_c3-infra-mcp-api": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-api_c3-public-api": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-api_c3-services-api": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-api_c3-services-mcp-api": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-api_c3-specs-docs-mcp": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-api_cloud-drive-mcp": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-api_cloud-infra-mcp": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-api_cloud-mail-mcp": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-api_cloud-mattermost-mcp": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-api_cloud-services-mcp": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-api_cloud-superapp-mcp": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-api_cloud-vault-mcp": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-api_git-proxy-api": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-api_google-personal-mcp": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-api_google-workspace-mcp": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-api_tools-http-to-smtp-proxy-api": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-bld_cloud-builder-x": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-bld_gha-runner": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-cloud_cloudflare-worker": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-cloud_gcloud": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-dat_backup-borg": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-dat_backup-bup": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-dat_gitea": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-db_postlite": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-db_redis": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-net_hickory-dns": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-net_unbound-dns64": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-net_wireguard-mesh": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-net_wireguard-mesh-ws-tunnel": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-net_wireguard-public": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-obs_cloud-spec": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-obs_cloud-spec/dist/assets/site/fonts": {
+   "licence": "Apache-2.0 AND OFL-1.1",
+   "note": "mdBook theme fonts: Open Sans (Apache-2.0, OPEN-SANS-LICENSE.txt) and Source Code Pro (OFL-1.1, SOURCE-CODE-PRO-LICENSE.txt)."
+  },
+  "infra-obs_dagu": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-obs_dbgate": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-obs_matomo": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-obs_ntfy": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-obs_openobserve": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-obs_reports": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-obs_umami": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-ops_agents-tmp-reaper": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-ops_disk-janitor": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-sec_authelia": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-sec_caddy": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-sec_caddy-l4-image": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-sec_caddy-public": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-sec_crowdsec": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-sec_introspect-proxy": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "licenses": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "user-ai_cloud-cgc-pub-mcp": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "user-ai_db-agent": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "user-ai_hermes-agent": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "user-ai_kg-store": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "user-ai_kg-store-pub": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "user-ai_my-ai-api": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "user-ai_my-ai-api/dist/code/arm64/vendor/headroom": {
+   "licence": "Apache-2.0",
+   "note": "Build-staged copy of user-ai_my-ai-api/src/code/vendor/headroom (upstream module headroom-my-ai-api); same licence, LICENSE + NOTICE retained."
+  },
+  "user-ai_my-ai_claude-api": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "user-ai_session-memory": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "user-comm_chat-mattermost": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "user-comm_cloud-webmail": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "user-comm_mail-puller": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "user-comm_matrix-continuwuity": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "user-comm_matrix-element": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "user-comm_matrix-mautrix-whatsapp": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "user-comm_tools-maddy": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "user-comm_tools-stalwart": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "user-data_scrappers-api": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "user-fin_crawlee-cloud": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "user-fin_fin-api": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "user-media_photoprism": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "user-media_playlist-syncer": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "user-news_news-gdelt": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "user-prod_calendar-radicale": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "user-prod_code-server": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "user-prod_contacts-radicale": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "user-prod_etherpad": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "user-prod_filebrowser": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "user-prod_grist": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "user-prod_hedgedoc": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "user-prod_paca": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "user-prod_revealmd": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "user-prod_send": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "user-vault_vaultwarden": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "user-web_front-end": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  }
+ },
+ "assets": {
+  "infra-obs_cloud-spec/dist/assets/site/FontAwesome/fonts/FontAwesome.ttf": {
+   "licence": "OFL-1.1",
+   "note": "Font Awesome 4.7.0 font (font: SIL OFL 1.1; CSS: MIT) - shipped by the mdBook theme."
+  },
+  "infra-obs_cloud-spec/dist/assets/site/FontAwesome/fonts/fontawesome-webfont.ttf": {
+   "licence": "OFL-1.1",
+   "note": "Font Awesome 4.7.0 font (font: SIL OFL 1.1; CSS: MIT) - shipped by the mdBook theme."
+  },
+  "infra-obs_cloud-spec/dist/assets/site/FontAwesome/fonts/fontawesome-webfont.woff": {
+   "licence": "OFL-1.1",
+   "note": "Font Awesome 4.7.0 font (font: SIL OFL 1.1; CSS: MIT) - shipped by the mdBook theme."
+  },
+  "infra-obs_cloud-spec/dist/assets/site/FontAwesome/fonts/fontawesome-webfont.woff2": {
+   "licence": "OFL-1.1",
+   "note": "Font Awesome 4.7.0 font (font: SIL OFL 1.1; CSS: MIT) - shipped by the mdBook theme."
+  },
+  "infra-obs_cloud-spec/dist/assets/site/fonts/open-sans-v17-all-charsets-300.woff2": {
+   "licence": "Apache-2.0",
+   "note": "Open Sans (fonts/OPEN-SANS-LICENSE.txt)."
+  },
+  "infra-obs_cloud-spec/dist/assets/site/fonts/open-sans-v17-all-charsets-300italic.woff2": {
+   "licence": "Apache-2.0",
+   "note": "Open Sans (fonts/OPEN-SANS-LICENSE.txt)."
+  },
+  "infra-obs_cloud-spec/dist/assets/site/fonts/open-sans-v17-all-charsets-600.woff2": {
+   "licence": "Apache-2.0",
+   "note": "Open Sans (fonts/OPEN-SANS-LICENSE.txt)."
+  },
+  "infra-obs_cloud-spec/dist/assets/site/fonts/open-sans-v17-all-charsets-600italic.woff2": {
+   "licence": "Apache-2.0",
+   "note": "Open Sans (fonts/OPEN-SANS-LICENSE.txt)."
+  },
+  "infra-obs_cloud-spec/dist/assets/site/fonts/open-sans-v17-all-charsets-700.woff2": {
+   "licence": "Apache-2.0",
+   "note": "Open Sans (fonts/OPEN-SANS-LICENSE.txt)."
+  },
+  "infra-obs_cloud-spec/dist/assets/site/fonts/open-sans-v17-all-charsets-700italic.woff2": {
+   "licence": "Apache-2.0",
+   "note": "Open Sans (fonts/OPEN-SANS-LICENSE.txt)."
+  },
+  "infra-obs_cloud-spec/dist/assets/site/fonts/open-sans-v17-all-charsets-800.woff2": {
+   "licence": "Apache-2.0",
+   "note": "Open Sans (fonts/OPEN-SANS-LICENSE.txt)."
+  },
+  "infra-obs_cloud-spec/dist/assets/site/fonts/open-sans-v17-all-charsets-800italic.woff2": {
+   "licence": "Apache-2.0",
+   "note": "Open Sans (fonts/OPEN-SANS-LICENSE.txt)."
+  },
+  "infra-obs_cloud-spec/dist/assets/site/fonts/open-sans-v17-all-charsets-italic.woff2": {
+   "licence": "Apache-2.0",
+   "note": "Open Sans (fonts/OPEN-SANS-LICENSE.txt)."
+  },
+  "infra-obs_cloud-spec/dist/assets/site/fonts/open-sans-v17-all-charsets-regular.woff2": {
+   "licence": "Apache-2.0",
+   "note": "Open Sans (fonts/OPEN-SANS-LICENSE.txt)."
+  },
+  "infra-obs_cloud-spec/dist/assets/site/fonts/source-code-pro-v11-all-charsets-500.woff2": {
+   "licence": "OFL-1.1",
+   "note": "Source Code Pro (fonts/SOURCE-CODE-PRO-LICENSE.txt)."
+  },
+  "infra-sec_caddy/src/pgp-wkd-key.bin": {
+   "licence": "LicenseRef-NoLicenseGranted",
+   "licence_source": "licenses/curated.json::assets",
+   "note": "The owner's own OpenPGP public key served for WKD - data, not software."
+  }
+ },
+ "flake_licences": {
+  "github:nixos/nixpkgs": {
+   "licence": "MIT",
+   "note": "The Nix expressions; every package built from it keeps its own licence (meta.license)."
+  }
+ },
+ "docker_licences": {
+  "alpine": {
+   "licence": "LicenseRef-OS-Distribution",
+   "note": "A distribution root filesystem: each package keeps its own licence (mostly GPL/LGPL/BSD/MIT); see the image's package copyright files."
+  },
+  "authelia/authelia": {
+   "licence": "Apache-2.0"
+  },
+  "binwiederhier/ntfy": {
+   "licence": "Apache-2.0 OR GPL-2.0-only",
+   "note": "ntfy is dual-licensed (LICENSE + LICENSE.GPLv2)."
+  },
+  "busybox": {
+   "licence": "GPL-2.0-only",
+   "note": "BusyBox; image is a single static busybox."
+  },
+  "caddy": {
+   "licence": "Apache-2.0"
+  },
+  "crowdsecurity/crowdsec": {
+   "licence": "MIT"
+  },
+  "curlimages/curl": {
+   "licence": "curl"
+  },
+  "dbgate/dbgate": {
+   "licence": "GPL-3.0-only",
+   "note": "DbGate community edition (github.com/dbgate/dbgate)."
+  },
+  "debian": {
+   "licence": "LicenseRef-OS-Distribution",
+   "note": "A distribution root filesystem: each package keeps its own licence (mostly GPL/LGPL/BSD/MIT); see the image's package copyright files."
+  },
+  "dock.mau.dev/mautrix/whatsapp": {
+   "licence": "AGPL-3.0-only"
+  },
+  "erikvl87/languagetool": {
+   "licence": "LGPL-2.1-only",
+   "note": "Image wrapper LGPL-2.1 (erikvl87/docker-languagetool); LanguageTool itself LGPL-2.1."
+  },
+  "etherpad/etherpad": {
+   "licence": "Apache-2.0"
+  },
+  "filebrowser/filebrowser": {
+   "licence": "Apache-2.0"
+  },
+  "forgejo.ellis.link/continuwuation/continuwuity": {
+   "licence": "Apache-2.0"
+  },
+  "foxcpp/maddy": {
+   "licence": "GPL-3.0-only"
+  },
+  "gcr.io/distroless/base-debian12": {
+   "licence": "Apache-2.0 AND LicenseRef-OS-Distribution",
+   "note": "distroless build tooling Apache-2.0; contents are Debian packages under their own licences."
+  },
+  "germanorizzo/ws4sqlite": {
+   "licence": "ISC",
+   "note": "github.com/proofrock/ws4sqlite"
+  },
+  "ghcr.io/astral-sh/uv": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "ghcr.io/diegonmarcos/": {
+   "licence": "LicenseRef-NoLicenseGranted",
+   "note": "Image built by this fleet. The licence is that of the packaging (own code); the software inside keeps its upstream licence - see the same service's upstream image / vendored-source entries."
+  },
+  "ghcr.io/erebe/wstunnel": {
+   "licence": "BSD-3-Clause"
+  },
+  "ghcr.io/umami-software/umami": {
+   "licence": "MIT"
+  },
+  "gitea/gitea": {
+   "licence": "MIT"
+  },
+  "golang": {
+   "licence": "BSD-3-Clause AND LicenseRef-OS-Distribution",
+   "note": "Go toolchain BSD-3-Clause; build stage only where used as builder."
+  },
+  "gristlabs/grist": {
+   "licence": "Apache-2.0",
+   "note": "grist-core"
+  },
+  "hickorydns/hickory-dns": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "kalilinux/kali-rolling": {
+   "licence": "LicenseRef-OS-Distribution",
+   "note": "A distribution root filesystem: each package keeps its own licence (mostly GPL/LGPL/BSD/MIT); see the image's package copyright files."
+  },
+  "klutchell/unbound": {
+   "licence": "BSD-3-Clause",
+   "note": "Image wrapper and NLnet Labs Unbound are both BSD-3-Clause."
+  },
+  "linuxserver/code-server": {
+   "licence": "GPL-3.0-only AND MIT",
+   "note": "linuxserver image scripts GPL-3.0; code-server itself MIT."
+  },
+  "mariadb": {
+   "licence": "GPL-2.0-only"
+  },
+  "matomo": {
+   "licence": "GPL-3.0-only"
+  },
+  "myoung34/github-runner": {
+   "licence": "GPL-3.0-only AND MIT",
+   "note": "Image scripts GPL-3.0 (myoung34/docker-github-actions-runner); GitHub Actions runner MIT."
+  },
+  "nginx": {
+   "licence": "BSD-2-Clause"
+  },
+  "node": {
+   "licence": "MIT AND LicenseRef-OS-Distribution",
+   "note": "Node.js runtime MIT; the base distribution's packages keep their own licences."
+  },
+  "photoprism/photoprism": {
+   "licence": "AGPL-3.0-only"
+  },
+  "postgres": {
+   "licence": "PostgreSQL"
+  },
+  "public.ecr.aws/zinclabs/openobserve": {
+   "licence": "AGPL-3.0-only"
+  },
+  "python": {
+   "licence": "PSF-2.0 AND LicenseRef-OS-Distribution",
+   "note": "CPython PSF-2.0; the base distribution's packages keep their own licences."
+  },
+  "quay.io/hedgedoc/hedgedoc": {
+   "licence": "AGPL-3.0-only"
+  },
+  "rclone/rclone": {
+   "licence": "MIT"
+  },
+  "redis": {
+   "licence": "BSD-3-Clause OR (LicenseRef-RSALv2 OR SSPL-1.0 OR AGPL-3.0-only)",
+   "note": "Redis <= 7.x is BSD-3-Clause (redis:7-alpine, redis:7-bookworm); Redis 8+ is RSALv2 / SSPLv1 / AGPLv3 at the user's choice - the untagged `redis:alpine` floats to 8.x. See LICENSING.md conflicts."
+  },
+  "registry.gitlab.com/timvisee/send": {
+   "licence": "MPL-2.0"
+  },
+  "rust": {
+   "licence": "(MIT OR Apache-2.0) AND LicenseRef-OS-Distribution",
+   "note": "Rust toolchain; build stage."
+  },
+  "stalwartlabs/stalwart": {
+   "licence": "AGPL-3.0-only OR LicenseRef-Stalwart-Enterprise",
+   "note": "Community edition AGPL-3.0-only; enterprise features under Stalwart's commercial licence."
+  },
+  "surrealdb/surrealdb": {
+   "licence": "BUSL-1.1",
+   "note": "Business Source License 1.1 (not open source until its change date). See LICENSING.md conflicts."
+  },
+  "tomsquest/docker-radicale": {
+   "licence": "GPL-3.0-only",
+   "note": "Image wrapper and Radicale are both GPL-3.0."
+  },
+  "ubuntu": {
+   "licence": "LicenseRef-OS-Distribution",
+   "note": "A distribution root filesystem: each package keeps its own licence (mostly GPL/LGPL/BSD/MIT); see the image's package copyright files."
+  },
+  "valkey/valkey": {
+   "licence": "BSD-3-Clause"
+  },
+  "vaultwarden/server": {
+   "licence": "AGPL-3.0-only"
+  },
+  "vectorim/element-web": {
+   "licence": "AGPL-3.0-only OR GPL-3.0-only OR LicenseRef-Element-Commercial"
+  },
+  "webpronl/reveal-md": {
+   "licence": "MIT"
+  }
+ },
+ "pypi_licences": {
+  "hnswlib": {
+   "licence": "Apache-2.0",
+   "note": "PyPI carries no licence metadata; github.com/nmslib/hnswlib LICENSE."
+  },
+  "tiktoken": {
+   "licence": "MIT",
+   "note": "PyPI carries only the licence text; github.com/openai/tiktoken LICENSE."
+  }
+ }
+}
