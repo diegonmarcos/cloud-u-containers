@@ -15,6 +15,10 @@ import os
 import httpx
 from selectolax.parser import HTMLParser
 
+from ._robots import require
+
+# The agent robots.txt is asked about (the render itself runs at the Cloudflare edge).
+_UA = "Mozilla/5.0 (compatible; scrappers-api/0.1; +https://api.diegonmarcos.com/scrappers)"
 API = "https://api.cloudflare.com/client/v4/accounts/{acct}/browser-rendering/{endpoint}"
 
 
@@ -44,7 +48,8 @@ def render(url: str, wait_ms: int = 0) -> str:
 
 
 def scrape(url: str, selector: str | None = None, **_):
-    """Module interface (mirrors crawl.py) but over a real browser render."""
+    """Module interface (mirrors crawl.py) but over a real browser render; robots.txt first (#797)."""
+    require(url, _UA)
     html = render(url)
     tree = HTMLParser(html)
     if selector:

@@ -18,6 +18,7 @@ import httpx
 from selectolax.parser import HTMLParser
 
 from . import cloudflare
+from ._robots import allowed
 
 _HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; scrappers-api/1.0)"}
 _HARD_MAX_PAGES = 200
@@ -49,6 +50,10 @@ def scrape(
     queue: deque[str] = deque([start_url])
     visited: set[str] = set()
     pages: list[dict] = []
+    # #797 every page is asked of its site's robots.txt (read once per site); a disallowed page is
+    # skipped and counted, never fetched.
+    robots: dict = {}
+    refused: list[str] = []
 
     while queue and len(pages) < max_pages:
         url = queue.popleft()
@@ -56,6 +61,9 @@ def scrape(
             continue
         visited.add(url)
 
+        if not allowed(url, _HEADERS["User-Agent"], cache=robots)[0]:
+            refused.append(url)
+            continue
         try:
             html = _fetch(url, render)
         except httpx.HTTPError:
@@ -95,5 +103,6 @@ def scrape(
     return {
         "start_url": start_url,
         "pages": pages,
-        "_summary": {"crawled": len(pages), "via": "self-hosted-crawlee"},
+        "robots_refused": refused,
+        "_summary": {"crawled": len(pages), "robots_refused": len(refused), "via": "self-hosted-crawlee"},
     }

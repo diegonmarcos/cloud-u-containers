@@ -15,6 +15,7 @@ import trafilatura
 from selectolax.parser import HTMLParser
 
 from . import cloudflare
+from ._robots import require
 
 _HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; scrappers-api/1.0)"}
 
@@ -32,6 +33,7 @@ def scrape(url: str, render: bool = False, **_):
     """Fetch `url`, extract the main content, and return it as clean markdown."""
     if not url:
         raise ValueError("url required")
+    require(url, _HEADERS["User-Agent"])  # robots.txt first (#797)
     html = _fetch(url, render)
 
     markdown = trafilatura.extract(html, url=url, output_format="markdown") or ""

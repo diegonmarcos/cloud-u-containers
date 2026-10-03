@@ -2,9 +2,14 @@
 
 Covers the ad-hoc crawls crawlee-cloud used to run. No browser/headless — static HTML only;
 if a target needs JS rendering, that's a future upgrade (playwright), not the lean default.
+
+#797 robots.txt first: a URL the site's robots.txt disallows (or a site whose robots.txt cannot be
+read) is refused before any fetch, rendered or not — see _robots.py.
 """
 import httpx
 from selectolax.parser import HTMLParser
+
+from ._robots import require
 
 UA = "Mozilla/5.0 (compatible; scrappers-api/0.1; +https://api.diegonmarcos.com/scrappers)"
 
@@ -12,6 +17,7 @@ UA = "Mozilla/5.0 (compatible; scrappers-api/0.1; +https://api.diegonmarcos.com/
 def scrape(url: str, selector: str | None = None, render: bool = False, **_):
     if not url:
         raise ValueError("url required")
+    require(url, UA)
     if render:
         # JS-heavy or anti-bot target → render via Cloudflare Browser Rendering instead of httpx.
         from . import cloudflare

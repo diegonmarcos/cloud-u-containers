@@ -78,5 +78,11 @@
     "display_name": "Scrapers API",
     "description": "Unified profile-scrape + generic-crawl API. Replaces crawlee-cloud.",
     "auth": "two_factor"
+  },
+  "tests": {
+    "robots": {
+      "cmd": "python3 test_robots.py",
+      "cwd": "src/code"
+    }
   }
 }
