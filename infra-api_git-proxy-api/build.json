@@ -147,7 +147,7 @@
     "feeds": {
       "_doc": "The allow-list for the commits/runs routes is DATA, here, not code: the server refuses any owner/repo not listed, so a caller cannot spend the server-side credential's quota on arbitrary repositories. Seeded from the repos the superapp Store's GitHub commits and workflow-run panels declare (cloud-u-android aa_cloud-superapp build.json ui.sections stack_observability). Every successful upstream answer is cached in memory for cache_ttl_s, keyed by (repo, kind) and always fetched at max_per_page then sliced, so the whole fleet polling costs at most 2 x len(repos) upstream calls per TTL window, however many phones ask.",
       "cache_ttl_s": 120,
-      "max_per_page": 20,
+      "max_per_page": 50,
       "repos": [
         "diegonmarcos/cloud-infra",
         "diegonmarcos/cloud-infra-desktop",

@@ -277,6 +277,10 @@ function testFeedsUnit() {
   for (const [raw, want] of [[undefined, 5], ['abc', 5], ['3', 3], ['0', 1], ['-4', 1], ['999', max]]) {
     eq(clampPerPage(raw, max), want, `clampPerPage(${JSON.stringify(raw)}) -> ${want}`);
   }
+  // #674: the Store's COMMITS feed asks for up to 50 (a data value app-side);
+  // a smaller cap would silently truncate it.
+  ok(max >= 50, `feeds.max_per_page (${max}) serves the Store's per_page=50`);
+  eq(clampPerPage('50', max), 50, 'per_page=50 is honoured, not clamped');
   eq(feedUrl('https://x', 'o', 'r', 'commits', 20), 'https://x/repos/o/r/commits?per_page=20', 'commits URL');
   eq(feedUrl('https://x', 'o', 'r', 'runs', 20), 'https://x/repos/o/r/actions/runs?per_page=20', 'runs URL');
   ok(!('smuggled' in projectCommit({ sha: 'a', commit: {}, smuggled: 1 })), 'projectCommit drops unknown fields');
