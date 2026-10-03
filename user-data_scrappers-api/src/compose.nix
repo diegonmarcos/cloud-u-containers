@@ -12,7 +12,22 @@ let
 in
 {
   services = {
+    # #824: the named volumes were created root-owned before the image switched
+    # to the non-root appuser (10001:999), so every scrape's _persist() hit
+    # EACCES on /app/data and the API answered 500. Docker never re-owns an
+    # existing volume, so a one-shot root repair runs before the app on every
+    # deploy. `$$` = compose escape for a literal `$`.
+    scrappers-api-volume-owner = {
+      image = "busybox:1.37";
+      container_name = "scrappers-api-volume-owner";
+      user = "0:0";
+      restart = "no";
+      network_mode = "none";
+      volumes = [ "scrappers_data:/v/data" "scrappers_session:/v/session" ];
+      command = [ "sh" "-c" "set -eu; chown -R 10001:999 /v/data /v/session; left=$$(find /v/data /v/session ! -uid 10001 | wc -l); echo \"[scrappers-volume-owner] wrong-owner paths left=$$left\"; [ \"$$left\" -eq 0 ]" ];
+    };
     scrappers-api = {
+      depends_on = { scrappers-api-volume-owner = { condition = "service_completed_successfully"; }; };
       image = binariesImage;
       container_name = app.container_name;
       network_mode = "host";

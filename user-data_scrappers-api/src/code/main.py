@@ -46,11 +46,27 @@ def _load(platform: str):
         raise HTTPException(500, f"scraper module '{platform}' not available: {e}")
 
 
-def _persist(name: str, data: dict) -> str:
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    out = DATA_DIR / f"{name}.json"
-    out.write_text(json.dumps(data, ensure_ascii=False, indent=2))
-    return str(out)
+def _persist(name: str, data: dict) -> str | None:
+    """Write the result; a storage fault must not discard a finished scrape (#824)."""
+    try:
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        out = DATA_DIR / f"{name}.json"
+        out.write_text(json.dumps(data, ensure_ascii=False, indent=2))
+        return str(out)
+    except OSError as e:
+        print(f"[persist] cannot write {name}.json under {DATA_DIR}: {e}", flush=True)
+        return None
+
+
+def _data_dir_writable() -> bool:
+    try:
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        probe = DATA_DIR / ".health-probe"
+        probe.write_text("ok")
+        probe.unlink()
+        return True
+    except OSError:
+        return False
 
 
 class ScrapeReq(BaseModel):
@@ -65,7 +81,12 @@ class ScrapeReq(BaseModel):
 @app.get(f"{BASE_PATH}/health")
 @app.get("/health")
 def health():
-    return {"status": "ok", "service": "scrappers-api", "platforms": list(PLATFORMS), "targets": len(TARGETS)}
+    # 503 (not 200) when results cannot be stored, so the container healthcheck
+    # and the fleet endpoint monitor alert instead of reporting a false green (#824).
+    writable = _data_dir_writable()
+    body = {"status": "ok" if writable else "degraded", "service": "scrappers-api",
+            "platforms": list(PLATFORMS), "targets": len(TARGETS), "data_dir_writable": writable}
+    return JSONResponse(body, status_code=200 if writable else 503)
 
 
 @app.get(f"{BASE_PATH}/targets")
