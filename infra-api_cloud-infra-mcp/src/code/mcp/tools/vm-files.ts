@@ -128,7 +128,9 @@ export function registerVmFilesTools(server: McpServer) {
     async ({ vm, container, path, content, encoding, overwrite }) => {
       const vmId = resolveVmId(vm);
       const target = `${container}@${vmId}:${path}`;
-      const t = writeTarget(vmId, container, path);
+      // WRITE_ROOTS names VMs by alias; resolveVmId returns the canonical id.
+      const vmKey = WRITE_ROOTS.find((r) => { try { return resolveVmId(r.vm) === vmId; } catch { return false; } })?.vm ?? vmId;
+      const t = writeTarget(vmKey, container, path);
       if (!t.ok) {
         audit("devops.vm.write_file", target, `REFUSED ${t.why}`);
         return err(`${target}: ${t.why}`);
