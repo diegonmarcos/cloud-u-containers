@@ -108,5 +108,11 @@
       "google_compute_engine",
       "google_compute_engine.pub"
     ]
+  },
+  "tests": {
+    "vm-files-policy": {
+      "cmd": "node --experimental-strip-types test-vm-files-policy.mjs",
+      "cwd": "src/code"
+    }
   }
 }
