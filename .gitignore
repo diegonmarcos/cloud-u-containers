@@ -23,6 +23,11 @@ result-*
 .secrets
 */.secrets
 **/.secrets
+# ship-engine decrypt also writes per-key files + a JSON map (#835)
+.secrets.d/
+**/.secrets.d/
+.secrets.json
+**/.secrets.json
 
 # Private keys (decrypted from SOPS at deploy time)
 *.pem
