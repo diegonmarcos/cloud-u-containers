@@ -10,7 +10,7 @@
         "verbatim": 829
       },
       "git": {
-        "commits_touching": 6,
+        "commits_touching": 7,
         "first_added": "f874a2a 2026-09-03"
       },
       "lines": {
@@ -25,7 +25,7 @@
       "pin": "2f1192bb3285dea2c8b8ece461d52967fe0e6706",
       "pin_source": "user-comm_cloud-webmail/VENDOR.md (tag 1.9.2)",
       "repo": "https://github.com/bulwarkmail/webmail.git",
-      "tree_measured_at": "d8ce024bb",
+      "tree_measured_at": "5bb463ee7",
       "upstream": "Bulwark Webmail (fork lineage root-fr/jmap-webmail, MIT)",
       "upstream_files_not_in_tree": 62,
       "upstream_licence": "AGPL-3.0-only"
@@ -39,7 +39,7 @@
         "verbatim": 89
       },
       "git": {
-        "commits_touching": 8,
+        "commits_touching": 9,
         "first_added": "81ed282 2026-08-20"
       },
       "lines": {
@@ -54,7 +54,7 @@
       "pin": "92b4a7847fa78713e98ffe9562a5adee2c926ec7",
       "pin_source": "infra-api_google-workspace-mcp/src/code/VENDORED.md (tag v1.14.3, inferred from pyproject.toml version; #839)",
       "repo": "https://github.com/taylorwilsdon/google_workspace_mcp.git",
-      "tree_measured_at": "d8ce024bb",
+      "tree_measured_at": "5bb463ee7",
       "upstream": "google_workspace_mcp (Taylor Wilsdon)",
       "upstream_files_not_in_tree": 25,
       "upstream_licence": "MIT"
@@ -83,7 +83,7 @@
       "pin": "9f7f3adfea03710d5e67c4c630b3c8061ff6d161",
       "pin_source": "user-ai_my-ai_claude-api/src/code/vendor/headroom/VENDORED.md (upstream 0.26.0)",
       "repo": "https://github.com/chopratejas/headroom.git",
-      "tree_measured_at": "d8ce024bb",
+      "tree_measured_at": "5bb463ee7",
       "upstream": "Headroom (context compression engine)",
       "upstream_files_not_in_tree": 2690,
       "upstream_licence": "Apache-2.0"
@@ -112,7 +112,7 @@
       "pin": "9f7f3adfea03710d5e67c4c630b3c8061ff6d161",
       "pin_source": "user-ai_my-ai-api/src/code/vendor/headroom/VENDORED.md (upstream 0.26.0)",
       "repo": "https://github.com/chopratejas/headroom.git",
-      "tree_measured_at": "d8ce024bb",
+      "tree_measured_at": "5bb463ee7",
       "upstream": "Headroom (context compression engine)",
       "upstream_files_not_in_tree": 2690,
       "upstream_licence": "Apache-2.0"

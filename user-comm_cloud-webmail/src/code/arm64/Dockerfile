@@ -17,7 +17,7 @@ ARG GIT_COMMIT=2f1192b
 ENV GIT_COMMIT=$GIT_COMMIT
 # AGPL-3.0 §13: link to the exact corresponding source of this MODIFIED build
 # (this repo path at the commit that last changed webapp/). Bump with webapp/.
-ARG SOURCE_URL=https://github.com/diegonmarcos/cloud-u-containers/tree/main/user-comm_cloud-webmail/src/code/arm64/webapp
+ARG SOURCE_URL=https://github.com/diegonmarcos/cloud-u-containers/tree/5bb463ee794d4aadd35f4cee2880313458ebae70/user-comm_cloud-webmail/src/code/arm64/webapp
 ENV SOURCE_URL=$SOURCE_URL
 # Bulwark's package.json build script uses --turbopack, but its Dockerfile
 # pins --webpack for the production image; match that.
