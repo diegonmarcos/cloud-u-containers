@@ -1,5 +1,0 @@
-# Per-run scan output is ephemeral (port state varies with firewall/load)
-# → NOT reproducible artifact, don't commit.
-# Keep this .gitignore tracked so the dist/ dir exists; ignore everything else.
-*
-!.gitignore

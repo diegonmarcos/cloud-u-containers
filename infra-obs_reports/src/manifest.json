@@ -1,7 +1,0 @@
-[
-  {"file": "reports/dist/cloud_health_daily.md", "name": "cloud health daily"},
-  {"file": "reports/dist/cloud_mail_full.md", "name": "cloud mail full"},
-  {"file": "reports/dist/cloud_sec_data.md", "name": "cloud sec data"},
-  {"file": "reports/dist/cloud_sec_network.md", "name": "cloud sec network"},
-  {"file": "reports/dist/cloud_url_health.md", "name": "cloud url health"}
-]

@@ -1,2 +1,0 @@
-# Users will be created on server with htpasswd
-# Format: username:bcrypt_hash

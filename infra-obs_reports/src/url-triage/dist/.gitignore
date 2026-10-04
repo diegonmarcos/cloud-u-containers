@@ -1,5 +1,0 @@
-# Per-run probe output is ephemeral (DNS TTLs, certs rotate, network changes)
-# → NOT reproducible artifact, don't commit.
-# Keep this .gitignore tracked so the dist/ dir exists; ignore everything else.
-*
-!.gitignore

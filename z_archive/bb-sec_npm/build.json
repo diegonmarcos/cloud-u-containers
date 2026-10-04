@@ -1,9 +1,0 @@
-{
-  "name": "npm",
-  "description": "Nginx Proxy Manager reverse proxy",
-
-  "deploy": {
-    "host": "gcp-proxy",
-    "remote_path": "/opt/containers/npm"
-  }
-}

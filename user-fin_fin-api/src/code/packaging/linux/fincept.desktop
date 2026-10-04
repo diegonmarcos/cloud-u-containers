@@ -1,8 +1,0 @@
-[Desktop Entry]
-Name=Fincept Terminal
-Comment=Financial intelligence terminal
-Exec=fincept
-Icon=fincept
-Terminal=false
-Type=Application
-Categories=Office;Finance;

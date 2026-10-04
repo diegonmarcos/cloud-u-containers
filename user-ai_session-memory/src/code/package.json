@@ -1,9 +1,0 @@
-{
-  "name": "session-memory",
-  "version": "1.0.0",
-  "type": "module",
-  "private": true,
-  "description": "Central SQLite store of Claude Code session transcripts (cross-device resume)",
-  "main": "server.mjs",
-  "scripts": { "start": "node --experimental-sqlite server.mjs" }
-}

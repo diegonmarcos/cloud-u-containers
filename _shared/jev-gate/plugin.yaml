@@ -1,4 +1,0 @@
-name: jev-gate
-version: 1.1.0
-description: "#764/#765 Jev gate: on the first API call of a turn send only the tool Jev picks (all tools when unsure), and inject the code-graph context Jev routes the user message to (nothing when unsure). Config: jev-gate.json beside this file."
-author: diegonmarcos

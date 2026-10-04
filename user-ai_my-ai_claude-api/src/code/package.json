@@ -1,9 +1,0 @@
-{
-  "name": "claude-api-superset",
-  "version": "1.0.0",
-  "type": "module",
-  "private": true,
-  "description": "OpenAI/Ollama/Anthropic mimic over the subscription Claude CLI with a Headroom compression hop (successor to kg-bridge)",
-  "main": "server.mjs",
-  "scripts": { "start": "node server.mjs" }
-}

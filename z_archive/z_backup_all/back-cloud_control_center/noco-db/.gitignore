@@ -1,5 +1,0 @@
-.env
-*.sql
-*.bak
-backups/*.sql
-!backups/.gitkeep

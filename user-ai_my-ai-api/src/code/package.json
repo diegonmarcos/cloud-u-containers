@@ -1,9 +1,0 @@
-{
-  "name": "my-ai-api",
-  "version": "1.0.0",
-  "type": "module",
-  "private": true,
-  "description": "OpenAI/Ollama/Anthropic mimic over OpenRouter with a Headroom compression hop (sibling of claude-api-superset; no Claude CLI, no Anthropic proxy face)",
-  "main": "server.mjs",
-  "scripts": { "start": "node server.mjs" }
-}

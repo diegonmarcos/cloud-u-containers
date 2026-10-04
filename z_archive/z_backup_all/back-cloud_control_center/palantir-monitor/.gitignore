@@ -1,7 +1,0 @@
-# Environment variables (contains passwords)
-.env
-
-# Docker volumes
-*.log
-reports/
-palantir-deploy.tar.gz

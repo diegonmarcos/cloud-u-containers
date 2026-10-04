@@ -1,7 +1,0 @@
-# Local dev artifacts must never enter the image build context.
-# 2026-07-03 incident: an x86 dev .venv in code/ was COPY'd into the arm64
-# image; `uv sync` died with "Exec format error" querying its python3, and
-# (pre rc-isolation) the broken image still got pushed and deployed.
-code/.venv
-**/__pycache__
-**/.pytest_cache

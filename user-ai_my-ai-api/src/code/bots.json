@@ -1,7 +1,0 @@
-{
-  "_comment": "Telegram bot roster for the my-ai gateway. One entry per bot; adding a bot is a JSON edit, no code change. token_env must exist in .secrets (sops) or the bot is skipped at startup. Optional \"require_mention\": true|false — in group/supergroup chats, gate replies on an @mention, a reply-to-the-bot, or a /command; defaults to true. Direct messages always respond regardless of this flag. require_mention is false for both bots because forum topics are used as sessions — one message per turn, no @mention each time. NOTE: Telegram Bot Privacy Mode must ALSO be disabled via BotFather (/setprivacy) or plain group messages never reach getUpdates at all.",
-  "telegram": [
-    { "name": "goose",  "token_env": "TELEGRAM_BOT_TOKEN",        "key_prefix": "telegram",        "default_agent": "goose",  "require_mention": false },
-    { "name": "claude", "token_env": "TELEGRAM_CLAUDE_BOT_TOKEN", "key_prefix": "telegram-claude", "default_agent": "claude", "require_mention": false }
-  ]
-}
