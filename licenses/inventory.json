@@ -18,16 +18,16 @@
    "CDLA-Permissive-2.0": 1
   },
   "dir": {
-   "LicenseRef-NoLicenseGranted": 89
+   "LicenseRef-NoLicenseGranted": 88
   },
   "docker": {
    "LicenseRef-NoLicenseGranted": 43,
-   "Apache-2.0": 9,
+   "Apache-2.0": 6,
    "AGPL-3.0-only": 5,
    "MIT": 5,
    "GPL-3.0-only": 4,
    "LicenseRef-OS-Distribution": 4,
-   "BSD-3-Clause": 3,
+   "BSD-3-Clause": 2,
    "GPL-2.0-only": 2,
    "GPL-3.0-only AND MIT": 2,
    "MIT OR Apache-2.0": 2,
@@ -2726,14 +2726,6 @@
    "licence": "LicenseRef-NoLicenseGranted",
    "licence_source": "licenses/curated.json::directories"
   },
-  "dir:user-prod_paca": {
-   "kind": "dir",
-   "declared_in": [
-    "(tree)"
-   ],
-   "licence": "LicenseRef-NoLicenseGranted",
-   "licence_source": "licenses/curated.json::directories"
-  },
   "dir:user-prod_revealmd": {
    "kind": "dir",
    "declared_in": [
@@ -3689,9 +3681,7 @@
     "infra-net_wireguard-mesh/dist/code/arm64/Dockerfile",
     "infra-net_wireguard-mesh/src/build.json",
     "infra-net_wireguard-mesh/src/code/Dockerfile",
-    "infra-obs_matomo/src/analytics-app/docker-compose.yml",
-    "user-prod_paca/build.json",
-    "user-prod_paca/src/build.json"
+    "infra-obs_matomo/src/analytics-app/docker-compose.yml"
    ],
    "version": "nginx:1.27-alpine",
    "scope": "base",
@@ -3771,42 +3761,6 @@
    "licence_source": "licenses/curated.json::docker_licences[node]",
    "note": "Node.js runtime MIT; the base distribution's packages keep their own licences."
   },
-  "docker:pacaai/paca-api": {
-   "kind": "docker",
-   "declared_in": [
-    "user-prod_paca/build.json",
-    "user-prod_paca/src/build.json"
-   ],
-   "version": "pacaai/paca-api:latest",
-   "scope": "runtime",
-   "licence": "Apache-2.0",
-   "licence_source": "licenses/curated.json::docker_licences[pacaai/paca-api]",
-   "note": "Source https://github.com/Paca-AI/paca (OCI labels source/revision on the running image, 0.18.4 @ b0d1e01d75c2b8efb5730b0e30f351e0f180f57b); LICENSE at that revision read 2026-10-03 (#839)."
-  },
-  "docker:pacaai/paca-realtime": {
-   "kind": "docker",
-   "declared_in": [
-    "user-prod_paca/build.json",
-    "user-prod_paca/src/build.json"
-   ],
-   "version": "pacaai/paca-realtime:latest",
-   "scope": "runtime",
-   "licence": "Apache-2.0",
-   "licence_source": "licenses/curated.json::docker_licences[pacaai/paca-realtime]",
-   "note": "Source https://github.com/Paca-AI/paca (OCI labels source/revision on the running image, 0.18.4 @ b0d1e01d75c2b8efb5730b0e30f351e0f180f57b); LICENSE at that revision read 2026-10-03 (#839)."
-  },
-  "docker:pacaai/paca-web": {
-   "kind": "docker",
-   "declared_in": [
-    "user-prod_paca/build.json",
-    "user-prod_paca/src/build.json"
-   ],
-   "version": "pacaai/paca-web:latest",
-   "scope": "runtime",
-   "licence": "Apache-2.0",
-   "licence_source": "licenses/curated.json::docker_licences[pacaai/paca-web]",
-   "note": "Source https://github.com/Paca-AI/paca (OCI labels source/revision on the running image, 0.18.4 @ b0d1e01d75c2b8efb5730b0e30f351e0f180f57b); LICENSE at that revision read 2026-10-03 (#839)."
-  },
   "docker:photoprism/photoprism": {
    "kind": "docker",
    "declared_in": [
@@ -3829,9 +3783,7 @@
     "user-prod_etherpad/build.json",
     "user-prod_etherpad/src/build.json",
     "user-prod_hedgedoc/build.json",
-    "user-prod_hedgedoc/src/build.json",
-    "user-prod_paca/build.json",
-    "user-prod_paca/src/build.json"
+    "user-prod_hedgedoc/src/build.json"
    ],
    "version": "postgres:16-alpine",
    "scope": "runtime",
@@ -3915,11 +3867,11 @@
     "user-prod_send/build.json",
     "user-prod_send/src/build.json"
    ],
-   "version": "redis:alpine",
+   "version": "redis:8.10.2-alpine@sha256:3811787313eba226a2ef38658c6ccb91cd5e110edc89c37767de373120a0e5a0",
    "scope": "runtime",
    "licence": "BSD-3-Clause OR (LicenseRef-RSALv2 OR SSPL-1.0 OR AGPL-3.0-only)",
    "licence_source": "licenses/curated.json::docker_licences[redis]",
-   "note": "Redis <= 7.x is BSD-3-Clause (redis:7-alpine, redis:7-bookworm); Redis 8+ is RSALv2 / SSPLv1 / AGPLv3 at the user's choice - the untagged `redis:alpine` floats to 8.x. See LICENSING.md conflicts."
+   "note": "Redis <= 7.x is BSD-3-Clause (redis:7-alpine, redis:7-bookworm); Redis 8+ is RSALv2 / SSPLv1 / AGPLv3 at the user's choice - infra-db_redis pins redis:8.10.2-alpine by digest and takes the AGPLv3 option (#839). See LICENSING.md conflicts."
   },
   "docker:registry.gitlab.com/timvisee/send": {
    "kind": "docker",
@@ -4010,17 +3962,6 @@
    "licence": "LicenseRef-OS-Distribution",
    "licence_source": "licenses/curated.json::docker_licences[ubuntu]",
    "note": "A distribution root filesystem: each package keeps its own licence (mostly GPL/LGPL/BSD/MIT); see the image's package copyright files."
-  },
-  "docker:valkey/valkey": {
-   "kind": "docker",
-   "declared_in": [
-    "user-prod_paca/build.json",
-    "user-prod_paca/src/build.json"
-   ],
-   "version": "valkey/valkey:8-alpine",
-   "scope": "runtime",
-   "licence": "BSD-3-Clause",
-   "licence_source": "licenses/curated.json::docker_licences[valkey/valkey]"
   },
   "docker:vaultwarden/server": {
    "kind": "docker",
@@ -4130,7 +4071,6 @@
     "user-prod_filebrowser/src/flake.nix",
     "user-prod_grist/src/flake.nix",
     "user-prod_hedgedoc/src/flake.nix",
-    "user-prod_paca/src/flake.nix",
     "user-prod_revealmd/src/flake.nix",
     "user-prod_send/src/flake.nix",
     "user-vault_vaultwarden/src/flake.nix"

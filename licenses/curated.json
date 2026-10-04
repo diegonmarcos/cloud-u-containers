@@ -287,9 +287,6 @@
   "user-prod_hedgedoc": {
    "licence": "LicenseRef-NoLicenseGranted"
   },
-  "user-prod_paca": {
-   "licence": "LicenseRef-NoLicenseGranted"
-  },
   "user-prod_revealmd": {
    "licence": "LicenseRef-NoLicenseGranted"
   },
@@ -492,18 +489,6 @@
    "licence": "MIT AND LicenseRef-OS-Distribution",
    "note": "Node.js runtime MIT; the base distribution's packages keep their own licences."
   },
-  "pacaai/paca-api": {
-   "licence": "Apache-2.0",
-   "note": "Source https://github.com/Paca-AI/paca (OCI labels source/revision on the running image, 0.18.4 @ b0d1e01d75c2b8efb5730b0e30f351e0f180f57b); LICENSE at that revision read 2026-10-03 (#839)."
-  },
-  "pacaai/paca-realtime": {
-   "licence": "Apache-2.0",
-   "note": "Source https://github.com/Paca-AI/paca (OCI labels source/revision on the running image, 0.18.4 @ b0d1e01d75c2b8efb5730b0e30f351e0f180f57b); LICENSE at that revision read 2026-10-03 (#839)."
-  },
-  "pacaai/paca-web": {
-   "licence": "Apache-2.0",
-   "note": "Source https://github.com/Paca-AI/paca (OCI labels source/revision on the running image, 0.18.4 @ b0d1e01d75c2b8efb5730b0e30f351e0f180f57b); LICENSE at that revision read 2026-10-03 (#839)."
-  },
   "photoprism/photoprism": {
    "licence": "AGPL-3.0-only"
   },
@@ -525,7 +510,7 @@
   },
   "redis": {
    "licence": "BSD-3-Clause OR (LicenseRef-RSALv2 OR SSPL-1.0 OR AGPL-3.0-only)",
-   "note": "Redis <= 7.x is BSD-3-Clause (redis:7-alpine, redis:7-bookworm); Redis 8+ is RSALv2 / SSPLv1 / AGPLv3 at the user's choice - the untagged `redis:alpine` floats to 8.x. See LICENSING.md conflicts."
+   "note": "Redis <= 7.x is BSD-3-Clause (redis:7-alpine, redis:7-bookworm); Redis 8+ is RSALv2 / SSPLv1 / AGPLv3 at the user's choice - infra-db_redis pins redis:8.10.2-alpine by digest and takes the AGPLv3 option (#839). See LICENSING.md conflicts."
   },
   "registry.gitlab.com/timvisee/send": {
    "licence": "MPL-2.0"
