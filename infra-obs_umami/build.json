@@ -9,7 +9,7 @@
   },
   "domain": "analytics.diegonmarcos.com/umami",
   "deploy": {
-    "host": "oci-analytics",
+    "host": "oci-apps",
     "remote_path": "/opt/containers/umami",
     "compose_flags": "--pull always --force-recreate"
   },
@@ -20,13 +20,13 @@
     "registry": "ghcr.io/diegonmarcos",
     "image": "umami",
     "dockerfile": "Dockerfile",
-    "arch": "amd64"
+    "arch": "arm64"
   },
   "lifecycle": {
     "site-id": [
       {
         "action": "exec",
-        "vm": "oci-analytics",
+        "vm": "oci-apps",
         "container": "umami-setup",
         "script": "cat /output/site_id"
       }
@@ -34,14 +34,14 @@
     "migrate-from-matomo": [
       {
         "action": "ssh_run",
-        "vm": "oci-analytics",
+        "vm": "oci-apps",
         "script": "/opt/containers/umami/migrate-from-matomo/migrate.sh"
       }
     ],
     "migrate-test": [
       {
         "action": "ssh_run",
-        "vm": "oci-analytics",
+        "vm": "oci-apps",
         "script": "/opt/containers/umami/migrate-from-matomo/test.sh"
       }
     ]
