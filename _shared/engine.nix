@@ -522,6 +522,13 @@ let
   # ──────────────────────────────────────────────────────────────
   # Dockerfile for code/<arch>/ — Type B (wrap) or Type A (own)
   # ──────────────────────────────────────────────────────────────
+  # Stable, checkout-independent path: strip the /nix/store/<hash>-source/
+  # prefix (that hash covers the whole repo tree, so it changes on any commit).
+  repoRelPath = p:
+    let s = builtins.unsafeDiscardStringContext (toString p);
+        m = builtins.match "/nix/store/[^/]+/(.*)" s;
+    in if m == null then baseNameOf s else builtins.head m;
+
   mkCodeDockerfile = arch:
     if nativeBuild != null then
       # Two Type-A flavors:
@@ -536,7 +543,7 @@ let
       if (nativeBuild.dockerfile or null) != null then
         pkgs.writeText "Dockerfile" ''
           ${mkBanner "#"}# Type A — service-shipped Dockerfile, arch=${arch}
-          # Source: ${toString nativeBuild.dockerfile}
+          # Source: ${repoRelPath nativeBuild.dockerfile}
           ${lib.replaceStrings
               [ "@AGENT_TOOLBELT_APT@" "@AGENT_TOOLBELT_EXTRA_RUN@" "@AGENT_TOOLBELT_NPM@" ]
               [ toolbeltApt toolbeltExtraRun toolbeltNpmRun ]
