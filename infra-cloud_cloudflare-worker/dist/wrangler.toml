@@ -2,9 +2,9 @@
 # ║                                                                  ║
 # ║   GENERATED FILE — DO NOT EDIT                                   ║
 # ║                                                                  ║
-# ║   Source : a_solutions/ba-clo_cloudflare-worker/src/wrangler.toml
-# ║   Engine : 1_workflows/src/scripts/cloud-ship-container-engine.sh
-# ║   Rebuild: ./1_workflows/build.sh
+# ║   Source : /tmp/claude-0/-home-user-git-repos-master/b1098656-41b9-576f-b118-2d2cccc19031/scratchpad/r/a_solutions/infra-cloud_cloudflare-worker/src/wrangler.toml
+# ║   Engine : 1_cicd/src/scripts/cloud-ship-container-engine.sh
+# ║   Rebuild: ./9_others/build.sh
 # ║                                                                  ║
 # ║   Manual edits will be overwritten on next build.                ║
 # ║                                                                  ║
@@ -38,8 +38,8 @@ head_sampling_rate = 1
 # Non-secret configuration
 GOOGLE_EMAIL = "me@diegonmarcos.com"
 GOOGLE_SA_EMAIL = "diego-cli@diegonmarcos-infra-prod.iam.gserviceaccount.com"
-C3_HEALTH_URL = "https://api.diegonmarcos.com/c3-services-api/http-to-smtp-proxy-api/reach"
-HTTP_TO_SMTP_PROXY_API_URL = "https://api.diegonmarcos.com/http-to-smtp-proxy-api/"
+C3_HEALTH_URL = "https://api.diegonmarcos.com/pub/health"
+HTTP_TO_SMTP_PROXY_API_URL = "https://api.diegonmarcos.com/pub/mail/http-to-smtp"
 BACKUP_EMAIL = "diegonmarcos@live.com"
 # Secrets — set via: wrangler secret put <NAME>
 # C3_BEARER_TOKEN              — Authelia OIDC bearer token (cloudflare-health-c3-api client)

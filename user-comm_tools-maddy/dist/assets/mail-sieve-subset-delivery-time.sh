@@ -22,7 +22,7 @@
 # ║     imap-filters/). This script implements ~30% of RFC 5228      ║
 # ║     covering all predicates the canonical mail-rules.json uses.  ║
 # ║   - Same rules are RENDERED to a real Sieve script for Stalwart  ║
-# ║     via _shared/lib/mail-rules.nix → toSieve. Single SoT.        ║
+# ║     via _shared/lib/derive-mail-rules.ts → toSieve. Single SoT.        ║
 # ║                                                                  ║
 # ║ Rules input (derived JSON, schema v2):                           ║
 # ║   {                                                              ║

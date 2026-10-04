@@ -24,7 +24,22 @@ inject() {
 
 # config.yaml: seed only if absent — mautrix auto-upgrades this file in place
 # on startup, so we must not clobber the bridge-maintained version on redeploy.
-[ -f "$ROOT/data/config.yaml" ] || inject "$ROOT/configs/config.yaml" "$ROOT/data/config.yaml"
+# Its two token lines are still re-pinned to sops on every deploy: the
+# homeserver registers whatever registration.yaml says (matrix-continuwuity
+# admin_execute), so a config.yaml left on old tokens after a rotation is the
+# same "as_token was not accepted" outage from the other side.
+if [ -f "$ROOT/data/config.yaml" ]; then
+    tmp=$(mktemp)
+    awk -v as="$AS_TOKEN" -v hs="$HS_TOKEN" '
+        /^[[:space:]]*as_token:/ { match($0, /^[[:space:]]*/); print substr($0, 1, RLENGTH) "as_token: \"" as "\""; next }
+        /^[[:space:]]*hs_token:/ { match($0, /^[[:space:]]*/); print substr($0, 1, RLENGTH) "hs_token: \"" hs "\""; next }
+        { print }
+    ' "$ROOT/data/config.yaml" > "$tmp"
+    cat "$tmp" > "$ROOT/data/config.yaml"   # in place: keeps the bridge's owner/mode
+    rm -f "$tmp"
+else
+    inject "$ROOT/configs/config.yaml" "$ROOT/data/config.yaml"
+fi
 
 # registration.yaml: refresh every deploy (idempotent — tokens are fixed).
 inject "$ROOT/configs/registration.yaml" "$ROOT/data/registration.yaml"

@@ -89,7 +89,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="overview.html"><strong aria-hidden="true">1.</strong> Overview</a></li><li class="chapter-item expanded affix "><li class="spacer"></li><li class="chapter-item expanded affix "><li class="part-title">Applications</li><li class="chapter-item expanded "><a href="services/google-personal-mcp.html"><strong aria-hidden="true">2.</strong> Google Personal Account MCP server — Gmail (IMAP/SMTP via App Password) for personal Google accounts, multi-account</a></li><li class="chapter-item expanded "><a href="services/google-workspace-mcp.html"><strong aria-hidden="true">3.</strong> Google Workspace MCP server — Gmail, Calendar, Drive, Docs, Sheets via HTTP transport</a></li><li class="chapter-item expanded "><a href="services/mail-mcp.html"><strong aria-hidden="true">4.</strong> Mail MCP server — IMAP/SMTP/Admin via Stalwart REST API</a></li><li class="chapter-item expanded "><a href="services/mattermost-mcp.html"><strong aria-hidden="true">5.</strong> Mattermost MCP server — chat tools via HTTP transport</a></li><li class="chapter-item expanded "><a href="services/chat-mattermost.html"><strong aria-hidden="true">6.</strong> Mattermost team chat (TE 11.x ESR) with ntfy bridge and C3 command bot</a></li><li class="chapter-item expanded "><a href="services/cypht.html"><strong aria-hidden="true">7.</strong> Cypht webmail (multi-account IMAP/JMAP/EWS, RSS feeds, calendar) — webmail.diegonmarcos.com</a></li><li class="chapter-item expanded "><a href="services/mail-puller.html"><strong aria-hidden="true">8.</strong> Rust sidecar — IMAP-IDLE pulls from external providers (Gmail, Outlook/Live, …) and dual-delivers into Maddy + Stalwart via SMTP submission. Declarative source list in src/sources.json; OAuth2 creds via sops.</a></li><li class="chapter-item expanded "><a href="services/matrix-continuwuity.html"><strong aria-hidden="true">9.</strong> Continuwuity Matrix homeserver (maintained conduwuit fork, Rust/RocksDB) — central hub for chat bridges. Federation enabled via .well-known delegation over :443.</a></li><li class="chapter-item expanded "><a href="services/matrix-element.html"><strong aria-hidden="true">10.</strong> Element Web — browser Matrix client for the Continuwuity homeserver. Served at messenger.diegonmarcos.com behind Authelia 2FA.</a></li><li class="chapter-item expanded "><a href="services/matrix-mautrix-whatsapp.html"><strong aria-hidden="true">11.</strong> mautrix-whatsapp bridge (appservice) for the Continuwuity homeserver. WG-only, no public route. Links a WhatsApp account via QR into Matrix.</a></li><li class="chapter-item expanded "><a href="services/snappymail.html"><strong aria-hidden="true">12.</strong> SnappyMail webmail client (mail.diegonmarcos.com/webmail)</a></li><li class="chapter-item expanded "><a href="services/maddy.html"><strong aria-hidden="true">13.</strong> Maddy Mail Server (mail.diegonmarcos.com)</a></li><li class="chapter-item expanded "><a href="services/stalwart.html"><strong aria-hidden="true">14.</strong> Stalwart Mail Server — JMAP webmail backend (jmap.diegonmarcos.com)</a></li><li class="chapter-item expanded "><a href="services/photoprism.html"><strong aria-hidden="true">15.</strong> PhotoPrism AI-powered photo management (oci-flex-1)</a></li><li class="chapter-item expanded "><a href="services/calendar-radicale.html"><strong aria-hidden="true">16.</strong> Radicale CalDAV server (calendars only) — cal.diegonmarcos.com</a></li><li class="chapter-item expanded "><a href="services/code-server.html"><strong aria-hidden="true">17.</strong> VS Code IDE (ide.diegonmarcos.com)</a></li><li class="chapter-item expanded "><a href="services/contacts-radicale.html"><strong aria-hidden="true">18.</strong> Radicale CardDAV server (contacts / address books) — contacts.diegonmarcos.com</a></li><li class="chapter-item expanded "><a href="services/etherpad.html"><strong aria-hidden="true">19.</strong> Etherpad collaborative editor</a></li><li class="chapter-item expanded "><a href="services/filebrowser.html"><strong aria-hidden="true">20.</strong> FileBrowser web file manager (NEW - not deployed yet)</a></li><li class="chapter-item expanded "><a href="services/grist.html"><strong aria-hidden="true">21.</strong> Grist spreadsheet/database (sheets.diegonmarcos.com)</a></li><li class="chapter-item expanded "><a href="services/hedgedoc.html"><strong aria-hidden="true">22.</strong> Collaborative markdown editor</a></li><li class="chapter-item expanded "><a href="services/paca.html"><strong aria-hidden="true">23.</strong> Paca — AI-native open-source project management (Jira/Trello alternative). Core stack: Go API + React web + Socket.IO realtime + Postgres + Valkey, behind an nginx gateway. MinIO + ai-agent intentionally dropped (S3 = OCI; no LLM agent in v1).</a></li><li class="chapter-item expanded "><a href="services/front-end.html"><strong aria-hidden="true">24.</strong> Front-end project — GitHub Pages route declarations (apex + subdomains). Data-only service: no flake, no deploy. Owns the declarative source for every public host that reverse-proxies to diegonmarcos.github.io, replacing the previous hack of co-locating these inside bb-sec_caddy/build.json.</a></li><li class="chapter-item expanded affix "><li class="part-title">Microservices</li><li class="chapter-item expanded "><a href="services/vaultwarden.html"><strong aria-hidden="true">25.</strong> Bitwarden password manager</a></li><li class="chapter-item expanded affix "><li class="part-title">Financial</li><li class="chapter-item expanded "><a href="services/crawlee-cloud.html"><strong aria-hidden="true">26.</strong> Self-hosted Crawlee Cloud — Apify-compatible scraping platform (API + Runner + Dashboard + Scheduler)</a></li><li class="chapter-item expanded "><a href="services/fin-api.html"><strong aria-hidden="true">27.</strong> Fincept Terminal backend (fin-api) — REST + WebSocket over DataHub, 35 data connectors, 7 analytics, 17 brokers, 6 investor personas, MCP tools</a></li><li class="chapter-item expanded affix "><li class="part-title">AI / AGI</li><li class="chapter-item expanded "><a href="services/claude-superset-api.html"><strong aria-hidden="true">28.</strong> Claude superset API on oci-apps — one polyglot container: OpenAI /v1 + Ollama /api + Anthropic /v1/messages mimic backed by the subscription claude CLI (no metered key), with a vendored Headroom (Apache-2.0) compression hop and a savings dashboard. Successor to kg-bridge; usable as a local/remote fallback. Internal WG-only sidecar, never public.</a></li><li class="chapter-item expanded "><a href="services/ollama.html"><strong aria-hidden="true">29.</strong> Ollama LLM Server — DeepSeek/Qwen 14B on GCP Spot T4 + Vast.ai fallback</a></li><li class="chapter-item expanded "><a href="services/ollama-arm.html"><strong aria-hidden="true">30.</strong> Ollama LLM server (ARM CPU, 7b models)</a></li><li class="chapter-item expanded "><a href="services/rig-agentic-sonn-14bq8.html"><strong aria-hidden="true">31.</strong> Rig Agentic AI (Heavy) — DeepSeek R1 14B Q8 agent with tool calling via C3 MCP</a></li><li class="chapter-item expanded "><a href="services/session-memory.html"><strong aria-hidden="true">32.</strong> Central SQLite store of all Claude Code session transcripts — push/list/fetch so a session started on one device can be resumed from any other. WG-only sidecar on oci-apps; Node 22 built-in node:sqlite (phone-portable, no native deps).</a></li><li class="chapter-item expanded affix "><li class="part-title">Cloud Providers</li><li class="chapter-item expanded "><a href="services/cloudflare-worker.html"><strong aria-hidden="true">33.</strong> Cloudflare Email Worker — inbound mail forwarder. Triple-delivers to Maddy (via http-to-smtp-proxy-api), Google Workspace (Gmail API), and live.com (disaster backup).</a></li><li class="chapter-item expanded "><a href="services/gcloud.html"><strong aria-hidden="true">34.</strong> Google Cloud SDK and tools (local CLI only)</a></li><li class="chapter-item expanded "><a href="services/hickory-dns.html"><strong aria-hidden="true">35.</strong> Internal DNS server for WireGuard mesh (per-service .app zones)</a></li><li class="chapter-item expanded affix "><li class="part-title">Security</li><li class="chapter-item expanded "><a href="services/c3-infra-api.html"><strong aria-hidden="true">36.</strong> C3 REST API — Cloud Control Center Fastify API</a></li><li class="chapter-item expanded "><a href="services/c3-infra-mcp.html"><strong aria-hidden="true">37.</strong> C3 MCP Server — Cloud Control Center MCP transport (stdio + HTTP)</a></li><li class="chapter-item expanded "><a href="services/authelia.html"><strong aria-hidden="true">38.</strong> SSO and 2FA authentication portal</a></li><li class="chapter-item expanded "><a href="services/caddy.html"><strong aria-hidden="true">39.</strong> Caddy reverse proxy + security dashboard (gcp-proxy, wg0 bind)</a></li><li class="chapter-item expanded "><a href="services/caddy-l4-image.html"><strong aria-hidden="true">40.</strong> Custom Caddy with L4 TCP proxy, ratelimit, Cloudflare DNS plugins</a></li><li class="chapter-item expanded "><a href="services/caddy-public.html"><strong aria-hidden="true">41.</strong> Caddy public-edge L7 allowlist on oci-analytics. Terminates TLS on :8443, serves ONLY the declared-public allowlist (build-caddy-public.json: gh-pages, no-auth subdomains, well-known, explicit public_paths), and FORWARDS everything else to the private hub gcp-proxy over wg-public (10.1.0.2:443). Fail-closed: any host/path not explicitly allowlisted is forwarded to gcp-proxy, whose @wg gate 403s public clients.</a></li><li class="chapter-item expanded "><a href="services/crowdsec.html"><strong aria-hidden="true">42.</strong> CrowdSec behavioral IDS/IPS engine — DORMANT placeholder (Cloudflare-off fallback). Container runs but detects/remediates nothing: empty acquisition, online API (CAPI) disabled, no bouncers wired.</a></li><li class="chapter-item expanded "><a href="services/introspect-proxy.html"><strong aria-hidden="true">43.</strong> OIDC token introspection sidecar for Caddy Bearer auth</a></li><li class="chapter-item expanded affix "><li class="part-title">Observability</li><li class="chapter-item expanded "><a href="services/c3-analytics-api.html"><strong aria-hidden="true">44.</strong> Public first-party analytics collector — passthrough proxy to matomo/umami/openobserve</a></li><li class="chapter-item expanded "><a href="services/c3-public-api.html"><strong aria-hidden="true">45.</strong> C3 Public API — single public-edge listener on oci-analytics. Consolidates http-to-smtp-proxy-api (Bearer-gated /mail/) and c3-analytics-api passthrough (public /analytics/). Replaces split listeners across gcp-proxy + oci-analytics so gcp-proxy becomes a pure wg0 spoke.</a></li><li class="chapter-item expanded "><a href="services/c3-services-api.html"><strong aria-hidden="true">46.</strong> C3 Services REST API — service API gateway Fastify API</a></li><li class="chapter-item expanded "><a href="services/c3-services-mcp.html"><strong aria-hidden="true">47.</strong> C3 Services MCP Server — service API gateway MCP transport (stdio + HTTP)</a></li><li class="chapter-item expanded "><a href="services/cloud-cgc-mcp.html"><strong aria-hidden="true">48.</strong> Cloud CGC MCP — Code Graph Context: infra knowledge, specs, docs, semantic code search</a></li><li class="chapter-item expanded affix "><li class="part-title">Data</li><li class="chapter-item expanded "><a href="services/c3-diego-personal-data-mcp.html"><strong aria-hidden="true">49.</strong> MCP server — READ-ONLY personal data access (vault metadata, identity, comms, media, finance, health)</a></li><li class="chapter-item expanded "><a href="services/gitea.html"><strong aria-hidden="true">50.</strong> Self-hosted Git service</a></li><li class="chapter-item expanded "><a href="services/redis.html"><strong aria-hidden="true">51.</strong> In-memory data store</a></li><li class="chapter-item expanded "><a href="services/db-agent.html"><strong aria-hidden="true">52.</strong> Central DB Backup Agent (deployed on all VMs)</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="overview.html"><strong aria-hidden="true">1.</strong> Overview</a></li><li class="chapter-item expanded affix "><li class="spacer"></li><li class="chapter-item expanded affix "><li class="part-title">Applications</li><li class="chapter-item expanded "><a href="services/cloud-drive-mcp.html"><strong aria-hidden="true">2.</strong> Drive MCP server — one facade over every storage unit: repos, files, photos, sync, scrapes, S3 and conversion</a></li><li class="chapter-item expanded "><a href="services/cloud-mail-mcp.html"><strong aria-hidden="true">3.</strong> Mail MCP server — IMAP/SMTP/Admin via Stalwart REST API</a></li><li class="chapter-item expanded "><a href="services/cloud-mattermost-mcp.html"><strong aria-hidden="true">4.</strong> Mattermost MCP server — chat tools via HTTP transport</a></li><li class="chapter-item expanded "><a href="services/cloud-superapp-mcp.html"><strong aria-hidden="true">5.</strong> MCP + HTTP faces over the Android constellation's on-device debug API (libs:devtools AppDebugServer), reached over ssh. lib-api/lib-mcp shared, one module per app under mcps-apps/, one server process.</a></li><li class="chapter-item expanded "><a href="services/git-proxy-api.html"><strong aria-hidden="true">6.</strong> Git Proxy API — Authelia-fronted read path to GitHub so the phone holds NO GitHub credential (#647, route 3 of #646's fallback chain). The caller authenticates to US with the Authelia bearer it already has; this service holds the GitHub token server-side and streams the result back.</a></li><li class="chapter-item expanded "><a href="services/google-personal-mcp.html"><strong aria-hidden="true">7.</strong> Google Personal Account MCP server — Gmail (IMAP/SMTP via App Password) for personal Google accounts, multi-account</a></li><li class="chapter-item expanded "><a href="services/google-workspace-mcp.html"><strong aria-hidden="true">8.</strong> Google Workspace MCP server — Gmail, Calendar, Drive, Docs, Sheets via HTTP transport</a></li><li class="chapter-item expanded "><a href="services/chat-mattermost.html"><strong aria-hidden="true">9.</strong> Mattermost team chat (TE 11.x ESR) with ntfy bridge and C3 command bot</a></li><li class="chapter-item expanded "><a href="services/cloud-webmail.html"><strong aria-hidden="true">10.</strong> Cloud Webmail — Stalwart-native JMAP webmail with multi-account/multi-server (webmail.diegonmarcos.com); OUR build of bulwarkmail/webmail 1.9.2. Replaces SnappyMail.</a></li><li class="chapter-item expanded "><a href="services/mail-puller.html"><strong aria-hidden="true">11.</strong> Rust sidecar — IMAP-IDLE pulls from external providers (Gmail, Outlook/Live, …) and delivers into Maddy via SMTP submission (:465 implicit TLS; Maddy dual-writes to Stalwart). Declarative source list in src/sources.json; OAuth2 creds via sops.</a></li><li class="chapter-item expanded "><a href="services/matrix-continuwuity.html"><strong aria-hidden="true">12.</strong> Continuwuity Matrix homeserver (maintained conduwuit fork, Rust/RocksDB) — central hub for chat bridges. Federation enabled via .well-known delegation over :443.</a></li><li class="chapter-item expanded "><a href="services/matrix-element.html"><strong aria-hidden="true">13.</strong> Element Web — browser Matrix client for the Continuwuity homeserver. Served at messenger.diegonmarcos.com behind Authelia 2FA.</a></li><li class="chapter-item expanded "><a href="services/matrix-mautrix-whatsapp.html"><strong aria-hidden="true">14.</strong> mautrix-whatsapp bridge (appservice) for the Continuwuity homeserver. WG-only, no public route. Links a WhatsApp account via QR into Matrix.</a></li><li class="chapter-item expanded "><a href="services/maddy.html"><strong aria-hidden="true">15.</strong> Maddy Mail Server (mail.diegonmarcos.com)</a></li><li class="chapter-item expanded "><a href="services/stalwart.html"><strong aria-hidden="true">16.</strong> Stalwart Mail Server — JMAP webmail backend (jmap.diegonmarcos.com)</a></li><li class="chapter-item expanded "><a href="services/photoprism.html"><strong aria-hidden="true">17.</strong> PhotoPrism AI-powered photo management (oci-flex-1)</a></li><li class="chapter-item expanded "><a href="services/playlist-syncer.html"><strong aria-hidden="true">18.</strong> Spotube — bidirectional Spotify &lt;-&gt; YouTube Music playlist sync (playlist.diegonmarcos.com). Self-hosted Soundiiz alternative.</a></li><li class="chapter-item expanded "><a href="services/calendar-radicale.html"><strong aria-hidden="true">19.</strong> Radicale CalDAV server (calendars only) — cal.diegonmarcos.com</a></li><li class="chapter-item expanded "><a href="services/code-server.html"><strong aria-hidden="true">20.</strong> VS Code IDE (ide.diegonmarcos.com)</a></li><li class="chapter-item expanded "><a href="services/contacts-radicale.html"><strong aria-hidden="true">21.</strong> Radicale CardDAV server (contacts / address books) — contacts.diegonmarcos.com</a></li><li class="chapter-item expanded "><a href="services/etherpad.html"><strong aria-hidden="true">22.</strong> Etherpad collaborative editor</a></li><li class="chapter-item expanded "><a href="services/filebrowser.html"><strong aria-hidden="true">23.</strong> FileBrowser web file manager (NEW - not deployed yet)</a></li><li class="chapter-item expanded "><a href="services/grist.html"><strong aria-hidden="true">24.</strong> Grist spreadsheet/database (sheets.diegonmarcos.com)</a></li><li class="chapter-item expanded "><a href="services/hedgedoc.html"><strong aria-hidden="true">25.</strong> Collaborative markdown editor</a></li><li class="chapter-item expanded "><a href="services/send.html"><strong aria-hidden="true">26.</strong> Send — self-hosted end-to-end encrypted ephemeral file sharing (timvisee/send, Firefox Send fork). Files encrypted client-side; server sees only ciphertext. Links self-destruct after configured downloads or time.</a></li><li class="chapter-item expanded "><a href="services/front-end.html"><strong aria-hidden="true">27.</strong> Front-end project — GitHub Pages route declarations (apex + subdomains). Data-only service: no flake, no deploy. Owns the declarative source for every public host that reverse-proxies to diegonmarcos.github.io, replacing the previous hack of co-locating these inside bb-sec_caddy/build.json.</a></li><li class="chapter-item expanded affix "><li class="part-title">Microservices</li><li class="chapter-item expanded "><a href="services/vaultwarden.html"><strong aria-hidden="true">28.</strong> Bitwarden password manager</a></li><li class="chapter-item expanded affix "><li class="part-title">Financial</li><li class="chapter-item expanded "><a href="services/fin-api.html"><strong aria-hidden="true">29.</strong> Fincept Terminal backend (fin-api) — REST + WebSocket over DataHub, 35 data connectors, 7 analytics, 17 brokers, 6 investor personas, MCP tools</a></li><li class="chapter-item expanded affix "><li class="part-title">AI / AGI</li><li class="chapter-item expanded "><a href="services/hermes-agent.html"><strong aria-hidden="true">30.</strong> Nous Research Hermes Agent (autonomous, persistent-memory AI agent) on oci-apps. Messaging gateway (Telegram live, Mattermost scaffolded) backed by claude-superset-api (subscription CLI, no metered key). WG-internal, never public.</a></li><li class="chapter-item expanded "><a href="services/my-ai-api.html"><strong aria-hidden="true">31.</strong> my-ai API on oci-apps — one polyglot container: OpenAI /v1 + Ollama /api + Anthropic /v1/messages mimic backed by OpenRouter (no Claude subscription, no metered Anthropic key), with a vendored Headroom (Apache-2.0) compression hop and a savings dashboard. Sibling of claude-superset-api; the agent face for this stack is goose (my-ai wraps goose, claude-superset keeps claude-cli). Internal WG-only sidecar, never public.</a></li><li class="chapter-item expanded "><a href="services/my-ai_claude-api.html"><strong aria-hidden="true">32.</strong> Claude superset API on oci-apps — one polyglot container: OpenAI /v1 + Ollama /api + Anthropic /v1/messages mimic backed by the subscription claude CLI (no metered key), with a vendored Headroom (Apache-2.0) compression hop and a savings dashboard. Successor to kg-bridge; usable as a local/remote fallback. Internal WG-only sidecar, never public.</a></li><li class="chapter-item expanded "><a href="services/session-memory.html"><strong aria-hidden="true">33.</strong> Central SQLite store of all Claude Code session transcripts — push/list/fetch so a session started on one device can be resumed from any other. WG-only sidecar on oci-apps; Node 22 built-in node:sqlite (phone-portable, no native deps).</a></li><li class="chapter-item expanded affix "><li class="part-title">Cloud Providers</li><li class="chapter-item expanded "><a href="services/cloudflare-worker.html"><strong aria-hidden="true">34.</strong> Cloudflare Email Worker — inbound mail forwarder. Triple-delivers to Maddy (via http-to-smtp-proxy-api), Google Workspace (Gmail API), and live.com (disaster backup).</a></li><li class="chapter-item expanded "><a href="services/gcloud.html"><strong aria-hidden="true">35.</strong> Google Cloud SDK and tools (local CLI only)</a></li><li class="chapter-item expanded "><a href="services/hickory-dns.html"><strong aria-hidden="true">36.</strong> Internal DNS server for WireGuard mesh (per-service .app zones)</a></li><li class="chapter-item expanded affix "><li class="part-title">Security</li><li class="chapter-item expanded "><a href="services/c3-infra-api.html"><strong aria-hidden="true">37.</strong> C3 REST API — Cloud Control Center Fastify API</a></li><li class="chapter-item expanded "><a href="services/cloud-infra-mcp.html"><strong aria-hidden="true">38.</strong> C3 MCP Server — Cloud Control Center MCP transport (stdio + HTTP)</a></li><li class="chapter-item expanded "><a href="services/authelia.html"><strong aria-hidden="true">39.</strong> SSO and 2FA authentication portal</a></li><li class="chapter-item expanded "><a href="services/caddy.html"><strong aria-hidden="true">40.</strong> Caddy reverse proxy + security dashboard (gcp-proxy, wg0 bind)</a></li><li class="chapter-item expanded "><a href="services/caddy-l4-image.html"><strong aria-hidden="true">41.</strong> Custom Caddy with L4 TCP proxy, ratelimit, Cloudflare DNS plugins</a></li><li class="chapter-item expanded "><a href="services/caddy-public.html"><strong aria-hidden="true">42.</strong> Caddy public-edge L7 allowlist on oci-analytics. Terminates TLS on :8443, serves ONLY the declared-public allowlist (build-caddy-public.json: gh-pages, no-auth subdomains, well-known, explicit public_paths), and FORWARDS everything else to the private hub gcp-proxy over wg-public (10.1.0.2:443). Fail-closed: any host/path not explicitly allowlisted is forwarded to gcp-proxy, whose @wg gate 403s public clients.</a></li><li class="chapter-item expanded "><a href="services/crowdsec.html"><strong aria-hidden="true">43.</strong> CrowdSec behavioral IDS/IPS engine — DORMANT placeholder (Cloudflare-off fallback). Container runs but detects/remediates nothing: empty acquisition, online API (CAPI) disabled, no bouncers wired.</a></li><li class="chapter-item expanded "><a href="services/introspect-proxy.html"><strong aria-hidden="true">44.</strong> OIDC token introspection sidecar for Caddy Bearer auth</a></li><li class="chapter-item expanded affix "><li class="part-title">Observability</li><li class="chapter-item expanded "><a href="services/c3-public-api.html"><strong aria-hidden="true">45.</strong> C3 Public API — single public-edge listener on oci-analytics. Consolidates http-to-smtp-proxy-api (Bearer-gated /mail/) and c3-analytics-api passthrough (public /analytics/). Replaces split listeners across gcp-proxy + oci-analytics so gcp-proxy becomes a pure wg0 spoke.</a></li><li class="chapter-item expanded "><a href="services/c3-services-api.html"><strong aria-hidden="true">46.</strong> C3 Services REST API — service API gateway Fastify API</a></li><li class="chapter-item expanded "><a href="services/cloud-services-mcp.html"><strong aria-hidden="true">47.</strong> C3 Services MCP Server — service API gateway MCP transport (stdio + HTTP)</a></li><li class="chapter-item expanded "><a href="services/cloud-cgc-pub-mcp.html"><strong aria-hidden="true">48.</strong> Cloud CGC Pub MCP — Code Graph Context: infra knowledge, specs, docs, semantic code search</a></li><li class="chapter-item expanded affix "><li class="part-title">Data</li><li class="chapter-item expanded "><a href="services/cloud-vault-mcp.html"><strong aria-hidden="true">49.</strong> MCP server — READ-ONLY personal data access (vault metadata, identity, comms, media, finance, health)</a></li><li class="chapter-item expanded "><a href="services/gitea.html"><strong aria-hidden="true">50.</strong> Self-hosted Git service</a></li><li class="chapter-item expanded "><a href="services/redis.html"><strong aria-hidden="true">51.</strong> In-memory data store</a></li><li class="chapter-item expanded "><a href="services/db-agent.html"><strong aria-hidden="true">52.</strong> Central DB Backup Agent (deployed on all VMs)</a></li><li class="chapter-item expanded "><a href="services/kg-store.html"><strong aria-hidden="true">53.</strong> SurrealDB Hybrid Knowledge Graph - Infrastructure topology + vector search</a></li><li class="chapter-item expanded "><a href="services/kg-store-pub.html"><strong aria-hidden="true">54.</strong> SurrealDB Hybrid Knowledge Graph - Infrastructure topology + vector search</a></li><li class="chapter-item expanded "><a href="services/scrappers-api.html"><strong aria-hidden="true">55.</strong> Unified scrapers API (Instagram / Pinterest / LinkedIn / generic crawl) — retires crawlee-cloud. Lean single-container FastAPI, on-demand, flat-JSON output.</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -204,6 +204,58 @@
 <p>Each service's <code>flake.nix</code> contains a <code>mkDocs</code> function that auto-generates an mdBook site from the <code>config</code> attrset. The spec page shows all configured values (domains, ports, images, containers). Optional narrative docs in <code>src/docs/</code> provide additional context.</p>
 <p>Build a service's docs: <code>cd &lt;service&gt;/src &amp;&amp; nix build .#docs</code></p>
 <p>Build via build.sh: <code>&lt;service&gt;/build.sh docs</code></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="drive-mcp-server--one-facade-over-every-storage-unit-repos-files-photos-sync-scrapes-s3-and-conversion"><a class="header" href="#drive-mcp-server--one-facade-over-every-storage-unit-repos-files-photos-sync-scrapes-s3-and-conversion">Drive MCP server — one facade over every storage unit: repos, files, photos, sync, scrapes, S3 and conversion</a></h1>
+<div class="table-wrapper"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
+<tr><td><strong>Key</strong></td><td><code>cloud-drive-mcp</code></td></tr>
+<tr><td><strong>VM</strong></td><td><code>oci-A1-f_0</code></td></tr>
+<tr><td><strong>Category</strong></td><td><code>app</code></td></tr>
+<tr><td><strong>Domain</strong></td><td><code>drive-mcp.app</code></td></tr>
+<tr><td><strong>Upstream</strong></td><td><code>10.0.0.6:3109</code></td></tr>
+<tr><td><strong>Image</strong></td><td><code>ghcr.io/diegonmarcos/cloud-drive-mcp:latest</code></td></tr>
+<tr><td><strong>Port</strong></td><td><code>3109</code></td></tr>
+</tbody></table>
+</div><div style="break-before: page; page-break-before: always;"></div><h1 id="mail-mcp-server--imapsmtpadmin-via-stalwart-rest-api"><a class="header" href="#mail-mcp-server--imapsmtpadmin-via-stalwart-rest-api">Mail MCP server — IMAP/SMTP/Admin via Stalwart REST API</a></h1>
+<div class="table-wrapper"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
+<tr><td><strong>Key</strong></td><td><code>cloud-mail-mcp</code></td></tr>
+<tr><td><strong>VM</strong></td><td><code>oci-A1-f_0</code></td></tr>
+<tr><td><strong>Category</strong></td><td><code>app</code></td></tr>
+<tr><td><strong>Domain</strong></td><td><code>mail-mcp.app</code></td></tr>
+<tr><td><strong>Upstream</strong></td><td><code>10.0.0.6:3103</code></td></tr>
+<tr><td><strong>Image</strong></td><td><code>ghcr.io/diegonmarcos/cloud-mail-mcp:latest</code></td></tr>
+<tr><td><strong>Port</strong></td><td><code>3103</code></td></tr>
+</tbody></table>
+</div><div style="break-before: page; page-break-before: always;"></div><h1 id="mattermost-mcp-server--chat-tools-via-http-transport"><a class="header" href="#mattermost-mcp-server--chat-tools-via-http-transport">Mattermost MCP server — chat tools via HTTP transport</a></h1>
+<div class="table-wrapper"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
+<tr><td><strong>Key</strong></td><td><code>cloud-mattermost-mcp</code></td></tr>
+<tr><td><strong>VM</strong></td><td><code>oci-A1-f_0</code></td></tr>
+<tr><td><strong>Category</strong></td><td><code>app</code></td></tr>
+<tr><td><strong>Domain</strong></td><td><code>mattermost-mcp.app</code></td></tr>
+<tr><td><strong>Upstream</strong></td><td><code>10.0.0.6:3102</code></td></tr>
+<tr><td><strong>Image</strong></td><td><code>ghcr.io/diegonmarcos/cloud-mattermost-mcp:latest</code></td></tr>
+<tr><td><strong>Port</strong></td><td><code>3102</code></td></tr>
+</tbody></table>
+</div><div style="break-before: page; page-break-before: always;"></div><h1 id="mcp--http-faces-over-the-android-constellations-on-device-debug-api-libsdevtools-appdebugserver-reached-over-ssh-lib-apilib-mcp-shared-one-module-per-app-under-mcps-apps-one-server-process"><a class="header" href="#mcp--http-faces-over-the-android-constellations-on-device-debug-api-libsdevtools-appdebugserver-reached-over-ssh-lib-apilib-mcp-shared-one-module-per-app-under-mcps-apps-one-server-process">MCP + HTTP faces over the Android constellation's on-device debug API (libs:devtools AppDebugServer), reached over ssh. lib-api/lib-mcp shared, one module per app under mcps-apps/, one server process.</a></h1>
+<div class="table-wrapper"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
+<tr><td><strong>Key</strong></td><td><code>cloud-superapp-mcp</code></td></tr>
+<tr><td><strong>VM</strong></td><td><code>oci-A1-f_0</code></td></tr>
+<tr><td><strong>Category</strong></td><td><code>app</code></td></tr>
+<tr><td><strong>Domain</strong></td><td><code>superapp-mcp.app</code></td></tr>
+<tr><td><strong>Upstream</strong></td><td><code>10.0.0.6:3110</code></td></tr>
+<tr><td><strong>Image</strong></td><td><code>ghcr.io/diegonmarcos/cloud-superapp-mcp:latest</code></td></tr>
+<tr><td><strong>Port</strong></td><td><code>3110</code></td></tr>
+</tbody></table>
+</div><div style="break-before: page; page-break-before: always;"></div><h1 id="git-proxy-api--authelia-fronted-read-path-to-github-so-the-phone-holds-no-github-credential-647-route-3-of-646s-fallback-chain-the-caller-authenticates-to-us-with-the-authelia-bearer-it-already-has-this-service-holds-the-github-token-server-side-and-streams-the-result-back"><a class="header" href="#git-proxy-api--authelia-fronted-read-path-to-github-so-the-phone-holds-no-github-credential-647-route-3-of-646s-fallback-chain-the-caller-authenticates-to-us-with-the-authelia-bearer-it-already-has-this-service-holds-the-github-token-server-side-and-streams-the-result-back">Git Proxy API — Authelia-fronted read path to GitHub so the phone holds NO GitHub credential (#647, route 3 of #646's fallback chain). The caller authenticates to US with the Authelia bearer it already has; this service holds the GitHub token server-side and streams the result back.</a></h1>
+<div class="table-wrapper"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
+<tr><td><strong>Key</strong></td><td><code>git-proxy-api</code></td></tr>
+<tr><td><strong>VM</strong></td><td><code>oci-E2-f_1</code></td></tr>
+<tr><td><strong>Category</strong></td><td><code>app</code></td></tr>
+<tr><td><strong>Domain</strong></td><td><code>git-proxy-api.app</code></td></tr>
+<tr><td><strong>Upstream</strong></td><td><code>10.0.0.4:8123</code></td></tr>
+<tr><td><strong>Image</strong></td><td><code>ghcr.io/diegonmarcos/git-proxy-api:latest</code></td></tr>
+<tr><td><strong>Port</strong></td><td><code>8123</code></td></tr>
+<tr><td><strong>Healthcheck</strong></td><td><code>/health</code></td></tr>
+</tbody></table>
+</div><div class="probe" data-svc="git-proxy-api">Live probe: <span class="probe-status" id="probe-git-proxy-api">checking…</span></div>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="google-personal-account-mcp-server--gmail-imapsmtp-via-app-password-for-personal-google-accounts-multi-account"><a class="header" href="#google-personal-account-mcp-server--gmail-imapsmtp-via-app-password-for-personal-google-accounts-multi-account">Google Personal Account MCP server — Gmail (IMAP/SMTP via App Password) for personal Google accounts, multi-account</a></h1>
 <div class="table-wrapper"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
 <tr><td><strong>Key</strong></td><td><code>google-personal-mcp</code></td></tr>
@@ -228,27 +280,7 @@
 <tr><td><strong>Healthcheck</strong></td><td><code>/health</code></td></tr>
 </tbody></table>
 </div><div class="probe" data-svc="google-workspace-mcp">Live probe: <span class="probe-status" id="probe-google-workspace-mcp">checking…</span></div>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="mail-mcp-server--imapsmtpadmin-via-stalwart-rest-api"><a class="header" href="#mail-mcp-server--imapsmtpadmin-via-stalwart-rest-api">Mail MCP server — IMAP/SMTP/Admin via Stalwart REST API</a></h1>
-<div class="table-wrapper"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
-<tr><td><strong>Key</strong></td><td><code>mail-mcp</code></td></tr>
-<tr><td><strong>VM</strong></td><td><code>oci-A1-f_0</code></td></tr>
-<tr><td><strong>Category</strong></td><td><code>app</code></td></tr>
-<tr><td><strong>Domain</strong></td><td><code>mail-mcp.app</code></td></tr>
-<tr><td><strong>Upstream</strong></td><td><code>10.0.0.6:3103</code></td></tr>
-<tr><td><strong>Image</strong></td><td><code>ghcr.io/diegonmarcos/mail-mcp:latest</code></td></tr>
-<tr><td><strong>Port</strong></td><td><code>3103</code></td></tr>
-</tbody></table>
-</div><div style="break-before: page; page-break-before: always;"></div><h1 id="mattermost-mcp-server--chat-tools-via-http-transport"><a class="header" href="#mattermost-mcp-server--chat-tools-via-http-transport">Mattermost MCP server — chat tools via HTTP transport</a></h1>
-<div class="table-wrapper"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
-<tr><td><strong>Key</strong></td><td><code>mattermost-mcp</code></td></tr>
-<tr><td><strong>VM</strong></td><td><code>oci-A1-f_0</code></td></tr>
-<tr><td><strong>Category</strong></td><td><code>app</code></td></tr>
-<tr><td><strong>Domain</strong></td><td><code>mattermost-mcp.app</code></td></tr>
-<tr><td><strong>Upstream</strong></td><td><code>10.0.0.6:3102</code></td></tr>
-<tr><td><strong>Image</strong></td><td><code>ghcr.io/diegonmarcos/mattermost-mcp:latest</code></td></tr>
-<tr><td><strong>Port</strong></td><td><code>3102</code></td></tr>
-</tbody></table>
-</div><div style="break-before: page; page-break-before: always;"></div><h1 id="mattermost-team-chat-te-11x-esr-with-ntfy-bridge-and-c3-command-bot"><a class="header" href="#mattermost-team-chat-te-11x-esr-with-ntfy-bridge-and-c3-command-bot">Mattermost team chat (TE 11.x ESR) with ntfy bridge and C3 command bot</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="mattermost-team-chat-te-11x-esr-with-ntfy-bridge-and-c3-command-bot"><a class="header" href="#mattermost-team-chat-te-11x-esr-with-ntfy-bridge-and-c3-command-bot">Mattermost team chat (TE 11.x ESR) with ntfy bridge and C3 command bot</a></h1>
 <div class="table-wrapper"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
 <tr><td><strong>Key</strong></td><td><code>chat-mattermost</code></td></tr>
 <tr><td><strong>VM</strong></td><td><code>oci-A1-f_0</code></td></tr>
@@ -260,19 +292,19 @@
 <tr><td><strong>Healthcheck</strong></td><td><code>/api/v4/system/ping</code></td></tr>
 </tbody></table>
 </div><div class="probe" data-svc="chat-mattermost">Live probe: <span class="probe-status" id="probe-chat-mattermost">checking…</span></div>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="cypht-webmail-multi-account-imapjmapews-rss-feeds-calendar--webmaildiegonmarcoscom"><a class="header" href="#cypht-webmail-multi-account-imapjmapews-rss-feeds-calendar--webmaildiegonmarcoscom">Cypht webmail (multi-account IMAP/JMAP/EWS, RSS feeds, calendar) — webmail.diegonmarcos.com</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="cloud-webmail--stalwart-native-jmap-webmail-with-multi-accountmulti-server-webmaildiegonmarcoscom-our-build-of-bulwarkmailwebmail-192-replaces-snappymail"><a class="header" href="#cloud-webmail--stalwart-native-jmap-webmail-with-multi-accountmulti-server-webmaildiegonmarcoscom-our-build-of-bulwarkmailwebmail-192-replaces-snappymail">Cloud Webmail — Stalwart-native JMAP webmail with multi-account/multi-server (webmail.diegonmarcos.com); OUR build of bulwarkmail/webmail 1.9.2. Replaces SnappyMail.</a></h1>
 <div class="table-wrapper"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
-<tr><td><strong>Key</strong></td><td><code>cypht</code></td></tr>
-<tr><td><strong>VM</strong></td><td><code>oci-E2-f_0</code></td></tr>
+<tr><td><strong>Key</strong></td><td><code>cloud-webmail</code></td></tr>
+<tr><td><strong>VM</strong></td><td><code>oci-A1-f_0</code></td></tr>
 <tr><td><strong>Category</strong></td><td><code>app</code></td></tr>
-<tr><td><strong>Domain</strong></td><td><code>cypht.app</code></td></tr>
-<tr><td><strong>Upstream</strong></td><td><code>10.0.0.3:8889</code></td></tr>
-<tr><td><strong>Image</strong></td><td><code>cypht/cypht:latest</code></td></tr>
-<tr><td><strong>Port</strong></td><td><code>8889</code></td></tr>
-<tr><td><strong>Healthcheck</strong></td><td><code>/</code></td></tr>
+<tr><td><strong>Domain</strong></td><td><code>webmail.app</code></td></tr>
+<tr><td><strong>Upstream</strong></td><td><code>10.0.0.6:3000</code></td></tr>
+<tr><td><strong>Image</strong></td><td><code>ghcr.io/diegonmarcos/cloud-webmail-binaries:latest</code></td></tr>
+<tr><td><strong>Port</strong></td><td><code>3000</code></td></tr>
+<tr><td><strong>Healthcheck</strong></td><td><code>/api/health</code></td></tr>
 </tbody></table>
-</div><div class="probe" data-svc="cypht">Live probe: <span class="probe-status" id="probe-cypht">checking…</span></div>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="rust-sidecar--imap-idle-pulls-from-external-providers-gmail-outlooklive--and-dual-delivers-into-maddy--stalwart-via-smtp-submission-declarative-source-list-in-srcsourcesjson-oauth2-creds-via-sops"><a class="header" href="#rust-sidecar--imap-idle-pulls-from-external-providers-gmail-outlooklive--and-dual-delivers-into-maddy--stalwart-via-smtp-submission-declarative-source-list-in-srcsourcesjson-oauth2-creds-via-sops">Rust sidecar — IMAP-IDLE pulls from external providers (Gmail, Outlook/Live, …) and dual-delivers into Maddy + Stalwart via SMTP submission. Declarative source list in src/sources.json; OAuth2 creds via sops.</a></h1>
+</div><div class="probe" data-svc="cloud-webmail">Live probe: <span class="probe-status" id="probe-cloud-webmail">checking…</span></div>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="rust-sidecar--imap-idle-pulls-from-external-providers-gmail-outlooklive--and-delivers-into-maddy-via-smtp-submission-465-implicit-tls-maddy-dual-writes-to-stalwart-declarative-source-list-in-srcsourcesjson-oauth2-creds-via-sops"><a class="header" href="#rust-sidecar--imap-idle-pulls-from-external-providers-gmail-outlooklive--and-delivers-into-maddy-via-smtp-submission-465-implicit-tls-maddy-dual-writes-to-stalwart-declarative-source-list-in-srcsourcesjson-oauth2-creds-via-sops">Rust sidecar — IMAP-IDLE pulls from external providers (Gmail, Outlook/Live, …) and delivers into Maddy via SMTP submission (:465 implicit TLS; Maddy dual-writes to Stalwart). Declarative source list in src/sources.json; OAuth2 creds via sops.</a></h1>
 <div class="table-wrapper"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
 <tr><td><strong>Key</strong></td><td><code>mail-puller</code></td></tr>
 <tr><td><strong>VM</strong></td><td><code>oci-E2-f_0</code></td></tr>
@@ -314,19 +346,7 @@
 <tr><td><strong>Image</strong></td><td><code>ghcr.io/diegonmarcos/matrix-mautrix-whatsapp-binaries:latest</code></td></tr>
 <tr><td><strong>Port</strong></td><td><code>29318</code></td></tr>
 </tbody></table>
-</div><div style="break-before: page; page-break-before: always;"></div><h1 id="snappymail-webmail-client-maildiegonmarcoscomwebmail"><a class="header" href="#snappymail-webmail-client-maildiegonmarcoscomwebmail">SnappyMail webmail client (mail.diegonmarcos.com/webmail)</a></h1>
-<div class="table-wrapper"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
-<tr><td><strong>Key</strong></td><td><code>snappymail</code></td></tr>
-<tr><td><strong>VM</strong></td><td><code>oci-E2-f_0</code></td></tr>
-<tr><td><strong>Category</strong></td><td><code>app</code></td></tr>
-<tr><td><strong>Domain</strong></td><td><code>snappymail.app</code></td></tr>
-<tr><td><strong>Upstream</strong></td><td><code>10.0.0.3:8888</code></td></tr>
-<tr><td><strong>Image</strong></td><td><code>djmaze/snappymail:latest</code></td></tr>
-<tr><td><strong>Port</strong></td><td><code>8888</code></td></tr>
-<tr><td><strong>Healthcheck</strong></td><td><code>/</code></td></tr>
-</tbody></table>
-</div><div class="probe" data-svc="snappymail">Live probe: <span class="probe-status" id="probe-snappymail">checking…</span></div>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="maddy-mail-server-maildiegonmarcoscom"><a class="header" href="#maddy-mail-server-maildiegonmarcoscom">Maddy Mail Server (mail.diegonmarcos.com)</a></h1>
+</div><div style="break-before: page; page-break-before: always;"></div><h1 id="maddy-mail-server-maildiegonmarcoscom"><a class="header" href="#maddy-mail-server-maildiegonmarcoscom">Maddy Mail Server (mail.diegonmarcos.com)</a></h1>
 <div class="table-wrapper"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
 <tr><td><strong>Key</strong></td><td><code>maddy</code></td></tr>
 <tr><td><strong>VM</strong></td><td><code>oci-E2-f_0</code></td></tr>
@@ -341,7 +361,7 @@
 <tr><td><strong>Category</strong></td><td><code>app</code></td></tr>
 <tr><td><strong>Domain</strong></td><td><code>stalwart.app</code></td></tr>
 <tr><td><strong>Upstream</strong></td><td><code>10.0.0.3:2443</code></td></tr>
-<tr><td><strong>Image</strong></td><td><code>stalwartlabs/stalwart:v0.14.1</code></td></tr>
+<tr><td><strong>Image</strong></td><td><code>stalwartlabs/stalwart:v0.16.5</code></td></tr>
 <tr><td><strong>Port</strong></td><td><code>2443</code></td></tr>
 <tr><td><strong>Healthcheck</strong></td><td><code>/</code></td></tr>
 </tbody></table>
@@ -358,6 +378,18 @@
 <tr><td><strong>Healthcheck</strong></td><td><code>/api/v1/status</code></td></tr>
 </tbody></table>
 </div><div class="probe" data-svc="photoprism">Live probe: <span class="probe-status" id="probe-photoprism">checking…</span></div>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="spotube--bidirectional-spotify---youtube-music-playlist-sync-playlistdiegonmarcoscom-self-hosted-soundiiz-alternative"><a class="header" href="#spotube--bidirectional-spotify---youtube-music-playlist-sync-playlistdiegonmarcoscom-self-hosted-soundiiz-alternative">Spotube — bidirectional Spotify &lt;-&gt; YouTube Music playlist sync (playlist.diegonmarcos.com). Self-hosted Soundiiz alternative.</a></h1>
+<div class="table-wrapper"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
+<tr><td><strong>Key</strong></td><td><code>playlist-syncer</code></td></tr>
+<tr><td><strong>VM</strong></td><td><code>oci-A1-f_0</code></td></tr>
+<tr><td><strong>Category</strong></td><td><code>app</code></td></tr>
+<tr><td><strong>Domain</strong></td><td><code>playlist-syncer.app</code></td></tr>
+<tr><td><strong>Upstream</strong></td><td><code>10.0.0.6:8090</code></td></tr>
+<tr><td><strong>Image</strong></td><td><code>ghcr.io/diegonmarcos/playlist-syncer-binaries:latest</code></td></tr>
+<tr><td><strong>Port</strong></td><td><code>8090</code></td></tr>
+<tr><td><strong>Healthcheck</strong></td><td><code>/api/health</code></td></tr>
+</tbody></table>
+</div><div class="probe" data-svc="playlist-syncer">Live probe: <span class="probe-status" id="probe-playlist-syncer">checking…</span></div>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="radicale-caldav-server-calendars-only--caldiegonmarcoscom"><a class="header" href="#radicale-caldav-server-calendars-only--caldiegonmarcoscom">Radicale CalDAV server (calendars only) — cal.diegonmarcos.com</a></h1>
 <div class="table-wrapper"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
 <tr><td><strong>Key</strong></td><td><code>calendar-radicale</code></td></tr>
@@ -453,15 +485,19 @@
 <tr><td><strong>Healthcheck</strong></td><td><code>/</code></td></tr>
 </tbody></table>
 </div><div class="probe" data-svc="hedgedoc">Live probe: <span class="probe-status" id="probe-hedgedoc">checking…</span></div>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="paca--ai-native-open-source-project-management-jiratrello-alternative-core-stack-go-api--react-web--socketio-realtime--postgres--valkey-behind-an-nginx-gateway-minio--ai-agent-intentionally-dropped-s3--oci-no-llm-agent-in-v1"><a class="header" href="#paca--ai-native-open-source-project-management-jiratrello-alternative-core-stack-go-api--react-web--socketio-realtime--postgres--valkey-behind-an-nginx-gateway-minio--ai-agent-intentionally-dropped-s3--oci-no-llm-agent-in-v1">Paca — AI-native open-source project management (Jira/Trello alternative). Core stack: Go API + React web + Socket.IO realtime + Postgres + Valkey, behind an nginx gateway. MinIO + ai-agent intentionally dropped (S3 = OCI; no LLM agent in v1).</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="send--self-hosted-end-to-end-encrypted-ephemeral-file-sharing-timviseesend-firefox-send-fork-files-encrypted-client-side-server-sees-only-ciphertext-links-self-destruct-after-configured-downloads-or-time"><a class="header" href="#send--self-hosted-end-to-end-encrypted-ephemeral-file-sharing-timviseesend-firefox-send-fork-files-encrypted-client-side-server-sees-only-ciphertext-links-self-destruct-after-configured-downloads-or-time">Send — self-hosted end-to-end encrypted ephemeral file sharing (timvisee/send, Firefox Send fork). Files encrypted client-side; server sees only ciphertext. Links self-destruct after configured downloads or time.</a></h1>
 <div class="table-wrapper"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
-<tr><td><strong>Key</strong></td><td><code>paca</code></td></tr>
+<tr><td><strong>Key</strong></td><td><code>send</code></td></tr>
 <tr><td><strong>VM</strong></td><td><code>oci-A1-f_0</code></td></tr>
 <tr><td><strong>Category</strong></td><td><code>app</code></td></tr>
-<tr><td><strong>Domain</strong></td><td><code>paca.app</code></td></tr>
-<tr><td><strong>Upstream</strong></td><td><code>10.0.0.6:8095</code></td></tr>
+<tr><td><strong>Domain</strong></td><td><code>send.app</code></td></tr>
+<tr><td><strong>Upstream</strong></td><td><code>10.0.0.6:3016</code></td></tr>
+<tr><td><strong>Image</strong></td><td><code>registry.gitlab.com/timvisee/send:latest</code></td></tr>
+<tr><td><strong>Port</strong></td><td><code>3016</code></td></tr>
+<tr><td><strong>Healthcheck</strong></td><td><code>/__lbheartbeat__</code></td></tr>
 </tbody></table>
-</div><div style="break-before: page; page-break-before: always;"></div><h1 id="front-end-project--github-pages-route-declarations-apex--subdomains-data-only-service-no-flake-no-deploy-owns-the-declarative-source-for-every-public-host-that-reverse-proxies-to-diegonmarcosgithubio-replacing-the-previous-hack-of-co-locating-these-inside-bb-sec_caddybuildjson"><a class="header" href="#front-end-project--github-pages-route-declarations-apex--subdomains-data-only-service-no-flake-no-deploy-owns-the-declarative-source-for-every-public-host-that-reverse-proxies-to-diegonmarcosgithubio-replacing-the-previous-hack-of-co-locating-these-inside-bb-sec_caddybuildjson">Front-end project — GitHub Pages route declarations (apex + subdomains). Data-only service: no flake, no deploy. Owns the declarative source for every public host that reverse-proxies to diegonmarcos.github.io, replacing the previous hack of co-locating these inside bb-sec_caddy/build.json.</a></h1>
+</div><div class="probe" data-svc="send">Live probe: <span class="probe-status" id="probe-send">checking…</span></div>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="front-end-project--github-pages-route-declarations-apex--subdomains-data-only-service-no-flake-no-deploy-owns-the-declarative-source-for-every-public-host-that-reverse-proxies-to-diegonmarcosgithubio-replacing-the-previous-hack-of-co-locating-these-inside-bb-sec_caddybuildjson"><a class="header" href="#front-end-project--github-pages-route-declarations-apex--subdomains-data-only-service-no-flake-no-deploy-owns-the-declarative-source-for-every-public-host-that-reverse-proxies-to-diegonmarcosgithubio-replacing-the-previous-hack-of-co-locating-these-inside-bb-sec_caddybuildjson">Front-end project — GitHub Pages route declarations (apex + subdomains). Data-only service: no flake, no deploy. Owns the declarative source for every public host that reverse-proxies to diegonmarcos.github.io, replacing the previous hack of co-locating these inside bb-sec_caddy/build.json.</a></h1>
 <div class="table-wrapper"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
 <tr><td><strong>Key</strong></td><td><code>front-end</code></td></tr>
 <tr><td><strong>VM</strong></td><td><code>local</code></td></tr>
@@ -479,18 +515,6 @@
 <tr><td><strong>Healthcheck</strong></td><td><code>/alive</code></td></tr>
 </tbody></table>
 </div><div class="probe" data-svc="vaultwarden">Live probe: <span class="probe-status" id="probe-vaultwarden">checking…</span></div>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="self-hosted-crawlee-cloud--apify-compatible-scraping-platform-api--runner--dashboard--scheduler"><a class="header" href="#self-hosted-crawlee-cloud--apify-compatible-scraping-platform-api--runner--dashboard--scheduler">Self-hosted Crawlee Cloud — Apify-compatible scraping platform (API + Runner + Dashboard + Scheduler)</a></h1>
-<div class="table-wrapper"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
-<tr><td><strong>Key</strong></td><td><code>crawlee-cloud</code></td></tr>
-<tr><td><strong>VM</strong></td><td><code>oci-A1-f_0</code></td></tr>
-<tr><td><strong>Category</strong></td><td><code>fin</code></td></tr>
-<tr><td><strong>Domain</strong></td><td><code>crawlee.app</code></td></tr>
-<tr><td><strong>Upstream</strong></td><td><code>10.0.0.6:3000</code></td></tr>
-<tr><td><strong>Image</strong></td><td><code>ghcr.io/diegonmarcos/crawlee-cloud-api:latest</code></td></tr>
-<tr><td><strong>Port</strong></td><td><code>3000</code></td></tr>
-<tr><td><strong>Healthcheck</strong></td><td>`wget -qO /dev/null http://127.0.0.1:3000/health</td></tr>
-</tbody></table>
-</div><div class="probe" data-svc="crawlee-cloud">Live probe: <span class="probe-status" id="probe-crawlee-cloud">checking…</span></div>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="fincept-terminal-backend-fin-api--rest--websocket-over-datahub-35-data-connectors-7-analytics-17-brokers-6-investor-personas-mcp-tools"><a class="header" href="#fincept-terminal-backend-fin-api--rest--websocket-over-datahub-35-data-connectors-7-analytics-17-brokers-6-investor-personas-mcp-tools">Fincept Terminal backend (fin-api) — REST + WebSocket over DataHub, 35 data connectors, 7 analytics, 17 brokers, 6 investor personas, MCP tools</a></h1>
 <div class="table-wrapper"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
 <tr><td><strong>Key</strong></td><td><code>fin-api</code></td></tr>
@@ -503,45 +527,41 @@
 <tr><td><strong>Healthcheck</strong></td><td><code>/health</code></td></tr>
 </tbody></table>
 </div><div class="probe" data-svc="fin-api">Live probe: <span class="probe-status" id="probe-fin-api">checking…</span></div>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="claude-superset-api-on-oci-apps--one-polyglot-container-openai-v1--ollama-api--anthropic-v1messages-mimic-backed-by-the-subscription-claude-cli-no-metered-key-with-a-vendored-headroom-apache-20-compression-hop-and-a-savings-dashboard-successor-to-kg-bridge-usable-as-a-localremote-fallback-internal-wg-only-sidecar-never-public"><a class="header" href="#claude-superset-api-on-oci-apps--one-polyglot-container-openai-v1--ollama-api--anthropic-v1messages-mimic-backed-by-the-subscription-claude-cli-no-metered-key-with-a-vendored-headroom-apache-20-compression-hop-and-a-savings-dashboard-successor-to-kg-bridge-usable-as-a-localremote-fallback-internal-wg-only-sidecar-never-public">Claude superset API on oci-apps — one polyglot container: OpenAI /v1 + Ollama /api + Anthropic /v1/messages mimic backed by the subscription <code>claude</code> CLI (no metered key), with a vendored Headroom (Apache-2.0) compression hop and a savings dashboard. Successor to kg-bridge; usable as a local/remote fallback. Internal WG-only sidecar, never public.</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="nous-research-hermes-agent-autonomous-persistent-memory-ai-agent-on-oci-apps-messaging-gateway-telegram-live-mattermost-scaffolded-backed-by-claude-superset-api-subscription-cli-no-metered-key-wg-internal-never-public"><a class="header" href="#nous-research-hermes-agent-autonomous-persistent-memory-ai-agent-on-oci-apps-messaging-gateway-telegram-live-mattermost-scaffolded-backed-by-claude-superset-api-subscription-cli-no-metered-key-wg-internal-never-public">Nous Research Hermes Agent (autonomous, persistent-memory AI agent) on oci-apps. Messaging gateway (Telegram live, Mattermost scaffolded) backed by claude-superset-api (subscription CLI, no metered key). WG-internal, never public.</a></h1>
 <div class="table-wrapper"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
-<tr><td><strong>Key</strong></td><td><code>claude-superset-api</code></td></tr>
+<tr><td><strong>Key</strong></td><td><code>hermes-agent</code></td></tr>
 <tr><td><strong>VM</strong></td><td><code>oci-A1-f_0</code></td></tr>
 <tr><td><strong>Category</strong></td><td><code>agi</code></td></tr>
-<tr><td><strong>Domain</strong></td><td><code>claude-superset-api.app</code></td></tr>
+<tr><td><strong>Domain</strong></td><td><code>hermes-agent.app</code></td></tr>
+<tr><td><strong>Upstream</strong></td><td><code>10.0.0.6:8642</code></td></tr>
+<tr><td><strong>Image</strong></td><td><code>ghcr.io/diegonmarcos/hermes-agent:latest</code></td></tr>
+<tr><td><strong>Port</strong></td><td><code>8642</code></td></tr>
+</tbody></table>
+</div><div style="break-before: page; page-break-before: always;"></div><h1 id="my-ai-api-on-oci-apps--one-polyglot-container-openai-v1--ollama-api--anthropic-v1messages-mimic-backed-by-openrouter-no-claude-subscription-no-metered-anthropic-key-with-a-vendored-headroom-apache-20-compression-hop-and-a-savings-dashboard-sibling-of-claude-superset-api-the-agent-face-for-this-stack-is-goose-my-ai-wraps-goose-claude-superset-keeps-claude-cli-internal-wg-only-sidecar-never-public"><a class="header" href="#my-ai-api-on-oci-apps--one-polyglot-container-openai-v1--ollama-api--anthropic-v1messages-mimic-backed-by-openrouter-no-claude-subscription-no-metered-anthropic-key-with-a-vendored-headroom-apache-20-compression-hop-and-a-savings-dashboard-sibling-of-claude-superset-api-the-agent-face-for-this-stack-is-goose-my-ai-wraps-goose-claude-superset-keeps-claude-cli-internal-wg-only-sidecar-never-public">my-ai API on oci-apps — one polyglot container: OpenAI /v1 + Ollama /api + Anthropic /v1/messages mimic backed by OpenRouter (no Claude subscription, no metered Anthropic key), with a vendored Headroom (Apache-2.0) compression hop and a savings dashboard. Sibling of claude-superset-api; the agent face for this stack is goose (my-ai wraps goose, claude-superset keeps claude-cli). Internal WG-only sidecar, never public.</a></h1>
+<div class="table-wrapper"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
+<tr><td><strong>Key</strong></td><td><code>my-ai-api</code></td></tr>
+<tr><td><strong>VM</strong></td><td><code>oci-A1-f_0</code></td></tr>
+<tr><td><strong>Category</strong></td><td><code>agi</code></td></tr>
+<tr><td><strong>Domain</strong></td><td><code>my-ai-api.app</code></td></tr>
+<tr><td><strong>Upstream</strong></td><td><code>10.0.0.6:3217</code></td></tr>
+<tr><td><strong>Image</strong></td><td><code>ghcr.io/diegonmarcos/my-ai-api:latest</code></td></tr>
+<tr><td><strong>Port</strong></td><td><code>3217</code></td></tr>
+<tr><td><strong>Healthcheck</strong></td><td><code>/health</code></td></tr>
+</tbody></table>
+</div><div class="probe" data-svc="my-ai-api">Live probe: <span class="probe-status" id="probe-my-ai-api">checking…</span></div>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="claude-superset-api-on-oci-apps--one-polyglot-container-openai-v1--ollama-api--anthropic-v1messages-mimic-backed-by-the-subscription-claude-cli-no-metered-key-with-a-vendored-headroom-apache-20-compression-hop-and-a-savings-dashboard-successor-to-kg-bridge-usable-as-a-localremote-fallback-internal-wg-only-sidecar-never-public"><a class="header" href="#claude-superset-api-on-oci-apps--one-polyglot-container-openai-v1--ollama-api--anthropic-v1messages-mimic-backed-by-the-subscription-claude-cli-no-metered-key-with-a-vendored-headroom-apache-20-compression-hop-and-a-savings-dashboard-successor-to-kg-bridge-usable-as-a-localremote-fallback-internal-wg-only-sidecar-never-public">Claude superset API on oci-apps — one polyglot container: OpenAI /v1 + Ollama /api + Anthropic /v1/messages mimic backed by the subscription <code>claude</code> CLI (no metered key), with a vendored Headroom (Apache-2.0) compression hop and a savings dashboard. Successor to kg-bridge; usable as a local/remote fallback. Internal WG-only sidecar, never public.</a></h1>
+<div class="table-wrapper"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
+<tr><td><strong>Key</strong></td><td><code>my-ai_claude-api</code></td></tr>
+<tr><td><strong>VM</strong></td><td><code>oci-A1-f_0</code></td></tr>
+<tr><td><strong>Category</strong></td><td><code>agi</code></td></tr>
+<tr><td><strong>Domain</strong></td><td><code>my-ai-claude-api.app</code></td></tr>
 <tr><td><strong>Upstream</strong></td><td><code>10.0.0.6:3117</code></td></tr>
 <tr><td><strong>Image</strong></td><td><code>ghcr.io/diegonmarcos/claude-superset-api:latest</code></td></tr>
 <tr><td><strong>Port</strong></td><td><code>3117</code></td></tr>
 <tr><td><strong>Healthcheck</strong></td><td><code>/health</code></td></tr>
 </tbody></table>
-</div><div class="probe" data-svc="claude-superset-api">Live probe: <span class="probe-status" id="probe-claude-superset-api">checking…</span></div>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="ollama-llm-server--deepseekqwen-14b-on-gcp-spot-t4--vastai-fallback"><a class="header" href="#ollama-llm-server--deepseekqwen-14b-on-gcp-spot-t4--vastai-fallback">Ollama LLM Server — DeepSeek/Qwen 14B on GCP Spot T4 + Vast.ai fallback</a></h1>
-<div class="table-wrapper"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
-<tr><td><strong>Key</strong></td><td><code>ollama</code></td></tr>
-<tr><td><strong>VM</strong></td><td><code>gcp-t4</code></td></tr>
-<tr><td><strong>Category</strong></td><td><code>agi</code></td></tr>
-<tr><td><strong>Domain</strong></td><td><code>ollama.app</code></td></tr>
-<tr><td><strong>Image</strong></td><td><code>ollama/ollama:latest</code></td></tr>
-<tr><td><strong>Port</strong></td><td><code>11434</code></td></tr>
-</tbody></table>
-</div><div style="break-before: page; page-break-before: always;"></div><h1 id="ollama-llm-server-arm-cpu-7b-models"><a class="header" href="#ollama-llm-server-arm-cpu-7b-models">Ollama LLM server (ARM CPU, 7b models)</a></h1>
-<div class="table-wrapper"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
-<tr><td><strong>Key</strong></td><td><code>ollama-arm</code></td></tr>
-<tr><td><strong>VM</strong></td><td><code>oci-apps-2</code></td></tr>
-<tr><td><strong>Category</strong></td><td><code>agi</code></td></tr>
-<tr><td><strong>Domain</strong></td><td><code>ollama-arm.app</code></td></tr>
-<tr><td><strong>Port</strong></td><td><code>11434</code></td></tr>
-</tbody></table>
-</div><div style="break-before: page; page-break-before: always;"></div><h1 id="rig-agentic-ai-heavy--deepseek-r1-14b-q8-agent-with-tool-calling-via-c3-mcp"><a class="header" href="#rig-agentic-ai-heavy--deepseek-r1-14b-q8-agent-with-tool-calling-via-c3-mcp">Rig Agentic AI (Heavy) — DeepSeek R1 14B Q8 agent with tool calling via C3 MCP</a></h1>
-<div class="table-wrapper"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
-<tr><td><strong>Key</strong></td><td><code>rig-agentic-sonn-14bq8</code></td></tr>
-<tr><td><strong>VM</strong></td><td><code>oci-A1-f_0</code></td></tr>
-<tr><td><strong>Category</strong></td><td><code>agi</code></td></tr>
-<tr><td><strong>Domain</strong></td><td><code>rig-agentic-sonn-14bq8.app</code></td></tr>
-<tr><td><strong>Upstream</strong></td><td><code>10.0.0.6:8091</code></td></tr>
-<tr><td><strong>Port</strong></td><td><code>8091</code></td></tr>
-</tbody></table>
-</div><div style="break-before: page; page-break-before: always;"></div><h1 id="central-sqlite-store-of-all-claude-code-session-transcripts--pushlistfetch-so-a-session-started-on-one-device-can-be-resumed-from-any-other-wg-only-sidecar-on-oci-apps-node-22-built-in-nodesqlite-phone-portable-no-native-deps"><a class="header" href="#central-sqlite-store-of-all-claude-code-session-transcripts--pushlistfetch-so-a-session-started-on-one-device-can-be-resumed-from-any-other-wg-only-sidecar-on-oci-apps-node-22-built-in-nodesqlite-phone-portable-no-native-deps">Central SQLite store of all Claude Code session transcripts — push/list/fetch so a session started on one device can be resumed from any other. WG-only sidecar on oci-apps; Node 22 built-in node:sqlite (phone-portable, no native deps).</a></h1>
+</div><div class="probe" data-svc="my-ai_claude-api">Live probe: <span class="probe-status" id="probe-my-ai_claude-api">checking…</span></div>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="central-sqlite-store-of-all-claude-code-session-transcripts--pushlistfetch-so-a-session-started-on-one-device-can-be-resumed-from-any-other-wg-only-sidecar-on-oci-apps-node-22-built-in-nodesqlite-phone-portable-no-native-deps"><a class="header" href="#central-sqlite-store-of-all-claude-code-session-transcripts--pushlistfetch-so-a-session-started-on-one-device-can-be-resumed-from-any-other-wg-only-sidecar-on-oci-apps-node-22-built-in-nodesqlite-phone-portable-no-native-deps">Central SQLite store of all Claude Code session transcripts — push/list/fetch so a session started on one device can be resumed from any other. WG-only sidecar on oci-apps; Node 22 built-in node:sqlite (phone-portable, no native deps).</a></h1>
 <div class="table-wrapper"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
 <tr><td><strong>Key</strong></td><td><code>session-memory</code></td></tr>
 <tr><td><strong>VM</strong></td><td><code>oci-A1-f_0</code></td></tr>
@@ -589,23 +609,23 @@
 </div><div class="probe" data-svc="c3-infra-api">Live probe: <span class="probe-status" id="probe-c3-infra-api">checking…</span></div>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="c3-mcp-server--cloud-control-center-mcp-transport-stdio--http"><a class="header" href="#c3-mcp-server--cloud-control-center-mcp-transport-stdio--http">C3 MCP Server — Cloud Control Center MCP transport (stdio + HTTP)</a></h1>
 <div class="table-wrapper"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
-<tr><td><strong>Key</strong></td><td><code>c3-infra-mcp</code></td></tr>
+<tr><td><strong>Key</strong></td><td><code>cloud-infra-mcp</code></td></tr>
 <tr><td><strong>VM</strong></td><td><code>oci-A1-f_0</code></td></tr>
 <tr><td><strong>Category</strong></td><td><code>sec</code></td></tr>
 <tr><td><strong>Domain</strong></td><td><code>c3-infra-mcp.app</code></td></tr>
 <tr><td><strong>Upstream</strong></td><td><code>10.0.0.6:3100</code></td></tr>
-<tr><td><strong>Image</strong></td><td><code>ghcr.io/diegonmarcos/c3-infra-mcp:latest</code></td></tr>
+<tr><td><strong>Image</strong></td><td><code>ghcr.io/diegonmarcos/cloud-infra-mcp:latest</code></td></tr>
 <tr><td><strong>Port</strong></td><td><code>3100</code></td></tr>
 <tr><td><strong>Healthcheck</strong></td><td><code>/mcp</code></td></tr>
 </tbody></table>
-</div><div class="probe" data-svc="c3-infra-mcp">Live probe: <span class="probe-status" id="probe-c3-infra-mcp">checking…</span></div>
+</div><div class="probe" data-svc="cloud-infra-mcp">Live probe: <span class="probe-status" id="probe-cloud-infra-mcp">checking…</span></div>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="sso-and-2fa-authentication-portal"><a class="header" href="#sso-and-2fa-authentication-portal">SSO and 2FA authentication portal</a></h1>
 <div class="table-wrapper"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
 <tr><td><strong>Key</strong></td><td><code>authelia</code></td></tr>
 <tr><td><strong>VM</strong></td><td><code>gcp-E2-f_0</code></td></tr>
 <tr><td><strong>Category</strong></td><td><code>sec</code></td></tr>
 <tr><td><strong>Domain</strong></td><td><code>authelia.app</code></td></tr>
-<tr><td><strong>Upstream</strong></td><td><code>10.0.0.1:9091</code></td></tr>
+<tr><td><strong>Upstream</strong></td><td><code>172.18.0.3:9091</code></td></tr>
 <tr><td><strong>Image</strong></td><td><code>authelia/authelia:4.39.15</code></td></tr>
 <tr><td><strong>Port</strong></td><td><code>9091</code></td></tr>
 <tr><td><strong>Healthcheck</strong></td><td><code>/api/health</code></td></tr>
@@ -661,18 +681,6 @@
 <tr><td><strong>Healthcheck</strong></td><td><code>/health</code></td></tr>
 </tbody></table>
 </div><div class="probe" data-svc="introspect-proxy">Live probe: <span class="probe-status" id="probe-introspect-proxy">checking…</span></div>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="public-first-party-analytics-collector--passthrough-proxy-to-matomoumamiopenobserve"><a class="header" href="#public-first-party-analytics-collector--passthrough-proxy-to-matomoumamiopenobserve">Public first-party analytics collector — passthrough proxy to matomo/umami/openobserve</a></h1>
-<div class="table-wrapper"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
-<tr><td><strong>Key</strong></td><td><code>c3-analytics-api</code></td></tr>
-<tr><td><strong>VM</strong></td><td><code>gcp-E2-f_0</code></td></tr>
-<tr><td><strong>Category</strong></td><td><code>obs</code></td></tr>
-<tr><td><strong>Domain</strong></td><td><code>c3-analytics-api.app</code></td></tr>
-<tr><td><strong>Upstream</strong></td><td><code>10.0.0.1:8085</code></td></tr>
-<tr><td><strong>Image</strong></td><td><code>ghcr.io/diegonmarcos/c3-analytics-api:latest</code></td></tr>
-<tr><td><strong>Port</strong></td><td><code>8085</code></td></tr>
-<tr><td><strong>Healthcheck</strong></td><td><code>/healthz</code></td></tr>
-</tbody></table>
-</div><div class="probe" data-svc="c3-analytics-api">Live probe: <span class="probe-status" id="probe-c3-analytics-api">checking…</span></div>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="c3-public-api--single-public-edge-listener-on-oci-analytics-consolidates-http-to-smtp-proxy-api-bearer-gated-mail-and-c3-analytics-api-passthrough-public-analytics-replaces-split-listeners-across-gcp-proxy--oci-analytics-so-gcp-proxy-becomes-a-pure-wg0-spoke"><a class="header" href="#c3-public-api--single-public-edge-listener-on-oci-analytics-consolidates-http-to-smtp-proxy-api-bearer-gated-mail-and-c3-analytics-api-passthrough-public-analytics-replaces-split-listeners-across-gcp-proxy--oci-analytics-so-gcp-proxy-becomes-a-pure-wg0-spoke">C3 Public API — single public-edge listener on oci-analytics. Consolidates http-to-smtp-proxy-api (Bearer-gated /mail/<em>) and c3-analytics-api passthrough (public /analytics/</em>). Replaces split listeners across gcp-proxy + oci-analytics so gcp-proxy becomes a pure wg0 spoke.</a></h1>
 <div class="table-wrapper"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
 <tr><td><strong>Key</strong></td><td><code>c3-public-api</code></td></tr>
@@ -699,33 +707,37 @@
 </div><div class="probe" data-svc="c3-services-api">Live probe: <span class="probe-status" id="probe-c3-services-api">checking…</span></div>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="c3-services-mcp-server--service-api-gateway-mcp-transport-stdio--http"><a class="header" href="#c3-services-mcp-server--service-api-gateway-mcp-transport-stdio--http">C3 Services MCP Server — service API gateway MCP transport (stdio + HTTP)</a></h1>
 <div class="table-wrapper"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
-<tr><td><strong>Key</strong></td><td><code>c3-services-mcp</code></td></tr>
+<tr><td><strong>Key</strong></td><td><code>cloud-services-mcp</code></td></tr>
 <tr><td><strong>VM</strong></td><td><code>oci-A1-f_0</code></td></tr>
 <tr><td><strong>Category</strong></td><td><code>obs</code></td></tr>
 <tr><td><strong>Domain</strong></td><td><code>c3-services-mcp.app</code></td></tr>
 <tr><td><strong>Upstream</strong></td><td><code>10.0.0.6:3101</code></td></tr>
-<tr><td><strong>Image</strong></td><td><code>ghcr.io/diegonmarcos/c3-services-mcp:latest</code></td></tr>
+<tr><td><strong>Image</strong></td><td><code>ghcr.io/diegonmarcos/cloud-services-mcp:latest</code></td></tr>
 <tr><td><strong>Port</strong></td><td><code>3101</code></td></tr>
 <tr><td><strong>Healthcheck</strong></td><td><code>/mcp</code></td></tr>
 </tbody></table>
-</div><div class="probe" data-svc="c3-services-mcp">Live probe: <span class="probe-status" id="probe-c3-services-mcp">checking…</span></div>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="cloud-cgc-mcp--code-graph-context-infra-knowledge-specs-docs-semantic-code-search"><a class="header" href="#cloud-cgc-mcp--code-graph-context-infra-knowledge-specs-docs-semantic-code-search">Cloud CGC MCP — Code Graph Context: infra knowledge, specs, docs, semantic code search</a></h1>
+</div><div class="probe" data-svc="cloud-services-mcp">Live probe: <span class="probe-status" id="probe-cloud-services-mcp">checking…</span></div>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="cloud-cgc-pub-mcp--code-graph-context-infra-knowledge-specs-docs-semantic-code-search"><a class="header" href="#cloud-cgc-pub-mcp--code-graph-context-infra-knowledge-specs-docs-semantic-code-search">Cloud CGC Pub MCP — Code Graph Context: infra knowledge, specs, docs, semantic code search</a></h1>
 <div class="table-wrapper"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
-<tr><td><strong>Key</strong></td><td><code>cloud-cgc-mcp</code></td></tr>
+<tr><td><strong>Key</strong></td><td><code>cloud-cgc-pub-mcp</code></td></tr>
 <tr><td><strong>VM</strong></td><td><code>oci-A1-f_0</code></td></tr>
 <tr><td><strong>Category</strong></td><td><code>obs</code></td></tr>
-<tr><td><strong>Domain</strong></td><td><code>cloud-cgc-mcp.app</code></td></tr>
+<tr><td><strong>Domain</strong></td><td><code>cloud-cgc-pub-mcp.app</code></td></tr>
 <tr><td><strong>Upstream</strong></td><td><code>10.0.0.6:3105</code></td></tr>
-<tr><td><strong>Image</strong></td><td><code>ghcr.io/diegonmarcos/cloud-cgc-mcp:latest</code></td></tr>
+<tr><td><strong>Image</strong></td><td><code>ghcr.io/diegonmarcos/cloud-cgc-pub-mcp:latest</code></td></tr>
 <tr><td><strong>Port</strong></td><td><code>3105</code></td></tr>
 <tr><td><strong>Healthcheck</strong></td><td><code>/mcp</code></td></tr>
 </tbody></table>
-</div><div class="probe" data-svc="cloud-cgc-mcp">Live probe: <span class="probe-status" id="probe-cloud-cgc-mcp">checking…</span></div>
+</div><div class="probe" data-svc="cloud-cgc-pub-mcp">Live probe: <span class="probe-status" id="probe-cloud-cgc-pub-mcp">checking…</span></div>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="mcp-server--read-only-personal-data-access-vault-metadata-identity-comms-media-finance-health"><a class="header" href="#mcp-server--read-only-personal-data-access-vault-metadata-identity-comms-media-finance-health">MCP server — READ-ONLY personal data access (vault metadata, identity, comms, media, finance, health)</a></h1>
 <div class="table-wrapper"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
-<tr><td><strong>Key</strong></td><td><code>c3-diego-personal-data-mcp</code></td></tr>
-<tr><td><strong>VM</strong></td><td><code>local</code></td></tr>
+<tr><td><strong>Key</strong></td><td><code>cloud-vault-mcp</code></td></tr>
+<tr><td><strong>VM</strong></td><td><code>oci-A1-f_0</code></td></tr>
 <tr><td><strong>Category</strong></td><td><code>data</code></td></tr>
+<tr><td><strong>Domain</strong></td><td><code>vault-mcp.app</code></td></tr>
+<tr><td><strong>Upstream</strong></td><td><code>10.0.0.6:3111</code></td></tr>
+<tr><td><strong>Image</strong></td><td><code>ghcr.io/diegonmarcos/cloud-vault-mcp:latest</code></td></tr>
+<tr><td><strong>Port</strong></td><td><code>3111</code></td></tr>
 </tbody></table>
 </div><div style="break-before: page; page-break-before: always;"></div><h1 id="self-hosted-git-service"><a class="header" href="#self-hosted-git-service">Self-hosted Git service</a></h1>
 <div class="table-wrapper"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
@@ -746,9 +758,9 @@
 <tr><td><strong>Category</strong></td><td><code>data</code></td></tr>
 <tr><td><strong>Domain</strong></td><td><code>redis.app</code></td></tr>
 <tr><td><strong>Upstream</strong></td><td><code>10.0.0.1:6379</code></td></tr>
-<tr><td><strong>Image</strong></td><td><code>redis:alpine</code></td></tr>
+<tr><td><strong>Image</strong></td><td><code>redis:8.10.2-alpine@sha256:3811787313eba226a2ef38658c6ccb91cd5e110edc89c37767de373120a0e5a0</code></td></tr>
 <tr><td><strong>Port</strong></td><td><code>6379</code></td></tr>
-<tr><td><strong>Healthcheck</strong></td><td><code>redis-cli ping</code></td></tr>
+<tr><td><strong>Healthcheck</strong></td><td>`redis-cli -a "$REDIS_PASSWORD" --no-auth-warning ping</td></tr>
 </tbody></table>
 </div><div class="probe" data-svc="redis">Live probe: <span class="probe-status" id="probe-redis">checking…</span></div>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="central-db-backup-agent-deployed-on-all-vms"><a class="header" href="#central-db-backup-agent-deployed-on-all-vms">Central DB Backup Agent (deployed on all VMs)</a></h1>
@@ -757,7 +769,39 @@
 <tr><td><strong>VM</strong></td><td><code>all</code></td></tr>
 <tr><td><strong>Category</strong></td><td><code>data</code></td></tr>
 </tbody></table>
-</div>
+</div><div style="break-before: page; page-break-before: always;"></div><h1 id="surrealdb-hybrid-knowledge-graph---infrastructure-topology--vector-search"><a class="header" href="#surrealdb-hybrid-knowledge-graph---infrastructure-topology--vector-search">SurrealDB Hybrid Knowledge Graph - Infrastructure topology + vector search</a></h1>
+<div class="table-wrapper"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
+<tr><td><strong>Key</strong></td><td><code>kg-store</code></td></tr>
+<tr><td><strong>VM</strong></td><td><code>oci-A1-f_0</code></td></tr>
+<tr><td><strong>Category</strong></td><td><code>data</code></td></tr>
+<tr><td><strong>Domain</strong></td><td><code>kg-store.app</code></td></tr>
+<tr><td><strong>Upstream</strong></td><td><code>10.0.0.6:8001</code></td></tr>
+<tr><td><strong>Image</strong></td><td><code>ghcr.io/diegonmarcos/kg-store:latest</code></td></tr>
+<tr><td><strong>Port</strong></td><td><code>8001</code></td></tr>
+</tbody></table>
+</div><div style="break-before: page; page-break-before: always;"></div><h1 id="surrealdb-hybrid-knowledge-graph---infrastructure-topology--vector-search-1"><a class="header" href="#surrealdb-hybrid-knowledge-graph---infrastructure-topology--vector-search-1">SurrealDB Hybrid Knowledge Graph - Infrastructure topology + vector search</a></h1>
+<div class="table-wrapper"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
+<tr><td><strong>Key</strong></td><td><code>kg-store-pub</code></td></tr>
+<tr><td><strong>VM</strong></td><td><code>oci-A1-f_0</code></td></tr>
+<tr><td><strong>Category</strong></td><td><code>data</code></td></tr>
+<tr><td><strong>Domain</strong></td><td><code>kg-store-pub.app</code></td></tr>
+<tr><td><strong>Upstream</strong></td><td><code>10.0.0.6:8002</code></td></tr>
+<tr><td><strong>Image</strong></td><td><code>ghcr.io/diegonmarcos/kg-store-pub:latest</code></td></tr>
+<tr><td><strong>Port</strong></td><td><code>8002</code></td></tr>
+</tbody></table>
+</div><div style="break-before: page; page-break-before: always;"></div><h1 id="unified-scrapers-api-instagram--pinterest--linkedin--generic-crawl--retires-crawlee-cloud-lean-single-container-fastapi-on-demand-flat-json-output"><a class="header" href="#unified-scrapers-api-instagram--pinterest--linkedin--generic-crawl--retires-crawlee-cloud-lean-single-container-fastapi-on-demand-flat-json-output">Unified scrapers API (Instagram / Pinterest / LinkedIn / generic crawl) — retires crawlee-cloud. Lean single-container FastAPI, on-demand, flat-JSON output.</a></h1>
+<div class="table-wrapper"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
+<tr><td><strong>Key</strong></td><td><code>scrappers-api</code></td></tr>
+<tr><td><strong>VM</strong></td><td><code>oci-A1-f_0</code></td></tr>
+<tr><td><strong>Category</strong></td><td><code>data</code></td></tr>
+<tr><td><strong>Domain</strong></td><td><code>scrappers-api.app</code></td></tr>
+<tr><td><strong>Upstream</strong></td><td><code>10.0.0.6:3020</code></td></tr>
+<tr><td><strong>Image</strong></td><td><code>ghcr.io/diegonmarcos/scrappers-api:latest</code></td></tr>
+<tr><td><strong>Port</strong></td><td><code>3020</code></td></tr>
+<tr><td><strong>Healthcheck</strong></td><td>`curl -fsS http://127.0.0.1:3020/health &gt;/dev/null 2&gt;&amp;1</td></tr>
+</tbody></table>
+</div><div class="probe" data-svc="scrappers-api">Live probe: <span class="probe-status" id="probe-scrappers-api">checking…</span></div>
+
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
