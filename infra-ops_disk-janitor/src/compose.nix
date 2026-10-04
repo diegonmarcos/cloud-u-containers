@@ -37,12 +37,13 @@ in
         TZ                        = buildJson.timezone;
         SCHEDULE                  = "\${SCHEDULE:-17 */3 * * *}";
         MODE                      = "\${MODE:-enforce}";
-        IMAGE_MIN_AGE_HOURS       = "\${IMAGE_MIN_AGE_HOURS:-48}";
+        IMAGE_MIN_AGE_HOURS       = "\${IMAGE_MIN_AGE_HOURS:-24}";
         IMAGE_KEEP_PER_REPO       = "\${IMAGE_KEEP_PER_REPO:-2}";
         BUILD_CACHE_MIN_AGE_HOURS = "\${BUILD_CACHE_MIN_AGE_HOURS:-48}";
         VOLUME_MIN_AGE_DAYS       = "\${VOLUME_MIN_AGE_DAYS:-7}";
         DISPATCH_CONTAINERS       = "\${DISPATCH_CONTAINERS:-cloud-agi-claude:claude}";
         DISPATCH_ROOT             = "\${DISPATCH_ROOT:-/home/appuser/git}";
+        REAP_SCRIPT               = "\${REAP_SCRIPT:-/home/appuser/git/cloud-u-containers/_dispatch/reap.sh}";
         LOG_RETENTION_DAYS        = "\${LOG_RETENTION_DAYS:-30}";
         ALERT_FREE_GB             = "\${ALERT_FREE_GB:-12}";
         NTFY_URL                  = "\${NTFY_URL:-http://10.0.0.6:8090}";

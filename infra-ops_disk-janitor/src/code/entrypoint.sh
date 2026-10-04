@@ -33,12 +33,14 @@ log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"; }
 
 SCHEDULE="${SCHEDULE:-17 */3 * * *}"
 MODE="${MODE:-dry-run}"
-IMAGE_MIN_AGE_HOURS="${IMAGE_MIN_AGE_HOURS:-48}"
+IMAGE_MIN_AGE_HOURS="${IMAGE_MIN_AGE_HOURS:-24}"
 IMAGE_KEEP_PER_REPO="${IMAGE_KEEP_PER_REPO:-2}"
 BUILD_CACHE_MIN_AGE_HOURS="${BUILD_CACHE_MIN_AGE_HOURS:-48}"
 VOLUME_MIN_AGE_DAYS="${VOLUME_MIN_AGE_DAYS:-7}"
 DISPATCH_CONTAINERS="${DISPATCH_CONTAINERS:-}"
 DISPATCH_ROOT="${DISPATCH_ROOT:-/home/appuser/git}"
+# reap.sh is versioned in the cloud-u-containers checkout, not in the runtime _dispatch dir.
+REAP_SCRIPT="${REAP_SCRIPT:-$DISPATCH_ROOT/cloud-u-containers/_dispatch/reap.sh}"
 LOG_RETENTION_DAYS="${LOG_RETENTION_DAYS:-30}"
 ALERT_FREE_GB="${ALERT_FREE_GB:-12}"
 NTFY_URL="${NTFY_URL:-}"
@@ -47,7 +49,7 @@ HOST_ROOT="${HOST_ROOT:-/host}"
 STATE_DIR="${STATE_DIR:-/var/log/disk-janitor}"
 # busybox crond starts each firing with an empty environment.
 export SCHEDULE MODE IMAGE_MIN_AGE_HOURS IMAGE_KEEP_PER_REPO BUILD_CACHE_MIN_AGE_HOURS \
-  VOLUME_MIN_AGE_DAYS DISPATCH_CONTAINERS DISPATCH_ROOT LOG_RETENTION_DAYS ALERT_FREE_GB \
+  VOLUME_MIN_AGE_DAYS DISPATCH_CONTAINERS DISPATCH_ROOT REAP_SCRIPT LOG_RETENTION_DAYS ALERT_FREE_GB \
   NTFY_URL NTFY_TOPIC HOST_ROOT STATE_DIR
 
 for v in IMAGE_MIN_AGE_HOURS IMAGE_KEEP_PER_REPO BUILD_CACHE_MIN_AGE_HOURS VOLUME_MIN_AGE_DAYS LOG_RETENTION_DAYS ALERT_FREE_GB; do
@@ -121,9 +123,12 @@ sweep_slots() {
     if [ $DRY = 1 ]; then
       out=$(docker exec "$c" sh -c "GIT_CONFIG_GLOBAL=$DISPATCH_ROOT/_dispatch/gitconfig; export GIT_CONFIG_GLOBAL; $SLOT_REPORT" _ "$DISPATCH_ROOT" 2>&1)
       while IFS= read -r l; do [ -n "$l" ] && log "  [dry-run] $c: $l"; done <<<"$out"
-      log "  [dry-run] $c: enforce would run $DISPATCH_ROOT/_dispatch/reap.sh $e --sweep (removes only clean+pushed finished slots)"
+      log "  [dry-run] $c: enforce would run $REAP_SCRIPT $e --sweep (removes only clean+pushed finished slots)"
     else
-      out=$(docker exec "$c" sh "$DISPATCH_ROOT/_dispatch/reap.sh" "$e" --sweep 2>&1)
+      if ! docker exec "$c" test -f "$REAP_SCRIPT"; then
+        log "  ERROR $c: reap script $REAP_SCRIPT missing — slots NOT swept"; KEPT_SLOTS="$KEPT_SLOTS $c:reap-missing"; continue
+      fi
+      out=$(docker exec "$c" sh "$REAP_SCRIPT" "$e" --sweep 2>&1)
       while IFS= read -r l; do [ -n "$l" ] && log "  $c: $l"; done <<<"$out"
     fi
     k=$(grep -c 'KEPT' <<<"$out" || true)
