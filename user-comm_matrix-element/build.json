@@ -62,7 +62,13 @@
     "registry": "ghcr.io/diegonmarcos",
     "image": "matrix-element",
     "dockerfile": "Dockerfile",
-    "arch": "arm64"
+    "arch": "arm64",
+    "labels": {
+      "org.opencontainers.image.source": "https://github.com/diegonmarcos/cloud-u-containers/tree/main/user-comm_matrix-element",
+      "org.opencontainers.image.licenses": "AGPL-3.0-only OR GPL-3.0-only OR LicenseRef-Element-Commercial",
+      "io.diegonmarcos.upstream.source": "https://github.com/element-hq/element-web",
+      "io.diegonmarcos.source-offer": "https://github.com/diegonmarcos/cloud-u-containers/blob/main/LICENSING.md#6a-source-offers-839"
+    }
   },
   "upstream_image": "vectorim/element-web:latest",
   "resources": {

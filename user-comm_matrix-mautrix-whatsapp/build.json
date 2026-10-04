@@ -60,7 +60,13 @@
     "registry": "ghcr.io/diegonmarcos",
     "image": "matrix-mautrix-whatsapp",
     "dockerfile": "Dockerfile",
-    "arch": "arm64"
+    "arch": "arm64",
+    "labels": {
+      "org.opencontainers.image.source": "https://github.com/diegonmarcos/cloud-u-containers/tree/main/user-comm_matrix-mautrix-whatsapp",
+      "org.opencontainers.image.licenses": "AGPL-3.0-or-later",
+      "io.diegonmarcos.upstream.source": "https://github.com/mautrix/whatsapp",
+      "io.diegonmarcos.source-offer": "https://github.com/diegonmarcos/cloud-u-containers/blob/main/LICENSING.md#6a-source-offers-839"
+    }
   },
   "upstream_image": "dock.mau.dev/mautrix/whatsapp:latest",
   "resources": {

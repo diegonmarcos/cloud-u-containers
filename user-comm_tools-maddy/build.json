@@ -157,6 +157,12 @@
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
     "image": "maddy-binaries",
+    "labels": {
+      "org.opencontainers.image.source": "https://github.com/diegonmarcos/cloud-u-containers/tree/main/user-comm_tools-maddy",
+      "org.opencontainers.image.licenses": "GPL-3.0-only",
+      "io.diegonmarcos.upstream.source": "https://github.com/foxcpp/maddy",
+      "io.diegonmarcos.source-offer": "https://github.com/diegonmarcos/cloud-u-containers/blob/main/LICENSING.md#6a-source-offers-839"
+    },
     "arch": "amd64",
     "_doc": "Was Type-B (FROM foxcpp/maddy:0.9 + apk add, no compile). Now native_build: same base image (still gets maddy itself for free from upstream), same apk packages (moved from runtime_packages -- that field only fed the Type-B auto-detect path, which native_build.type bypasses entirely), PLUS an in-container compile of maddy-sorter (src/crate) copied in alongside. One image, both binaries -- maddy-sorter's own code lives in this service's src/, same as jmap-sorter does for Stalwart.",
     "native_build": {

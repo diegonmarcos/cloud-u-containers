@@ -17,6 +17,12 @@
       "base_image": "python:3.13-slim-bookworm",
       "apt": "curl ca-certificates git",
       "app_dir": "./code"
+    },
+    "labels": {
+      "org.opencontainers.image.source": "https://github.com/diegonmarcos/cloud-u-containers/tree/main/user-data_scrappers-api",
+      "org.opencontainers.image.licenses": "LicenseRef-NoLicenseGranted AND GPL-2.0-only",
+      "io.diegonmarcos.upstream.source": "https://github.com/mikf/gallery-dl",
+      "io.diegonmarcos.source-offer": "https://github.com/diegonmarcos/cloud-u-containers/blob/main/LICENSING.md#6a-source-offers-839"
     }
   },
   "ports": {

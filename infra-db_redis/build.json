@@ -27,7 +27,7 @@
       "dns": "redis.app",
       "public": false,
       "proxy": null,
-      "healthcheck": "redis-cli ping",
+      "healthcheck": "redis-cli -a \"$REDIS_PASSWORD\" --no-auth-warning ping | grep -q PONG",
       "volumes": [
         "/data/redis:/data"
       ],
@@ -54,7 +54,13 @@
     "registry": "ghcr.io/diegonmarcos",
     "image": "redis",
     "dockerfile": "Dockerfile",
-    "arch": "amd64"
+    "arch": "amd64",
+    "labels": {
+      "org.opencontainers.image.source": "https://github.com/diegonmarcos/cloud-u-containers/tree/main/infra-db_redis",
+      "org.opencontainers.image.licenses": "AGPL-3.0-only",
+      "io.diegonmarcos.upstream.source": "https://github.com/redis/redis",
+      "io.diegonmarcos.source-offer": "https://github.com/diegonmarcos/cloud-u-containers/blob/main/LICENSING.md#6a-source-offers-839"
+    }
   },
   "redis": {
     "maxmemory": "128mb",

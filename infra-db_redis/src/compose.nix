@@ -39,7 +39,9 @@ in
         reservations = { memory = "16M"; };
       };
       healthcheck = {
-        test     = [ "CMD" "redis-cli" "-p" port "ping" ];
+        # Authenticated ping (#839): an unauthenticated `redis-cli ping` gets NOAUTH
+        # yet exits 0, so it always looked healthy. $$ survives compose interpolation.
+        test     = [ "CMD-SHELL" "redis-cli -p ${port} -a \"$$REDIS_PASSWORD\" --no-auth-warning ping | grep -q PONG" ];
         interval = "30s";
         timeout  = "10s";
         retries  = 3;

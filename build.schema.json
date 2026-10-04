@@ -224,6 +224,11 @@
           "description": "Docker --build-arg key/value pairs passed to the image build.",
           "additionalProperties": { "type": "string" }
         },
+        "labels": {
+          "type": "object",
+          "description": "OCI image labels (LABEL key=value) for the built image, e.g. org.opencontainers.image.source / .licenses and the GPL/AGPL source-offer pointer (#839, LICENSING.md section 6a). Applied by the ship engine on the image's next build.",
+          "additionalProperties": { "type": "string" }
+        },
         "agent_toolbelt": {
           "type": "boolean",
           "description": "Type-B (wrap upstream image) opt-in (#509): sources apt packages + the gh/yq install from the single fleet-wide _shared/agent-toolbelt.json declaration instead of runtime_packages/runtime_extra_run below, which the engine ignores when this is true."
