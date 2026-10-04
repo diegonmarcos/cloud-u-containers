@@ -1,6 +1,6 @@
 {
   "name": "cloud-infra-mcp",
-  "description": "C3 MCP Server — Cloud Control Center MCP transport (stdio + HTTP)",
+  "description": "C3 MCP Server \u2014 Cloud Control Center MCP transport (stdio + HTTP)",
   "dns": "c3-infra-mcp.app",
   "ports": {
     "app": 3100
@@ -112,6 +112,10 @@
   "tests": {
     "vm-files-policy": {
       "cmd": "node --experimental-strip-types test-vm-files-policy.mjs",
+      "cwd": "src/code"
+    },
+    "gha-policy": {
+      "cmd": "node --experimental-strip-types test-gha-policy.mjs",
       "cwd": "src/code"
     }
   }

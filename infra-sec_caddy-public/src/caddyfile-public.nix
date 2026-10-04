@@ -372,8 +372,15 @@ ${bearer}
     ${group.parent_domain} {
     ${sec}
     ${endpointBlocks}
-      handle {
+      # Bare host: human hint. Any other path is not a public MCP route
+      # (mesh-only / wg_only, or unknown): answer 404 JSON so MCP clients
+      # report "not found" instead of a 200 text/plain "Unexpected content type".
+      handle / {
         respond "${fallbackMsg}" 200
+      }
+      handle {
+        header Content-Type application/json
+        respond `{"jsonrpc":"2.0","id":null,"error":{"code":-32004,"message":"No public MCP route at this path (mesh-only or unknown). ${fallbackMsg}"}}` 404
       }
       ${handleErrors}
     }'';

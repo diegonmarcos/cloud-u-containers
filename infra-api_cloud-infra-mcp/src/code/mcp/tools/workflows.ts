@@ -5,6 +5,14 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { execAsync } from "../../shared/libs/exec.js";
 import { DAGU_API, DAGU_API_PATH, daguHeaders } from "../../shared/libs/ops.js";
+import { audit } from "../../shared/libs/audit.js";
+import {
+  validRepo, validId, validArtifactName, safeRelPath, planInline, rerunnable,
+  ARTIFACT_MAX_BYTES, ARTIFACT_INLINE_MAX_BYTES, ARTIFACT_FILE_MAX_BYTES,
+} from "../../shared/libs/gha-policy.js";
+import { mkdtemp, readdir, readFile, rm, stat } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join, relative } from "node:path";
 
 const log = (msg: string) => process.stderr.write(`[workflows] ${msg}\n`);
 // Resolve GitHub repo from cloud-data topology owner
@@ -655,7 +663,7 @@ export function registerWorkflowTools(server: McpServer): void {
       let run: {
         workflowName?: string; status?: string; conclusion?: string; displayTitle?: string;
         createdAt?: string; url?: string;
-        jobs?: Array<{ name: string; status: string; conclusion: string; steps?: Array<{ number: number; name: string; status: string; conclusion: string }> }>;
+        jobs?: Array<{ databaseId?: number; name: string; status: string; conclusion: string; steps?: Array<{ number: number; name: string; status: string; conclusion: string }> }>;
       };
       try { run = JSON.parse(r.stdout); } catch { return `Could not parse run view: ${r.stdout.slice(0, 200)}`; }
       const out: string[] = [];
@@ -664,7 +672,7 @@ export function registerWorkflowTools(server: McpServer): void {
       out.push(`Result: ${run.conclusion || run.status}  |  ${run.createdAt ? timeAgo(run.createdAt) : "?"}  |  ${run.displayTitle ?? ""}`);
       if (run.url) out.push(run.url);
       for (const job of run.jobs ?? []) {
-        out.push(`\n── ${job.name}: ${job.conclusion || job.status} ──`);
+        out.push(`\n── ${job.name}: ${job.conclusion || job.status}${job.databaseId ? ` (job ${job.databaseId})` : ""} ──`);
         for (const step of job.steps ?? []) {
           const state = step.conclusion || step.status;
           const marker = state === "success" ? "✓" : state === "failure" ? "✗" : state === "skipped" ? "-" : "…";
@@ -698,6 +706,131 @@ export function registerWorkflowTools(server: McpServer): void {
       const header = `RUN ${runId} LOGS (${full ? "full" : "failed steps"}) — ${target}\n${"═".repeat(70)}`;
       const elided = lines.length > shown.length ? `… ${lines.length - shown.length} earlier line(s) elided; raise \`tail\` to see them\n` : "";
       return `${header}\n${elided}${shown.join("\n")}`;
+    }),
+  );
+
+  // ── GHA artifacts + single-job re-run (#833 item 2) ──
+  const badArgs = (repo: string, ...ids: string[]): string | null => {
+    if (!validRepo(repo)) return `Invalid repo "${repo}" (want owner/name).`;
+    for (const id of ids) if (!validId(id)) return `Invalid id "${id}" (want a numeric database id).`;
+    return null;
+  };
+
+  server.tool(
+    "devops.workflows.gha_artifacts",
+    "GHA: list a run's artifacts (name, id, size, expired). Read-only. Feed a name to devops.workflows.gha_artifact_download.",
+    {
+      runId: z.string().describe("Run database ID"),
+      repo: z.string().optional().describe("owner/repo (default: the cloud-infra repo)"),
+    },
+    ({ runId, repo }) => safeRun(async () => {
+      const target = repo ?? GH_REPO;
+      const bad = badArgs(target, runId); if (bad) return bad;
+      const r = await gh(["api", `repos/${target}/actions/runs/${runId}/artifacts?per_page=100`], 20_000);
+      if (!r.ok) return `ERROR: ${ghError(r.stderr)}`;
+      let data: { artifacts?: Array<{ id: number; name: string; size_in_bytes: number; expired: boolean; created_at?: string }> };
+      try { data = JSON.parse(r.stdout); } catch { return `Could not parse artifacts: ${r.stdout.slice(0, 200)}`; }
+      const arts = data.artifacts ?? [];
+      if (arts.length === 0) return `Run ${runId} in ${target} has no artifacts.`;
+      const rows = arts.map((a) => [a.name, String(a.id), `${Math.round(a.size_in_bytes / 1024)} KiB`, a.expired ? "expired" : "ok",
+        a.size_in_bytes > ARTIFACT_MAX_BYTES ? "too big to download here" : ""]);
+      return `ARTIFACTS — run ${runId} (${target})\n${"═".repeat(70)}\n${formatTable(["Name", "ID", "Size", "State", "Note"], rows)}`;
+    }),
+  );
+
+  server.tool(
+    "devops.workflows.gha_artifact_download",
+    `GHA: download ONE artifact of a run and return its files (read-only; audited). Artifacts over ${ARTIFACT_MAX_BYTES / 1048576} MiB are refused. Text files come back inline, binary as base64, up to ${ARTIFACT_FILE_MAX_BYTES / 1024} KiB per file and ${ARTIFACT_INLINE_MAX_BYTES / 1024} KiB total; the rest are listed by name and size. Use 'path' to fetch one file from a larger artifact.`,
+    {
+      runId: z.string().describe("Run database ID"),
+      name: z.string().describe("Artifact name (from devops.workflows.gha_artifacts)"),
+      path: z.string().optional().describe("Return only this file inside the artifact"),
+      repo: z.string().optional().describe("owner/repo (default: the cloud-infra repo)"),
+    },
+    ({ runId, name, path, repo }) => safeRun(async () => {
+      const target = repo ?? GH_REPO;
+      const auditTarget = `${target}#${runId}/${name}${path ? `/${path}` : ""}`;
+      const bad = badArgs(target, runId) ?? (validArtifactName(name) ? null : `Invalid artifact name "${name}".`)
+        ?? (path !== undefined && !safeRelPath(path) ? `Invalid path "${path}".` : null);
+      if (bad) { audit("devops.workflows.gha_artifact_download", auditTarget, `REFUSED ${bad}`); return bad; }
+      const list = await gh(["api", `repos/${target}/actions/runs/${runId}/artifacts?per_page=100`], 20_000);
+      if (!list.ok) return `ERROR: ${ghError(list.stderr)}`;
+      let arts: Array<{ name: string; size_in_bytes: number; expired: boolean }> = [];
+      try { arts = JSON.parse(list.stdout).artifacts ?? []; } catch { return "Could not parse artifact list."; }
+      const art = arts.find((a) => a.name === name);
+      if (!art) return `No artifact "${name}" in run ${runId}. Available: ${arts.map((a) => a.name).join(", ") || "(none)"}`;
+      if (art.expired) return `Artifact "${name}" has expired.`;
+      if (art.size_in_bytes > ARTIFACT_MAX_BYTES) {
+        audit("devops.workflows.gha_artifact_download", auditTarget, `REFUSED ${art.size_in_bytes} bytes > cap`);
+        return `Artifact "${name}" is ${art.size_in_bytes} bytes, over the ${ARTIFACT_MAX_BYTES}-byte cap.`;
+      }
+      const dir = await mkdtemp(join(tmpdir(), "gha-art-"));
+      try {
+        const r = await gh(["run", "download", runId, "--repo", target, "--name", name, "--dir", dir], 120_000);
+        if (!r.ok) { audit("devops.workflows.gha_artifact_download", auditTarget, "FAILED download"); return `ERROR: ${ghError(r.stderr)}`; }
+        const files: Array<{ path: string; size: number }> = [];
+        for (const e of await readdir(dir, { recursive: true, withFileTypes: true })) {
+          if (!e.isFile()) continue;
+          const abs = join(e.parentPath ?? (e as unknown as { path: string }).path, e.name);
+          const rel = safeRelPath(relative(dir, abs));
+          if (rel) files.push({ path: rel, size: (await stat(abs)).size });
+        }
+        files.sort((a, b) => a.path.localeCompare(b.path));
+        const wanted = path ? files.filter((f) => f.path === safeRelPath(path)) : files;
+        if (path && wanted.length === 0) return `No file "${path}" in artifact. Files: ${files.map((f) => f.path).join(", ")}`;
+        const { inline, skipped } = planInline(wanted);
+        const out: string[] = [`ARTIFACT ${name} — run ${runId} (${target}): ${files.length} file(s)`, "═".repeat(70)];
+        for (const p of inline) {
+          const buf = await readFile(join(dir, p));
+          const isText = !buf.includes(0) && (() => { try { new TextDecoder("utf-8", { fatal: true }).decode(buf); return true; } catch { return false; } })();
+          out.push(`\n── ${p} (${buf.length} bytes${isText ? "" : ", base64"}) ──`);
+          out.push(isText ? buf.toString("utf8") : buf.toString("base64"));
+        }
+        if (skipped.length) {
+          out.push(`\nNot inlined (over caps) — fetch one with 'path':`);
+          for (const p of skipped) out.push(`  ${p} (${wanted.find((f) => f.path === p)?.size} bytes)`);
+        }
+        audit("devops.workflows.gha_artifact_download", auditTarget, `OK ${inline.length} inline, ${skipped.length} listed`);
+        return out.join("\n");
+      } finally {
+        await rm(dir, { recursive: true, force: true });
+      }
+    }),
+  );
+
+  server.tool(
+    "devops.workflows.gha_rerun_job",
+    "GHA: re-run ONE job of a finished run (gh run rerun --job), not the whole workflow. WRITE action — audited. Get the job id from devops.workflows.gha_run. Refused while the run is still in progress.",
+    {
+      runId: z.string().describe("Run database ID the job belongs to"),
+      jobId: z.string().describe("Job database ID (shown as 'job N' by devops.workflows.gha_run)"),
+      debug: z.boolean().optional().describe("Re-run with step debug logging (default false)"),
+      repo: z.string().optional().describe("owner/repo (default: the cloud-infra repo)"),
+    },
+    ({ runId, jobId, debug, repo }) => safeRun(async () => {
+      const target = repo ?? GH_REPO;
+      const auditTarget = `${target}#${runId}/job ${jobId}`;
+      const bad = badArgs(target, runId, jobId);
+      if (bad) { audit("devops.workflows.gha_rerun_job", auditTarget, `REFUSED ${bad}`); return bad; }
+      const v = await gh(["run", "view", runId, "--repo", target, "--json", "status,jobs"], 30_000);
+      if (!v.ok) return `ERROR: ${ghError(v.stderr)}`;
+      let run: { status?: string; jobs?: Array<{ databaseId: number; name: string }> };
+      try { run = JSON.parse(v.stdout); } catch { return "Could not parse run."; }
+      const job = (run.jobs ?? []).find((j) => String(j.databaseId) === jobId);
+      if (!job) {
+        audit("devops.workflows.gha_rerun_job", auditTarget, "REFUSED job not in run");
+        return `Job ${jobId} is not part of run ${runId}. Jobs: ${(run.jobs ?? []).map((j) => `${j.databaseId} ${j.name}`).join("; ")}`;
+      }
+      if (!rerunnable(run.status)) {
+        audit("devops.workflows.gha_rerun_job", auditTarget, `REFUSED run ${run.status}`);
+        return `Run ${runId} is ${run.status}; a job can be re-run only after the run completes.`;
+      }
+      const args = ["run", "rerun", "--job", jobId, "--repo", target];
+      if (debug) args.push("--debug");
+      const r = await gh(args, 30_000);
+      if (!r.ok) { audit("devops.workflows.gha_rerun_job", auditTarget, `FAILED ${r.stderr.trim().slice(0, 200)}`); return `ERROR: ${ghError(r.stderr)}`; }
+      audit("devops.workflows.gha_rerun_job", auditTarget, `OK "${job.name}"${debug ? " (debug)" : ""}`);
+      return `Re-run requested for job ${jobId} "${job.name}" of run ${runId} (${target}). Follow it with devops.workflows.gha_run. (audited)`;
     }),
   );
 
