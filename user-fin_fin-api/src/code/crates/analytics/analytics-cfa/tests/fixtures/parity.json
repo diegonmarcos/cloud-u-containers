@@ -1,0 +1,13 @@
+{
+  "note": "NPV/IRR: CF[0] is t=0 (no discount). Verified by hand against: Σ CF_i/(1+r)^i for i∈[0,n].",
+  "cases": [
+    { "fn": "npv",  "args": [0.10, [-1000, 300, 400, 500]],                 "expected": -21.0368144,    "tolerance": 1e-5 },
+    { "fn": "npv",  "args": [0.10, [-1000, 500, 500, 500]],                 "expected": 243.42599549,   "tolerance": 1e-5 },
+    { "fn": "irr",  "args": [[-1000, 300, 400, 500], 0.1],                  "expected":  0.08896339,    "tolerance": 1e-6 },
+    { "fn": "irr",  "args": [[-1000, 500, 500, 500], 0.1],                  "expected":  0.23375272,    "tolerance": 1e-6 },
+    { "fn": "fv",   "args": [1000, 0.05, 10],                                "expected":  1628.8946267775,"tolerance": 1e-6 },
+    { "fn": "pv",   "args": [1628.8946267775, 0.05, 10],                    "expected":  1000.0,        "tolerance": 1e-6 },
+    { "fn": "wacc", "args": [6000, 4000, 0.12, 0.06, 0.21],                 "expected":  0.09096,       "tolerance": 1e-5 },
+    { "fn": "dcf",  "args": [[100, 110, 120, 130, 140], 0.10, 0.03],        "expected": 1726.7946179,   "tolerance": 1e-4 }
+  ]
+}

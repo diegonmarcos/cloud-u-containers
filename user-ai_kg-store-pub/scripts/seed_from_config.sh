@@ -1,0 +1,1 @@
+../../user-ai_kg-store/scripts/seed_from_config.sh

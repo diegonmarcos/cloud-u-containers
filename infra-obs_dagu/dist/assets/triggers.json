@@ -1,0 +1,18 @@
+{
+  "dev_commits":           ["sync_cloud-data", "sync_front-data", "sync_gitea-mirrors"],
+  "dev_pull-requests":     [],
+  "dev_releases":          [],
+  "deploy_ship":           ["ops_deploy-digest"],
+  "deploy_containers":     ["health_docker-containers"],
+  "health_mesh":           ["health_mesh-connectivity"],
+  "health_endpoints":      ["health_service-endpoints"],
+  "health_dns":            ["health_dns-resolution"],
+  "health_resources":      ["health_system-resources"],
+  "health_containers":     ["health_docker-containers"],
+  "ops_backups":           ["ops_backup-check"],
+  "ops_reports":           ["ops_summary", "report_daily"],
+  "sec_audit":             ["security_auth-events"],
+  "sec_tls":               ["security_tls-expiry"],
+  "sec_connections":       ["security_ssh-audit"],
+  "sec_yara":              ["security_sauron-integrity"]
+}

@@ -1,0 +1,791 @@
+{
+  "$schema": "cloud-infrastructure-static",
+  "version": "7.0.0",
+  "lastUpdated": "2025-12-29",
+  "owner": "Diego Nepomuceno Marcos",
+  "description": "Static infrastructure configuration - source of truth for architecture and cloud_control exports",
+
+  "_index": {
+    "sections": [
+      {"key": "partI_overview", "title": "Overview", "description": "Providers, active services, proxy admin"},
+      {"key": "partII_infrastructure", "title": "Infrastructure", "description": "VMs, services, containers, docker networks"},
+      {"key": "partIII_security", "title": "Security", "description": "Domains, firewall rules, authentication"},
+      {"key": "partIV_data", "title": "Data", "description": "Databases, object storage, rclone remotes"},
+      {"key": "partV_operations", "title": "Operations", "description": "SSH commands, docker commands, monitoring"},
+      {"key": "partVI_reference", "title": "Reference & Costs", "description": "Costs, wake-on-demand, port mapping, docker images"},
+      {"key": "cloudControlExports", "title": "Cloud Control Exports", "description": "Pre-designed structures for topology/cost/monitor exports"}
+    ],
+    "stats": {
+      "vmCount": 4,
+      "serviceCount": 9,
+      "providerCount": 2,
+      "dockerNetworkCount": 4
+    },
+    "exports": ["cloud_architecture.md"],
+    "relatedFiles": ["cloud_control.json", "cloud_architecture_api.json"]
+  },
+
+  "partI_overview": {
+    "title": "Overview",
+    "providers": {
+      "oracle": {
+        "id": "oracle",
+        "name": "Oracle Cloud",
+        "tier": "always-free",
+        "region": "eu-marseille-1",
+        "consoleUrl": "https://cloud.oracle.com",
+        "cli": {
+          "name": "OCI CLI",
+          "install": "bash -c \"$(curl -L https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh)\"",
+          "listInstances": "oci compute instance list --compartment-id $OCI_COMPARTMENT_ID"
+        }
+      },
+      "gcloud": {
+        "id": "gcloud",
+        "name": "Google Cloud",
+        "tier": "free-tier",
+        "region": "us-central1",
+        "consoleUrl": "https://console.cloud.google.com",
+        "cli": {
+          "name": "gcloud CLI",
+          "install": "curl https://sdk.cloud.google.com | bash && exec -l $SHELL && gcloud init",
+          "listInstances": "gcloud compute instances list"
+        }
+      }
+    },
+    "activeServicesSummary": [
+      {"id": "photos", "name": "Photoprism", "url": "https://photos.diegonmarcos.com", "availability": "wake"},
+      {"id": "matomo", "name": "Matomo Analytics", "url": "https://analytics.diegonmarcos.com", "availability": "24/7"},
+      {"id": "mail", "name": "Mailu Mail", "url": "https://mail.diegonmarcos.com", "availability": "24/7"},
+      {"id": "calendar", "name": "Radicale Calendar", "url": "https://cal.diegonmarcos.com", "availability": "wake"},
+      {"id": "cloud", "name": "Cloud Dashboard", "url": "https://cloud.diegonmarcos.com", "availability": "24/7"},
+      {"id": "authelia", "name": "Authelia 2FA", "url": "https://auth.diegonmarcos.com", "availability": "24/7"}
+    ],
+    "proxyAdmin": {
+      "name": "NPM (Single Central)",
+      "url": "http://34.55.55.234:81",
+      "vmId": "gcp-f-micro_1"
+    }
+  },
+
+  "partII_infrastructure": {
+    "title": "Infrastructure",
+
+    "vmCategories": {
+      "services": {"id": "services", "name": "Services", "description": "General purpose VMs for web services"},
+      "ml": {"id": "ml", "name": "Machine Learning", "description": "VMs dedicated to ML workloads"}
+    },
+
+    "virtualMachines": {
+      "oci-f-micro_1": {
+        "id": "oci-f-micro_1",
+        "name": "OCI Free Micro 1",
+        "displayName": "Mail Server",
+        "provider": "oracle",
+        "ociInstanceId": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacbwylmkqr253ay7binepapgsyopllfayovkzaky6oigbq",
+        "category": "services",
+        "instanceType": "VM.Standard.E2.1.Micro",
+        "specs": {"cpu": "1 OCPU (AMD)", "ram": "1 GB", "storage": "47 GB Boot"},
+        "network": {
+          "publicIp": "130.110.251.193",
+          "privateIp": "10.0.0.x",
+          "dockerNetwork": "mail_network",
+          "dockerSubnet": "172.20.0.0/24"
+        },
+        "os": {"name": "Ubuntu", "version": "24.04 LTS"},
+        "ssh": {
+          "user": "ubuntu",
+          "keyPath": "/home/diego/Documents/Git/LOCAL_KEYS/00_terminal/ssh/id_rsa",
+          "command": "ssh -i /home/diego/Documents/Git/LOCAL_KEYS/00_terminal/ssh/id_rsa ubuntu@130.110.251.193"
+        },
+        "services": ["mail"],
+        "ports": {"external": [22, 25, 587, 993, 8080], "internal": []},
+        "availability": "24/7",
+        "cost": {"monthly": 0, "currency": "USD"},
+        "notes": "Mailu Mail Suite (8 containers) - 24/7 FREE"
+      },
+      "oci-f-micro_2": {
+        "id": "oci-f-micro_2",
+        "name": "OCI Free Micro 2",
+        "displayName": "Analytics Server",
+        "provider": "oracle",
+        "ociInstanceId": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacgwg5rkrjyomuxvjtvtuk5xrbmy7hmslwn4pse4kw5jkq",
+        "category": "services",
+        "instanceType": "VM.Standard.E2.1.Micro",
+        "specs": {"cpu": "1 OCPU (AMD)", "ram": "1 GB", "storage": "47 GB Boot"},
+        "network": {
+          "publicIp": "129.151.228.66",
+          "privateIp": "10.0.0.x",
+          "dockerNetwork": "matomo_network",
+          "dockerSubnet": "172.21.0.0/24"
+        },
+        "os": {"name": "Ubuntu", "version": "24.04 LTS"},
+        "ssh": {
+          "user": "ubuntu",
+          "keyPath": "/home/diego/Documents/Git/LOCAL_KEYS/00_terminal/ssh/id_rsa",
+          "command": "ssh -i /home/diego/Documents/Git/LOCAL_KEYS/00_terminal/ssh/id_rsa ubuntu@129.151.228.66"
+        },
+        "services": ["matomo"],
+        "ports": {"external": [22, 80, 443], "internal": [8080, 3306]},
+        "availability": "24/7",
+        "cost": {"monthly": 0, "currency": "USD"},
+        "notes": "Matomo Analytics - 24/7 FREE"
+      },
+      "gcp-f-micro_1": {
+        "id": "gcp-f-micro_1",
+        "name": "GCP Free Micro 1",
+        "displayName": "Central Proxy",
+        "provider": "gcloud",
+        "category": "services",
+        "instanceType": "e2-micro",
+        "specs": {"cpu": "0.25-2 vCPU", "ram": "1 GB", "storage": "30 GB"},
+        "network": {
+          "publicIp": "34.55.55.234",
+          "privateIp": "10.128.0.x",
+          "dockerNetwork": "proxy_network",
+          "dockerSubnet": "172.23.0.0/24"
+        },
+        "os": {"name": "Arch Linux", "version": "rolling"},
+        "ssh": {
+          "user": "diego",
+          "keyPath": "/home/diego/Documents/Git/LOCAL_KEYS/00_terminal/ssh/google_compute_engine",
+          "command": "gcloud compute ssh arch-1 --zone us-central1-a"
+        },
+        "services": ["npm", "authelia", "flask-app"],
+        "ports": {"external": [22, 80, 443, 81], "internal": [9091, 6379]},
+        "availability": "24/7",
+        "cost": {"monthly": 0, "currency": "USD"},
+        "notes": "SINGLE CENTRAL NPM + Authelia 2FA - 24/7 FREE"
+      },
+      "oci-p-flex_1": {
+        "id": "oci-p-flex_1",
+        "name": "OCI Paid Flex 1",
+        "displayName": "Dev Server",
+        "provider": "oracle",
+        "ociInstanceId": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczachwpa3qrh7n25vfez3smidz4o7gpmtj4ga4d7zqlja5yq",
+        "category": "services",
+        "instanceType": "VM.Standard.E4.Flex",
+        "specs": {"cpu": "1 OCPU (2 vCPU)", "ram": "8 GB", "storage": "100 GB"},
+        "network": {
+          "publicIp": "84.235.234.87",
+          "privateIp": "10.0.0.x",
+          "dockerNetwork": "dev_network",
+          "dockerSubnet": "172.24.0.0/24"
+        },
+        "os": {"name": "Ubuntu", "version": "22.04 Minimal"},
+        "ssh": {
+          "user": "ubuntu",
+          "keyPath": "/home/diego/Documents/Git/LOCAL_KEYS/00_terminal/ssh/id_rsa",
+          "command": "ssh -i /home/diego/Documents/Git/LOCAL_KEYS/00_terminal/ssh/id_rsa ubuntu@84.235.234.87"
+        },
+        "services": ["photos", "calendar", "cache"],
+        "ports": {"external": [22, 443], "internal": [5000, 6379, 2342, 5232]},
+        "availability": "wake-on-demand",
+        "wakeConfig": {"idleTimeout": 1800, "wakeTime": 60},
+        "cost": {"monthly": 5.5, "hourly": 0.037, "currency": "USD"},
+        "notes": "Dev Server - Wake-on-Demand PAID"
+      }
+    },
+
+    "serviceCategories": {
+      "user-productivity": {"id": "user-productivity", "name": "User Productivity", "description": "Mail, Calendar, Photos"},
+      "coder": {"id": "coder", "name": "Coder Services", "description": "Analytics, Cloud Dashboard"},
+      "infra-proxy": {"id": "infra-proxy", "name": "Proxies", "description": "NPM (SINGLE CENTRAL)"},
+      "infra-auth": {"id": "infra-auth", "name": "Authentication", "description": "Authelia 2FA"},
+      "infra-db": {"id": "infra-db", "name": "Databases", "description": "Database services"},
+      "infra-services": {"id": "infra-services", "name": "Infra Services", "description": "APIs and automation"},
+      "infra-security": {"id": "infra-security", "name": "Security Services", "description": "Sauron malware scanner, security monitoring"}
+    },
+
+    "services": {
+      "mail": {
+        "id": "mail",
+        "displayName": "Mailu Mail Suite",
+        "category": "user-productivity",
+        "vmId": "oci-f-micro_1",
+        "containers": ["mailu-front", "mailu-admin", "mailu-imap", "mailu-smtp", "roundcube", "mailu-antispam"],
+        "technology": {"image": "ghcr.io/mailu/*", "version": "2024.06"},
+        "stack": {
+          "server": "Mailu (Postfix SMTP + Dovecot IMAP + Rspamd Antispam)",
+          "webmail": "Roundcube 1.6.11",
+          "plugins": [
+            {"name": "calendar", "version": "3.2.8", "source": "http://git.kolab.org/roundcubemail-plugins-kolab/"},
+            {"name": "carddav", "version": "5.1.1", "source": "https://github.com/mstilkerich/rcmcarddav/"}
+          ]
+        },
+        "urls": {
+          "admin": "https://mail.diegonmarcos.com/admin",
+          "webmail": "https://mail.diegonmarcos.com/webmail"
+        },
+        "resources": {"ram": "300-500 MB", "storage": "5-50 GB", "bandwidth": "1-10 GB/mo"}
+      },
+      "photos": {
+        "id": "photos",
+        "displayName": "Photoprism",
+        "category": "user-productivity",
+        "vmId": "oci-p-flex_1",
+        "containers": ["photoprism-app", "photos-db"],
+        "technology": {"image": "photoprism/photoprism", "version": "latest"},
+        "urls": {"gui": "https://photos.diegonmarcos.com"},
+        "authRequired": true,
+        "resources": {"ram": "1-2 GB", "storage": "10-50 GB", "bandwidth": "5-20 GB/mo"}
+      },
+      "calendar": {
+        "id": "calendar",
+        "displayName": "Radicale Calendar",
+        "category": "user-productivity",
+        "vmId": "oci-p-flex_1",
+        "containers": ["radicale-app"],
+        "technology": {"image": "tomsquest/docker-radicale", "version": "latest"},
+        "urls": {"gui": "https://cal.diegonmarcos.com/.web/"},
+        "resources": {"ram": "32-64 MB", "storage": "10-100 MB", "bandwidth": "10-50 MB/mo"}
+      },
+      "matomo": {
+        "id": "matomo",
+        "displayName": "Matomo Analytics",
+        "category": "coder",
+        "vmId": "oci-f-micro_2",
+        "containers": ["matomo-app", "matomo-db"],
+        "technology": {"image": "matomo:fpm-alpine", "version": "latest"},
+        "urls": {"gui": "https://analytics.diegonmarcos.com"},
+        "resources": {"ram": "512 MB-1 GB", "storage": "3-15 GB", "bandwidth": "500 MB-2 GB/mo"}
+      },
+      "cloud": {
+        "id": "cloud",
+        "displayName": "Cloud Dashboard",
+        "category": "coder",
+        "vmId": "external",
+        "containers": ["cloud-app"],
+        "technology": {"hosting": "GitHub Pages"},
+        "urls": {"gui": "https://cloud.diegonmarcos.com"},
+        "resources": {"storage": "~5 MB"}
+      },
+      "npm": {
+        "id": "npm",
+        "displayName": "NPM (SINGLE CENTRAL)",
+        "category": "infra-proxy",
+        "vmId": "gcp-f-micro_1",
+        "containers": ["npm-gcloud"],
+        "technology": {"image": "jc21/nginx-proxy-manager", "version": "latest"},
+        "urls": {"admin": "http://34.55.55.234:81"},
+        "resources": {"ram": "128-256 MB", "storage": "100-500 MB", "bandwidth": "20-80 GB/mo"},
+        "notes": "All traffic routes through this single NPM instance"
+      },
+      "authelia": {
+        "id": "authelia",
+        "displayName": "Authelia 2FA",
+        "category": "infra-auth",
+        "vmId": "gcp-f-micro_1",
+        "containers": ["authelia-app", "authelia-redis"],
+        "technology": {"image": "authelia/authelia", "version": "latest"},
+        "urls": {"gui": "https://auth.diegonmarcos.com"},
+        "resources": {"ram": "32-64 MB", "storage": "50-100 MB"}
+      },
+      "cache": {
+        "id": "cache",
+        "displayName": "Redis Cache",
+        "category": "infra-services",
+        "vmId": "oci-p-flex_1",
+        "containers": ["cache-app"],
+        "technology": {"image": "redis", "version": "alpine"},
+        "resources": {"ram": "64-256 MB", "storage": "100 MB-1 GB"}
+      },
+      "flask-app": {
+        "id": "flask-app",
+        "displayName": "Flask API Server",
+        "category": "infra-services",
+        "vmId": "gcp-f-micro_1",
+        "containers": ["flask-app"],
+        "technology": {"type": "Flask/Python"},
+        "network": {"internalPort": 5000},
+        "resources": {"ram": "64-128 MB", "storage": "50-100 MB"}
+      },
+      "sauron": {
+        "id": "sauron",
+        "displayName": "Sauron-Lite Security Scanner",
+        "category": "infra-security",
+        "vmId": ["gcp-f-micro_1", "oci-f-micro_1", "oci-f-micro_2"],
+        "containers": ["sauron", "sauron-forwarder"],
+        "technology": {"image": "alpine:3.19 + inotify-tools + yara", "version": "lite"},
+        "description": "Lightweight hybrid file integrity monitor + YARA scanner optimized for 1GB VMs",
+        "features": [
+          "Real-time file change detection via inotifywait",
+          "Periodic YARA scanning (every 5 min, changed files only)",
+          "Resource-constrained: 64MB RAM limit, 50% CPU limit",
+          "Nice 19 priority during scans (non-blocking)",
+          "JSON alert output with central forwarding"
+        ],
+        "mounts": {
+          "/watch/etc": {"source": "/etc", "mode": "ro"},
+          "/watch/home": {"source": "/home", "mode": "ro"}
+        },
+        "yaraRules": ["webshells.yar", "cryptominers.yar", "suspicious.yar"],
+        "scanFrequency": "every 5 minutes (changed files only)",
+        "centralServer": "gcp-f-micro_1",
+        "forwardPort": 5514,
+        "resourceLimits": {
+          "sauron": {"memLimit": "64MB", "cpuLimit": "50%", "cpuShares": 256},
+          "forwarder": {"memLimit": "16MB", "cpuLimit": "5%"}
+        },
+        "resources": {"ramIdle": "2-5 MB", "ramScan": "20-30 MB", "storage": "50-100 MB"}
+      }
+    },
+
+    "dockerNetworks": {
+      "mail_network": {"vmId": "oci-f-micro_1", "subnet": "172.20.0.0/24", "purpose": "Mail services (Mailu)"},
+      "matomo_network": {"vmId": "oci-f-micro_2", "subnet": "172.21.0.0/24", "purpose": "Analytics stack"},
+      "proxy_network": {"vmId": "gcp-f-micro_1", "subnet": "172.23.0.0/24", "purpose": "NPM + Authelia"},
+      "dev_network": {"vmId": "oci-p-flex_1", "subnet": "172.24.0.0/24", "purpose": "Photos, Calendar, Cache"}
+    }
+  },
+
+  "partIII_security": {
+    "title": "Security",
+
+    "domains": {
+      "primary": "diegonmarcos.com",
+      "registrar": "Cloudflare",
+      "nameservers": ["burt.ns.cloudflare.com", "phoenix.ns.cloudflare.com"],
+      "subdomains": {
+        "analytics.diegonmarcos.com": {"service": "matomo", "vmId": "oci-f-micro_2", "proxyVia": "gcp-f-micro_1", "ssl": true, "auth": "none"},
+        "photos.diegonmarcos.com": {"service": "photos", "vmId": "oci-p-flex_1", "proxyVia": "gcp-f-micro_1", "ssl": true, "auth": "authelia"},
+        "auth.diegonmarcos.com": {"service": "authelia", "vmId": "gcp-f-micro_1", "ssl": true, "auth": "none"},
+        "mail.diegonmarcos.com": {"service": "mail", "vmId": "oci-f-micro_1", "ssl": true, "auth": "native", "directAccess": true},
+        "cloud.diegonmarcos.com": {"service": "cloud", "hosting": "GitHub Pages", "ssl": true, "auth": "none"},
+        "cal.diegonmarcos.com": {"service": "calendar", "vmId": "oci-p-flex_1", "ssl": true, "auth": "authelia"},
+        "proxy.diegonmarcos.com": {"service": "npm", "vmId": "gcp-f-micro_1", "ssl": true, "auth": "authelia"}
+      }
+    },
+
+    "firewallRules": {
+      "oci-f-micro_1": [
+        {"port": 22, "protocol": "TCP", "service": "SSH"},
+        {"port": 587, "protocol": "TCP", "service": "SMTP Submission"},
+        {"port": 993, "protocol": "TCP", "service": "IMAPS"},
+        {"port": 443, "protocol": "TCP", "service": "Mailu (HTTPS)"}
+      ],
+      "oci-f-micro_2": [
+        {"port": 22, "protocol": "TCP", "service": "SSH"},
+        {"port": 80, "protocol": "TCP", "service": "HTTP"},
+        {"port": 443, "protocol": "TCP", "service": "HTTPS"}
+      ],
+      "gcp-f-micro_1": [
+        {"port": 22, "protocol": "TCP", "service": "SSH"},
+        {"port": 80, "protocol": "TCP", "service": "HTTP"},
+        {"port": 443, "protocol": "TCP", "service": "HTTPS"},
+        {"port": 81, "protocol": "TCP", "service": "NPM Admin"}
+      ],
+      "oci-p-flex_1": [
+        {"port": 22, "protocol": "TCP", "service": "SSH"},
+        {"port": 443, "protocol": "TCP", "service": "HTTPS"}
+      ]
+    },
+
+    "authentication": {
+      "methods": {
+        "forward-auth": {"description": "nginx auth_request via Authelia", "services": ["photos", "calendar", "proxy"]},
+        "oidc": {"description": "OpenID Connect via Authelia", "services": ["npm-admin"]},
+        "native": {"description": "App-level authentication", "services": ["matomo", "mail-admin"]}
+      },
+      "authelia": {
+        "issuer": "https://auth.diegonmarcos.com",
+        "endpoints": {
+          "authorization": "https://auth.diegonmarcos.com/api/oidc/authorization",
+          "token": "https://auth.diegonmarcos.com/api/oidc/token",
+          "userinfo": "https://auth.diegonmarcos.com/api/oidc/userinfo"
+        }
+      }
+    }
+  },
+
+  "partIV_data": {
+    "title": "Data",
+
+    "databases": {
+      "matomo-db": {"service": "matomo", "vmId": "oci-f-micro_2", "technology": "MariaDB 11.4", "storage": "1-10 GB"},
+      "photos-db": {"service": "photos", "vmId": "oci-p-flex_1", "technology": "PostgreSQL", "storage": "1-5 GB"},
+      "mailu-db": {"service": "mail", "vmId": "oci-f-micro_1", "technology": "SQLite", "storage": "100-500 MB"},
+      "authelia-redis": {"service": "authelia", "vmId": "gcp-f-micro_1", "technology": "Redis", "storage": "50-100 MB"}
+    },
+
+    "objectStorage": {
+      "oracle_s3": {
+        "provider": "oracle",
+        "tier": "always-free",
+        "totalSize": "~250 GB",
+        "buckets": {
+          "my-photos": {"size": "~248 GB", "contents": "Google Takeout photos", "linkedService": "photos"},
+          "archlinux-images": {"size": "~2 GB", "contents": "Arch Linux VM images"}
+        }
+      }
+    },
+
+    "rcloneRemotes": {
+      "gdrive": {"type": "Google Drive", "purpose": "Access Google Drive files"},
+      "gdrive_photos": {"type": "Google Photos", "purpose": "Access Google Photos"},
+      "oracle_s3": {"type": "Oracle Object Storage", "purpose": "S3-compatible bucket storage"}
+    }
+  },
+
+  "partV_operations": {
+    "title": "Operations",
+
+    "sshCommands": {
+      "oci-f-micro_1": "ssh -i ~/Documents/Git/LOCAL_KEYS/00_terminal/ssh/id_rsa ubuntu@130.110.251.193",
+      "oci-f-micro_2": "ssh -i ~/Documents/Git/LOCAL_KEYS/00_terminal/ssh/id_rsa ubuntu@129.151.228.66",
+      "oci-p-flex_1": "ssh -i ~/Documents/Git/LOCAL_KEYS/00_terminal/ssh/id_rsa ubuntu@84.235.234.87",
+      "gcp-f-micro_1": "gcloud compute ssh arch-1 --zone us-central1-a"
+    },
+
+    "dockerCommands": {
+      "status": "sudo docker ps --format 'table {{.Names}}\\t{{.Status}}\\t{{.Ports}}'",
+      "logs": "sudo docker logs --tail 100 <container>",
+      "exec": "sudo docker exec -it <container> bash",
+      "stats": "docker stats --no-stream"
+    },
+
+    "monitoringCommands": {
+      "diskUsage": "df -h",
+      "memoryUsage": "free -h",
+      "cpuUsage": "htop"
+    },
+
+    "statusLegend": {
+      "on": {"description": "Running and accessible", "color": "green"},
+      "dev": {"description": "Under active development", "color": "blue"},
+      "wake": {"description": "Wake-on-Demand (dormant by default)", "color": "cyan"},
+      "hold": {"description": "Waiting for resources", "color": "yellow"},
+      "tbd": {"description": "Planned for future", "color": "gray"}
+    }
+  },
+
+  "partVI_reference": {
+    "title": "Reference & Costs",
+
+    "costs": {
+      "infra": {
+        "oracle": {"tier": "always-free", "monthly": 0, "paidVms": {"oci-p-flex_1": 5.5}},
+        "gcloud": {"tier": "free-tier", "monthly": 0},
+        "cloudflare": {"tier": "free", "monthly": 0},
+        "github-pages": {"tier": "free", "monthly": 0}
+      },
+      "ai": {
+        "claude": {"plan": "max5x", "monthlyBudget": 100}
+      },
+      "total": {"infra": 5.5, "ai": 100, "total": 105.5, "currency": "USD"}
+    },
+
+    "wakeOnDemand": {
+      "enabled": true,
+      "targetVm": "oci-p-flex_1",
+      "healthCheckUrl": "https://photos.diegonmarcos.com",
+      "idleTimeoutSeconds": 1800,
+      "services": ["photos", "calendar", "cache"]
+    },
+
+    "portMapping": [
+      {"service": "npm-gcloud", "internal": 81, "external": 81, "protocol": "TCP", "notes": "Admin UI"},
+      {"service": "npm-gcloud", "internal": 80, "external": 80, "protocol": "TCP", "notes": "HTTP redirect"},
+      {"service": "npm-gcloud", "internal": 443, "external": 443, "protocol": "TCP", "notes": "HTTPS termination"},
+      {"service": "matomo-app", "internal": 8080, "external": "443 (via NPM)", "protocol": "HTTPS", "notes": "Analytics UI"},
+      {"service": "photoprism-app", "internal": 2342, "external": "443 (via NPM)", "protocol": "HTTPS", "notes": "Photo gallery"},
+      {"service": "radicale", "internal": 5232, "external": "443 (via NPM)", "protocol": "HTTPS", "notes": "Calendar"},
+      {"service": "authelia", "internal": 9091, "external": "internal only", "protocol": "HTTP", "notes": "2FA server"}
+    ],
+
+    "dockerImages": [
+      {"service": "matomo-app", "image": "matomo:fpm-alpine", "version": "latest"},
+      {"service": "matomo-db", "image": "mariadb", "version": "11.4"},
+      {"service": "radicale", "image": "tomsquest/docker-radicale", "version": "latest"},
+      {"service": "mailu-*", "image": "ghcr.io/mailu/*", "version": "2024.06"},
+      {"service": "cache-app", "image": "redis", "version": "alpine"},
+      {"service": "npm-*", "image": "jc21/nginx-proxy-manager", "version": "latest"},
+      {"service": "photoprism-app", "image": "photoprism/photoprism", "version": "latest"},
+      {"service": "authelia", "image": "authelia/authelia", "version": "latest"}
+    ]
+  },
+
+  "cloudControlExports": {
+    "_comment": "Pre-designed table structures for cloud_control_*.md exports",
+
+    "topology": {
+      "_target": "cloud_control_topology.md",
+
+      "serviceTypes": {
+        "A120_security": {
+          "name": "A120) Security Services",
+          "description": "Backup, security, and data protection services",
+          "services": ["sauron"]
+        },
+        "A120b_auth_proxy": {
+          "name": "A120b) Auth & Proxy Services",
+          "description": "Web servers, OAuth2, Authelia 2FA, VPN, and reverse proxies",
+          "services": ["npm", "authelia", "wireguard", "oauth2-proxy"]
+        },
+        "A121_audit": {
+          "name": "A121) Audit & Analytics",
+          "description": "Analytics, logging, and audit services",
+          "services": ["matomo"]
+        },
+        "A122_data_api": {
+          "name": "A122) Data & API & MCP",
+          "description": "APIs, caching, databases, and Model Context Protocol services",
+          "services": ["flask-app", "cache"]
+        },
+        "A123_others": {
+          "name": "A123) Other Services",
+          "description": "User-facing and miscellaneous services",
+          "services": ["photos", "calendar", "mail"]
+        }
+      },
+
+      "containers": {
+        "gcp-f-micro_1": {
+          "count": 5,
+          "items": [
+            {"name": "npm", "image": "jc21/nginx-proxy-manager:latest", "ports": "80, 443, 81", "network": "proxy_network"},
+            {"name": "authelia", "image": "authelia/authelia:latest", "ports": "9091", "network": "proxy_network"},
+            {"name": "cloud-api", "image": "python:3.11-slim", "ports": "5000", "network": "proxy_network"},
+            {"name": "sauron", "image": "alpine:3.19 (sauron-lite)", "ports": "-", "network": "security", "notes": "Hybrid watcher + YARA scanner (64MB limit)"},
+            {"name": "sauron-forwarder", "image": "alpine:3.19", "ports": "-", "network": "security", "notes": "Forwards alerts to central (16MB limit)"}
+          ]
+        },
+        "oci-p-flex_1": {
+          "count": 6,
+          "items": [
+            {"name": "photoprism", "image": "photoprism/photoprism:latest", "ports": "127.0.0.1:2342", "network": "dev_network"},
+            {"name": "photoprism-db", "image": "mariadb:10.11", "ports": "-", "network": "dev_network"},
+            {"name": "radicale", "image": "tomsquest/docker-radicale:latest", "ports": "127.0.0.1:5232", "network": "dev_network"},
+            {"name": "wireguard", "image": "linuxserver/wireguard:latest", "ports": "51820/udp", "network": "host"},
+            {"name": "redis", "image": "redis:alpine", "ports": "-", "network": "dev_network"}
+          ]
+        },
+        "oci-f-micro_1": {
+          "count": 10,
+          "items": [
+            {"name": "mailu-front", "image": "mailu/nginx:2.0", "ports": "25, 465, 587, 993, 995, 143", "network": "mail_network"},
+            {"name": "mailu-admin", "image": "mailu/admin:2.0", "ports": "-", "network": "mail_network"},
+            {"name": "mailu-imap", "image": "mailu/dovecot:2.0", "ports": "-", "network": "mail_network"},
+            {"name": "mailu-smtp", "image": "mailu/postfix:2.0", "ports": "-", "network": "mail_network"},
+            {"name": "mailu-antispam", "image": "mailu/rspamd:2.0", "ports": "-", "network": "mail_network"},
+            {"name": "roundcube", "image": "mailu/webmail:2.0", "ports": "-", "network": "mail_network", "notes": "Roundcube 1.6.11 + calendar 3.2.8 + carddav 5.1.1"},
+            {"name": "mailu-redis", "image": "redis:alpine", "ports": "-", "network": "mail_network"},
+            {"name": "mailu-resolver", "image": "mailu/unbound:2.0", "ports": "-", "network": "mail_network"},
+            {"name": "sauron", "image": "alpine:3.19 (sauron-lite)", "ports": "-", "network": "security", "notes": "Hybrid watcher + YARA scanner (64MB limit)"},
+            {"name": "sauron-forwarder", "image": "alpine:3.19", "ports": "-", "network": "security", "notes": "Forwards alerts to central (16MB limit)"}
+          ]
+        },
+        "oci-f-micro_2": {
+          "count": 4,
+          "items": [
+            {"name": "matomo", "image": "matomo:fpm-alpine", "ports": "127.0.0.1:8080", "network": "matomo_network"},
+            {"name": "matomo-db", "image": "mariadb:10.11", "ports": "-", "network": "matomo_network"},
+            {"name": "sauron", "image": "alpine:3.19 (sauron-lite)", "ports": "-", "network": "security", "notes": "Hybrid watcher + YARA scanner (64MB limit)"},
+            {"name": "sauron-forwarder", "image": "alpine:3.19", "ports": "-", "network": "security", "notes": "Forwards alerts to central (16MB limit)"}
+          ]
+        }
+      },
+
+      "databaseAllocations": {
+        "gcp-f-micro_1": {
+          "bootSize": "10 GB",
+          "databases": [
+            {"name": "authelia-db", "type": "SQLite", "service": "Authelia", "size": "~5 MB", "path": "/data/authelia/db.sqlite3"},
+            {"name": "npm-db", "type": "SQLite", "service": "NPM", "size": "~10 MB", "path": "/data/npm/database.sqlite"}
+          ]
+        },
+        "oci-p-flex_1": {
+          "bootSize": "242 GB",
+          "databases": [
+            {"name": "photoprism-db", "type": "MariaDB", "service": "PhotoPrism", "size": "~2 GB", "path": "/data/photoprism/database/"},
+            {"name": "photoprism-sidecar", "type": "Files (YAML/JSON)", "service": "PhotoPrism", "size": "~5 GB", "path": "/data/photoprism/storage/sidecar/"},
+            {"name": "photoprism-originals", "type": "Files (Photos)", "service": "PhotoPrism", "size": "~100 GB", "path": "/data/photoprism/originals/"},
+            {"name": "radicale-db", "type": "Files (ICS/VCF)", "service": "Radicale", "size": "~50 MB", "path": "/data/radicale/collections/"}
+          ]
+        },
+        "oci-f-micro_1": {
+          "bootSize": "47 GB",
+          "databases": [
+            {"name": "mailu-db", "type": "SQLite", "service": "Mailu", "size": "~50 MB", "path": "/mailu/data/main.db"},
+            {"name": "mailu-mail", "type": "Maildir", "service": "Mailu (Dovecot)", "size": "~2 GB", "path": "/mailu/mail/"},
+            {"name": "mailu-dkim", "type": "Keys", "service": "Mailu (DKIM)", "size": "~1 MB", "path": "/mailu/dkim/"}
+          ]
+        },
+        "oci-f-micro_2": {
+          "bootSize": "47 GB",
+          "databases": [
+            {"name": "matomo-db", "type": "MariaDB", "service": "Matomo", "size": "~1 GB", "path": "/data/matomo/db/"},
+            {"name": "matomo-config", "type": "PHP Files", "service": "Matomo", "size": "~50 MB", "path": "/data/matomo/config/"}
+          ]
+        }
+      },
+
+      "summaries": {
+        "storage": {
+          "totalData": "~190 GB",
+          "databaseCount": 4,
+          "fileStorage": "~180 GB",
+          "totalCapacity": "346 GB"
+        },
+        "containers": {
+          "totalContainers": 19,
+          "dockerNetworks": 4,
+          "uniqueImages": 12,
+          "vmsWithDocker": 4
+        }
+      }
+    },
+
+    "cost": {
+      "_target": "cloud_control_cost.md",
+
+      "summary": {
+        "allTimeSpend": {"value": 0.83, "currency": "EUR"},
+        "thisMonth": {"value": 0.83, "currency": "EUR", "label": "Dec 2025"},
+        "projected": {"value": 3.22, "currency": "EUR"},
+        "yearToDate": {"value": 0.83, "currency": "EUR", "year": 2025},
+        "savingsVsMarket": {"value": 44.17, "percentage": 98, "currency": "EUR"}
+      },
+
+      "providerDistribution": [
+        {"provider": "Oracle Cloud (OCI)", "cost": 0.83, "percentage": 100, "color": "#F80000"},
+        {"provider": "Google Cloud (GCP)", "cost": 0.00, "percentage": 0, "color": "#4285F4"}
+      ],
+
+      "resourceUsageByVm": {
+        "oci-p-flex_1": {
+          "displayName": "OCI Paid Flex 1",
+          "specs": "1 OCPU, 8 GB RAM, 242 GB",
+          "vmTotal": {"cpu": 15, "ram": 45, "storage": 68},
+          "services": [
+            {"name": "photoprism", "cpu": 5, "ram": 15, "storage": 21},
+            {"name": "radicale", "cpu": "<1", "ram": 1, "storage": "<1"},
+            {"name": "cloud-api", "cpu": 1, "ram": 2, "storage": "<1"},
+            {"name": "openvpn", "cpu": "<1", "ram": "<1", "storage": "<1"},
+            {"name": "redis", "cpu": 1, "ram": "<1", "storage": "<1"}
+          ]
+        },
+        "oci-f-micro_1": {
+          "displayName": "OCI Free Micro 1",
+          "specs": "1 OCPU, 1 GB RAM, 47 GB",
+          "vmTotal": {"cpu": 5, "ram": 60, "storage": 27},
+          "services": [
+            {"name": "mailu-front", "cpu": 1, "ram": 8, "storage": 2},
+            {"name": "mailu-admin", "cpu": 1, "ram": 12, "storage": 1},
+            {"name": "mailu-imap", "cpu": 2, "ram": 20, "storage": 15},
+            {"name": "mailu-smtp", "cpu": 1, "ram": 10, "storage": 5},
+            {"name": "roundcube", "cpu": "<1", "ram": 10, "storage": 4}
+          ]
+        },
+        "oci-f-micro_2": {
+          "displayName": "OCI Free Micro 2",
+          "specs": "1 OCPU, 1 GB RAM, 47 GB",
+          "vmTotal": {"cpu": 10, "ram": 55, "storage": 20},
+          "services": [
+            {"name": "matomo-app", "cpu": 5, "ram": 25, "storage": 5},
+            {"name": "matomo-db", "cpu": 5, "ram": 30, "storage": 15}
+          ]
+        },
+        "gcp-f-micro_1": {
+          "displayName": "GCP Free Micro 1",
+          "specs": "0.25 vCPU, 1 GB RAM, 30 GB",
+          "vmTotal": {"cpu": 20, "ram": 70, "storage": 35},
+          "services": [
+            {"name": "npm", "cpu": 8, "ram": 25, "storage": 10},
+            {"name": "authelia", "cpu": 3, "ram": 15, "storage": 5},
+            {"name": "authelia-redis", "cpu": 1, "ram": 10, "storage": 3},
+            {"name": "wireguard", "cpu": 5, "ram": 10, "storage": 1},
+            {"name": "oauth2-proxy", "cpu": 3, "ram": 10, "storage": 1}
+          ]
+        }
+      },
+
+      "freeTierUtilization": {
+        "oci": {
+          "name": "Oracle Cloud (OCI)",
+          "tier": "Always Free Tier",
+          "resources": [
+            {"name": "Compute (ARM)", "usage": 0, "limit": "4 OCPU + 24 GB", "notes": "Available"},
+            {"name": "Block Storage", "usage": 25, "limit": "200 GB", "notes": "~94 GB used (2x47 GB free micro)"},
+            {"name": "Object Storage", "usage": 1, "limit": "20 GB", "notes": "< 1 GB used"},
+            {"name": "VCN Egress", "usage": 0, "limit": "10 TB/month", "notes": "< 1 GB used"}
+          ]
+        },
+        "gcp": {
+          "name": "Google Cloud (GCP)",
+          "tier": "Free Tier",
+          "resources": [
+            {"name": "Compute Engine", "usage": 100, "limit": "1 e2-micro", "notes": "730 hrs/mo"},
+            {"name": "Cloud Storage", "usage": 10, "limit": "5 GB", "notes": "< 1 GB used"},
+            {"name": "Cloud DNS", "usage": 4, "limit": "25 zones", "notes": "1 zone"},
+            {"name": "Network Egress", "usage": 50, "limit": "1 GB/month", "notes": "~0.5 GB used"}
+          ]
+        }
+      },
+
+      "marketComparison": [
+        {"provider": "Your Cost", "cost": 0.83, "currency": "EUR", "period": "mo", "specs": "OCI + GCP Free Tier"},
+        {"provider": "AWS Equivalent", "cost": 45.00, "currency": "EUR", "period": "mo", "specs": "t3.medium + 50GB EBS"},
+        {"provider": "Azure Equivalent", "cost": 42.00, "currency": "EUR", "period": "mo", "specs": "B2s + 50GB SSD"}
+      ],
+
+      "infraBreakdown": [
+        {"provider": "Oracle", "vm": "oci-p-flex_1", "tier": "Paid (Flex)", "cost": 5.50, "currency": "EUR"},
+        {"provider": "Oracle", "vm": "oci-f-micro_1", "tier": "Always Free", "cost": 0},
+        {"provider": "Oracle", "vm": "oci-f-micro_2", "tier": "Always Free", "cost": 0},
+        {"provider": "Google", "vm": "gcp-f-micro_1", "tier": "Free Tier", "cost": 0},
+        {"provider": "Cloudflare", "vm": "DNS", "tier": "Free", "cost": 0},
+        {"provider": "GitHub Pages", "vm": "Hosting", "tier": "Free", "cost": 0}
+      ]
+    },
+
+    "monitor": {
+      "_target": "cloud_control_monitor.md",
+      "_comment": "Template structure - values populated by runtime monitoring",
+
+      "vmOverview": {
+        "_columns": ["VM", "CPU", "RAM", "Storage", "VRAM", "Status"],
+        "vms": [
+          {"id": "oci-p-flex_1", "displayName": "OCI Paid Flex 1", "cpu": "2 vCPU", "ram": "8 GB", "storage": "242 GB"},
+          {"id": "oci-f-micro_1", "displayName": "OCI Free Micro 1", "cpu": "1 OCPU", "ram": "1 GB", "storage": "47 GB"},
+          {"id": "oci-f-micro_2", "displayName": "OCI Free Micro 2", "cpu": "1 OCPU", "ram": "1 GB", "storage": "47 GB"},
+          {"id": "gcp-f-micro_1", "displayName": "GCP Free Micro 1", "cpu": "0.25 vCPU", "ram": "1 GB", "storage": "30 GB"}
+        ]
+      },
+
+      "auditAnalytics": {
+        "services": [
+          {"name": "Matomo Analytics", "url": "https://analytics.diegonmarcos.com"}
+        ]
+      },
+
+      "auditLogsMetricsTemplate": {
+        "metrics": [
+          {"name": "Total Events (24h)", "valueKey": "totalEvents"},
+          {"name": "Success Rate", "valueKey": "successRate"},
+          {"name": "Blocked Attempts", "valueKey": "blockedAttempts"},
+          {"name": "Warnings", "valueKey": "warnings"}
+        ],
+        "eventTypes": [
+          {"type": "Authentication", "percentageKey": "authPct"},
+          {"type": "System", "percentageKey": "systemPct"},
+          {"type": "Network", "percentageKey": "networkPct"},
+          {"type": "Security", "percentageKey": "securityPct"}
+        ],
+        "statusBreakdown": ["Success", "Blocked", "Warning", "Info"]
+      },
+
+      "orchestrate": {
+        "dockgeInstances": [
+          {"vm": "OCI Paid Flex 1", "ip": "130.110.251.193", "description": "Main production server", "url": "https://dockge.diegonmarcos.com"},
+          {"vm": "GCP Free Micro 1", "ip": "34.55.55.234", "description": "NPM Proxy & Services", "url": "https://dockge-gcp.diegonmarcos.com"}
+        ]
+      },
+
+      "cloudConsoles": [
+        {"provider": "Oracle Cloud", "url": "https://cloud.oracle.com/compute/instances"},
+        {"provider": "Google Cloud", "url": "https://console.cloud.google.com/compute/instances"}
+      ]
+    }
+  }
+}

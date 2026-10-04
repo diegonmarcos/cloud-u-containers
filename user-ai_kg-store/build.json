@@ -1,0 +1,179 @@
+{
+  "name": "kg-store",
+  "enabled": true,
+  "description": "SurrealDB Hybrid Knowledge Graph - Infrastructure topology + vector search",
+  "category": "data",
+  "version": "0.1.0",
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/kg-store",
+    "compose_flags": "--build"
+  },
+  "backup": {
+    "enabled": true
+  },
+  "ports": {
+    "app": 8001
+  },
+  "containers": {
+    "app": {
+      "container_name": "kg-store",
+      "port": 8001,
+      "protocol": "http",
+      "db_engine": "surrealdb",
+      "image": "ghcr.io/diegonmarcos/kg-store:latest",
+      "resources": {
+        "_comment": "THE ONE DECLARATION of this container's memory budget. src/compose.nix reads mem_limit twice off this single value: once as the cgroup ceiling (deploy.resources.limits.memory) and once to size SurrealDB's own RocksDB caches (SURREAL_ROCKSDB_BLOCK_CACHE_SIZE = half of it, SURREAL_ROCKSDB_WRITE_BUFFER_SIZE = an eighth). Both halves are required: the cgroup alone converts the leak into an OOM kill, and the engine budget alone leaves nothing enforcing it. Change this number and BOTH move — no literal is written in compose.nix. Sized from measurement: kg-store's resident set on oci-apps 2026-09-24 was 140.6MiB, so 1G is ~7x headroom, against the ~10.6GB it held uncapped.",
+        "mem_limit": "1G",
+        "mem_reservation": "128M"
+      }
+    }
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "kg-store",
+    "dockerfile": "Dockerfile",
+    "arch": "arm64"
+  },
+  "upstream_image": "surrealdb/surrealdb:v2",
+  "data_path": "/opt/data/surrealdb",
+  "build": {
+    "headers_enforced": true
+  },
+  "tests": {
+    "memory-ceiling": {
+      "cmd": "node ../_shared/test-kg-store-memory-ceiling.mjs"
+    }
+  },
+  "kg": {
+    "namespace": "infra",
+    "database": "production",
+    "embedder": {
+      "enabled": false,
+      "model": "nomic-embed-text",
+      "dim": 768,
+      "index_type": "MTREE",
+      "vector_dtype": "F32"
+    },
+    "ingest": {
+      "endpoint": "/import",
+      "idempotent": true,
+      "stale_strategy": "mark"
+    },
+    "node_tables": [
+      {
+        "table": "vm",
+        "key_source": "ssh_alias"
+      },
+      {
+        "table": "service",
+        "key_source": "name"
+      },
+      {
+        "table": "container",
+        "key_source": "container_name"
+      },
+      {
+        "table": "domain",
+        "key_source": "fqdn"
+      },
+      {
+        "table": "log",
+        "key_source": "auto"
+      },
+      {
+        "table": "documentation",
+        "key_source": "path"
+      },
+      {
+        "table": "audit_log",
+        "key_source": "auto"
+      },
+      {
+        "table": "repo",
+        "key_source": "name"
+      },
+      {
+        "table": "module",
+        "key_source": "name"
+      },
+      {
+        "table": "package",
+        "key_source": "name"
+      },
+      {
+        "_comment": "octocode code-graph file nodes (full file-level mirror). One table; node_type property = file|source_file|test_file|config_file. Populated by a_solutions/user-ai_cloud-cgc-pub-mcp/src/code/octocode-export.py reading octocode's Lance graphrag_nodes per repo. key = <repo>:<path>.",
+        "table": "file",
+        "key_source": "path"
+      }
+    ],
+    "edge_tables": [
+      {
+        "table": "hosted_on",
+        "in": "service",
+        "out": "vm"
+      },
+      {
+        "table": "runs_container",
+        "in": "service",
+        "out": "container"
+      },
+      {
+        "table": "depends_on",
+        "in": "service",
+        "out": "service"
+      },
+      {
+        "table": "proxied_by",
+        "in": "service",
+        "out": "service"
+      },
+      {
+        "table": "authenticated_by",
+        "in": "service",
+        "out": "service"
+      },
+      {
+        "table": "connected_to",
+        "in": "vm",
+        "out": "vm"
+      },
+      {
+        "table": "routes_to",
+        "in": "domain",
+        "out": "service"
+      },
+      {
+        "table": "caused_by",
+        "in": "log",
+        "out": "any"
+      },
+      {
+        "table": "belongs_to_repo",
+        "in": "module",
+        "out": "repo"
+      },
+      {
+        "table": "implements",
+        "in": "module",
+        "out": "service"
+      },
+      {
+        "table": "declares_tool",
+        "in": "repo",
+        "out": "package"
+      },
+      {
+        "table": "consumes",
+        "in": "repo",
+        "out": "repo"
+      },
+      {
+        "_comment": "octocode code-graph relationships (file→file), e.g. sibling_module. The exporter emits whatever relationship types octocode produced; SurrealDB RELATE auto-creates any not pre-defined here.",
+        "table": "sibling_module",
+        "in": "file",
+        "out": "file"
+      }
+    ]
+  }
+}

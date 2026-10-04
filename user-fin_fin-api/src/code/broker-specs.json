@@ -1,0 +1,471 @@
+{
+  "$schema": "./broker-specs.schema.json",
+  "note": "Data-driven broker registry. Interpreted by crates/brokers/brokers-generic. Auth details, OAuth flows, and signed payloads that don't fit this shape live in their own crate (see brokers-alpaca template). Every spec ships a hermetic test fixture.",
+  "specs": [
+    {
+      "id": "zerodha",
+      "description": "Zerodha Kite Connect",
+      "base_url": "https://api.kite.trade",
+      "region": "IN",
+      "auth": { "header": "Authorization", "prefix": "token " },
+      "endpoints": {
+        "place_order": "/orders/regular",
+        "cancel_order": "/orders/regular/{id}",
+        "get_order": "/orders/{id}",
+        "list_orders": "/orders",
+        "positions": "/portfolio/positions",
+        "balance": "/user/margins"
+      },
+      "fields": {
+        "order_id": "/data/order_id",
+        "order_status": "/data/status",
+        "cash": "/data/equity/net",
+        "equity": "/data/equity/available",
+        "positions": "/data/net",
+        "position_symbol": "/tradingsymbol",
+        "position_qty": "/quantity",
+        "position_avg_price": "/average_price"
+      },
+      "test": {
+        "place_order_response": { "status": "success", "data": { "order_id": "250101000000123" } },
+        "get_order_response":   { "data": { "order_id": "250101000000123", "status": "COMPLETE" } },
+        "positions_response":   { "data": { "net": [{ "tradingsymbol": "INFY", "quantity": 10, "average_price": 1450.25 }] } },
+        "balance_response":     { "data": { "equity": { "net": 100000.0, "available": 95000.0 } } }
+      }
+    },
+    {
+      "id": "angelone",
+      "description": "Angel One SmartAPI",
+      "base_url": "https://apiconnect.angelbroking.com",
+      "region": "IN",
+      "auth": { "header": "Authorization", "prefix": "Bearer " },
+      "endpoints": {
+        "place_order": "/rest/secure/angelbroking/order/v1/placeOrder",
+        "cancel_order": "/rest/secure/angelbroking/order/v1/cancelOrder/{id}",
+        "get_order": "/rest/secure/angelbroking/order/v1/details/{id}",
+        "list_orders": "/rest/secure/angelbroking/order/v1/getOrderBook",
+        "positions": "/rest/secure/angelbroking/order/v1/getPosition",
+        "balance": "/rest/secure/angelbroking/user/v1/getRMS"
+      },
+      "fields": {
+        "order_id": "/data/orderid",
+        "order_status": "/data/orderstatus",
+        "cash": "/data/availablecash",
+        "equity": "/data/net",
+        "positions": "/data",
+        "position_symbol": "/symbolname",
+        "position_qty": "/netqty",
+        "position_avg_price": "/avgnetprice"
+      },
+      "test": {
+        "place_order_response": { "status": true, "data": { "orderid": "231019000001234" } },
+        "get_order_response":   { "data": { "orderid": "231019000001234", "orderstatus": "complete" } },
+        "positions_response":   { "data": [{ "symbolname": "SBIN-EQ", "netqty": "50", "avgnetprice": "620.1" }] },
+        "balance_response":     { "data": { "availablecash": "50000.5", "net": "55000.0" } }
+      }
+    },
+    {
+      "id": "upstox",
+      "description": "Upstox v2 API",
+      "base_url": "https://api.upstox.com",
+      "region": "IN",
+      "auth": { "header": "Authorization", "prefix": "Bearer " },
+      "endpoints": {
+        "place_order": "/v2/order/place",
+        "cancel_order": "/v2/order/cancel/{id}",
+        "get_order": "/v2/order/details?order_id={id}",
+        "list_orders": "/v2/order/retrieve-all",
+        "positions": "/v2/portfolio/short-term-positions",
+        "balance": "/v2/user/get-funds-and-margin"
+      },
+      "fields": {
+        "order_id": "/data/order_id",
+        "order_status": "/data/status",
+        "cash": "/data/equity/available_margin",
+        "equity": "/data/equity/used_margin",
+        "positions": "/data",
+        "position_symbol": "/trading_symbol",
+        "position_qty": "/quantity",
+        "position_avg_price": "/average_price"
+      },
+      "test": {
+        "place_order_response": { "status": "success", "data": { "order_id": "UP-ORD-42" } },
+        "get_order_response":   { "data": { "order_id": "UP-ORD-42", "status": "complete" } },
+        "positions_response":   { "data": [{ "trading_symbol": "RELIANCE", "quantity": 5, "average_price": 2800.0 }] },
+        "balance_response":     { "data": { "equity": { "available_margin": 100000.0, "used_margin": 25000.0 } } }
+      }
+    },
+    {
+      "id": "fyers",
+      "description": "Fyers API v3",
+      "base_url": "https://api-t1.fyers.in",
+      "region": "IN",
+      "auth": { "header": "Authorization", "prefix": "" },
+      "endpoints": {
+        "place_order": "/api/v3/orders/sync",
+        "cancel_order": "/api/v3/orders/sync/{id}",
+        "get_order": "/api/v3/orders/?id={id}",
+        "list_orders": "/api/v3/orders",
+        "positions": "/api/v3/positions",
+        "balance": "/api/v3/funds"
+      },
+      "fields": {
+        "order_id": "/id",
+        "order_status": "/status",
+        "cash": "/fund_limit/0/equityAmount",
+        "equity": "/fund_limit/0/utilizedAmount",
+        "positions": "/netPositions",
+        "position_symbol": "/symbol",
+        "position_qty": "/netQty",
+        "position_avg_price": "/avgPrice"
+      },
+      "test": {
+        "place_order_response": { "s": "ok", "id": "FYERS-99" },
+        "get_order_response":   { "id": "FYERS-99", "status": "filled" },
+        "positions_response":   { "netPositions": [{ "symbol": "NSE:HDFCBANK-EQ", "netQty": 3, "avgPrice": 1580.5 }] },
+        "balance_response":     { "fund_limit": [{ "equityAmount": 80000.0, "utilizedAmount": 10000.0 }] }
+      }
+    },
+    {
+      "id": "dhan",
+      "description": "Dhan HQ",
+      "base_url": "https://api.dhan.co",
+      "region": "IN",
+      "auth": { "header": "access-token", "prefix": "" },
+      "endpoints": {
+        "place_order": "/orders",
+        "cancel_order": "/orders/{id}",
+        "get_order": "/orders/{id}",
+        "list_orders": "/orders",
+        "positions": "/positions",
+        "balance": "/fundlimit"
+      },
+      "fields": {
+        "order_id": "/orderId",
+        "order_status": "/orderStatus",
+        "cash": "/availabelBalance",
+        "equity": "/utilizedAmount",
+        "positions": "",
+        "position_symbol": "/securityId",
+        "position_qty": "/netQty",
+        "position_avg_price": "/costPrice"
+      },
+      "test": {
+        "place_order_response": { "orderId": "DHN-101", "orderStatus": "TRANSIT" },
+        "get_order_response":   { "orderId": "DHN-101", "orderStatus": "TRADED" },
+        "positions_response":   [{ "securityId": "HDFCBANK", "netQty": 2, "costPrice": 1600.0 }],
+        "balance_response":     { "availabelBalance": 25000.0, "utilizedAmount": 5000.0 }
+      }
+    },
+    {
+      "id": "groww",
+      "description": "Groww Trade API",
+      "base_url": "https://api.groww.in",
+      "region": "IN",
+      "auth": { "header": "Authorization", "prefix": "Bearer " },
+      "endpoints": {
+        "place_order": "/v1/orders",
+        "cancel_order": "/v1/orders/{id}",
+        "get_order": "/v1/orders/{id}",
+        "list_orders": "/v1/orders",
+        "positions": "/v1/positions",
+        "balance": "/v1/accounts/balance"
+      },
+      "fields": {
+        "order_id": "/order_id",
+        "order_status": "/status",
+        "cash": "/available_cash",
+        "equity": "/total_equity",
+        "positions": "/positions",
+        "position_symbol": "/trading_symbol",
+        "position_qty": "/quantity",
+        "position_avg_price": "/average_price"
+      },
+      "test": {
+        "place_order_response": { "order_id": "GW-5", "status": "OPEN" },
+        "get_order_response":   { "order_id": "GW-5", "status": "EXECUTED" },
+        "positions_response":   { "positions": [{ "trading_symbol": "TCS", "quantity": 1, "average_price": 3500.0 }] },
+        "balance_response":     { "available_cash": 10000.0, "total_equity": 13500.0 }
+      }
+    },
+    {
+      "id": "kotak",
+      "description": "Kotak Neo API",
+      "base_url": "https://gw-napi.kotaksecurities.com",
+      "region": "IN",
+      "auth": { "header": "Authorization", "prefix": "Bearer " },
+      "endpoints": {
+        "place_order": "/Orders/2.0/quick/order/rule/ms/place",
+        "cancel_order": "/Orders/2.0/quick/order/cancel/{id}",
+        "get_order": "/Orders/2.0/quick/order/{id}",
+        "list_orders": "/Orders/2.0/quick/user/orders",
+        "positions": "/Orders/2.0/quick/user/positions",
+        "balance": "/Orders/2.0/quick/user/limits"
+      },
+      "fields": {
+        "order_id": "/data/orderId",
+        "order_status": "/data/status",
+        "cash": "/data/Net",
+        "equity": "/data/OpeningBal",
+        "positions": "/data",
+        "position_symbol": "/trdSym",
+        "position_qty": "/flBuyQty",
+        "position_avg_price": "/avgPrc"
+      },
+      "test": {
+        "place_order_response": { "data": { "orderId": "KT-1", "status": "PENDING" } },
+        "get_order_response":   { "data": { "orderId": "KT-1", "status": "COMPLETE" } },
+        "positions_response":   { "data": [{ "trdSym": "BANKNIFTY", "flBuyQty": 5, "avgPrc": 48500.0 }] },
+        "balance_response":     { "data": { "Net": 75000.0, "OpeningBal": 100000.0 } }
+      }
+    },
+    {
+      "id": "iifl",
+      "description": "IIFL Markets API",
+      "base_url": "https://ttblaze.iifl.com",
+      "region": "IN",
+      "auth": { "header": "Authorization", "prefix": "Bearer " },
+      "endpoints": {
+        "place_order": "/interactive/orders",
+        "cancel_order": "/interactive/orders?appOrderID={id}",
+        "get_order": "/interactive/orders?appOrderID={id}",
+        "list_orders": "/interactive/orders",
+        "positions": "/interactive/portfolio/positions",
+        "balance": "/interactive/user/balance"
+      },
+      "fields": {
+        "order_id": "/result/AppOrderID",
+        "order_status": "/result/OrderStatus",
+        "cash": "/result/BalanceList/0/limitObject/RMSSubLimits/netMarginAvailable",
+        "equity": "/result/BalanceList/0/limitObject/cashAvailable",
+        "positions": "/result",
+        "position_symbol": "/TradingSymbol",
+        "position_qty": "/Quantity",
+        "position_avg_price": "/AveragePrice"
+      },
+      "test": {
+        "place_order_response": { "result": { "AppOrderID": "IIFL-77", "OrderStatus": "New" } },
+        "get_order_response":   { "result": { "AppOrderID": "IIFL-77", "OrderStatus": "Filled" } },
+        "positions_response":   { "result": [{ "TradingSymbol": "ITC", "Quantity": 100, "AveragePrice": 425.5 }] },
+        "balance_response":     { "result": { "BalanceList": [{ "limitObject": { "RMSSubLimits": { "netMarginAvailable": 40000.0 }, "cashAvailable": 50000.0 } }] } }
+      }
+    },
+    {
+      "id": "5paisa",
+      "description": "5paisa XTS API",
+      "base_url": "https://openapi.5paisa.com",
+      "region": "IN",
+      "auth": { "header": "Authorization", "prefix": "Bearer " },
+      "endpoints": {
+        "place_order": "/VendorsAPI/Service1.svc/V1/PlaceOrderRequest",
+        "cancel_order": "/VendorsAPI/Service1.svc/V1/CancelOrderRequest?exchOrderID={id}",
+        "get_order": "/VendorsAPI/Service1.svc/V1/OrderStatus?exchOrderID={id}",
+        "list_orders": "/VendorsAPI/Service1.svc/V3/OrderBook",
+        "positions": "/VendorsAPI/Service1.svc/V4/NetPositionNetWise",
+        "balance": "/VendorsAPI/Service1.svc/V4/Margin"
+      },
+      "fields": {
+        "order_id": "/body/BrokerOrderID",
+        "order_status": "/body/Status",
+        "cash": "/body/EquityMargin/AvailableMargin",
+        "equity": "/body/EquityMargin/NetMargin",
+        "positions": "/body/NetPositionDetail",
+        "position_symbol": "/SymbolName",
+        "position_qty": "/NetQty",
+        "position_avg_price": "/AvgRate"
+      },
+      "test": {
+        "place_order_response": { "body": { "BrokerOrderID": "5P-7", "Status": "Pending" } },
+        "get_order_response":   { "body": { "BrokerOrderID": "5P-7", "Status": "Fully Executed" } },
+        "positions_response":   { "body": { "NetPositionDetail": [{ "SymbolName": "SBIN", "NetQty": 10, "AvgRate": 620.0 }] } },
+        "balance_response":     { "body": { "EquityMargin": { "AvailableMargin": 20000.0, "NetMargin": 22000.0 } } }
+      }
+    },
+    {
+      "id": "aliceblue",
+      "description": "Alice Blue ANT API",
+      "base_url": "https://ant.aliceblueonline.com",
+      "region": "IN",
+      "auth": { "header": "Authorization", "prefix": "Bearer " },
+      "endpoints": {
+        "place_order": "/rest/AliceBlueAPIService/api/placeOrder/executePlaceOrder",
+        "cancel_order": "/rest/AliceBlueAPIService/api/placeOrder/cancelOrder/{id}",
+        "get_order": "/rest/AliceBlueAPIService/api/placeOrder/getOrderInfo?nestOrderNumber={id}",
+        "list_orders": "/rest/AliceBlueAPIService/api/placeOrder/fetchOrderBook",
+        "positions": "/rest/AliceBlueAPIService/api/positionAndHoldings/positionBook",
+        "balance": "/rest/AliceBlueAPIService/api/limits/getRmsLimits"
+      },
+      "fields": {
+        "order_id": "/NOrdNo",
+        "order_status": "/stat",
+        "cash": "/cashmarginavailable",
+        "equity": "/net",
+        "positions": "",
+        "position_symbol": "/Trdsym",
+        "position_qty": "/Netqty",
+        "position_avg_price": "/NetPrice"
+      },
+      "test": {
+        "place_order_response": { "NOrdNo": "AB-9", "stat": "Ok" },
+        "get_order_response":   { "NOrdNo": "AB-9", "stat": "complete" },
+        "positions_response":   [{ "Trdsym": "WIPRO", "Netqty": 20, "NetPrice": 420.5 }],
+        "balance_response":     { "cashmarginavailable": 30000.0, "net": 31000.0 }
+      }
+    },
+    {
+      "id": "shoonya",
+      "description": "Shoonya (Finvasia) API",
+      "base_url": "https://api.shoonya.com",
+      "region": "IN",
+      "auth": { "header": "Authorization", "prefix": "Bearer " },
+      "endpoints": {
+        "place_order": "/NorenWClientTP/PlaceOrder",
+        "cancel_order": "/NorenWClientTP/CancelOrder",
+        "get_order": "/NorenWClientTP/SingleOrdHist",
+        "list_orders": "/NorenWClientTP/OrderBook",
+        "positions": "/NorenWClientTP/PositionBook",
+        "balance": "/NorenWClientTP/Limits"
+      },
+      "fields": {
+        "order_id": "/norenordno",
+        "order_status": "/stat",
+        "cash": "/cash",
+        "equity": "/payin",
+        "positions": "",
+        "position_symbol": "/tsym",
+        "position_qty": "/netqty",
+        "position_avg_price": "/netavgprc"
+      },
+      "test": {
+        "place_order_response": { "norenordno": "SH-3", "stat": "Ok" },
+        "get_order_response":   { "norenordno": "SH-3", "stat": "COMPLETE" },
+        "positions_response":   [{ "tsym": "NIFTY", "netqty": "1", "netavgprc": "24000.0" }],
+        "balance_response":     { "cash": "15000.0", "payin": "0.0" }
+      }
+    },
+    {
+      "id": "motilal",
+      "description": "Motilal Oswal Trade API",
+      "base_url": "https://openapi.motilaloswal.com",
+      "region": "IN",
+      "auth": { "header": "Authorization", "prefix": "Bearer " },
+      "endpoints": {
+        "place_order": "/rest/v2/order/placeorder",
+        "cancel_order": "/rest/v2/order/cancelorder/{id}",
+        "get_order": "/rest/v2/order/getorderdetails?orderid={id}",
+        "list_orders": "/rest/v2/order/getorders",
+        "positions": "/rest/v2/positions/getpositions",
+        "balance": "/rest/v2/margin/getmargin"
+      },
+      "fields": {
+        "order_id": "/data/uniqueorderid",
+        "order_status": "/data/status",
+        "cash": "/data/availablemargin",
+        "equity": "/data/netmargin",
+        "positions": "/data",
+        "position_symbol": "/tradingsymbol",
+        "position_qty": "/netquantity",
+        "position_avg_price": "/averageprice"
+      },
+      "test": {
+        "place_order_response": { "data": { "uniqueorderid": "MO-11", "status": "PENDING" } },
+        "get_order_response":   { "data": { "uniqueorderid": "MO-11", "status": "COMPLETE" } },
+        "positions_response":   { "data": [{ "tradingsymbol": "LT", "netquantity": 1, "averageprice": 3200.0 }] },
+        "balance_response":     { "data": { "availablemargin": 45000.0, "netmargin": 47000.0 } }
+      }
+    },
+    {
+      "id": "ibkr",
+      "description": "Interactive Brokers Client Portal Web API",
+      "base_url": "https://localhost:5000",
+      "region": "US/EU/APAC",
+      "auth": { "header": "", "prefix": "" },
+      "endpoints": {
+        "place_order": "/v1/api/iserver/account/{account}/orders",
+        "cancel_order": "/v1/api/iserver/account/{account}/order/{id}",
+        "get_order": "/v1/api/iserver/account/order/status/{id}",
+        "list_orders": "/v1/api/iserver/account/orders",
+        "positions": "/v1/api/portfolio/{account}/positions/0",
+        "balance": "/v1/api/portfolio/{account}/ledger"
+      },
+      "fields": {
+        "order_id": "/order_id",
+        "order_status": "/order_status",
+        "cash": "/USD/cashbalance",
+        "equity": "/USD/netliquidationvalue",
+        "positions": "",
+        "position_symbol": "/contractDesc",
+        "position_qty": "/position",
+        "position_avg_price": "/avgCost"
+      },
+      "test": {
+        "place_order_response": { "order_id": "IB-55", "order_status": "Submitted" },
+        "get_order_response":   { "order_id": "IB-55", "order_status": "Filled" },
+        "positions_response":   [{ "contractDesc": "AAPL", "position": 100, "avgCost": 150.0 }],
+        "balance_response":     { "USD": { "cashbalance": 50000.0, "netliquidationvalue": 65000.0 } }
+      }
+    },
+    {
+      "id": "tradier",
+      "description": "Tradier brokerage API",
+      "base_url": "https://api.tradier.com",
+      "region": "US",
+      "auth": { "header": "Authorization", "prefix": "Bearer " },
+      "endpoints": {
+        "place_order": "/v1/accounts/{account}/orders",
+        "cancel_order": "/v1/accounts/{account}/orders/{id}",
+        "get_order": "/v1/accounts/{account}/orders/{id}",
+        "list_orders": "/v1/accounts/{account}/orders",
+        "positions": "/v1/accounts/{account}/positions",
+        "balance": "/v1/accounts/{account}/balances"
+      },
+      "fields": {
+        "order_id": "/order/id",
+        "order_status": "/order/status",
+        "cash": "/balances/total_cash",
+        "equity": "/balances/total_equity",
+        "positions": "/positions/position",
+        "position_symbol": "/symbol",
+        "position_qty": "/quantity",
+        "position_avg_price": "/cost_basis"
+      },
+      "test": {
+        "place_order_response": { "order": { "id": "TD-1", "status": "pending" } },
+        "get_order_response":   { "order": { "id": "TD-1", "status": "filled" } },
+        "positions_response":   { "positions": { "position": [{ "symbol": "MSFT", "quantity": 50, "cost_basis": 410.0 }] } },
+        "balance_response":     { "balances": { "total_cash": 20000.0, "total_equity": 40500.0 } }
+      }
+    },
+    {
+      "id": "saxo",
+      "description": "Saxo Bank OpenAPI",
+      "base_url": "https://gateway.saxobank.com",
+      "region": "EU",
+      "auth": { "header": "Authorization", "prefix": "Bearer " },
+      "endpoints": {
+        "place_order": "/openapi/trade/v2/orders",
+        "cancel_order": "/openapi/trade/v2/orders/{id}",
+        "get_order": "/openapi/port/v1/orders/{id}",
+        "list_orders": "/openapi/port/v1/orders/me",
+        "positions": "/openapi/port/v1/positions/me",
+        "balance": "/openapi/port/v1/balances/me"
+      },
+      "fields": {
+        "order_id": "/OrderId",
+        "order_status": "/Status",
+        "cash": "/CashBalance",
+        "equity": "/TotalValue",
+        "positions": "/Data",
+        "position_symbol": "/DisplayAndFormat/Symbol",
+        "position_qty": "/PositionBase/Amount",
+        "position_avg_price": "/PositionView/AverageOpenPrice"
+      },
+      "test": {
+        "place_order_response": { "OrderId": "SX-77", "Status": "Working" },
+        "get_order_response":   { "OrderId": "SX-77", "Status": "Filled" },
+        "positions_response":   { "Data": [{ "DisplayAndFormat": { "Symbol": "EURUSD" }, "PositionBase": { "Amount": 10000 }, "PositionView": { "AverageOpenPrice": 1.085 } }] },
+        "balance_response":     { "CashBalance": 50000.0, "TotalValue": 52000.0 }
+      }
+    }
+  ]
+}

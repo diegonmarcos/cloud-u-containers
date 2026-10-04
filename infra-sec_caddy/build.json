@@ -1,0 +1,321 @@
+{
+  "name": "caddy",
+  "description": "Caddy reverse proxy + security dashboard (gcp-proxy, wg0 bind)",
+  "dns": "caddy.app",
+  "category": "sec",
+  "domain": "proxy.diegonmarcos.com",
+  "deploy": {
+    "host": "gcp-proxy",
+    "remote_path": "/opt/containers/caddy",
+    "excludes": [
+      "logs/"
+    ],
+    "compose_flags": "--build"
+  },
+  "compose": {
+    "custom": true
+  },
+  "build": {
+    "headers_enforced": true
+  },
+  "secrets": {
+    "escape_dollars": "true"
+  },
+  "caddy_config": {
+    "global": {
+      "debug": true,
+      "admin_bind": "localhost:2019",
+      "order": "respond before handle",
+      "auto_https": "disable_redirects",
+      "_doc_wg_bind_ip": "Caddy's wg0 IP on gcp-proxy (10.0.0.1) \u2014 every public *.diegonmarcos.com site block dual-binds to (0.0.0.0, wg_bind_ip). Caddy lives on gcp-proxy (the public-facing VM); reverse-proxy upstreams to internal services traverse the wg0 mesh (10.0.0.x). Engine resolveVmIpForCaddy() still prefers wg-public IPs (10.1.0.x) when both endpoints are peers \u2014 gcp-proxy is a wg-public peer (10.1.0.2) so mail-side upstreams keep using wg-public transit.",
+      "wg_bind_ip": "10.0.0.1",
+      "_doc_wg_cidrs": "Source CIDRs that count as \"on the mesh\" for every wg_only / bearer gate caddyfile.nix emits (@wg, @not_wg). Mirrors config.json wireguard.subnet + wireguard.subnet_v6. The wg0 mesh went dual-stack on 2026-07-26 but this gate stayed IPv4-only, so any client resolving the AAAA record (fd0c:1d00::1 \u2014 Hickory serves both, and clients prefer IPv6) arrived from fd0c:1d00::/64, missed the matcher and got 403. Keep both families listed or mesh-only routes break for IPv6-capable peers. Space-separated: Caddy remote_ip takes a CIDR list.",
+      "wg_cidrs": "10.0.0.0/24 fd0c:1d00::/64"
+    },
+    "on_demand_tls": {
+      "ask_bind": "127.0.0.1:2020",
+      "ask_url": "http://127.0.0.1:2020"
+    },
+    "security_snippets": {
+      "security_headers": {
+        "hsts_max_age": 31536000,
+        "frame_options": "SAMEORIGIN",
+        "referrer_policy": "strict-origin-when-cross-origin",
+        "permissions_policy": "camera=(), microphone=(), geolocation=()",
+        "cors_origin": "*",
+        "cors_methods": "GET, POST, OPTIONS",
+        "cors_headers": "Authorization, Content-Type",
+        "hide_headers": [
+          "Server"
+        ]
+      },
+      "rate_limit": {
+        "events": 100,
+        "window": "1m",
+        "key": "{remote_host}",
+        "zone": "global"
+      },
+      "bot_blocker": {
+        "user_agents": [
+          "sqlmap",
+          "nikto",
+          "masscan",
+          "nmap",
+          "zgrab",
+          "scrapy",
+          "dirbuster",
+          "gobuster",
+          "nuclei",
+          "wfuzz",
+          "havij",
+          "acunetix",
+          "nessus",
+          "openvas"
+        ]
+      },
+      "scanner_blocker": {
+        "paths": [
+          "/wp-admin*",
+          "/wp-login*",
+          "/xmlrpc.php",
+          "/.env",
+          "/.git*",
+          "/phpmyadmin*",
+          "/actuator*",
+          "/solr*",
+          "/console*",
+          "/.aws*",
+          "/cgi-bin/*"
+        ]
+      },
+      "request_limits": {
+        "max_body": "10MB"
+      },
+      "ip_block": {
+        "cidrs": []
+      },
+      "access_log": {
+        "path": "/var/log/caddy/access.log",
+        "format": "json",
+        "roll_size": "10mb",
+        "roll_keep": 5
+      },
+      "mcp_rate_limit": {
+        "events": 600,
+        "window": "1m",
+        "key": "{remote_host}",
+        "zone": "mcp"
+      },
+      "jmap_rate_limit": {
+        "events": 600,
+        "window": "1m",
+        "key": "{remote_host}",
+        "zone": "jmap"
+      }
+    },
+    "auth": {
+      "authelia_uri": "/api/authz/forward-auth",
+      "authelia_copy": [
+        "Remote-User",
+        "Remote-Groups",
+        "Remote-Email",
+        "Remote-Name"
+      ],
+      "introspect_uri": "/auth",
+      "introspect_copy": [
+        "X-Auth-User",
+        "X-Auth-Subject",
+        "X-Auth-Email"
+      ],
+      "ntfy_jwt_pattern": "^Bearer eyJ",
+      "ntfy_token_pattern": "^Bearer tk_"
+    },
+    "error_handler": {
+      "status_codes": [
+        502,
+        503,
+        504
+      ],
+      "error_html": "/srv/error.html"
+    },
+    "static_files": [
+      {
+        "src": "error.html",
+        "dest": "error.html"
+      },
+      {
+        "src": "dashboard.html",
+        "dest": "dashboard.html"
+      },
+      {
+        "src": "ntfy-setup.html",
+        "dest": "ntfy-setup.html"
+      },
+      {
+        "src": "servermail.html",
+        "dest": "mail/servermail.html"
+      },
+      {
+        "src": "servermail-config.html",
+        "dest": "mail/servermail-config.html"
+      },
+      {
+        "src": "pgp-wkd-key.bin",
+        "dest": "wkd/hu/s8y7oh5xrdpu9psba3i5ntk64ohouhga"
+      }
+    ],
+    "wkd": {
+      "domains": [
+        "diegonmarcos.com, www.diegonmarcos.com",
+        "linktree.diegonmarcos.com",
+        "nexus.diegonmarcos.com",
+        "suite.diegonmarcos.com",
+        "maps.diegonmarcos.com"
+      ],
+      "hash": "s8y7oh5xrdpu9psba3i5ntk64ohouhga",
+      "path": "/.well-known/openpgpkey/*"
+    },
+    "mta_sts": {
+      "domain": "mta-sts.diegonmarcos.com",
+      "policy_path": "/.well-known/mta-sts.txt",
+      "mode": "enforce",
+      "mx": [
+        "route1.mx.cloudflare.net",
+        "route2.mx.cloudflare.net",
+        "route3.mx.cloudflare.net"
+      ],
+      "max_age": 604800
+    },
+    "catch_all": {
+      "domain": "*.diegonmarcos.com",
+      "page": "/srv/error.html"
+    },
+    "messages": {
+      "portless_placeholder": "Portless worker/sidecar \u2014 no HTTP endpoint",
+      "db_catalog_template": "DB catalog \u2014 container={container} engine={engine} port={port} upstream={upstream} path={path} vm={vm}",
+      "app_hub_fallback": "Not Found"
+    }
+  },
+  "proxy": {
+    "type": "special",
+    "well_known": [
+      {
+        "_doc": "RFC 8620 JMAP discovery on the jmap vhost. These grafts do double duty: caddyfile.nix mkWellKnownBlock emits the public handlers AND mkSubdomainRoute exempts exactly these paths from the vhost's @not_wg mesh gate, so discovery works off-mesh (Stalwart itself enforces Basic auth) while the rest of the vhost (Stalwart web-admin) stays mesh-only. Mirrors the apex's public JMAP surface declared in user-comm_tools-stalwart proxy.well_known. Declared caddy-side because the gate exemption is a Caddy concern; upstream is explicit (auto-resolve would yield caddy's own VM, not Stalwart's 10.0.0.3:2443).",
+        "path": "/.well-known/jmap",
+        "target_domain": "jmap.diegonmarcos.com",
+        "upstream": "10.0.0.3:2443",
+        "tls_skip_verify": true,
+        "_doc_rewrite_to": "Serve the session AT the discovery URL rather than making the client chase Stalwart's relative 307 (Location: /jmap/session). Legal per RFC 8620 and the original design, but a client that mishandles a RELATIVE Location never arrives: Cloud-Mail failed 2026-09-01 with 'EndpointNotFoundException: Unable to fetch session object(https://jmap.diegonmarcos.com/.well-known/jmap)' while curl -L on that exact URL returned a valid session in ~1.3s. Same upstream, same Authorization passthrough, same per-user session JSON \u2014 the /jmap/* sibling below stays for the API calls that follow. Fixes every JMAP client instead of patching one.",
+        "rewrite_to": "/jmap/session",
+        "comment": "JMAP discovery on jmap vhost (public per RFC 8620)"
+      },
+      {
+        "path": "/jmap/*",
+        "target_domain": "jmap.diegonmarcos.com",
+        "upstream": "10.0.0.3:2443",
+        "tls_skip_verify": true,
+        "comment": "JMAP session/api/download/upload/eventsource follow-through on jmap vhost"
+      }
+    ],
+    "proxy_dashboard": {
+      "domain": "proxy.diegonmarcos.com",
+      "comment": "Infrastructure dashboard (static HTML)"
+    },
+    "parent_domain_meta": {
+      "api.diegonmarcos.com": {
+        "landing_page": "api",
+        "comment": "API hub -- path-based routing to backend APIs",
+        "extra_paths": [
+          {
+            "base_path": "/dash",
+            "type": "github_pages",
+            "github_path": "mcp-api-swagger",
+            "redirect_bare": true,
+            "comment": "C3 Dashboard from GitHub Pages"
+          }
+        ]
+      },
+      "app.diegonmarcos.com": {
+        "comment": "App hub -- path-based routing",
+        "fallback": "respond \"Not Found\" 404",
+        "extra_paths": [
+          {
+            "base_path": "/crawlee",
+            "upstream": "crawlee.app:3001",
+            "comment": "Crawlee Cloud dashboard (separate from API)"
+          }
+        ]
+      },
+      "cloud.diegonmarcos.com": {
+        "comment": "Cloud dashboard + spec viewer",
+        "landing_page": "cloud"
+      },
+      "mcp.diegonmarcos.com": {
+        "comment": "MCP -- Streamable HTTP endpoints for Claude Code MCP clients"
+      },
+      "mail.diegonmarcos.com": {
+        "comment": "Redirect to webmail.diegonmarcos.com"
+      }
+    }
+  },
+  "containers": {
+    "app": {
+      "container_name": "caddy",
+      "_image_doc": "PINNED to the last-known-good digest. caddy-l4:latest was rebuilt broken on 2026-06-19 (no caddy binary, CMD=/bin/sh) \u2192 gcp-proxy pulled it \u2192 :443 outage. Repin to :latest once infra-sec_caddy-l4-image is rebuilt + verified to contain caddy.",
+      "image": "ghcr.io/diegonmarcos/caddy-l4@sha256:d8309fad8a32c393ddf7a258b8dbfc990ea928372284804a08bd071a13df6b7c",
+      "port": 443,
+      "extra_ports": [
+        {
+          "port": 80,
+          "protocol": "http",
+          "monitor": false,
+          "_comment": "Caddy is TLS-only on :443 \u2014 no plain :80 listener. Suppress canonical URL probe."
+        },
+        {
+          "port": 2019,
+          "protocol": "http",
+          "monitor": false,
+          "_comment": "Admin API bound to localhost:2019 only \u2014 local-only by design."
+        }
+      ],
+      "port_env": null,
+      "dns": "caddy.app",
+      "public": true,
+      "proxy": {
+        "type": "special",
+        "comment": "Caddy IS the reverse proxy \u2014 serves all domains"
+      },
+      "healthcheck": null,
+      "monitoring": null,
+      "volumes": [
+        "./Caddyfile:/etc/caddy/Caddyfile:ro",
+        "./error.html:/srv/error.html:ro",
+        "./dashboard.html:/srv/dashboard.html:ro",
+        "./ntfy-setup.html:/srv/ntfy-setup.html:ro",
+        "./wkd:/srv/wkd:ro",
+        "./logs:/var/log/caddy",
+        "caddy_data:/data",
+        "caddy_config:/config"
+      ],
+      "env_file": true,
+      "depends_on": [
+        "introspect-proxy"
+      ],
+      "resources": null,
+      "read_only": false,
+      "protocol": "https"
+    }
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "caddy",
+    "dockerfile": "Dockerfile",
+    "arch": "amd64"
+  },
+  "tests": {
+    "authelia-rd-keeps-prefix": {
+      "cmd": "bash test/test-authelia-rd-keeps-prefix.sh",
+      "cwd": "src"
+    }
+  }
+}

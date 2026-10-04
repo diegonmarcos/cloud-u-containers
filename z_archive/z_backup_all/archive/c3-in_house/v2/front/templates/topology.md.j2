@@ -1,0 +1,79 @@
+{# Topology Template - Outputs Markdown from cloud_control.json -> topology #}
+# Topology
+
+> Generated: {{ now.strftime('%Y-%m-%d %H:%M') }}
+
+---
+
+## Virtual Machines
+
+| Host | VM ID | IP | Docker Network | OS |
+|------|-------|-----|----------------|-----|
+{% for vm in topology.virtualMachines.data -%}
+| {{ vm.host }} | {{ vm.vmId }} | `{{ vm.ip }}` | {{ vm.dockerNetwork }} | {{ vm.os }} |
+{% endfor %}
+
+---
+
+## Services by VM
+
+{% for vmId, services in topology.servicesByVm.items() if not vmId.startswith('_') %}
+### {{ vmId }}
+
+| Service | Description | Ports | Status |
+|---------|-------------|-------|--------|
+{% for svc in services -%}
+| **{{ svc.service }}** | {{ svc.description }} | `{{ svc.ports }}` | {{ svc.status }} |
+{% endfor %}
+
+{% endfor %}
+
+---
+
+## Database Allocations
+
+{% for vmId, vmData in topology.databaseAllocations.items() if not vmId.startswith('_') %}
+### {{ vmId }} ({{ vmData.bootSize }} Boot)
+
+| Database | Type | Service | Size | Path |
+|----------|------|---------|------|------|
+{% for db in vmData.databases -%}
+| **{{ db.name }}** | {{ db.type }} | {{ db.service }} | {{ db.size }} | `{{ db.path }}` |
+{% endfor %}
+
+{% endfor %}
+
+---
+
+## Docker Containers
+
+{% for vmId, vmData in topology.containers.items() if not vmId.startswith('_') %}
+### {{ vmId }} ({{ vmData.count }} containers)
+
+| Container | Image | Ports | Network | Status |
+|-----------|-------|-------|---------|--------|
+{% for c in vmData['items'] -%}
+| **{{ c.name }}** | `{{ c.image }}` | `{{ c.ports }}` | {{ c.network }} | {{ c.status }} |
+{% endfor %}
+
+{% endfor %}
+
+---
+
+## Docker Networks
+
+| Network | VM | Subnet | Purpose |
+|---------|-----|--------|---------|
+{% for net in topology.dockerNetworks.data -%}
+| **{{ net.network }}** | {{ net.vm }} | `{{ net.subnet }}` | {{ net.purpose }} |
+{% endfor %}
+
+---
+
+## Storage Summary
+
+| Metric | Value |
+|--------|-------|
+{% for item in topology.summaries.storage.data -%}
+| {{ item.metric }} | {{ item.value }} |
+{% endfor %}

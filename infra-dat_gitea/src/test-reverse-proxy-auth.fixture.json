@@ -1,0 +1,137 @@
+{
+  "global": {
+    "debug": true,
+    "admin_bind": "localhost:2019",
+    "order": "respond before handle",
+    "auto_https": "disable_redirects",
+    "_doc_wg_bind_ip": "Caddy's wg0 IP on gcp-proxy (10.0.0.1) \u2014 every public *.diegonmarcos.com site block dual-binds to (0.0.0.0, wg_bind_ip). Caddy lives on gcp-proxy (the public-facing VM); reverse-proxy upstreams to internal services traverse the wg0 mesh (10.0.0.x). Engine resolveVmIpForCaddy() still prefers wg-public IPs (10.1.0.x) when both endpoints are peers \u2014 gcp-proxy is a wg-public peer (10.1.0.2) so mail-side upstreams keep using wg-public transit.",
+    "wg_bind_ip": "10.0.0.1",
+    "_doc_wg_cidrs": "Source CIDRs that count as \"on the mesh\" for every wg_only / bearer gate caddyfile.nix emits (@wg, @not_wg). Mirrors config.json wireguard.subnet + wireguard.subnet_v6. The wg0 mesh went dual-stack on 2026-07-26 but this gate stayed IPv4-only, so any client resolving the AAAA record (fd0c:1d00::1 \u2014 Hickory serves both, and clients prefer IPv6) arrived from fd0c:1d00::/64, missed the matcher and got 403. Keep both families listed or mesh-only routes break for IPv6-capable peers. Space-separated: Caddy remote_ip takes a CIDR list.",
+    "wg_cidrs": "10.0.0.0/24 fd0c:1d00::/64"
+  },
+  "security_snippets": {
+    "security_headers": {
+      "hsts_max_age": 31536000,
+      "frame_options": "SAMEORIGIN",
+      "referrer_policy": "strict-origin-when-cross-origin",
+      "permissions_policy": "camera=(), microphone=(), geolocation=()",
+      "cors_origin": "*",
+      "cors_methods": "GET, POST, OPTIONS",
+      "cors_headers": "Authorization, Content-Type",
+      "hide_headers": [
+        "Server"
+      ]
+    },
+    "rate_limit": {
+      "events": 100,
+      "window": "1m",
+      "key": "{remote_host}",
+      "zone": "global"
+    },
+    "bot_blocker": {
+      "user_agents": [
+        "sqlmap",
+        "nikto",
+        "masscan",
+        "nmap",
+        "zgrab",
+        "scrapy",
+        "dirbuster",
+        "gobuster",
+        "nuclei",
+        "wfuzz",
+        "havij",
+        "acunetix",
+        "nessus",
+        "openvas"
+      ]
+    },
+    "scanner_blocker": {
+      "paths": [
+        "/wp-admin*",
+        "/wp-login*",
+        "/xmlrpc.php",
+        "/.env",
+        "/.git*",
+        "/phpmyadmin*",
+        "/actuator*",
+        "/solr*",
+        "/console*",
+        "/.aws*",
+        "/cgi-bin/*"
+      ]
+    },
+    "request_limits": {
+      "max_body": "10MB"
+    },
+    "ip_block": {
+      "cidrs": []
+    },
+    "access_log": {
+      "path": "/var/log/caddy/access.log",
+      "format": "json",
+      "roll_size": "10mb",
+      "roll_keep": 5
+    },
+    "mcp_rate_limit": {
+      "events": 600,
+      "window": "1m",
+      "key": "{remote_host}",
+      "zone": "mcp"
+    },
+    "jmap_rate_limit": {
+      "events": 600,
+      "window": "1m",
+      "key": "{remote_host}",
+      "zone": "jmap"
+    }
+  },
+  "auth": {
+    "authelia_uri": "/api/authz/forward-auth",
+    "authelia_copy": [
+      "Remote-User",
+      "Remote-Groups",
+      "Remote-Email",
+      "Remote-Name"
+    ],
+    "introspect_uri": "/auth",
+    "introspect_copy": [
+      "X-Auth-User",
+      "X-Auth-Subject",
+      "X-Auth-Email"
+    ],
+    "ntfy_jwt_pattern": "^Bearer eyJ",
+    "ntfy_token_pattern": "^Bearer tk_"
+  },
+  "error_handler": {
+    "status_codes": [
+      502,
+      503,
+      504
+    ],
+    "error_html": "/srv/error.html"
+  },
+  "l4_routes": [],
+  "routes": [],
+  "path_routes": [],
+  "github_pages_proxies": [],
+  "mcp_routes": [],
+  "auth_upstreams": {
+    "authelia": "172.18.0.3:9091",
+    "introspect_proxy": "10.0.0.1:4182"
+  },
+  "on_demand_tls": {
+    "ask_bind": "127.0.0.1:2020",
+    "ask_url": "http://127.0.0.1:2020"
+  },
+  "catch_all": {
+    "domain": "*.diegonmarcos.com",
+    "page": "/srv/error.html"
+  },
+  "messages": {
+    "portless_placeholder": "Portless worker/sidecar \u2014 no HTTP endpoint",
+    "db_catalog_template": "DB catalog \u2014 container={container} engine={engine} port={port} upstream={upstream} path={path} vm={vm}",
+    "app_hub_fallback": "Not Found"
+  },
+  "_doc": "Minimal caddyRoutes for rendering infra-sec_caddy/src/caddyfile.nix in isolation (test-reverse-proxy-auth.ts). Copied from cloud-infra 1_cloud-configs/dist/build-caddy.json 2026-09-30 with every route list emptied; the tester injects the gitea route itself."
+}

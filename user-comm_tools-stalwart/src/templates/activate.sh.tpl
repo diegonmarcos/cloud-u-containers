@@ -1,0 +1,549 @@
+#!/bin/sh
+# ── Stalwart v0.16 activation hook ─────────────────────────────────────
+# Runs after compose-up. Idempotent.
+#
+# Per user in build.json#users:
+#   0. Wait for admin API.
+#   A. Create the Stalwart account itself if missing (create-only — see the
+#      Step A block for why an existing account is never updated).
+#   1. Discover JMAP accountId from /jmap/session.
+#   2. Create mailbox hierarchy (4 parents + 10 leaves) declared in
+#      mail-rules-general.json::folders + folders_ui. Skips existing.
+#   3. Upload + activate dist/configs/default.sieve via JMAP Sieve API.
+#
+# Plus (admin scope):
+#   D. Apply outbound MTA routes declared in build.json#mta_routes,
+#      emitted as configs/mta-routes.json by the flake. Secrets pulled
+#      from $SECRETS_DIR/<env-var-name>. No hardcoded data in this file.
+#
+# Domain creation is still owned by stalwart-cli apply (manual recovery-mode
+# bootstrap), NOT this hook. Account creation used to be too — that is what
+# left three declared users existing in maddy and nowhere else.
+#
+# Folder list and user/pass-env pairs are injected by the flake from
+# mail-rules-general.json + build.json#users. They appear below inside
+# single-quoted strings; NEVER reference the @VAR@ tokens in comments
+# (engine substitutes everywhere — multi-line values break shell parsing).
+set -e
+BASE="https://@BIND_IP@:@APP_PORT@"
+SECRETS_DIR="/opt/containers/stalwart/.secrets.d"
+CONFIGS_DIR="/opt/containers/stalwart/configs"
+SIEVE_FILE="$CONFIGS_DIR/default.sieve"
+MTA_ROUTES_FILE="$CONFIGS_DIR/mta-routes.json"
+APPLY_ROUTES_PY="$CONFIGS_DIR/apply-mta-routes.py"
+APPLY_CERT_PY="$CONFIGS_DIR/apply-tls-cert.py"
+TLS_DIR="/opt/containers/maddy/tls"
+
+# Admin identity sourced from build.json#users.admin (data-driven). The
+# pre-v0.16 "admin:$ADMIN_PASSWORD" magic principal only exists in
+# recovery_mode; post-bootstrap, JMAP requires a real principal — the
+# user with role=admin (mkUserLines in flake.nix gates this on key=="admin").
+ADMIN_EMAIL="@ADMIN_EMAIL@"
+ADMIN_PW=$(cat "$SECRETS_DIR/@ADMIN_PASS_ENV@" 2>/dev/null || echo)
+# Was `exit 0` — "no admin password, skipping" is not a benign condition, it
+# means NOTHING in this hook can run, and exiting 0 reported that as a green
+# ship. A skip must never be silent.
+[ -z "$ADMIN_PW" ] && echo "[activate] ERROR: no @ADMIN_PASS_ENV@ in $SECRETS_DIR — cannot provision anything" >&2 && exit 1
+
+# ── Per-item outcome accounting ───────────────────────────────────────
+# Counts live in FILES, not shell variables: the folder loop below runs in a
+# pipeline subshell (`printf ... | while read`), where an incremented variable
+# is discarded on subshell exit — the classic way a loop "counts" failures and
+# still reports none. Every per-item branch lands in exactly one tally, and the
+# machine-readable SUMMARY at the bottom is what decides this hook's exit code.
+TALLY_DIR=$(mktemp -d /tmp/.stalwart-activate-tally.XXXXXX)
+trap 'rm -rf "$TALLY_DIR"' EXIT
+tally()       { echo "$2" >> "$TALLY_DIR/$1"; }
+tally_count() { _c=$(cat "$TALLY_DIR/$1" 2>/dev/null | wc -l | tr -d ' '); echo "${_c:-0}"; }
+
+# Keep legacy $PW for any reader that still expects it (per-user sieve loop
+# below uses its own $USER_PW, so this is only documentary).
+PW="$ADMIN_PW"
+
+echo "[activate] Waiting for Stalwart JMAP on $BASE (probe: $ADMIN_EMAIL) ..."
+_ready=0
+for i in $(seq 1 60); do
+  # Bounded: an unbounded curl against a TCP-open-but-unresponsive Stalwart
+  # blocks forever, so the loop could stall on a single iteration.
+  _code=$(curl -sk --connect-timeout 5 --max-time 15 -o /dev/null -w '%{http_code}' -u "$ADMIN_EMAIL:$ADMIN_PW" "$BASE/jmap/session" 2>/dev/null || echo 000)
+  case "$_code" in
+    2*) _ready=1; break ;;
+    4*) echo "[activate] WARN: $ADMIN_EMAIL auth returned $_code — Stalwart up but admin principal not yet bootstrapped?" >&2
+        _ready=2; break ;;
+  esac
+  # Heartbeat, NOT decoration. ssh_run_detached (cloud-ship-container-engine.sh)
+  # polls the remote log's byte count and calls the whole post-hook dead after
+  # 900s of no growth. A silent readiness wait therefore gets reported as
+  # "FAIL (exit 124)" while the detached post-hook runs on and succeeds — a
+  # false failure that cost an incident (stalwart, 2026-09-04). One line per
+  # iteration keeps the log growing for as long as we are legitimately waiting.
+  echo "[activate]   still waiting for JMAP ($i/60, last HTTP $_code)"
+  sleep 2
+done
+if [ "$_ready" = 0 ]; then
+  echo "[activate] ERROR: Stalwart JMAP never became ready (last HTTP $_code)" >&2
+  exit 1
+fi
+
+# ── Step A: reconcile accounts (admin scope) ──────────────────────────
+# Why this exists: the declared users used to provision maddy ONLY, so an
+# address could be declared here, answer 250 at the MX, and still not exist
+# in Stalwart's store — invisible until someone tried cloud-webmail, which
+# authenticates against JMAP. Verified 2026-09-04: maddy had five accounts,
+# Stalwart two. v0.16.5 has no REST management API (/api/principal is 404,
+# x:Principal/get answers unknownMethod); accounts are ordinary registry
+# objects reached with the urn:stalwart:jmap capability — the same channel
+# Steps F and G already use.
+#
+# CREATE-ONLY, deliberately. An existing account is never updated:
+#   * secrets are stored hashed, so "unchanged" is indistinguishable from
+#     "rotated" — a blind update would silently reset the password on EVERY
+#     ship, including any the owner changed in the webmail;
+#   * roles are a lock: pushing User onto the one Admin account would lock
+#     this very script out of the registry, recoverable only by another
+#     recovery-mode bootstrap.
+# Role drift on an existing account is therefore REPORTED, not corrected.
+# Aliases are not reconciled (the only aliased account predates this hook).
+# Must run before the per-user loop below, which authenticates as each user.
+# Deferred failure: a missing account must turn the ship RED, but it must not
+# skip the TLS cert / MTA route / throttle steps below, so the verdict is
+# parked in a flag file and cashed in at the very end of this script.
+ACCOUNTS_FLAG="$TALLY_DIR/accounts_failed"
+if [ "$_ready" != 1 ]; then
+  # Stalwart answered, but the admin principal did not authenticate. Every
+  # admin-scoped step below is then a no-op — which used to pass as green.
+  tally accounts_failed "admin auth $_code — account reconcile not attempted"
+fi
+if [ "$_ready" = 1 ]; then
+  echo "[activate] Reconciling accounts from declared users (admin: $ADMIN_EMAIL)..."
+  ACCOUNTS="@USERS_ACCOUNTS@" BASE_DOMAIN="@BASE_DOMAIN@" SECRETS_DIR="$SECRETS_DIR" \
+  ACCOUNTS_FLAG="$ACCOUNTS_FLAG" \
+  ADMIN_EMAIL="$ADMIN_EMAIL" ADMIN_PW="$ADMIN_PW" BASE="$BASE" python3 - <<'PYEOF' \
+    || { echo "[activate]   account reconcile crashed (rc $?)"; echo crashed >> "$ACCOUNTS_FLAG"; }
+import os, ssl, json, base64
+from urllib import request as ur, error as ue
+BASE=os.environ["BASE"]
+AUTH="Basic "+base64.b64encode(f'{os.environ["ADMIN_EMAIL"]}:{os.environ["ADMIN_PW"]}'.encode()).decode()
+ctx=ssl._create_unverified_context()
+def jmap(calls):
+    body=json.dumps({"using":["urn:ietf:params:jmap:core","urn:stalwart:jmap"],"methodCalls":calls}).encode()
+    req=ur.Request(BASE+"/jmap/",data=body,method="POST",
+                   headers={"Content-Type":"application/json","Authorization":AUTH})
+    try: return json.loads(ur.urlopen(req,context=ctx,timeout=20).read())
+    except ue.HTTPError as e: return {"err":e.code,"body":e.read().decode(errors="replace")[:300]}
+FLAG=os.environ["ACCOUNTS_FLAG"]
+CREATED_TALLY=os.path.join(os.path.dirname(FLAG),"accounts_created")
+# APPEND, never truncate: the shell counts the LINES of this file to size the
+# failure, and a truncating write reported ten broken accounts as one.
+def fail(msg):
+    print("  [accounts] "+msg)
+    with open(FLAG,"a") as f: f.write(msg+"\n")
+try:
+    req=ur.Request(BASE+"/jmap/session",headers={"Authorization":AUTH})
+    s=json.loads(ur.urlopen(req,context=ctx,timeout=10).read())
+except Exception as e:
+    # Was "(non-fatal)" + SystemExit(0): no session means not one account was
+    # reconciled, and reporting that as success is the whole bug.
+    fail(f"session failed: {e}"); raise SystemExit(0)
+acct=s.get("primaryAccounts",{}).get("urn:stalwart:jmap") or next(iter(s.get("accounts",{})),None)
+r=jmap([["x:Account/get",{"accountId":acct,"ids":None},"0"]])
+try: live={o.get("name"):o for o in r["methodResponses"][0][1].get("list",[])}
+except Exception:
+    fail(f"x:Account/get failed: {r}"); raise SystemExit(0)
+# @type here is a VARIANT discriminator, not a table name — x:Action/set below
+# sends "ReloadSettings", not "Action" — so for an account it is a principal
+# kind and cannot be guessed. Guessing is what broke the 2026-09-04 ship: every
+# create came back invalidPatch "Missing or invalid '@type' property in object",
+# which also means validation stopped before the secret property was ever
+# looked at. Copy the discriminator off an account that already exists instead,
+# and print one live account's property names so the log settles the remaining
+# schema (secrets vs password, alias field) without another round trip. Keys
+# only, never values — an account object may carry a hash.
+proto=next((o for o in live.values() if o.get("@type")),None)
+ATYPE=(proto or {}).get("@type")
+DOMAINID=(proto or {}).get("domainId")
+print("  [accounts] live schema:",sorted(next(iter(live.values()),{}).keys()),"@type:",ATYPE,"domainId:",DOMAINID)
+if (not ATYPE or not DOMAINID) and any(rec.split("|")[0] not in live for rec in os.environ["ACCOUNTS"].split()):
+    fail("no @type/domainId on any existing account — cannot build a create payload"); raise SystemExit(0)
+created=[]
+for rec in os.environ["ACCOUNTS"].split():
+    name,role,pass_env,_aliases=rec.split("|")
+    cur=live.get(name)
+    if cur is not None:
+        have=(cur.get("roles") or {}).get("@type","User")
+        if have!=role:
+            print(f"  [accounts] {name}: present with roles={have}, declared {role} — left as is (create-only)")
+        else:
+            print(f"  [accounts] {name}: already present, no-op")
+        continue
+    try: pw=open(os.path.join(os.environ["SECRETS_DIR"],pass_env)).read().strip()
+    except OSError: pw=""
+    if not pw:
+        fail(f"{name}: no password ({pass_env}) — cannot create"); continue
+    # Payload verified against v0.16.5 on 2026-09-05. Three properties decide it:
+    #   * emailAddress is SERVER-SET — sending it is rejected with invalidPatch
+    #     "Cannot modify server set property". It is derived from name +
+    #     domainId, so domainId is what has to be sent instead.
+    #   * the secret lives in "credentials", a map keyed by slot index holding
+    #     {"@type":"Password","secret":...}. Neither "secrets" nor "password"
+    #     is a real property; both were accepted-looking guesses that failed.
+    #   * the secret must be PLAINTEXT — Stalwart hashes it on write (it reads
+    #     back masked as "****"). A pre-hashed $6$ crypt string is stored
+    #     happily and then never authenticates, which is silent and worse.
+    obj={"@type":ATYPE,"name":name,"domainId":DOMAINID,
+         "roles":{"@type":role},
+         "credentials":{"0":{"@type":"Password","secret":pw}}}
+    rr=jmap([["x:Account/set",{"accountId":acct,"create":{"c":obj}},"0"]])
+    res=(rr.get("methodResponses") or [[None,{}]])[0][1]
+    if res.get("created"):
+        created.append(name)
+        print(f"  [accounts] {name}: CREATED (roles={role})"); continue
+    fail(f"FAIL create {name}: {json.dumps(res.get('notCreated') or rr)}")
+# A brand-new account is invisible to authentication until the negative email
+# cache is dropped: v0.16.5 has no process_create invalidator (added upstream
+# in 0.16.10), so any earlier lookup of the address — an SMTP RCPT TO, a probe
+# login, a delivery attempt — pins a "no such account" entry for negativeTtl,
+# one hour by default. The account exists, the password is right, and both
+# IMAP and JMAP still answer AUTHENTICATIONFAILED. Flush it here so a freshly
+# provisioned mailbox is usable the moment the ship reports green.
+if created:
+    with open(CREATED_TALLY,"a") as f: f.write("\n".join(created)+"\n")
+    print("  [accounts] flushing negative caches for:", ", ".join(created))
+    jmap([["x:Action/set",{"create":{"flush":{"@type":"InvalidateNegativeCaches"}}},"0"]])
+PYEOF
+fi
+
+# Resolve a mailbox id by name from current Mailbox/get response (JSON in $1).
+# Outputs the id (no quotes) or empty string.
+mailbox_id_for() {
+  printf '%s' "$1" | python3 -c "
+import sys, json, re
+data = sys.stdin.read()
+name = '''$2'''
+# Find the most-recent Mailbox/get 'list' array.
+m = re.search(r'\"list\":\\s*(\\[.*?\\])\\s*,\\s*\"notFound\"', data, re.DOTALL)
+if not m:
+    sys.exit()
+try:
+    for box in json.loads(m.group(1)):
+        if box.get('name') == name:
+            print(box['id'])
+            break
+except Exception:
+    pass
+"
+}
+
+# ── Per-user setup ────────────────────────────────────────────────────
+for PAIR in @USERS_LIST@; do
+  U=${PAIR%%=*}
+  PASS_ENV=${PAIR#*=}
+  USER="$U@@BASE_DOMAIN@"
+  USER_PW=$(cat "$SECRETS_DIR/$PASS_ENV" 2>/dev/null || echo)
+  if [ -z "$USER_PW" ]; then
+    echo "[activate]   $USER: ERROR no password ($PASS_ENV) — cannot provision" >&2
+    tally users_failed "$USER: no password ($PASS_ENV)"
+    continue
+  fi
+
+  echo "[activate] Setup $USER..."
+
+  SESSION=$(curl -sk -u "$USER:$USER_PW" "$BASE/jmap/session" 2>/dev/null)
+  ACCOUNT_ID=$(printf '%s' "$SESSION" | grep -o '"urn:ietf:params:jmap:mail":"[^"]*"' | head -1 | cut -d'"' -f4)
+  if [ -z "$ACCOUNT_ID" ]; then
+    # This exact line printed four times on 2026-09-04 and the ship was green.
+    echo "[activate]   $USER: ERROR could not discover accountId (account missing or auth rejected)" >&2
+    tally users_failed "$USER: no accountId from /jmap/session"
+    continue
+  fi
+  tally users_ok "$USER"
+
+  # ── Step B: create missing mailboxes ─────────────────────────────
+  refresh_existing() {
+    EXISTING=$(curl -sk -u "$USER:$USER_PW" -X POST "$BASE/jmap/" \
+      -H "Content-Type: application/json" \
+      -d "{\"using\":[\"urn:ietf:params:jmap:core\",\"urn:ietf:params:jmap:mail\"],\"methodCalls\":[[\"Mailbox/get\",{\"accountId\":\"$ACCOUNT_ID\",\"ids\":null,\"properties\":[\"id\",\"name\",\"parentId\"]},\"0\"]]}" 2>/dev/null)
+  }
+  refresh_existing
+
+  printf '%s\n' '@FOLDERS_LINES@' | while IFS='|' read -r FNAME FPARENT; do
+    [ -z "$FNAME" ] && continue
+
+    # Skip if already exists.
+    EXISTING_ID=$(mailbox_id_for "$EXISTING" "$FNAME")
+    if [ -n "$EXISTING_ID" ]; then
+      continue
+    fi
+
+    # Resolve parentId (null for top-level, otherwise lookup parent's id).
+    PARENT_JSON="null"
+    if [ -n "$FPARENT" ]; then
+      PARENT_ID=$(mailbox_id_for "$EXISTING" "$FPARENT")
+      if [ -z "$PARENT_ID" ]; then
+        echo "[activate]   FAIL '$FNAME' — parent '$FPARENT' not yet created" >&2
+        tally mailboxes_failed "$USER/$FNAME: parent '$FPARENT' missing"
+        continue
+      fi
+      PARENT_JSON="\"$PARENT_ID\""
+    fi
+
+    RESP=$(curl -sk -u "$USER:$USER_PW" -X POST "$BASE/jmap/" \
+      -H "Content-Type: application/json" \
+      -d "{\"using\":[\"urn:ietf:params:jmap:core\",\"urn:ietf:params:jmap:mail\"],\"methodCalls\":[[\"Mailbox/set\",{\"accountId\":\"$ACCOUNT_ID\",\"create\":{\"new\":{\"name\":\"$FNAME\",\"parentId\":$PARENT_JSON}}},\"0\"]]}" 2>/dev/null)
+
+    if printf '%s' "$RESP" | grep -q '"created":{[^}]*"id"'; then
+      echo "[activate]   created mailbox '$FNAME'"
+      tally mailboxes_created "$USER/$FNAME"
+      refresh_existing
+    else
+      echo "[activate]   FAIL create '$FNAME': $(printf '%s' "$RESP" | head -c 200)" >&2
+      tally mailboxes_failed "$USER/$FNAME: $(printf '%s' "$RESP" | head -c 120)"
+    fi
+  done
+
+  # ── Step C: upload + activate sieve script ─────────────────────────
+  if [ ! -f "$SIEVE_FILE" ]; then
+    # The flake always emits default.sieve into configs/, so its absence means
+    # the rsync did not land what the build produced — a deploy fault, not a
+    # config choice.
+    echo "[activate]   ERROR $SIEVE_FILE missing — sieve not applied for $USER" >&2
+    tally sieve_failed "$USER: $SIEVE_FILE absent"
+    continue
+  fi
+
+  SIEVE_ACCT=$(printf '%s' "$SESSION" | grep -o '"urn:ietf:params:jmap:sieve":"[^"]*"' | head -1 | cut -d'"' -f4)
+  [ -z "$SIEVE_ACCT" ] && SIEVE_ACCT="$ACCOUNT_ID"
+
+  UPLOAD_RESP=$(curl -sk -u "$USER:$USER_PW" -X POST "$BASE/jmap/upload/$SIEVE_ACCT/" \
+    -H "Content-Type: application/sieve" --data-binary @"$SIEVE_FILE" 2>/dev/null)
+  BLOB_ID=$(printf '%s' "$UPLOAD_RESP" | grep -o '"blobId":"[^"]*"' | head -1 | cut -d'"' -f4)
+  if [ -z "$BLOB_ID" ]; then
+    echo "[activate]   sieve blob upload failed: $UPLOAD_RESP" >&2
+    tally sieve_failed "$USER: blob upload failed"
+    continue
+  fi
+
+  JMAP_RESP=$(curl -sk -u "$USER:$USER_PW" -X POST "$BASE/jmap/" \
+    -H "Content-Type: application/json" \
+    -d "{\"using\":[\"urn:ietf:params:jmap:core\",\"urn:ietf:params:jmap:sieve\"],\"methodCalls\":[[\"SieveScript/set\",{\"accountId\":\"$SIEVE_ACCT\",\"create\":{\"default\":{\"name\":\"default\",\"blobId\":\"$BLOB_ID\"}},\"onSuccessActivateScript\":\"#default\"},\"0\"]]}" 2>/dev/null)
+
+  if printf '%s' "$JMAP_RESP" | grep -q '"created":{[^}]*"id"'; then
+    echo "[activate]   sieve created + activated for $USER"
+    tally sieve_ok "$USER"
+  else
+    LIST=$(curl -sk -u "$USER:$USER_PW" -X POST "$BASE/jmap/" \
+      -H "Content-Type: application/json" \
+      -d "{\"using\":[\"urn:ietf:params:jmap:core\",\"urn:ietf:params:jmap:sieve\"],\"methodCalls\":[[\"SieveScript/get\",{\"accountId\":\"$SIEVE_ACCT\"},\"0\"]]}" 2>/dev/null)
+    SID=$(printf '%s' "$LIST" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+    if [ -n "$SID" ]; then
+      curl -sk -u "$USER:$USER_PW" -X POST "$BASE/jmap/" \
+        -H "Content-Type: application/json" \
+        -d "{\"using\":[\"urn:ietf:params:jmap:core\",\"urn:ietf:params:jmap:sieve\"],\"methodCalls\":[[\"SieveScript/set\",{\"accountId\":\"$SIEVE_ACCT\",\"update\":{\"$SID\":{\"blobId\":\"$BLOB_ID\"}},\"onSuccessActivateScript\":\"$SID\"},\"0\"]]}" >/dev/null 2>&1
+      echo "[activate]   sieve updated + activated for $USER"
+      tally sieve_ok "$USER"
+    else
+      echo "[activate]   sieve create+update both failed: $JMAP_RESP" >&2
+      tally sieve_failed "$USER: create+update both failed"
+    fi
+  fi
+done
+
+# ── Step D: outbound MTA routes (admin scope) ──────────────────────────
+# Orchestration only. All data + JMAP logic lives in:
+#   $MTA_ROUTES_FILE   — data, emitted from build.json#mta_routes by flake
+#   $APPLY_ROUTES_PY   — engine, applies the data via JMAP
+# Empty file or empty array = no-op (handled by the python helper).
+if [ -s "$MTA_ROUTES_FILE" ] && [ -x "$APPLY_ROUTES_PY" -o -f "$APPLY_ROUTES_PY" ]; then
+  echo "[activate] Applying MTA routes from $MTA_ROUTES_FILE (admin: $ADMIN_EMAIL)..."
+  if python3 "$APPLY_ROUTES_PY" "$MTA_ROUTES_FILE" "$BASE" "$ADMIN_EMAIL:$ADMIN_PW" "$SECRETS_DIR"; then
+    :
+  else
+    echo "[activate]   apply-mta-routes.py exit $?"
+  fi
+fi
+
+# ── Step E: TLS certificate (admin scope) ──────────────────────────────
+# Upsert the LE wildcard cert as a JMAP Certificate object so Stalwart
+# serves the real cert instead of the rcgen self-signed one. Idempotent.
+# After storing, restart the container so Stalwart reloads the TLS cert
+# from the JMAP store at startup (ReloadSettings does not reload TLS).
+if [ -f "$TLS_DIR/fullchain.pem" ] && [ -f "$TLS_DIR/privkey.pem" ]; then
+  echo "[activate] Applying TLS certificate from $TLS_DIR..."
+  CERT_APPLIED=0
+  if python3 "$APPLY_CERT_PY" "$BASE" "$ADMIN_EMAIL:$ADMIN_PW" \
+       "$TLS_DIR/fullchain.pem" "$TLS_DIR/privkey.pem"; then
+    CERT_APPLIED=1
+  else
+    echo "[activate]   apply-tls-cert.py exited $? (non-fatal)"
+  fi
+
+  if [ "$CERT_APPLIED" = 1 ]; then
+    echo "[activate] Restarting stalwart to reload TLS cert from JMAP store..."
+    docker restart stalwart 2>/dev/null || true
+    # Wait for JMAP to come back before exit
+    for i in $(seq 1 30); do
+      _c=$(curl -sk --connect-timeout 5 --max-time 15 -o /dev/null -w '%{http_code}' -u "$ADMIN_EMAIL:$ADMIN_PW" "$BASE/jmap/session" 2>/dev/null || echo 000)
+      case "$_c" in 2*) echo "[activate]   stalwart ready (HTTP $_c)"; break ;; esac
+      echo "[activate]   waiting for stalwart to come back ($i/30, last HTTP $_c)"
+      sleep 2
+    done
+  fi
+else
+  echo "[activate]   TLS cert not yet on disk ($TLS_DIR) — skipping"
+fi
+
+# ── Step F: allowed-ip / fail2ban bypass (admin scope) ─────────────────
+# Trust the WG mesh + docker bridge so Stalwart's fail2ban / auth rate-limit
+# never bans internal clients (bursts of a few auths otherwise trip a
+# per-account ban that clears only after ~1min of quiet). In v0.16.5 the old
+# config.toml `server.allowed-ip` is DEAD — config.toml is not loaded (the
+# JSON --config is only a data-store pointer; all settings live in the RocksDB
+# registry). So we upsert AllowedIp registry objects via the same JMAP admin
+# channel used for MTA routes. Idempotent: only creates CIDRs not already
+# present. CIDR list is declared in build.json#allowed_ips.
+ALLOWED_IPS="@ALLOWED_IPS@"
+if [ -n "$ALLOWED_IPS" ]; then
+  echo "[activate] Ensuring allowed-ip entries: $ALLOWED_IPS"
+  ALLOWED_IPS="$ALLOWED_IPS" ADMIN_EMAIL="$ADMIN_EMAIL" ADMIN_PW="$ADMIN_PW" BASE="$BASE" python3 - <<'PYEOF'
+import os, ssl, json, base64, urllib.request as ur, urllib.error as ue
+BASE=os.environ["BASE"]
+AUTH="Basic "+base64.b64encode(f'{os.environ["ADMIN_EMAIL"]}:{os.environ["ADMIN_PW"]}'.encode()).decode()
+ctx=ssl._create_unverified_context()
+def jmap(calls):
+    body=json.dumps({"using":["urn:ietf:params:jmap:core","urn:stalwart:jmap"],"methodCalls":calls}).encode()
+    req=ur.Request(BASE+"/jmap/",data=body,method="POST",
+                   headers={"Content-Type":"application/json","Authorization":AUTH})
+    try: return json.loads(ur.urlopen(req,context=ctx,timeout=20).read())
+    except ue.HTTPError as e: return {"err":e.code,"body":e.read().decode(errors="replace")[:300]}
+try:
+    req=ur.Request(BASE+"/jmap/session",headers={"Authorization":AUTH})
+    s=json.loads(ur.urlopen(req,context=ctx,timeout=10).read())
+except Exception as e:
+    print("  [allowed-ip] session failed (non-fatal):",e); raise SystemExit(0)
+acct=s.get("primaryAccounts",{}).get("urn:stalwart:jmap") or next(iter(s.get("accounts",{})),None)
+r=jmap([["x:AllowedIp/get",{"accountId":acct,"ids":None},"0"]])
+try: existing={o.get("address") for o in r["methodResponses"][0][1].get("list",[])}
+except Exception: existing=set()
+for cidr in os.environ["ALLOWED_IPS"].split():
+    if cidr in existing:
+        print(f"  [allowed-ip] {cidr} already present"); continue
+    rr=jmap([["x:AllowedIp/set",{"accountId":acct,"create":{"c":{
+        "address":cidr,"reason":"WG mesh + docker bridge trusted (declarative)"}}},"0"]])
+    print(f"  [allowed-ip] {cidr} -> {'created' if 'created' in json.dumps(rr) else rr}")
+PYEOF
+fi
+
+# ── Step G: inbound throttle cap raise (admin scope) ────────────────────
+# Stalwart ships two MtaInboundThrottle defaults: a per-remote-IP throttle
+# (5/sec — a sane runaway backstop, left untouched) and a per-(senderDomain,
+# rcpt) throttle (25/hour by default). This instance's ONLY inbound SMTP
+# peer is maddy on 10.0.0.3:2025 over the WireGuard mesh — nothing reaches
+# it from the public internet — and maddy (plus Cloudflare Email Routing
+# upstream of it) already performs DKIM/SPF/DMARC/dnsbl checks. So the
+# sender-domain throttle here is redundant anti-abuse policy applied to an
+# already-vetted internal relay, and it was actively harmful: a single busy
+# sender domain (observed: wg-gesucht.de) blows through 25/hour and every
+# subsequent message that hour gets `452 4.4.5 Rate limit exceeded` —
+# legitimate mail silently rejected (and, before maddy grew a durable
+# queue, actually lost). We raise the cap to 500/hour rather than removing
+# the throttle outright, keeping a (much wider) backstop in place. As with
+# Step F, config.toml is not loaded at runtime in v0.16 — this must go
+# through the JMAP registry. The object is looked up by its `key` shape
+# (senderDomain+rcpt), never by hardcoded id — ids are per-install.
+echo "[activate] Ensuring sender-domain inbound throttle cap >= 500/hour..."
+ADMIN_EMAIL="$ADMIN_EMAIL" ADMIN_PW="$ADMIN_PW" BASE="$BASE" python3 - <<'PYEOF'
+import os, ssl, json, base64
+from urllib import request as ur, error as ue
+BASE=os.environ["BASE"]
+AUTH="Basic "+base64.b64encode(f'{os.environ["ADMIN_EMAIL"]}:{os.environ["ADMIN_PW"]}'.encode()).decode()
+ctx=ssl._create_unverified_context()
+def jmap(calls):
+    body=json.dumps({"using":["urn:ietf:params:jmap:core","urn:stalwart:jmap"],"methodCalls":calls}).encode()
+    req=ur.Request(BASE+"/jmap/",data=body,method="POST",
+                   headers={"Content-Type":"application/json","Authorization":AUTH})
+    try: return json.loads(ur.urlopen(req,context=ctx,timeout=20).read())
+    except ue.HTTPError as e: return {"err":e.code,"body":e.read().decode(errors="replace")[:300]}
+try:
+    req=ur.Request(BASE+"/jmap/session",headers={"Authorization":AUTH})
+    s=json.loads(ur.urlopen(req,context=ctx,timeout=10).read())
+except Exception as e:
+    print("  [throttle] session failed (non-fatal):",e); raise SystemExit(0)
+acct=s.get("primaryAccounts",{}).get("urn:stalwart:jmap") or next(iter(s.get("accounts",{})),None)
+
+r=jmap([["x:MtaInboundThrottle/get",{"accountId":acct,"ids":None},"0"]])
+try: objs=r["methodResponses"][0][1].get("list",[])
+except Exception: objs=[]
+
+# Match by key shape first (senderDomain + rcpt); description is a fallback
+# only, since it's free text and could change across Stalwart versions.
+target=None
+for o in objs:
+    key=o.get("key") or {}
+    if key.get("senderDomain") and key.get("rcpt"):
+        target=o; break
+if target is None:
+    for o in objs:
+        d=(o.get("description") or "").lower()
+        if "sender" in d and "recipient throttle" in d:
+            target=o; break
+if target is None:
+    print("  [throttle] WARN: no sender-domain->rcpt MtaInboundThrottle object found — leaving throttles untouched")
+    raise SystemExit(0)
+
+tid=target["id"]
+TARGET_COUNT, TARGET_PERIOD = 500, 3600000
+cur=target.get("rate") or {}
+if cur.get("count")==TARGET_COUNT and cur.get("period")==TARGET_PERIOD:
+    print(f"  [throttle] {tid} already at {TARGET_COUNT}/{TARGET_PERIOD}ms, no-op")
+    raise SystemExit(0)
+
+rr=jmap([["x:MtaInboundThrottle/set",
+    {"accountId":acct,"update":{tid:{"rate":{"count":TARGET_COUNT,"period":TARGET_PERIOD}}}},"0"]])
+u=(rr.get("methodResponses") or [[None,{}]])[0][1]
+if u.get("updated"):
+    print(f"  [throttle] {tid}: rate -> {TARGET_COUNT}/hour")
+else:
+    print(f"  [throttle] FAIL update {tid}: {u.get('notUpdated') or rr}")
+    raise SystemExit(0)
+
+# Same reload dance as Step D — otherwise the live SMTP queue keeps using
+# the throttle snapshot loaded at container startup.
+for variant in ("ReloadSettings", "InvalidateCaches"):
+    rr=jmap([["x:Action/set",{"accountId":acct,"create":{"a":{"@type":variant}}},"0"]])
+    c=(rr.get("methodResponses") or [[None,{}]])[0][1]
+    if c.get("created"):
+        print(f"  [throttle] {variant}: dispatched")
+    else:
+        print(f"  [throttle] WARN {variant} not dispatched: {c.get('notCreated') or rr}")
+PYEOF
+
+echo "[activate] Done — folders + sieve + mta routes + tls cert + allowed-ip + throttle cap ensured"
+
+# ── Verdict, cashed in LAST so every step above still ran ─────────────
+# One machine-readable line, then the exit code. The ship engine propagates
+# this hook's rc (ssh_run_detached returns the remote rc, and the engine runs
+# under set -e), so any per-item failure now turns the deploy RED. That is the
+# opposite of the 2026-09-04 ship, which printed four "skipping" lines and
+# reported success while four declared accounts did not exist.
+ACCOUNTS_CREATED=$(tally_count accounts_created)
+ACCOUNTS_FAILED=$(tally_count accounts_failed)
+USERS_OK=$(tally_count users_ok)
+USERS_FAILED=$(tally_count users_failed)
+MAILBOXES_CREATED=$(tally_count mailboxes_created)
+MAILBOXES_FAILED=$(tally_count mailboxes_failed)
+SIEVE_OK=$(tally_count sieve_ok)
+SIEVE_FAILED=$(tally_count sieve_failed)
+echo "[activate] SUMMARY revision=${SHIP_REVISION:-unknown} accounts_created=$ACCOUNTS_CREATED accounts_failed=$ACCOUNTS_FAILED users_ok=$USERS_OK users_failed=$USERS_FAILED mailboxes_created=$MAILBOXES_CREATED mailboxes_failed=$MAILBOXES_FAILED sieve_ok=$SIEVE_OK sieve_failed=$SIEVE_FAILED"
+
+TOTAL_FAILED=$((ACCOUNTS_FAILED + USERS_FAILED + MAILBOXES_FAILED + SIEVE_FAILED))
+if [ "$TOTAL_FAILED" -gt 0 ]; then
+    echo "[activate] FAILED: $TOTAL_FAILED provisioning item(s) did not complete:" >&2
+    for _t in accounts_failed users_failed mailboxes_failed sieve_failed; do
+        [ -f "$TALLY_DIR/$_t" ] && sed "s/^/[activate]   $_t: /" "$TALLY_DIR/$_t" >&2 || true
+    done
+    exit 1
+fi
+if [ "$USERS_OK" = 0 ]; then
+    echo "[activate] FAILED: not one declared user was provisioned — the hook ran but did nothing" >&2
+    exit 1
+fi

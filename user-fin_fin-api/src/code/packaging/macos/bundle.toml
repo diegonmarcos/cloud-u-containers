@@ -1,0 +1,14 @@
+# cargo-bundle manifest. Injected into the binary crate's Cargo.toml as
+# [package.metadata.bundle] at release time by build.sh.
+name = "Fincept Terminal"
+identifier = "com.fincept.terminal-rs"
+version = "0.1.0"
+icon = ["packaging/macos/fincept.icns"]
+resources = []
+copyright = "Copyright © 2026 Fincept Corporation"
+category = "public.app-category.finance"
+short_description = "Financial intelligence terminal"
+long_description = """
+Fincept Terminal — Bloomberg-class financial analytics in a single native binary.
+"""
+osx_minimum_system_version = "11.0"

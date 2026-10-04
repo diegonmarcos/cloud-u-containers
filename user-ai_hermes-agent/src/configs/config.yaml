@@ -1,0 +1,192 @@
+# Hermes Agent config — declarative, git-tracked. Secrets (bot tokens, api_key) come from env
+# via the service .secrets file, never here. Backend = claude-superset-api (subscription CLI,
+# no metered key). All keys below verified against hermes-agent source
+# (hermes_cli/config.py, hermes_cli/tools_config.py, cli-config.yaml.example).
+
+# LLM backend → OpenRouter (metered key). api_mode chat_completions selects the
+# /v1/chat/completions wire format against the base_url below.
+# THIS FILE IS A TEMPLATE. The `default:` placeholder below is substituted at emission time
+# from build.json's runtime.model by src/flake.nix. build.json is the ONE declaration of the
+# model — do not paste a literal back in here. (No placeholder token appears anywhere else in
+# this file, including in prose: the substitution is global, and a token in a comment would be
+# rewritten too and make a stale-literal check unreadable.)
+#
+# Why the indirection (#434): hermes reads no OPENAI_MODEL env var at all (every OPENAI_MODEL*
+# hit in /opt/hermes is the unrelated constant OPENAI_MODEL_EXECUTION_GUIDANCE), so `default:`
+# is the value hermes actually runs — compose's OPENAI_MODEL does NOT override it. When this
+# line carried its own literal it was a second declaration, and it drifted: it pinned the Pro
+# model for weeks while build.json declared the Flash one, and the declared model never reached
+# the agent. Deleting the key outright is not an option either — hermes fills an absent default
+# from an alias rather than falling back to build.json.
+model:
+  provider: openrouter
+  default: @HERMES_MODEL@
+  base_url: https://openrouter.ai/api/v1
+  api_mode: chat_completions
+  # api_key supplied via OPENAI_API_KEY env (sops secrets.yaml → .secrets): an
+  # OpenRouter sk-or-v1-… key.
+  # Provider list moved (openrouter | nous | anthropic | gemini | zai | copilot |
+  # openai-codex …); "openai" was retired in favor of explicit backend names.
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# LEAN PROFILE — capabilities stripped to a minimal, low-RAM / low-quota set.
+# Every block below is a toggle; the comment on each says how to turn it back on.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# TOOLSETS — the master capability switch (per platform). The default preset
+# `hermes-telegram` bundles browser + tts + image_gen + vision + cronjob; we
+# replace it with a lean custom list. A capability is present ONLY if its
+# toolset is listed here.
+#   KEPT:    web (search+extract), terminal, file, todo, skills, memory
+#   DROPPED: browser  → Chromium never launches (biggest RAM win, ~2-4GB → ~1GB)
+#            tts      → no text-to-speech
+#            image_gen→ no image generation
+#            vision   → no image analysis
+#            cronjob  → no scheduled/autonomous timed tasks
+#            delegation → no sub-agent fan-out (biggest subscription-quota win)
+#            session_search → no FTS5+Gemini background summarization
+# To restore everything:  telegram: [hermes-telegram]
+# To re-add just browsing: append `browser` (needs BROWSERBASE_API_KEY).
+platform_toolsets:
+  telegram: [web, terminal, file, todo, skills, memory]
+
+# CONTEXT COMPRESSION — OFF. No background summarization LLM calls.
+# Enable: compression.enabled: true
+compression:
+  enabled: false
+
+# VOICE TRANSCRIPTION (speech-to-text) — OFF. No audio model / whisper libs.
+# Enable: stt.enabled: true  (+ a provider key in secrets)
+stt:
+  enabled: false
+
+# SKILLS auto-creation — OFF. The skills_list/skill_view tools still work
+# (skills toolset kept above); only the background "save a skill?" LLM nudges stop.
+# Enable auto-creation nudges: skills.creation_nudge_interval: 15
+skills:
+  creation_nudge_interval: 0
+
+# MEMORY — stored memory stays readable/writable (memory toolset kept), but the
+# periodic background nudges/flush LLM passes are OFF. The agent still saves
+# memory when explicitly asked.
+# Re-enable nudges: memory.nudge_interval: 10 / flush_min_turns: 6
+memory:
+  memory_enabled: true
+  user_profile_enabled: true
+  nudge_interval: 0
+  flush_min_turns: 0
+
+# AGENT — cap the tool-loop fan-out per message to bound subscription-quota use.
+# Raise (50-100) for heavier autonomous exploration.
+#
+# 100, not 30, because this container is not only a chat gateway: it also runs
+# dispatched engineering tasks via `hermes --yolo -z`, and the contract those
+# tasks are given (read the brief, edit, run the tester, commit, push, then watch
+# the CI run to green) does not fit in 30 tool calls. A task that exhausts the
+# cap ends with a partial answer and no error, which reads downstream as a
+# finished run: wave-3 slot 444 burned 1h57m and exited rc=0 having delivered
+# nothing. The quota argument that set 30 applies to Telegram chat turns, where
+# the fan-out is a handful of calls; it never applied to the dispatch path.
+agent:
+  max_turns: 100
+
+# PLUGINS — opt-in list (hermes_cli/plugins_discovery.py skips any user plugin not
+# named here). jev-gate (#764) is the shared Jev gate in _shared/jev-gate, mounted at
+# /opt/data/plugins/jev-gate by compose.nix: an llm_request middleware that, on the
+# first API call of each turn, sends only the tool Jev picks (all tools when Jev is
+# unsure, errors, or has no OPENROUTER_API_KEY). Tunables: _shared/jev-gate/jev-gate.json.
+plugins:
+  enabled: [jev-gate]
+
+# APPROVALS - AUTO MODE. Never prompt for tool/command approval (equiv --yolo).
+# Does NOT touch secret redaction (independent). Operator 2026-09-19: goose+Hermes
+# default to auto mode, no prompts. modes: manual|smart|off.
+approvals:
+  mode: off
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Messaging gateway. A platform auto-enables when its token env var is present
+# (TELEGRAM_BOT_TOKEN); `enabled: false` is an explicit override honored even when
+# a token env is set.
+gateway:
+  platforms:
+    telegram:
+      enabled: true
+      # forum topics are used as sessions in the bot's dedicated group
+      # (allowed_chats below), one message per turn with no @mention friction —
+      # mirrors the my-ai gateway bots' topics-as-sessions setting; flip back
+      # to true only if the bot ever joins a busy shared group.
+      require_mention: false
+      reactions: true
+      # Group access: the current hermes schema reads a platform-level
+      # allowed_chats list. The bot is an administrator of this forum group
+      # (so Telegram delivers every message); without the chat listed here the
+      # gateway silently drops group updates. Id provided by the operator
+      # 2026-08-11: supergroup "___Cloud_agent_hermes".
+      allowed_chats: ["-1004329192410"]
+      # The adapter reads access-control + dm_topics from `extra` and treats them
+      # as the sole authority (verified in plugins/platforms/telegram/adapter.py).
+      extra:
+        status_indicator: true
+        rich_messages: true
+        # ── Access control (split by surface) ──
+        allow_from: [6431508617]         # DM access — you (Diego)
+        group_allow_from: [6431508617]   # group/forum access — you; add teammate IDs to share
+        guest_mode: false
+        # ── Parallel DM topics — separate concurrent sessions inside your DM.
+        #    Auto-created on startup (needs Telegram's DM-topics capability on the bot).
+        #    chat_id in a 1:1 DM == your user id.
+        dm_topics:
+          - chat_id: 6431508617
+            topics:
+              - name: ops
+              - name: research
+              - name: scratch
+
+    # Mattermost — DISABLED. Explicit `enabled: false` guarantees it stays off even if a
+    # MATTERMOST_TOKEN env is later present. To enable: provision a Mattermost bot account
+    # (Integrations → Bot Accounts), add MATTERMOST_TOKEN to the service secrets, set
+    # MATTERMOST_URL=http://10.0.0.6:8065 (internal wg0 address of user-comm_chat-mattermost),
+    # then flip enabled: true. Integration is REST-API v4 + WebSocket (bot token, not a webhook).
+    mattermost:
+      enabled: false
+    # Per-platform toolsets for Mattermost, when enabled, would go under
+    # platform_toolsets.mattermost: [web, terminal, file, todo, skills, memory]
+
+
+# ══ BEGIN GENERATED MCP SERVERS — do not edit; derived from cloud-infra/1_cloud-configs/dist/mcp.json + mcp-policy.json by cloud-u-linux da_my-ai/data/claude/gen-mcp-tpl.sh (platform: container-hermes) ══
+mcp_servers:
+  cloud-cgc-pub-mcp:
+    type: http
+    url: http://10.0.0.6:3105/mcp
+  cloud-cgc-pvt-mcp:
+    type: http
+    url: http://10.0.0.6:3107/mcp
+  cloud-drive-mcp:
+    type: http
+    url: http://10.0.0.6:3109/mcp
+  cloud-infra-mcp:
+    type: http
+    url: http://10.0.0.6:3100/mcp
+  cloud-mail-mcp:
+    type: http
+    url: http://10.0.0.6:3103/mcp
+  cloud-mattermost-mcp:
+    type: http
+    url: http://10.0.0.6:3102/mcp
+  cloud-services-mcp:
+    type: http
+    url: http://10.0.0.6:3101/mcp
+  cloud-superapp-mcp:
+    type: http
+    url: http://10.0.0.6:3110/mcp
+  cloud-vault-mcp:
+    type: http
+    url: http://10.0.0.6:3111/mcp
+  google-personal-mcp:
+    type: http
+    url: http://10.0.0.6:3106/mcp
+  google-workspace-mcp:
+    type: http
+    url: http://10.0.0.6:3104/mcp
+# ══ END GENERATED MCP SERVERS ══

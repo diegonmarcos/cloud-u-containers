@@ -1,0 +1,52 @@
+version: '3.8'
+
+# Matomo Analytics
+# VM: oracle-services-server-1 (129.151.228.66)
+
+services:
+  analytics-app:
+    image: matomo:fpm-alpine
+    container_name: analytics-app
+    restart: unless-stopped
+    depends_on:
+      - analytics-db
+    environment:
+      - MATOMO_DATABASE_HOST=analytics-db
+      - MATOMO_DATABASE_ADAPTER=mysql
+      - MATOMO_DATABASE_TABLES_PREFIX=matomo_
+      - MATOMO_DATABASE_USERNAME=${MATOMO_DB_USER:-matomo}
+      - MATOMO_DATABASE_PASSWORD=${MATOMO_DB_PASSWORD:-changeme}
+      - MATOMO_DATABASE_DBNAME=${MATOMO_DB_NAME:-matomo}
+    volumes:
+      - matomo_data:/var/www/html
+    networks:
+      - matomo_network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  analytics-web:
+    image: nginx:alpine
+    container_name: analytics-web
+    restart: unless-stopped
+    depends_on:
+      - analytics-app
+    ports:
+      - "8080:80"
+    volumes:
+      - matomo_data:/var/www/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - matomo_network
+
+networks:
+  matomo_network:
+    name: matomo_network
+    driver: bridge
+
+volumes:
+  matomo_data:
+    name: matomo_data

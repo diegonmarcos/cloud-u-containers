@@ -1,0 +1,106 @@
+{
+  "name": "stalwart",
+  "description": "Stalwart Mail Server (mail.diegonmarcos.com)",
+  "dns": "stalwart.app",
+  "category": "app",
+  "domain": "mail.diegonmarcos.com",
+  "deploy": {
+    "host": "oci-mail",
+    "remote_path": "/opt/containers/stalwart",
+    "excludes": [
+      "data/**",
+      "dkim/**"
+    ]
+  },
+  "compose": {
+    "custom": true,
+    "pre_hook": "init.sh"
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "stalwart",
+    "dockerfile": "Dockerfile",
+    "arch": "amd64"
+  },
+  "proxy": {
+    "primary": {
+      "domain": "mail.diegonmarcos.com",
+      "auth": "two_factor",
+      "tls_skip_verify": true,
+      "landing_page": "mymail",
+      "l4_ports": [
+        {
+          "port": 993,
+          "upstream": "130.110.251.193:993",
+          "comment": "IMAPS"
+        },
+        {
+          "port": 465,
+          "upstream": "130.110.251.193:465",
+          "comment": "SMTPS"
+        },
+        {
+          "port": 587,
+          "upstream": "130.110.251.193:587",
+          "comment": "SMTP Submission"
+        }
+      ]
+    },
+    "app_hub": false
+  },
+  "health": {
+    "path": "/"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
+  },
+  "backup": {
+    "enabled": true,
+    "volumes": [
+      "stalwart_data"
+    ]
+  },
+  "ports": {
+    "app": 443,
+    "smtp": 465,
+    "imap": 993
+  },
+  "containers": {
+    "app": {
+      "container_name": "stalwart",
+      "image": "stalwartlabs/mail-server:v0.11",
+      "port": 443,
+      "port_env": null,
+      "dns": "stalwart.app",
+      "public": true,
+      "proxy": {
+        "domain": "mail.diegonmarcos.com",
+        "auth": "two_factor",
+        "tls_skip_verify": true
+      },
+      "healthcheck": "/",
+      "monitoring": {
+        "tls_check": true
+      },
+      "volumes": [
+        "./data:/opt/stalwart-mail/data",
+        "./config.toml:/opt/stalwart-mail/etc/config.toml:ro",
+        "./dkim:/opt/stalwart-mail/dkim:ro"
+      ],
+      "env_file": false,
+      "depends_on": [],
+      "resources": {
+        "limits": {
+          "memory": "512M"
+        },
+        "reservations": {
+          "memory": "64M"
+        }
+      },
+      "read_only": false,
+      "dump_cmd": "sh -c 'stalwart-mail --export /tmp/stalwart-export && tar cf - -C /tmp stalwart-export && rm -rf /tmp/stalwart-export'"
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "timestamp": "2025-12-15T23:27:41.986696",
+  "date": "2025-12-15",
+  "month": "2025-12",
+  "claude": {
+    "status": "ok",
+    "usage": {
+      "today": {
+        "input": 0,
+        "output": 0,
+        "cache_read": 0,
+        "cache_write": 0
+      },
+      "week": {
+        "input": 0,
+        "output": 0,
+        "cache_read": 0,
+        "cache_write": 0
+      },
+      "month": {
+        "input": 0,
+        "output": 0,
+        "cache_read": 0,
+        "cache_write": 0
+      },
+      "sessions": [],
+      "estimated_cost_usd": 0.0
+    }
+  }
+}

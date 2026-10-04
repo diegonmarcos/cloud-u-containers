@@ -1,0 +1,181 @@
+#!/usr/bin/env node
+// kg-ingest — load the infra knowledge-graph delta ({nodes[],edges[]}) into the
+// kg-store SurrealDB as idempotent SurrealQL (UPSERT nodes + batched INSERT
+// RELATION edges). Called by reindex.sh after octocode builds the code graph, so
+// the one-shot job (re)builds BOTH graphs. Fully env-gated/data-driven — no-ops
+// if kg-store is not configured. Uses only Node built-ins.
+import { readFileSync, existsSync } from "node:fs";
+import { createHash } from "node:crypto";
+
+const URL_  = process.env.KG_STORE_URL;                       // http://127.0.0.1:8001
+const NS    = process.env.KG_STORE_NS  || "infra";
+const DB    = process.env.KG_STORE_DB  || "production";
+const USER  = process.env.KG_STORE_USER || "root";
+const PASS  = process.env.KG_STORE_PASS;
+const DELTA = process.env.KG_DELTA || "/app/graphs/build-kg-graph_delta.json";
+const BATCH = parseInt(process.env.KG_INGEST_BATCH || "500", 10);
+
+const skip = (m) => { console.error(`[kg-ingest] skip — ${m}`); process.exit(0); };
+if (!URL_)  skip("KG_STORE_URL unset");
+if (!PASS)  skip("KG_STORE_PASS unset");
+if (!existsSync(DELTA)) skip(`delta not found: ${DELTA}`);
+
+const die = (m) => { console.error(`[kg-ingest] ABORT — ${m} (writing NOTHING)`); process.exit(1); };
+
+let d;
+try {
+  d = JSON.parse(readFileSync(DELTA, "utf8"));
+} catch (e) {
+  die(`failed to parse delta JSON: ${e.message}`);
+}
+if (d == null || typeof d !== "object") die("delta root is not an object");
+if (!Array.isArray(d.nodes)) die("delta.nodes is not an array");
+if (!Array.isArray(d.edges)) die("delta.edges is not an array");
+if (d.nodes.length === 0) die("delta.nodes is empty");
+
+// kg-ingest handles TWO delta shapes: per-repo code-graph deltas (file nodes, all
+// repo-scoped) AND the infra topology delta (vm/service/domain/container nodes with
+// NO repo — keyed by stable id, naturally idempotent). So structural fields (table/
+// id/key) are required on every node, but repo is OPTIONAL: collect it where present
+// to drive the repo-scoped replace below; nodes without it just UPSERT by id.
+const repos = new Set();
+for (const n of d.nodes) {
+  if (!n?.table) die(`node missing "table": ${JSON.stringify(n)}`);
+  if (n?.id == null) die(`node missing "id": ${JSON.stringify(n)}`);
+  if (!n?.key) die(`node missing "key": ${JSON.stringify(n)}`);
+  if (typeof n?.properties?.repo === "string" && n.properties.repo) repos.add(n.properties.repo);
+}
+
+const nodes = d.nodes ?? [], edges = d.edges ?? [];
+const byKey = new Map(nodes.map((n) => [n.key, n]));
+const q = (s) => JSON.stringify(String(s));            // safe SurrealQL string literal
+const thing = (t, id) => `type::thing(${q(t)}, ${q(id)})`;
+
+// Nodes → UPSERT (batched, distinct record ids never conflict).
+const nodeStmts = [];
+for (const n of nodes) {
+  if (!n?.table || n?.id == null) continue;
+  nodeStmts.push(`UPSERT ${thing(n.table, n.id)} CONTENT ${JSON.stringify(n.properties ?? {})} RETURN NONE;`);
+}
+// Edges → batched INSERT RELATION with explicit deterministic ids. RELATE was
+// proven to silently consolidate edges sharing a vertex when batched OR run
+// concurrently (90134→~36k, 0 errors), which forced one-RELATE-per-request
+// serial ingest — 523k edges ≈ 6h per restore. INSERT RELATION creates explicit
+// records: distinct ids can never consolidate. Proven live on the kg-store
+// SurrealDB (2026-09-02, isolated ns): one batched request with duplicate
+// from/to pairs preserves every edge, ->t-> traversal works, in.repo/out.repo
+// scoped DELETE works, and re-INSERTing an existing id is a silent no-op — so
+// deterministic ids also make edge ingest idempotent (RELATE minted random ids
+// and accumulated duplicates on any re-run without a repo-scoped delete).
+let edgeOk = 0, eSeq = 0;
+const edgesByTable = new Map();
+for (const e of edges) {
+  const a = byKey.get(e.from), b = byKey.get(e.to);
+  if (!a || !b || !e.table) continue;
+  // Deterministic per-delta id: same delta → same ids (idempotent); the ordinal
+  // keeps genuine duplicate (from,table,to) triples as distinct edge records.
+  const id = createHash("sha1").update(`${e.from}|${e.table}|${e.to}|${eSeq++}`).digest("hex").slice(0, 24);
+  const p = e.properties ?? {};
+  const obj = `{id:${q(id)},in:${thing(a.table, a.id)},out:${thing(b.table, b.id)}` +
+    `,description:${JSON.stringify(p.description ?? null)}` +
+    `,confidence:${JSON.stringify(Number(p.confidence ?? 0))}` +
+    `,weight:${JSON.stringify(Number(p.weight ?? 0))}}`;
+  if (!edgesByTable.has(e.table)) edgesByTable.set(e.table, []);
+  edgesByTable.get(e.table).push(obj);
+  edgeOk++;
+}
+console.error(`[kg-ingest] ${nodes.length} nodes + ${edgeOk}/${edges.length} edges → ${URL_} (ns=${NS} db=${DB})`);
+
+const auth = "Basic " + Buffer.from(`${USER}:${PASS}`).toString("base64");
+// Returns {errs, firstErr}. SurrealDB's /sql returns HTTP 200 even when individual
+// statements fail — the body is an array of {status:"OK"|"ERR", result|detail}.
+// Checking only r.ok silently drops failed UPSERT/RELATE (the cause of missing
+// edges). Parse per-statement status and surface the first error.
+const sql = async (body) => {
+  const r = await fetch(`${URL_.replace(/\/$/, "")}/sql`, {
+    method: "POST",
+    headers: { Authorization: auth, "surreal-ns": NS, "surreal-db": DB, Accept: "application/json", "Content-Type": "text/plain" },
+    body,
+  });
+  if (!r.ok) throw new Error(`HTTP ${r.status}: ${(await r.text()).slice(0, 300)}`);
+  const out = await r.json();
+  let errs = 0, firstErr = null;
+  if (Array.isArray(out)) for (const x of out) {
+    if (x && x.status && x.status !== "OK") {
+      errs++;
+      if (!firstErr) firstErr = String(x.result ?? x.detail ?? JSON.stringify(x)).slice(0, 240);
+    }
+  }
+  return { errs, firstErr };
+};
+
+// ── Idempotency: repo-scoped replace. Delete existing rows for every repo present
+// in THIS delta before reinserting, so a re-ingest doesn't accumulate duplicates.
+// Edges MUST be deleted before nodes — the in.repo/out.repo traversal below only
+// resolves while the endpoint nodes still exist.
+// ponytail: every DELETE is scoped to a specific repo string drawn from this delta
+// (never an unscoped `DELETE FROM file;`); this assumes the delta is complete-per-repo
+// (reindex.sh's one-KG_DELTA-per-repo contract).
+const nodeTables = new Set(nodes.map((n) => n.table).filter(Boolean));
+const edgeTables = new Set(edges.map((e) => e.table).filter(Boolean));
+const deleteStmts = [];
+for (const repo of repos) {
+  for (const t of edgeTables) deleteStmts.push(`DELETE FROM ${t} WHERE in.repo = ${q(repo)} OR out.repo = ${q(repo)};`);
+  for (const t of nodeTables) deleteStmts.push(`DELETE FROM ${t} WHERE repo = ${q(repo)};`);
+}
+if (deleteStmts.length) {
+  console.error(`[kg-ingest] repo-scoped replace: deleting existing rows for [${[...repos].join(", ")}]`);
+  const { errs, firstErr } = await sql(deleteStmts.join("\n"));
+  if (errs) die(`repo-scoped delete failed (${errs} statements) — first: ${firstErr}`);
+}
+
+// ── Nodes: UPSERT batched by statement count AND request byte size. SurrealDB's
+// /sql rejects oversized bodies (HTTP 413); node CONTENT (imports/exports/symbols
+// arrays) can be large, so cap bytes too. Distinct record ids never conflict, so
+// batching nodes is safe + fast.
+const MAX_BYTES = parseInt(process.env.KG_INGEST_MAX_BYTES || "200000", 10);
+let nDone = 0, buf = [], bytes = 0, nodeErrs = 0, firstErr = null;
+const flush = async () => {
+  if (!buf.length) return;
+  const { errs, firstErr: fe } = await sql(buf.join("\n"));
+  nodeErrs += errs; if (fe && !firstErr) firstErr = fe;
+  nDone += buf.length; buf = []; bytes = 0;
+  process.stderr.write(`\r[kg-ingest] nodes ${nDone}/${nodeStmts.length}`);
+};
+for (const s of nodeStmts) {
+  if (buf.length && bytes + s.length + 1 > MAX_BYTES) await flush();
+  buf.push(s); bytes += s.length + 1;
+  if (buf.length >= BATCH) await flush();
+}
+await flush();
+
+// ── Edges: relation tables must exist as TYPE RELATION for ->t-> traversal.
+// IF NOT EXISTS keeps tables already created by the old RELATE path untouched.
+let eDone = 0, edgeErrs = 0;
+if (edgesByTable.size) {
+  const defs = [...edgesByTable.keys()].map((t) => `DEFINE TABLE IF NOT EXISTS ${t} TYPE RELATION;`).join("\n");
+  const { errs, firstErr: fe } = await sql(defs);
+  if (errs) die(`DEFINE relation tables failed — first: ${fe}`);
+}
+for (const [t, objs] of edgesByTable) {
+  let ebuf = [], ebytes = 0;
+  const eflush = async () => {
+    if (!ebuf.length) return;
+    const stmt = `INSERT RELATION INTO ${t} [${ebuf.join(",")}] RETURN NONE;`;
+    let r = await sql(stmt).catch(() => ({ errs: 1, firstErr: "request failed" }));
+    if (r.errs) r = await sql(stmt).catch(() => ({ errs: 1, firstErr: "request failed" }));  // one retry
+    if (r.errs) { edgeErrs += ebuf.length; if (r.firstErr && !firstErr) firstErr = r.firstErr; }
+    eDone += ebuf.length; ebuf = []; ebytes = 0;
+    process.stderr.write(`\r[kg-ingest] edges ${eDone}/${edgeOk}${edgeErrs ? ` (${edgeErrs} failed)` : ""}`);
+  };
+  for (const o of objs) {
+    if (ebuf.length && ebytes + o.length + 1 > MAX_BYTES) await eflush();
+    ebuf.push(o); ebytes += o.length + 1;
+    if (ebuf.length >= BATCH) await eflush();
+  }
+  await eflush();
+}
+
+const totalErrs = nodeErrs + edgeErrs;
+if (totalErrs) console.error(`\n[kg-ingest] ⚠ ${totalErrs} statements FAILED (${nodeErrs} node, ${edgeErrs} edge) — first: ${firstErr}`);
+console.error(`\n[kg-ingest] DONE — ${nodeStmts.length} nodes + ${edgeOk} edges → kg-store (${totalErrs} failed)`);

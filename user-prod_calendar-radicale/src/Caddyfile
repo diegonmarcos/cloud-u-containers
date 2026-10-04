@@ -1,0 +1,3 @@
+cal.diegonmarcos.com {
+    reverse_proxy calendar-radicale:5232
+}

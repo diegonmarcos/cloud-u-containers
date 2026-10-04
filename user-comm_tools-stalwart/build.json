@@ -1,0 +1,289 @@
+{
+  "name": "stalwart",
+  "description": "Stalwart Mail Server — JMAP webmail backend (jmap.diegonmarcos.com)",
+  "dns": "stalwart.app",
+  "category": "app",
+  "domain": "jmap.diegonmarcos.com",
+  "deploy": {
+    "host": "oci-mail",
+    "remote_path": "/opt/containers/stalwart",
+    "excludes": [
+      "data/**",
+      "dkim/**"
+    ],
+    "compose_flags": ""
+  },
+  "compose": {
+    "custom": true,
+    "post_hook": "configs/activate.sh",
+    "_doc_post_hook": "v0.16 activate.sh: Step A creates any account declared in #users that is missing from Stalwart's registry (x:Account/set, create-only), then ensures per-user mailbox hierarchy (4 parents + 10 leaves from mail-rules-general.json::folders+folders_ui) + uploads + activates default.sieve. Idempotent. DOMAIN creation is still owned by stalwart-cli apply (manual recovery-mode bootstrap); account creation no longer is."
+  },
+  "_doc_recovery_mode": "First-boot v0.16 bootstrap toggle. Set true to inject STALWART_RECOVERY_MODE=1 + STALWART_RECOVERY_ADMIN=admin:${ADMIN_PASSWORD} into the container's env so v0.16 wipes settings + accepts admin login. After running `stalwart-cli apply --file export.json` + recreating listeners, flip back to false and redeploy. The container reads JMAP-object state from RocksDB on production boot.",
+  "recovery_mode": false,
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "stalwart-sorter-binaries",
+    "dockerfile": "Dockerfile.native",
+    "arch": "amd64",
+    "_doc": "The upstream Stalwart server image is pulled as-is (containers.app.image); the only thing built here is the JMAP filter-view sorter sidecar, compiled from src/crate.",
+    "native_build": {
+      "type": "binary",
+      "app_dir": "crate",
+      "builder_image": "rust:1-bookworm",
+      "_doc_builder_image": "In-container multi-stage compile so the binary is always the target arch, never the CI host's. app_dir keeps the build context to the crate alone — src/ also holds secrets.yaml and the config templates, none of which the compiler needs.",
+      "cmd": "cargo build --release",
+      "binary": "target/release/jmap-sorter",
+      "base_image": "debian:bookworm-slim",
+      "apt": "ca-certificates",
+      "_doc_apt": "rustls does the TLS, so no libssl — ca-certificates only, and even that is belt-and-braces since the JMAP peer is reached over the docker bridge with verification disabled."
+    }
+  },
+  "proxy": {
+    "primary": {
+      "domain": "jmap.diegonmarcos.com",
+      "auth": "none",
+      "tls_skip_verify": true,
+      "_doc_security_import": "Dedicated rate-limit zone (security_jmap -> zone jmap, declared in infra-sec_caddy build.json security_snippets). A real JMAP sync is ~24+ Email/get calls plus query paging per pass; the shared global zone is 100/min/IP, so a sync eats 429s exactly like the MCP session-start starvation fixed in 12e9766e. max_upload 50MB matches Stalwart's advertised maxSizeUpload (the global request_limits caps bodies at 10MB, silently rejecting uploads the session JSON promises).",
+      "security_import": "security_jmap",
+      "max_upload": "50MB",
+      "_doc_root_response_json_removed": "Initially tried serving a STATIC session JSON at jmap.diegonmarcos.com/ to bypass Stalwart's :2443 port leak in apiUrl/downloadUrl/etc. BROKE LTT.rs because the static JSON has empty accounts: {} — JMAP clients NEED the authenticated per-user response which only Stalwart can generate (it includes the user's account ID, capabilities per account, etc.). The :2443 leak is a real Stalwart limitation but reverting to runtime session is the lesser evil. Static-JSON approach is preserved in caddyfile.nix root_response_json schema for non-stateful endpoints (where applicable).",
+      "_doc_l4_ports": "Stalwart serves JMAP via jmap.diegonmarcos.com (HTTPS reverse_proxy to :2443) and classical IMAPS/SMTPS via SNI on :443 → its own :2993/:2465 listeners. These two SNI routes used to be declared in user-comm_tools-maddy/build.json even though Stalwart terminates them; moved here so that retiring Maddy's directory cannot silently delete the live mail endpoints. Maddy keeps only :25.",
+      "l4_ports": [
+        {
+          "port": 443,
+          "sni": "imap.diegonmarcos.com",
+          "upstream": "oci-mail:2993",
+          "comment": "IMAPS via SNI on :443 -> STALWART :2993 (2026-09-02). Maddy :993 (go-imap v1) advertises no CONDSTORE/QRESYNC/UIDPLUS, which forces clients into a full flag rescan of every synced folder each poll -- measured on-device: 9355 UID FLAGS fetches per 15-min pass, all night, phone dead at 04:49. Stalwart :2993 advertises CONDSTORE+QRESYNC+UIDPLUS+IMAP4rev2. The earlier objection to :2993 (IMAP clients see Stalwart's ENTIRE 1*-9* + A*-F* tree because JMAP and IMAP share one store) is mitigated by the subscription policy in mail-rules-profile-diego.json folder_options: only INBOX + the F* sender folders are subscribed, and clients honouring LSUB/subscriptions see the intended menu. Maddy keeps :25 inbound and its store stays intact for rollback: revert this upstream to oci-mail:993.",
+          "protocol": "tls"
+        },
+        {
+          "port": 443,
+          "sni": "smtps.diegonmarcos.com",
+          "upstream": "oci-mail:2465",
+          "comment": "SMTPS via SNI on :443 → Stalwart :2465 (Maddy's :465 is legacy)",
+          "protocol": "tls"
+        }
+      ]
+    },
+    "app_hub": false,
+    "mail_hub": {
+      "parent_domain": "mail.diegonmarcos.com",
+      "base_path": "/stalwart",
+      "tls_skip_verify": true,
+      "auth": "none",
+      "error_redirect": "/"
+    },
+    "well_known": [
+      {
+        "_doc": "JMAP autoconfig per RFC 8620: clients enter me@diegonmarcos.com and look up the apex /.well-known/jmap. Caddy proxies to Stalwart (passes the Authorization header through), Stalwart issues a relative 307 → /jmap/session, client re-issues to apex which Caddy proxies for /jmap/* (well_known sibling below). The PER-USER session JSON returned by Stalwart includes the user's accounts list (which LTT.rs and others require). The static JSON at jmap.diegonmarcos.com/ is for clients that bypass autoconfig and probe the discoverable hostname directly — but autoconfig clients NEED the authenticated Stalwart session.",
+        "path": "/.well-known/jmap",
+        "target_domain": "diegonmarcos.com",
+        "tls_skip_verify": true,
+        "_doc_rewrite_to": "Serve the session AT the discovery URL instead of making the client chase Stalwart's relative 307 (Location: /jmap/session). The redirect is legal and was the original design, but a client that mishandles a RELATIVE Location never arrives: Cloud-Mail failed 2026-09-01 with 'EndpointNotFoundException: Unable to fetch session object' while curl -L against the same URL returned a valid session in ~1.3s. Same upstream, same Authorization passthrough, same per-user session JSON — one less hop for every JMAP client, not a patch for one.",
+        "rewrite_to": "/jmap/session",
+        "comment": "JMAP autoconfig — proxies to Stalwart (preserves per-user session)"
+      },
+      {
+        "_doc": "Follow-through for Stalwart's relative redirect from /.well-known/jmap → /jmap/session. Path wildcard.",
+        "path": "/jmap/*",
+        "target_domain": "diegonmarcos.com",
+        "tls_skip_verify": true,
+        "comment": "JMAP API follow-through (matches relative redirect from /.well-known/jmap)"
+      },
+      {
+        "_doc": "Bare-host shortcut: clients that hit https://jmap.diegonmarcos.com/ (no path) get a 308 to /.well-known/jmap so the JMAP session JSON is reachable at any of three equivalent URLs — bare host, /.well-known/jmap, apex /.well-known/jmap. Relies on the proxy-route well_known graft (caddyfile.nix mkProxyRoute filtering wellKnownRoutes by target_domain). Mailtemi and similar clients that probe the bare subdomain hostname work without manual URL entry.",
+        "path": "/",
+        "target_domain": "jmap.diegonmarcos.com",
+        "redirect_to": "/.well-known/jmap",
+        "comment": "Bare host → JMAP discovery URL (308 redirect)"
+      }
+    ]
+  },
+  "health": {
+    "path": "/"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
+  },
+  "backup": {
+    "enabled": true,
+    "volumes": [
+      "stalwart_data"
+    ]
+  },
+  "containers": {
+    "app": {
+      "container_name": "stalwart",
+      "image": "stalwartlabs/stalwart:v0.16.5",
+      "port": 2443,
+      "_doc_dual_bind": "Phase 4 of public-surface collapse: each port dual-binds on wg0 (10.0.0.3) AND wg-public (10.1.0.3). Caddy on oci-analytics reaches mail ports via wg-public mesh; legacy clients on wg0 keep working unchanged. compose.nix expands `bind` arrays into one host-port mapping per IP.",
+      "_doc_container_port": "v0.16 binds protocols on STANDARD ports inside the container (SMTP:25, IMAPS:993, SMTPS:465, HTTPS:443, Sieve:4190) — listeners are not configurable in v0.16 schema. We map host_offset → container_standard so external clients keep using offset ports (maddy owns the standard ones on the host network until decommissioned).",
+      "extra_ports": [
+        {
+          "port": 2025,
+          "container_port": 25,
+          "protocol": "starttls",
+          "bind": [
+            "10.0.0.3",
+            "10.1.0.3"
+          ],
+          "service": "smtp_shadow",
+          "desc": "SMTP shadow (host:2025 → stalwart:25)"
+        },
+        {
+          "port": 2443,
+          "container_port": 443,
+          "protocol": "tls",
+          "bind": [
+            "10.0.0.3",
+            "10.1.0.3"
+          ],
+          "service": "jmap_tls",
+          "desc": "HTTPS admin/JMAP (host:2443 → stalwart:443)"
+        },
+        {
+          "port": 2465,
+          "container_port": 465,
+          "protocol": "tls",
+          "bind": [
+            "10.0.0.3",
+            "10.1.0.3"
+          ],
+          "service": "smtp_ssl",
+          "desc": "SMTPS (host:2465 → stalwart:465)"
+        },
+        {
+          "port": 2993,
+          "container_port": 993,
+          "protocol": "tls",
+          "bind": [
+            "10.0.0.3",
+            "10.1.0.3"
+          ],
+          "service": "imap_ssl",
+          "desc": "IMAPS (host:2993 → stalwart:993)"
+        },
+        {
+          "port": 6190,
+          "container_port": 4190,
+          "protocol": "tls",
+          "bind": [
+            "10.0.0.3",
+            "10.1.0.3"
+          ],
+          "service": "manage_sieve",
+          "desc": "ManageSieve (host:6190 → stalwart:4190)"
+        }
+      ],
+      "port_env": null,
+      "dns": "stalwart.app",
+      "public": true,
+      "proxy": {
+        "domain": "jmap.diegonmarcos.com",
+        "auth": "none",
+        "tls_skip_verify": true
+      },
+      "healthcheck": "/",
+      "monitoring": {
+        "tls_check": true
+      },
+      "volumes": [
+        "stalwart_data:/opt/stalwart-mail/data",
+        "./tls:/opt/stalwart-mail/tls:ro"
+      ],
+      "env_file": true,
+      "depends_on": [],
+      "resources": {
+        "reservations": {
+          "memory": "32M"
+        }
+      },
+      "read_only": false,
+      "dump_cmd": "sh -c 'stalwart-mail --export /tmp/stalwart-export && tar cf - -C /tmp stalwart-export && rm -rf /tmp/stalwart-export'",
+      "protocol": "https",
+      "embedded_dbs": [
+        {
+          "engine": "rocksdb",
+          "path": "/opt/stalwart-mail/data"
+        }
+      ]
+    },
+    "sorter": {
+      "container_name": "stalwart-sorter",
+      "image": "ghcr.io/diegonmarcos/stalwart-sorter-binaries:latest",
+      "_doc_image": "Was python:3-alpine running a bind-mounted jmap-sorter.py. Now a compiled binary: the rules schema is parsed and validated once at startup, so a malformed or unknown predicate stops the container instead of silently producing an empty filter folder.",
+      "resources": {
+        "mem_reservation": "16M"
+      }
+    }
+  },
+  "upstream_image": "stalwartlabs/stalwart:v0.16.5",
+  "timezone": "Europe/Madrid",
+  "_doc_users": "The `admin` entry is the ADMIN PRINCIPAL: src/flake.nix derives adminEmail/adminPassEnv from it and configs/activate.sh authenticates every registry upsert (allowed-ip, MTA routes, throttles) as that account. In v0.16.5 admin-ness is a field on the account object itself — `roles: {\"@type\": \"Admin\"}` — not a separate principal record; an account with roles=User authenticates fine but gets no `urn:stalwart:jmap` entry in its JMAP session's primaryAccounts and can read nothing from the registry. Verified live 2026-09-04: only `me` (roles Admin) and `no-reply` (roles User) existed in Stalwart's store — `mailadmin`/`yo`/`42` were declared here but had NEVER been created, because account creation was not part of the deploy, so those three existed in maddy alone and could not log into cloud-webmail (which authenticates against Stalwart JMAP, not maddy). That is why cloud-mail-mcp's STALWART_ADMIN_USER pointed at admin@diegonmarcos.com and 401'd; it now points at me@diegonmarcos.com. Since 2026-09-05 this list is the single source of truth for BOTH stores: activate.sh Step A creates any missing account via x:Account/set. It is CREATE-ONLY — an existing account is never updated, because secrets are stored hashed (so every ship would blind-reset the password) and because writing roles could demote the only Admin and lock the hook out of the registry. Rotating a password or changing a role on an EXISTING account therefore still needs a deliberate manual x:Account/set update.",
+  "users": {
+    "admin": {
+      "name": "me",
+      "pass_env": "ME_PASSWORD"
+    },
+    "noreply": {
+      "name": "no-reply",
+      "pass_env": "NOREPLY_PASSWORD",
+      "aliases": [
+        "noreply"
+      ]
+    },
+    "mailadmin": {
+      "name": "admin",
+      "pass_env": "ADMIN_PASSWORD"
+    },
+    "yo": {
+      "name": "yo",
+      "pass_env": "MAIL_DEFAULT_PASSWORD"
+    },
+    "42": {
+      "name": "42",
+      "pass_env": "MAIL_DEFAULT_PASSWORD"
+    }
+  },
+  "_doc_mta_routes": "Outbound SMTP routes for Stalwart's MTA. OCI Free Tier blocks outbound :25/:465/:587 from VMs, so direct MX delivery fails — every route must be a Relay to a paid SMTP service (OCI Email Delivery, AWS SES, etc.). activate.sh maps these into JMAP MtaRoute objects via /jmap/ + the urn:stalwart:jmap capability. Credentials are referenced by env-var NAME only (auth_username_env / auth_secret_env); actual values live in secrets.yaml.",
+  "mta_routes": [
+    {
+      "name": "oci-relay",
+      "description": "OCI Email Delivery (eu-marseille-1) — primary outbound relay; SMTP creds shared with maddy (same vault user/pass, region-bound)",
+      "address": "smtp.email.eu-marseille-1.oci.oraclecloud.com",
+      "port": 587,
+      "protocol": "smtp",
+      "implicit_tls": false,
+      "allow_invalid_certs": false,
+      "auth_username_env": "OCI_RELAYUSER",
+      "auth_secret_env": "OCI_RELAYPASSWORD",
+      "default_outbound": true
+    },
+    {
+      "name": "maddy-relay",
+      "description": "Maddy submission co-located on oci-mail. Selected when the envelope MAIL FROM is me+maddy@diegonmarcos.com (the cloud-webmail 'me@ (via Maddy)' identity's return-path). Maddy strips the +tag, DKIM-signs (selector default), then relays to OCI — giving an independent send leg that still shows From: me@. Auth reuses the me@ account: username is the plain mailbox address, password is the shared ME_PASSWORD (identical on both servers). allow_invalid_certs because we reach Maddy by its WG IP, whose cert CN is mail.diegonmarcos.com (WG-internal, so skipping name-verify is safe).",
+      "address": "10.0.0.3",
+      "port": 465,
+      "protocol": "smtp",
+      "implicit_tls": true,
+      "allow_invalid_certs": true,
+      "auth_username": "me@diegonmarcos.com",
+      "auth_secret_env": "ME_PASSWORD",
+      "sender_match": "me+maddy@diegonmarcos.com"
+    }
+  ],
+  "_doc_allowed_ips": "IP ranges trusted by Stalwart's fail2ban/auth-ban (v0.16.5 stores these as AllowedIp registry objects; the old config.toml server.allowed-ip is dead because config.toml is not loaded). activate.sh upserts these via JMAP so internal clients on the WG mesh + docker bridge are never banned. Keep in sync with the wg0 /24 and the stalwart_default bridge /16.",
+  "allowed_ips": [
+    "10.0.0.0/24",
+    "172.18.0.0/16"
+  ],
+  "build": {
+    "headers_enforced": true
+  },
+  "_doc_tests": "Registered #502 (this repo's tester CI only runs what a build.json's `tests` key names, per .github/scripts/run-service-tests.sh -- an unnamed tester sits in the tree, executable, and reached by nothing, same pattern cloud-u-android's #368 found 44 times over). mail-rules was a golden+structural suite for derive-mail-rules.ts with no build.json anywhere pointing at it, so it had never run in CI despite existing since #269. It pins the declared mail folder tree (parent/child nesting, not just names) and the Sieve/maddy artifact derivation; #502 added the structural assertions for the Alerts/noAlerts split, the 24 House -> F0 move (with real de-dup), and the CLOUD -> 40 C3 renumber.",
+  "tests": {
+    "mail-rules": { "cmd": "bash ../_shared/lib/mail-rules.tests/run-tests.sh" }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "light",
+  "mode": "light",
+  "palette": {
+    "background": "#ffffff",
+    "surface": "#f6f8fa",
+    "surface_alt": "#eaeef2",
+    "text": "#1f2328",
+    "text_muted": "#636c76",
+    "accent": "#0969da",
+    "positive": "#1a7f37",
+    "negative": "#cf222e",
+    "warning": "#9a6700",
+    "grid": "#d0d7de"
+  },
+  "font": {
+    "size_small": 11.0,
+    "size_body": 13.0,
+    "size_heading": 18.0,
+    "monospace_size": 12.0
+  }
+}

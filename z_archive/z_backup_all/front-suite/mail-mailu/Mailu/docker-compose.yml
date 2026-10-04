@@ -1,0 +1,115 @@
+services:
+  # Resolver (required)
+  resolver:
+    image: ghcr.io/mailu/unbound:2024.06
+    env_file: mailu.env
+    restart: always
+    networks:
+      default:
+        ipv4_address: 192.168.203.254
+
+  # Front (nginx reverse proxy)
+  front:
+    image: ghcr.io/mailu/nginx:2024.06
+    env_file: mailu.env
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+      - "25:25"
+      - "465:465"
+      - "587:587"
+      - "993:993"
+    volumes:
+      - "/opt/mailu/certs:/certs"
+      - "/opt/mailu/overrides/nginx:/overrides:ro"
+    depends_on:
+      - resolver
+    dns:
+      - 192.168.203.254
+
+  # Admin interface
+  admin:
+    image: ghcr.io/mailu/admin:2024.06
+    env_file: mailu.env
+    restart: always
+    volumes:
+      - "/opt/mailu/data:/data"
+      - "/opt/mailu/dkim:/dkim"
+    depends_on:
+      - resolver
+      - redis
+    dns:
+      - 192.168.203.254
+
+  # IMAP server
+  imap:
+    image: ghcr.io/mailu/dovecot:2024.06
+    env_file: mailu.env
+    restart: always
+    volumes:
+      - "/opt/mailu/mail:/mail"
+      - "/opt/mailu/overrides/dovecot:/overrides:ro"
+    depends_on:
+      - resolver
+      - front
+    dns:
+      - 192.168.203.254
+
+  # SMTP server
+  smtp:
+    image: ghcr.io/mailu/postfix:2024.06
+    env_file: mailu.env
+    restart: always
+    volumes:
+      - "/opt/mailu/mailqueue:/queue"
+      - "/opt/mailu/overrides/postfix:/overrides:ro"
+    depends_on:
+      - resolver
+      - front
+    dns:
+      - 192.168.203.254
+
+  # Antispam (rspamd - lightweight)
+  antispam:
+    image: ghcr.io/mailu/rspamd:2024.06
+    env_file: mailu.env
+    restart: always
+    volumes:
+      - "/opt/mailu/filter:/var/lib/rspamd"
+      - "/opt/mailu/overrides/rspamd:/overrides:ro"
+    depends_on:
+      - resolver
+      - front
+    dns:
+      - 192.168.203.254
+
+  # Redis (for rate limiting and session storage)
+  redis:
+    image: redis:7-alpine
+    restart: always
+    volumes:
+      - "/opt/mailu/redis:/data"
+
+  # Webmail (Roundcube)
+  webmail:
+    image: ghcr.io/mailu/webmail:2024.06
+    env_file: mailu.env
+    restart: always
+    volumes:
+      - "/opt/mailu/webmail:/data"
+      - "/opt/mailu/overrides/roundcube:/overrides:ro"
+    depends_on:
+      - resolver
+      - front
+      - imap
+    dns:
+      - 192.168.203.254
+
+networks:
+  default:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 192.168.203.0/24

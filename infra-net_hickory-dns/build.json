@@ -1,0 +1,101 @@
+{
+  "name": "hickory-dns",
+  "description": "Internal DNS server for WireGuard mesh (per-service .app zones)",
+  "dns": {
+    "zones": [
+      "app",
+      "db",
+      "diegonmarcos.com"
+    ],
+    "forwarders": [
+      "1.1.1.1",
+      "8.8.8.8"
+    ],
+    "_records_doc": "Per-zone specific A records emitted BEFORE the wildcard so they win over the catch-all `* IN A <caddy_wg_ip>`. NOTE: do NOT override `mail.diegonmarcos.com` / `jmap.diegonmarcos.com` / `imap.diegonmarcos.com` here — those hostnames must still resolve to the public Caddy edge (oci-analytics) for HTTPS probes; the wildcard already covers that. The `app` zone is purely internal so its records can point straight at the backend VMs.",
+    "records": {
+      "app": [
+        {
+          "name": "maddy",
+          "type": "A",
+          "value": "10.0.0.3"
+        },
+        {
+          "name": "stalwart",
+          "type": "A",
+          "value": "10.0.0.3"
+        },
+        {
+          "name": "maddy",
+          "type": "AAAA",
+          "value": "fd0c:1d00::3"
+        },
+        {
+          "name": "stalwart",
+          "type": "AAAA",
+          "value": "fd0c:1d00::3"
+        },
+        {
+          "name": "git-proxy-api",
+          "type": "A",
+          "value": "10.0.0.4"
+        }
+      ],
+      "diegonmarcos.com": [
+        {
+          "name": "wg-public",
+          "type": "AAAA",
+          "value": "2603:c026:c104:8f00:0:c704:63b:6eee"
+        }
+      ]
+    },
+    "caddy_wg_ipv6": "fd0c:1d00::1",
+    "_caddy_wg_ipv6_doc": "wg0 mesh ULA of the Caddy/DNS host (gcp-proxy). Mirrors .services.caddy.ip in src/build-hickory-dns.json. Set ⇒ every zone gains apex + wildcard AAAA so mesh clients prefer IPv6 (Happy Eyeballs) and fall back to IPv4; remove the field to go back to v4-only zones.",
+    "_records_git_proxy_api_doc": "#849 git-proxy-api binds only oci-analytics wg0 10.0.0.4:8123 (no hub route, and #837 mesh auth needs a direct dial without X-Forwarded-*). A only, no AAAA: the service has no v6 bind, and an owned name stops the wildcard AAAA from pointing it back at the hub."
+  },
+  "ports": {
+    "dns": 53
+  },
+  "category": "cloud",
+  "domain": "dns.internal",
+  "deploy": {
+    "host": "gcp-proxy",
+    "remote_path": "/opt/containers/hickory-dns",
+    "compose_flags": "--build"
+  },
+  "compose": {
+    "custom": true
+  },
+  "build": {
+    "include_cloud_data": "true",
+    "headers_enforced": true
+  },
+  "containers": {
+    "app": {
+      "container_name": "hickory-dns",
+      "image": "hickorydns/hickory-dns:latest",
+      "port": 53,
+      "port_env": null,
+      "dns": "hickory-dns.app",
+      "public": false,
+      "proxy": null,
+      "healthcheck": null,
+      "monitoring": null,
+      "volumes": [
+        "./named.toml:/etc/named.toml:ro",
+        "./zones:/etc/zones:ro"
+      ],
+      "env_file": false,
+      "depends_on": [],
+      "resources": {
+      },
+      "read_only": false,
+      "protocol": "udp"
+    }
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "hickory-dns",
+    "dockerfile": "Dockerfile",
+    "arch": "amd64"
+  }
+}

@@ -1,0 +1,128 @@
+#!/usr/bin/env python3
+"""
+count_recent.py — read-only: count Gmail messages received since a given
+timestamp, via the Gmail REST API (gmail.readonly), impersonating the
+target user through the existing domain-wide-delegation service account.
+Not an MCP tool (this module isn't imported by main.py) — a one-off
+operator/CI script, same shape as
+../../../../infra-api_mail-mcp/src/code/mcp/tools/others/gws_missing_backfill.py
+(which reads Gmail the identical way for the backfill tool).
+
+Why this exists: cross-store mail-health reconciliation
+(1_cicd/src/ops/cloud-health-mail-full.sh) — Gmail is the authoritative
+primary inbox; comparing its recent-message count against maddy/Stalwart
+(see the sibling count-since.ts) catches a store silently falling behind,
+which the liveness-only cloud-mail-health-full Rust derive does not.
+
+Auth: service account key at /run/secrets/service-account-key.json (the
+same path gws_missing_backfill.py uses — see google-workspace-mcp's
+compose.nix, which bind-mounts .secrets.d/GOOGLE_SERVICE_ACCOUNT_KEY there),
+domain-wide delegation impersonating --user (default me@diegonmarcos.com),
+scope gmail.readonly. No app password, no interactive consent.
+
+Counting: paginates messages.list with q="after:<epoch_seconds>" and sums
+page sizes exactly (NOT resultSizeEstimate, which Gmail documents as
+approximate) so the count is precise enough for a tight tolerance check.
+
+--message-ids: instead of the count, print the Message-ID of each of those
+messages, one per line, angle brackets stripped. This is what the health
+check reconciles on (piped into cloud-mail-mcp's count-since.ts, which
+reports how many are absent from maddy and Stalwart) — see that script for
+why a per-store count comparison gave a false red. A message with no
+Message-ID cannot be matched in another store; those are skipped and their
+number goes to stderr.
+
+RUN — inside the google-workspace-mcp container, same invocation shape as
+gws_missing_backfill.py:
+
+  docker cp count_recent.py google-workspace-mcp:/tmp/count_recent.py
+  docker exec google-workspace-mcp /app/.venv/bin/python /tmp/count_recent.py \
+    --since 2026-08-21T00:00:00Z
+
+Prints a single integer (message count) to stdout on success; nonzero exit
++ message on stderr on failure.
+"""
+import argparse
+import sys
+from datetime import datetime, timezone
+
+import os
+from google.oauth2 import service_account
+from google.auth.transport.requests import Request
+from googleapiclient.discovery import build
+
+SA_KEY = os.environ.get("GOOGLE_SERVICE_ACCOUNT_KEY_PATH", "/run/secrets/GOOGLE_SERVICE_ACCOUNT_KEY")
+
+
+def gmail_service(user: str):
+    creds = service_account.Credentials.from_service_account_file(
+        SA_KEY, scopes=["https://www.googleapis.com/auth/gmail.readonly"], subject=user
+    )
+    creds.refresh(Request())
+    return build("gmail", "v1", credentials=creds, cache_discovery=False)
+
+
+def count_since(svc, epoch_seconds: int) -> int:
+    total = 0
+    req = svc.users().messages().list(userId="me", q=f"after:{epoch_seconds}", maxResults=500)
+    while req is not None:
+        resp = req.execute()
+        total += len(resp.get("messages", []))
+        req = svc.users().messages().list_next(req, resp)
+    return total
+
+
+def message_ids_since(svc, epoch_seconds: int):
+    without_message_id = 0
+    req = svc.users().messages().list(userId="me", q=f"after:{epoch_seconds}", maxResults=500)
+    while req is not None:
+        resp = req.execute()
+        for message in resp.get("messages", []):
+            full = svc.users().messages().get(
+                userId="me", id=message["id"], format="metadata", metadataHeaders=["Message-ID"]
+            ).execute()
+            headers = full.get("payload", {}).get("headers", [])
+            value = next((h["value"] for h in headers if h["name"].lower() == "message-id"), "")
+            value = value.strip().lstrip("<").split(">")[0]
+            if value:
+                yield value
+            else:
+                without_message_id += 1
+        req = svc.users().messages().list_next(req, resp)
+    if without_message_id:
+        print(f"messages without a Message-ID skipped: {without_message_id}", file=sys.stderr)
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--since", required=True, help="ISO8601 timestamp, e.g. 2026-08-21T00:00:00Z")
+    ap.add_argument("--user", default="me@diegonmarcos.com")
+    ap.add_argument("--message-ids", action="store_true", help="print each message's Message-ID instead of the count")
+    args = ap.parse_args()
+
+    try:
+        since_dt = datetime.fromisoformat(args.since.replace("Z", "+00:00"))
+    except ValueError:
+        print(f"invalid --since date: {args.since}", file=sys.stderr)
+        sys.exit(2)
+
+    epoch = int(since_dt.astimezone(timezone.utc).timestamp())
+
+    try:
+        svc = gmail_service(args.user)
+        if args.message_ids:
+            # Collected before printing, so a failure part-way through exits
+            # non-zero with nothing on stdout instead of a truncated list the
+            # caller would read as "the rest is missing from every store".
+            output = "\n".join(message_ids_since(svc, epoch))
+        else:
+            output = str(count_since(svc, epoch))
+    except Exception as e:  # noqa: BLE001 — surface any auth/API failure to the caller
+        print(f"gmail count failed: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    print(output)
+
+
+if __name__ == "__main__":
+    main()

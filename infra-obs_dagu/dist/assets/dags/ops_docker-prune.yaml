@@ -1,0 +1,51 @@
+schedule: "0 4 */3 * *"
+env:
+  - SSH: ssh -i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR
+  - NTFY_URL: http://10.0.0.6:8090
+  - VM_LIST: 10.0.0.6:oci-apps:ubuntu 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.1:gcp-proxy:diego
+mail_on:
+  failure: true
+  success: false
+steps:
+  - name: prune-all-vms
+    command: |
+      REPORT=""
+      for entry in $VM_LIST; do
+        IP=$(echo "$entry" | cut -d: -f1)
+        NAME=$(echo "$entry" | cut -d: -f2)
+        USER=$(echo "$entry" | cut -d: -f3)
+
+        echo "=== Pruning $NAME ($IP) ==="
+        BEFORE=$($SSH "$USER@$IP" "df --output=used / | tail -1" 2>/dev/null || echo "?")
+
+        # Scoped so it can never delete what a declared service needs to restart.
+        # `system prune -af` removed every stopped container and then every image
+        # no container referenced. The load-shedder stops containers under memory
+        # pressure (restart is "no" by policy), so a temporary stop became the loss
+        # of the container AND the image needed to bring it back — and matomo's
+        # image exists only locally, so there was nothing to pull either.
+        #   container prune, label!=com.docker.compose.project: every declared
+        #     service is deployed by compose and carries the label; only stray
+        #     `docker run` debris is collected.
+        #   image prune without -a: dangling (untagged) layers only. A declared
+        #     service references its image by tag, so its image is never dangling.
+        #   no volume prune: volumes hold the databases.
+        # Mirrors cloud-infra vm-pilot infra/prune-maintenance.nix.
+        RESULT=$($SSH "$USER@$IP" "docker container prune -f --filter label!=com.docker.compose.project >/dev/null && docker image prune -f 2>&1 | tail -1 && docker builder prune -f --keep-storage=1G >/dev/null" 2>/dev/null || echo "FAILED")
+
+        AFTER=$($SSH "$USER@$IP" "df --output=used / | tail -1" 2>/dev/null || echo "?")
+        FREED=$(( (BEFORE - AFTER) / 1024 ))
+
+        echo "  $NAME: $RESULT (freed ~${FREED}MB)"
+        REPORT="$REPORT\n$NAME: $RESULT (freed ~${FREED}MB)"
+      done
+
+      echo ""
+      echo "=== Summary ==="
+      echo -e "$REPORT"
+
+      # Notify via ntfy
+      curl -sf -d "Docker prune complete:$(echo -e "$REPORT")" \
+        -H "Title: Docker Prune" \
+        -H "Tags: broom" \
+        "$NTFY_URL/ops" 2>/dev/null || true

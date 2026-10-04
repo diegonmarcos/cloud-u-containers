@@ -1,0 +1,13 @@
+[package]
+name = "fincept-ml-candle"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "ML primitives: OLS, standardize/normalize, train/test split. Phase 5a uses ndarray; candle integration lands Phase 5b for ONNX inference."
+
+[dependencies]
+thiserror = { workspace = true }
+ndarray = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }

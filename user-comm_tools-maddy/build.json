@@ -1,0 +1,182 @@
+{
+  "name": "maddy",
+  "description": "Maddy Mail Server (mail.diegonmarcos.com)",
+  "dns": "maddy.app",
+  "category": "app",
+  "domain": "mail.diegonmarcos.com",
+  "deploy": {
+    "host": "oci-mail",
+    "remote_path": "/opt/containers/maddy",
+    "compose_flags": "--build"
+  },
+  "compose": {
+    "custom": true,
+    "pre_hook": "configs/init.sh",
+    "post_hook": "configs/assert-provisioning.sh",
+    "_doc_post_hook": "Provisioning assertion, deliberately SEPARATE from init.sh. init.sh is the maddy container's entrypoint and ends in `exec maddy`, so it cannot exit non-zero on a provisioning failure without turning a missing mailbox into a total mail outage; it only emits a SUMMARY receipt into the maddy_data volume. assert-provisioning.sh reads that receipt on the host, rejects one written before the current container start, and fails the SHIP if any *_failed > 0 or users_ok = 0 — while maddy keeps serving. Gated in turn by the engine's revision-scoped post-hook receipt, so a hook that never ran is not green either."
+  },
+  "lifecycle": {
+    "_doc": "Post-hoc maintenance via mail-sieve-subset-post-hoc.sh. SQL-direct on /data/imapsql.db using the actual go-imap-sql schema. UNIFIED-INBOX delivery model: maddy delivery-time always places mail in INBOX (with \\Seen via inbox_copy_flags from mail-rules.json); apply-rules then SQL-direct COPIES (NOT moves) into matched category folders with rule-derived keywords (no \\Seen — copies are unread). INBOX is the chronological archive; category folders are the unread working set. apply-rules is idempotent via the $distributed keyword on the INBOX original — maddy-sorter (src/crate, Rust, compiled into this same image via docker.native_build) runs the equivalent logic continuously (started by init.sh alongside `maddy run`, no external scheduler); the bash cmd_apply_rules / post-hoc-apply-rules lifecycle entries below are for manual/testing use only now. reseed-inbox-archive is a one-shot history backfill that COPIES every existing non-system folder msg back into INBOX as \\Seen + $distributed (Message-Id deduped). recover-headers stays intentionally NOT a subcommand: missing-blob bodies are unrecoverable, integrity-fix is the right action.",
+    "post-hoc-integrity-check": [
+      { "action": "ssh_run", "vm": "oci-mail",
+        "script": "docker exec maddy /usr/local/bin/mail-sieve-subset-post-hoc integrity-check" }
+    ],
+    "post-hoc-integrity-fix": [
+      { "action": "ssh_run", "vm": "oci-mail",
+        "script": "docker exec maddy /usr/local/bin/mail-sieve-subset-post-hoc integrity-fix" }
+    ],
+    "post-hoc-dedupe": [
+      { "action": "ssh_run", "vm": "oci-mail",
+        "script": "docker exec maddy /usr/local/bin/mail-sieve-subset-post-hoc dedupe" }
+    ],
+    "post-hoc-cleanup-mailboxes": [
+      { "action": "ssh_run", "vm": "oci-mail",
+        "script": "docker exec maddy /usr/local/bin/mail-sieve-subset-post-hoc cleanup-mailboxes" }
+    ],
+    "post-hoc-apply-rules-dry-run": [
+      { "action": "ssh_run", "vm": "oci-mail",
+        "script": "docker exec maddy /usr/local/bin/mail-sieve-subset-post-hoc apply-rules --dry-run" }
+    ],
+    "post-hoc-apply-rules": [
+      { "action": "ssh_run", "vm": "oci-mail",
+        "script": "docker exec maddy /usr/local/bin/mail-sieve-subset-post-hoc apply-rules" }
+    ],
+    "post-hoc-reseed-inbox-archive-dry-run": [
+      { "action": "ssh_run", "vm": "oci-mail",
+        "script": "docker exec maddy /usr/local/bin/mail-sieve-subset-post-hoc reseed-inbox-archive --dry-run" }
+    ],
+    "post-hoc-reseed-inbox-archive": [
+      { "action": "ssh_run", "vm": "oci-mail",
+        "script": "docker exec maddy /usr/local/bin/mail-sieve-subset-post-hoc reseed-inbox-archive" }
+    ],
+    "post-hoc-all": [
+      { "action": "ssh_run", "vm": "oci-mail",
+        "script": "docker exec maddy /usr/local/bin/mail-sieve-subset-post-hoc all" }
+    ]
+  },
+  "proxy": {
+    "primary": {
+      "domain": "mail.diegonmarcos.com",
+      "auth": "two_factor",
+      "tls_skip_verify": true,
+      "l4_ports": [
+        {
+          "port": 25,
+          "upstream": "oci-mail:25",
+          "comment": "SMTP MX plain TCP — design-complete listener; GCP firewall currently blocks public, CF Worker is the active inbound bridge",
+          "protocol": "tcp"
+        }
+      ],
+      "_doc_l4_ports": "Only :25 lives here — Maddy still answers plain SMTP. The imap./smtps. SNI routes on :443 moved to user-comm_tools-stalwart/build.json, which is what actually terminates them (imaps -> Stalwart :2993 since 2026-09-02, smtps -> Stalwart :2465). A route is declared by the service that answers the bytes."
+    },
+    "app_hub": false,
+    "mail_hub": {
+      "parent_domain": "mail.diegonmarcos.com",
+      "base_path": "/maddy",
+      "type": "static"
+    }
+  },
+  "health": {
+    "path": "/"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
+  },
+  "backup": {
+    "enabled": true,
+    "volumes": [
+      "maddy_data"
+    ]
+  },
+  "ports": {
+    "app": 993,
+    "smtp": 465,
+    "imap": 993
+  },
+  "users": {
+    "admin": {
+      "name": "me",
+      "pass_env": "ME_PASSWORD"
+    },
+    "noreply": {
+      "name": "no-reply",
+      "pass_env": "NOREPLY_PASSWORD",
+      "aliases": ["noreply"]
+    },
+    "mailadmin": {
+      "name": "admin",
+      "pass_env": "ADMIN_PASSWORD"
+    },
+    "yo": {
+      "name": "yo",
+      "pass_env": "MAIL_DEFAULT_PASSWORD"
+    },
+    "42": {
+      "name": "42",
+      "pass_env": "MAIL_DEFAULT_PASSWORD"
+    }
+  },
+  "containers": {
+    "app": {
+      "container_name": "maddy",
+      "image": "ghcr.io/diegonmarcos/maddy:latest",
+      "port": null,
+      "_doc_dual_bind": "Phase 4 of public-surface collapse: each port dual-binds on wg0 (10.0.0.3) AND wg-public (10.1.0.3). Maddy is host-network so binds happen inside maddy.conf.tpl via `@LISTEN_<port>@`; flake.nix expands `bind` arrays into space-separated multi-listener prefixes (e.g. `tls://10.0.0.3:993 tls://10.1.0.3:993`). Caddy on oci-analytics reaches mail ports via wg-public; legacy clients on wg0 keep working unchanged.",
+      "extra_ports": [
+        { "port": 25,  "protocol": "tcp",      "bind": ["10.0.0.3", "10.1.0.3"], "service": "smtp_mx",       "desc": "MX delivery endpoint — dual-bind wg0+wg-public; CF Worker → Caddy → http-to-smtp-proxy-api → SMTP over WG is the public bridge (Phase 5)" },
+        { "port": 465, "protocol": "tls",      "bind": ["10.0.0.3", "10.1.0.3"], "service": "smtp_ssl",      "desc": "SMTPS — dual-bind wg0+wg-public, reached via Caddy L4 from oci-analytics" },
+        { "port": 993, "protocol": "tls",      "bind": ["10.0.0.3", "10.1.0.3"], "service": "imap_ssl",      "desc": "IMAPS — dual-bind wg0+wg-public, reached via Caddy L4 from oci-analytics" },
+        { "port": 143, "protocol": "tcp",      "bind": ["10.0.0.3", "10.1.0.3"], "service": "imap_plain",    "desc": "IMAP plain — dual-bind wg0+wg-public" }
+      ],
+      "dns": "maddy.app",
+      "public": false,
+      "proxy": null,
+      "healthcheck": null,
+      "volumes": [
+        "maddy_data:/data",
+        "./dkim:/data/dkim:ro"
+      ],
+      "env_file": true,
+      "depends_on": [],
+      "resources": {
+        "reservations": {
+          "memory": "32M"
+        }
+      },
+      "read_only": false,
+      "embedded_dbs": [
+        {
+          "engine": "sqlite",
+          "path": "/data/imapsql.db"
+        }
+      ]
+    }
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "maddy-binaries",
+    "arch": "amd64",
+    "_doc": "Was Type-B (FROM foxcpp/maddy:0.9 + apk add, no compile). Now native_build: same base image (still gets maddy itself for free from upstream), same apk packages (moved from runtime_packages -- that field only fed the Type-B auto-detect path, which native_build.type bypasses entirely), PLUS an in-container compile of maddy-sorter (src/crate) copied in alongside. One image, both binaries -- maddy-sorter's own code lives in this service's src/, same as jmap-sorter does for Stalwart.",
+    "native_build": {
+      "type": "binary",
+      "app_dir": "crate",
+      "builder_image": "rust:1-alpine",
+      "_doc_builder_image": "MUST be an alpine/musl builder, not rust:1-bookworm (glibc) -- base_image below is foxcpp/maddy:0.9 (alpine/musl). A glibc-linked binary copied into a musl final image has no dynamic linker to run against (this isn't a PATH issue patchelf can fix, unlike the nix-store-ld-linux case elsewhere in this repo -- glibc and musl are different libcs, not just different paths to the same one). rust:1-alpine's native target already IS x86_64-unknown-linux-musl, so no --target flag or cross toolchain needed, just a C compiler for libsqlite3-sys's build script (rusqlite's \"bundled\" feature compiles its own sqlite3.c) -- hence build-base in cmd below.",
+      "cmd": "apk add --no-cache build-base && cargo build --release",
+      "binary": "target/release/maddy-sorter",
+      "base_image": "foxcpp/maddy:0.9",
+      "apk": "jq sqlite coreutils",
+      "_doc_apk": "jq/sqlite/coreutils are for the OTHER post-hoc subcommands (integrity-check, dedupe, cleanup-mailboxes, reseed-inbox-archive), which stay bash + sqlite3-CLI. maddy-sorter itself needs neither -- rusqlite's bundled feature compiles its own libsqlite3, no apk sqlite required for apply-rules specifically."
+    }
+  },
+  "upstream_image": "foxcpp/maddy:0.9",
+  "oci_relay": {
+    "host": "smtp.email.eu-marseille-1.oci.oraclecloud.com",
+    "port": "587"
+  },
+  "build": {
+    "headers_enforced": true
+  }
+}

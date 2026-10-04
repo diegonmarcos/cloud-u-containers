@@ -1,0 +1,4 @@
+{
+  "_comment": "#742: declared limits for the dispatch runner beside this file. min_free_mb: prep.sh refuses to add a slot's worktree when the _work volume has less free space than this, after first reaping the worktrees of finished slots (reap.sh). Sized above one cloud-u-android worktree (~600MB, 36k files) plus that agent's build and log headroom; oci-apps hit 185MB free with 24 unreaped slots and two fires then died mid-checkout with ENOSPC.",
+  "min_free_mb": 4096
+}

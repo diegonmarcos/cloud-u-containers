@@ -1,0 +1,41 @@
+{
+  "timestamp": "2025-12-15T23:25:03.796744",
+  "date": "2025-12-15",
+  "hour": "23",
+  "vms": {
+    "oci-f-micro_1": {
+      "status": "unreachable",
+      "ip": "130.110.251.193"
+    },
+    "oci-f-micro_2": {
+      "status": "unreachable",
+      "ip": "129.151.228.66"
+    },
+    "gcp-f-micro_1": {
+      "status": "ok",
+      "ip": "34.55.55.234",
+      "syncthing": {
+        "raw": "=== SYNCTHING PROCESS ===\nSyncthing not running\n=== SYNCTHING CONTAINER ===\nNAMES     STATUS\n=== SYNCTHING LOGS ===\nError response from daemon: No such container: syncthing\n=== SYNC FOLDERS ===\n"
+      },
+      "backup_status": {
+        "raw": "=== RECENT BACKUPS ===\n=== BACKUP CRON JOBS ===\nNo backup cron jobs\n=== SYSTEMD BACKUP TIMERS ===\nNo backup timers\n"
+      },
+      "backup_sizes": {
+        "raw": "=== BACKUP SIZES ===\n=== DISK USAGE ===\n/dev/sda4       9.0G  3.8G  4.6G  46% /home\n"
+      },
+      "database_backups": {
+        "raw": "=== DATABASE BACKUPS ===\n=== DOCKER VOLUMES ===\nVOLUME NAME                                                        DRIVER\n2c7a5450009bc40b3874768e029bc88aa8c83de962160bf2060e4b39298ac029   local\n097e15e8317395116ddf430b658b5b8a3d6656ad83157b3f92a657284650f364   local\nc3-data                                                            local\nc3-raw                                                             local\nd5eda5016ab4815a4cda67ba94c108a4bc3b86a29b7746d2b03996ab507fabed   local\nnpm_npm_data                                                       local\nportainer_portainer_data                                           local\n"
+      },
+      "restore_test": {
+        "raw": "=== RESTORE SCRIPTS ===\n=== RESTORE LOGS ===\n"
+      },
+      "data_integrity": {
+        "raw": "=== CHECKSUM FILES ===\n=== RECENT MODIFICATIONS ===\n"
+      }
+    },
+    "oci-p-flex_1": {
+      "status": "unreachable",
+      "ip": "84.235.234.87"
+    }
+  }
+}

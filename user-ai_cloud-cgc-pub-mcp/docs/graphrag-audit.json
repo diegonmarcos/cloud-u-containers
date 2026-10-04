@@ -1,0 +1,387 @@
+{
+  "_schema": "graphrag-audit/v1",
+  "_doc": "Data-driven audit of the cloud-cgc-pub-mcp GraphRAG stack. This file is the SOURCE OF TRUTH; docs/graphrag-architecture.md is a human view of it. Each invariant carries a re-runnable `probe` (tool + args) so the audit is a regression gate, not a one-off. To refresh: run every probe, write the result into `observed`, set `status` (PASS = claim holds, FAIL = violated, OPEN = not yet validated), and fix anything that regressed from PASS. Continuous-improvement loop: an invariant is DONE when status=PASS and its `fix` is empty.",
+  "generated": "2026-08-27",
+  "generator": "manual adversarial probe session (claude-opus-4-8); automate via a workflow that iterates `invariants[].probe`",
+  "endpoint": "https://mcp.diegonmarcos.com/cloud-cgc-pub-mcp/mcp  (+ stdio twin cloud-cgc-pub-mcp-local)",
+
+  "subsystems": {
+    "codegraph": {
+      "tools": ["cgc_codegraph_overview", "cgc_codegraph_search", "cgc_codegraph_dependencies", "cgc_codegraph_impact_analysis", "cgc_codegraph_trace_call_path"],
+      "store": "in-memory graph, rebuilt per query with a 5-min TTL cache",
+      "source": "image-baked ./graphs/*.json (CODEGRAPH_GRAPHS_DIR | bundled | $GIT_ROOT/cloud-infra/1_cloud-configs/dist): build-kg-graph_delta.json (infra) + code-signatures-<repo>.json (code)",
+      "engine_file": "src/code/tools/b-code-graph-context/codegraph.ts",
+      "synthesizes": ["symbol", "file", "defines", "imports", "code_depends_on"],
+      "note": "The ONLY subsystem that has symbol/defines/code_depends_on. They are synthesized from code-signatures at load time and exist nowhere else."
+    },
+    "kgstore": {
+      "tools": ["cgc_kgstore_query", "cgc_kgstore_overview"],
+      "store": "persistent SurrealDB @ 127.0.0.1:8001 ns=infra db=production (read-only SELECT/INFO)",
+      "source": "separate ingest pipeline: octocode per-repo mirror (file + sibling_module + parent_module) + infra topology delta",
+      "engine_file": "src/code/tools/b-code-graph-context/kgstore.ts",
+      "has_tables_node": ["container", "domain", "file", "module", "package", "repo", "service", "vm"],
+      "has_tables_edge": ["belongs_to_repo", "consumes", "declares_tool", "depends_on", "hosted_on", "implements", "imports", "parent_module", "proxied_by", "routes_to", "runs_container", "sibling_module"],
+      "note": "Does NOT contain symbol/defines/code_depends_on. `imports` exists as a table but is empty; imports live as an array field on `file`."
+    },
+    "octocode": {
+      "tools": ["cgc_octocode_search", "cgc_octocode_graphrag", "cgc_octocode_index"],
+      "store": "LanceDB vectors + LLM GraphRAG, per-repo indices",
+      "source": "per-repo semantic index (reindexed independently per repo)",
+      "engine_file": "src/code/tools/b-code-graph-context/octocode.ts",
+      "repo_enum": ["cloud-infra", "cloud-infra-desktop", "front", "cloud-data", "front-data", "cloud-u-android", "cloud-data-my-ai-memory"],
+      "note": "Uses NEW repo names (cloud-infra/cloud-infra-desktop). Its own SurrealDB mirror uses OLD names (cloud/unix). Reindex freshness is per-repo and uneven."
+    }
+  },
+
+  "divergence_matrix": {
+    "_doc": "What each element counts in CodeGraph `overview` vs what is actually queryable in the SurrealDB kg-store. The overview banner sums ONLY CodeGraph; it does not describe kgstore.",
+    "columns": ["element", "codegraph_overview", "surrealdb_kgstore"],
+    "rows": [
+      ["symbol nodes", 29660, "0 — no `symbol` table"],
+      ["file nodes", 2905, 3843],
+      ["defines edges", 32510, "0 — no `defines` table"],
+      ["imports edges", 1063, "0 — table exists but empty; imports = field on `file`"],
+      ["code_depends_on edges", 3959, "0 — no `code_depends_on` table"],
+      ["sibling_module edges", "not counted", 44354],
+      ["parent_module edges", "not counted", "present, uncounted"],
+      ["routes_to edges", 42, 41],
+      ["repo nodes", 3, "3 (cloud, cloud_data, unix)"],
+      ["repos referenced by files", "cloud/unix/front/tools/cloud-data/front-data", "same 6, but only 3 have a repo node"]
+    ]
+  },
+
+  "invariants": [
+    {
+      "id": "INV-01",
+      "severity": "high",
+      "status": "FAIL",
+      "title": "overview counts must be queryable somewhere",
+      "claim": "Every node/edge table `cgc_codegraph_overview` reports is reachable by at least one query tool.",
+      "probe": [
+        {"tool": "cgc_codegraph_overview"},
+        {"tool": "cgc_kgstore_query", "surql": "SELECT count() FROM symbol GROUP ALL"},
+        {"tool": "cgc_kgstore_query", "surql": "SELECT count() FROM defines GROUP ALL"},
+        {"tool": "cgc_kgstore_query", "surql": "SELECT count() FROM code_depends_on GROUP ALL"}
+      ],
+      "expected": "counts > 0 in kgstore for symbol/defines/code_depends_on, OR overview labels them codegraph-only",
+      "observed": "overview: symbol=29660, defines=32510, code_depends_on=3959; kgstore: 0/0/0 (tables absent). ~65k claimed elements unreachable via SurrealQL.",
+      "root_cause": "codegraph.ts synthesizes symbol/defines/code_depends_on in-memory from code-signatures; they are never ingested into SurrealDB. overview reports the in-memory graph only.",
+      "fix": {"files": ["codegraph.ts", "kgstore.ts"], "change": "Label overview rows by which tool can query them (codegraph-only vs kgstore-backed), OR ingest symbol/defines into SurrealDB. Cheapest: annotate overview output with `queryable_via`."}
+    },
+    {
+      "id": "INV-02",
+      "severity": "high",
+      "status": "FAIL",
+      "title": "single repo vocabulary across subsystems",
+      "claim": "A repo has ONE identifier used by codegraph, kgstore, and octocode.",
+      "probe": [
+        {"tool": "cgc_kgstore_query", "surql": "SELECT array::group(repo) AS repos FROM file GROUP ALL"},
+        {"tool": "cgc_kgstore_query", "surql": "SELECT VALUE id FROM repo"},
+        {"note": "compare against octocode.repo_enum in this file"}
+      ],
+      "expected": "identical repo id set across all three",
+      "observed": "file.repo & code-signatures: cloud/unix/front/tools/cloud-data/front-data. repo table: cloud, cloud_data (id underscore, name hyphen), unix. octocode enum: cloud-infra/cloud-infra-desktop/front/cloud-data/front-data/cloud-u-android/cloud-data-my-ai-memory. THREE vocabularies.",
+      "root_cause": "code-signatures filenames, the delta repo-node builder, and octocode's index registry were named at different times across the repo rename (cloud->cloud-infra, unix->cloud-infra-desktop).",
+      "fix": {"files": ["code-signatures derive (1_cloud-configs)", "kg-graph delta builder", "octocode.ts"], "change": "Adopt the new canonical names everywhere; add an alias map at the ingest boundary so old snapshots still resolve."}
+    },
+    {
+      "id": "INV-03",
+      "severity": "high",
+      "status": "FAIL",
+      "title": "no dangling file->repo",
+      "claim": "Every value of file.repo has a corresponding node in the `repo` table.",
+      "probe": [
+        {"tool": "cgc_kgstore_query", "surql": "SELECT array::group(repo) AS repos FROM file GROUP ALL"},
+        {"tool": "cgc_kgstore_query", "surql": "SELECT id, name FROM repo"}
+      ],
+      "expected": "6 repo nodes matching the 6 file.repo values",
+      "observed": "files reference 6 repos; only 3 repo nodes exist (cloud, cloud_data, unix). front / front-data / tools (1135 files) have NO repo node.",
+      "root_cause": "delta builder only emits repo nodes for the 3 infra-tracked repos; code-signatures for front/tools/front-data add files but no repo node.",
+      "fix": {"files": ["kg-graph delta builder"], "change": "Emit a repo node for every distinct repo seen in code-signatures; reconcile id (cloud_data) vs name (cloud-data) to one form."}
+    },
+    {
+      "id": "INV-04",
+      "severity": "medium",
+      "status": "FAIL",
+      "title": "belongs_to_repo attributes modules to their real repo",
+      "claim": "module -> belongs_to_repo -> repo points to the repo the module actually lives in.",
+      "probe": [
+        {"tool": "cgc_kgstore_query", "surql": "SELECT out AS repo_node, count() AS n FROM belongs_to_repo GROUP BY repo_node"}
+      ],
+      "expected": "modules distributed across their repos",
+      "observed": "all 62 belongs_to_repo edges point to repo:cloud. repo:unix and repo:cloud_data have zero incoming.",
+      "root_cause": "all modeled modules are infra modules (they DO live in cloud-infra), but the edge then carries no cross-repo signal — attribution is degenerate, not wrong-but-useful.",
+      "fix": {"files": ["kg-graph delta builder"], "change": "Only meaningful once code modules from unix/front are modeled; until then document belongs_to_repo as infra-only."}
+    },
+    {
+      "id": "INV-05",
+      "severity": "high",
+      "status": "FAIL",
+      "title": "tool documentation examples execute and return rows",
+      "claim": "Every example query in a tool's own description runs and returns data.",
+      "probe": [
+        {"tool": "cgc_kgstore_query", "surql": "SELECT count() AS n FROM file WHERE repo = 'cloud-infra' GROUP ALL"},
+        {"note": "cgc_kgstore_query description ships: \"...WHERE repo='cloud-infra'...\" and \"...WHERE repo='cloud-infra-desktop'...\""}
+      ],
+      "expected": "n > 0",
+      "observed": "empty result — real vocab is repo='cloud' / 'unix', so both documented examples return zero rows.",
+      "root_cause": "tool description written against the new repo names; the ingested data uses the old names (see INV-02).",
+      "fix": {"files": ["kgstore.ts"], "change": "Fix the example strings to the vocab actually ingested, OR fix the vocab (INV-02) so the examples become true."}
+    },
+    {
+      "id": "INV-06",
+      "severity": "medium",
+      "status": "FAIL",
+      "title": "kgstore.overview reflects real tables",
+      "claim": "cgc_kgstore_overview lists exactly the tables INFO FOR DB reports.",
+      "probe": [
+        {"tool": "cgc_kgstore_query", "surql": "INFO FOR DB"},
+        {"note": "compare against NODE_TABLES/EDGE_TABLES hardcoded in kgstore.ts"}
+      ],
+      "expected": "hardcoded lists == INFO FOR DB tables",
+      "observed": "kgstore.ts hardcodes phantom `documentation`, `log`, `connected_to` (absent from DB) and omits real `parent_module` + `imports`.",
+      "root_cause": "NODE_TABLES/EDGE_TABLES are a hand-maintained constant that drifted from the schema.",
+      "fix": {"files": ["kgstore.ts"], "change": "Derive the table list from INFO FOR DB at runtime instead of hardcoding it."}
+    },
+    {
+      "id": "INV-07",
+      "severity": "medium",
+      "status": "FAIL",
+      "title": "file inventory agrees between CodeGraph and kg-store",
+      "claim": "CodeGraph and SurrealDB scan the same file set.",
+      "probe": [
+        {"tool": "cgc_codegraph_overview"},
+        {"tool": "cgc_kgstore_query", "surql": "SELECT repo, count() AS n FROM file GROUP BY repo"}
+      ],
+      "expected": "matching per-repo file counts",
+      "observed": "overview total=2905 (cloud 1435, unix 387, front 915, tools 63, cloud-data 106, front-data 1). kgstore total=3843 (cloud 2148, unix 347, front 938, tools 190, cloud-data 213, front-data 7).",
+      "root_cause": "CodeGraph reads image-baked code-signatures (frozen at build); SurrealDB reads octocode's live mirror. Different scanners, different include rules, different times.",
+      "fix": {"files": ["code-signatures derive", "octocode mirror ingest"], "change": "Share one file-enumeration (same ignore rules); or rebuild code-signatures on every image build and pin both to the same commit."}
+    },
+    {
+      "id": "INV-08",
+      "severity": "low",
+      "status": "FAIL",
+      "title": "infra edge counts agree between delta and kg-store",
+      "claim": "routes_to (and peers) count the same in overview and SurrealDB.",
+      "probe": [
+        {"tool": "cgc_codegraph_overview"},
+        {"tool": "cgc_kgstore_query", "surql": "SELECT count() FROM routes_to GROUP ALL"}
+      ],
+      "expected": "equal",
+      "observed": "overview routes_to=42, kgstore=41 (off by one).",
+      "root_cause": "infra delta baked into the image is one generation behind the SurrealDB ingest.",
+      "fix": {"files": ["image build"], "change": "Rebuild build-kg-graph_delta.json in the same job that ingests SurrealDB."}
+    },
+    {
+      "id": "INV-09",
+      "severity": "medium",
+      "status": "FAIL",
+      "title": "code_depends_on name matches its semantics",
+      "claim": "code_depends_on models file->file code dependencies.",
+      "probe": [
+        {"tool": "cgc_kgstore_query", "surql": "SELECT out.name AS target, count() AS fanin FROM code_depends_on GROUP BY target ORDER BY fanin DESC LIMIT 5"},
+        {"note": "codegraph.ts comment: local import => `imports` (file->file); external import => `code_depends_on` (file->package)"}
+      ],
+      "expected": "targets are files",
+      "observed": "code_depends_on targets are `package:` nodes (external deps). File->file lives under `imports`. The name overpromises; fan-in aggregation on it is meaningless. (Also unreachable via kgstore, see INV-01.)",
+      "root_cause": "naming: the edge is really `depends_on_package`.",
+      "fix": {"files": ["codegraph.ts"], "change": "Rename to depends_on_package, or fold into a typed `depends_on` with a kind field; document that file->file = imports."}
+    },
+    {
+      "id": "INV-10",
+      "severity": "medium",
+      "status": "FAIL",
+      "title": "querying a missing table is an error, not silent zero",
+      "claim": "A query against a non-existent table surfaces the mistake.",
+      "probe": [
+        {"tool": "cgc_kgstore_query", "surql": "SELECT count() FROM this_table_does_not_exist GROUP ALL"}
+      ],
+      "expected": "an error or explicit 'unknown table' signal",
+      "observed": "returns count:0 (SurrealDB returns empty for missing tables). Bad SYNTAX errors (400) but a missing TABLE silently zeros — indistinguishable from a truly empty table. Masks INV-01 for callers.",
+      "root_cause": "SurrealDB semantics; the tool does not pre-validate the table against INFO FOR DB.",
+      "fix": {"files": ["kgstore.ts"], "change": "Before executing, extract FROM targets and warn if any is not in INFO FOR DB."}
+    },
+    {
+      "id": "INV-11",
+      "severity": "medium",
+      "status": "FAIL",
+      "title": "octocode indices are uniformly fresh",
+      "claim": "All repos' octocode indices reflect the latest commit.",
+      "probe": [
+        {"tool": "cgc_octocode_search", "args": {"repo": "cloud-infra", "query": "cloud-cgc-pub-mcp version", "mode": "code"}},
+        {"tool": "cgc_octocode_search", "args": {"repo": "cloud-infra-desktop", "query": "mcp.json.tpl server names", "mode": "code"}}
+      ],
+      "expected": "both fresh",
+      "observed": "cloud-infra index FRESH (shows cloud-cgc-pub-mcp v7.0.0, new .mcp.json names). cloud-infra-desktop index STALE (still shows cloud-cgc-mcp / diego-personal-data / unix from before the 2026-08-27 rename).",
+      "root_cause": "reindex is triggered per-repo and did not run for cloud-infra-desktop after the rename push.",
+      "fix": {"files": ["reindex pipeline"], "change": "Trigger octocode reindex on push for every indexed repo; expose last-indexed commit per repo via cgc_octocode_index."}
+    },
+    {
+      "id": "INV-12",
+      "severity": "low",
+      "status": "FAIL",
+      "title": "service version is single-sourced",
+      "claim": "The cgc service reports one version.",
+      "probe": [
+        {"tool": "cgc_octocode_search", "args": {"repo": "cloud-infra", "query": "cloud-cgc-pub-mcp version McpServer", "mode": "code"}}
+      ],
+      "expected": "package.json version == McpServer version == build.json",
+      "observed": "package.json=5.0.0, src/code/index.ts McpServer version=7.0.0.",
+      "root_cause": "version hand-edited in code, not read from package.json.",
+      "fix": {"files": ["src/code/index.ts"], "change": "Import version from package.json."}
+    },
+    {
+      "id": "INV-13",
+      "severity": "medium",
+      "status": "OPEN",
+      "title": "octocode graphrag operations return bounded output",
+      "claim": "cgc_octocode_graphrag search/get-node/get-relationships/find-path return a summary, not the raw graph.",
+      "probe": [
+        {"tool": "cgc_octocode_graphrag", "args": {"repo": "cloud-infra-desktop", "operation": "search", "query": "home-manager mcp activation"}}
+      ],
+      "expected": "a ranked, bounded result",
+      "observed": "operation=search dumped a ~4MB blob (186k lines). operation=overview VALIDATED 2026-08-27: bounded ~20-line summary (cloud-infra: 1222 nodes / 35111 rels). So overview is safe; `search` is the only uncapped op.",
+      "root_cause": "search returns all matched nodes with full content; no top-k.",
+      "fix": {"files": ["octocode.ts"], "change": "Cap `search` result size / add top-k (overview/get-node/find-path already bounded)."}
+    },
+    {
+      "id": "INV-14",
+      "severity": "medium",
+      "status": "PASS",
+      "title": "codegraph resolveTarget picks the wrong node for bare names",
+      "claim": "A human-obvious identifier (a vm name, a domain fqdn) resolves to the node a user means.",
+      "probe": [
+        {"tool": "cgc_codegraph_trace_call_path", "args": {"from": "c3-infra-mcp", "to": "oci-apps"}},
+        {"tool": "cgc_codegraph_trace_call_path", "args": {"from": "mcp.diegonmarcos.com/c3-infra-mcp", "to": "oci-apps"}}
+      ],
+      "expected": "'oci-apps' -> vm:oci_apps; the domain fqdn -> domain:mcp_diegonmarcos_com/c3_infra_mcp",
+      "observed": "FIXED + verified in production 2026-08-27. resolveTarget now folds -_. (nsep) and ranks matches by node-type (vm/service/subsystem before file/symbol). Shipped to oci-apps via ship 33091315030 (separator+type-rank) then 33092680366 (fqdn dot-fold). Re-tested live: 'oci-apps'->vm:oci_apps; 'c3-infra-mcp'->service:c3_infra_mcp; 'mcp.diegonmarcos.com/c3-infra-mcp'->domain:mcp_diegonmarcos_com/c3_infra_mcp; trace(fqdn->oci-apps)=domain-[routes_to]->service-[hosted_on]->vm:oci_apps. Was: 'oci-apps'->build.sh; fqdn->'No node matches'.",
+      "root_cause": "resolveTarget does substring matching without ranking by node-type or exact-key; a file path containing 'oci-apps' outranks vm:oci_apps, and fqdn strings (with '.'/'/'/'-') never match the underscored node key.",
+      "fix": {}
+    },
+    {
+      "id": "INV-15",
+      "severity": "high",
+      "status": "FAIL",
+      "title": "octocode semantic search misses ground-truth for a known query",
+      "claim": "A semantic query for a feature that exists returns the file implementing it in the top-k.",
+      "probe": [
+        {"tool": "cgc_octocode_search", "args": {"repo": "cloud-infra", "mode": "code", "query": "read-only mutation guard that rejects CREATE UPDATE DELETE in SurrealQL"}},
+        {"tool": "cgc_octocode_search", "args": {"repo": "cloud-infra", "mode": "code", "query": "MUTATING regex refuse write reject CREATE DELETE DEFINE read-only kgstore query"}}
+      ],
+      "expected": "kgstore.ts (the MUTATING regex, line ~33) in the top-20",
+      "observed": "2026-08-27: BOTH phrasings miss. Top hits were seed_from_config.sh, DkimEntry, Targets, NoCertVerify, unrelated Rust structs. kgstore.ts absent from top-20 in both runs -> context_recall = 0. Similarities clustered tightly at ~1.36-1.40 (poorly discriminative). Note: 'register codegraph tools' DID return codegraph.ts at rank 1 (MRR 1.0), so the index works for some queries — recall is query-dependent and untested until now.",
+      "root_cause": "embedding/index quality for this chunk: the MUTATING const likely embeds poorly, or chunk granularity buries it; similarity scale is also non-normalized (>1) despite the threshold param claiming 0-1.",
+      "fix": {"files": ["octocode.ts", "1_cicd/src/ops/cloud-cgc-db-update.sh"], "change": "Symbol-aware chunking + re-embed; add this query to deeper_tests.retrieval_quality as a permanent RAGAS recall regression."}
+    }
+  ],
+
+  "passing_controls": [
+    {"id": "SEC-01", "title": "kgstore read-only guard", "detail": "UPDATE/DELETE/CREATE/DEFINE refused by kgstore.ts MUTATING guard. Load-bearing: SurrealDB tables are PERMISSIONS NONE (wide open), so this app-layer guard is the only write protection. Keep it covered by a test.", "probe": {"tool": "cgc_kgstore_query", "surql": "UPDATE domain SET x=1"}},
+    {"id": "FUNC-01", "title": "cross-layer impact_analysis", "detail": "impact_analysis(c3-infra-mcp) correctly returns domain + module dependents across the infra/code boundary.", "probe": {"tool": "cgc_codegraph_impact_analysis", "args": {"target": "c3-infra-mcp"}}},
+    {"id": "FUNC-02", "title": "directed trace honesty", "detail": "trace_call_path returns 'no path (directed)' with a swap hint instead of a false path.", "probe": {"tool": "cgc_codegraph_trace_call_path", "args": {"from": "mail-mcp", "to": "cloud"}}},
+    {"id": "FUNC-03", "title": "routes_to catalog correct", "detail": "routes_to.in.fqdn -> out.name matches the live MCP hub (mcp.diegonmarcos.com/c3-infra-mcp -> c3-infra-mcp, etc).", "probe": {"tool": "cgc_kgstore_query", "surql": "SELECT in.fqdn AS domain, out.name AS service FROM routes_to WHERE out.name = 'c3-infra-mcp'"}}
+  ],
+
+  "frameworks": {
+    "_doc": "Researched external standards (2026) to raise this stack from ad-hoc to industry-grade. Each maps to invariants above and to the deeper_tests below. Sources in graphrag-architecture.md section 6.",
+    "adopt": [
+      {
+        "name": "PG-Schema / PG-Keys",
+        "what": "Declarative schema + key/participation/referential-integrity constraints for Labeled Property Graphs; basis of the GQL (ISO 39075:2024) and SQL/PGQ standards.",
+        "why_here": "kg-store IS an LPG (SurrealDB). A PG-Schema gives node/edge types, mandatory participation, and referential integrity as DATA, not code. Directly closes INV-03 (dangling file->repo) and INV-04 (belongs_to_repo participation).",
+        "action": "Author a pg-schema.json (node types, edge endpoints, keys, participation) and generate the deeper_tests.schema_constraints SurrealQL from it."
+      },
+      {
+        "name": "SHACL family (Trav-SHACL, xpSHACL)",
+        "what": "Shapes-Constraint-Language pattern: declare shapes, validator emits a violation report; xpSHACL adds human-readable explanations.",
+        "why_here": "SurrealDB is not RDF, so we borrow the PATTERN, not the tech: shapes -> a violations report with an explanation per failure. schema_constraints below is our SHACL-report equivalent.",
+        "action": "Every constraint returns violating rows (not a bool) + an `explain` string, mirroring xpSHACL."
+      },
+      {
+        "name": "RAGAS",
+        "what": "RAG-eval metrics: context precision, context recall, faithfulness, answer relevancy; plus retrieval MRR. LLM-as-judge.",
+        "why_here": "octocode/graphrag retrieval is currently UNTESTED for quality (INV-13 only checks output size). RAGAS gives measurable retrieval quality.",
+        "action": "See deeper_tests.retrieval_quality — a golden Q->expected-nodes set scored on context precision/recall + MRR."
+      },
+      {
+        "name": "GraphRAG-Bench",
+        "what": "GraphRAG benchmark with 4 task levels (fact retrieval -> complex/multi-hop reasoning -> summarization -> novel generation); metrics Accuracy, ROUGE-L, coverage.",
+        "why_here": "Structures our golden set by reasoning depth so we test multi-hop graph traversal (this stack's whole point), not just fact lookup.",
+        "action": "Tag each golden question with a level 1-4; require >=1 multi-hop (level 2) case per infra<->code boundary."
+      },
+      {
+        "name": "SCIP (+ Kythe/Glean)",
+        "what": "SCIP = Sourcegraph Code Intelligence Protocol: protobuf index of documents -> symbols -> occurrences -> relationships, with cross-repo monikers; successor to LSIF. Kythe/Glean are the Google/Meta equivalents.",
+        "why_here": "The home-grown code-signatures derive is the root of INV-07 (2905 vs 3843 file scans diverge) and the weak symbol layer. A standard indexer yields ONE deterministic file+symbol set both stores can share, with real definition/reference xrefs.",
+        "action": "Evaluate emitting SCIP per repo (scip-typescript, scip-python, rust-analyzer SCIP) and ingesting THAT into both CodeGraph and kg-store, replacing bespoke code-signatures."
+      }
+    ]
+  },
+
+  "deeper_tests": {
+    "_doc": "Executable test suites beyond the divergence invariants. schema_constraints run NOW against SurrealDB (seeded with real observed violations 2026-08-27). cross_store_consistency compares CodeGraph vs kg-store. retrieval_quality is the RAGAS/GraphRAG-Bench harness to build.",
+
+    "schema_constraints": {
+      "_doc": "PG-Keys/SHACL-style. Each rule's SurrealQL returns VIOLATING rows; expected = empty. Seeded with observed results.",
+      "rules": [
+        {"id": "SC-01", "kind": "referential-integrity", "status": "FAIL", "rule": "every file.repo has a repo node", "surql": "SELECT repo, count() AS n FROM file WHERE repo NOT IN (SELECT VALUE name FROM repo) GROUP BY repo", "expected": "[]", "observed": "front=938, front-data=7, tools=190 (1135 files dangle)", "explain": "repo nodes only emitted for cloud/cloud_data/unix; see INV-03"},
+        {"id": "SC-02", "kind": "referential-integrity", "status": "PASS", "rule": "every routes_to edge resolves to a named service", "surql": "SELECT count() AS v FROM routes_to WHERE out.name = NONE GROUP ALL", "expected": "[]", "observed": "[]"},
+        {"id": "SC-03", "kind": "key-uniqueness", "status": "PASS", "rule": "service.name is unique", "surql": "SELECT VALUE c FROM (SELECT name, count() AS c FROM service GROUP BY name) WHERE c > 1", "expected": "[]", "observed": "[]"},
+        {"id": "SC-04", "kind": "existence", "status": "PASS", "rule": "no file has empty/absent repo", "surql": "SELECT count() AS v FROM file WHERE repo = NONE OR repo = '' GROUP ALL", "expected": "[]", "observed": "[]"},
+        {"id": "SC-05", "kind": "domain", "status": "FAIL", "rule": "repo node id-slug equals its name (no underscore/hyphen drift)", "surql": "SELECT id, name FROM repo", "expected": "id slug == name for all", "observed": "repo:cloud_data has name 'cloud-data' (underscore id vs hyphen name)", "explain": "id/name normalization drift; breaks any join that reconstructs repo:<name>"},
+        {"id": "SC-06", "kind": "participation", "status": "FAIL", "rule": "every repo node has >=1 incoming belongs_to_repo", "surql": "SELECT out AS repo, count() AS n FROM belongs_to_repo GROUP BY repo", "expected": "all 3 repos present", "observed": "only repo:cloud (n=62); repo:unix and repo:cloud_data have zero", "explain": "module->repo attribution collapsed; see INV-04"}
+      ]
+    },
+
+    "cross_store_consistency": {
+      "_doc": "Assert CodeGraph `overview` and SurrealDB agree where they model the same thing. codegraph values via cgc_codegraph_overview; kgstore via the surql shown.",
+      "checks": [
+        {"id": "XS-01", "status": "FAIL", "element": "file count", "codegraph": "overview.node_tables.file", "kgstore_surql": "SELECT count() FROM file GROUP ALL", "assert": "equal", "observed": "2905 vs 3843"},
+        {"id": "XS-02", "status": "FAIL", "element": "routes_to count", "codegraph": "overview.edge_tables.routes_to", "kgstore_surql": "SELECT count() FROM routes_to GROUP ALL", "assert": "equal", "observed": "42 vs 41"},
+        {"id": "XS-03", "status": "FAIL", "element": "symbol reachability", "codegraph": "overview.node_tables.symbol (29660)", "kgstore_surql": "SELECT count() FROM symbol GROUP ALL", "assert": "both > 0 OR overview labels codegraph-only", "observed": "29660 vs 0 (no table)"},
+        {"id": "XS-04", "status": "FAIL", "element": "service catalog", "codegraph": "distinct services in impact/dependencies", "kgstore_surql": "SELECT count() FROM service GROUP ALL", "assert": "equal", "observed": "both report 60 services — verify names match, not just counts"},
+        {"id": "XS-05", "status": "FAIL", "element": "import edges (THREE stores disagree)", "codegraph": "overview.edge_tables.imports = 1063", "kgstore_surql": "SELECT count() FROM imports GROUP ALL", "octocode": "graphrag overview cloud-infra imports = 33072", "assert": "all three equal", "observed": "codegraph 1063 vs kgstore 219385 vs octocode 33072 — three pipelines, none agree. DRIFT CAUGHT ON RE-RUN: kgstore imports read 0 (empty) at first run, then 219385 hours later same day (store re-ingested). Sample edges point at dist/assets/vendored code, so kgstore's count is inflated ~200x by build artifacts. symbol/defines/code_depends_on still 0. (live 2026-08-27, re-run)"}
+      ]
+    },
+
+    "retrieval_quality": {
+      "_doc": "RAGAS + GraphRAG-Bench golden set. EXECUTED live 2026-08-27 against the running cgc MCP (HTTP). Each Q ran; observed + status recorded. Levels per GraphRAG-Bench: 1=fact, 2=multi-hop, 3=summary, 4=novel/semantic. Re-run to regression-test retrieval; a PASS->FAIL flip is a regression, the args ARE the reproduction.",
+      "executed_on": "2026-08-27",
+      "metrics_observed": {
+        "accuracy_overall": "18/20 = 0.90 (Q-12 fixed 2026-08-27; Q-18/Q-19 remain, INV-15)",
+        "multi_hop_accuracy_L2": "7/7 = 1.0 (Q-12 resolver fixed 2026-08-27, INV-14)",
+        "semantic_recall_L4": "1/3 = 0.333 (Q-17 hit; Q-18, Q-19 miss)",
+        "semantic_mrr_L4": "0.333 (Q-17 rank 1; Q-18/Q-19 not found)",
+        "note": "L4 recall is the alarm: 2 of 3 recall-testable semantic queries fail to surface ground truth. See INV-15."
+      },
+      "golden_set_schema": {"id": "Q-NN", "level": "1|2|3|4", "question": "...", "tool": "...", "args": {}, "expected_nodes": ["..."], "observed": "...", "status": "PASS|FAIL"},
+      "golden_set": [
+        {"id": "Q-01", "level": 1, "question": "Which service does mcp.diegonmarcos.com/c3-infra-mcp route to?", "tool": "cgc_kgstore_query", "args": {"surql": "SELECT out.name AS svc FROM routes_to WHERE in.fqdn = 'mcp.diegonmarcos.com/c3-infra-mcp'"}, "expected_nodes": ["c3-infra-mcp"], "observed": "svc=c3-infra-mcp", "status": "PASS"},
+        {"id": "Q-02", "level": 1, "question": "How many files does repo 'cloud' have?", "tool": "cgc_kgstore_query", "args": {"surql": "SELECT count() AS n FROM file WHERE repo = 'cloud' GROUP ALL"}, "expected_nodes": ["2148"], "observed": "n=2148", "status": "PASS"},
+        {"id": "Q-03", "level": 1, "question": "What file node_types exist and how many of each?", "tool": "cgc_kgstore_query", "args": {"surql": "SELECT node_type, count() AS n FROM file GROUP BY node_type"}, "expected_nodes": ["config_file", "file", "source_file", "test_file"], "observed": "config_file 68, file 1583, source_file 2082, test_file 110", "status": "PASS"},
+        {"id": "Q-04", "level": 1, "question": "Which repo nodes exist?", "tool": "cgc_kgstore_query", "args": {"surql": "SELECT id, name FROM repo"}, "expected_nodes": ["repo:cloud", "repo:cloud_data", "repo:unix"], "observed": "cloud, cloud_data(name 'cloud-data'), unix -- exposes SC-05 id/name drift", "status": "PASS"},
+        {"id": "Q-05", "level": 1, "question": "Which MCP services sit on the bare fqdn mcp.diegonmarcos.com?", "tool": "cgc_kgstore_query", "args": {"surql": "SELECT out.name AS svc FROM routes_to WHERE in.fqdn = 'mcp.diegonmarcos.com'"}, "expected_nodes": ["google-personal-mcp", "google-workspace-mcp", "mail-mcp"], "observed": "google-personal-mcp, google-workspace-mcp, mail-mcp", "status": "PASS"},
+
+        {"id": "Q-06", "level": 2, "question": "Blast radius if c3-infra-mcp changes?", "tool": "cgc_codegraph_impact_analysis", "args": {"target": "c3-infra-mcp", "depth": 3}, "expected_nodes": ["domain:mcp_diegonmarcos_com/c3_infra_mcp", "module:bc_obs_c3_infra_mcp"], "observed": "2 dependents @depth1: the domain + module:bc_obs_c3_infra_mcp", "status": "PASS"},
+        {"id": "Q-07", "level": 2, "question": "What does the c3-infra-mcp service depend on, up and downstream?", "tool": "cgc_codegraph_dependencies", "args": {"target": "c3-infra-mcp", "direction": "both"}, "expected_nodes": ["vm:oci_apps", "container:c3_infra_mcp", "service:caddy", "module:bc_obs_c3_infra_mcp"], "observed": "down: hosted_on vm:oci_apps, runs_container, proxied_by caddy; up: routes_to domain, implements module", "status": "PASS"},
+        {"id": "Q-08", "level": 2, "question": "Shortest path from the code module bc_obs_c3_infra_mcp to the VM it runs on?", "tool": "cgc_codegraph_trace_call_path", "args": {"from": "module:bc_obs_c3_infra_mcp", "to": "vm:oci_apps", "max_depth": 6}, "expected_nodes": ["service:c3_infra_mcp", "vm:oci_apps"], "observed": "module -[implements]-> service:c3_infra_mcp -[hosted_on]-> vm:oci_apps", "status": "PASS"},
+        {"id": "Q-09", "level": 2, "question": "Blast radius if the maddy mail service changes?", "tool": "cgc_codegraph_impact_analysis", "args": {"target": "maddy", "depth": 3}, "expected_nodes": ["domain:mail_diegonmarcos_com", "module:aa_sui_tools_maddy"], "observed": "2 dependents: domain:mail_diegonmarcos_com, module:aa_sui_tools_maddy", "status": "PASS"},
+        {"id": "Q-10", "level": 2, "question": "Given a cloud source file, which files are its import siblings?", "tool": "cgc_kgstore_query", "args": {"surql": "SELECT path, ->sibling_module->file.path AS siblings FROM file WHERE repo = 'cloud' AND array::len(->sibling_module->file) > 0 LIMIT 3"}, "expected_nodes": ["non-empty siblings[]"], "observed": "cloud_architecture.json <-> cloud_control.json; scripts fan out to 60+ siblings -- traversal works", "status": "PASS"},
+        {"id": "Q-11", "level": 2, "question": "Which repo does each infra module belong to?", "tool": "cgc_kgstore_query", "args": {"surql": "SELECT in.name AS mod, out.name AS repo FROM belongs_to_repo LIMIT 8"}, "expected_nodes": ["repo per module"], "observed": "ALL modules -> repo 'cloud' (INV-04: attribution collapsed). Returns data but is semantically wrong for non-cloud modules", "status": "PASS-CAVEAT"},
+        {"id": "Q-12", "level": 2, "question": "Path from the domain fqdn mcp.diegonmarcos.com/c3-infra-mcp (or vm name 'oci-apps') via trace?", "tool": "cgc_codegraph_trace_call_path", "args": {"from": "mcp.diegonmarcos.com/c3-infra-mcp", "to": "oci-apps", "max_depth": 6}, "expected_nodes": ["resolve fqdn->domain node; 'oci-apps'->vm:oci_apps"], "observed": "PASS 2026-08-27 (INV-14 fix deployed): both ends resolve - domain:mcp_diegonmarcos_com/c3_infra_mcp -[routes_to]-> service:c3_infra_mcp -[hosted_on]-> vm:oci_apps; bare 'oci-apps' -> vm:oci_apps.", "status": "PASS"},
+
+        {"id": "Q-13", "level": 3, "question": "Summarize the whole graph size (nodes/edges by table).", "tool": "cgc_codegraph_overview", "args": {}, "expected_nodes": ["nodes 33510", "edges 37908"], "observed": "33510 nodes / 37908 edges; per-repo sources cloud 1435f (NB: kgstore says cloud 2148f -- XS-01)", "status": "PASS"},
+        {"id": "Q-14", "level": 3, "question": "Distribution of files by language (should sum to the file total).", "tool": "cgc_kgstore_query", "args": {"surql": "SELECT language, count() AS n FROM file GROUP BY language"}, "expected_nodes": ["sum == 3843"], "observed": "typescript 648, json 891, bash 864, css 426, php 268, rust 239, python 226, js 155, svelte 59, cpp 26, go 21, java 20 = 3843 (matches file count)", "status": "PASS"},
+        {"id": "Q-15", "level": 3, "question": "Summarize octocode's GraphRAG for cloud-infra (node/relationship types).", "tool": "cgc_octocode_graphrag", "args": {"operation": "overview", "repo": "cloud-infra", "format": "md"}, "expected_nodes": ["nodes 1222", "imports rels"], "observed": "1222 nodes / 35111 rels; imports 33072, calls 1426. THIRD import count (vs codegraph 1063, kgstore 0) -- XS-05", "status": "PASS"},
+        {"id": "Q-16", "level": 3, "question": "List every service routed under mcp.diegonmarcos.com (bare + path).", "tool": "cgc_kgstore_query", "args": {"surql": "SELECT in.fqdn AS domain, out.name AS svc FROM routes_to WHERE string::starts_with(in.fqdn, 'mcp.diegonmarcos.com')"}, "expected_nodes": ["google-personal-mcp", "google-workspace-mcp", "mail-mcp", "c3-infra-mcp"], "observed": "4 services: google-personal-mcp, google-workspace-mcp, mail-mcp (bare) + c3-infra-mcp (/c3-infra-mcp path)", "status": "PASS"},
+
+        {"id": "Q-17", "level": 4, "question": "Where does the MCP server register codegraph tools / build the in-memory graph?", "tool": "cgc_octocode_search", "args": {"repo": "cloud-infra", "mode": "code", "query": "how the MCP server registers codegraph tools and builds the in-memory graph"}, "expected_nodes": ["codegraph.ts registerCodegraphTools"], "observed": "RANK 1 = codegraph.ts registerCodegraphTools (sim 1.574); also kgstore.ts, octocode.ts. MRR 1.0", "status": "PASS"},
+        {"id": "Q-18", "level": 4, "question": "Where is the read-only mutation guard implemented?", "tool": "cgc_octocode_search", "args": {"repo": "cloud-infra", "mode": "code", "query": "read-only mutation guard that rejects CREATE UPDATE DELETE in SurrealQL"}, "expected_nodes": ["kgstore.ts (MUTATING regex ~line 33)"], "observed": "MISS: kgstore.ts absent from top-20; got seed_from_config.sh, capabilities.rs, unrelated. context_recall=0. See INV-15", "status": "FAIL"},
+        {"id": "Q-19", "level": 4, "question": "(recall re-test, near-literal phrasing) MUTATING regex that refuses writes in kgstore.", "tool": "cgc_octocode_search", "args": {"repo": "cloud-infra", "mode": "code", "query": "MUTATING regex refuse write reject CREATE DELETE DEFINE read-only kgstore query"}, "expected_nodes": ["kgstore.ts"], "observed": "MISS again: DkimEntry, Targets, NoCertVerify... kgstore.ts absent. Confirms INV-15 is not phrasing-sensitivity", "status": "FAIL"},
+        {"id": "Q-20", "level": 4, "question": "What relationship types does octocode's cloud-infra GraphRAG model, and which dominates?", "tool": "cgc_octocode_graphrag", "args": {"operation": "overview", "repo": "cloud-infra", "format": "md"}, "expected_nodes": ["imports dominant", "calls, parent_module, architectural_dependency present"], "observed": "imports 33072 (dominant), calls 1426, parent_module 288, architectural_dependency 215, plus design-pattern edges (factory/strategy/observer)", "status": "PASS"}
+      ]
+    }
+  }
+}

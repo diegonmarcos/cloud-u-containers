@@ -1,0 +1,61 @@
+[package]
+name = "palantir-monitor"
+version = "2.0.0"
+edition = "2021"
+
+[[bin]]
+name = "palantir-monitor"
+path = "src/main.rs"
+
+[dependencies]
+# Async runtime
+tokio = { version = "1.35", features = ["full"] }
+async-trait = "0.1"
+futures = "0.3"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Templating
+tera = "1.19"
+
+# HTTP client
+reqwest = { version = "0.11", features = ["json", "rustls-tls"] }
+
+# Email
+lettre = { version = "0.11", default-features = false, features = ["tokio1-rustls-tls", "builder", "smtp-transport"] }
+
+# SSH
+ssh2 = "0.9"
+
+# DNS
+trust-dns-resolver = "0.23"
+
+# SSL/TLS
+rustls = "0.21"
+x509-parser = "0.15"
+webpki-roots = "0.25"
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Time
+chrono = "0.4"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# CLI
+base64 = "0.21"
+
+# Configuration
+dotenv = "0.15"
+
+# System info
+hostname = "0.3"
+
+[dev-dependencies]
+tokio-test = "0.4"

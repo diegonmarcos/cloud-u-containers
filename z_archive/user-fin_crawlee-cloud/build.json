@@ -1,0 +1,209 @@
+{
+  "name": "crawlee-cloud",
+  "description": "Self-hosted Crawlee Cloud — Apify-compatible scraping platform (API + Runner + Dashboard + Scheduler)",
+  "dns": "crawlee.app",
+  "ports": {
+    "app": 3000,
+    "dashboard": 3001,
+    "db": 5434,
+    "redis": 6381,
+    "minio": 9000,
+    "minio_console": 9001
+  },
+  "runtime": {
+    "node_env": "production",
+    "log_level": "info",
+    "rate_limit_max": 1000,
+    "max_concurrent_runs": 5,
+    "actor_max_memory_mb": 2048,
+    "actor_default_memory_mb": 512,
+    "actor_timeout_secs": 3600,
+    "s3_bucket": "crawlee-cloud",
+    "s3_region": "us-east-1",
+    "s3_force_path_style": true,
+    "cors_origins": "https://api.diegonmarcos.com,http://localhost:3001",
+    "dashboard_hostname": "10.0.0.6"
+  },
+  "category": "fin",
+  "domain": "api.diegonmarcos.com/crawlee/",
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/crawlee-cloud"
+  },
+  "proxy": {
+    "primary": {
+      "type": "path",
+      "parent_domain": "api.diegonmarcos.com",
+      "base_path": "/crawlee",
+      "auth": "two_factor",
+      "paths": {
+        "/openapi.json": {
+          "auth": "public"
+        }
+      }
+    }
+  },
+  "health": {
+    "path": "/"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
+  },
+  "backup": {
+    "enabled": true
+  },
+  "containers": {
+    "app": {
+      "container_name": "crawlee_api",
+      "image": "ghcr.io/diegonmarcos/crawlee-cloud-api:latest",
+      "port": 3000,
+      "port_env": "PORT",
+      "dns": "crawlee.app",
+      "public": true,
+      "proxy": {
+        "domain": "api.diegonmarcos.com",
+        "base_path": "/crawlee",
+        "auth": "two_factor"
+      },
+      "healthcheck": "wget -qO /dev/null http://127.0.0.1:3000/health || exit 1",
+      "monitoring": {
+        "tls_check": true
+      },
+      "volumes": [],
+      "env_file": true,
+      "depends_on": [
+        "db",
+        "redis",
+        "minio"
+      ],
+      "resources": null,
+      "read_only": false,
+      "protocol": "http"
+    },
+    "runner": {
+      "container_name": "crawlee_runner",
+      "image": "ghcr.io/diegonmarcos/crawlee-cloud-runner:latest",
+      "port": null,
+      "port_env": null,
+      "dns": "crawlee-runner.app",
+      "public": false,
+      "healthcheck": null,
+      "volumes": [
+        "/var/run/docker.sock:/var/run/docker.sock"
+      ],
+      "env_file": true,
+      "depends_on": [
+        "app"
+      ],
+      "resources": null,
+      "read_only": false
+    },
+    "dashboard": {
+      "container_name": "crawlee_dashboard",
+      "image": "ghcr.io/diegonmarcos/crawlee-cloud-dashboard:latest",
+      "port": 3001,
+      "port_env": "PORT",
+      "dns": "crawlee-dashboard.app",
+      "public": false,
+      "healthcheck": null,
+      "volumes": [],
+      "env_file": false,
+      "depends_on": [
+        "app"
+      ],
+      "resources": null,
+      "read_only": false,
+      "protocol": "http"
+    },
+    "scheduler": {
+      "container_name": "crawlee_scheduler",
+      "image": "ghcr.io/diegonmarcos/crawlee-cloud-api:latest",
+      "port": null,
+      "port_env": null,
+      "dns": "crawlee-scheduler.app",
+      "public": false,
+      "healthcheck": null,
+      "volumes": [],
+      "env_file": true,
+      "depends_on": [
+        "db",
+        "redis"
+      ],
+      "resources": null,
+      "read_only": false
+    },
+    "db": {
+      "container_name": "crawlee_db",
+      "image": "postgres:16-alpine",
+      "port": 5434,
+      "port_env": "PGPORT",
+      "dns": "crawlee-db.app",
+      "public": false,
+      "healthcheck": "pg_isready -U $POSTGRES_USER",
+      "volumes": [
+        "crawlee_postgres:/var/lib/postgresql/data"
+      ],
+      "env_file": true,
+      "resources": null,
+      "read_only": false,
+      "db_user": "crawlee",
+      "db_name": "crawlee",
+      "protocol": "tcp",
+      "db_engine": "postgres"
+    },
+    "redis": {
+      "container_name": "crawlee_redis",
+      "image": "redis:7-alpine",
+      "port": 6381,
+      "port_env": null,
+      "dns": "crawlee-redis.app",
+      "public": false,
+      "healthcheck": "redis-cli -p 6381 ping",
+      "volumes": [
+        "crawlee_redis:/data"
+      ],
+      "env_file": false,
+      "resources": null,
+      "read_only": false,
+      "protocol": "tcp",
+      "db_engine": "redis"
+    },
+    "minio": {
+      "container_name": "crawlee_minio",
+      "image": "minio/minio:latest",
+      "port": 9000,
+      "port_env": null,
+      "dns": "crawlee-minio.app",
+      "public": false,
+      "healthcheck": "curl -f http://localhost:9000/minio/health/live",
+      "volumes": [
+        "crawlee_minio:/data"
+      ],
+      "env_file": true,
+      "resources": null,
+      "read_only": false,
+      "protocol": "http",
+      "db_engine": "minio"
+    }
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "crawlee-cloud",
+    "dockerfile": "Dockerfile",
+    "arch": "arm64"
+  },
+  "build": {
+    "headers_enforced": true
+  },
+  "api": {
+    "type": "openapi",
+    "spec_path": "/openapi.json",
+    "base_path": "/v2",
+    "endpoint_count": 74,
+    "display_name": "Crawlee Cloud Apify-Compatible API",
+    "description": "Self-hosted Apify-compatible web scraping platform with actors, runs, datasets, queues, and schedules.",
+    "auth": "api-key"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "lib-api",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "The route contract every constellation app serves (mirror of libs:devtools AppDebugServer)"
+}

@@ -1,0 +1,177 @@
+#!/bin/sh
+set -e
+
+# ── Provisioning accounting — READ THIS BEFORE ADDING AN `exit 1` ──────
+# This script is the container ENTRYPOINT and its last line is `exec maddy`.
+# It therefore must NOT exit non-zero when provisioning fails: that would kill
+# the mail server outright and turn "one mailbox did not get created" into a
+# total mail outage — strictly worse than the bug being fixed. So the verdict
+# is EMITTED here, never enforced here:
+#   * a machine-readable SUMMARY line on stdout (docker logs maddy), and
+#   * the same line, plus per-item detail, written to $PROV_RECEIPT inside the
+#     maddy_data volume and stamped with the epoch it was written at.
+# The ASSERTION lives where it can fail safely: configs/assert-provisioning.sh,
+# wired as build.json#compose.post_hook. It runs on the VM after compose-up,
+# reads this receipt and turns the SHIP red while maddy keeps serving mail.
+# That post-hook is itself covered by the ship engine's revision-scoped
+# receipt, so "the assertion never ran" is not a green outcome either.
+#
+# Counts live in FILES, not shell variables: `prov` runs its command inside a
+# command substitution, and an incremented counter in a subshell is discarded
+# on exit — literally how a loop counts failures and then reports none.
+PROV_RECEIPT=/data/.provisioning-summary
+rm -f "$PROV_RECEIPT"
+TALLY_DIR=$(mktemp -d /tmp/.maddy-init-tally.XXXXXX)
+tally()       { echo "$2" >> "$TALLY_DIR/$1"; }
+# `cat | wc -l`, not `wc -l < file`: the redirection of a missing tally file is
+# the SHELL's error, not wc's, so `2>/dev/null` on wc does not suppress it and
+# every zero count printed a spurious "No such file or directory".
+tally_count() { _c=$(cat "$TALLY_DIR/$1" 2>/dev/null | wc -l | tr -d ' '); echo "${_c:-0}"; }
+
+# prov <tally-base> <label> <command...>
+#
+# maddy's create verbs are NOT idempotent: `creds create`, `imap-acct create`
+# and `imap-mboxes create` each error when the object already exists, and that
+# is the NORMAL path on every boot after the first. That is why every generated
+# line used to end in `|| true` — and why a genuine failure (locked
+# credentials.db, a password that never got injected, version skew) was
+# indistinguishable from a healthy no-op and vanished into a green ship. The
+# same silent divergence between this store and Stalwart's is what left four
+# declared accounts non-existent for a day while the MX accepted their mail.
+#
+# So classify instead of swallowing: an "already exists" error is an `_exists`
+# tally, anything else is a `_failed` tally the SUMMARY will report. Always
+# returns 0 — that is the `exec maddy` constraint expressed in code, not an
+# oversight.
+prov() {
+  _t=$1; _l=$2; shift 2
+  if _out=$("$@" 2>&1); then
+    [ -n "$_out" ] && printf '%s\n' "$_out" | sed "s|^|  [$_l] |"
+    tally "${_t}_ok" "$_l"
+    return 0
+  else
+    _rc=$?
+  fi
+  [ -n "$_out" ] && printf '%s\n' "$_out" | sed "s|^|  [$_l] |"
+  case "$_out" in
+    *"already exist"*|*"already in use"*|*exists*)
+      tally "${_t}_exists" "$_l"
+      return 0
+      ;;
+  esac
+  echo "[init] PROVISIONING FAILURE ($_l): exit $_rc" >&2
+  tally "${_t}_failed" "$_l (exit $_rc)"
+  return 0
+}
+
+# Install jq + sqlite3 — required by:
+#   /usr/local/bin/mail-sieve-subset-delivery-time (jq for per-message rule eval)
+#   /usr/local/bin/mail-sieve-subset-post-hoc      (jq + sqlite3 for batch ops)
+# Idempotent — no-op if already present (alpine apk).
+for pkg in jq sqlite; do
+  if ! command -v "${pkg%sqlite}sqlite3" >/dev/null 2>&1 && ! command -v "$pkg" >/dev/null 2>&1; then
+    echo "[init] Installing $pkg..."
+    apk add --no-cache "$pkg" >/dev/null 2>&1 || true
+  fi
+done
+
+echo "[init] Generating maddy.conf from template..."
+# maddy.conf uses native `{env:VAR}` interpolation for secrets — no sed,
+# no shell-text mangling. Maddy reads env vars at config-load time.
+# Source of every secret value: src/secrets.yaml -> env_file (.secrets) -> $env.
+cp /etc/maddy/maddy.conf.tpl /data/maddy.conf
+
+# Write DKIM private key from base64
+if [ -n "$DKIM_PRIVATE_KEY_B64" ]; then
+  echo "[init] Writing DKIM key..."
+  mkdir -p /data/dkim
+  echo "$DKIM_PRIVATE_KEY_B64" | base64 -d > /data/dkim/@BASE_DOMAIN@.key
+  chmod 600 /data/dkim/@BASE_DOMAIN@.key
+fi
+
+# Create accounts AND sync passwords on every boot.
+# `creds create` errors if the account exists, so an existing account would
+# keep a stale password forever (drift between secrets.yaml and the maddy
+# credentials.db). Pair with `creds password` to UPSERT the secret —
+# `creds create` for first-boot, `creds password` for password rotation.
+# Pipe passwords via stdin — never `--password $VAR` (the value would land in
+# process args / `docker top` / `ps` output). maddy's own --help carries the
+# same warning. Source of every value is sops-encrypted src/secrets.yaml,
+# which docker compose injects as env_file -> $ME_PASSWORD / $NOREPLY_PASSWORD.
+#
+# `printf '%s'` (no trailing \n) — `echo` would append a newline that maddy
+# then bcrypts into the stored hash, so SMTP clients sending the bare value
+# would never authenticate.
+#
+# Stderr stays visible so that any `creds password` failure (locked db,
+# missing config block, version skew) shows up in `docker logs maddy`.
+# `creds create` is expected to error on existing accounts — that's fine,
+# `creds password` is the unconditional upsert.
+echo "[init] Ensuring accounts + syncing passwords..."
+# USER_CREATION_BLOCK below — generated from build.json#users at flake build time.
+# Each entry produces: creds create + creds password + imap-acct create.
+# Source: aa-sui_tools-maddy/build.json#users (this service's own SoT).
+@USER_CREATION_BLOCK@
+
+# FOLDER_CREATION_BLOCK below — the F0 sender-classification folders
+# (mail-rules-general.json#filters.views, axis="sender"). Must exist before
+# apply-rules' first COPY into them: its SQL only UPDATEs an existing mboxes
+# row, never INSERTs one, so a missing folder makes every copy into it a
+# silent no-op. `imap-mboxes create` errors on an existing folder — expected,
+# same idempotent-boot pattern as USER_CREATION_BLOCK above.
+echo "[init] Ensuring F0 sender-classification folders..."
+@FOLDER_CREATION_BLOCK@
+
+# ── Provisioning verdict: emitted, not enforced (see header) ──────────
+# One machine-readable line, on stdout AND in the receipt. `written_at` is the
+# anti-stale guard: a receipt left in the maddy_data volume by an EARLIER boot
+# would otherwise satisfy "a summary exists", which is exactly the trap the
+# ship engine's own post-hook receipt was added to close. The assertion
+# compares this stamp against the container's StartedAt and refuses anything
+# older.
+ACCOUNTS_OK=$(tally_count accounts_ok)
+ACCOUNTS_EXISTS=$(tally_count accounts_exists)
+ACCOUNTS_FAILED=$(tally_count accounts_failed)
+USERS_OK=$(tally_count users_ok)
+USERS_FAILED=$(tally_count users_failed)
+IMAP_OK=$(tally_count imap_ok)
+IMAP_EXISTS=$(tally_count imap_exists)
+IMAP_FAILED=$(tally_count imap_failed)
+MAILBOXES_OK=$(tally_count mailboxes_ok)
+MAILBOXES_EXISTS=$(tally_count mailboxes_exists)
+MAILBOXES_FAILED=$(tally_count mailboxes_failed)
+SUMMARY_LINE="[init] SUMMARY written_at=$(date +%s) revision=${SHIP_REVISION:-unknown} accounts_created=$ACCOUNTS_OK accounts_exists=$ACCOUNTS_EXISTS accounts_failed=$ACCOUNTS_FAILED users_ok=$USERS_OK users_failed=$USERS_FAILED imap_created=$IMAP_OK imap_exists=$IMAP_EXISTS imap_failed=$IMAP_FAILED mailboxes_created=$MAILBOXES_OK mailboxes_exists=$MAILBOXES_EXISTS mailboxes_failed=$MAILBOXES_FAILED"
+echo "$SUMMARY_LINE"
+printf '%s\n' "$SUMMARY_LINE" > "$PROV_RECEIPT"
+for _t in accounts_failed users_failed imap_failed mailboxes_failed; do
+  [ -f "$TALLY_DIR/$_t" ] || continue
+  sed "s|^|detail $_t: |" "$TALLY_DIR/$_t" >> "$PROV_RECEIPT"
+  sed "s|^|[init]   $_t: |" "$TALLY_DIR/$_t" >&2
+done
+if [ "$USERS_OK" = 0 ]; then
+  # A hook that ran and did nothing is not a success — but saying so is all
+  # this script may do. assert-provisioning.sh is what makes the ship red.
+  echo "[init] PROVISIONING FAILURE: not one declared user's password was synced — maddy is starting anyway, but no declared account is usable" >&2
+fi
+rm -rf "$TALLY_DIR"
+
+echo "[init] Starting maddy-sorter in background..."
+# Compiled into this same image (build.json#docker.native_build, src/crate)
+# from maddy's OWN src/, same as jmap-sorter is for Stalwart -- NOT a
+# separate sidecar container (Stalwart's docker.* slot was free since its
+# main app image is pulled upstream as-is; Maddy's isn't, so this native_build
+# both compiles maddy-sorter AND still gets maddy itself for free from
+# base_image=foxcpp/maddy:0.9). Runs its own poll loop internally
+# (STARTUP_DELAY/POLL_INTERVAL env vars, same shape as jmap-sorter) -- no
+# external Dagu cron, no wrapper shell loop. Was previously an external
+# Dagu DAG that ssh'd in every 2 min and caused a real livelock incident
+# (see git history / this repo's mail-sieve-subset-post-hoc.sh comments on
+# cmd_apply_rules, now dead code kept only for manual/testing use).
+# This container runs with `init: true` (docker-compose.yml), so tini is
+# the real PID1 and reaps this backgrounded process's tree regardless of
+# the `exec maddy` below (exec only replaces THIS shell's own image, it
+# doesn't touch already-backgrounded children).
+/usr/local/bin/maddy-sorter &
+
+echo "[init] Starting Maddy..."
+exec maddy -config /data/maddy.conf run

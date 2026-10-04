@@ -1,0 +1,71 @@
+{
+  "name": "hermes-agent",
+  "description": "Nous Research Hermes Agent (autonomous, persistent-memory AI agent) on oci-apps. Messaging gateway (Telegram live, Mattermost scaffolded) backed by claude-superset-api (subscription CLI, no metered key). WG-internal, never public.",
+  "dns": "hermes-agent.app",
+  "ports": {
+    "api": 8642,
+    "dashboard": 9119
+  },
+  "category": "agi",
+  "agent": {
+    "_comment": "The shared checkout (docker volume cloud-git-gh) mounts at ONE canonical path in EVERY agent container — /home/appuser/git — declared once in _shared/engine.nix and published to the container as AGENT_GIT_TREE. The per-container git_tree_mount field is GONE and setting it is now a build error. It used to claim to be 'this container's own $HOME/git' with nothing checking, and the three agent containers drifted to three different answers; hermes ended up with the tree at /opt/data/git while its running HOME was /root, so `ls $HOME/git` found nothing and the agent reported the repositories as missing. Read-write: an agent that can read the code but not commit it cannot do the job it exists for.",
+    "git_tree": true,
+    "git_tree_writable": true,
+    "_comment_working_directory": "Hermes' main process is an s6-supervised idle holder; the real work arrives as `docker exec`, which starts at the image WorkingDir (/opt/hermes) — outside the checkout. The agent then sees zero repositories and answers as if the code did not exist. Starting it in the tree is the point of mounting the tree.",
+    "git_tree_is_working_directory": true,
+    "_memory_briefing_env_doc": "#556. The memory system itself is declared once in _shared/agent-memory.nix and published by engine.nix as AGENT_MEMORY_DIR/_INDEX/_ENTRIES/_TYPES/_BRIEFING. hermes reads no AGENT_* var: its system-prompt extension is HERMES_EPHEMERAL_SYSTEM_PROMPT, which gateway/run_config_loaders.py resolves BEFORE display.personality / agent.system_prompt (neither is set in src/configs/config.yaml) and agent/turn_context.py APPENDS to the base prompt at API-call time, so the tool instructions hermes needs are not replaced. What is declared here is the env var NAME, never the briefing text — a second copy of the text is how claude, goose and hermes came to be told three different things. NOTE: HERMES_WRITE_SAFE_ROOT=/opt/data is an image default, so hermes must write entries with the terminal toolset; its file toolset is sandboxed away from the shared tree.",
+    "memory_briefing_env": "HERMES_EPHEMERAL_SYSTEM_PROMPT"
+  },
+  "upstream_image": "ghcr.io/diegonmarcos/hermes-agent:latest",
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "hermes-agent",
+    "arch": "arm64",
+    "platform": "linux/arm64",
+    "_agent_toolbelt_doc": "ticket #509: agent_toolbelt=true replaces the hand-written runtime_packages/runtime_extra_run pair that used to live here. _shared/engine.nix now derives both from the single fleet-wide declaration in _shared/agent-toolbelt.json (the same one my-ai_claude-api and my-ai-api splice into their own Dockerfiles), so this container's tool list cannot drift from theirs.",
+    "agent_toolbelt": true
+  },
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/hermes-agent",
+    "compose_flags": "--pull always --force-recreate"
+  },
+  "tests": {
+    "jev-gate": {
+      "cmd": "python3 test-jev-gate.py",
+      "cwd": "../_shared"
+    },
+    "agent-toolbelt-declared": {
+      "cmd": "node ../_shared/test-agent-toolbelt.mjs"
+    }
+  },
+  "secrets": {
+    "escape_dollars": "false"
+  },
+  "proxy": {
+    "app_hub": false
+  },
+  "runtime": {
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "backend_url": "https://openrouter.ai/api/v1",
+    "api_mode": "chat_completions"
+  },
+  "containers": {
+    "app": {
+      "container_name": "cloud-agi-hermes",
+      "image": "ghcr.io/diegonmarcos/hermes-agent:latest",
+      "port": 8642,
+      "port_env": null,
+      "dns": "hermes-agent.app",
+      "public": false,
+      "healthcheck": null,
+      "monitoring": null,
+      "env_file": true,
+      "depends_on": [],
+      "resources": null,
+      "read_only": false,
+      "protocol": "http"
+    }
+  },
+  "version": "1.1.1"
+}

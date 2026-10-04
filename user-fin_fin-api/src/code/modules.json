@@ -1,0 +1,111 @@
+{
+  "$schema": "./modules.schema.json",
+  "note": "Single source of truth. build.sh reads this to append workspace members, generate CI matrix, and enforce coverage. Every id listed here MUST have a corresponding crate under crates/<group>/<crate> OR be marked phase=planned.",
+
+  "connectors": [
+    { "id": "yahoo",                   "kind": "custom",  "crate": "data-yahoo",        "transport": "http",    "status": "active",  "phase": 2 },
+    { "id": "polygon",                 "kind": "custom",  "crate": "data-polygon",      "transport": "http+ws", "status": "active",  "phase": 2 },
+    { "id": "fred",                    "kind": "custom",  "crate": "data-fred",         "transport": "http",    "status": "active",  "phase": 2 },
+    { "id": "dbnomics",                "kind": "custom",  "crate": "data-dbnomics",     "transport": "http",    "status": "active",  "phase": 2 },
+    { "id": "worldbank",               "kind": "custom",  "crate": "data-worldbank",    "transport": "http",    "status": "active",  "phase": 2 },
+    { "id": "imf",                     "kind": "custom",  "crate": "data-imf",          "transport": "http",    "status": "active",  "phase": 2 },
+    { "id": "kraken",                  "kind": "custom",  "crate": "data-kraken",       "transport": "http+ws", "status": "active",  "phase": 2 },
+    { "id": "akshare",                 "kind": "custom",  "crate": "data-akshare",      "transport": "http",    "status": "active",  "phase": 2 },
+    { "id": "coingecko",               "kind": "custom",  "crate": "data-coingecko",    "transport": "http",    "status": "active",  "phase": 2 },
+    { "id": "alphavantage",            "kind": "custom",  "crate": "data-alphavantage", "transport": "http",    "status": "active",  "phase": 2 },
+
+    { "id": "ecb-exchangerates",       "kind": "generic", "crate": "data-generic", "status": "active", "phase": 3 },
+    { "id": "treasury-fiscal",         "kind": "generic", "crate": "data-generic", "status": "active", "phase": 3 },
+    { "id": "binance-ticker",          "kind": "generic", "crate": "data-generic", "status": "active", "phase": 3 },
+    { "id": "coinmarketcap-listings",  "kind": "generic", "crate": "data-generic", "status": "active", "phase": 3 },
+    { "id": "defillama-tvl",           "kind": "generic", "crate": "data-generic", "status": "active", "phase": 3 },
+    { "id": "dexscreener-token",       "kind": "generic", "crate": "data-generic", "status": "active", "phase": 3 },
+    { "id": "bls-timeseries",          "kind": "generic", "crate": "data-generic", "status": "active", "phase": 3 },
+    { "id": "bea-gdp",                 "kind": "generic", "crate": "data-generic", "status": "active", "phase": 3 },
+    { "id": "oecd-sdmx",               "kind": "generic", "crate": "data-generic", "status": "active", "phase": 3 },
+    { "id": "eurostat",                "kind": "generic", "crate": "data-generic", "status": "active", "phase": 3 },
+    { "id": "tradingeconomics",        "kind": "generic", "crate": "data-generic", "status": "active", "phase": 3 },
+    { "id": "sec-edgar-submissions",   "kind": "generic", "crate": "data-generic", "status": "active", "phase": 3 },
+    { "id": "polymarket-events",       "kind": "generic", "crate": "data-generic", "status": "active", "phase": 3 },
+    { "id": "acled-data",              "kind": "generic", "crate": "data-generic", "status": "active", "phase": 3 },
+    { "id": "hdx-datasets",            "kind": "generic", "crate": "data-generic", "status": "active", "phase": 3 },
+    { "id": "cftc-cot",                "kind": "generic", "crate": "data-generic", "status": "active", "phase": 3 },
+    { "id": "nasa-neo",                "kind": "generic", "crate": "data-generic", "status": "active", "phase": 3 },
+    { "id": "openweather-current",     "kind": "generic", "crate": "data-generic", "status": "active", "phase": 3 },
+    { "id": "newsapi-top",             "kind": "generic", "crate": "data-generic", "status": "active", "phase": 3 },
+    { "id": "marinetraffic-vesselinfo","kind": "generic", "crate": "data-generic", "status": "active", "phase": 3 },
+    { "id": "open-meteo-forecast",     "kind": "generic", "crate": "data-generic", "status": "active", "phase": 3 },
+    { "id": "coinbase-spot",           "kind": "generic", "crate": "data-generic", "status": "active", "phase": 3 },
+    { "id": "nseindia-marketstatus",   "kind": "generic", "crate": "data-generic", "status": "active", "phase": 3 },
+    { "id": "stooq-hist",              "kind": "generic", "crate": "data-generic", "status": "active", "phase": 3 },
+    { "id": "unhcr-refugees",          "kind": "generic", "crate": "data-generic", "status": "active", "phase": 3 }
+  ],
+
+  "brokers": [
+    { "id": "paper",     "kind": "custom",  "crate": "brokers-paper",   "region": "-",    "status": "active",  "phase": 7 },
+    { "id": "alpaca",    "kind": "custom",  "crate": "brokers-alpaca",  "region": "US",   "status": "active",  "phase": 7 },
+    { "id": "zerodha",   "kind": "generic", "crate": "brokers-generic", "region": "IN",   "status": "active",  "phase": 7 },
+    { "id": "angelone",  "kind": "generic", "crate": "brokers-generic", "region": "IN",   "status": "active",  "phase": 7 },
+    { "id": "upstox",    "kind": "generic", "crate": "brokers-generic", "region": "IN",   "status": "active",  "phase": 7 },
+    { "id": "fyers",     "kind": "generic", "crate": "brokers-generic", "region": "IN",   "status": "active",  "phase": 7 },
+    { "id": "dhan",      "kind": "generic", "crate": "brokers-generic", "region": "IN",   "status": "active",  "phase": 7 },
+    { "id": "groww",     "kind": "generic", "crate": "brokers-generic", "region": "IN",   "status": "active",  "phase": 7 },
+    { "id": "kotak",     "kind": "generic", "crate": "brokers-generic", "region": "IN",   "status": "active",  "phase": 7 },
+    { "id": "iifl",      "kind": "generic", "crate": "brokers-generic", "region": "IN",   "status": "active",  "phase": 7 },
+    { "id": "5paisa",    "kind": "generic", "crate": "brokers-generic", "region": "IN",   "status": "active",  "phase": 7 },
+    { "id": "aliceblue", "kind": "generic", "crate": "brokers-generic", "region": "IN",   "status": "active",  "phase": 7 },
+    { "id": "shoonya",   "kind": "generic", "crate": "brokers-generic", "region": "IN",   "status": "active",  "phase": 7 },
+    { "id": "motilal",   "kind": "generic", "crate": "brokers-generic", "region": "IN",   "status": "active",  "phase": 7 },
+    { "id": "ibkr",      "kind": "generic", "crate": "brokers-generic", "region": "US/EU/APAC", "status": "active", "phase": 7 },
+    { "id": "tradier",   "kind": "generic", "crate": "brokers-generic", "region": "US",   "status": "active",  "phase": 7 },
+    { "id": "saxo",      "kind": "generic", "crate": "brokers-generic", "region": "EU",   "status": "active",  "phase": 7 }
+  ],
+
+  "analytics": [
+    { "id": "cfa",          "crate": "analytics-cfa",          "status": "active",  "phase": 4 },
+    { "id": "portfolio",    "crate": "analytics-portfolio",    "status": "active",  "phase": 4 },
+    { "id": "risk",         "crate": "analytics-risk",         "status": "active",  "phase": 4 },
+    { "id": "derivatives",  "crate": "analytics-derivatives",  "status": "active",  "phase": 4 },
+    { "id": "fixedincome",  "crate": "analytics-fixedincome",  "status": "active",  "phase": 4 },
+    { "id": "quant",        "crate": "analytics-quant",        "status": "active",  "phase": 4 },
+    { "id": "backtest",     "crate": "analytics-backtest",     "status": "active",  "phase": 4 }
+  ],
+
+  "ml": [
+    { "id": "candle", "crate": "ml-candle", "status": "active",  "phase": 5 },
+    { "id": "factor", "crate": "ml-factor", "status": "active",  "phase": 5 },
+    { "id": "rl",     "crate": "ml-rl",     "status": "active",  "phase": 5 },
+    { "id": "hft",    "crate": "ml-hft",    "status": "active",  "phase": 5 }
+  ],
+
+  "agents": [
+    { "id": "core",         "crate": "agents-core",         "status": "active",  "phase": 6 },
+    { "id": "llm",          "crate": "agents-llm",          "status": "active",  "phase": 6 },
+    { "id": "investors",    "crate": "agents-investors",    "personas": ["buffett", "graham", "lynch", "munger", "klarman", "marks"], "status": "active",  "phase": 6 },
+    { "id": "economic",     "crate": "agents-economic",     "status": "active",  "phase": 6 },
+    { "id": "geopolitical", "crate": "agents-geopolitical", "status": "active",  "phase": 6 },
+    { "id": "hedgefund",    "crate": "agents-hedgefund",    "status": "active",  "phase": 6 }
+  ],
+
+  "infrastructure": [
+    { "id": "core",      "crate": "core",      "status": "active",  "phase": 0 },
+    { "id": "datahub",   "crate": "datahub",   "status": "active",  "phase": 1 },
+    { "id": "eventbus",  "crate": "eventbus",  "status": "active",  "phase": 1 },
+    { "id": "storage",   "crate": "storage",   "status": "active",  "phase": 1 },
+    { "id": "http",      "crate": "http",      "status": "active",  "phase": 1 },
+    { "id": "ws",        "crate": "ws",        "status": "active",  "phase": 1 },
+    { "id": "auth",      "crate": "auth",      "status": "active",  "phase": 1 },
+    { "id": "mcp",       "crate": "mcp",       "status": "active",  "phase": 1 },
+    { "id": "data-core", "crate": "data-core", "status": "active",  "phase": 2 },
+    { "id": "brokers-core", "crate": "brokers-core", "status": "active", "phase": 7 },
+    { "id": "trading",   "crate": "trading",   "status": "active",  "phase": 7 },
+    { "id": "migration", "crate": "migration", "status": "active",  "phase": 10 },
+    { "id": "server",    "crate": "server",    "status": "active",  "phase": 11 },
+    { "id": "client",    "crate": "client",    "status": "active",  "phase": 11 },
+    { "id": "nodegraph", "crate": "nodegraph", "status": "active",  "phase": 9 },
+    { "id": "ui-core",     "crate": "ui-core",     "status": "active",  "phase": 8 },
+    { "id": "ui-widgets",  "crate": "ui-widgets",  "status": "active",  "phase": 8 },
+    { "id": "ui-charts",   "crate": "ui-charts",   "status": "active",  "phase": 8 },
+    { "id": "ui-screens",  "crate": "ui-screens",  "status": "active",  "phase": 8 }
+  ]
+}

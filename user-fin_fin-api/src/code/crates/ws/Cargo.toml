@@ -1,0 +1,18 @@
+[package]
+name = "fincept-ws"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "WebSocket client wrapper for push-only producers (Kraken, HyperLiquid, Polymarket)."
+
+[dependencies]
+fincept-core = { path = "../core" }
+tokio = { workspace = true }
+tokio-tungstenite = { workspace = true }
+futures = { workspace = true }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util", "macros", "rt-multi-thread"] }
