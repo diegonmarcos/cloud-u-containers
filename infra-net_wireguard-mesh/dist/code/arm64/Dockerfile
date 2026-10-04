@@ -7,7 +7,7 @@
 # ║ Rebuild: a_solutions/infra-net_wireguard-mesh/build.sh ship
 # ╚══════════════════════════════════════════════════════════════════╝
 # Type A — service-shipped Dockerfile, arch=arm64
-# Source: /nix/store/9hqwkmrhr8kn8mxy8nd73kiqabn5lzb1-source/infra-net_wireguard-mesh/src/code/Dockerfile
+# Source: infra-net_wireguard-mesh/src/code/Dockerfile
 # wireguard-mesh — multi-stage build
 #
 # Stage 1: build static assets (TS+SCSS+HTML+data wrapper) with node + esbuild + sass

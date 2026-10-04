@@ -7,7 +7,7 @@
 # ║ Rebuild: a_solutions/user-comm_chat-mattermost/build.sh ship
 # ╚══════════════════════════════════════════════════════════════════╝
 # Type A — service-shipped Dockerfile, arch=arm64
-# Source: /nix/store/1q29swmdcpf0p5nz0g3j4bg5199gq5hj-source/user-comm_chat-mattermost/src/code/arm64/Dockerfile
+# Source: user-comm_chat-mattermost/src/code/arm64/Dockerfile
 # ╔══════════════════════════════════════════════════════════════════╗
 # ║  VENDORED — copy of upstream Mattermost server/build/Dockerfile  ║
 # ║                                                                  ║

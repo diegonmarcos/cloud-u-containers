@@ -7,7 +7,7 @@
 # ║ Rebuild: a_solutions/infra-sec_caddy/build.sh ship
 # ╚══════════════════════════════════════════════════════════════════╝
 # Type A — service-shipped Dockerfile, arch=amd64
-# Source: /nix/store/zarmmgmp8z2iixr3mfbsgmbz70i0p9dd-source/infra-sec_caddy/src/code/Dockerfile
+# Source: infra-sec_caddy/src/code/Dockerfile
 FROM caddy:2-builder AS builder
 # Cache-bust 2026-06-19 — xcaddy resolves the plugins; the comment forces
 # RUN-layer invalidation if a stale layer cache ever drops a plugin.

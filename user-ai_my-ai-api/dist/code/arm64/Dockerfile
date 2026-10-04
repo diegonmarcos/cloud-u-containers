@@ -7,7 +7,7 @@
 # ║ Rebuild: a_solutions/user-ai_my-ai-api/build.sh ship
 # ╚══════════════════════════════════════════════════════════════════╝
 # Type A — service-shipped Dockerfile, arch=arm64
-# Source: /nix/store/3caf0qav8r9r0vbgr52kapyln1sgacn8-source/user-ai_my-ai-api/src/code/Dockerfile
+# Source: user-ai_my-ai-api/src/code/Dockerfile
 # my-ai-api — polyglot image (Python Headroom sidecar + Node front).
 #
 # Sibling of claude-superset-api. Routes to three agent backends (OpenRouter,
