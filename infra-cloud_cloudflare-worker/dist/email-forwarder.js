@@ -2,7 +2,7 @@
 // ║                                                                  ║
 // ║   GENERATED FILE — DO NOT EDIT                                   ║
 // ║                                                                  ║
-// ║   Source : /root/git/cloud-infra/a_solutions/infra-cloud_cloudflare-worker/src/email-forwarder.js
+// ║   Source : infra-cloud_cloudflare-worker/src/email-forwarder.js
 // ║   Engine : 1_cicd/src/scripts/cloud-ship-container-engine.sh
 // ║   Rebuild: ./9_others/build.sh
 // ║                                                                  ║
