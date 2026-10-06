@@ -14,6 +14,18 @@ const USER  = process.env.KG_STORE_USER || "root";
 const PASS  = process.env.KG_STORE_PASS;
 const DELTA = process.env.KG_DELTA || "/app/graphs/build-kg-graph_delta.json";
 const BATCH = parseInt(process.env.KG_INGEST_BATCH || "500", 10);
+// Transport resilience (#888): a dropped connection mid-ingest ("fetch failed … other
+// side closed", 417k edges on the private surface) used to cost the run its remaining
+// edges. Every request now has a timeout and is retried with capped exponential backoff
+// on transport errors / HTTP 5xx / 429. All writes are idempotent (UPSERT by id; edge
+// ids are deterministic and re-INSERTing one is a no-op), so re-sending a batch whose
+// reply was lost is safe.
+const RETRIES    = parseInt(process.env.KG_INGEST_RETRIES || "8", 10);
+const BACKOFF_MS = parseInt(process.env.KG_INGEST_BACKOFF_MS || "500", 10);
+const TIMEOUT_MS = parseInt(process.env.KG_INGEST_TIMEOUT_MS || "120000", 10);
+// KG_INGEST_RESUME=1: re-run after an aborted ingest WITHOUT the repo-scoped delete, so
+// rows already written are kept (re-sent ones are no-ops) and the run continues the load.
+const RESUME = process.env.KG_INGEST_RESUME === "1";
 
 const skip = (m) => { console.error(`[kg-ingest] skip — ${m}`); process.exit(0); };
 if (!URL_)  skip("KG_STORE_URL unset");
@@ -91,14 +103,27 @@ const auth = "Basic " + Buffer.from(`${USER}:${PASS}`).toString("base64");
 // statements fail — the body is an array of {status:"OK"|"ERR", result|detail}.
 // Checking only r.ok silently drops failed UPSERT/RELATE (the cause of missing
 // edges). Parse per-statement status and surface the first error.
-const sql = async (body) => {
-  const r = await fetch(`${URL_.replace(/\/$/, "")}/sql`, {
-    method: "POST",
-    headers: { Authorization: auth, "surreal-ns": NS, "surreal-db": DB, Accept: "application/json", "Content-Type": "text/plain" },
-    body,
-  });
-  if (!r.ok) throw new Error(`HTTP ${r.status}: ${(await r.text()).slice(0, 300)}`);
-  const out = await r.json();
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+class Transient extends Error {}
+const sqlOnce = async (body) => {
+  let r;
+  try {
+    r = await fetch(`${URL_.replace(/\/$/, "")}/sql`, {
+      method: "POST",
+      headers: { Authorization: auth, "surreal-ns": NS, "surreal-db": DB, Accept: "application/json", "Content-Type": "text/plain" },
+      body,
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+  } catch (e) {
+    throw new Transient(`${e.message}${e.cause ? ` (${e.cause.code || e.cause.message})` : ""}`);
+  }
+  if (!r.ok) {
+    const msg = `HTTP ${r.status}: ${(await r.text().catch(() => "")).slice(0, 300)}`;
+    if (r.status >= 500 || r.status === 429) throw new Transient(msg);
+    throw new Error(msg);
+  }
+  let out;
+  try { out = await r.json(); } catch (e) { throw new Transient(`bad response body: ${e.message}`); }
   let errs = 0, firstErr = null;
   if (Array.isArray(out)) for (const x of out) {
     if (x && x.status && x.status !== "OK") {
@@ -107,6 +132,19 @@ const sql = async (body) => {
     }
   }
   return { errs, firstErr };
+};
+// Retry transport failures only; per-statement errors come back as {errs} for the caller.
+// Throws after RETRIES retries so the caller can abort loudly with how far it got.
+const sql = async (body) => {
+  for (let attempt = 0; ; attempt++) {
+    try { return await sqlOnce(body); }
+    catch (e) {
+      if (!(e instanceof Transient) || attempt >= RETRIES) throw e;
+      const wait = Math.min(30000, BACKOFF_MS * 2 ** attempt) + Math.floor(Math.random() * BACKOFF_MS);
+      console.error(`\n[kg-ingest] transport error (${e.message}) — retry ${attempt + 1}/${RETRIES} in ${wait}ms`);
+      await sleep(wait);
+    }
+  }
 };
 
 // ── Idempotency: repo-scoped replace. Delete existing rows for every repo present
@@ -123,9 +161,10 @@ for (const repo of repos) {
   for (const t of edgeTables) deleteStmts.push(`DELETE FROM ${t} WHERE in.repo = ${q(repo)} OR out.repo = ${q(repo)};`);
   for (const t of nodeTables) deleteStmts.push(`DELETE FROM ${t} WHERE repo = ${q(repo)};`);
 }
-if (deleteStmts.length) {
+if (RESUME && deleteStmts.length) console.error("[kg-ingest] KG_INGEST_RESUME=1 — keeping existing rows, no repo-scoped delete");
+else if (deleteStmts.length) {
   console.error(`[kg-ingest] repo-scoped replace: deleting existing rows for [${[...repos].join(", ")}]`);
-  const { errs, firstErr } = await sql(deleteStmts.join("\n"));
+  const { errs, firstErr } = await sql(deleteStmts.join("\n")).catch((e) => die(`repo-scoped delete failed: ${e.message}`));
   if (errs) die(`repo-scoped delete failed (${errs} statements) — first: ${firstErr}`);
 }
 
@@ -137,7 +176,8 @@ const MAX_BYTES = parseInt(process.env.KG_INGEST_MAX_BYTES || "200000", 10);
 let nDone = 0, buf = [], bytes = 0, nodeErrs = 0, firstErr = null;
 const flush = async () => {
   if (!buf.length) return;
-  const { errs, firstErr: fe } = await sql(buf.join("\n"));
+  const { errs, firstErr: fe } = await sql(buf.join("\n")).catch((e) =>
+    die(`node ingest lost the connection after ${nDone}/${nodeStmts.length} nodes: ${e.message} — re-run with KG_INGEST_RESUME=1 to continue`));
   nodeErrs += errs; if (fe && !firstErr) firstErr = fe;
   nDone += buf.length; buf = []; bytes = 0;
   process.stderr.write(`\r[kg-ingest] nodes ${nDone}/${nodeStmts.length}`);
@@ -154,7 +194,7 @@ await flush();
 let eDone = 0, edgeErrs = 0;
 if (edgesByTable.size) {
   const defs = [...edgesByTable.keys()].map((t) => `DEFINE TABLE IF NOT EXISTS ${t} TYPE RELATION;`).join("\n");
-  const { errs, firstErr: fe } = await sql(defs);
+  const { errs, firstErr: fe } = await sql(defs).catch((e) => die(`DEFINE relation tables failed: ${e.message}`));
   if (errs) die(`DEFINE relation tables failed — first: ${fe}`);
 }
 for (const [t, objs] of edgesByTable) {
@@ -162,8 +202,13 @@ for (const [t, objs] of edgesByTable) {
   const eflush = async () => {
     if (!ebuf.length) return;
     const stmt = `INSERT RELATION INTO ${t} [${ebuf.join(",")}] RETURN NONE;`;
-    let r = await sql(stmt).catch(() => ({ errs: 1, firstErr: "request failed" }));
-    if (r.errs) r = await sql(stmt).catch(() => ({ errs: 1, firstErr: "request failed" }));  // one retry
+    // Transport drops are retried with backoff inside sql(); only exhausting them aborts —
+    // continuing past a dead server would just skip every remaining batch (the 2026-10
+    // private-surface run that kept 417k edges only partly). A statement-level error gets
+    // one more try, as before.
+    let r = await sql(stmt).catch((e) =>
+      die(`edge ingest lost the connection after ${eDone}/${edgeOk} edges (table ${t}): ${e.message} — re-run with KG_INGEST_RESUME=1 to continue`));
+    if (r.errs) r = await sql(stmt).catch((e) => ({ errs: 1, firstErr: e.message }));
     if (r.errs) { edgeErrs += ebuf.length; if (r.firstErr && !firstErr) firstErr = r.firstErr; }
     eDone += ebuf.length; ebuf = []; ebytes = 0;
     process.stderr.write(`\r[kg-ingest] edges ${eDone}/${edgeOk}${edgeErrs ? ` (${edgeErrs} failed)` : ""}`);
@@ -179,3 +224,4 @@ for (const [t, objs] of edgesByTable) {
 const totalErrs = nodeErrs + edgeErrs;
 if (totalErrs) console.error(`\n[kg-ingest] ⚠ ${totalErrs} statements FAILED (${nodeErrs} node, ${edgeErrs} edge) — first: ${firstErr}`);
 console.error(`\n[kg-ingest] DONE — ${nodeStmts.length} nodes + ${edgeOk} edges → kg-store (${totalErrs} failed)`);
+if (totalErrs) process.exit(1);
