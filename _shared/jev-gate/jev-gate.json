@@ -11,16 +11,40 @@
   "log_path": "~/.local/state/jev-gate/decisions.jsonl",
   "_log_doc": "JSONL, one line per decision: use, verdict, probabilities, latency, Jev request id, usage.cost and a short sha256 of the state. Never the state text itself, so nothing a redaction pattern missed can reach the log. JEV_GATE_LOG overrides the path.",
 
+  "budget": {
+    "_doc": "#881 the spend control the gate lacked: cost was logged, never enforced. daily_cost_cap (USD, UTC day) is the host's total across every use; a call that finds today's spend at or above it is not made and behaves exactly like no_key (logged over_budget). A use's own max_calls_per_hour caps how often it may call (logged rate_limited). est_call_cost is charged when an answer carries no usage.cost. The ledger is a file shared by every hook process (flock); JEV_GATE_BUDGET overrides its path. 0 or absent daily_cost_cap = no cap.",
+    "daily_cost_cap": 1.0,
+    "est_call_cost": 0.0005,
+    "ledger_path": "~/.local/state/jev-gate/budget.json"
+  },
+
+  "sidecar": {
+    "_doc": "#881 `jev-gate serve`: the one Decisions caller for sites that cannot hold a gate of their own (Dagu DAGs, journal-ntfy.sh, maddy post-hoc) - POST /decide/<use> with {state, questions}, GET /health. One OPENROUTER_API_KEY, one cache, one budget ledger, one journal (stdout, shipped to OpenObserve by the fleet's log-shipper). bind/port are overridden by JEV_GATE_BIND/JEV_GATE_PORT; the container binds the mesh address, never a public one. Desktop and termux keep the in-process CLI with their own key.",
+    "bind": "127.0.0.1",
+    "port": 3110
+  },
+
+  "_uses_doc": "#881 THE SHARED USE SHAPE, the same one the Android decisions engine declares in fleet-config.json: enabled, threshold, allowed (the option keys a choice question of the use may offer), class (user_facing | background | gating), ttl_s (answer cache; REQUIRED for background, which must cache and never re-ask), max_calls_per_hour. The four hook uses below predate it and are driven by their own adapter; a use that declares a `class` is also served by `jev-gate decide --use <name>` and the sidecar. A gating use answers advice_only: a suggestion or a confirm, never an automatic action. Static deny lists always run before Jev, in the caller.",
   "uses": {
+    "probe": {
+      "enabled": true,
+      "class": "background",
+      "threshold": 0.75,
+      "ttl_s": 3600,
+      "max_calls_per_hour": 6,
+      "_doc": "#881 wave 0: the plumbing's own end-to-end check (`echo '{\"state\":{\"statement\":\"2+2=4\"},\"questions\":{\"correct\":{\"type\":\"noul\",\"instructions\":\"The statement in `statement` is arithmetically correct.\"}}}' | jev-gate decide --use probe`). Calls made nowhere else; waves #882-#884 declare their own uses beside it."
+    },
     "claude_permission": {
       "enabled": true,
       "threshold": 0.85,
+      "max_calls_per_hour": 600,
       "on_error": "defer",
       "_doc": "Claude Code PermissionRequest hook (Bash|Edit|Write). Every asked noul >= threshold -> {decision:{behavior:allow}}. Anything else -> no output, so the normal prompt (or headless auto-deny) happens exactly as without the gate. Never denies. Deny and ask rules are evaluated by Claude Code regardless of a hook's allow."
     },
     "goose_pretool": {
       "enabled": true,
       "threshold": 0.85,
+      "max_calls_per_hour": 600,
       "on_error": "defer",
       "on_unsafe": "log",
       "_doc": "goose 1.44 PreToolUse plugin hook. It runs AFTER goose's own permission stage and can only block or pass — there is no allow/ask channel — so 'safe -> allow, else defer to the normal flow' is a pass in both branches. on_unsafe=log records Jev's verdict and passes; on_unsafe=block refuses a call only when every asked noul <= 1 - threshold (confidently unsafe), with an explicit reason the model sees. log is the default because blocking turns Jev's opinion into an automatic deny of dispatched work (git push scores low on reversibility by design)."
@@ -28,6 +52,7 @@
     "hermes_tool_select": {
       "enabled": true,
       "threshold": 0.75,
+      "max_calls_per_hour": 600,
       "on_error": "all_tools",
       "first_call_only": true,
       "api_modes": ["chat_completions"],
@@ -38,6 +63,7 @@
     "code_context": {
       "enabled": true,
       "threshold": 0.75,
+      "max_calls_per_hour": 120,
       "_doc": "#765. Per user prompt (claude UserPromptSubmit, goose UserPromptSubmit -> tom file, hermes pre_llm_call), Jev picks one of code_graph.route.options or 'none'. P(choice) >= threshold and not 'none' -> the gate runs that lookup against the cloud-cgc MCP server the CLI's own config already declares and injects the size-capped text. 'none', below threshold, no key, no endpoint, a timeout or any error -> nothing is fetched or injected, exactly as without the gate."
     }
   },

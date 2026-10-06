@@ -18,10 +18,10 @@
    "CDLA-Permissive-2.0": 1
   },
   "dir": {
-   "LicenseRef-NoLicenseGranted": 88
+   "LicenseRef-NoLicenseGranted": 89
   },
   "docker": {
-   "LicenseRef-NoLicenseGranted": 43,
+   "LicenseRef-NoLicenseGranted": 44,
    "Apache-2.0": 6,
    "AGPL-3.0-only": 5,
    "MIT": 5,
@@ -2102,6 +2102,14 @@
    "licence": "LicenseRef-NoLicenseGranted",
    "licence_source": "licenses/curated.json::directories"
   },
+  "dir:infra-ai_jev-sidecar": {
+   "kind": "dir",
+   "declared_in": [
+    "(tree)"
+   ],
+   "licence": "LicenseRef-NoLicenseGranted",
+   "licence_source": "licenses/curated.json::directories"
+  },
   "dir:infra-ai_languagetool": {
    "kind": "dir",
    "declared_in": [
@@ -3332,6 +3340,18 @@
     "infra-sec_introspect-proxy/src/build.json"
    ],
    "version": "ghcr.io/diegonmarcos/introspect-proxy:latest",
+   "scope": "runtime",
+   "licence": "LicenseRef-NoLicenseGranted",
+   "licence_source": "licenses/curated.json::docker_licences[ghcr.io/diegonmarcos/]",
+   "note": "Image built by this fleet. The licence is that of the packaging (own code); the software inside keeps its upstream licence - see the same service's upstream image / vendored-source entries."
+  },
+  "docker:ghcr.io/diegonmarcos/jev-sidecar": {
+   "kind": "docker",
+   "declared_in": [
+    "infra-ai_jev-sidecar/build.json",
+    "infra-ai_jev-sidecar/src/build.json"
+   ],
+   "version": "ghcr.io/diegonmarcos/jev-sidecar:latest",
    "scope": "runtime",
    "licence": "LicenseRef-NoLicenseGranted",
    "licence_source": "licenses/curated.json::docker_licences[ghcr.io/diegonmarcos/]",

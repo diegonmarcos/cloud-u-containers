@@ -184,6 +184,7 @@ def test_config(mod):
     for cli, path in CLIENT_CFG.items():
         g["client_configs"][cli]["path"] = path
     g["cache_dir"] = os.path.join(TMP, "cache-%d" % time.monotonic_ns())
+    cfg["budget"]["ledger_path"] = os.path.join(TMP, "budget-%d.json" % time.monotonic_ns())
     g["route"]["budget_s"] = 1.5
     g["impact"]["budget_s"] = 0.6
     return cfg
@@ -378,6 +379,7 @@ def suite(mod):
     reset(choice("read_file", 0.9))
     check(mod.select_tools(req, cfg, api_call_count=1) is None and not Mock.bodies, "disabled use makes no call")
     code_graph_suite(mod, check)
+    decide_suite(mod, check)
     return fails
 
 
@@ -568,6 +570,328 @@ def code_graph_suite(mod, check):
     mcp_reset(text="x")
     perm(edit, sid="i6")
     check(not McpMock.calls, "impact disabled -> no MCP call")
+
+
+# ── #881: the generic `decide` entry, the budget and the sidecar ──────────────
+
+def generic_config(mod):
+    """test_config plus four declared generic uses (one per class, one rate-limited)."""
+    cfg = test_config(mod)
+    cfg["uses"].update({
+        "t_ui": {"enabled": True, "class": "user_facing", "threshold": 0.8, "allowed": ["a", "b"]},
+        "t_bg": {"enabled": True, "class": "background", "threshold": 0.8, "ttl_s": 60},
+        "t_gate": {"enabled": True, "class": "gating", "threshold": 0.8},
+        "t_rate": {"enabled": True, "class": "user_facing", "threshold": 0.8, "max_calls_per_hour": 2},
+        "t_off": {"enabled": False, "class": "user_facing", "threshold": 0.8},
+        "t_nottl": {"enabled": True, "class": "background", "threshold": 0.8},
+    })
+    return cfg
+
+
+def noul_q(**kw):
+    return {"ok": dict({"type": "noul", "instructions": "The statement is true."}, **kw)}
+
+
+def choice_q(*options):
+    return {"pick": {"type": "choice", "instructions": "Which one?", "criteria": {o: o + " option" for o in options}}}
+
+
+def choice_reply(pick, p, extra=None):
+    def f(body):
+        out = {}
+        for qid, q in body["questions"].items():
+            probs = {k: round((1 - p) / max(len(q["criteria"]) - 1, 1), 4) for k in q["criteria"]}
+            probs[pick] = p
+            probs.update(extra or {})
+            out[qid] = {"type": "choice", "choice": pick, "probabilities": probs}
+        return out
+    return f
+
+
+def decide_suite(mod, check):
+    cfg = generic_config(mod)
+    os.environ["OPENROUTER_API_KEY"] = FAKE_KEY
+    mod._MEM_LEDGER.update(day="", spent=0.0, calls={})
+    run = lambda use, state, questions: mod.run_use(use, {"state": state, "questions": questions}, cfg)
+
+    # a noul answered: ok, typed, thresholded; the state the API sees is redacted, never the caller's raw text
+    reset(nouls(ok=0.95))
+    r = run("t_ui", {"note": "key " + FAKE_KEY, "n": 3}, noul_q())
+    check(r.get("ok") and r["class"] == "user_facing" and r["results"]["ok"]["p"] == 0.95
+          and r["results"]["ok"]["confident"] and r["results"]["ok"]["value"] and not r["cached"], "a noul is answered")
+    sent = Mock.bodies[0]["body"] if Mock.bodies else {}
+    check(Mock.bodies and FAKE_KEY not in json.dumps(sent) and "[REDACTED]" in json.dumps(sent["state"])
+          and sent["state"]["n"] == 3 and sent["model"] == "typesafe/jev-1.13", "decide redacts every string of the state")
+    reset(nouls(ok=0.5))
+    r = run("t_ui", {"a": 1}, noul_q())
+    check(r["ok"] and not r["results"]["ok"]["confident"], "P near 0.5 is not confident")
+    reset(nouls(ok=0.1))
+    r = run("t_ui", {"a": 2}, noul_q())
+    check(r["ok"] and r["results"]["ok"]["confident"] and not r["results"]["ok"]["value"], "a confident NO is confident")
+
+    # choices: pick must be one of the caller's options; `allowed` bounds the options a use may offer
+    reset(choice_reply("a", 0.9))
+    r = run("t_ui", {"q": 1}, choice_q("a", "b"))
+    check(r["ok"] and r["results"]["pick"]["pick"] == "a" and r["results"]["pick"]["confident"], "a choice is answered")
+    reset(choice_reply("c", 0.9))
+    r = run("t_ui", {"q": 2}, choice_q("a", "c"))
+    check(not r["ok"] and r["reason"] == "option_not_allowed" and not Mock.bodies, "an option outside `allowed` is refused before any call")
+    reset(choice_reply("zzz", 0.9, {"zzz": 0.9}))
+    r = run("t_ui", {"q": 3}, choice_q("a", "b"))
+    check(not r["ok"] and r["reason"] == "malformed", "a pick outside the caller's options is malformed")
+    reset(choice_reply("a", 0.9))
+    r = run("t_ui", {"q": 4}, choice_q("a"))
+    check(not r["ok"] and r["reason"] == "bad_questions", "a one-option choice is not a question")
+    reset(choice_reply("a", 0.5))
+    r = run("t_ui", {"q": 6}, choice_q("a", "b"))
+    check(r["ok"] and not r["results"]["pick"]["confident"], "a choice below the threshold is not confident")
+    reset(lambda body: {"pick": {"type": "choice", "choice": "a", "probabilities": {"a": 1.4, "b": 0.0}}})
+    check(run("t_ui", {"q": 7}, choice_q("a", "b"))["reason"] == "malformed", "a choice probability above 1 is malformed")
+    # scores read the best level
+    reset(lambda body: {"s": {"type": "score", "probabilities": {"low": 0.1, "high": 0.85}, "legend": {"low": "l", "high": "h"}}})
+    r = run("t_ui", {"q": 5}, {"s": {"type": "score", "instructions": "How urgent?", "criteria": {"low": "l", "high": "h"}}})
+    check(r["ok"] and r["results"]["s"]["level"] == "high" and r["results"]["s"]["confident"], "a score reads its best level")
+
+    # what is never served
+    for use, why in [("nope", "unknown_use"), ("claude_permission", "not_generic"), ("t_off", "disabled"), ("t_nottl", "misconfigured")]:
+        reset(nouls(ok=0.95))
+        r = run(use, {"x": 1}, noul_q())
+        check(not r["ok"] and r["reason"] == why and not Mock.bodies, "%s is answered %s without a call" % (use, why))
+    reset(nouls(ok=0.95))
+    big = run("t_ui", {"blob": "x" * (cfg["max_state_chars"] + 1)}, noul_q())
+    check(not big["ok"] and big["reason"] == "state_too_large" and not Mock.bodies, "an oversized state is not sent, not truncated")
+    for bad in ({}, {"state": 1}, {"state": 1, "questions": {}}, {"state": 1, "questions": {"q": {"type": "nope", "instructions": "i"}}}):
+        r = mod.run_use("t_ui", bad, cfg)
+        check(not r["ok"] and r["reason"] in ("bad_request", "bad_questions") and not Mock.bodies, "malformed request %r" % (bad,))
+
+    # failures are "no opinion" with the reason
+    reset(nouls(ok=1.5))
+    r = run("t_ui", {"m": 1}, noul_q())
+    check(not r["ok"] and r["reason"] == "malformed", "a probability above 1 is malformed")
+    reset(lambda body: {"ok": {"type": "noul", "noul": True}})
+    check(run("t_ui", {"m": 2}, noul_q())["reason"] == "malformed", "a boolean is not a probability")
+    reset(status=500, raw=b"{}")
+    check(not run("t_ui", {"m": 3}, noul_q())["ok"], "an HTTP error is no opinion")
+    os.environ.pop("OPENROUTER_API_KEY")
+    reset(nouls(ok=0.95))
+    r = run("t_ui", {"m": 4}, noul_q())
+    check(not r["ok"] and r["reason"] == "no_key" and not Mock.bodies, "no key is no opinion, no call")
+    os.environ["OPENROUTER_API_KEY"] = FAKE_KEY
+
+    # class semantics: background caches and never re-asks; gating is advice only
+    reset(nouls(ok=0.95))
+    first = run("t_bg", {"k": "v"}, noul_q())
+    second = run("t_bg", {"k": "v"}, noul_q())
+    check(first["ok"] and not first["cached"] and second["ok"] and second["cached"] and len(Mock.bodies) == 1,
+          "a background use asks once and serves the answer from its cache")
+    run("t_bg", {"k": "other"}, noul_q())
+    check(len(Mock.bodies) == 2, "the cache key is the state: another state asks again")
+    reset(nouls(ok=0.95))
+    g = run("t_gate", {"k": "v"}, noul_q())
+    check(g["ok"] and g["advice_only"] is True and "advice_only" not in run("t_ui", {"k": "w"}, noul_q()), "only a gating use answers advice_only")
+
+    # budget: per-use hourly limit, host daily cap, day roll-over, an unusable ledger
+    reset(nouls(ok=0.95))
+    outs = [run("t_rate", {"i": i}, noul_q()) for i in range(3)]
+    check([o["ok"] for o in outs] == [True, True, False] and outs[2]["reason"] == "rate_limited" and len(Mock.bodies) == 2,
+          "max_calls_per_hour stops the third call of an hour")
+    check(mod.budget_admit(cfg, "t_rate", now=time.time() + 3700) is None, "the hour window slides")
+    cfg["budget"]["daily_cost_cap"] = 1e-7
+    cfg["budget"]["ledger_path"] = os.path.join(TMP, "cap-%d.json" % time.monotonic_ns())
+    reset(nouls(ok=0.95))
+    a, b = run("t_ui", {"c": 1}, noul_q()), run("t_ui", {"c": 2}, noul_q())
+    check(a["ok"] and not b["ok"] and b["reason"] == "over_budget" and len(Mock.bodies) == 1,
+          "a spent daily_cost_cap stops the next call like no_key")
+    check(mod.budget_admit(cfg, None, now=time.time() + 90000) is None, "the cap resets with the UTC day")
+    mod._MEM_LEDGER.update(day="", spent=0.0, calls={})
+    cfg["budget"]["ledger_path"] = os.path.join(TMP, "a-file-not-a-dir", "x", "budget.json")
+    open(os.path.join(TMP, "a-file-not-a-dir"), "w").write("x")
+    reset(nouls(ok=0.95))
+    a, b = run("t_ui", {"c": 3}, noul_q()), run("t_ui", {"c": 4}, noul_q())
+    check(a["ok"] and not b["ok"] and b["reason"] == "over_budget", "an unusable ledger file still enforces the cap in memory")
+    cfg["budget"]["daily_cost_cap"] = 0
+    cfg["budget"]["ledger_path"] = os.path.join(TMP, "none-%d.json" % time.monotonic_ns())
+    reset(nouls(ok=0.95))
+    check(all(run("t_ui", {"c": 10 + i}, noul_q())["ok"] for i in range(4)), "no cap and no hourly limit: never refused")
+    # the existing hook uses are charged to the same ledger
+    cfg["budget"]["daily_cost_cap"] = 1e-7
+    reset(nouls(all=0.95))
+    cfg["uses"]["claude_permission"]["max_calls_per_hour"] = 600
+    first = mod.claude_hook({"hook_event_name": "PermissionRequest", "tool_name": "Bash", "tool_input": {"command": "ls"}, "cwd": "/p"}, cfg)
+    second = mod.claude_hook({"hook_event_name": "PermissionRequest", "tool_name": "Bash", "tool_input": {"command": "ls -a"}, "cwd": "/p"}, cfg)
+    check(first is not None and second is None, "the permission hook shares the daily cap and defers once it is spent")
+    cfg["budget"]["daily_cost_cap"] = 0
+    cfg["budget"]["ledger_path"] = os.path.join(TMP, "hook-%d.json" % time.monotonic_ns())
+    cfg["uses"]["claude_permission"]["max_calls_per_hour"] = 1
+    reset(nouls(all=0.95))
+    first = mod.claude_hook({"hook_event_name": "PermissionRequest", "tool_name": "Bash", "tool_input": {"command": "ls"}, "cwd": "/p"}, cfg)
+    second = mod.claude_hook({"hook_event_name": "PermissionRequest", "tool_name": "Bash", "tool_input": {"command": "ls -a"}, "cwd": "/p"}, cfg)
+    check(first is not None and second is None and len(Mock.bodies) == 1, "a hook use's max_calls_per_hour defers the call past it")
+
+    # decide_cli: the shell contract
+    cli = lambda argv, stdin: mod.decide_cli(argv, stdin, cfg)
+    reset(nouls(ok=0.95))
+    check(cli(["--use", "t_ui"], json.dumps({"state": {"z": 1}, "questions": noul_q()}))["ok"], "decide --use answers a stdin request")
+    check(cli([], "{}")["reason"].startswith("usage"), "decide without --use explains its usage")
+    check(cli(["--use", "t_ui"], "not json")["reason"] == "bad_request", "decide on bad JSON is no opinion")
+
+
+def sidecar_suite(mod):
+    """`serve`: POST /decide/<use> over a real socket, health by names, the body cap, the stdout journal."""
+    import contextlib
+    import io
+    import urllib.error
+    import urllib.request
+    fails = []
+    cfg = generic_config(mod)
+    os.environ["OPENROUTER_API_KEY"] = FAKE_KEY
+    mod._MEM_LEDGER.update(day="", spent=0.0, calls={})
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        srv = mod.serve(cfg, bind="127.0.0.1", port=0)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        base = "http://127.0.0.1:%d" % srv.server_address[1]
+
+        def call(path, body=None, raw=None):
+            data = raw if raw is not None else (json.dumps(body).encode() if body is not None else None)
+            try:
+                with urllib.request.urlopen(urllib.request.Request(base + path, data=data), timeout=10) as res:
+                    return res.status, json.loads(res.read())
+            except urllib.error.HTTPError as e:
+                return e.code, json.loads(e.read() or b"{}")
+
+        reset(nouls(ok=0.95))
+        code, out = call("/decide/t_ui", {"state": {"secret": FAKE_KEY, "n": 7}, "questions": noul_q()})
+        if not (code == 200 and out.get("ok") and out["results"]["ok"]["p"] == 0.95):
+            fails.append("sidecar did not answer a decision: %s %r" % (code, out))
+        code, out = call("/decide/nope", {"state": 1, "questions": noul_q()})
+        if not (code == 200 and out == {"ok": False, "use": "nope", "reason": "unknown_use"}):
+            fails.append("sidecar: an unknown use must be 200 {ok:false}: %s %r" % (code, out))
+        code, out = call("/health")
+        if not (code == 200 and out["ok"] and "t_ui" in out["uses"] and "claude_permission" not in out["uses"] and out["key"] is True
+                and FAKE_KEY not in json.dumps(out)):
+            fails.append("sidecar /health must list served use names and the key's presence only: %r" % (out,))
+        if call("/decide/")[0] != 404 or call("/other")[0] != 404:
+            fails.append("sidecar: other paths are 404")
+        if call("/decide/t_ui", raw=b"{not json")[0] != 400:
+            fails.append("sidecar: a body that is not JSON is 400")
+        if call("/decide/t_ui", raw=b"x" * (mod.MAX_BODY + 1))[0] != 413:
+            fails.append("sidecar: a body over MAX_BODY is 413")
+        srv.shutdown()
+    mod.JOURNAL_STDOUT = False
+    lines = [json.loads(l) for l in buf.getvalue().splitlines() if l.startswith("{")]
+    if not any(l.get("use") == "t_ui" and l.get("verdict") == "answered" for l in lines):
+        fails.append("sidecar journal must go to stdout for the log-shipper: %r" % buf.getvalue()[:300])
+    if FAKE_KEY in buf.getvalue() or '"n": 7' in buf.getvalue():
+        fails.append("sidecar journal must never carry the state")
+    return fails
+
+
+# mutants of the #881 code: each must make decide_suite fail
+MUTANTS_DECIDE = [
+    ("allowed ignored", 'if allowed and not set(crit) <= set(allowed):', "if False:"),
+    ("daily cap ignored", 'if cap and st.get("spent", 0.0) >= cap:', "if False:"),
+    ("hourly limit ignored", "if len(recent) >= per_hour:", "if False:"),
+    ("spend never charged", 'budget_charge(cfg, meta["cost"])', "pass"),
+    ("background not cached", "hit = _cache_get(cfg, key)", "hit = None"),
+    ("gating not advice-only", 'if u["class"] == "gating":', "if False:"),
+    ("generic state unredacted", 'state = _redact_obj(payload["state"], cfg)', 'state = payload["state"]'),
+    ("generic oversize sent", "if _too_big(state, cfg):", "if False:"),
+    ("out-of-set pick accepted", 'if not isinstance(pick, str) or pick not in q["criteria"] or pick not in probs:', "if not isinstance(pick, str):"),
+    ("noul confidence ignored", '"confident": max(p, 1 - p) >= t}', '"confident": True}'),
+    ("choice confidence ignored", '"confident": probs[pick] >= t,', '"confident": True,'),
+    ("disabled use served", 'if not u.get("enabled"):\n        return None, "disabled"', "if False:\n        return None, 'disabled'"),
+    ("hook use served by decide", 'if u.get("class") not in CLASSES:', "if False:"),
+    ("probabilities unchecked", "if not isinstance(probs, dict) or not probs or not all(_prob(v) for v in probs.values()):", "if not isinstance(probs, dict):"),
+    ("background without ttl served", 'if u["class"] == "background" and not (isinstance(ttl, (int, float)) and ttl > 0):', "if False:"),
+    ("memory ledger fallback dropped", "        with _MEM_LOCK:\n            return txn(_MEM_LEDGER)", "        return None"),
+    ("cache key ignores state", 'key = _sha(json.dumps([use, state, questions], sort_keys=True))', 'key = _sha(json.dumps([use, questions], sort_keys=True))'),
+    ("body cap dropped", "if not 0 < n <= MAX_BODY:", "if False:"),
+    ("hook call not budgeted", "answers, meta = decide(state, asked, cfg, use=use)", "answers, meta = decide(state, asked, cfg)"),
+]
+
+
+def decide_mutation_tests():
+    src = open(os.path.join(GATE_DIR, "jev_gate.py")).read()
+    survived = []
+    for label, old, new in MUTANTS_DECIDE:
+        if src.count(old) != 1:
+            survived.append("%s: mutation site not found exactly once (tester out of date)" % label)
+            continue
+        d = tempfile.mkdtemp(prefix="jev-mutant-", dir=TMP)
+        shutil.copy(os.path.join(GATE_DIR, "jev-gate.json"), d)
+        with open(os.path.join(d, "jev_gate.py"), "w") as f:
+            f.write(src.replace(old, new))
+        mutant = load(os.path.join(d, "jev_gate.py"), "jev_gate_mutant_d")
+        fails = []
+        check = lambda cond, msg: None if cond else fails.append(msg)
+        try:
+            decide_suite(mutant, check)
+            if not fails and label in ("body cap dropped",):
+                fails += sidecar_suite(mutant)
+        except Exception:  # noqa: BLE001 — a mutant that crashes the suite is caught too
+            fails.append("crashed")
+        if not fails:
+            survived.append(label)
+    return survived
+
+
+def package_and_parity():
+    """The nix package, the sidecar service and the src/dist parity of every committed copy of the gate."""
+    fails = []
+    read = lambda p: open(os.path.join(ROOT, p)).read()
+    pkg = read("_shared/jev-gate.nix")
+    for needle in ['writers.writePython3Bin "jev-gate"', "JEV_GATE_CONFIG", "share/jev-gate", 'mainProgram = "jev-gate"', "./jev-gate"]:
+        if needle not in pkg:
+            fails.append("_shared/jev-gate.nix lacks %r" % needle)
+    nix_parse = shutil.which("nix-instantiate")
+    if nix_parse:
+        r = subprocess.run([nix_parse, "--parse", os.path.join(ROOT, "_shared/jev-gate.nix")], capture_output=True, text=True)
+        if r.returncode:
+            fails.append("_shared/jev-gate.nix does not parse: %s" % r.stderr[:200])
+    sidecar = "infra-ai_jev-sidecar"
+    if "../../_shared/jev-gate" not in read(sidecar + "/src/flake.nix"):
+        fails.append(sidecar + ": flake extraFiles must carry ../../_shared/jev-gate")
+    if not re.search(r"^COPY jev-gate/ /app/jev-gate/$", read(sidecar + "/src/code/Dockerfile"), re.M) \
+            or '"serve"' not in read(sidecar + "/src/code/Dockerfile"):
+        fails.append(sidecar + ": Dockerfile must COPY jev-gate/ and run `jev_gate.py serve`")
+    comp = read(sidecar + "/src/compose.nix")
+    if "10.0.0.6" not in comp or "JEV_GATE_BIND" not in comp or re.search(r"^\s*ports\s*=", comp, re.M):
+        fails.append(sidecar + ": compose must bind the mesh address (JEV_GATE_BIND) and publish no port")
+    if json.load(open(os.path.join(ROOT, sidecar, "build.json")))["containers"]["app"].get("public"):
+        fails.append(sidecar + ": the sidecar must not be public")
+    # every committed copy of the gate is byte-identical to _shared/jev-gate (dist is generated; a stale
+    # copy would ship an old gate with a new declaration)
+    for rel in ["user-ai_my-ai-api/dist/code/arm64/jev-gate", "user-ai_my-ai-api/dist/code/amd64/jev-gate"]:
+        d = os.path.join(ROOT, rel)
+        if not os.path.isdir(d):
+            continue
+        for name in sorted(os.listdir(GATE_DIR)):
+            src = os.path.join(GATE_DIR, name)
+            if name == "__pycache__":
+                continue
+            if os.path.isdir(src):
+                continue
+            if not os.path.exists(os.path.join(d, name)) or open(src, "rb").read() != open(os.path.join(d, name), "rb").read():
+                fails.append("src/dist parity: %s/%s differs from _shared/jev-gate/%s" % (rel, name, name))
+        for name in sorted(os.listdir(os.path.join(GATE_DIR, "hooks"))):
+            if open(os.path.join(GATE_DIR, "hooks", name), "rb").read() != open(os.path.join(d, "hooks", name), "rb").read():
+                fails.append("src/dist parity: %s/hooks/%s differs" % (rel, name))
+        extra = set(os.listdir(d)) - set(os.listdir(GATE_DIR))
+        if extra:
+            fails.append("src/dist parity: %s holds files _shared/jev-gate does not: %s" % (rel, sorted(extra)))
+    # the declaration: every generic use declares what the engine on Android declares
+    cfg = json.load(open(os.path.join(GATE_DIR, "jev-gate.json")))
+    if not cfg.get("budget", {}).get("daily_cost_cap"):
+        fails.append("jev-gate.json must declare budget.daily_cost_cap")
+    for name, u in cfg["uses"].items():
+        if "class" in u and (u["class"] not in ("user_facing", "background", "gating")
+                             or (u["class"] == "background" and not u.get("ttl_s"))
+                             or not u.get("max_calls_per_hour")):
+            fails.append("use %s: a generic use declares a valid class, ttl_s for background and max_calls_per_hour" % name)
+        if "class" not in u and not u.get("max_calls_per_hour"):
+            fails.append("use %s: every use declares max_calls_per_hour" % name)
+    return fails
 
 
 # ── mutation tests: each guard must be load-bearing ──────────────────────────
@@ -773,11 +1097,16 @@ def main():
     survived = mutation_tests()
     fails += ["mutant SURVIVED (a guard is not tested): " + m for m in survived]
     fails += ["wiring: " + f for f in cli_and_wiring()]
+    survived_881 = decide_mutation_tests()
+    fails += ["mutant SURVIVED (a #881 guard is not tested): " + m for m in survived_881]
+    survived = survived + survived_881
+    fails += ["sidecar: " + f for f in sidecar_suite(real)]
+    fails += ["package: " + f for f in package_and_parity()]
     SERVER.shutdown()
     shutil.rmtree(TMP, ignore_errors=True)
     for f in fails:
         print("FAIL", f)
-    print("jev-gate: %d/%d mutants killed, %d failures" % (len(MUTANTS) - len(survived), len(MUTANTS), len(fails)))
+    print("jev-gate: %d/%d mutants killed, %d failures" % (len(MUTANTS) + len(MUTANTS_DECIDE) - len(survived), len(MUTANTS) + len(MUTANTS_DECIDE), len(fails)))
     return 1 if fails else 0
 
 

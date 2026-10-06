@@ -11,6 +11,8 @@ Entry points:
   python3 jev_gate.py goose-prompt  goose 1.44 UserPromptSubmit plugin hook -> $GOOSE_MOIM_MESSAGE_FILE
   select_tools(request, cfg)        hermes llm_request middleware (see __init__.py)
   route_context(cli, prompt, ...)   hermes pre_llm_call hook (see __init__.py)
+  python3 jev_gate.py decide --use <name>   generic: {state, questions} on stdin -> verdict JSON on stdout (#881)
+  python3 jev_gate.py serve         the oci-apps sidecar: POST /decide/<use> on the mesh (#881)
 
 #765: Jev cannot call tools, so the gate does. route_context asks Jev whether a prompt needs code-graph
 context and, on a confident pick, runs that cloud-cgc MCP lookup and returns capped text to inject;
@@ -20,11 +22,13 @@ Fail-safe contract: no key, a timeout, an HTTP error, a malformed answer or ANY 
 "no opinion", and every adapter maps no opinion to exactly what the host would do without the gate.
 """
 import hashlib
+import http.server
 import json
 import os
 import re
 import shlex
 import sys
+import threading
 import time
 import urllib.request
 
@@ -88,12 +92,17 @@ def _key(cfg):
     return next((os.environ[k] for k in cfg["key_env"] if os.environ.get(k)), None)
 
 
-def decide(state, questions, cfg, budget=None):
+def decide(state, questions, cfg, budget=None, use=None):
     """POST one Decisions request. Returns (answers, meta) or (None, meta) on any failure.
-    budget: seconds left of a caller's deadline; the call never waits longer than that."""
+    budget: seconds left of a caller's deadline; the call never waits longer than that.
+    use: the declared use this call belongs to; its max_calls_per_hour and the host's daily_cost_cap
+    (#881) are charged here, and an exhausted budget answers exactly like no_key."""
     key = _key(cfg)
     if not key:
         return None, {"error": "no_key"}
+    over = budget_admit(cfg, use)
+    if over:
+        return None, {"error": over}
     body = json.dumps({"model": cfg["model"], "state": state, "questions": questions}).encode()
     req = urllib.request.Request(cfg["endpoint"], data=body, method="POST", headers={
         "Authorization": "Bearer " + key, "Content-Type": "application/json"})
@@ -106,6 +115,7 @@ def decide(state, questions, cfg, budget=None):
             meta["status"] = res.status
             data = json.loads(res.read())
         meta.update(id=data.get("id"), cost=(data.get("usage") or {}).get("cost"))
+        budget_charge(cfg, meta["cost"])
         answers = data["answers"]
         if not isinstance(answers, dict):
             raise ValueError("answers is not an object")
@@ -121,15 +131,103 @@ def _prob(x):
     return isinstance(x, (int, float)) and not isinstance(x, bool) and 0 <= x <= 1
 
 
+# The sidecar's container log is the journal OpenObserve ingests (the fleet's log-shipper reads
+# every declared container's stdout), so `serve` also prints each line. Never set for the CLI modes:
+# their stdout is the hook's answer.
+JOURNAL_STDOUT = False
+
+
 def log(cfg, **event):
     """Append one JSONL decision. Never the state text. Never raises."""
     try:
+        line = json.dumps({"ts": int(time.time()), "src": "jev-gate", **event})
+        if JOURNAL_STDOUT:
+            print(line, flush=True)
         path = os.path.expanduser(os.environ.get("JEV_GATE_LOG") or cfg["log_path"])
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "a") as f:
-            f.write(json.dumps({"ts": int(time.time()), **event}) + "\n")
+            f.write(line + "\n")
     except Exception:  # noqa: BLE001
         pass
+
+
+# ── budget (#881): a daily USD cap for the host and max_calls_per_hour per use ─────────────
+
+_MEM_LEDGER = {"day": "", "spent": 0.0, "calls": {}}
+_MEM_LOCK = threading.Lock()
+
+
+def _ledger(cfg, txn):
+    """Run txn(state) -> result under a file lock on the shared ledger, then write the state back.
+    Hooks are separate short-lived processes, so the ledger is a file; when it cannot be used the
+    in-process ledger still bounds this process (a cap that silently vanishes is worse than a gate
+    that stops)."""
+    path = os.path.expanduser(os.environ.get("JEV_GATE_BUDGET") or (cfg.get("budget") or {}).get("ledger_path")
+                              or "~/.local/state/jev-gate/budget.json")
+    try:
+        import fcntl
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path + ".lock", "w") as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            try:
+                st = json.load(open(path))
+                if not isinstance(st, dict):
+                    st = {}
+            except (OSError, ValueError):
+                st = {}
+            res = txn(st)
+            tmp = path + ".tmp"
+            with open(tmp, "w") as f:
+                json.dump(st, f)
+            os.replace(tmp, path)
+            return res
+    except Exception:  # noqa: BLE001
+        with _MEM_LOCK:
+            return txn(_MEM_LEDGER)
+
+
+def budget_admit(cfg, use, now=None):
+    """None when one more call may be made, else 'over_budget' (today's spend reached daily_cost_cap)
+    or 'rate_limited' (the use made max_calls_per_hour calls in the last hour). An admitted call is
+    counted against its use here, before it is made, so concurrent hooks cannot all slip under."""
+    cap = (cfg.get("budget") or {}).get("daily_cost_cap")
+    per_hour = ((cfg.get("uses") or {}).get(use) or {}).get("max_calls_per_hour") if use else None
+    if not cap and not per_hour:
+        return None
+    now = time.time() if now is None else now
+
+    def txn(st):
+        day = time.strftime("%Y-%m-%d", time.gmtime(now))
+        if st.get("day") != day:
+            st["day"], st["spent"] = day, 0.0
+        if cap and st.get("spent", 0.0) >= cap:
+            return "over_budget"
+        if per_hour:
+            calls = st.setdefault("calls", {})
+            recent = [t for t in calls.get(use, []) if t > now - 3600]
+            if len(recent) >= per_hour:
+                calls[use] = recent
+                return "rate_limited"
+            calls[use] = recent + [now]
+        return None
+    return _ledger(cfg, txn)
+
+
+def budget_charge(cfg, cost, now=None):
+    """Add one answered call's usage.cost (est_call_cost when the answer carried none) to today's spend."""
+    b = cfg.get("budget") or {}
+    if not b.get("daily_cost_cap"):
+        return
+    amount = cost if isinstance(cost, (int, float)) and not isinstance(cost, bool) and cost >= 0 \
+        else b.get("est_call_cost", 0.0)
+    now = time.time() if now is None else now
+
+    def txn(st):
+        day = time.strftime("%Y-%m-%d", time.gmtime(now))
+        if st.get("day") != day:
+            st["day"], st["spent"] = day, 0.0
+        st["spent"] = st.get("spent", 0.0) + amount
+    _ledger(cfg, txn)
 
 
 # ── safety verdict (claude + goose) ──────────────────────────────────────────
@@ -156,7 +254,7 @@ def safety(use, tool, tool_input, project, task, cfg, cli=None, session_id=None)
         asked = {k: {kk: vv for kk, vv in q.items() if kk != "needs"}
                  for k, q in cfg["questions"].items()
                  if not k.startswith("_") and (not q.get("needs") or q["needs"] in state)}
-        answers, meta = decide(state, asked, cfg)
+        answers, meta = decide(state, asked, cfg, use=use)
         scores = {k: (answers.get(k) or {}).get("noul") for k in asked} if answers else None
         if not scores or not all(_prob(s) for s in scores.values()):
             log(cfg, use=use, tool=tool, verdict=u["on_error"], reason="error", **meta)
@@ -417,7 +515,7 @@ def route_context(cli, prompt, session_id, cwd, cfg):
         criteria["none"] = r["none_criterion"]
         answers, meta = decide({"request": query}, {"route": {
             "type": "choice", "instructions": r["instructions"], "criteria": criteria}}, cfg,
-            deadline - time.monotonic())
+            deadline - time.monotonic(), use="code_context")
         choice, p = _pick(answers, "route")
         if not _prob(p) or choice not in criteria:
             log(cfg, verdict="none", reason="error", **meta, **ev)
@@ -444,7 +542,7 @@ def route_context(cli, prompt, session_id, cwd, cfg):
         if repos and repo not in repos:
             answers, _ = decide({"request": query}, {"repo": {
                 "type": "choice", "instructions": r["repo_instructions"], "criteria": {x: x for x in repos}}},
-                cfg, deadline - time.monotonic())
+                cfg, deadline - time.monotonic(), use="code_context")
             repo, rp = _pick(answers, "repo")
             if not _prob(rp) or rp < u["threshold"] or repo not in repos:
                 log(cfg, verdict="none", reason="repo_unsure", **ev)
@@ -572,7 +670,7 @@ def select_tools(request, cfg, api_call_count=1, api_mode="chat_completions"):
         criteria.setdefault("none", "No tool is needed; answer directly in text.")
         state = {"request": redact(prompt, cfg)[:cfg["max_state_chars"]]}
         answers, meta = decide(state, {"tool": {"type": "choice", "instructions": cfg["tool_pick_instructions"],
-                                                "criteria": criteria}}, cfg)
+                                                "criteria": criteria}}, cfg, use="hermes_tool_select")
         a = (answers or {}).get("tool") or {}
         choice, probs = a.get("choice"), a.get("probabilities") or {}
         p = probs.get(choice)
@@ -600,8 +698,264 @@ def _without_tools(request):
     return {k: v for k, v in request.items() if k not in ("tools", "tool_choice", "parallel_tool_calls")}
 
 
+# ── generic uses (#881): `jev-gate decide --use <name>` and the sidecar ──────────────────
+
+CLASSES = ("user_facing", "background", "gating")
+QUESTION_TYPES = ("noul", "choice", "score")
+MAX_QUESTIONS = 8
+MAX_DECIDE_CACHE = 256   # cached answers kept on disk, oldest dropped first
+
+
+def _redact_obj(x, cfg):
+    """Every string inside a JSON value through redact(); keys are the caller's vocabulary, not data."""
+    if isinstance(x, str):
+        return redact(x, cfg)
+    if isinstance(x, list):
+        return [_redact_obj(i, cfg) for i in x]
+    if isinstance(x, dict):
+        return {k: _redact_obj(v, cfg) for k, v in x.items()}
+    return x
+
+
+def generic_use(cfg, use):
+    """The declaration of a use `decide` may serve, or (None, reason). A generic use declares its
+    `class`; background must also declare a ttl_s (it caches and never re-asks); gating is advice-only."""
+    u = (cfg.get("uses") or {}).get(use)
+    if not isinstance(u, dict):
+        return None, "unknown_use"
+    if u.get("class") not in CLASSES:
+        return None, "not_generic"
+    if not u.get("enabled"):
+        return None, "disabled"
+    ttl = u.get("ttl_s")
+    if u["class"] == "background" and not (isinstance(ttl, (int, float)) and ttl > 0):
+        return None, "misconfigured"
+    if not isinstance(u.get("threshold"), (int, float)) or not 0 < u["threshold"] <= 1:
+        return None, "misconfigured"
+    return u, None
+
+
+def check_questions(questions, u):
+    """None when the caller's questions are well formed and inside the use's `allowed` option set,
+    else the reason. Options are never invented here: a choice question lists its own criteria."""
+    if not isinstance(questions, dict) or not 0 < len(questions) <= MAX_QUESTIONS:
+        return "bad_questions"
+    allowed = u.get("allowed")
+    for qid, q in questions.items():
+        if not isinstance(qid, str) or not isinstance(q, dict) or q.get("type") not in QUESTION_TYPES \
+                or not isinstance(q.get("instructions"), str):
+            return "bad_questions"
+        if q["type"] == "choice":
+            crit = q.get("criteria")
+            if not isinstance(crit, dict) or len(crit) < 2:
+                return "bad_questions"
+            if allowed and not set(crit) <= set(allowed):
+                return "option_not_allowed"
+    return None
+
+
+def read_verdicts(answers, questions, u):
+    """{question: {type, p, confident, ...}} from a Decisions answer, or None when ANY answer is
+    missing, mistyped, outside the caller's options or carries a probability outside [0, 1]."""
+    t, out = u["threshold"], {}
+    for qid, q in questions.items():
+        a = answers.get(qid)
+        if not isinstance(a, dict):
+            return None
+        if q["type"] == "noul":
+            p = a.get("noul")
+            if not _prob(p):
+                return None
+            out[qid] = {"type": "noul", "p": p, "value": p >= 0.5, "confident": max(p, 1 - p) >= t}
+            continue
+        probs = a.get("probabilities")
+        if not isinstance(probs, dict) or not probs or not all(_prob(v) for v in probs.values()):
+            return None
+        if q["type"] == "choice":
+            pick = a.get("choice")
+            if not isinstance(pick, str) or pick not in q["criteria"] or pick not in probs:
+                return None
+            out[qid] = {"type": "choice", "pick": pick, "p": probs[pick], "confident": probs[pick] >= t,
+                        "probabilities": probs}
+        else:
+            level = max(probs, key=probs.get)
+            out[qid] = {"type": "score", "level": level, "p": probs[level], "confident": probs[level] >= t,
+                        "probabilities": probs}
+    return out
+
+
+def _decide_cache(cfg):
+    return os.path.join(os.path.expanduser(cfg["code_graph"]["cache_dir"]), "decide")
+
+
+def _cache_get(cfg, key):
+    try:
+        with open(os.path.join(_decide_cache(cfg), key + ".json")) as f:
+            hit = json.load(f)
+        return hit["results"] if hit["exp"] > time.time() else None
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+
+
+def _cache_set(cfg, key, results, ttl):
+    try:
+        d = _decide_cache(cfg)
+        os.makedirs(d, exist_ok=True)
+        with open(os.path.join(d, key + ".json"), "w") as f:
+            json.dump({"exp": time.time() + ttl, "results": results}, f)
+        files = sorted((os.path.join(d, n) for n in os.listdir(d)), key=os.path.getmtime)
+        for old in files[:max(0, len(files) - MAX_DECIDE_CACHE)]:
+            os.unlink(old)
+    except OSError:
+        pass
+
+
+def run_use(use, payload, cfg):
+    """One decision for a declared generic use: {"state": ..., "questions": {...}} in, a verdict out.
+    ALWAYS returns a dict; {"ok": False, "reason": ...} is "no opinion", and the caller's own path is
+    the fallback. The state is redacted and size-capped like every other state, `allowed` options are
+    enforced before any call, and the Decisions call is charged to the budget. Never raises."""
+    t0 = time.monotonic()
+    ev = {"use": use}
+    try:
+        u, why = generic_use(cfg, use)
+        if u is None:
+            log(cfg, verdict="none", reason=why, **ev)
+            return {"ok": False, "use": use, "reason": why}
+        ev["class"] = u["class"]
+        if not isinstance(payload, dict) or "state" not in payload:
+            return _no_opinion(cfg, use, ev, "bad_request")
+        questions = payload.get("questions")
+        why = check_questions(questions, u)
+        if why:
+            return _no_opinion(cfg, use, ev, why)
+        state = _redact_obj(payload["state"], cfg)
+        if _too_big(state, cfg):
+            return _no_opinion(cfg, use, ev, "state_too_large")
+        key = _sha(json.dumps([use, state, questions], sort_keys=True))
+        ttl = u.get("ttl_s") or 0
+        if ttl:
+            hit = _cache_get(cfg, key)
+            if hit is not None:
+                log(cfg, verdict="cached", **ev)
+                return _result(use, u, hit, True)
+        answers, meta = decide(state, questions, cfg, use=use)
+        results = read_verdicts(answers, questions, u) if answers else None
+        if results is None:
+            reason = meta.get("error") or "malformed"
+            log(cfg, verdict="none", reason=reason, **ev, **{k: v for k, v in meta.items() if k != "error"})
+            return {"ok": False, "use": use, "reason": reason}
+        if ttl:
+            _cache_set(cfg, key, results, ttl)
+        log(cfg, verdict="answered", scores={q: r["p"] for q, r in results.items()},
+            threshold=u["threshold"], **ev, **meta)
+        return _result(use, u, results, False)
+    except Exception as e:  # noqa: BLE001 — every failure is "no opinion"
+        log(cfg, verdict="none", reason="exception:" + type(e).__name__,
+            latency_ms=int((time.monotonic() - t0) * 1000), **ev)
+        return {"ok": False, "use": use, "reason": "exception"}
+
+
+def _too_big(state, cfg):
+    return len(json.dumps(state)) > cfg["max_state_chars"]
+
+
+def _no_opinion(cfg, use, ev, reason):
+    log(cfg, verdict="none", reason=reason, **ev)
+    return {"ok": False, "use": use, "reason": reason}
+
+
+def _result(use, u, results, cached):
+    out = {"ok": True, "use": use, "class": u["class"], "cached": cached, "threshold": u["threshold"],
+           "results": results}
+    if u["class"] == "gating":
+        out["advice_only"] = True   # a suggestion or a confirm, never an automatic action
+    return out
+
+
+def decide_cli(argv, stdin, cfg):
+    """`decide --use <name>`: stdin {state, questions} -> the run_use dict as one JSON line."""
+    use = argv[argv.index("--use") + 1] if "--use" in argv[:-1] else None
+    if not use:
+        return {"ok": False, "reason": "usage: jev-gate decide --use <name> < {state, questions}"}
+    try:
+        payload = json.loads(stdin)
+    except ValueError:
+        return {"ok": False, "use": use, "reason": "bad_request"}
+    return run_use(use, payload, cfg)
+
+
+MAX_BODY = 65536
+
+
+def make_handler(cfg):
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def log_message(self, *a):
+            pass
+
+        def _send(self, code, obj):
+            body = json.dumps(obj).encode()
+            self.send_response(code)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def do_GET(self):
+            if self.path == "/health":
+                names = sorted(n for n in cfg["uses"] if generic_use(cfg, n)[0])
+                return self._send(200, {"ok": True, "uses": names, "key": bool(_key(cfg))})
+            self._send(404, {"ok": False, "reason": "not_found"})
+
+        def do_POST(self):
+            m = re.fullmatch(r"/decide/([A-Za-z0-9_.-]{1,64})", self.path)
+            if not m:
+                return self._send(404, {"ok": False, "reason": "not_found"})
+            try:
+                n = int(self.headers.get("Content-Length") or 0)
+            except ValueError:
+                n = -1
+            if not 0 < n <= MAX_BODY:
+                return self._send(413 if n > MAX_BODY else 400, {"ok": False, "reason": "bad_request"})
+            try:
+                payload = json.loads(self.rfile.read(n))
+            except ValueError:
+                return self._send(400, {"ok": False, "reason": "bad_request"})
+            self._send(200, run_use(m.group(1), payload, cfg))
+    return Handler
+
+
+def serve(cfg, bind=None, port=None):
+    """The oci-apps sidecar (#881): one process, one OPENROUTER_API_KEY, one cache, one budget ledger and
+    one journal for every shell-heavy site (Dagu DAGs, journal-ntfy, maddy post-hoc) on the mesh.
+    POST /decide/<use> {state, questions} answers run_use's dict; GET /health lists the served uses
+    by name. Journal lines go to the JSONL log and to stdout, which the fleet's log-shipper sends to
+    OpenObserve."""
+    global JOURNAL_STDOUT
+    JOURNAL_STDOUT = True
+    sc = cfg.get("sidecar") or {}
+    srv = http.server.ThreadingHTTPServer(
+        (bind or os.environ.get("JEV_GATE_BIND") or sc.get("bind", "127.0.0.1"),
+         int(port or os.environ.get("JEV_GATE_PORT") or sc.get("port", 3110))), make_handler(cfg))
+    return srv
+
+
 def main(argv):
     mode = argv[1] if len(argv) > 1 else ""
+    if mode == "decide":
+        # prints a verdict or {"ok": false, "reason": ...} ("no opinion"); the exit status stays 0 so a
+        # shell caller's `set -e` never turns the gate's silence into a failure of its own job
+        try:
+            out = decide_cli(argv[2:], sys.stdin.read(), load_config())
+        except Exception as e:  # noqa: BLE001
+            out = {"ok": False, "reason": "exception:" + type(e).__name__}
+        print(json.dumps(out))
+        return 0
+    if mode == "serve":
+        srv = serve(load_config())
+        print("jev-gate sidecar listening on %s:%d" % srv.server_address, flush=True)
+        srv.serve_forever()
+        return 0
     try:
         cfg = load_config()
         event = json.loads(sys.stdin.read())

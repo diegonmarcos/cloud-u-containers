@@ -1,0 +1,51 @@
+{
+  "name": "jev-sidecar",
+  "description": "Jev decisions sidecar on oci-apps (#881) — `jev-gate serve`: POST /decide/<use> with {state, questions} on the WireGuard mesh for the sites that cannot carry a gate of their own (Dagu DAGs, journal-ntfy.sh, maddy post-hoc). One OPENROUTER_API_KEY, one answer cache, one daily USD cap and per-use hourly limits, one journal on stdout for the fleet's log-shipper (OpenObserve). Jev only suggests: every failure answers {ok:false, reason} and the caller keeps today's behaviour. Uses are declared in _shared/jev-gate/jev-gate.json, the same file the agent CLIs' gate reads. WG-only, never public.",
+  "dns": "jev-sidecar.app",
+  "ports": {
+    "app": 3110
+  },
+  "category": "tools",
+  "upstream_image": "python:3.13-slim",
+  "docker": {
+    "image": "jev-sidecar",
+    "dockerfile": "Dockerfile",
+    "registry": "ghcr.io/diegonmarcos",
+    "platform": "linux/arm64",
+    "arch": "arm64"
+  },
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/jev-sidecar",
+    "compose_flags": "--pull always --force-recreate"
+  },
+  "proxy": {
+    "app_hub": false
+  },
+  "containers": {
+    "app": {
+      "container_name": "jev-sidecar",
+      "image": "ghcr.io/diegonmarcos/jev-sidecar:latest",
+      "port": 3110,
+      "port_env": "JEV_GATE_PORT",
+      "dns": "jev-sidecar.app",
+      "public": false,
+      "healthcheck": "/health",
+      "monitoring": null,
+      "env_file": true,
+      "depends_on": [],
+      "resources": null,
+      "read_only": false,
+      "protocol": "http"
+    }
+  },
+  "resources": {
+    "mem_reservation": "32m"
+  },
+  "tests": {
+    "jev-gate": {
+      "cmd": "python3 test-jev-gate.py",
+      "cwd": "../_shared"
+    }
+  }
+}

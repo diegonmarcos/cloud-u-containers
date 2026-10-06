@@ -45,6 +45,9 @@
   "bc-obs_alerts-api": {
    "licence": "LicenseRef-NoLicenseGranted"
   },
+  "infra-ai_jev-sidecar": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
   "infra-ai_languagetool": {
    "licence": "LicenseRef-NoLicenseGranted"
   },
