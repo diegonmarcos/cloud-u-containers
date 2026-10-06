@@ -142,7 +142,10 @@ def log(cfg, **event):
     try:
         line = json.dumps({"ts": int(time.time()), "src": "jev-gate", **event})
         if JOURNAL_STDOUT:
-            print(line, flush=True)
+            try:
+                print(line, flush=True)
+            except Exception:  # noqa: BLE001 — a closed stdout must not cost the file journal its line
+                pass
         path = os.path.expanduser(os.environ.get("JEV_GATE_LOG") or cfg["log_path"])
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "a") as f:
