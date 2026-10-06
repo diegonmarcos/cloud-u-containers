@@ -632,7 +632,17 @@ export function registerWorkflowTools(server: McpServer): void {
       if (branch !== undefined && !/^[A-Za-z0-9._\/-]{1,200}$/.test(branch)) return `Invalid branch "${branch}".`;
       const args = ["run", "list", "--repo", target, "--limit", String(Math.min(Math.max(limit ?? 10, 1), 200)),
         "--json", "databaseId,workflowName,status,conclusion,createdAt,displayTitle,headBranch,headSha"];
-      if (sha) args.push("--commit", sha);
+      if (sha) {
+        // `gh run list --commit` matches the FULL 40-hex head SHA only; an abbreviated one
+        // silently returns no runs. Resolve it through the commits API first.
+        let full = sha.toLowerCase();
+        if (full.length < 40) {
+          const c = await gh(["api", `repos/${target}/commits/${full}`, "--jq", ".sha"], 20_000);
+          if (!c.ok || !/^[0-9a-f]{40}$/.test(c.stdout.trim())) return `Could not resolve commit "${sha}" in ${target}: ${ghError(c.stderr) || c.stdout.trim()}`;
+          full = c.stdout.trim();
+        }
+        args.push("--commit", full);
+      }
       if (branch) args.push("--branch", branch);
       if (status) args.push("--status", status);
       if (workflow) {
