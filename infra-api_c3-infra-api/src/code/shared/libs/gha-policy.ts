@@ -44,3 +44,42 @@ export function planInline(files: ArtifactFile[], total = ARTIFACT_INLINE_MAX_BY
 export function rerunnable(runStatus: string | undefined): boolean {
   return runStatus === "completed";
 }
+
+// ── #885: the GitHub + SSH commands that had to be worked around ─────────────
+
+/** A commit SHA (abbreviated 7+ or full 40 hex). */
+export function validSha(sha: string): boolean {
+  return /^[0-9a-f]{7,40}$/i.test(sha);
+}
+
+/** A run can be cancelled only while it has not completed. */
+export function cancellable(runStatus: string | undefined): boolean {
+  return !!runStatus && runStatus !== "completed";
+}
+
+/**
+ * Lines matching `pattern` (case-insensitive regex, or a literal if the regex
+ * does not compile), each with `context` lines either side; gaps are marked
+ * with "--" like grep -C. Returns null for an over-long pattern (ReDoS guard).
+ */
+export function grepLines(lines: string[], pattern: string, context = 0): string[] | null {
+  if (pattern.length === 0 || pattern.length > 200) return null;
+  let re: RegExp;
+  try { re = new RegExp(pattern, "i"); } catch { re = new RegExp(pattern.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"); }
+  const ctx = Math.max(0, Math.min(context, 20));
+  const keep = new Set<number>();
+  lines.forEach((l, i) => { if (re.test(l)) for (let k = i - ctx; k <= i + ctx; k++) if (k >= 0 && k < lines.length) keep.add(k); });
+  const out: string[] = [];
+  let prev = -2;
+  for (const i of [...keep].sort((a, b) => a - b)) {
+    if (ctx > 0 && prev >= 0 && i > prev + 1) out.push("--");
+    out.push(lines[i]);
+    prev = i;
+  }
+  return out;
+}
+
+/** A process-name filter safe to single-quote into a remote shell: no quotes, no metacharacters. */
+export function validPsPattern(p: string): boolean {
+  return /^[A-Za-z0-9._:\/@+= -]{1,80}$/.test(p) && !p.startsWith("-");
+}

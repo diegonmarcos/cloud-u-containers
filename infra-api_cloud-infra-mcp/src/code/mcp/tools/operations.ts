@@ -6,6 +6,7 @@ import { z } from "zod";
 import { sshExec, checkVmReachable } from "../../shared/libs/ssh.js";
 import { getConfig, resolveVmId, getVmSshAlias, getServiceDir, composeCd } from "../../shared/libs/config.js";
 import { audit } from "../../shared/libs/audit.js";
+import { validPsPattern } from "../../shared/libs/gha-policy.js";
 import {
   containerTop,
   containerDiff,
@@ -175,6 +176,36 @@ export function registerOperationsTools(server: McpServer) {
         r.stderr.length ? r.stderr.replace(/\n$/, "") : "(empty)",
       ];
       return { content: [{ type: "text", text: parts.join("\n") }], isError: !r.ok };
+    }
+  );
+
+  // #885: process listing that works on every VM. oci-apps runs BusyBox ps, which rejects
+  // procps flags (`ps --sort`, `ps aux` columns), so a diagnosis through devops.ssh.exec failed
+  // on the flag instead of answering "is a runner / octocode / gradle process alive?".
+  server.tool(
+    "devops.ssh.ps",
+    "List processes on a VM (pid, elapsed time, command), optionally only those whose command line contains `match`. Works on procps and BusyBox hosts alike. Read-only.",
+    {
+      vm: z.string().describe("VM ID or SSH alias"),
+      match: z.string().optional().describe("Keep only processes whose command contains this (case-insensitive; letters, digits, space and ._:/@+=- only)"),
+      limit: z.number().int().min(1).max(500).optional().describe("Max rows (default 100)"),
+    },
+    async ({ vm, match, limit }) => {
+      const vmId = resolveVmId(vm);
+      if (match !== undefined && !validPsPattern(match)) {
+        return { content: [{ type: "text", text: `Invalid match "${match}" (letters, digits, space and ._:/@+=- only, max 80).` }], isError: true };
+      }
+      const n = limit ?? 100;
+      // procps first (full args, wide), BusyBox second (its -o accepts pid,etime,args); the
+      // filter runs remotely with grep -iF on a single-quoted literal, never a regex.
+      const list = "(ps -eo pid,etime,args --no-headers -ww 2>/dev/null || ps -o pid,etime,args | tail -n +2)";
+      const filt = match ? ` | grep -iF -- '${match}' | grep -v 'grep -iF'` : "";
+      const r = sshExec(vmId, `${list}${filt} | head -n ${n}`, 30_000);
+      const body = r.stdout.trim() ? r.stdout.replace(/\n$/, "") : (match ? `(no process matches "${match}")` : "(no processes listed)");
+      return {
+        content: [{ type: "text", text: `Processes on ${getVmSshAlias(vmId)} (${vmId})${match ? ` matching "${match}"` : ""}:\n  PID ELAPSED COMMAND\n${body}${r.ok || r.stdout.trim() ? "" : `\nSSH FAILED (exit ${r.exitCode}): ${r.stderr.trim()}`}` }],
+        isError: !r.ok && !r.stdout.trim(),
+      };
     }
   );
 

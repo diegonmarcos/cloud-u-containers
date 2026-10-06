@@ -1,4 +1,4 @@
-// ── Workflows — GHA + Dagu workflow tools (10 tools) ──
+// ── Workflows — GHA + Dagu workflow tools, plus GitHub release assets ──
 // Full status, error reports, trigger workflows
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -8,6 +8,7 @@ import { DAGU_API, DAGU_API_PATH, daguHeaders } from "../../shared/libs/ops.js";
 import { audit } from "../../shared/libs/audit.js";
 import {
   validRepo, validId, validArtifactName, safeRelPath, planInline, rerunnable,
+  validSha, cancellable, grepLines,
   ARTIFACT_MAX_BYTES, ARTIFACT_INLINE_MAX_BYTES, ARTIFACT_FILE_MAX_BYTES,
 } from "../../shared/libs/gha-policy.js";
 import { mkdtemp, readdir, readFile, rm, stat } from "node:fs/promises";
@@ -141,7 +142,10 @@ interface GhaWorkflow { id: number; name: string; state: string; path: string }
 // on any failure, which turned "gh is not authenticated" into a convincing
 // "Available workflows:" with nothing under it.
 async function ghaWorkflows(repo: string = GH_REPO): Promise<{ workflows: GhaWorkflow[]; error?: string }> {
-  const r = await gh(["workflow", "list", "--repo", repo, "--json", "id,name,state,path", "--all"], 10_000);
+  // #885: `gh workflow list` returns 50 workflows unless told otherwise. cloud-u-android has
+  // ~130, so every name past the 50th ("Ship → Cloud Store APK", "Test → Cloud Nav", the
+  // wasm ship) came back "Workflow not found" from gha_runs / gha_definition / gha_trigger.
+  const r = await gh(["workflow", "list", "--repo", repo, "--json", "id,name,state,path", "--all", "--limit", "1000"], 20_000);
   if (!r.ok) return { workflows: [], error: ghError(r.stderr) };
   try {
     return { workflows: JSON.parse(r.stdout) as GhaWorkflow[] };
@@ -616,13 +620,21 @@ export function registerWorkflowTools(server: McpServer): void {
     "GHA: recent runs for one workflow (gh run list --workflow). Unlike devops.workflows.gha this is not capped at 24h — use it to follow a run you just dispatched.",
     {
       workflow: z.string().optional().describe("Workflow ID, file name or name. Omit for all workflows in the repo."),
-      limit: z.number().optional().describe("How many runs to return (default: 10)"),
+      limit: z.number().optional().describe("How many runs to return (default: 10, max 200)"),
       repo: z.string().optional().describe("owner/repo (default: the cloud-infra repo)"),
+      sha: z.string().optional().describe("Only runs for this commit (7-40 hex) — 'what did commit X trigger, and how did each end'"),
+      branch: z.string().optional().describe("Only runs on this branch"),
+      status: z.enum(["queued", "in_progress", "completed", "success", "failure", "cancelled", "skipped", "waiting", "pending"]).optional().describe("Only runs in this status/conclusion"),
     },
-    ({ workflow, limit, repo }) => safeRun(async () => {
+    ({ workflow, limit, repo, sha, branch, status }) => safeRun(async () => {
       const target = repo ?? GH_REPO;
-      const args = ["run", "list", "--repo", target, "--limit", String(limit ?? 10),
-        "--json", "databaseId,workflowName,status,conclusion,createdAt,displayTitle,headBranch"];
+      if (sha !== undefined && !validSha(sha)) return `Invalid sha "${sha}" (want 7-40 hex).`;
+      if (branch !== undefined && !/^[A-Za-z0-9._\/-]{1,200}$/.test(branch)) return `Invalid branch "${branch}".`;
+      const args = ["run", "list", "--repo", target, "--limit", String(Math.min(Math.max(limit ?? 10, 1), 200)),
+        "--json", "databaseId,workflowName,status,conclusion,createdAt,displayTitle,headBranch,headSha"];
+      if (sha) args.push("--commit", sha);
+      if (branch) args.push("--branch", branch);
+      if (status) args.push("--status", status);
       if (workflow) {
         const { workflows: wfs } = await ghaWorkflows(target);
         const match = matchWorkflow(wfs, workflow);
@@ -635,16 +647,17 @@ export function registerWorkflowTools(server: McpServer): void {
       if (!r.ok) return `ERROR: ${ghError(r.stderr)}`;
       let runs: Array<Record<string, string | number>>;
       try { runs = JSON.parse(r.stdout); } catch { return `Could not parse run list: ${r.stdout.slice(0, 200)}`; }
-      if (runs.length === 0) return `No runs found in ${target}${workflow ? ` for "${workflow}"` : ""}.`;
+      if (runs.length === 0) return `No runs found in ${target}${workflow ? ` for "${workflow}"` : ""}${sha ? ` at ${sha}` : ""}.`;
       const rows = runs.map((run) => [
         String(run.databaseId),
         String(run.workflowName ?? "-"),
         String(run.conclusion || run.status),
+        String(run.headSha ?? "").slice(0, 9),
         String(run.headBranch ?? "-"),
         timeAgo(String(run.createdAt)),
         String(run.displayTitle ?? "").slice(0, 40),
       ]);
-      return `GHA RUNS — ${target}${workflow ? ` / ${workflow}` : ""}\n${"═".repeat(70)}\n${formatTable(["ID", "Workflow", "Result", "Branch", "When", "Title"], rows)}`;
+      return `GHA RUNS — ${target}${workflow ? ` / ${workflow}` : ""}${sha ? ` @ ${sha}` : ""}\n${"═".repeat(70)}\n${formatTable(["ID", "Workflow", "Result", "SHA", "Branch", "When", "Title"], rows)}`;
     }),
   );
 
@@ -683,29 +696,168 @@ export function registerWorkflowTools(server: McpServer): void {
     }),
   );
 
+  // One job's log through the jobs API. `gh run view --log-failed` returns NOTHING for some
+  // failed runs (it reads the run's log archive, which GitHub serves late or not at all for a
+  // run whose failure was at gradle configuration); the per-job endpoint has it. #885: run
+  // 37497692330 failed both build jobs and --log-failed said "no failed-step logs".
+  async function jobLog(target: string, jobId: string): Promise<{ ok: boolean; text: string }> {
+    const r = await gh(["api", `repos/${target}/actions/jobs/${jobId}/logs`], 120_000);
+    return { ok: r.ok, text: r.ok ? r.stdout : ghError(r.stderr) };
+  }
+
   server.tool(
     "devops.workflows.gha_run_logs",
-    "GHA: a run's logs (gh run view --log-failed, or --log for the full transcript). Failed-only by default — the full log of a ship run is megabytes.",
+    "GHA: a run's logs (gh run view --log-failed, or --log for the full transcript). Failed-only by default — the full log of a ship run is megabytes. When the failed-only view is empty for a failed run, falls back to each failed job's log through the jobs API. Use `grep` (+ `context`) to search the log instead of paging through it, and `job` for one job.",
     {
       runId: z.string().describe("Run database ID (from devops.workflows.gha_runs)"),
       full: z.boolean().optional().describe("true = whole log (--log); default false = failed steps only (--log-failed)"),
-      tail: z.number().optional().describe("Return only the last N lines (default: 200)"),
+      tail: z.number().optional().describe("Return only the last N lines (default: 200; applied after grep)"),
       repo: z.string().optional().describe("owner/repo (default: the cloud-infra repo)"),
+      job: z.string().optional().describe("Job database ID (from devops.workflows.gha_run): that job's whole log via the jobs API"),
+      grep: z.string().optional().describe("Case-insensitive regex (or literal) — keep only matching lines, e.g. 'FAIL|error:|What went wrong'"),
+      context: z.number().optional().describe("Lines of context around each grep match (0-20, default 0)"),
     },
-    ({ runId, full, tail, repo }) => safeRun(async () => {
+    ({ runId, full, tail, repo, job, grep, context }) => safeRun(async () => {
       const target = repo ?? GH_REPO;
-      const r = await gh(["run", "view", runId, "--repo", target, full ? "--log" : "--log-failed"], 120_000);
-      if (!r.ok) return `ERROR: ${ghError(r.stderr)}`;
-      const lines = r.stdout.trim().split("\n");
-      if (!r.stdout.trim()) {
-        return full ? `Run ${runId} has no logs (still queued, or expired).`
-                    : `Run ${runId} has no failed-step logs — it may have succeeded, been cancelled, or still be running. Pass full: true for the whole log.`;
+      const bad = (!validRepo(target) ? `Invalid repo "${target}".` : null)
+        ?? (!validId(runId) ? `Invalid run id "${runId}".` : null)
+        ?? (job !== undefined && !validId(job) ? `Invalid job id "${job}".` : null);
+      if (bad) return bad;
+      let text = "";
+      let source = full ? "full" : "failed steps";
+      if (job) {
+        const j = await jobLog(target, job);
+        if (!j.ok) return `ERROR: ${j.text}`;
+        text = j.text; source = `job ${job}`;
+      } else {
+        const r = await gh(["run", "view", runId, "--repo", target, full ? "--log" : "--log-failed"], 120_000);
+        if (!r.ok) return `ERROR: ${ghError(r.stderr)}`;
+        text = r.stdout;
+        if (!text.trim() && !full) {
+          // Fallback: the run's failed jobs, one by one.
+          const v = await gh(["run", "view", runId, "--repo", target, "--json", "conclusion,jobs"], 30_000);
+          let run: { conclusion?: string; jobs?: Array<{ databaseId: number; name: string; conclusion: string }> } = {};
+          try { run = JSON.parse(v.stdout); } catch { /* reported below */ }
+          const failed = (run.jobs ?? []).filter((j) => j.conclusion === "failure");
+          if (failed.length === 0) {
+            return `Run ${runId} has no failed-step logs and no failed job — it may have succeeded, been cancelled, or still be running. Pass full: true for the whole log.`;
+          }
+          const parts: string[] = [];
+          for (const j of failed) {
+            const l = await jobLog(target, String(j.databaseId));
+            parts.push(`##### job ${j.databaseId} — ${j.name}${l.ok ? "" : " (log unavailable)"}`);
+            parts.push(l.text);
+          }
+          text = parts.join("\n");
+          source = `failed jobs via jobs API (${failed.length})`;
+        }
+      }
+      if (!text.trim()) return `Run ${runId} has no logs (still queued, or expired).`;
+      let lines = text.replace(/\r/g, "").trim().split("\n");
+      let matched = "";
+      if (grep !== undefined) {
+        const g = grepLines(lines, grep, context ?? 0);
+        if (g === null) return `Invalid grep pattern (empty or over 200 chars).`;
+        matched = ` — ${g.filter((l) => l !== "--").length} line(s) match /${grep}/i`;
+        lines = g;
+        if (lines.length === 0) return `RUN ${runId} LOGS (${source}) — ${target}\n${"═".repeat(70)}\nNo line matches /${grep}/i.`;
       }
       const n = tail ?? 200;
       const shown = lines.slice(-n);
-      const header = `RUN ${runId} LOGS (${full ? "full" : "failed steps"}) — ${target}\n${"═".repeat(70)}`;
+      const header = `RUN ${runId} LOGS (${source}) — ${target}${matched}\n${"═".repeat(70)}`;
       const elided = lines.length > shown.length ? `… ${lines.length - shown.length} earlier line(s) elided; raise \`tail\` to see them\n` : "";
       return `${header}\n${elided}${shown.join("\n")}`;
+    }),
+  );
+
+  // #885: cancel. A run the operator wants gone (a 12-hour zombie holding a concurrency group,
+  // a dispatch with the wrong inputs) had no tool; `force` uses the force-cancel endpoint, which
+  // is the one that works on a run GitHub shows in_progress with no runner behind it.
+  server.tool(
+    "devops.workflows.gha_cancel",
+    "GHA: cancel ONE run that has not completed (gh run cancel; force=true uses the force-cancel endpoint for a run stuck in_progress with no runner). WRITE action — audited. Refused for a completed run.",
+    {
+      runId: z.string().describe("Run database ID"),
+      force: z.boolean().optional().describe("Use POST .../force-cancel (for a zombie run that ignores a normal cancel)"),
+      repo: z.string().optional().describe("owner/repo (default: the cloud-infra repo)"),
+    },
+    ({ runId, force, repo }) => safeRun(async () => {
+      const target = repo ?? GH_REPO;
+      const auditTarget = `${target}#${runId}`;
+      const bad = (!validRepo(target) ? `Invalid repo "${target}".` : null) ?? (!validId(runId) ? `Invalid run id "${runId}".` : null);
+      if (bad) { audit("devops.workflows.gha_cancel", auditTarget, `REFUSED ${bad}`); return bad; }
+      const v = await gh(["run", "view", runId, "--repo", target, "--json", "status,workflowName,displayTitle"], 30_000);
+      if (!v.ok) return `ERROR: ${ghError(v.stderr)}`;
+      let run: { status?: string; workflowName?: string; displayTitle?: string };
+      try { run = JSON.parse(v.stdout); } catch { return "Could not parse run."; }
+      if (!cancellable(run.status)) {
+        audit("devops.workflows.gha_cancel", auditTarget, `REFUSED run ${run.status}`);
+        return `Run ${runId} is ${run.status}; only a run that has not completed can be cancelled.`;
+      }
+      const r = force
+        ? await gh(["api", "-X", "POST", `repos/${target}/actions/runs/${runId}/force-cancel`], 30_000)
+        : await gh(["run", "cancel", runId, "--repo", target], 30_000);
+      if (!r.ok) { audit("devops.workflows.gha_cancel", auditTarget, `FAILED ${r.stderr.trim().slice(0, 200)}`); return `ERROR: ${ghError(r.stderr)}`; }
+      audit("devops.workflows.gha_cancel", auditTarget, `OK${force ? " (force)" : ""} "${run.workflowName}"`);
+      return `${force ? "Force-cancel" : "Cancel"} requested for run ${runId} "${run.workflowName}" — ${run.displayTitle ?? ""} (${target}). Follow it with devops.workflows.gha_run. (audited)`;
+    }),
+  );
+
+  // ── GitHub releases (#885) ──
+  server.tool(
+    "devops.release.assets",
+    "GitHub release: list a release's assets (name, size, updated, downloads). Read-only. Default tag 'latest' — the rolling release every fleet APK is installed from; compare an asset's updated time with its .source/.sha256 sidecar to see whether it really republished.",
+    {
+      repo: z.string().optional().describe("owner/repo (default: the cloud-infra repo)"),
+      tag: z.string().optional().describe("Release tag (default: latest)"),
+      match: z.string().optional().describe("Only assets whose name contains this (case-insensitive)"),
+    },
+    ({ repo, tag, match }) => safeRun(async () => {
+      const target = repo ?? GH_REPO;
+      const t = tag ?? "latest";
+      if (!validRepo(target)) return `Invalid repo "${target}".`;
+      if (!/^[A-Za-z0-9._\/-]{1,128}$/.test(t) || t.startsWith("-")) return `Invalid tag "${t}".`;
+      const r = await gh(["release", "view", t, "--repo", target, "--json", "tagName,assets"], 30_000);
+      if (!r.ok) return `ERROR: ${ghError(r.stderr)}`;
+      let rel: { tagName?: string; assets?: Array<{ name: string; size: number; updatedAt: string; downloadCount?: number }> };
+      try { rel = JSON.parse(r.stdout); } catch { return `Could not parse release: ${r.stdout.slice(0, 200)}`; }
+      const m = match?.toLowerCase();
+      const assets = (rel.assets ?? []).filter((a) => !m || a.name.toLowerCase().includes(m));
+      if (assets.length === 0) return `No asset${m ? ` matching "${match}"` : ""} on release ${t} (${target}).`;
+      const rows = assets.map((a) => [a.name, a.size >= 1048576 ? `${(a.size / 1048576).toFixed(1)} MiB` : `${Math.round(a.size / 1024)} KiB`,
+        a.updatedAt, timeAgo(a.updatedAt), String(a.downloadCount ?? "-")]);
+      return `RELEASE ${rel.tagName ?? t} — ${target}: ${assets.length} asset(s)\n${"═".repeat(70)}\n${formatTable(["Asset", "Size", "Updated", "Ago", "DL"], rows)}`;
+    }),
+  );
+
+  server.tool(
+    "devops.release.delete_asset",
+    "GitHub release: delete ONE named asset from a release (e.g. a stale .source sidecar that makes a publish gate skip forever). WRITE action — audited, irreversible for that asset; the next publish re-uploads it.",
+    {
+      name: z.string().describe("Exact asset name"),
+      repo: z.string().optional().describe("owner/repo (default: the cloud-infra repo)"),
+      tag: z.string().optional().describe("Release tag (default: latest)"),
+    },
+    ({ name, repo, tag }) => safeRun(async () => {
+      const target = repo ?? GH_REPO;
+      const t = tag ?? "latest";
+      const auditTarget = `${target}@${t}/${name}`;
+      const bad = (!validRepo(target) ? `Invalid repo "${target}".` : null)
+        ?? (!/^[A-Za-z0-9._\/-]{1,128}$/.test(t) || t.startsWith("-") ? `Invalid tag "${t}".` : null)
+        ?? (!validArtifactName(name) ? `Invalid asset name "${name}".` : null);
+      if (bad) { audit("devops.release.delete_asset", auditTarget, `REFUSED ${bad}`); return bad; }
+      const v = await gh(["release", "view", t, "--repo", target, "--json", "assets"], 30_000);
+      if (!v.ok) return `ERROR: ${ghError(v.stderr)}`;
+      let names: string[] = [];
+      try { names = (JSON.parse(v.stdout).assets ?? []).map((a: { name: string }) => a.name); } catch { return "Could not parse release."; }
+      if (!names.includes(name)) {
+        audit("devops.release.delete_asset", auditTarget, "REFUSED not on release");
+        return `No asset "${name}" on release ${t}.`;
+      }
+      const r = await gh(["release", "delete-asset", t, name, "--repo", target, "--yes"], 30_000);
+      if (!r.ok) { audit("devops.release.delete_asset", auditTarget, `FAILED ${r.stderr.trim().slice(0, 200)}`); return `ERROR: ${ghError(r.stderr)}`; }
+      audit("devops.release.delete_asset", auditTarget, "OK");
+      return `Deleted asset "${name}" from release ${t} (${target}). (audited)`;
     }),
   );
 

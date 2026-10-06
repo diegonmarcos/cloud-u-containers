@@ -1,7 +1,7 @@
 // Tests the policy behind devops.workflows.gha_artifacts / gha_artifact_download / gha_rerun_job.
 // Run: node --experimental-strip-types test-gha-policy.mjs
 import assert from "node:assert/strict";
-import { validRepo, validId, validArtifactName, safeRelPath, planInline, rerunnable } from "./shared/libs/gha-policy.ts";
+import { validRepo, validId, validArtifactName, safeRelPath, planInline, rerunnable, validSha, cancellable, grepLines, validPsPattern } from "./shared/libs/gha-policy.ts";
 
 let n = 0;
 const t = (name, fn) => { fn(); n++; console.log(`ok - ${name}`); };
@@ -30,5 +30,26 @@ t("inline plan caps", () => {
 t("rerun only finished runs", () => {
   assert.ok(rerunnable("completed"));
   for (const s of ["in_progress", "queued", undefined]) assert.equal(rerunnable(s), false);
+});
+t("sha", () => {
+  assert.ok(validSha("eb0111daa")); assert.ok(validSha("f3ca976c7844b56b2c2628bbdda9a98ad6a9d10b"));
+  for (const x of ["", "abc", "zzzzzzz", "eb0111daa;rm", "--all"]) assert.equal(validSha(x), false, x);
+});
+t("cancel only unfinished runs", () => {
+  for (const s of ["in_progress", "queued", "waiting", "pending"]) assert.ok(cancellable(s), s);
+  for (const s of ["completed", undefined, ""]) assert.equal(cancellable(s), false, String(s));
+});
+t("grep lines with context", () => {
+  const L = ["a", "b", "ERROR one", "c", "d", "e", "error two", "f"];
+  assert.deepEqual(grepLines(L, "error"), ["ERROR one", "error two"]);
+  assert.deepEqual(grepLines(L, "error", 1), ["b", "ERROR one", "c", "--", "e", "error two", "f"]);
+  assert.deepEqual(grepLines(L, "(unclosed"), []);           // literal fallback, no match, no throw
+  assert.deepEqual(grepLines(["x (unclosed y"], "(unclosed"), ["x (unclosed y"]);
+  assert.equal(grepLines(L, ""), null);
+  assert.equal(grepLines(L, "x".repeat(201)), null);
+});
+t("ps pattern", () => {
+  for (const p of ["octocode", "Runner.Worker", "gradle daemon", "/usr/bin/node"]) assert.ok(validPsPattern(p), p);
+  for (const p of ["", "a'b", "a;b", "$(id)", "a|b", "`x`", "-ef", "x".repeat(81)]) assert.equal(validPsPattern(p), false, p);
 });
 console.log(`${n} passed`);
