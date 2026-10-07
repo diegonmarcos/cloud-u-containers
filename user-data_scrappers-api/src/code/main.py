@@ -110,6 +110,18 @@ def scrape(platform: str, req: ScrapeReq):
     return JSONResponse({"ok": True, "written": path, "summary": data.get("_summary", {})})
 
 
+@app.get(f"{BASE_PATH}/prices")
+@app.get("/prices")  # unprefixed twin (Caddy strips /scrappers)
+def prices(q: str, brands: str | None = None):
+    """#903 Cloud Search's price table: the declared chains' own search pages for item [q], the
+    cheapest matching offer each publishes (robots.txt-gated, cached). The data itself is the answer."""
+    mod = _load("prices")
+    try:
+        return mod.scrape(q=q, brands=brands)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
 @app.post(f"{BASE_PATH}/run/{{target_id}}")
 @app.post("/run/{target_id}")  # unprefixed twin (Caddy strips /scrappers)
 def run_target(target_id: str):

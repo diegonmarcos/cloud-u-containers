@@ -1,0 +1,57 @@
+{
+  "_doc": "Store-site price adapters for GET /prices (#903). One entry per chain whose own site search answers with schema.org JSON-LD offers in its static HTML. Nothing is fetched unless the entry is enabled AND the site's robots.txt lets scrappers-api fetch the URL (scrapers/_robots.py). `brands` is what the caller's OSM brand/name tags are matched against (lowercase). A chain that blocks automated clients, forbids the path in robots.txt, or serves prices only through JavaScript is listed disabled with the reason, never guessed.",
+  "ttl_minutes": 30,
+  "min_interval_s": 2,
+  "max_hits": 40,
+  "adapters": {
+    "obi": {
+      "label": "OBI",
+      "enabled": true,
+      "brands": ["obi"],
+      "search_url": "https://www.obi.de/search/{q_path}/",
+      "terms": "robots.txt allows the search path (checked per request); prices are the chain's ONLINE shop price from the page's JSON-LD ItemList, not a branch shelf price. The owner has not reviewed the site's terms of use."
+    },
+    "euronics": {
+      "label": "Euronics",
+      "enabled": true,
+      "brands": ["euronics"],
+      "search_url": "https://www.euronics.de/search?q={q}",
+      "terms": "robots.txt allows the search path (checked per request); prices are the chain's ONLINE shop price from the page's JSON-LD ItemList, not a branch shelf price. The owner has not reviewed the site's terms of use."
+    },
+    "mediamarkt": {
+      "label": "MediaMarkt",
+      "enabled": false,
+      "brands": ["mediamarkt", "media markt"],
+      "search_url": "https://www.mediamarkt.de/de/search.html?query={q}",
+      "why": "Answers 403 to automated clients (verified 2026-10-07)."
+    },
+    "saturn": {
+      "label": "Saturn",
+      "enabled": false,
+      "brands": ["saturn"],
+      "search_url": "https://www.saturn.de/de/search.html?query={q}",
+      "why": "Same shop platform as MediaMarkt; answers 403 to automated clients."
+    },
+    "dm": {
+      "label": "dm-drogerie markt",
+      "enabled": false,
+      "brands": ["dm", "dm-drogerie markt"],
+      "search_url": "https://www.dm.de/search?query={q}",
+      "why": "robots.txt disallows scrappers-api (verified 2026-10-07)."
+    },
+    "ikea": {
+      "label": "IKEA",
+      "enabled": false,
+      "brands": ["ikea"],
+      "search_url": "https://www.ikea.com/de/de/search/?q={q}",
+      "why": "Search page carries no JSON-LD offers (prices are in a JS bundle); not read."
+    },
+    "hornbach": {
+      "label": "Hornbach",
+      "enabled": false,
+      "brands": ["hornbach"],
+      "search_url": "https://www.hornbach.de/s/{q}",
+      "why": "Search page is rendered by JavaScript; no static offers to read."
+    }
+  }
+}
