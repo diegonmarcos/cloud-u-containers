@@ -26,6 +26,15 @@ const TIMEOUT_MS = parseInt(process.env.KG_INGEST_TIMEOUT_MS || "120000", 10);
 // KG_INGEST_RESUME=1: re-run after an aborted ingest WITHOUT the repo-scoped delete, so
 // rows already written are kept (re-sent ones are no-ops) and the run continues the load.
 const RESUME = process.env.KG_INGEST_RESUME === "1";
+// Shrink guard (#888): the repo-scoped replace trusts the delta to be the WHOLE repo. A
+// graphrag pass that only re-processed a handful of changed files exported 12 nodes for
+// cloud-u-containers, and the replace wiped its ~3155 rows to insert those 12. Refuse a
+// replace whose delta is below MIN_RATIO of the rows already stored (once that is at least
+// SHRINK_FLOOR rows) — write NOTHING, keep the old graph. KG_INGEST_ALLOW_SHRINK=1 when a
+// repo really did shrink.
+const MIN_RATIO    = parseFloat(process.env.KG_INGEST_MIN_RATIO || "0.5");
+const SHRINK_FLOOR = parseInt(process.env.KG_INGEST_SHRINK_FLOOR || "50", 10);
+const ALLOW_SHRINK = process.env.KG_INGEST_ALLOW_SHRINK === "1";
 
 const skip = (m) => { console.error(`[kg-ingest] skip — ${m}`); process.exit(0); };
 if (!URL_)  skip("KG_STORE_URL unset");
@@ -131,7 +140,7 @@ const sqlOnce = async (body) => {
       if (!firstErr) firstErr = String(x.result ?? x.detail ?? JSON.stringify(x)).slice(0, 240);
     }
   }
-  return { errs, firstErr };
+  return { errs, firstErr, out };
 };
 // Retry transport failures only; per-statement errors come back as {errs} for the caller.
 // Throws after RETRIES retries so the caller can abort loudly with how far it got.
@@ -161,11 +170,28 @@ for (const repo of repos) {
   for (const t of edgeTables) deleteStmts.push(`DELETE FROM ${t} WHERE in.repo = ${q(repo)} OR out.repo = ${q(repo)};`);
   for (const t of nodeTables) deleteStmts.push(`DELETE FROM ${t} WHERE repo = ${q(repo)};`);
 }
+if (deleteStmts.length && !ALLOW_SHRINK) {
+  for (const repo of repos) {
+    const incoming = nodes.filter((n) => n.properties?.repo === repo).length;
+    let stored = 0;
+    for (const t of nodeTables) {
+      const { out } = await sql(`SELECT count() FROM ${t} WHERE repo = ${q(repo)} GROUP ALL;`)
+        .catch((e) => die(`shrink-guard count failed: ${e.message}`));
+      stored += Number(out?.[0]?.result?.[0]?.count ?? 0);
+    }
+    if (stored >= SHRINK_FLOOR && incoming < stored * MIN_RATIO)
+      die(`shrink guard: delta has ${incoming} nodes for [${repo}] but kg-store holds ${stored} — a partial export would wipe the repo (KG_INGEST_ALLOW_SHRINK=1 if it really shrank)`);
+  }
+}
 if (RESUME && deleteStmts.length) console.error("[kg-ingest] KG_INGEST_RESUME=1 — keeping existing rows, no repo-scoped delete");
 else if (deleteStmts.length) {
   console.error(`[kg-ingest] repo-scoped replace: deleting existing rows for [${[...repos].join(", ")}]`);
-  const { errs, firstErr } = await sql(deleteStmts.join("\n")).catch((e) => die(`repo-scoped delete failed: ${e.message}`));
-  if (errs) die(`repo-scoped delete failed (${errs} statements) — first: ${firstErr}`);
+  // One request per DELETE: the single multi-table request is what dropped the socket on
+  // the private surface for cloud-u-containers (8 retries, UND_ERR_SOCKET). Each is idempotent.
+  for (const st of deleteStmts) {
+    const { errs, firstErr } = await sql(st).catch((e) => die(`repo-scoped delete failed: ${e.message}`));
+    if (errs) die(`repo-scoped delete failed — first: ${firstErr}`);
+  }
 }
 
 // ── Nodes: UPSERT batched by statement count AND request byte size. SurrealDB's

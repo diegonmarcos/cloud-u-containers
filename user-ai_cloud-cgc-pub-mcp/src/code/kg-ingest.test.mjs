@@ -20,7 +20,7 @@ function delta() {
 
 // `plan(n, body)` returns "ok" | "drop-before" (socket killed, nothing applied) |
 // "drop-after" (applied, reply lost) for the n-th request carrying an INSERT RELATION.
-async function run(plan, extraEnv = {}) {
+async function run(plan, extraEnv = {}, stored = 0) {
   const edgeIds = new Map(), stmts = [];
   let edgeReq = 0;
   const srv = http.createServer((req, res) => {
@@ -30,6 +30,7 @@ async function run(plan, extraEnv = {}) {
       stmts.push(body.split("\n")[0].slice(0, 40));
       const ins = body.startsWith("INSERT RELATION");
       const mode = ins ? plan(++edgeReq, body) : "ok";
+      if (body.startsWith("SELECT count()")) { res.setHeader("Content-Type", "application/json"); return res.end(JSON.stringify([{ status: "OK", result: stored ? [{ count: stored }] : [] }])); }
       if (mode === "drop-before") return req.socket.destroy();
       if (ins) for (const m of body.matchAll(/\{id:"([0-9a-f]+)"/g)) edgeIds.set(m[1], (edgeIds.get(m[1]) || 0) + 1);
       if (mode === "drop-after") return req.socket.destroy();
@@ -75,4 +76,22 @@ test("KG_INGEST_RESUME=1 skips the repo-scoped delete", async () => {
   assert.ok(!r.stmts.some((s) => s.startsWith("DELETE FROM")));
   const d = await run(() => "ok");
   assert.ok(d.stmts.some((s) => s.startsWith("DELETE FROM")));
+});
+
+test("shrink guard: a delta far smaller than the stored repo writes nothing", async () => {
+  const r = await run(() => "ok", {}, 3155);
+  assert.equal(r.code, 1, r.err);
+  assert.match(r.err, /shrink guard/);
+  assert.ok(!r.stmts.some((x) => x.startsWith("DELETE") || x.startsWith("UPSERT")), r.stmts.join("|"));
+});
+
+test("shrink guard: KG_INGEST_ALLOW_SHRINK=1 lets a real shrink through", async () => {
+  const r = await run(() => "ok", { KG_INGEST_ALLOW_SHRINK: "1" }, 3155);
+  assert.equal(r.code, 0, r.err);
+  assert.ok(r.stmts.some((x) => x.startsWith("DELETE")));
+});
+
+test("shrink guard: a comparable delta replaces normally", async () => {
+  const r = await run(() => "ok", {}, 6);
+  assert.equal(r.code, 0, r.err);
 });
