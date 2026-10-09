@@ -7,9 +7,9 @@
 # ║ Rebuild: a_solutions/infra-net_wireguard-mesh-ws-tunnel/build.sh ship
 # ╚══════════════════════════════════════════════════════════════════╝
 # Type B — wrap upstream, arch=amd64
-FROM ghcr.io/erebe/wstunnel:latest
+FROM ghcr.io/erebe/wstunnel:v11.0.0
 LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
-LABEL cloud.diegonmarcos.from-image="ghcr.io/erebe/wstunnel:latest"
+LABEL cloud.diegonmarcos.from-image="ghcr.io/erebe/wstunnel:v11.0.0"
 
 
 
