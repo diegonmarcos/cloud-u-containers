@@ -7,7 +7,7 @@ env:
   - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
   - SSH_OPTS: "-i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
   - GITEA_HOST: 10.0.0.6
-  - GITEA_PORT: 3017
+  - GITEA_PORT: 3002   # gitea-gate (caddy) — gitea itself only listens on a unix socket since the reverse-proxy-auth gate; 3017 is gone
   - GITEA_ORG: diego
   - GITEA_TOKEN: ${GITEA_TOKEN}
 mail_on:
