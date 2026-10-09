@@ -12,7 +12,9 @@
 # (e.g. ac_cloud-nav), which is a bare identifier by construction.
 set -eu
 
-HOST="${UMAMI_SSH_HOST:-oci-analytics}"
+# Umami (and its umami-db) moved to oci-apps in 6148c9e (#845); the stopped
+# copy left on oci-analytics is what this used to query, so every run failed.
+HOST="${UMAMI_SSH_HOST:-oci-apps}"
 WINDOW_H="${WINDOW_H:-24}"
 DB="docker exec umami-db psql -U umami -d umami -t -A -F'|' -c"
 
