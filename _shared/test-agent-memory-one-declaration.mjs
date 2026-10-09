@@ -90,9 +90,13 @@ check("A3 engine.nix splices the env into the git-tree contract",
 check("A4 engine.nix splices the per-runtime alias too",
   /\/\/\s*\(agentMemory\.aliasEnv\s+agentSpec\)/.test(engine));
 // The negative that matters: no literal store path anywhere but the module.
+// dist/ is excluded because it is the module's own RENDERED output (a compose
+// file carries AGENT_MEMORY_DIR because agent-memory.nix put it there), not a
+// second hand-written declaration; a stale dist is caught by Ship's
+// committed-dist check, not here. Every source file is still scanned.
 {
   const strays = execFileSync("sh", ["-c",
-    "grep -rl 'b_projects/home-diego' --include='*.nix' --include='*.sh' --include='*.mjs' --include='*.yaml' --include='*.yml' . "
+    "grep -rl --exclude-dir=dist 'b_projects/home-diego' --include='*.nix' --include='*.sh' --include='*.mjs' --include='*.yaml' --include='*.yml' . "
     + "| grep -v '^./_shared/agent-memory.nix$' | grep -v '^./_shared/test-agent-memory-one-declaration.mjs$' || true"],
     { cwd: ROOT, encoding: "utf8" }).trim();
   check("A5 the store path is written in exactly ONE place",
