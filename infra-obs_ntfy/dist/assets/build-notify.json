@@ -52,6 +52,7 @@
     "health_report_cloud-sec-data-report",
     "health_report_cloud-sec-network-report",
     "logs_alerts-api",
+    "logs_jev-sidecar",
     "logs_languagetool",
     "logs_c3-infra-api",
     "logs_c3-public-api",
