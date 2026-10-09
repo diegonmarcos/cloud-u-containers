@@ -451,13 +451,43 @@ ${fallbackBlock}
 
 // ── Maddy subset ────────────────────────────────────────────────────
 
+/**
+ * The G0 _ AUTH axis (Ga Code / Gb Link to auth / Gc No Auth) as sorter rules, DERIVED from the declared
+ * pattern set `_shared/mail-auth-patterns.json` -- never restated. The server sees headers only, so both
+ * classes are decided on the Subject. Exclusive by construction: Gb is "a link phrase and not a code", Gc
+ * is "neither", and the three are evaluated first-match-wins in this order.
+ */
+/** The filters tree without the axes only the Maddy engine evaluates. */
+function withoutMaddyAxes(f: Json): Json {
+  const { axes_from_patterns: _maddyOnly, ...rest } = f;
+  return rest;
+}
+
+export function authAxisRules(merged: Merged): Json[] {
+  const declared = ((merged.filters?.axes_from_patterns ?? []) as Json[]).some((a: Json) => a.axis === 'auth');
+  if (!declared) return [];
+  const pat = JSON.parse(fs.readFileSync(path.join(ROOT, '_shared', 'mail-auth-patterns.json'), 'utf8'));
+  const code = { type: 'header_contains', header: 'Subject', values: pat.code_subject_phrases };
+  const link = { type: 'header_contains', header: 'Subject', values: pat.link_phrases };
+  const c = pat.classes;
+  return [
+    { id: c.Ga.folder, when: code, folder: c.Ga.folder, axis: 'auth' },
+    { id: c.Gb.folder, when: { all_of: [link, { not: code }] }, folder: c.Gb.folder, axis: 'auth' },
+    { id: c.Gc.folder, when: { not: { any_of: [code, link] } }, folder: c.Gc.folder, axis: 'auth' },
+  ];
+}
+
 export function toMaddyJson(merged: Merged): Json {
   const senderViews = (merged.filters?.views ?? []).filter((v: Json) => (v.axis ?? null) === 'sender');
 
   // Maddy gets ONLY the F* sender-classification folders, not the numeric
   // routing folders or the A-E axes. Each F view's own `predicate` IS the
   // delivery-time `when` tree unchanged.
-  const rules = senderViews.map((v: Json) => ({ id: v.folder, when: v.predicate, folder: v.folder }));
+  const senderRules = senderViews.map((v: Json) => ({ id: v.folder, when: v.predicate, folder: v.folder }));
+  // Plus the G0 _ AUTH axis, when the rules declare it (`filters.axes_from_patterns`): an INDEPENDENT axis, so
+  // a message gets one sender folder AND one auth folder. Its rules carry `axis: "auth"`; the sender rules
+  // carry none (absent = sender), which keeps their bytes as they were.
+  const rules = [...senderRules, ...authAxisRules(merged)];
 
   // Fz (the sender axis's own NOT-any-of-the-others catch-all) is deliberately
   // the true fallback: it matches exactly what nothing else does. Redundant
@@ -612,7 +642,8 @@ export function toLegacyJson(merged: Merged): Json {
     // one artifact, no drift between the two engines.
     folder_parents: folderParents(merged),
     routing_default: defFolder,
-    filters: junkMirror(curatedCarveOut(senderPartition(merged.filters ?? { views: [], section_headers: [] }))),
+    // `axes_from_patterns` is Maddy-only (see authAxisRules): stripped so the Stalwart artifact is unchanged.
+    filters: junkMirror(curatedCarveOut(senderPartition(withoutMaddyAxes(merged.filters ?? { views: [], section_headers: [] })))),
     folder_renames: merged.folder_renames ?? { map: {} },
     folder_options: merged.folder_options ?? {},
     routing,

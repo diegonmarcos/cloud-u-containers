@@ -18,12 +18,13 @@
 //! (`$distributed`) — neither is "rules data", both are implementation
 //! detail, same category as Stalwart's hardcoded `$sorted`/`$seen`.
 
+mod axes;
 mod db;
 mod email;
 mod rules;
 
 use anyhow::Result;
-use rules::Rules;
+use rules::{Rules, AXIS_AUTH};
 use std::time::Duration;
 
 fn env_or<T: std::str::FromStr>(key: &str, default: T) -> T {
@@ -73,19 +74,24 @@ fn one_run(db_path: &str, rules_path: &str, rules: &Rules) -> Result<()> {
 
     let fallback_id = db::find_mailbox_id(&conn, user_id, &rules.routing_default)?;
 
-    // Ruleset-change detection: if the rules file changed since the last
-    // run, re-open ($distributed cleared) any INBOX message whose only
-    // existing category copy is in the fallback folder, so the next scan
-    // re-evaluates it against the new rules instead of leaving it
-    // permanently fallback-filed under a stale decision.
+    // Ruleset-change detection: if the SENDER rules changed since the last run, re-open ($distributed
+    // cleared) any INBOX message whose only existing category copy is in the fallback folder, so the next
+    // scan re-evaluates it against the new rules instead of leaving it permanently fallback-filed under a
+    // stale decision.
+    //
+    // The hash covers the sender rules only (see [`db::sender_ruleset_hash`]): the G0 _ AUTH axis is
+    // independent, and editing it must never clear `$distributed` on live mail. A build that introduces
+    // this state file finds no previous value and re-opens nothing.
     let state_path = db::state_file_path(db_path);
+    let sender_state_path = db::sender_state_file_path(db_path);
     let new_hash = db::ruleset_hash(rules_path)?;
-    let old_hash = db::read_state_hash(&state_path);
-    if let (Some(old), Some(fb_id)) = (old_hash, fallback_id) {
-        if old != new_hash {
+    let new_sender_hash = db::sender_ruleset_hash(rules_path)?;
+    let old_sender_hash = db::read_state_hash(&sender_state_path);
+    if let (Some(old), Some(fb_id)) = (old_sender_hash, fallback_id) {
+        if old != new_sender_hash {
             let ids = db::fallback_only_distributed_ids(&conn, inbox_id, fb_id)?;
             if !ids.is_empty() {
-                tracing::info!("ruleset changed — re-opening {} fallback-only message(s)", ids.len());
+                tracing::info!("sender ruleset changed — re-opening {} fallback-only message(s)", ids.len());
                 db::clear_distributed(&conn, inbox_id, &ids)?;
             }
         }
@@ -95,6 +101,8 @@ fn one_run(db_path: &str, rules_path: &str, rules: &Rules) -> Result<()> {
     if candidates.is_empty() {
         db::resync_msgs_count(&conn, user_id)?;
         db::write_state_hash(&state_path, new_hash)?;
+        db::write_state_hash(&sender_state_path, new_sender_hash)?;
+        auth_backfill(db_path, rules_path, rules, &mut conn, inbox_id, user_id)?;
         return Ok(());
     }
     tracing::info!("{} undistributed INBOX message(s)", candidates.len());
@@ -110,13 +118,19 @@ fn one_run(db_path: &str, rules_path: &str, rules: &Rules) -> Result<()> {
                 continue;
             }
         };
-        let folder = rules
-            .rules
-            .iter()
-            .find(|r| email::matches(&email, &r.when))
-            .map(|r| r.folder.as_str())
-            .unwrap_or(rules.routing_default.as_str());
-        plans.push(db::Plan { target_folder: folder.to_string(), src_msg_id: *msg_id });
+        // One copy per declared axis: the sender folder (routing default as fallback) and, where the
+        // rules declare it, the G0 _ AUTH folder. Sender copies start unread (the working set); auth copies are
+        // a classification of mail that is already in INBOX, so they keep the original's state (read) instead of
+        // inflating every unread count with a second copy of everything.
+        for axis in axes::declared_axes(rules) {
+            if let Some(folder) = axes::folder_for(rules, &email, axis) {
+                plans.push(db::Plan {
+                    target_folder: folder.to_string(),
+                    src_msg_id: *msg_id,
+                    keep_seen: axis == AXIS_AUTH,
+                });
+            }
+        }
     }
 
     db::backup(db_path)?;
@@ -125,6 +139,84 @@ fn one_run(db_path: &str, rules_path: &str, rules: &Rules) -> Result<()> {
 
     db::resync_msgs_count(&conn, user_id)?;
     db::write_state_hash(&state_path, new_hash)?;
+    db::write_state_hash(&sender_state_path, new_sender_hash)?;
+    auth_backfill(db_path, rules_path, rules, &mut conn, inbox_id, user_id)?;
+    Ok(())
+}
+
+static DRY_RUN_LOGGED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// What the auth backfill does, from `AUTH_BACKFILL`: `off` nothing; `dry` (the DEFAULT) reads the whole
+/// INBOX and LOGS how many messages each auth class would receive, writing nothing; `apply` COPIES them.
+/// Copy only, always: no INBOX original, flag or existing folder is touched.
+fn auth_backfill_mode() -> String {
+    std::env::var("AUTH_BACKFILL").unwrap_or_else(|_| "dry".into())
+}
+
+/// Give the mail that was already in INBOX before the G0 _ AUTH axis existed its auth-folder copy.
+///
+/// `$distributed` mail is never re-scanned by the ordinary pass, so the backlog would otherwise never be
+/// classified. This walks the INBOX in bounded pages, plans the auth folder of each message, and (in `apply`
+/// mode) copies them with `keep_seen` so a backlog does not arrive as unread. Idempotent: the per-body
+/// duplicate check skips what a folder already holds, and a completed backfill is remembered by the hash of
+/// the auth rules, so it re-runs only when those rules change.
+fn auth_backfill(
+    db_path: &str,
+    rules_path: &str,
+    rules: &Rules,
+    conn: &mut rusqlite::Connection,
+    inbox_id: i64,
+    user_id: i64,
+) -> Result<()> {
+    if !axes::declared_axes(rules).contains(&AXIS_AUTH) {
+        return Ok(());
+    }
+    let mode = auth_backfill_mode();
+    if mode == "off" {
+        return Ok(());
+    }
+    let state = db::auth_backfill_state_path(db_path);
+    let hash = db::auth_ruleset_hash(rules_path)?;
+    if mode == "apply" && db::read_state_hash(&state) == Some(hash) {
+        return Ok(());
+    }
+
+    // A dry run is logged once per process: it re-walks the whole INBOX, so it must not repeat every poll.
+    if mode != "apply" && DRY_RUN_LOGGED.load(std::sync::atomic::Ordering::Relaxed) {
+        return Ok(());
+    }
+
+    const PAGE: i64 = 2000;
+    let mut after = 0i64;
+    let mut per_folder: std::collections::BTreeMap<String, usize> = std::collections::BTreeMap::new();
+    let mut plans: Vec<db::Plan> = Vec::new();
+    loop {
+        let page = db::inbox_rows_page(conn, inbox_id, after, PAGE)?;
+        if page.is_empty() {
+            break;
+        }
+        for (msg_id, header) in &page {
+            after = *msg_id;
+            let Ok(email) = db::parse_email(header) else { continue };
+            if let Some(folder) = axes::folder_for(rules, &email, AXIS_AUTH) {
+                *per_folder.entry(folder.to_string()).or_default() += 1;
+                plans.push(db::Plan { target_folder: folder.to_string(), src_msg_id: *msg_id, keep_seen: true });
+            }
+        }
+    }
+    let summary = per_folder.iter().map(|(f, n)| format!("{f}={n}")).collect::<Vec<_>>().join(" | ");
+    if mode != "apply" {
+        DRY_RUN_LOGGED.store(true, std::sync::atomic::Ordering::Relaxed);
+        tracing::info!("auth backfill DRY RUN — would copy {} message(s): {summary}", plans.len());
+        return Ok(());
+    }
+    tracing::info!("auth backfill — copying {} message(s): {summary}", plans.len());
+    db::backup(db_path)?;
+    // No originals are marked: this is a copy-only pass.
+    let (copied, skipped) = db::apply_plan(conn, inbox_id, user_id, &plans, &[])?;
+    tracing::info!("auth backfill — copied={copied} skipped={skipped}");
+    db::resync_msgs_count(conn, user_id)?;
+    db::write_state_hash(&state, hash)?;
     Ok(())
 }
 

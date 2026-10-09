@@ -288,7 +288,8 @@ OUT="$(jq -n -r \
   # Env override: MAIL_SIEVE_STRATEGY=split|unified-inbox wins over the
   # JSON-declared default — used by apply-rules to ask "which folder
   # WOULD this go to?" without flipping the global strategy.
-  ($rf[0].rules // []) as $rules
+  # Sender-axis rules only: the G0 _ AUTH rules (axis "auth") belong to the Rust sorter's second axis.
+  (($rf[0].rules // []) | map(select((.axis // "sender") == "sender"))) as $rules
   | ($rules | map(select(.when | match_when))) as $matched
   | ($matched | map(select(.folder != null and .folder != "")) | .[0].folder // "") as $folder
   | ($matched | map(.flags // []) | add // []) as $rule_flags

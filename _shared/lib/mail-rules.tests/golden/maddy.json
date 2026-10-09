@@ -892,6 +892,119 @@
           }
         ]
       }
+    },
+    {
+      "axis": "auth",
+      "folder": "Ga    🔑 Code",
+      "id": "Ga    🔑 Code",
+      "when": {
+        "header": "Subject",
+        "type": "header_contains",
+        "values": [
+          "verification code",
+          "security code",
+          "one-time code",
+          "one-time password",
+          "login code",
+          "sign-in code",
+          "authentication code",
+          "confirmation code",
+          "your code",
+          "passcode"
+        ]
+      }
+    },
+    {
+      "axis": "auth",
+      "folder": "Gb    🔗 Link to auth",
+      "id": "Gb    🔗 Link to auth",
+      "when": {
+        "all_of": [
+          {
+            "header": "Subject",
+            "type": "header_contains",
+            "values": [
+              "verify your email",
+              "verify your account",
+              "confirm your email",
+              "confirm your account",
+              "reset your password",
+              "password reset",
+              "forgot your password",
+              "magic link",
+              "sign-in link",
+              "sign in to",
+              "log in to",
+              "activate your account",
+              "finish signing up"
+            ]
+          },
+          {
+            "not": {
+              "header": "Subject",
+              "type": "header_contains",
+              "values": [
+                "verification code",
+                "security code",
+                "one-time code",
+                "one-time password",
+                "login code",
+                "sign-in code",
+                "authentication code",
+                "confirmation code",
+                "your code",
+                "passcode"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "axis": "auth",
+      "folder": "Gc    ⚪ No Auth",
+      "id": "Gc    ⚪ No Auth",
+      "when": {
+        "not": {
+          "any_of": [
+            {
+              "header": "Subject",
+              "type": "header_contains",
+              "values": [
+                "verification code",
+                "security code",
+                "one-time code",
+                "one-time password",
+                "login code",
+                "sign-in code",
+                "authentication code",
+                "confirmation code",
+                "your code",
+                "passcode"
+              ]
+            },
+            {
+              "header": "Subject",
+              "type": "header_contains",
+              "values": [
+                "verify your email",
+                "verify your account",
+                "confirm your email",
+                "confirm your account",
+                "reset your password",
+                "password reset",
+                "forgot your password",
+                "magic link",
+                "sign-in link",
+                "sign in to",
+                "log in to",
+                "activate your account",
+                "finish signing up"
+              ]
+            }
+          ]
+        }
+      }
     }
   ],
   "schema_version": 2

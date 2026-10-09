@@ -81,6 +81,44 @@ pub fn ruleset_hash(rules_path: &str) -> anyhow::Result<u64> {
     Ok(fnv1a(&raw))
 }
 
+/// Hash of the rules file WITHOUT its non-sender axes (the G0 _ AUTH rules). The "ruleset changed, re-open
+/// fallback-only messages" step guards the SENDER classification; adding or editing an independent axis
+/// must not trigger it (it would clear `$distributed` on live mail for a change that did not touch sender
+/// routing). Keys are sorted (serde_json's default map), so the hash is a function of content.
+pub fn sender_ruleset_hash(rules_path: &str) -> anyhow::Result<u64> {
+    let raw = std::fs::read(rules_path)?;
+    let mut v: serde_json::Value = serde_json::from_slice(&raw)?;
+    if let Some(rules) = v.get_mut("rules").and_then(|r| r.as_array_mut()) {
+        rules.retain(|r| r.get("axis").and_then(|a| a.as_str()).map_or(true, |a| a == "sender"));
+    }
+    Ok(fnv1a(serde_json::to_string(&v)?.as_bytes()))
+}
+
+/// State file of [`sender_ruleset_hash`]. Separate from [`state_file_path`] so a first run of a build that
+/// introduces it finds NO previous value and re-opens nothing.
+pub fn sender_state_file_path(db_path: &str) -> String {
+    let dir = Path::new(db_path).parent().unwrap_or(Path::new("/data"));
+    dir.join(".apply-rules-sender.hash").to_string_lossy().into_owned()
+}
+
+/// State file of the auth-axis backfill: the hash of the auth rules the backfill last completed for.
+pub fn auth_backfill_state_path(db_path: &str) -> String {
+    let dir = Path::new(db_path).parent().unwrap_or(Path::new("/data"));
+    dir.join(".auth-backfill.hash").to_string_lossy().into_owned()
+}
+
+/// Hash of just the auth-axis rules (what a backfill is a function of).
+pub fn auth_ruleset_hash(rules_path: &str) -> anyhow::Result<u64> {
+    let raw = std::fs::read(rules_path)?;
+    let v: serde_json::Value = serde_json::from_slice(&raw)?;
+    let auth: Vec<&serde_json::Value> = v
+        .get("rules")
+        .and_then(|r| r.as_array())
+        .map(|a| a.iter().filter(|r| r.get("axis").and_then(|x| x.as_str()) == Some("auth")).collect())
+        .unwrap_or_default();
+    Ok(fnv1a(serde_json::to_string(&auth)?.as_bytes()))
+}
+
 pub fn state_file_path(db_path: &str) -> String {
     let dir = Path::new(db_path).parent().unwrap_or(Path::new("/data"));
     dir.join(".apply-rules-ruleset.hash").to_string_lossy().into_owned()
@@ -195,6 +233,27 @@ pub fn resync_msgs_count(conn: &Connection, user_id: i64) -> anyhow::Result<()> 
 pub struct Plan {
     pub target_folder: String,
     pub src_msg_id: i64,
+    /// Copy the source's `seen` instead of starting the copy unread. False for ordinary delivery (category
+    /// folders are the unread working set); true for the auth backfill, whose INBOX sources are all read,
+    /// so a backlog does not land in the new folders as thousands of unread messages.
+    pub keep_seen: bool,
+}
+
+/// One page of INBOX rows after [`after_msg_id`], oldest first: the backfill walks the whole mailbox in
+/// bounded pages instead of loading every cached header at once.
+pub fn inbox_rows_page(
+    conn: &Connection,
+    inbox_id: i64,
+    after_msg_id: i64,
+    limit: i64,
+) -> anyhow::Result<Vec<(i64, Vec<u8>)>> {
+    let mut stmt = conn.prepare(
+        "SELECT msgId, cachedHeader FROM msgs WHERE mboxId = ?1 AND msgId > ?2 ORDER BY msgId LIMIT ?3",
+    )?;
+    let rows = stmt
+        .query_map(params![inbox_id, after_msg_id, limit], |r| Ok((r.get::<_, i64>(0)?, r.get::<_, Vec<u8>>(1)?)))?
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(rows)
 }
 
 /// Copies every planned message into its target mailbox (SQL-direct,
@@ -210,9 +269,9 @@ pub fn apply_plan(
     plans: &[Plan],
     all_scanned_ids: &[i64],
 ) -> anyhow::Result<(usize, usize)> {
-    let mut by_target: HashMap<&str, Vec<i64>> = HashMap::new();
+    let mut by_target: HashMap<&str, Vec<(i64, bool)>> = HashMap::new();
     for p in plans {
-        by_target.entry(p.target_folder.as_str()).or_default().push(p.src_msg_id);
+        by_target.entry(p.target_folder.as_str()).or_default().push((p.src_msg_id, p.keep_seen));
     }
 
     let tx = conn.transaction()?;
@@ -237,7 +296,7 @@ pub fn apply_plan(
             tx.query_row("SELECT uidnext FROM mboxes WHERE id = ?1", params![target_id], |r| r.get(0))?;
         let mut n_inserted = 0i64;
 
-        for &src_id in msg_ids {
+        for &(src_id, keep_seen) in msg_ids {
             let dup: Option<i64> = tx
                 .query_row(
                     "SELECT 1 FROM msgs m
@@ -255,9 +314,10 @@ pub fn apply_plan(
 
             tx.execute(
                 "INSERT INTO msgs (mboxId, msgId, date, bodyLen, mark, bodyStructure, cachedHeader, extBodyKey, seen, recent, compressAlgo)
-                 SELECT ?1, ?2, date, bodyLen, mark, bodyStructure, cachedHeader, extBodyKey, 0, 1, compressAlgo
+                 SELECT ?1, ?2, date, bodyLen, mark, bodyStructure, cachedHeader, extBodyKey,
+                        CASE WHEN ?5 THEN seen ELSE 0 END, 1, compressAlgo
                  FROM msgs WHERE mboxId = ?3 AND msgId = ?4",
-                params![target_id, next_uid, inbox_id, src_id],
+                params![target_id, next_uid, inbox_id, src_id, keep_seen],
             )?;
             tx.execute(
                 "UPDATE extKeys SET refs = refs + 1

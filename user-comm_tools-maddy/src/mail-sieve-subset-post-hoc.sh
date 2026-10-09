@@ -558,7 +558,9 @@ cmd_apply_rules() {
 
   # ── Part 2: ruleset-change detection + fallback re-open ───────────
   STATE_FILE="$(dirname "$DB")/.apply-rules-ruleset.md5"
-  RULESET_HASH="$(jq -Sc '{routing_default, rules}' "$RULES" | md5sum | cut -d' ' -f1)"
+  # Sender-axis rules only: editing the independent G0 _ AUTH axis must not look like a sender ruleset change
+  # (that would re-open fallback-only mail), and a ruleset without it hashes exactly as before.
+  RULESET_HASH="$(jq -Sc '{routing_default, rules: [.rules[] | select((.axis // "sender") == "sender")]}' "$RULES" | md5sum | cut -d' ' -f1)"
   OLD_HASH=""
   [ -f "$STATE_FILE" ] && OLD_HASH="$(cat "$STATE_FILE" 2>/dev/null || true)"
 

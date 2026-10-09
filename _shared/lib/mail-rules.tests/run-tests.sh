@@ -70,7 +70,8 @@ diff_file maddy.json     "$TMP/maddy.json"     || FAIL=1
 
 assert() { local msg="$1"; shift; if "$@"; then echo "ok: $msg"; else echo "FAIL: $msg" >&2; FAIL=1; fi; }
 
-MADDY_RULE_COUNT="$(jq '.rules | length' "$TMP/maddy.json")"
+# Sender-axis rules only (no `axis` key): the G0 _ AUTH rules carry axis "auth" and are asserted on their own below.
+MADDY_RULE_COUNT="$(jq '[.rules[] | select(.axis == null)] | length' "$TMP/maddy.json")"
 
 # The artifacts are COMMITTED, so nothing forces a regenerate when someone
 # edits a canonical. Without this, a rule change lands in git while the sieve
@@ -105,10 +106,17 @@ assert "every maddy rule has resolved folder or flags (not both empty)" \
 assert "every maddy route's folder is a declared sender-axis view" \
   test "$(jq --slurpfile g "$GENERAL" '
     ([$g[0].filters.views[] | select(.axis=="sender") | .folder]) as $declared
-    | [.rules[] | select(.folder != null) | .folder] | unique
+    | [.rules[] | select(.folder != null and .axis == null) | .folder] | unique
     | map(. as $f | select($declared | index($f) | not))
     | length
   ' "$TMP/maddy.json")" = 0
+
+# G0 _ AUTH: the three auth rules exist, are derived from the declared pattern set, and the pattern parity
+# test (auth_patterns_parity.py) holds them to it, including the exclusivity of Ga / Gb / Gc.
+assert "maddy carries exactly three auth-axis rules: Ga, Gb, Gc" \
+  test "$(jq -r '[.rules[] | select(.axis == "auth") | .folder[0:2]] | join(",")' "$TMP/maddy.json")" = "Ga,Gb,Gc"
+assert "G0 _ AUTH parity: rules == declared patterns, classes exclusive" \
+  python3 "$HERE/auth_patterns_parity.py" "$TMP/maddy.json"
 
 # A+B architectural contract:
 # • Maddy = A only (INBOX copy + one of 7 category folders, NO tags).

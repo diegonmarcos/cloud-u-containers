@@ -26,6 +26,20 @@ pub struct Route {
     pub id: String,
     pub folder: String,
     pub when: PredicateNode,
+    /// Which independent classification axis this rule belongs to. Absent = the F0 sender axis (the
+    /// original and only axis, so every existing rule keeps its bytes). "auth" = G0 _ AUTH. A message is
+    /// COPIED into the first matching folder of EACH axis.
+    #[serde(default)]
+    pub axis: Option<String>,
+}
+
+pub const AXIS_SENDER: &str = "sender";
+pub const AXIS_AUTH: &str = "auth";
+
+impl Route {
+    pub fn axis_name(&self) -> &str {
+        self.axis.as_deref().unwrap_or(AXIS_SENDER)
+    }
 }
 
 #[derive(Debug, Deserialize)]
