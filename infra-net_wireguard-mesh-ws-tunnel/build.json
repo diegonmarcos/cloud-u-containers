@@ -42,9 +42,12 @@
   "containers": {
     "app": {
       "container_name": "wireguard-mesh-ws-tunnel",
-      "image": "ghcr.io/erebe/wstunnel:latest",
+      "image": "ghcr.io/erebe/wstunnel:v11.0.0",
+      "_doc_image": "Pinned, not :latest: the SuperApp's WireGuard engine speaks this server's wire itself (libs:net-wg WsTunnel: the /<prefix>/events upgrade, the UDP ticket in Sec-WebSocket-Protocol, unmasked frames), measured against 11.0.0. A new wstunnel is a deliberate bump, re-run against MeshRelayTest and a phone, never a silent pull.",
+      "_doc_command": "--log-lvl WARN: at INFO the server logs 'Tunnel accepted due to matched restriction: Allow path prefix <the secret>' on every tunnel, so the scanner-defence prefix sat in the container log readable by every log tool. WARN keeps refusals (bad path, disallowed destination) and drops that line.",
       "command": [
         "/home/app/wstunnel",
+        "--log-lvl", "WARN",
         "server",
         "ws://0.0.0.0:8080",
         "--restrict-to", "127.0.0.1:51820",
