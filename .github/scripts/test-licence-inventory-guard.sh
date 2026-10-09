@@ -21,6 +21,11 @@ fail=0
 fixture() {
   rm -rf "$work/r"; mkdir -p "$work/r"; cd "$work/r"
   git init -q . && git config user.email t@t && git config user.name t
+  # No background auto-maintenance in a throw-away fixture: a detached
+  # `git maintenance run --auto` left over from the previous fixture's commit
+  # was still writing .git/objects/pack when the next fixture's `rm -rf` ran,
+  # and the suite died on "Directory not empty" (run 37983695537).
+  git config maintenance.auto false && git config gc.auto 0 && git config gc.autoDetach false
   mkdir -p licenses app/src fork/sub libs/x svc/src py rs tf
   cat > licenses/curated.json <<'J'
 {"scan_skip_prefixes":["z_archive/"],"asset_extensions":[".so",".jar",".ttf"],"maven_repos":[],
