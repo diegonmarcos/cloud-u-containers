@@ -146,11 +146,11 @@ fn one_run(db_path: &str, rules_path: &str, rules: &Rules) -> Result<()> {
 
 static DRY_RUN_LOGGED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
-/// What the auth backfill does, from `AUTH_BACKFILL`: `off` nothing; `dry` (the DEFAULT) reads the whole
-/// INBOX and LOGS how many messages each auth class would receive, writing nothing; `apply` COPIES them.
+/// What the auth backfill does, from `AUTH_BACKFILL`: `off` nothing; `dry` reads the whole
+/// INBOX and LOGS how many messages each auth class would receive, writing nothing; `apply` (the DEFAULT since the dry run read 17 Ga / 14 Gb / 13491 Gc = the 13522 INBOX messages) COPIES them.
 /// Copy only, always: no INBOX original, flag or existing folder is touched.
 fn auth_backfill_mode() -> String {
-    std::env::var("AUTH_BACKFILL").unwrap_or_else(|_| "dry".into())
+    std::env::var("AUTH_BACKFILL").unwrap_or_else(|_| "apply".into())
 }
 
 /// Give the mail that was already in INBOX before the G0 _ AUTH axis existed its auth-folder copy.
