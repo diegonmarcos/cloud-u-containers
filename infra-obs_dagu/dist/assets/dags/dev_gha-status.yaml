@@ -16,19 +16,21 @@ steps:
       # status message to ntfy's dev_gha-status topic. WG-only: this runs
       # inside the dagu container on oci-apps and posts to ntfy over the
       # WireGuard mesh IP (10.0.0.6), never via a public route.
-      IFS=',' read -ra REPOS <<< "$GH_REPOS"
-      for repo in "${REPOS[@]}"; do
+      # POSIX sh, not bash: dagu runs this step with the container's /bin/sh,
+      # where the `read -ra … <<<` array split was a syntax error ("line 6:
+      # unexpected redirection") and failed every run.
+      for repo in $(printf '%s' "$GH_REPOS" | tr ',' ' '); do
         RUN=$(curl -sf \
           -H "Authorization: Bearer $GHA_POLL_PAT" \
           -H "Accept: application/vnd.github+json" \
           "https://api.github.com/repos/${GH_ORG}/${repo}/actions/runs?per_page=1")
         [ -z "$RUN" ] && continue
 
-        WF_NAME=$(echo "$RUN" | jq -r '.workflow_runs[0].name // "unknown"')
-        CONCLUSION=$(echo "$RUN" | jq -r '.workflow_runs[0].conclusion // "in_progress"')
-        STATUS=$(echo "$RUN" | jq -r '.workflow_runs[0].status // "unknown"')
-        HTML_URL=$(echo "$RUN" | jq -r '.workflow_runs[0].html_url // ""')
-        BRANCH=$(echo "$RUN" | jq -r '.workflow_runs[0].head_branch // "?"')
+        WF_NAME=$(printf '%s\n' "$RUN" | jq -r '.workflow_runs[0].name // "unknown"')
+        CONCLUSION=$(printf '%s\n' "$RUN" | jq -r '.workflow_runs[0].conclusion // "in_progress"')
+        STATUS=$(printf '%s\n' "$RUN" | jq -r '.workflow_runs[0].status // "unknown"')
+        HTML_URL=$(printf '%s\n' "$RUN" | jq -r '.workflow_runs[0].html_url // ""')
+        BRANCH=$(printf '%s\n' "$RUN" | jq -r '.workflow_runs[0].head_branch // "?"')
 
         [ -z "$HTML_URL" ] || [ "$HTML_URL" = "null" ] && continue
 
