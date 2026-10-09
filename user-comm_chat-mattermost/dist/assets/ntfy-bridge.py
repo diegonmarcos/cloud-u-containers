@@ -861,6 +861,12 @@ def create_claude_users(admin_headers, team_id, all_channel_ids, ntfy_channel_id
             sync_sidebar_category(admin_headers, uid, team_id, ntfy_channel_ids)
 
 
+# 208b341 removed this alongside the Ollama names it sat next to, but the HAI
+# bot block below still reads it, so main() died with NameError at startup and
+# took the whole ntfy bridge (mattermost-bots) down with it.
+HAI_AI_USERNAME = "hai-1.5bq4-ai"
+
+
 def create_hai_ai(admin_headers, team_id):
     """Create or find HAI AI bot account (no WS listener — rig-agentic-hai handles its own).
     Returns (bot_user_id, bot_token) or (None, None)."""
