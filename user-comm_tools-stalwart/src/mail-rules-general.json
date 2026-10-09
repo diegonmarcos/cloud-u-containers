@@ -121,7 +121,7 @@
     }
   },
   "filters": {
-    "_doc": "Dynamic cross-cutting filter views maintained by jmap-sorter each poll over emails in the numeric 1*-9* folders. Multi-mailbox membership only (no copies, no $seen changes); add+remove each poll so time/read windows stay current.",
+    "_doc": "Dynamic cross-cutting filter views (A0-F0 below, plus the pattern-derived G0 _ AUTH from axes_from_patterns) maintained by jmap-sorter each poll over emails in the numeric 1*-9* folders. Multi-mailbox membership only (no copies, no $seen changes); add+remove each poll so time/read windows stay current.",
     "source_folder_regex": "^(Inbox$|[1-9])",
     "section_headers": ["A0 _ SIZE", "B0 _ TIME", "C0 _ STATE", "D0 _ ATTACH", "E0 _ PRIORITY", "F0 _ SENDER"],
     "axes_from_patterns": [
@@ -129,8 +129,8 @@
         "axis": "auth",
         "header": "G0 _ AUTH",
         "patterns": "_shared/mail-auth-patterns.json",
-        "engines": ["maddy"],
-        "_doc": "G0 _ AUTH (Cloud Mail rule 'G0 _ Auth'): Ga Code / Gb Link to auth / Gc No Auth. An axis the MADDY sorter evaluates, independently of the F0 sender axis: a message is COPIED into one sender folder and one auth folder. Its rules are derived from the declared pattern set in _shared/mail-auth-patterns.json (never restated here) by derive-mail-rules.ts::authAxisRules, and are NOT part of filters.views: the Stalwart sorter, which files views as labels on live mail, never sees this axis."
+        "engines": ["maddy", "stalwart"],
+        "_doc": "G0 _ AUTH (Cloud Mail rule 'G0 _ Auth'): Ga Code / Gb Link to auth / Gc No Auth. An axis independent of the F0 sender axis, filed by BOTH engines like every other axis: derive-mail-rules.ts::expandPatternAxes turns this declaration into the 'G0 _ AUTH' section header + three filter views (authAxisViews), derived from the declared pattern set in _shared/mail-auth-patterns.json (never restated here). The Stalwart jmap-sorter creates them as JMAP folders under G0 _ AUTH and keeps their membership every poll (new mail included); the Maddy sorter COPIES each INBOX message into one auth folder. engines must name both: a server axis without its JMAP folders and filter views is a build error (PATTERN_AXIS_ENGINES), the gap this axis first shipped with."
       }
     ],
     "_axis_doc": "Each view declares its axis and whether it is volatile. A volatile view depends on wall-clock time or read state and must be re-evaluated every poll; a static view is a property of the message itself (size, attachments) and is computed once. The size axis is a PARTITION: its buckets are half-open [lo,hi) and must tile the whole range, so every message lands in exactly one. That invariant is what lets the sorter use size-view membership as the sentinel for 'static views already computed' -- guarded by 9_others/test/test_mail_filter_views_partition.sh.",

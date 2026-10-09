@@ -130,10 +130,14 @@ export function merge(general: Json, profile: Json | null): Merged {
     // it twice (Ea's flag list and Eb's negation of it were exactly that, and
     // the Eb _doc claimed they were "referencing the same tree" while being a
     // second copy that nothing kept in sync).
-    filters: resolveViews(
+    // Pattern-declared axes (G0 _ AUTH) are expanded HERE into a section
+    // header + views, so every consumer -- the Stalwart jmap-sorter's JMAP
+    // folders and filter views, folderParents' tree, and the Maddy subset --
+    // reads them from the one `filters` tree like any A0-F0 axis.
+    filters: expandPatternAxes(resolveViews(
       { ...(general.predicates ?? {}), ...(p.predicates ?? {}) },
       p.filters ?? general.filters ?? { views: [], section_headers: [] },
-    ),
+    )),
     folder_renames: p.folder_renames ?? general.folder_renames ?? { map: {} },
     folder_options: p.folder_options ?? general.folder_options ?? {},
     predicates: { ...(general.predicates ?? {}), ...(p.predicates ?? {}) },
@@ -166,6 +170,71 @@ export function resolvePredicate(predicates: Record<string, Json>, pred: Json): 
     if ('not' in pred) return { not: resolvePredicate(predicates, pred.not) };
   }
   return pred;
+}
+
+// ── Pattern-declared axes (G0 _ AUTH) ───────────────────────────────
+
+/**
+ * Both engines an axis must reach. An axis the Maddy sorter files on the
+ * server but the Stalwart jmap-sorter never sees has no JMAP folders and no
+ * JMAP filter view -- invisible to every JMAP client (Cloud Mail, webmail) and
+ * never applied to new mail there. That is exactly how G0 _ AUTH first
+ * shipped (declared `engines: ["maddy"]`), so a declaration that leaves an
+ * engine out is now a build error, not a choice.
+ */
+export const PATTERN_AXIS_ENGINES = ['maddy', 'stalwart'];
+
+/**
+ * The G0 _ AUTH axis (Ga Code / Gb Link to auth / Gc No Auth) as filter VIEWS,
+ * DERIVED from the declared pattern set (`_shared/mail-auth-patterns.json`) --
+ * never restated. Both servers see headers only here, so both classes are
+ * decided on the Subject. Exclusive and exhaustive by construction: Gb is "a
+ * link phrase and not a code", Gc is "neither" -- the views are additive (no
+ * first-match ordering in the Stalwart engine), so the exclusion is in each
+ * predicate rather than in rule order.
+ */
+export function authAxisViews(pat: Json): Json[] {
+  const code = { type: 'header_contains', header: 'Subject', values: pat.code_subject_phrases };
+  const link = { type: 'header_contains', header: 'Subject', values: pat.link_phrases };
+  const c = pat.classes;
+  const view = (folder: string, predicate: Json, doc: string) =>
+    ({ folder, axis: 'auth', volatile: false, _doc: doc, predicate });
+  return [
+    view(c.Ga.folder, code, `${c.Ga.name}: Subject carries a one-time-code phrase. Derived from _shared/mail-auth-patterns.json -- do not hand-edit.`),
+    view(c.Gb.folder, { all_of: [link, { not: code }] }, `${c.Gb.name}: Subject carries a sign-in / verification link phrase and no code phrase. Derived from _shared/mail-auth-patterns.json -- do not hand-edit.`),
+    view(c.Gc.folder, { not: { any_of: [code, link] } }, `${c.Gc.name}: neither. Derived from _shared/mail-auth-patterns.json -- do not hand-edit.`),
+  ];
+}
+
+const PATTERN_AXIS_BUILDERS: Record<string, (pat: Json) => Json[]> = { auth: authAxisViews };
+
+/**
+ * Expand every `filters.axes_from_patterns` declaration into its section
+ * header (appended to `section_headers`) and its views (appended to `views`).
+ * Throws on a declaration that would reach one engine only, or on an axis kind
+ * with no builder.
+ */
+export function expandPatternAxes(filters: Json): Json {
+  const axes = (filters.axes_from_patterns ?? []) as Json[];
+  if (axes.length === 0) return filters;
+  const headers = [...(filters.section_headers ?? [])];
+  const views = [...(filters.views ?? [])];
+  for (const a of axes) {
+    const missing = PATTERN_AXIS_ENGINES.filter((e) => !(a.engines ?? []).includes(e));
+    if (missing.length)
+      throw new Error(`axis ${a.header ?? a.axis}: engines must include ${missing.join(', ')} -- an axis on the server needs its JMAP folders and filter views too`);
+    const build = PATTERN_AXIS_BUILDERS[a.axis];
+    if (!build) throw new Error(`axis ${a.axis}: no view builder in derive-mail-rules.ts`);
+    if (!a.header || !a.patterns) throw new Error(`axis ${a.axis}: needs a header and a patterns file`);
+    const pat = JSON.parse(fs.readFileSync(path.join(ROOT, a.patterns), 'utf8'));
+    if (!headers.includes(a.header)) headers.push(a.header);
+    for (const v of build(pat)) {
+      if (v.folder[0] !== a.header[0])
+        throw new Error(`axis ${a.header}: view ${v.folder} does not carry the header's class letter`);
+      views.push(v);
+    }
+  }
+  return { ...filters, section_headers: headers, views };
 }
 
 // ── Sieve compilation ───────────────────────────────────────────────
@@ -451,30 +520,23 @@ ${fallbackBlock}
 
 // ── Maddy subset ────────────────────────────────────────────────────
 
-/**
- * The G0 _ AUTH axis (Ga Code / Gb Link to auth / Gc No Auth) as sorter rules, DERIVED from the declared
- * pattern set `_shared/mail-auth-patterns.json` -- never restated. The server sees headers only, so both
- * classes are decided on the Subject. Exclusive by construction: Gb is "a link phrase and not a code", Gc
- * is "neither", and the three are evaluated first-match-wins in this order.
- */
-/** The filters tree without the axes only the Maddy engine evaluates. */
-function withoutMaddyAxes(f: Json): Json {
-  const { axes_from_patterns: _maddyOnly, ...rest } = f;
+/** The filters tree without the pattern-axis DECLARATIONS: they are expanded into views by [expandPatternAxes]. */
+function withoutAxisDeclarations(f: Json): Json {
+  const { axes_from_patterns: _expanded, ...rest } = f;
   return rest;
 }
 
+/**
+ * The G0 _ AUTH axis as Maddy sorter rules: the SAME views the Stalwart
+ * jmap-sorter files as JMAP folders ([authAxisViews], expanded into
+ * `filters.views` by [expandPatternAxes]), one rule per view. Maddy evaluates
+ * them first-match-wins in this order; the predicates are already exclusive.
+ */
 export function authAxisRules(merged: Merged): Json[] {
-  const declared = ((merged.filters?.axes_from_patterns ?? []) as Json[]).some((a: Json) => a.axis === 'auth');
-  if (!declared) return [];
-  const pat = JSON.parse(fs.readFileSync(path.join(ROOT, '_shared', 'mail-auth-patterns.json'), 'utf8'));
-  const code = { type: 'header_contains', header: 'Subject', values: pat.code_subject_phrases };
-  const link = { type: 'header_contains', header: 'Subject', values: pat.link_phrases };
-  const c = pat.classes;
-  return [
-    { id: c.Ga.folder, when: code, folder: c.Ga.folder, axis: 'auth' },
-    { id: c.Gb.folder, when: { all_of: [link, { not: code }] }, folder: c.Gb.folder, axis: 'auth' },
-    { id: c.Gc.folder, when: { not: { any_of: [code, link] } }, folder: c.Gc.folder, axis: 'auth' },
-  ];
+  const axes = new Set(((merged.filters?.axes_from_patterns ?? []) as Json[]).map((a: Json) => a.axis));
+  return ((merged.filters?.views ?? []) as Json[])
+    .filter((v: Json) => axes.has(v.axis))
+    .map((v: Json) => ({ id: v.folder, when: v.predicate, folder: v.folder, axis: v.axis }));
 }
 
 export function toMaddyJson(merged: Merged): Json {
@@ -642,8 +704,10 @@ export function toLegacyJson(merged: Merged): Json {
     // one artifact, no drift between the two engines.
     folder_parents: folderParents(merged),
     routing_default: defFolder,
-    // `axes_from_patterns` is Maddy-only (see authAxisRules): stripped so the Stalwart artifact is unchanged.
-    filters: junkMirror(curatedCarveOut(senderPartition(withoutMaddyAxes(merged.filters ?? { views: [], section_headers: [] })))),
+    // `axes_from_patterns` is a source declaration, already expanded into
+    // section_headers + views by expandPatternAxes: the G0 _ AUTH JMAP
+    // folders and filter views reach the jmap-sorter through those.
+    filters: junkMirror(curatedCarveOut(senderPartition(withoutAxisDeclarations(merged.filters ?? { views: [], section_headers: [] })))),
     folder_renames: merged.folder_renames ?? { map: {} },
     folder_options: merged.folder_options ?? {},
     routing,

@@ -118,6 +118,72 @@ assert "maddy carries exactly three auth-axis rules: Ga, Gb, Gc" \
 assert "G0 _ AUTH parity: rules == declared patterns, classes exclusive" \
   python3 "$HERE/auth_patterns_parity.py" "$TMP/maddy.json"
 
+# ── Server axis => JMAP folders + JMAP filter views ───────────────
+# G0 _ AUTH first shipped to the Maddy sorter only: the server copied mail into
+# Ga/Gb/Gc, but the Stalwart jmap-sorter -- the engine that creates the JMAP
+# mailboxes and keeps filter-view membership on new mail -- never heard of it,
+# so no JMAP client (Cloud Mail, webmail) had the folders. Every folder an
+# engine files into must therefore exist in the Stalwart artifact as a filter
+# view nested under a declared X0 section header, with the SAME predicate.
+NO_JMAP_VIEW="$(jq -rn --slurpfile m "$TMP/maddy.json" --slurpfile r "$TMP/stalwart-rules.json" '
+  $r[0] as $s
+  | ($s.filters.views | map({key: .folder, value: .}) | from_entries) as $views
+  | [ $m[0].rules[]
+      | . as $rule
+      | select( ($views[$rule.folder] == null)
+             or (($s.filters.section_headers | index($s.folder_parents[$rule.folder] // "")) == null)
+             or ($rule.axis != null and $views[$rule.folder].predicate != $rule.when) )
+      | $rule.folder ]
+  | unique | join(", ")
+')"
+assert "every server-filed axis folder is a JMAP filter view under its X0 header, same predicate (missing: ${NO_JMAP_VIEW:-none})" \
+  test -z "$NO_JMAP_VIEW"
+
+AXIS_DECL_GAPS="$(jq -rn --slurpfile g "$GENERAL" --slurpfile r "$TMP/stalwart-rules.json" '
+  [ ($g[0].filters.axes_from_patterns // [])[]
+    | . as $a
+    | select( (($a.engines // []) | index("maddy") | not)
+           or (($a.engines // []) | index("stalwart") | not)
+           or (($r[0].filters.section_headers | index($a.header)) == null)
+           or ([$r[0].filters.views[] | select(.axis == $a.axis)] | length) == 0 )
+    | $a.header ]
+  | join(", ")
+')"
+assert "every axes_from_patterns axis names both engines and has JMAP folders + views (gaps: ${AXIS_DECL_GAPS:-none})" \
+  test -z "$AXIS_DECL_GAPS"
+
+# The compiler itself must refuse a one-engine axis, not just this suite.
+refuses_one_engine_axis() {
+  ! node --input-type=module -e '
+    const m = await import(process.argv[1]);
+    m.expandPatternAxes({ views: [], section_headers: [], axes_from_patterns: [
+      { axis: "auth", header: "G0 _ AUTH", patterns: "_shared/mail-auth-patterns.json", engines: ["maddy"] } ] });
+  ' "$DERIVER" >/dev/null 2>&1
+}
+assert "derive-mail-rules.ts refuses an axis declared for the Maddy engine only" refuses_one_engine_axis
+
+AUTH_LANDINGS="$(node --input-type=module -e '
+import fs from "node:fs";
+const views = JSON.parse(fs.readFileSync(process.argv[1], "utf8")).filters.views.filter((v) => v.axis === "auth");
+const ev = (p, s) => {
+  if ("any_of" in p) return p.any_of.some((c) => ev(c, s));
+  if ("all_of" in p) return p.all_of.every((c) => ev(c, s));
+  if ("not" in p) return !ev(p.not, s);
+  return s !== null && p.values.some((v) => s.toLowerCase().includes(v.toLowerCase()));
+};
+const fx = [["Your Verification Code is ready", "Ga"], ["Please verify your email", "Gb"],
+            ["Reset your password: your code inside", "Ga"], ["Weekly newsletter", "Gc"], [null, "Gc"]];
+const bad = [];
+for (const [s, want] of fx) {
+  const hits = views.filter((v) => ev(v.predicate, s)).map((v) => v.folder.slice(0, 2));
+  if (hits.length !== 1 || hits[0] !== want) bad.push(`${s}=[${hits.join("|")}]`);
+}
+if (views.length !== 3) bad.push(`views=${views.length}`);
+console.log(bad.join(" "));
+' "$TMP/stalwart-rules.json")"
+assert "each fixture Subject lands in exactly one G0 _ AUTH JMAP view, the right one (bad: ${AUTH_LANDINGS:-none})" \
+  test -z "$AUTH_LANDINGS"
+
 # A+B architectural contract:
 # • Maddy = A only (INBOX copy + one of 7 category folders, NO tags).
 # • Stalwart = A + B (routes + tag system via IMAP keywords).
