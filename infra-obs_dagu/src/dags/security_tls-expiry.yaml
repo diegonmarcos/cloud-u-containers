@@ -34,13 +34,15 @@ steps:
       ALERTS=""
       TLS_DOMAINS=$(if [ -f "$MON_TARGETS" ]; then jq -r '.tls_checks[].domain' "$MON_TARGETS"; else echo -e "auth.diegonmarcos.com\nvault.diegonmarcos.com\nproxy.diegonmarcos.com\napi.diegonmarcos.com\nanalytics.diegonmarcos.com\nmail.diegonmarcos.com\nsync.diegonmarcos.com"; fi)
       for domain in $TLS_DOMAINS; do
-        EXPIRY=$(echo | openssl s_client -servername $domain -connect $domain:443 2>/dev/null | openssl x509 -noout -enddate 2>/dev/null | cut -d= -f2)
+        CERT=$(echo | openssl s_client -servername $domain -connect $domain:443 2>/dev/null)
+        EXPIRY=$(printf '%s\n' "$CERT" | openssl x509 -noout -enddate 2>/dev/null | cut -d= -f2)
         if [ -n "$EXPIRY" ]; then
-          EXPIRY_SEC=$(date -d "$EXPIRY" +%s 2>/dev/null || echo 0)
-          NOW_SEC=$(date +%s)
-          DAYS_LEFT=$(( (EXPIRY_SEC - NOW_SEC) / 86400 ))
-          if [ $DAYS_LEFT -lt 14 ]; then
-            ALERTS="${ALERTS}  - $domain: expires in $DAYS_LEFT days ($EXPIRY)\n"
+          # openssl decides "within 14 days", not `date -d "$EXPIRY"`: this
+          # step runs under busybox, whose date cannot parse openssl's
+          # "Dec  3 08:53:33 2026 GMT", fell back to 0 and reported every
+          # certificate as expiring in -20735 days, so the DAG failed daily.
+          if ! printf '%s\n' "$CERT" | openssl x509 -noout -checkend 1209600 >/dev/null 2>&1; then
+            ALERTS="${ALERTS}  - $domain: expires within 14 days ($EXPIRY)\n"
           fi
         else
           ALERTS="${ALERTS}  - $domain: COULD NOT READ CERTIFICATE\n"
