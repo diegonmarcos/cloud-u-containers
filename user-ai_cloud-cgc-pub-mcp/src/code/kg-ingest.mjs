@@ -165,10 +165,16 @@ const sql = async (body) => {
 // (reindex.sh's one-KG_DELTA-per-repo contract).
 const nodeTables = new Set(nodes.map((n) => n.table).filter(Boolean));
 const edgeTables = new Set(edges.map((e) => e.table).filter(Boolean));
-const deleteStmts = [];
+// Each scope is deleted in batches of DELETE_BATCH rows, one request and one transaction
+// per batch (#888): a single `DELETE FROM imports WHERE in.repo = ...` over cloud-u-
+// containers' ~461k edges ran kg-store-pub (SurrealDB 2.7, 1G memcg) out of memory on
+// 2026-10-10 15:32 and 15:47 (kernel "Memory cgroup out of memory: Killed process
+// (surreal)"), the retries met a restarting server, and the repo kept its old 2123 rows.
+const DELETE_BATCH = parseInt(process.env.KG_INGEST_DELETE_BATCH || "5000", 10);
+const deleteStmts = [];  // [table, where] scopes
 for (const repo of repos) {
-  for (const t of edgeTables) deleteStmts.push(`DELETE FROM ${t} WHERE in.repo = ${q(repo)} OR out.repo = ${q(repo)};`);
-  for (const t of nodeTables) deleteStmts.push(`DELETE FROM ${t} WHERE repo = ${q(repo)};`);
+  for (const t of edgeTables) deleteStmts.push([t, `in.repo = ${q(repo)} OR out.repo = ${q(repo)}`]);
+  for (const t of nodeTables) deleteStmts.push([t, `repo = ${q(repo)}`]);
 }
 if (deleteStmts.length && !ALLOW_SHRINK) {
   for (const repo of repos) {
@@ -186,11 +192,23 @@ if (deleteStmts.length && !ALLOW_SHRINK) {
 if (RESUME && deleteStmts.length) console.error("[kg-ingest] KG_INGEST_RESUME=1 — keeping existing rows, no repo-scoped delete");
 else if (deleteStmts.length) {
   console.error(`[kg-ingest] repo-scoped replace: deleting existing rows for [${[...repos].join(", ")}]`);
-  // One request per DELETE: the single multi-table request is what dropped the socket on
-  // the private surface for cloud-u-containers (8 retries, UND_ERR_SOCKET). Each is idempotent.
-  for (const st of deleteStmts) {
-    const { errs, firstErr } = await sql(st).catch((e) => die(`repo-scoped delete failed: ${e.message}`));
-    if (errs) die(`repo-scoped delete failed — first: ${firstErr}`);
+  // One request per batch: the single multi-table request is what dropped the socket on
+  // the private surface for cloud-u-containers (8 retries, UND_ERR_SOCKET), and one
+  // statement per table still OOM-killed the server. Each batch is idempotent.
+  for (const [t, where] of deleteStmts) {
+    let gone = 0;
+    for (;;) {
+      const st = `DELETE (SELECT VALUE id FROM ${t} WHERE ${where} LIMIT ${DELETE_BATCH}) RETURN VALUE $before.id;`;
+      const { errs, firstErr, out } = await sql(st).catch((e) =>
+        die(`repo-scoped delete failed after ${gone} ${t} rows: ${e.message} — re-run; the delete resumes where it stopped`));
+      if (errs) die(`repo-scoped delete failed — first: ${firstErr}`);
+      const res = Array.isArray(out) && out.length ? out[out.length - 1]?.result : null;
+      const n = Array.isArray(res) ? res.length : 0;
+      gone += n;
+      if (!(n > 0)) break;
+      if (n >= DELETE_BATCH) process.stderr.write(`\r[kg-ingest] deleted ${gone} ${t} rows`);
+    }
+    if (gone >= DELETE_BATCH) process.stderr.write("\n");
   }
 }
 

@@ -73,9 +73,9 @@ test("a server that stays down aborts loudly (non-zero) and says how to resume",
 test("KG_INGEST_RESUME=1 skips the repo-scoped delete", async () => {
   const r = await run(() => "ok", { KG_INGEST_RESUME: "1" });
   assert.equal(r.code, 0, r.err);
-  assert.ok(!r.stmts.some((s) => s.startsWith("DELETE FROM")));
+  assert.ok(!r.stmts.some((s) => s.startsWith("DELETE")));
   const d = await run(() => "ok");
-  assert.ok(d.stmts.some((s) => s.startsWith("DELETE FROM")));
+  assert.ok(d.stmts.some((s) => s.startsWith("DELETE")));
 });
 
 test("shrink guard: a delta far smaller than the stored repo writes nothing", async () => {
@@ -94,4 +94,42 @@ test("shrink guard: KG_INGEST_ALLOW_SHRINK=1 lets a real shrink through", async 
 test("shrink guard: a comparable delta replaces normally", async () => {
   const r = await run(() => "ok", {}, 6);
   assert.equal(r.code, 0, r.err);
+});
+
+// The repo-scoped delete must never be one unbounded statement: a single
+// `DELETE FROM imports WHERE in.repo = ...` over cloud-u-containers' ~461k edges ran
+// kg-store-pub (SurrealDB, 1G memcg) out of memory on 2026-10-10 (#888). The fake store
+// holds 12 rows per table and answers each bounded DELETE with the ids it removed.
+test("the repo-scoped delete runs in bounded batches until the scope is empty", async () => {
+  const left = new Map([["imports", 12], ["file", 12]]), deletes = [];
+  const srv = http.createServer((req, res) => {
+    let body = "";
+    req.on("data", (c) => (body += c));
+    req.on("end", () => {
+      res.setHeader("Content-Type", "application/json");
+      if (body.startsWith("DELETE")) {
+        deletes.push(body);
+        const lim = body.match(/LIMIT (\d+)/), t = body.match(/FROM (\w+) WHERE/)?.[1];
+        const n = Math.min(left.get(t) ?? 0, lim ? Number(lim[1]) : Infinity);
+        left.set(t, (left.get(t) ?? 0) - n);
+        return res.end(JSON.stringify([{ status: "OK", result: Array.from({ length: n }, (_, i) => `${t}:${i}`) }]));
+      }
+      res.end("[]");
+    });
+  });
+  await new Promise((r) => srv.listen(0, "127.0.0.1", r));
+  const dir = mkdtempSync(join(tmpdir(), "kgi-"));
+  writeFileSync(join(dir, "d.json"), JSON.stringify(delta()));
+  const env = { ...process.env, KG_STORE_URL: `http://127.0.0.1:${srv.address().port}`, KG_STORE_PASS: "x",
+    KG_DELTA: join(dir, "d.json"), KG_INGEST_DELETE_BATCH: "5", KG_INGEST_BACKOFF_MS: "5" };
+  const out = await new Promise((resolve) => {
+    const p = spawn(process.execPath, [SCRIPT], { env });
+    let err = ""; p.stderr.on("data", (c) => (err += c));
+    p.on("close", (code) => resolve({ code, err }));
+  });
+  srv.close(); rmSync(dir, { recursive: true });
+  assert.equal(out.code, 0, out.err);
+  assert.ok(deletes.every((b) => /LIMIT 5\b/.test(b)), `unbounded delete: ${deletes.find((b) => !/LIMIT 5\b/.test(b))}`);
+  assert.equal(left.get("imports"), 0); assert.equal(left.get("file"), 0);
+  assert.equal(deletes.length, 8, "3 full batches + 1 empty probe per table");
 });
