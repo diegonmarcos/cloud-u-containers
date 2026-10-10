@@ -78,16 +78,22 @@ const bj = (svc) => JSON.parse(readFileSync(join(ROOT, svc, "build.json"), "utf8
 
 // Render a service's compose spec, optionally with mem_limit overridden — the
 // mutation that proves the rendered value tracks the declaration.
-const renderSpec = (svc, memOverride = null) => {
+// `override` is either a mem_limit string (the original mutation) or an object
+// of containers.app.resources fields to replace.
+const renderExpr = (svc, override = null) => {
   const base = `builtins.fromJSON (builtins.readFile ./${svc}/build.json)`;
-  const bjExpr = memOverride === null ? base : `
+  const fields = override === null ? {}
+    : typeof override === "string" ? { mem_limit: override } : override;
+  const attrs = Object.entries(fields).map(([k, v]) => `${k} = "${v}";`).join(" ");
+  const bjExpr = attrs === "" ? base : `
     let b = ${base}; a = b.containers.app; in
     b // { containers = b.containers // {
-      app = a // { resources = a.resources // { mem_limit = "${memOverride}"; }; }; }; }`;
-  return nixEval(`
+      app = a // { resources = a.resources // { ${attrs} }; }; }; }`;
+  return `
     let b = (${bjExpr});
-    in import ./${svc}/src/compose.nix { buildJson = b; container = b.containers.app; }`);
+    in import ./${svc}/src/compose.nix { buildJson = b; container = b.containers.app; }`;
 };
+const renderSpec = (svc, override = null) => nixEval(renderExpr(svc, override));
 
 const toBytes = (s) => {
   const m = /^([0-9]+)([KkMmGg])[iI]?[bB]?$/.exec(s);
@@ -160,17 +166,46 @@ for (const svc of SERVICES) {
   check(`M8 ${svc} ceiling FOLLOWS the declaration (mem_limit 4G -> rendered 4G)`,
     ms.deploy.resources.limits.memory === "4G",
     `rendered ${ms.deploy.resources.limits.memory} — compose.nix is ignoring build.json`);
-  check(`M9 ${svc} RocksDB budget FOLLOWS the declaration too`,
-    Number(ms.environment.SURREAL_ROCKSDB_BLOCK_CACHE_SIZE)
-      === Number(env.SURREAL_ROCKSDB_BLOCK_CACHE_SIZE) * (toBytes("4G") / capB),
-    `4G rendered cache ${ms.environment.SURREAL_ROCKSDB_BLOCK_CACHE_SIZE} did not scale from ${env.SURREAL_ROCKSDB_BLOCK_CACHE_SIZE}`);
+  // The RocksDB budget has its OWN declaration (rocksdb_block_cache /
+  // rocksdb_write_buffer) so the ceiling can grow for ingest headroom without
+  // the cache growing with it (2026-10-10, ~945MiB peak against a 1G cap).
+  check(`M9 ${svc} RocksDB block cache FOLLOWS its own declaration`,
+    Number(env.SURREAL_ROCKSDB_BLOCK_CACHE_SIZE) === toBytes(declared.rocksdb_block_cache)
+      && Number(renderSpec(svc, { rocksdb_block_cache: "256M" })
+        .services[names[0]].environment.SURREAL_ROCKSDB_BLOCK_CACHE_SIZE) === toBytes("256M"),
+    `rendered ${env.SURREAL_ROCKSDB_BLOCK_CACHE_SIZE} vs declared ${declared.rocksdb_block_cache}`);
+  check(`M9b ${svc} memtable size FOLLOWS its own declaration`,
+    Number(env.SURREAL_ROCKSDB_WRITE_BUFFER_SIZE) === toBytes(declared.rocksdb_write_buffer)
+      && Number(renderSpec(svc, { rocksdb_write_buffer: "64M" })
+        .services[names[0]].environment.SURREAL_ROCKSDB_WRITE_BUFFER_SIZE) === toBytes("64M"),
+    `rendered ${env.SURREAL_ROCKSDB_WRITE_BUFFER_SIZE} vs declared ${declared.rocksdb_write_buffer}`);
+  check(`M9c ${svc} raising the ceiling does NOT grow the cache (mem_limit 4G keeps it bounded)`,
+    ms.environment.SURREAL_ROCKSDB_BLOCK_CACHE_SIZE === env.SURREAL_ROCKSDB_BLOCK_CACHE_SIZE,
+    `4G rendered cache ${ms.environment.SURREAL_ROCKSDB_BLOCK_CACHE_SIZE}, declared-limit render ${env.SURREAL_ROCKSDB_BLOCK_CACHE_SIZE}`);
+
+  // ── H0. the ingest-headroom floor (2026-10-10) ────────────────────────
+  // A full cgc graph refresh peaked at ~945MiB of a 1G cap and restarted both
+  // stores mid-ingest. 2G is the floor; going back under it is a regression.
+  check(`M20 ${svc} mem_limit >= 2G (full graph refresh peaked at ~945MiB)`,
+    capB >= toBytes("2G"), `declared ${lim}`);
+  check(`M21 ${svc} rendered block cache <= half of mem_limit`,
+    Number(env.SURREAL_ROCKSDB_BLOCK_CACHE_SIZE) * 2 <= capB,
+    `cache ${env.SURREAL_ROCKSDB_BLOCK_CACHE_SIZE} vs limit ${capB}`);
+  check(`M22 ${svc} compose.nix REFUSES a block cache above half of mem_limit`,
+    nixTry(renderExpr(svc, { mem_limit: "2G", rocksdb_block_cache: "1536M" })).ok === false,
+    "a 1.5G cache under a 2G cap rendered cleanly — the bound is not enforced");
+  check(`M23 ${svc} compose.nix REFUSES a cache+memtable budget that does not fit`,
+    nixTry(renderExpr(svc, { mem_limit: "1G", rocksdb_block_cache: "512M", rocksdb_write_buffer: "256M" })).ok === false,
+    "512M + 2x256M under a 1G cap rendered cleanly — that is an OOM kill waiting for load");
 
   // ── G. no literal size in compose.nix ─────────────────────────────────
   const src = readFileSync(join(ROOT, svc, "src/compose.nix"), "utf8");
   const code = src.split("\n").filter((l) => !/^\s*#/.test(l)).join("\n");
-  check(`M10 ${svc} compose.nix hardcodes no size literal`,
-    !new RegExp(`"${lim}"`).test(code),
-    `the string "${lim}" appears in code — two declarations, one of them will lie`);
+  for (const v of [lim, declared.rocksdb_block_cache, declared.rocksdb_write_buffer]) {
+    check(`M10 ${svc} compose.nix hardcodes no size literal "${v}"`,
+      !new RegExp(`"${v}"`).test(code),
+      `the string "${v}" appears in code — two declarations, one of them will lie`);
+  }
 }
 
 // ── H. the FLEET default: uncapped must be unreachable, not merely unused ──

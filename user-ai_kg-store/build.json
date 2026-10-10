@@ -23,9 +23,12 @@
       "db_engine": "surrealdb",
       "image": "ghcr.io/diegonmarcos/kg-store:latest",
       "resources": {
-        "_comment": "THE ONE DECLARATION of this container's memory budget. src/compose.nix reads mem_limit twice off this single value: once as the cgroup ceiling (deploy.resources.limits.memory) and once to size SurrealDB's own RocksDB caches (SURREAL_ROCKSDB_BLOCK_CACHE_SIZE = half of it, SURREAL_ROCKSDB_WRITE_BUFFER_SIZE = an eighth). Both halves are required: the cgroup alone converts the leak into an OOM kill, and the engine budget alone leaves nothing enforcing it. Change this number and BOTH move — no literal is written in compose.nix. Sized from measurement: kg-store's resident set on oci-apps 2026-09-24 was 140.6MiB, so 1G is ~7x headroom, against the ~10.6GB it held uncapped.",
-        "mem_limit": "1G",
-        "mem_reservation": "128M"
+        "_comment": "THE ONE DECLARATION of this container's memory budget. src/compose.nix reads mem_limit as the cgroup ceiling (deploy.resources.limits.memory) and rocksdb_block_cache / rocksdb_write_buffer below as SurrealDB's own RocksDB budget (SURREAL_ROCKSDB_BLOCK_CACHE_SIZE, SURREAL_ROCKSDB_WRITE_BUFFER_SIZE). Both halves are required: the cgroup alone converts the leak into an OOM kill, and the engine budget alone leaves nothing enforcing it. No literal is written in compose.nix. Sized from measurement: kg-store's resident set on oci-apps 2026-09-24 was 140.6MiB at rest, but a full graph refresh peaked at ~945MiB on 2026-10-10, hence 2G.",
+        "mem_limit": "2G",
+        "mem_reservation": "128M",
+        "_rocksdb_comment": "SurrealDB RocksDB engine budget, declared on its own so the cgroup ceiling above can grow without the cache growing with it. Raised mem_limit 1G -> 2G on 2026-10-10: a full cgc graph refresh (690k-edge cloud-u-containers ingest) peaked at ~945MiB of the 1G cap and restarted both stores once mid-ingest. The cache and memtables are kept exactly where they were (512M cache, 2 x 128M memtables) so the extra GiB is pure headroom for the process, WAL and compaction. compose.nix refuses a block cache above half of mem_limit, and _shared/test-kg-store-memory-ceiling.mjs asserts mem_limit >= 2G.",
+        "rocksdb_block_cache": "512M",
+        "rocksdb_write_buffer": "128M"
       }
     }
   },

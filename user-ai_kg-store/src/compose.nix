@@ -10,12 +10,13 @@ let
   # into a GHCR image; at runtime we pull the published binaries image.
   binariesImage = "ghcr.io/diegonmarcos/${buildJson.name}-binaries:latest";
 
-  # ── Memory budget, derived from ONE declared number ──────────────────
-  # build.json containers.app.resources.mem_limit is the only place the size
-  # is written. It feeds BOTH halves of the fix, and neither half works alone:
+  # ── Memory budget, declared in build.json, never written here ────────
+  # build.json containers.app.resources carries every number; no size literal
+  # is written in this file. Two halves, and neither works alone:
   #
-  #   cgroup ceiling  deploy.resources.limits.memory -> memory.max
-  #   engine budget   SURREAL_ROCKSDB_* -> what RocksDB will actually hold
+  #   cgroup ceiling  mem_limit            -> deploy.resources.limits.memory
+  #   engine budget   rocksdb_block_cache  -> SURREAL_ROCKSDB_BLOCK_CACHE_SIZE
+  #                   rocksdb_write_buffer -> SURREAL_ROCKSDB_WRITE_BUFFER_SIZE
   #
   # Without the ceiling, SurrealDB sizes its LRU block cache from the memory it
   # can see, which with no cgroup is the whole host:
@@ -30,24 +31,43 @@ let
   # MAX_WRITE_BUFFER_NUMBER, default up to 128MiB × 32 = 4GiB) are sized off
   # host RAM tiers independently. So both are declared, explicitly.
   #
-  # Budget: cache 1/2 + memtables 2 × 1/8 = 3/4 of the cap, leaving the rest
-  # for the process, the WAL and compaction readahead.
-  memLimit = app.resources.mem_limit;
-  memParts = builtins.match "([0-9]+)([KkMmGg])[iI]?[bB]?" memLimit;
-  memBytes =
-    if memParts == null
-    then throw ("${buildJson.name}: containers.app.resources.mem_limit = "
-                + "\"${memLimit}\" is not <integer><K|M|G>[i][B]; the RocksDB "
-                + "cache budget is computed from it and cannot be guessed.")
-    else (builtins.fromJSON (builtins.elemAt memParts 0)) *
-         (let u = builtins.elemAt memParts 1; in
+  # The cache is declared separately from the ceiling (2026-10-10) so the
+  # ceiling can grow for ingest headroom without the cache growing with it: a
+  # full graph refresh peaked at ~945MiB of the old 1G cap, so mem_limit went
+  # to 2G while the cache stayed at 512M. Bounds enforced below, at render
+  # time: cache <= 1/2 of the cap, and cache + memtables < the cap.
+  toBytes = field: s:
+    let parts = builtins.match "([0-9]+)([KkMmGg])[iI]?[bB]?" s; in
+    if parts == null
+    then throw ("${buildJson.name}: containers.app.resources.${field} = "
+                + "\"${s}\" is not <integer><K|M|G>[i][B]; the RocksDB "
+                + "budget is computed from it and cannot be guessed.")
+    else (builtins.fromJSON (builtins.elemAt parts 0)) *
+         (let u = builtins.elemAt parts 1; in
           if      u == "G" || u == "g" then 1073741824
           else if u == "M" || u == "m" then 1048576
           else                              1024);
 
-  blockCacheBytes      = memBytes / 2;
-  writeBufferBytes     = memBytes / 8;
+  memLimit = app.resources.mem_limit;
+  memBytes = toBytes "mem_limit" memLimit;
+
+  blockCacheBytes      = toBytes "rocksdb_block_cache"  app.resources.rocksdb_block_cache;
+  writeBufferBytes     = toBytes "rocksdb_write_buffer" app.resources.rocksdb_write_buffer;
   maxWriteBufferNumber = 2;
+
+  engineBudget =
+    if blockCacheBytes * 2 > memBytes
+    then throw ("${buildJson.name}: rocksdb_block_cache (${toString blockCacheBytes} B) "
+                + "exceeds half of mem_limit ${memLimit}; the cache would crowd "
+                + "out the memtables, WAL and process inside the cgroup.")
+    else if blockCacheBytes + writeBufferBytes * maxWriteBufferNumber >= memBytes
+    then throw ("${buildJson.name}: RocksDB cache + memtables do not fit under "
+                + "mem_limit ${memLimit}; that is an OOM kill waiting for load.")
+    else {
+      SURREAL_ROCKSDB_BLOCK_CACHE_SIZE        = toString blockCacheBytes;
+      SURREAL_ROCKSDB_WRITE_BUFFER_SIZE       = toString writeBufferBytes;
+      SURREAL_ROCKSDB_MAX_WRITE_BUFFER_NUMBER = toString maxWriteBufferNumber;
+    };
 in
 {
   services = {
@@ -67,11 +87,7 @@ in
       env_file       = [ ".secrets" ];
       # Names verified against surrealdb v2.3.7 source (cnf.rs), not guessed.
       # BLOCK_CACHE_SIZE and WRITE_BUFFER_SIZE are BYTES.
-      environment = {
-        SURREAL_ROCKSDB_BLOCK_CACHE_SIZE        = toString blockCacheBytes;
-        SURREAL_ROCKSDB_WRITE_BUFFER_SIZE       = toString writeBufferBytes;
-        SURREAL_ROCKSDB_MAX_WRITE_BUFFER_NUMBER = toString maxWriteBufferNumber;
-      };
+      environment = engineBudget;
       deploy = {
         resources = {
           limits       = { memory = memLimit; };
