@@ -7,6 +7,7 @@ import { sshExec, checkVmReachable } from "../../shared/libs/ssh.js";
 import { getConfig, resolveVmId, getVmSshAlias, getServiceDir, composeCd } from "../../shared/libs/config.js";
 import { audit } from "../../shared/libs/audit.js";
 import { validPsPattern } from "../../shared/libs/gha-policy.js";
+import { redactCommandString } from "../../shared/libs/redact-argv.js";
 import {
   containerTop,
   containerDiff,
@@ -201,7 +202,9 @@ export function registerOperationsTools(server: McpServer) {
       const list = "(ps -eo pid,etime,args --no-headers -ww 2>/dev/null || ps -o pid,etime,args | tail -n +2)";
       const filt = match ? ` | grep -iF -- '${match}' | grep -v 'grep -iF'` : "";
       const r = sshExec(vmId, `${list}${filt} | head -n ${n}`, 30_000);
-      const body = r.stdout.trim() ? r.stdout.replace(/\n$/, "") : (match ? `(no process matches "${match}")` : "(no processes listed)");
+      // Full argv is printed, so secrets passed as arguments (--pass X, -p X,
+      // URL credentials) are redacted line by line — see redact-argv.ts.
+      const body = r.stdout.trim() ? r.stdout.replace(/\n$/, "").split("\n").map(redactCommandString).join("\n") : (match ? `(no process matches "${match}")` : "(no processes listed)");
       return {
         content: [{ type: "text", text: `Processes on ${getVmSshAlias(vmId)} (${vmId})${match ? ` matching "${match}"` : ""}:\n  PID ELAPSED COMMAND\n${body}${r.ok || r.stdout.trim() ? "" : `\nSSH FAILED (exit ${r.exitCode}): ${r.stderr.trim()}`}` }],
         isError: !r.ok && !r.stdout.trim(),

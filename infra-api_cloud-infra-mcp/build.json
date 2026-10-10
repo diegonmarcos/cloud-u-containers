@@ -121,6 +121,10 @@
     "shell-quote": {
       "cmd": "node --experimental-strip-types test-shell-quote.mjs",
       "cwd": "src/code"
+    },
+    "inspect-redact": {
+      "cmd": "node --experimental-strip-types test-inspect-redact.mjs",
+      "cwd": "src/code"
     }
   }
 }

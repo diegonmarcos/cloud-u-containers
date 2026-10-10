@@ -3,6 +3,7 @@ import { getConfig, resolveVmId, getVmSshAlias, getServiceFolder, composeCd } fr
 import { audit } from "./audit.js";
 import { dockerExecShell } from "./shell-quote.js";
 import { validateContainerName, validateSince, validatePathComponent } from "./validators.js";
+import { redactInspectArgv } from "./redact-argv.js";
 import type { z } from "zod";
 import type { ContainerStatusSchema } from "./schemas.js";
 
@@ -172,11 +173,17 @@ export function containerInspectFull(
             return match ? `${match[1]}***REDACTED***` : e;
           });
         }
+        // Env is not the only place a secret lives: kg-store passed its
+        // SurrealDB root password as `--pass <pw>` in Cmd, and this tool
+        // printed it (2026-10-10). Redact argv-bearing fields too.
+        redactInspectArgv(item);
       }
     }
     return { ok: true, data: parsed };
   } catch {
-    return { ok: true, data: result.stdout.trim() };
+    // Unparseable output is never passed through raw: it is the same
+    // document the redaction above exists to filter.
+    return { ok: false, data: "docker inspect returned unparseable output (withheld: it would bypass redaction)" };
   }
 }
 
