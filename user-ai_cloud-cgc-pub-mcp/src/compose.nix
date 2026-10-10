@@ -42,6 +42,23 @@ let
   # user-comm_snappymail); this just applies it to a builtins.readFile'd script
   # instead of hand-doubling each `$` in the Nix source.
   escapeDollars = builtins.replaceStrings [ "$" ] [ "$$" ];
+
+  # ── kg-store root passwords, rotated 2026-10-10 ─────────────────────────────
+  # Both SurrealDB root passwords leaked (kg-store passed them as `--pass <pw>`
+  # on argv and `docker inspect` printed it) and were rotated. src/secrets.yaml
+  # still holds the OLD values under KG_STORE_PASS / KG_STORE_PASS_PUB, and a
+  # sops file can only gain keys without the private age key, so the new values
+  # live in the fragment src/secrets.kg-rotation.yaml under *_V2 names and are
+  # mapped back onto the names every consumer reads (kgstore.ts, kg-ingest.mjs,
+  # reindex.sh, the command remap below, cloud-cgc-db-restore-all.sh's
+  # `docker exec`s). compose `environment` beats `env_file`, and compose
+  # interpolates these from `--env-file .secrets` (the engine always passes it).
+  # Once someone with the private key drops the old keys from secrets.yaml and
+  # renames the fragment keys, delete this block.
+  kgRotatedPass = {
+    KG_STORE_PASS     = "\${KG_STORE_PASS_V2}";
+    KG_STORE_PASS_PUB = "\${KG_STORE_PASS_PUB_V2}";
+  };
   # Octocode index wiring (data-driven from build.json.runtime.octocode).
   oct = buildJson.runtime.octocode;
 
@@ -118,7 +135,7 @@ let
       KG_STORE_USER       = oct.kg_store_pvt.user;
       KG_DELTA            = oct.kg_store_pvt.delta;
       KG_GRAPHS_DIR       = "/app/graphs";
-    };
+    } // kgRotatedPass;
     env_file = [ ".secrets" ];
     volumes = [
       "${oct.repos_volume}:${oct.repos_path}"
@@ -172,7 +189,7 @@ let
       KG_STORE_NS    = kgStore.ns;
       KG_STORE_DB    = kgStore.db;
       KG_STORE_USER  = kgStore.user;
-    };
+    } // kgRotatedPass;
     env_file = [ ".secrets" ];
     # Dockerfile.native sets `ENTRYPOINT [] / CMD ["npx","tsx","index.ts"]` — no
     # shell in the default command, so a "read this env var under that name"

@@ -87,16 +87,25 @@ in
       env_file       = [ ".secrets" ];
       # Names verified against surrealdb v2.3.7 source (cnf.rs), not guessed.
       # BLOCK_CACHE_SIZE and WRITE_BUFFER_SIZE are BYTES.
-      environment = engineBudget;
+      #
+      # Root credentials come from the ENVIRONMENT, never argv: `surreal start`
+      # reads SURREAL_USER / SURREAL_PASS itself (clap env fallbacks of --user
+      # / --pass). The old `--pass ''${SURREAL_ROOT_PASSWORD}` was interpolated
+      # by compose into Config.Cmd, so `docker inspect`, `ps` and every tool
+      # that prints a command line showed the root password; on 2026-10-10 it
+      # reached an agent session's output and both stores were rotated.
+      # SURREAL_PASS itself arrives via env_file ".secrets" (sops fragment
+      # src/secrets.root-rotation.yaml). surreal only CREATES the root user
+      # from it on an empty datastore, so an existing store is brought to the
+      # new value by the post_hook assets/kg-root-pass-reconcile.sh.
+      environment = engineBudget // { SURREAL_USER = "root"; };
       deploy = {
         resources = {
           limits       = { memory = memLimit; };
           reservations = { memory = app.resources.mem_reservation; };
         };
       };
-      command =
-        "start --log info --user root --pass \${SURREAL_ROOT_PASSWORD} "
-        + "--bind 127.0.0.1:${port} file:/data/surreal.db";
+      command = "start --log info --bind 127.0.0.1:${port} file:/data/surreal.db";
       volumes = [ "${buildJson.data_path}:/data" ];
       healthcheck = {
         test         = [ "CMD" "/surreal" "is-ready" "--conn" "http://localhost:${port}" ];

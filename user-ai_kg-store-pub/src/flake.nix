@@ -51,6 +51,9 @@
             };
           }
         ];
+        # post_hook (build.json compose.post_hook): reconciles the live root
+        # user to SURREAL_PASS after a rotation — see the script header.
+        extraAssets = [ ./assets/kg-root-pass-reconcile.sh ];
         composeSpec = import ./compose.nix { inherit buildJson container; };
         title = "SurrealDB Hybrid Knowledge Graph";
       };

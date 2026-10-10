@@ -52,7 +52,7 @@ SURREAL_DB="production"
 if [ -f /opt/containers/kg-graph/.secrets ]; then
     source /opt/containers/kg-graph/.secrets
 fi
-SURREAL_PASS="${SURREAL_ROOT_PASSWORD:-root}"
+SURREAL_PASS="${SURREAL_PASS:-${SURREAL_ROOT_PASSWORD:-root}}"  # SURREAL_PASS = rotated root (2026-10-10)
 
 log() { echo "[seed] $*"; }
 

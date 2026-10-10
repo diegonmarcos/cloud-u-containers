@@ -9,6 +9,10 @@
     "remote_path": "/opt/containers/kg-store-pub",
     "compose_flags": "--build"
   },
+  "compose": {
+    "post_hook": "assets/kg-root-pass-reconcile.sh",
+    "_doc_post_hook": "Brings the live SurrealDB root user to SURREAL_PASS. surreal only creates the root user from SURREAL_USER/SURREAL_PASS on an empty store, so a rotation (2026-10-10, after the old --pass argv leaked via docker inspect) needs DEFINE USER OVERWRITE run with the previous password. Idempotent; runs under the engine's revision-scoped post-hook receipt, so a rotation that did not apply fails the ship."
+  },
   "backup": {
     "enabled": true
   },
