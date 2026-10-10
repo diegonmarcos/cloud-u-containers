@@ -224,6 +224,10 @@
   "user-ai_my-ai_claude-api": {
    "licence": "LicenseRef-NoLicenseGranted"
   },
+  "user-ai_openclaw": {
+   "licence": "LicenseRef-NoLicenseGranted",
+   "note": "The fleet's own declarations (build.json, compose.nix, openclaw-config.nix, the tester). OpenClaw itself is not vendored: it runs from upstream's image, see docker_licences ghcr.io/openclaw/openclaw."
+  },
   "user-ai_session-memory": {
    "licence": "LicenseRef-NoLicenseGranted"
   },
@@ -442,6 +446,10 @@
   "ghcr.io/diegonmarcos/": {
    "licence": "LicenseRef-NoLicenseGranted",
    "note": "Image built by this fleet. The licence is that of the packaging (own code); the software inside keeps its upstream licence - see the same service's upstream image / vendored-source entries."
+  },
+  "ghcr.io/openclaw/openclaw": {
+   "licence": "MIT",
+   "note": "OpenClaw (github.com/openclaw/openclaw), MIT, Copyright (c) 2026 OpenClaw Foundation; upstream's own release image, used unmodified (pinned tag). Bundled third-party components are listed in upstream THIRD_PARTY_NOTICES.md inside the image."
   },
   "ghcr.io/erebe/wstunnel": {
    "licence": "BSD-3-Clause"

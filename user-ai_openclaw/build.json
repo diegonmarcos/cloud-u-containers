@@ -1,0 +1,63 @@
+{
+  "name": "openclaw",
+  "description": "OpenClaw (MIT, github.com/openclaw/openclaw) on oci-apps — the open-source personal agent gateway, as a fourth fleet agent next to hermes, goose and claude. Upstream's own image, unmodified. Its gateway listens on 127.0.0.1 only (host network, auth mode none, the documented trusted-loopback setup) with the OpenAI-compatible /v1/chat/completions enabled; the fleet reaches it ONLY through the agent gateway my-ai-api (X-Agent-Mode: openclaw). Its model calls go back through that same gateway's OpenRouter face, which holds the key, so this service has no secret at all. Never public, never on the mesh directly.",
+  "dns": "openclaw.app",
+  "ports": {
+    "app": 18789
+  },
+  "category": "agi",
+  "version": "1.0.0",
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/openclaw",
+    "compose_flags": "--pull always --force-recreate"
+  },
+  "proxy": {
+    "app_hub": false
+  },
+  "runtime": {
+    "_comment": "THE ONE DECLARATION of what OpenClaw runs. src/openclaw-config.nix renders configs/openclaw.json from it (a pure function, evaluated by the tester too), compose.nix mounts that read-only and the container copies it into its state volume at every start, so a hand edit inside the container lasts until the next restart and never longer. `model` is the fleet's agent model (the same one goose and hermes declare); `provider` is the fleet gateway's OpenAI-compatible face on the WireGuard bind, which injects the OpenRouter key — the apiKey OpenClaw sends is a placeholder the gateway ignores (passthrough_auth false there).",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "agent_target": "openclaw/default",
+    "provider": {
+      "id": "fleet",
+      "base_url": "http://10.0.0.6:3217/v1",
+      "api": "openai-completions",
+      "api_key_placeholder": "fleet-gateway-injects-the-key",
+      "context_window": 128000,
+      "max_tokens": 8192
+    },
+    "_bind_comment": "loopback + auth none is the setup OpenClaw documents for a trusted same-host caller (docs/gateway/config-gateway.md: 'auth.mode none — use only for trusted local loopback setups'). Any other bind REQUIRES auth (non-loopback binds refuse to start without it) and would need a shared token in both this service's and my-ai-api's sops files; the tester fails if bind leaves loopback while auth stays none.",
+    "bind": "loopback",
+    "auth": "none"
+  },
+  "containers": {
+    "app": {
+      "container_name": "cloud-agi-openclaw",
+      "image": "ghcr.io/openclaw/openclaw:2026.9.9",
+      "_image_comment": "Upstream's public GHCR image, pinned (2026.9.9 = latest on 2026-10-10, arm64 digest sha256:f75083cde787fcb90cdfa91cb17ca0ea135b5f4ee989fc08ca2c2e12abe22e84). Public, so the oci-apps pull needs no GHCR login. 3.4 GB on disk.",
+      "port": 18789,
+      "port_env": "OPENCLAW_GATEWAY_PORT",
+      "dns": "openclaw.app",
+      "public": false,
+      "healthcheck": null,
+      "monitoring": null,
+      "env_file": false,
+      "depends_on": [],
+      "resources": {
+        "mem_limit": "3G",
+        "mem_reservation": "1G",
+        "_comment": "Measured 2026-10-10 on oci-apps (smoke run of this exact config): 1.33 GiB resident after one agent turn. 3G is the ceiling with headroom for tool runs; the agi category default (8G) is more than this service needs."
+      },
+      "read_only": false,
+      "protocol": "http",
+      "_healthcheck_comment": "null on purpose, as for cloud-agi-hermes: the listener is loopback-only, so a mesh probe of openclaw.app:18789 could only ever fail. Liveness is compose.nix's container healthcheck (127.0.0.1/health) and the gateway's /health.modes[openclaw].available."
+    }
+  },
+  "tests": {
+    "openclaw-service": {
+      "cmd": "node test-openclaw-service.mjs",
+      "cwd": "src"
+    }
+  }
+}

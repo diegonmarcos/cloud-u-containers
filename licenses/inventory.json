@@ -18,13 +18,13 @@
    "CDLA-Permissive-2.0": 1
   },
   "dir": {
-   "LicenseRef-NoLicenseGranted": 89
+   "LicenseRef-NoLicenseGranted": 90
   },
   "docker": {
    "LicenseRef-NoLicenseGranted": 44,
    "Apache-2.0": 6,
    "AGPL-3.0-only": 5,
-   "MIT": 5,
+   "MIT": 6,
    "GPL-3.0-only": 4,
    "LicenseRef-OS-Distribution": 4,
    "BSD-3-Clause": 2,
@@ -2558,6 +2558,15 @@
    "licence": "LicenseRef-NoLicenseGranted",
    "licence_source": "licenses/curated.json::directories"
   },
+  "dir:user-ai_openclaw": {
+   "kind": "dir",
+   "declared_in": [
+    "(tree)"
+   ],
+   "licence": "LicenseRef-NoLicenseGranted",
+   "licence_source": "licenses/curated.json::directories",
+   "note": "The fleet's own declarations (build.json, compose.nix, openclaw-config.nix, the tester). OpenClaw itself is not vendored: it runs from upstream's image, see docker_licences ghcr.io/openclaw/openclaw."
+  },
   "dir:user-ai_session-memory": {
    "kind": "dir",
    "declared_in": [
@@ -3559,6 +3568,18 @@
    "scope": "runtime",
    "licence": "BSD-3-Clause",
    "licence_source": "licenses/curated.json::docker_licences[ghcr.io/erebe/wstunnel]"
+  },
+  "docker:ghcr.io/openclaw/openclaw": {
+   "kind": "docker",
+   "declared_in": [
+    "user-ai_openclaw/build.json",
+    "user-ai_openclaw/src/build.json"
+   ],
+   "version": "ghcr.io/openclaw/openclaw:2026.9.9",
+   "scope": "runtime",
+   "licence": "MIT",
+   "licence_source": "licenses/curated.json::docker_licences[ghcr.io/openclaw/openclaw]",
+   "note": "OpenClaw (github.com/openclaw/openclaw), MIT, Copyright (c) 2026 OpenClaw Foundation; upstream's own release image, used unmodified (pinned tag). Bundled third-party components are listed in upstream THIRD_PARTY_NOTICES.md inside the image."
   },
   "docker:ghcr.io/umami-software/umami": {
    "kind": "docker",
