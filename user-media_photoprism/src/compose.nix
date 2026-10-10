@@ -13,6 +13,56 @@ let
   appImage    = "ghcr.io/diegonmarcos/${buildJson.name}-binaries:latest";
   dbImage     = db.image;
   rcloneImage = rclone.image;
+
+  # ── Originals mount: self-healing layout (2026-10-10) ──────────────────────
+  # Before: rclone mounted the bucket straight onto the bind SOURCE
+  # /opt/containers/photoprism/originals (`:shared`). When that rclone died
+  # without unmounting (killed, not stopped), the FUSE mount stayed behind on
+  # the host as "Transport endpoint is not connected". Every later
+  # `compose up` then failed before any container existed — docker cannot
+  # stat a dead FUSE mountpoint as a bind source, for rclone itself as much as
+  # for photoprism — so nothing could ever remount it: photoprism stayed down
+  # (Ship run 38073435379: `invalid mount config for type "bind": stat
+  # /opt/containers/photoprism/originals: transport endpoint is not connected`).
+  #
+  # Now the bind source is a plain PARENT directory that is never itself a
+  # mountpoint, so it always stats. rclone mounts at <parent>/originals inside
+  # it and the mount propagates out (rshared) and into photoprism (rslave):
+  #   • rclone clears a dead mount left by its predecessor before mounting;
+  #   • a watchdog exits the container when the mount stops answering, and
+  #     restart=unless-stopped brings it back (which clears + remounts);
+  #   • SIGTERM unmounts cleanly, so `docker stop`/`down` leaves nothing behind;
+  #   • photoprism waits for the mount before starting (depends_on healthy +
+  #     its own wait), and sees a remount live through rslave propagation.
+  mntHost      = "${buildJson.deploy.remote_path}/rclone-mnt";
+  mntRclone    = "/mnt";
+  mntApp       = "/photoprism/mnt";
+  originalsDir = "originals";
+  rcloneMountArgs = "--allow-other --allow-non-empty --vfs-cache-mode full --vfs-cache-max-size 1G --vfs-read-chunk-size 32M --vfs-read-chunk-size-limit 256M --dir-cache-time 5m --log-level INFO";
+  # Shell for `sh -c`. `$$` is compose's escape for a literal `$`.
+  rcloneSupervisor = ''
+    M=${mntRclone}/${originalsDir}
+    fusermount3 -uz "$$M" 2>/dev/null || umount -l "$$M" 2>/dev/null || true
+    mkdir -p "$$M"
+    rclone mount oci:${buildJson.s3.bucket} "$$M" ${rcloneMountArgs} &
+    pid=$$!
+    trap 'kill -TERM "$$pid" 2>/dev/null; wait "$$pid"; fusermount3 -uz "$$M" 2>/dev/null; exit 0' TERM INT
+    fails=0
+    while kill -0 "$$pid" 2>/dev/null; do
+      sleep 15 & wait $$!
+      if grep -q " $$M fuse.rclone " /proc/mounts && timeout 20 ls "$$M" >/dev/null 2>&1; then fails=0; else fails=$$((fails + 1)); fi
+      if [ "$$fails" -ge 8 ]; then
+        echo "[rclone-watchdog] $$M unresponsive for 2 min - exiting so docker restarts and remounts"
+        kill -TERM "$$pid" 2>/dev/null; sleep 5; kill -KILL "$$pid" 2>/dev/null
+        fusermount3 -uz "$$M" 2>/dev/null || umount -l "$$M" 2>/dev/null
+        exit 1
+      fi
+    done
+    wait "$$pid"; rc=$$?
+    fusermount3 -uz "$$M" 2>/dev/null || umount -l "$$M" 2>/dev/null
+    exit "$$rc"
+  '';
+  mountReady = "grep -q ' ${mntRclone}/${originalsDir} fuse.rclone ' /proc/mounts && timeout 20 ls ${mntRclone}/${originalsDir} >/dev/null";
 in
 {
   services = {
@@ -20,6 +70,7 @@ in
       image = dbImage;
       container_name = db.container_name;
       network_mode = "host";
+      restart = "unless-stopped";
       env_file = [ ".secrets" ];
       environment = {
         MARIADB_AUTO_UPGRADE      = "1";
@@ -46,7 +97,9 @@ in
       image = rcloneImage;
       container_name = rclone.container_name;
       network_mode = "host";
-      command = "mount oci:${buildJson.s3.bucket} /data --allow-other --allow-non-empty --vfs-cache-mode full --vfs-cache-max-size 1G --vfs-read-chunk-size 32M --vfs-read-chunk-size-limit 256M --dir-cache-time 5m --log-level INFO";
+      restart = "unless-stopped";
+      entrypoint = [ "/bin/sh" "-c" ];
+      command = [ rcloneSupervisor ];
       env_file = [ ".secrets" ];
       environment = {
         RCLONE_CONFIG_OCI_TYPE              = "s3";
@@ -57,14 +110,17 @@ in
         RCLONE_CONFIG_OCI_REGION            = buildJson.s3.region;
         RCLONE_CONFIG_OCI_ACL               = "private";
       };
-      volumes = [ "/opt/containers/photoprism/originals:/data:shared" ];
+      volumes = [ "${mntHost}:${mntRclone}:rshared" ];
+      # Healthy = the FUSE mount is present AND answers. photoprism's
+      # depends_on waits on this, so it never starts against an empty dir.
       healthcheck = {
-        test = [ "CMD" "ls" "/data" ];
+        test = [ "CMD-SHELL" mountReady ];
         interval = "30s";
-        timeout  = "10s";
+        timeout  = "25s";
         retries  = 3;
-        start_period = "15s";
+        start_period = "30s";
       };
+      stop_grace_period = "30s";
       # 2026-07-03: `privileged = true` was broader than this container
       # needs. cap_add SYS_ADMIN + /dev/fuse + empty security_opt still
       # fails ("fusermount3: mount failed: Permission denied") — reproduced
@@ -97,6 +153,11 @@ in
       # errors with 's6-overlay-suexec: fatal: can only run as pid 1' and
       # the container exits 100. Disable docker-init for this service.
       init = false;
+      restart = "unless-stopped";
+      # Wait for the originals mount before handing PID 1 to s6-overlay
+      # (`exec /init`, the image's own entrypoint, so s6 is still PID 1).
+      # depends_on covers `compose up`; this covers a restart on its own.
+      entrypoint = [ "/bin/sh" "-c" "until grep -q ' ${mntApp}/${originalsDir} fuse' /proc/mounts; do echo 'waiting for ${mntApp}/${originalsDir} (rclone)'; sleep 5; done; exec /init" ];
       env_file = [ ".secrets" ];
       environment = {
         TZ                              = buildJson.timezone;
@@ -126,10 +187,15 @@ in
         # `mariadb:3306` thinking bridge networking applied; reverting.
         PHOTOPRISM_DATABASE_SERVER      = "localhost:3306";
         PHOTOPRISM_HTTP_PORT            = toString buildJson.ports.app;
+        PHOTOPRISM_ORIGINALS_PATH       = "${mntApp}/${originalsDir}";
+        # oci-apps is shared (~10 GB free of 24): bound the indexer instead of
+        # letting it scale to every core. TensorFlow/faces stay on; two workers
+        # keep a full re-index within the 2G ceiling below.
+        PHOTOPRISM_WORKERS              = "2";
       };
       volumes = [
         "photoprism_storage:/photoprism/storage"
-        "/opt/containers/photoprism/originals:/photoprism/originals:ro"
+        "${mntHost}:${mntApp}:ro,rslave"
       ];
       depends_on = {
         mariadb = { condition = "service_healthy"; };
@@ -140,11 +206,13 @@ in
         interval = "30s";
         timeout  = "10s";
         retries  = 3;
-        start_period = "60s";
+        start_period = "120s";
       };
+      # 512M OOM-killed indexing (TensorFlow + thumbnails); PhotoPrism's own
+      # guidance is >=2G per worker pair. Bounded so it cannot crowd the VM.
       deploy.resources = {
-        limits       = { memory = "512M"; cpus = "1.0"; };
-        reservations = { memory = "64M"; };
+        limits       = { memory = "2G"; cpus = "2.0"; };
+        reservations = { memory = "256M"; };
       };
     };
   };
