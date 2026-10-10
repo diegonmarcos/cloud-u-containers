@@ -1,6 +1,7 @@
 import { exec, execAsync, type ExecResult } from "./exec.js";
 import { resolveVmId, getVmSshAlias } from "./config.js";
 import { audit } from "./audit.js";
+import { remoteShellWrap } from "./shell-quote.js";
 
 // ── SSH via alias ──────────────────────────────────────────────────
 // All connection logic (host, user, key, ProxyJump, mux) lives in
@@ -27,9 +28,10 @@ const SSH_BASE_OPTS = (connectTimeout: number | string) => [
 // error read as a docker problem. Run every command under `bash -c` with a
 // single-quoted body so the login shell only ever sees one opaque argument;
 // bash is present on every VM (the login shell is merely fish).
-export function remoteShellWrap(command: string): string {
-  return `bash -c '${command.replace(/'/g, "'\\''")}'`;
-}
+// 2026-10-10: the body is now quoted so fish AND POSIX read it identically —
+// the plain '\'' form broke under fish once the command itself held a quote
+// (see shell-quote.ts).
+export { remoteShellWrap };
 
 export function sshExec(
   vmNameOrAlias: string,

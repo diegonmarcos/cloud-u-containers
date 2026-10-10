@@ -2,6 +2,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { containerExecCmd } from "../../shared/libs/docker.js";
 import { sshExec } from "../../shared/libs/ssh.js";
+import { sqliteReadonlyCmd } from "../../shared/libs/shell-quote.js";
+import { MAIL_DB, DISTRIBUTION_SQL, INGEST_SQL } from "./mail-sql.js";
 
 const MAIL_VM = "oci-mail";
 const MAIL_CONTAINER = "maddy";
@@ -11,11 +13,6 @@ const POST_HOC = "/usr/local/bin/mail-sieve-subset-post-hoc";
 // (the 2026-08-23 backfill of 1335 messages took minutes), so post-hoc goes
 // through sshExec with its own timeout instead of the shared docker helper.
 const POST_HOC_TIMEOUT_MS = 900_000;
-
-// SQLite char(36) is '$'. Building the $distributed literal this way keeps the
-// dollar out of the shell entirely — no escaping to get wrong across the
-// ssh -> docker exec -> sqlite3 quoting layers.
-const DISTRIBUTED = "char(36) || 'distributed'";
 
 export function registerMailOpsTools(server: McpServer): void {
   // ── devops.mail.post_hoc — maddy maintenance runner ──────────────────────
@@ -74,23 +71,12 @@ export function registerMailOpsTools(server: McpServer): void {
     "INBOX distribution backlog: how many messages still lack the $distributed keyword, plus the oldest and newest undistributed dates. A growing backlog means the apply-rules scheduler has stopped.",
     {},
     async () => {
-      const sql = [
-        "SELECT 'inbox_total=' || COUNT(*) FROM msgs m",
-        "  JOIN mboxes b ON b.id = m.mboxId WHERE b.name = 'INBOX';",
-        "SELECT 'undistributed=' || COUNT(*) FROM msgs m",
-        "  JOIN mboxes b ON b.id = m.mboxId WHERE b.name = 'INBOX'",
-        "  AND NOT EXISTS (SELECT 1 FROM flags f WHERE f.mboxId = m.mboxId",
-        `    AND f.msgId = m.msgId AND f.flag = ${DISTRIBUTED});`,
-        "SELECT 'oldest_undistributed=' || COALESCE(datetime(MIN(m.date),'unixepoch'),'none'),",
-        "       'newest_undistributed=' || COALESCE(datetime(MAX(m.date),'unixepoch'),'none')",
-        "  FROM msgs m JOIN mboxes b ON b.id = m.mboxId WHERE b.name = 'INBOX'",
-        "  AND NOT EXISTS (SELECT 1 FROM flags f WHERE f.mboxId = m.mboxId",
-        `    AND f.msgId = m.msgId AND f.flag = ${DISTRIBUTED});`,
-      ].join(" ");
+      // The SQL is full of single quotes; sqliteReadonlyCmd + containerExecCmd
+      // quote it per layer (see shell-quote.ts — the remote login shell is fish).
       const result = containerExecCmd(
         MAIL_VM,
         MAIL_CONTAINER,
-        `sqlite3 -readonly /data/imapsql.db "${sql}"`,
+        sqliteReadonlyCmd(MAIL_DB, DISTRIBUTION_SQL),
       );
       return result.ok
         ? { content: [{ type: "text" as const, text: result.output }] }
@@ -112,24 +98,10 @@ export function registerMailOpsTools(server: McpServer): void {
     "Inbound freshness for maddy INBOX: hours since the last delivery, plus a 21-day per-day delivery map. A large age_hours or a run of 0-delivery days means inbound is broken (leg B down) even though every container still reports healthy.",
     {},
     async () => {
-      const sql = [
-        "SELECT 'newest_delivery=' || COALESCE(datetime(MAX(m.date),'unixepoch'),'none')",
-        "    || ' age_hours=' || COALESCE(CAST((strftime('%s','now') - MAX(m.date))/3600 AS INT),-1)",
-        "  FROM msgs m JOIN mboxes b ON b.id = m.mboxId WHERE b.name = 'INBOX';",
-        "WITH RECURSIVE d(x) AS (",
-        "  SELECT date('now','-20 days')",
-        "  UNION ALL SELECT date(x,'+1 day') FROM d WHERE x < date('now'))",
-        "SELECT d.x || ' ' || COALESCE(c.n,0) ||",
-        "       CASE WHEN COALESCE(c.n,0) = 0 THEN '  <-- NO MAIL' ELSE '' END",
-        "  FROM d LEFT JOIN (SELECT date(m.date,'unixepoch') dd, COUNT(*) n",
-        "    FROM msgs m JOIN mboxes b ON b.id = m.mboxId",
-        "    WHERE b.name = 'INBOX' GROUP BY dd) c ON c.dd = d.x",
-        "  ORDER BY d.x;",
-      ].join(" ");
       const result = containerExecCmd(
         MAIL_VM,
         MAIL_CONTAINER,
-        `sqlite3 -readonly /data/imapsql.db "${sql}"`,
+        sqliteReadonlyCmd(MAIL_DB, INGEST_SQL),
       );
       return result.ok
         ? { content: [{ type: "text" as const, text: result.output }] }

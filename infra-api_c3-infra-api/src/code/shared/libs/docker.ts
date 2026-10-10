@@ -1,6 +1,7 @@
 import { sshExec } from "./ssh.js";
 import { getConfig, resolveVmId, getVmSshAlias, getServiceFolder, composeCd } from "./config.js";
 import { audit } from "./audit.js";
+import { dockerExecShell } from "./shell-quote.js";
 import { validateContainerName, validateSince, validatePathComponent } from "./validators.js";
 import type { z } from "zod";
 import type { ContainerStatusSchema } from "./schemas.js";
@@ -224,9 +225,7 @@ export function containerExecCmd(
 ): { ok: boolean; output: string } {
   validateContainerName(container);
   const vmId = resolveVmId(vmNameOrAlias);
-  // Escape single quotes in the command for safe SSH passthrough
-  const escaped = command.replace(/'/g, "'\\''");
-  const result = sshExec(vmId, `docker exec ${container} sh -c '${escaped}'`, 30_000);
+  const result = sshExec(vmId, dockerExecShell(container, command), 30_000);
   audit("docker_exec", `${container}@${getVmSshAlias(vmId)}: ${command.slice(0, 80)}`, result.ok ? "OK" : "FAILED");
   return { ok: result.ok, output: (result.stdout + result.stderr).trim() };
 }

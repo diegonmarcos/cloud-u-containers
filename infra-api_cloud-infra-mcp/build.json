@@ -117,6 +117,10 @@
     "gha-policy": {
       "cmd": "node --experimental-strip-types test-gha-policy.mjs",
       "cwd": "src/code"
+    },
+    "shell-quote": {
+      "cmd": "node --experimental-strip-types test-shell-quote.mjs",
+      "cwd": "src/code"
     }
   }
 }
