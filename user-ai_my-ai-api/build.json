@@ -37,6 +37,7 @@
       "TELEGRAM_BOT_TOKEN",
       "GOOSE_SERVER__SECRET_KEY"
     ],
+    "_hermes_api_key_doc": "OPTIONAL, owner-provisioned (needs the fleet age key): HERMES_API_KEY = the same value as hermes-agent's API_SERVER_KEY (>= 16 chars). With it, X-Agent-Mode: hermes reaches the real Hermes Agent API on 127.0.0.1:8642 (skills, memory, sessions, toolsets, jobs; GET /agents/hermes/<fn>); without it, the hermes mode stays the Hermes model behind this gateway's MCP loop and /health.modes[hermes].native is false. Not in _required: the gateway is correct either way and says which.",
     "_goose_server_secret_key_doc": "X-Secret-Key header required by all goosed ACP requests. Comes from .secrets env_file (src/secrets.yaml). If unset the goosed process is skipped at startup."
   },
   "proxy": {
@@ -147,6 +148,10 @@
     "agi-container-naming": {
       "cmd": "node test-agi-container-naming.mjs",
       "cwd": "../_shared"
+    },
+    "native-agents": {
+      "cmd": "node test-my-ai-native-agents.mjs",
+      "cwd": "src/code"
     },
     "agent-credential-scope": {
       "cmd": "node test-agent-credential-scope.mjs",

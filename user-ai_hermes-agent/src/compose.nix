@@ -7,9 +7,20 @@
 #
 # WG-ONLY gateway: host network so the container can reach the WireGuard mesh
 # (claude-superset-api at 10.0.0.6:3117) and make outbound Telegram egress
-# without NAT hairpin issues. No inbound HTTP port is published — the Hermes
-# API server is NOT enabled (command = ["gateway" "run"] only), so there is
-# nothing to expose. public:false, no Caddy route.
+# without NAT hairpin issues. public:false, no Caddy route, no published port.
+#
+# HERMES API SERVER (loopback only). `gateway run` also starts Hermes'
+# OpenAI-compatible API platform whenever API_SERVER_KEY is set: measured
+# 2026-10-10 it was already answering on 127.0.0.1:8642 (Hermes 0.21.5), keyed
+# from an .env inside the hermes-agent-data volume that no file in this repo
+# declared. Its host and port are declared here now, so the listener can never
+# drift onto the WireGuard or public interface: API_SERVER_HOST is pinned to
+# 127.0.0.1 and the port is build.json ports.api. The only caller is the fleet
+# agent gateway my-ai-api (same host, host network), which reaches the REAL
+# agent — skills, memory, sessions, toolsets, scheduled jobs — with
+# X-Agent-Mode: hermes once it holds the same key as HERMES_API_KEY. The key
+# itself belongs in src/secrets.yaml as API_SERVER_KEY (and in my-ai-api's as
+# HERMES_API_KEY): a sops edit that needs the fleet age key.
 #
 # AUTH: secrets delivered via .secrets env_file (sops-encrypted src/secrets.yaml
 # → dist/.secrets at deploy). Contains TELEGRAM_BOT_TOKEN, OPENAI_API_KEY
@@ -78,6 +89,11 @@ in
         # runtime.model ever goes missing, eval must fail here rather than quietly
         # run a model nobody asked for.
         OPENAI_MODEL         = rt.model;
+        # The API server platform: loopback only, on the declared port (see the
+        # header). Hermes' own default host is also 127.0.0.1; pinning it here
+        # makes that a declaration rather than an upstream default.
+        API_SERVER_HOST      = "127.0.0.1";
+        API_SERVER_PORT      = toString buildJson.ports.api;
       };
       volumes = [
         "hermes_data:/opt/data"
@@ -99,9 +115,10 @@ in
         # caveat as above if flake.nix ever stops emitting it.
         "./configs/plugins/jev-gate:/opt/data/plugins/jev-gate:ro"
       ];
-      # NO healthcheck: the Hermes gateway subcommand exposes no HTTP health
-      # endpoint when the API server is disabled (command = "gateway run").
-      # Enable once the api-server subcommand is added and a port is opened.
+      # NO healthcheck: the API server's /health only exists while
+      # API_SERVER_KEY is set, and the gateway must not be marked unhealthy
+      # (and Telegram restarted) for a key that is not wired yet. The fleet
+      # gateway probes it instead and reports it in /health.modes[hermes].
     };
   };
 

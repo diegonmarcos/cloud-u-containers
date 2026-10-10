@@ -15,8 +15,10 @@
 // Agent modes (X-Agent-Mode header, or model-name prefix):
 //   claude-cli — forward to claude-superset-api (CLAUDE_CLI_BASE_URL, WG-only)
 //   goose      — OpenRouter with GOOSE_MODEL (forwarded like hermes, no local binary)
-//   hermes     — OpenRouter with HERMES_MODEL (Nous Hermes, default nousresearch/hermes-3-llama-3.1-405b)
-//   (default)  — OpenRouter with the requested model
+//   hermes     — the Hermes Agent's own API (HERMES_API_KEY set), else OpenRouter with HERMES_MODEL
+//   openclaw   — the OpenClaw gateway's own API (cloud-agi-openclaw, loopback)
+//   openrouter / (default) — OpenRouter with the requested model
+// GET /health lists them all under `modes` (see modes() below).
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
@@ -49,6 +51,75 @@ const CLAUDE_CLI_CHAT = process.env.CLAUDE_CLI_CHAT_PATH || "/v1/chat/completion
 const GOOSE_MODEL = process.env.GOOSE_MODEL || DEFAULT_MODEL;
 // hermes: OpenRouter model slug for Nous Hermes
 const HERMES_MODEL = process.env.HERMES_MODEL || "nousresearch/hermes-3-llama-3.1-405b:free";
+
+// ── Native agent APIs on this host's loopback ────────────────────────────────
+// Both run with network_mode host on oci-apps and listen on 127.0.0.1 only, so
+// this gateway (also host network) is the one way the mesh reaches them. The
+// defaults are the ports their own build.json files declare
+// (user-ai_openclaw ports.app, user-ai_hermes-agent ports.api);
+// test-my-ai-native-agents.mjs fails if either drifts from its declaration.
+//
+// openclaw — the OpenClaw gateway (cloud-agi-openclaw). Its OpenAI-compatible
+//   /v1/chat/completions runs a real OpenClaw agent turn; the `model` field
+//   names the agent target, not a provider model (OpenClaw's own config picks
+//   that). Loopback with gateway.auth.mode "none", so no credential exists to
+//   hold here.
+// hermes (native) — the Hermes Agent API server (cloud-agi-hermes): the real
+//   agent with its skills, memory, sessions and toolsets, where the plain
+//   `hermes` mode below is only the Hermes model behind this gateway's MCP
+//   loop. It takes Bearer API_SERVER_KEY, delivered here as HERMES_API_KEY by
+//   the .secrets env_file (src/secrets.yaml). Without it the hermes mode stays
+//   the OpenRouter forward and /health says native:false — never a guess.
+const OPENCLAW_BASE   = process.env.OPENCLAW_BASE_URL ?? "http://127.0.0.1:18789";
+const OPENCLAW_AGENT  = process.env.OPENCLAW_AGENT || "openclaw/default";
+const HERMES_API_BASE = process.env.HERMES_API_BASE_URL ?? "http://127.0.0.1:8642";
+const HERMES_API_KEY  = process.env.HERMES_API_KEY || "";
+const HERMES_API_MODEL = process.env.HERMES_API_MODEL || "hermes-agent";
+const PROBE_TTL_MS    = parseInt(process.env.BRIDGE_PROBE_TTL_MS || "30000", 10);
+const PROBE_TIMEOUT_MS = parseInt(process.env.BRIDGE_PROBE_TIMEOUT_MS || "1500", 10);
+
+// Read-only functions each native agent publishes to the app's More sheet,
+// served at GET /agents/<agent>/<fn>. An allowlist: nothing that writes, and no
+// path the caller chooses.
+const NATIVE = {
+  hermes: {
+    base: HERMES_API_BASE,
+    enabled: () => !!HERMES_API_KEY,
+    auth: () => ({ authorization: `Bearer ${HERMES_API_KEY}` }),
+    functions: {
+      skills:   { label: "Skills",          path: "/v1/skills" },
+      toolsets: { label: "Toolsets",        path: "/v1/toolsets" },
+      sessions: { label: "Hermes sessions", path: "/api/sessions" },
+      jobs:     { label: "Scheduled jobs",  path: "/api/jobs" },
+      models:   { label: "Models",          path: "/v1/models" },
+    },
+  },
+  openclaw: {
+    base: OPENCLAW_BASE,
+    enabled: () => !!OPENCLAW_BASE,
+    auth: () => ({}),
+    functions: {
+      agents: { label: "Agent targets", path: "/v1/models" },
+    },
+  },
+};
+
+// Liveness of each native agent, probed on its unauthenticated /health and
+// cached so the docker healthcheck and the app's polling never pile up probes.
+const probes = {};
+const probeNative = async (name) => {
+  const n = NATIVE[name];
+  if (!n.enabled()) return false;
+  const hit = probes[name];
+  if (hit && Date.now() - hit.at < PROBE_TTL_MS) return hit.up;
+  let up = false;
+  try {
+    const r = await fetch(`${n.base}/health`, { signal: AbortSignal.timeout(PROBE_TIMEOUT_MS) });
+    up = r.ok;
+  } catch { up = false; }
+  probes[name] = { at: Date.now(), up };
+  return up;
+};
 
 // ── cross-device session store ─────────────────────────────────────────────
 // SESSIONS_DIR is declared ONCE in sessions-store.mjs and shared — this server
@@ -254,6 +325,10 @@ const getAgentMode = (headers, model) => {
   if (hdr === "claude-cli" || hdr === "claude") return "claude-cli";
   if (hdr === "goose") return "goose";
   if (hdr === "hermes") return "hermes";
+  if (hdr === "openclaw") return "openclaw";
+  // Explicit, so a catalogue id such as "claude-…" cannot re-route a plain
+  // OpenRouter chat to the claude CLI through the model-prefix rules below.
+  if (hdr === "openrouter") return "openrouter";
   const m = String(model || "").toLowerCase();
   if (m === "goose" || m.startsWith("goose/") || m.startsWith("goose:")) return "goose";
   if (m === "hermes" || m.startsWith("hermes/") || m.startsWith("nous/")) return "hermes";
@@ -371,12 +446,70 @@ const callOpenRouterAgentic = async ({ messages, model, extra }) => {
   return { text, usage, raw: lastRaw };
 };
 
+// ── Backend: a native agent's own OpenAI-compatible API (loopback) ───────────
+// Only messages, the agent target and the OpenAI `user` (OpenClaw derives a
+// stable session from it) are sent: every other field is this gateway's own
+// (reasoning, tools, compression headers) and means nothing to the agent,
+// which runs its configured model with its own tools. Fails loud: a native
+// agent that is down is a 502 naming it, never a silent fall back to a model
+// that merely shares its name.
+const callNative = async (name, { messages, model, extra }) => {
+  const n = NATIVE[name];
+  const body = { model, messages, stream: false };
+  if (typeof extra?.user === "string") body.user = extra.user;
+  const r = await postJson(`${n.base}/v1/chat/completions`, { "content-type": "application/json", ...n.auth() }, body, CALL_TIMEOUT);
+  if (!r.ok) {
+    const txt = await r.text().catch(() => "");
+    throw new Error(`${name} ${r.status}: ${txt.slice(0, 500)}`);
+  }
+  const j = await r.json();
+  const text = j.choices?.[0]?.message?.content ?? "";
+  const usage = { input_tokens: j.usage?.prompt_tokens ?? 0, output_tokens: j.usage?.completion_tokens ?? 0 };
+  stats.calls++;
+  stats.prompt_tokens += usage.input_tokens;
+  stats.completion_tokens += usage.output_tokens;
+  return { text, usage, raw: j };
+};
+
 // ── Dispatch to the right backend ─────────────────────────────────────────────
 const dispatch = async ({ messages, model, extra, agentMode }) => {
   if (agentMode === "claude-cli") return callClaudeCLI({ messages, model, extra });
   if (agentMode === "goose")      return mcpEnabled() ? callOpenRouterAgentic({ messages, model: GOOSE_MODEL, extra }) : callOpenRouter({ messages, model: GOOSE_MODEL, extra });
+  if (agentMode === "openclaw")   return callNative("openclaw", { messages, model: OPENCLAW_AGENT, extra });
+  if (agentMode === "hermes" && NATIVE.hermes.enabled()) return callNative("hermes", { messages, model: HERMES_API_MODEL, extra });
   if (agentMode === "hermes")     return mcpEnabled() ? callOpenRouterAgentic({ messages, model: HERMES_MODEL, extra }) : callOpenRouter({ messages, model: HERMES_MODEL, extra });
   return callOpenRouter({ messages, model, extra });
+};
+
+// ── The agents this gateway serves, for /health.modes ────────────────────────
+// ONE list a client can build its agent picker from without knowing any of
+// them in advance: id is the X-Agent-Mode value, fleet the service in the C3
+// catalogue it runs as, backend what actually answers, model what that backend
+// runs (null = the request's model), available whether a request would reach
+// it now, functions the read-only GET /agents/<id>/<fn> routes it publishes.
+const modes = async () => {
+  const [clawUp, hermesUp] = await Promise.all([probeNative("openclaw"), probeNative("hermes")]);
+  const fns = (name, up) => (up ? Object.entries(NATIVE[name].functions).map(([id, f]) => ({ id, label: f.label, path: `/agents/${name}/${id}` })) : []);
+  const hermesNative = NATIVE.hermes.enabled();
+  return [
+    { id: "hermes", label: "Hermes", fleet: "cloud-agi-hermes",
+      backend: hermesNative ? "hermes-agent-api" : (mcpEnabled() ? "openrouter+mcp" : "openrouter"),
+      native: hermesNative, model: hermesNative ? HERMES_API_MODEL : HERMES_MODEL,
+      available: hermesNative ? hermesUp : !!UP_KEY,
+      ...(hermesNative && !hermesUp ? { reason: "the Hermes API server does not answer" } : {}),
+      ...(!hermesNative ? { note: "HERMES_API_KEY unset: the Hermes model behind this gateway's MCP loop, not the Hermes Agent" } : {}),
+      functions: fns("hermes", hermesNative && hermesUp) },
+    { id: "openclaw", label: "OpenClaw", fleet: "cloud-agi-openclaw", backend: "openclaw-gateway", native: true,
+      model: OPENCLAW_AGENT, available: clawUp,
+      ...(clawUp ? {} : { reason: "the OpenClaw gateway does not answer" }),
+      functions: fns("openclaw", clawUp) },
+    { id: "goose", label: "Goose", fleet: "cloud-agi-goose", backend: mcpEnabled() ? "openrouter+mcp" : "openrouter",
+      native: false, model: GOOSE_MODEL, available: !!UP_KEY, functions: [] },
+    { id: "claude-cli", label: "Claude", fleet: "cloud-agi-claude", backend: "claude-superset-api", native: true,
+      model: null, available: !!CLAUDE_CLI_BASE, functions: [] },
+    { id: "openrouter", label: "OpenRouter (fleet key)", fleet: null, backend: "openrouter", native: false,
+      model: null, available: !!UP_KEY, streams: true, functions: [] },
+  ];
 };
 
 // ── Full pipeline + dispatch ──────────────────────────────────────────────────
@@ -527,13 +660,36 @@ const server = http.createServer(async (req, res) => {
   }
 
   // ── health + model discovery ───────────────────────────────────────────────
-  if (req.method === "GET" && (req.url === "/health" || req.url === "/readyz" || req.url === "/livez" || req.url === "/"))
+  if (req.method === "GET" && (req.url === "/health" || req.url === "/readyz" || req.url === "/livez" || req.url === "/")) {
+    // /readyz and /livez stay probe-free; /health (the docker healthcheck and
+    // the app) carries the agent list, whose probes are cached.
+    const live = req.url === "/health" || req.url === "/" ? await modes() : null;
+    const byId = Object.fromEntries((live || []).map((m) => [m.id, m]));
     return send(200, {
       status: "ok", active, max: MAX_CONC,
       plugins: { headroom: HR_ENABLED, rtk: RTK_ENABLED, caveman: CAVEMAN_ENABLED, ponytail: PONYTAIL_DEFAULT, agents_principles: !!AGENTS_PRINCIPLES, cloud_principles: !!CLOUD_PRINCIPLES, mcp: MCP_ENABLED && mcpEnabled() },
-      agents: { openrouter: !!UP_KEY, claude_cli: !!CLAUDE_CLI_BASE, goose: GOOSE_MODEL, hermes: HERMES_MODEL },
+      agents: {
+        openrouter: !!UP_KEY, claude_cli: !!CLAUDE_CLI_BASE, goose: GOOSE_MODEL,
+        hermes: NATIVE.hermes.enabled() ? HERMES_API_MODEL : HERMES_MODEL,
+        ...(live ? { openclaw: byId.openclaw.available ? OPENCLAW_AGENT : false } : {}),
+      },
+      ...(live ? { modes: live } : {}),
       stats,
     });
+  }
+  // ── a native agent's read-only functions (NATIVE.<agent>.functions) ───────
+  if (req.method === "GET" && req.url.startsWith("/agents/")) {
+    const [name, fn] = req.url.split("?")[0].split("/").filter(Boolean).slice(1);
+    const n = NATIVE[name];
+    const f = n?.functions?.[fn];
+    if (!f) return send(404, { error: { message: "no such agent function" } });
+    if (!n.enabled()) return send(503, { error: { message: `${name}: not wired on this gateway` } });
+    try {
+      const r = await fetch(`${n.base}${f.path}`, { headers: n.auth(), signal: AbortSignal.timeout(15000) });
+      const txt = await r.text();
+      return send(r.ok ? 200 : 502, r.ok ? txt : { error: { message: `${name} ${r.status}: ${txt.slice(0, 300)}` } });
+    } catch (e) { return send(502, { error: { message: `${name}: ${String(e.message || e)}` } }); }
+  }
   if (req.method === "GET" && req.url.startsWith("/v1/mcp/status")) {
     if (!mcpEnabled()) return send(200, { enabled: false });
     try { return send(200, await getServerCounts()); }
@@ -637,7 +793,7 @@ const server = http.createServer(async (req, res) => {
 
 const handler = server.listeners("request")[0];
 server.listen(PORT, BIND, () =>
-  console.error(`[my-ai-api] API on http://${BIND}:${PORT} (model=${DEFAULT_MODEL}, conc=${MAX_CONC}, headroom=${HR_ENABLED}, rtk=${RTK_ENABLED}, caveman=${CAVEMAN_ENABLED}, ponytail=${PONYTAIL_DEFAULT}, agents=${["openrouter", CLAUDE_CLI_BASE && "claude-cli", "goose", "hermes"].filter(Boolean).join("+")})`));
+  console.error(`[my-ai-api] API on http://${BIND}:${PORT} (model=${DEFAULT_MODEL}, conc=${MAX_CONC}, headroom=${HR_ENABLED}, rtk=${RTK_ENABLED}, caveman=${CAVEMAN_ENABLED}, ponytail=${PONYTAIL_DEFAULT}, agents=${["openrouter", CLAUDE_CLI_BASE && "claude-cli", "goose", NATIVE.hermes.enabled() ? "hermes(native)" : "hermes", OPENCLAW_BASE && "openclaw"].filter(Boolean).join("+")})`));
 
 if (OLLAMA_PORT && !(OLLAMA_BIND === BIND && OLLAMA_PORT === PORT)) {
   const ollama = http.createServer(handler);
