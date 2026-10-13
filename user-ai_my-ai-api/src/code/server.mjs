@@ -17,6 +17,7 @@
 //   goose      — OpenRouter with GOOSE_MODEL (forwarded like hermes, no local binary)
 //   hermes     — the Hermes Agent's own API (HERMES_API_KEY set), else OpenRouter with HERMES_MODEL
 //   openclaw   — the OpenClaw gateway's own API (cloud-agi-openclaw, loopback)
+//   deepseek   — the DeepSeek harness: a DeepSeek model (request's deepseek/… or DEEPSEEK_MODEL) + the MCP tool loop
 //   openrouter / (default) — OpenRouter with the requested model
 // GET /health lists them all under `modes` (see modes() below).
 import http from "node:http";
@@ -51,6 +52,14 @@ const CLAUDE_CLI_CHAT = process.env.CLAUDE_CLI_CHAT_PATH || "/v1/chat/completion
 const GOOSE_MODEL = process.env.GOOSE_MODEL || DEFAULT_MODEL;
 // hermes: OpenRouter model slug for Nous Hermes
 const HERMES_MODEL = process.env.HERMES_MODEL || "nousresearch/hermes-3-llama-3.1-405b:free";
+
+// deepseek: the DeepSeek harness — DeepSeek's own models on OpenRouter driven
+// through this gateway's MCP tool loop (the same tools goose and hermes get).
+// The request may pick any DeepSeek model (deepseek/…, e.g. v4-pro or r1);
+// anything else falls back to DEEPSEEK_MODEL, so the mode never runs a
+// non-DeepSeek model under the DeepSeek name.
+const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL || "deepseek/deepseek-v4-pro-0813";
+const deepseekModel = (requested) => (/^deepseek\//.test(String(requested || "")) ? String(requested) : DEEPSEEK_MODEL);
 
 // ── Native agent APIs on this host's loopback ────────────────────────────────
 // Both run with network_mode host on oci-apps and listen on 127.0.0.1 only, so
@@ -326,6 +335,7 @@ const getAgentMode = (headers, model) => {
   if (hdr === "goose") return "goose";
   if (hdr === "hermes") return "hermes";
   if (hdr === "openclaw") return "openclaw";
+  if (hdr === "deepseek") return "deepseek";
   // Explicit, so a catalogue id such as "claude-…" cannot re-route a plain
   // OpenRouter chat to the claude CLI through the model-prefix rules below.
   if (hdr === "openrouter") return "openrouter";
@@ -475,6 +485,7 @@ const callNative = async (name, { messages, model, extra }) => {
 const dispatch = async ({ messages, model, extra, agentMode }) => {
   if (agentMode === "claude-cli") return callClaudeCLI({ messages, model, extra });
   if (agentMode === "goose")      return mcpEnabled() ? callOpenRouterAgentic({ messages, model: GOOSE_MODEL, extra }) : callOpenRouter({ messages, model: GOOSE_MODEL, extra });
+  if (agentMode === "deepseek")   { const m = deepseekModel(model); return mcpEnabled() ? callOpenRouterAgentic({ messages, model: m, extra }) : callOpenRouter({ messages, model: m, extra }); }
   if (agentMode === "openclaw")   return callNative("openclaw", { messages, model: OPENCLAW_AGENT, extra });
   if (agentMode === "hermes" && NATIVE.hermes.enabled()) return callNative("hermes", { messages, model: HERMES_API_MODEL, extra });
   if (agentMode === "hermes")     return mcpEnabled() ? callOpenRouterAgentic({ messages, model: HERMES_MODEL, extra }) : callOpenRouter({ messages, model: HERMES_MODEL, extra });
@@ -503,6 +514,9 @@ const modes = async () => {
       model: OPENCLAW_AGENT, available: clawUp,
       ...(clawUp ? {} : { reason: "the OpenClaw gateway does not answer" }),
       functions: fns("openclaw", clawUp) },
+    { id: "deepseek", label: "DeepSeek", fleet: null, backend: mcpEnabled() ? "openrouter+mcp" : "openrouter",
+      native: false, model: DEEPSEEK_MODEL, model_choice: { providers: ["DeepSeek"], prefix: "deepseek/" },
+      available: !!UP_KEY, functions: [] },
     { id: "goose", label: "Goose", fleet: "cloud-agi-goose", backend: mcpEnabled() ? "openrouter+mcp" : "openrouter",
       native: false, model: GOOSE_MODEL, available: !!UP_KEY, functions: [] },
     { id: "claude-cli", label: "Claude", fleet: "cloud-agi-claude", backend: "claude-superset-api", native: true,

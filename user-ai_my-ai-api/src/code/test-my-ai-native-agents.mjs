@@ -112,7 +112,7 @@ try {
 
   const health = await (await fetch(`${s.base}/health`)).json();
   const ids = (health.modes || []).map((m) => m.id).join(",");
-  check("N5 /health.modes lists every agent the gateway serves", ids === "hermes,openclaw,goose,claude-cli,openrouter", ids);
+  check("N5 /health.modes lists every agent the gateway serves", ids === "hermes,openclaw,deepseek,goose,claude-cli,openrouter", ids);
   const hm = health.modes.find((m) => m.id === "hermes"), om = health.modes.find((m) => m.id === "openclaw");
   check("N5b a live native agent is available and publishes its functions",
     hm.native && hm.available && hm.functions.some((f) => f.id === "skills" && f.path === "/agents/hermes/skills")
@@ -130,6 +130,12 @@ try {
   const bad2 = await fetch(`${s.base}/agents/nobody/skills`);
   check("N6b a function outside the allowlist, or an unknown agent, is a 404", bad.status === 404 && bad2.status === 404, `${bad.status} ${bad2.status}`);
 
+  const ds = await chat(s.base, "deepseek", "anthropic/claude-x");
+  check("N9 the DeepSeek harness never runs a non-DeepSeek model and reaches OpenRouter (my_ai_deepseek_error with no key)",
+    ds.status === 502 && ds.j.error?.type === "my_ai_deepseek_error" && /OPENROUTER_API_KEY/.test(ds.j.error.message), JSON.stringify(ds.j));
+  const dm = health.modes.find((m) => m.id === "deepseek");
+  check("N9b /health.modes[deepseek] names its default model and that only DeepSeek models can be picked",
+    /^deepseek\//.test(dm.model) && dm.model_choice.providers.join() === "DeepSeek", JSON.stringify(dm));
   const or = await chat(s.base, "openrouter", "claude-opus-5");
   check("N7 X-Agent-Mode: openrouter keeps a claude-… model on OpenRouter",
     or.status === 502 && or.j.error?.type === "my_ai_openrouter_error", JSON.stringify(or.j));
