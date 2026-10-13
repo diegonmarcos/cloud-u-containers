@@ -12,7 +12,6 @@
 
     engine = import ../../_shared/engine.nix;
     lib    = nixpkgs.lib;
-    nb     = buildJson.docker.native_build;
 
     base_domain =
       lib.concatStringsSep "." (lib.drop 1 (lib.splitString "." buildJson.domain));
@@ -43,10 +42,6 @@
             ./code/nginx.conf
             ./code/src
           ];
-          cmd       = nb.cmd or "";
-          binary    = nb.entrypoint or "";
-          baseImage = nb.base_image;
-          apt       = nb.apt or "";
         };
         title       = "WireGuard Mesh — read-only control panel";
       };
