@@ -27,5 +27,11 @@
   "upstream_image": "alpine:3.20",
   "build": {
     "headers_enforced": true
+  },
+  "tests": {
+    "init-writable-authkeys": {
+      "cmd": "sh test-init-writable-authkeys.sh",
+      "cwd": "src"
+    }
   }
 }
