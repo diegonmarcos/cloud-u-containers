@@ -30,6 +30,10 @@
     "remote_path": "/opt/containers/hermes-agent",
     "compose_flags": "--pull always --force-recreate"
   },
+  "compose": {
+    "post_hook": "assets/hermes-api-key-sync.sh",
+    "_doc_post_hook": "Writes API_SERVER_KEY (sops fragment src/secrets.hermes-api.yaml) into the hermes-agent-data volume's /opt/data/.env and restarts the container when it changed. Hermes loads that .env with override=True and clears known keys missing from it, so the env_file value alone never takes effect. Idempotent; verifies the key against 127.0.0.1:8642/health/detailed; runs under the engine's revision-scoped post-hook receipt, so a key that did not apply fails the ship. No secret on any command line or in any log."
+  },
   "tests": {
     "jev-gate": {
       "cmd": "python3 test-jev-gate.py",

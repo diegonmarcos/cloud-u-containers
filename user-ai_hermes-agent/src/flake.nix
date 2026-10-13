@@ -64,6 +64,10 @@
               [ "@HERMES_MODEL@" ] [ buildJson.runtime.model ]
               (builtins.readFile ./configs/config.yaml); }
         ] ++ jevGateTemplates;
+        # post_hook (build.json compose.post_hook): writes the sops
+        # API_SERVER_KEY into the volume .env, which Hermes lets override the
+        # container environment — see the script header.
+        extraAssets = [ ./assets/hermes-api-key-sync.sh ];
         composeSpec = import ./compose.nix { inherit buildJson container; };
         title = "Hermes Agent";
       };

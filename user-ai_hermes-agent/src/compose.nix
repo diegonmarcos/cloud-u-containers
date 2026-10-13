@@ -18,9 +18,14 @@
 # 127.0.0.1 and the port is build.json ports.api. The only caller is the fleet
 # agent gateway my-ai-api (same host, host network), which reaches the REAL
 # agent — skills, memory, sessions, toolsets, scheduled jobs — with
-# X-Agent-Mode: hermes once it holds the same key as HERMES_API_KEY. The key
-# itself belongs in src/secrets.yaml as API_SERVER_KEY (and in my-ai-api's as
-# HERMES_API_KEY): a sops edit that needs the fleet age key.
+# X-Agent-Mode: hermes with the same key as HERMES_API_KEY. The key lives in
+# the sops fragment src/secrets.hermes-api.yaml as API_SERVER_KEY (my-ai-api
+# holds it as HERMES_API_KEY in its own src/secrets.hermes-api.yaml); both reach
+# the containers through the .secrets env_file. Hermes loads the volume's
+# /opt/data/.env with override=True and clears known keys missing from it, so
+# the env var alone would lose to the stale .env value: the compose post_hook
+# assets/hermes-api-key-sync.sh writes the sops value into that .env, restarts
+# the container when it changed, and verifies the key on /health/detailed.
 #
 # AUTH: secrets delivered via .secrets env_file (sops-encrypted src/secrets.yaml
 # → dist/.secrets at deploy). Contains TELEGRAM_BOT_TOKEN, OPENAI_API_KEY
@@ -63,7 +68,8 @@ in
       # runs s6-overlay, which aborts ("s6-overlay-suexec: can only run as pid 1")
       # when Docker's tini is injected as PID 1. s6 must be PID 1, so disable init.
       init           = false;
-      # Secrets: TELEGRAM_BOT_TOKEN, OPENAI_API_KEY, MATTERMOST_TOKEN.
+      # Secrets: TELEGRAM_BOT_TOKEN, OPENAI_API_KEY, MATTERMOST_TOKEN, and
+      # API_SERVER_KEY (fragment secrets.hermes-api.yaml, see the header).
       env_file       = [ "./.secrets" ];
       environment    = {
         # 10001:999, not the image default 10000:10000, because the shared git tree
