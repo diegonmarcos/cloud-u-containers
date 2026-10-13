@@ -517,7 +517,63 @@ for variant in ("ReloadSettings", "InvalidateCaches"):
         print(f"  [throttle] WARN {variant} not dispatched: {c.get('notCreated') or rr}")
 PYEOF
 
-echo "[activate] Done — folders + sieve + mta routes + tls cert + allowed-ip + throttle cap ensured"
+# ── Step H: log tracer -> stdout (admin scope) ──────────────────────────
+# The registry shipped a `Log` (file) tracer pointing at /var/log/stalwart —
+# a directory that does not exist in the container and is not mounted, so
+# Stalwart wrote NO logs at all (`docker logs stalwart` empty; found
+# 2026-10-13). Like Steps F/G, config.toml's [tracer.log] type="stdout" is
+# dead in v0.16 — tracers live in the RocksDB registry. Declared state:
+# exactly one enabled Stdout tracer at level info; any file (`Log`) tracer is
+# destroyed. stdout lands in docker's json-file driver, which the compose
+# already rotates (7 x 10m) — no unbounded log dir inside the data volume.
+# Tracers are built at startup, so a change here takes effect on the next
+# container (re)start, which every compose-up ship performs anyway.
+echo "[activate] Ensuring Stalwart log tracer writes to stdout..."
+ADMIN_EMAIL="$ADMIN_EMAIL" ADMIN_PW="$ADMIN_PW" BASE="$BASE" python3 - <<'PYEOF'
+import os, ssl, json, base64
+from urllib import request as ur, error as ue
+BASE=os.environ["BASE"]
+AUTH="Basic "+base64.b64encode(f'{os.environ["ADMIN_EMAIL"]}:{os.environ["ADMIN_PW"]}'.encode()).decode()
+ctx=ssl._create_unverified_context()
+def jmap(calls):
+    body=json.dumps({"using":["urn:ietf:params:jmap:core","urn:stalwart:jmap"],"methodCalls":calls}).encode()
+    req=ur.Request(BASE+"/jmap/",data=body,method="POST",
+                   headers={"Content-Type":"application/json","Authorization":AUTH})
+    try: return json.loads(ur.urlopen(req,context=ctx,timeout=20).read())
+    except ue.HTTPError as e: return {"err":e.code,"body":e.read().decode(errors="replace")[:300]}
+try:
+    req=ur.Request(BASE+"/jmap/session",headers={"Authorization":AUTH})
+    s=json.loads(ur.urlopen(req,context=ctx,timeout=10).read())
+except Exception as e:
+    print("  [tracer] session failed (non-fatal):",e); raise SystemExit(0)
+acct=s.get("primaryAccounts",{}).get("urn:stalwart:jmap") or next(iter(s.get("accounts",{})),None)
+r=jmap([["x:Tracer/get",{"accountId":acct,"ids":None},"0"]])
+try: objs=r["methodResponses"][0][1]["list"]
+except Exception:
+    print(f"  [tracer] WARN: x:Tracer/get failed, leaving tracers untouched: {r}"); raise SystemExit(0)
+stdout=[o for o in objs if o.get("@type")=="Stdout" and o.get("enable")]
+files=[o["id"] for o in objs if o.get("@type")=="Log"]
+changed=False
+if not stdout:
+    rr=jmap([["x:Tracer/set",{"accountId":acct,"create":{"t":{
+        "@type":"Stdout","level":"info","ansi":False,"multiline":False,
+        "enable":True,"lossy":False,"events":{},"eventsPolicy":"exclude"}}},"0"]])
+    c=(rr.get("methodResponses") or [[None,{}]])[0][1]
+    if not c.get("created"):
+        print(f"  [tracer] FAIL create Stdout tracer: {c.get('notCreated') or rr}"); raise SystemExit(0)
+    print("  [tracer] created Stdout tracer"); changed=True
+else:
+    print(f"  [tracer] Stdout tracer present ({stdout[0]['id']})")
+if files:
+    rr=jmap([["x:Tracer/set",{"accountId":acct,"destroy":files},"0"]])
+    d=(rr.get("methodResponses") or [[None,{}]])[0][1]
+    print(f"  [tracer] destroyed file tracer(s) {d.get('destroyed')} {d.get('notDestroyed') or ''}"); changed=True
+if changed:
+    jmap([["x:Action/set",{"accountId":acct,"create":{"a":{"@type":"ReloadSettings"}}},"0"]])
+    print("  [tracer] changed — takes effect on the next stalwart container restart")
+PYEOF
+
+echo "[activate] Done — folders + sieve + mta routes + tls cert + allowed-ip + throttle cap + log tracer ensured"
 
 # ── Verdict, cashed in LAST so every step above still ran ─────────────
 # One machine-readable line, then the exit code. The ship engine propagates
