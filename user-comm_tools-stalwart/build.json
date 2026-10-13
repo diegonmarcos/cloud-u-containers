@@ -196,6 +196,9 @@
       "env_file": true,
       "depends_on": [],
       "resources": {
+        "_doc_limits": "oci-mail is a VM.Standard.E2.1.Micro (1 OCPU, 954MiB). 2026-10-13 it ran load 6-10, io PSI ~78%, cpu PSI ~74%, with stalwart at 110-160% CPU and 105GB read in 21h, every mail container capped only by the 2G category default (i.e. by nothing on a 954MiB box). cpus 0.7 leaves 0.3 OCPU for maddy (the MX leg) whatever stalwart does. mem_limit is NOT the 256M first proposed: measured on the box the same day stalwart's anon commit was ~306MiB 30 min after a restart (130MiB resident + 176MiB swapped) and ~345MiB after 21h, and the fleet already learned that 256M on stalwart is a thrash wall (_shared/docker.nix: 2909 memory.max breach events on oci-apps). restart is \"no\" fleet-wide, so an OOM kill here is not a blip -- it is webmail/IMAP down until someone notices. 384M sits above the measured peak with docker's default 2x memswap behind it. Gate: _shared/test-mail-stack-limits.mjs.",
+        "mem_limit": "384M",
+        "cpus": "0.7",
         "reservations": {
           "memory": "32M"
         }
@@ -215,6 +218,8 @@
       "image": "ghcr.io/diegonmarcos/stalwart-sorter-binaries:latest",
       "_doc_image": "Was python:3-alpine running a bind-mounted jmap-sorter.py. Now a compiled binary: the rules schema is parsed and validated once at startup, so a malformed or unknown predicate stops the container instead of silently producing an empty filter folder.",
       "resources": {
+        "_doc_mem_limit": "Measured 2026-10-13: cgroup peak 10MiB, anon ~1MiB. 64M is 6x that.",
+        "mem_limit": "64M",
         "mem_reservation": "16M"
       }
     }
@@ -284,6 +289,7 @@
   },
   "_doc_tests": "Registered #502 (this repo's tester CI only runs what a build.json's `tests` key names, per .github/scripts/run-service-tests.sh -- an unnamed tester sits in the tree, executable, and reached by nothing, same pattern cloud-u-android's #368 found 44 times over). mail-rules was a golden+structural suite for derive-mail-rules.ts with no build.json anywhere pointing at it, so it had never run in CI despite existing since #269. It pins the declared mail folder tree (parent/child nesting, not just names) and the Sieve/maddy artifact derivation; #502 added the structural assertions for the Alerts/noAlerts split, the 24 House -> F0 move (with real de-dup), and the CLOUD -> 40 C3 renumber.",
   "tests": {
-    "mail-rules": { "cmd": "bash ../_shared/lib/mail-rules.tests/run-tests.sh" }
+    "mail-rules": { "cmd": "bash ../_shared/lib/mail-rules.tests/run-tests.sh" },
+    "mail-stack-limits": { "cmd": "node ../_shared/test-mail-stack-limits.mjs" }
   }
 }

@@ -81,13 +81,17 @@ in
         "/opt/containers/maddy/tls:/opt/stalwart-mail/tls:ro"
         "./configs/config.json:/opt/stalwart-mail/etc/config.json:ro"
       ];
-      # Same conditional-limit shape as the sorter below — app still declares
-      # limits.memory today, but reading it unconditionally is exactly what
-      # broke the sorter, so don't leave the same trap here.
+      # Ceilings come from build.json containers.app.resources.{mem_limit,cpus}
+      # (the ONE declaration; numbers and the measurements behind them are in
+      # its _doc_limits). Read conditionally, same as the sorter below: a
+      # removed declaration degrades to the engine's category default instead
+      # of `attribute missing`. Gate: _shared/test-mail-stack-limits.mjs.
       deploy.resources = {
         reservations = { memory = app.resources.reservations.memory; };
-      } // lib.optionalAttrs (app.resources ? limits) {
-        limits = { memory = app.resources.limits.memory; };
+      } // lib.optionalAttrs (app.resources ? mem_limit || app.resources ? cpus) {
+        limits =
+          lib.optionalAttrs (app.resources ? mem_limit) { memory = app.resources.mem_limit; }
+          // lib.optionalAttrs (app.resources ? cpus) { cpus = app.resources.cpus; };
       };
     };
     stalwart-sorter = {
@@ -114,7 +118,16 @@ in
         # is fast-moving: the tightest time window is measured in hours, and
         # read-state can lag a few minutes without anyone noticing. 300s is the
         # same work at a tenth the cost.
-        POLL_INTERVAL  = "300";
+        #
+        # 300 -> 1800 (2026-10-13). On oci-mail (1 OCPU E2.1.Micro, ~950MiB)
+        # one pass -- Email/get of ~11.7k messages with bodyStructure + headers
+        # for 34 views, then the routing pass -- took ~8 min (21:56 -> 22:04),
+        # so a 300s sleep kept Stalwart busy ~60% of the time: 110-160% CPU and
+        # 105GB read in 21h, load 6-10. At 1800s the same pass is ~20% duty.
+        # Nothing user-visible waits on it: the SuperApp's `.reapply` sentinel
+        # still forces an immediate pass (checked every 10s, see main.rs TICK).
+        # Gate: _shared/test-mail-stack-limits.mjs (>= 1800).
+        POLL_INTERVAL  = "1800";
       };
       # Only the rules travel as an asset now — the sorter itself is compiled
       # into the image (docker.native_build), so there is no interpreter and

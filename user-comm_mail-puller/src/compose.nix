@@ -25,19 +25,20 @@ in
         "./assets/sources.json:/etc/mail-puller/sources.json:ro"
       ];
       entrypoint = [ "sh" "/usr/local/bin/init.sh" ];
-      # No memory/cpu ceiling — see _shared/docker.nix, which made memLimit and
-      # cpuLimit inert fleet-wide: deploy.resources.limits.memory becomes cgroup
-      # memory.max, a LOCAL wall that force-reclaims from this container the
-      # instant it is touched regardless of host free RAM. Pressure is
-      # load-shedder's job now (PSI cpu/mem/io). Reservations stay: a floor is
-      # protection, not a ceiling.
-      #
-      # Read the limit CONDITIONALLY so removing it from build.json degrades to
-      # "no limit" instead of `attribute 'limits' missing`. Plain `if` rather
-      # than lib.optionalAttrs because flake.nix does not pass `lib` here.
+      # Ceiling from build.json containers.app.resources.mem_limit (the ONE
+      # declaration, measured numbers in its _doc_mem_limit); the older
+      # resources.limits.memory shape is still honoured. Every container gets
+      # a ceiling anyway (_shared/memory-ceiling.nix falls back to the
+      # category default) -- but that default is 2G, which on oci-mail's
+      # 954MiB caps nothing. Read CONDITIONALLY so removing the declaration
+      # degrades to that default instead of `attribute missing`. Plain `if`
+      # because flake.nix does not pass `lib` here.
+      # Gate: _shared/test-mail-stack-limits.mjs.
       deploy.resources = {
         reservations = { memory = app.resources.reservations.memory; };
-      } // (if app.resources ? limits
+      } // (if app.resources ? mem_limit
+            then { limits = { memory = app.resources.mem_limit; }; }
+            else if app.resources ? limits
             then { limits = { memory = app.resources.limits.memory; }; }
             else {});
     };

@@ -47,6 +47,8 @@
       "env_file": true,
       "depends_on": [],
       "resources": {
+        "_doc_mem_limit": "Measured on oci-mail 2026-10-13: cgroup peak 13MiB, anon ~0. 64M is ~5x that; it replaces the 2G category default, which on a 954MiB VM capped nothing. Gate: _shared/test-mail-stack-limits.mjs.",
+        "mem_limit": "64M",
         "reservations": {
           "memory": "16M"
         }

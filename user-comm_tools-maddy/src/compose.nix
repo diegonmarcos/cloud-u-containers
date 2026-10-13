@@ -53,17 +53,18 @@ in
         # apply-rules, dedupe, cleanup-mailboxes, all.
         "./assets/mail-sieve-subset-post-hoc.sh:/usr/local/bin/mail-sieve-subset-post-hoc:ro"
       ];
-      # Limits read conditionally: 9ad4168d2 removed memory limits fleet-wide
-      # and the identical unconditional read in stalwart's compose.nix broke
-      # every stalwart build until it was found. maddy's build.json still
-      # declares limits so this is currently a no-op — the point is that the
-      # next removal degrades to "no limit" instead of a build failure.
+      # Ceiling from build.json containers.app.resources.mem_limit (the ONE
+      # declaration, measured numbers in its _doc_mem_limit); the older
+      # resources.limits.memory shape is still honoured. Read conditionally so
+      # a removed declaration degrades to the engine's category default
+      # (_shared/memory-ceiling.nix) instead of a build failure.
       # (Pure nix rather than lib.optionalAttrs: this compose.nix isn't
-      # passed `lib`, and threading it through the flake for one conditional
-      # isn't worth it.)
+      # passed `lib`.) Gate: _shared/test-mail-stack-limits.mjs.
       deploy.resources = {
         reservations = { memory = app.resources.reservations.memory; };
-      } // (if app.resources ? limits
+      } // (if app.resources ? mem_limit
+            then { limits = { memory = app.resources.mem_limit; }; }
+            else if app.resources ? limits
             then { limits = { memory = app.resources.limits.memory; }; }
             else {});
     };
