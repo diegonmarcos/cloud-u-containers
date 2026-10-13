@@ -44,6 +44,28 @@
 # outage) rather than the expected trickle of transient drops — blindly
 # replaying hundreds of messages is the wrong reflex for that case. Past the
 # cap this DAG only alerts, at high priority, and leaves repair to a human.
+#
+# --- Window and cadence (2026-10-13) ---------------------------------------
+# This used to run once a day over `after:<date> before:<date>` with a
+# whole-day lag. Gmail interprets yyyy/mm/dd search dates as midnight US
+# Pacific, so the newest ~1.5-2 days of mail were never examined: every drop
+# on the worker leg sat unrepaired for up to two days, and the 24h
+# cross-store check in Health Mail Full (cloud-infra
+# 1_cicd/src/ops/cloud-health-mail-full.sh) kept failing on mail this DAG
+# would only get to later ("maddy missing 6 of 57", tolerance 3). Now:
+#   * Gmail is queried with epoch seconds (exact, timezone-free), ending
+#     LAG_MINUTES ago so mail genuinely in flight is not "missing";
+#   * the DAG runs every 3h, so the unexamined tail is at most ~3h45m;
+#   * the maddy side keeps a per-body-key fingerprint cache inside the maddy
+#     container, so a run only parses messages it has not seen before (a cold
+#     full scan of ~9.5k bodies took ~50 min on the 1 GB oci-mail VM, which is
+#     not affordable 8x a day). The cache lives in the container's /tmp, so a
+#     container recreate just costs one cold scan.
+#   * a re-send that fails BEFORE the message is handed over (connect, EHLO,
+#     MAIL, RCPT, 4xx) is retried in-run; a failure during/after DATA is
+#     ambiguous (maddy may have stored it) and is never retried in-run - the
+#     next run's diff re-checks presence first, so it cannot duplicate.
+# Tester: test_health_mail-reconcile.py (registered in build.json tests).
 name: health_mail-reconcile
 description: Verify every Gmail message in a lagged window is present in maddy
 group: health
@@ -52,15 +74,15 @@ tags:
   - health
   - reconciliation
 
-schedule: "23 5 * * *"
+schedule: "23 */3 * * *"
 
 env:
   - SSH: "ssh -i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=10"
   - NTFY_URL: "http://10.0.0.6:8090"
-  # Days of history to verify each run. The window is lagged by LAG_DAYS so
-  # mail still in flight is never counted as lost.
+  # Days of history to verify each run. The window ends LAG_MINUTES before
+  # now so mail still in flight is never counted as lost.
   - WINDOW_DAYS: "8"
-  - LAG_DAYS: "1"
+  - LAG_MINUTES: "45"
   # Alert if more than this many messages are missing. 0 = any loss alerts.
   - MISS_THRESHOLD: "0"
   # Safety cap: auto-repair at most this many messages per run. Above this,
@@ -73,11 +95,18 @@ steps:
       set -u
       TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
 
-      # busybox date has no relative-offset parsing; only `-d @<epoch>` works.
-      NOW=$(date -u +%s)
-      FROM=$(date -u -d @$((NOW - (WINDOW_DAYS + LAG_DAYS) * 86400)) +%Y/%m/%d)
-      TO=$(date -u -d @$((NOW - LAG_DAYS * 86400)) +%Y/%m/%d)
-      echo "window: after:$FROM before:$TO"
+      # Epoch seconds, never yyyy/mm/dd: Gmail reads search DATES as midnight
+      # US Pacific, which silently cut the newest 1.5-2 days out of the window.
+      # NOW may be preset (tester); busybox date only understands -d @<epoch>.
+      # >>> window
+      NOW=${NOW:-$(date -u +%s)}
+      TO_EPOCH=$((NOW - LAG_MINUTES * 60))
+      FROM_EPOCH=$((TO_EPOCH - WINDOW_DAYS * 86400))
+      GMAIL_QUERY="after:$FROM_EPOCH before:$TO_EPOCH"
+      # <<< window
+      FROM=$(date -u -d @$FROM_EPOCH +%Y-%m-%dT%H:%MZ)
+      TO=$(date -u -d @$TO_EPOCH +%Y-%m-%dT%H:%MZ)
+      echo "window: $GMAIL_QUERY ($FROM .. $TO)"
 
       # ---- Gmail side -------------------------------------------------------
       # Service-account domain-wide delegation is the only working read path;
@@ -119,7 +148,7 @@ steps:
       PYEOF
 
       $SSH ubuntu@10.0.0.6 \
-        "docker exec google-workspace-mcp /app/.venv/bin/python /tmp/recon_gmail.py 'after:$FROM before:$TO'" \
+        "docker exec google-workspace-mcp /app/.venv/bin/python /tmp/recon_gmail.py '$GMAIL_QUERY'" \
         > "$TMP/gmail.tsv" 2>"$TMP/gmail.err" || true
 
       if [ ! -s "$TMP/gmail.tsv" ]; then
@@ -128,7 +157,7 @@ steps:
           -H "Title: Mail reconciliation could not read Gmail" \
           -H "Priority: 4" \
           -H "Tags: warning,email" \
-          -d "The reconciliation DAG could not list Gmail for after:$FROM before:$TO. The service-account read path may be broken. While this is down, silent mail loss is undetectable."
+          -d "The reconciliation DAG could not list Gmail for $FROM .. $TO. The service-account read path may be broken. While this is down, silent mail loss is undetectable."
         exit 1
       fi
       cut -f1 "$TMP/gmail.tsv" | sort -u > "$TMP/gmail.fps"
@@ -152,11 +181,42 @@ steps:
       }
       AWKEOF
 
-      $SSH ubuntu@10.0.0.3 "docker exec maddy sh -c '
-        for k in \$(sqlite3 /data/imapsql.db \"SELECT DISTINCT extBodyKey FROM msgs;\"); do
-          m=\$(awk -f /tmp/recon_mid.awk /data/messages/\$k 2>/dev/null)
-          [ -n \"\$m\" ] && printf \"%s\" \"\$m\" | md5sum | cut -c1-10
-        done | sort -u'" > "$TMP/maddy.fps" 2>/dev/null || true
+      # Incremental: fingerprint only body keys not already in the cache, then
+      # print the fingerprints of every key still present in imapsql (keys
+      # whose messages were deleted drop out, and are pruned from the cache).
+      # Keys without a Message-ID are cached as "-" so they are not re-parsed
+      # each run. A key whose body file is not there yet is NOT cached, so it
+      # is retried next run. FILENAME==ARGV[1], not NR==FNR: the cache is
+      # empty on a cold start, and NR==FNR would then treat every key as a
+      # cache line.
+      $SSH ubuntu@10.0.0.3 "docker exec -i maddy sh -c 'cat > /tmp/recon_scan.sh'" <<'SCANEOF'
+      set -u
+      DB=${DB:-/data/imapsql.db}
+      MSG_DIR=${MSG_DIR:-/data/messages}
+      CACHE=${CACHE:-/tmp/recon_fp_cache.tsv}
+      AWK_PROG=${AWK_PROG:-/tmp/recon_mid.awk}
+      KEYS="$CACHE.keys"
+      touch "$CACHE" || exit 1
+      if [ -n "${KEYS_CMD:-}" ]; then
+        sh -c "$KEYS_CMD"
+      else
+        sqlite3 "$DB" "SELECT DISTINCT extBodyKey FROM msgs;"
+      fi > "$KEYS.raw" || exit 1
+      awk 'NF' "$KEYS.raw" | sort -u > "$KEYS"; rm -f "$KEYS.raw"
+      [ -s "$KEYS" ] || exit 1
+      awk -F'\t' 'FILENAME==ARGV[1] { seen[$1]; next } !($1 in seen)' "$CACHE" "$KEYS" |
+      while IFS= read -r k; do
+        [ -f "$MSG_DIR/$k" ] || continue
+        m=$(awk -f "$AWK_PROG" "$MSG_DIR/$k" 2>/dev/null)
+        if [ -n "$m" ]; then fp=$(printf '%s' "$m" | md5sum | cut -c1-10); else fp=-; fi
+        printf '%s\t%s\n' "$k" "$fp" >> "$CACHE"
+      done
+      awk -F'\t' 'FILENAME==ARGV[1] { live[$1]; next } ($1 in live) && !dup[$1]++' "$KEYS" "$CACHE" > "$CACHE.new" \
+        && mv "$CACHE.new" "$CACHE"
+      awk -F'\t' '$2 != "-" { print $2 }' "$CACHE" | sort -u
+      SCANEOF
+
+      $SSH ubuntu@10.0.0.3 "docker exec maddy sh /tmp/recon_scan.sh" > "$TMP/maddy.fps" 2>/dev/null || true
 
       if [ ! -s "$TMP/maddy.fps" ]; then
         echo "maddy fingerprint scan produced nothing"
@@ -200,7 +260,7 @@ steps:
           -H "Title: Mail LOST - $MISS message(s) exceed auto-repair cap ($MAX_REPAIR)" \
           -H "Priority: 5" \
           -H "Tags: rotating_light,email" \
-          -d "$(printf '%s message(s) present in Gmail for after:%s before:%s never reached maddy — above MAX_REPAIR=%s, so auto-repair was skipped. This needs manual review; a diff this large usually means the worker or the mesh leg is structurally broken, not just transient drops.\n\nSample:\n%s\n' \
+          -d "$(printf '%s message(s) present in Gmail for %s .. %s never reached maddy — above MAX_REPAIR=%s, so auto-repair was skipped. This needs manual review; a diff this large usually means the worker or the mesh leg is structurally broken, not just transient drops.\n\nSample:\n%s\n' \
                 "$MISS" "$FROM" "$TO" "$MAX_REPAIR" "$(cat "$TMP/sample.txt")")"
         exit 1
       fi
@@ -209,12 +269,101 @@ steps:
       # Re-fetch each missing message from Gmail by id and re-inject it into
       # maddy over SMTP, exactly like an existing manual backfill does — just
       # with a distinct HELO name so these injections are attributable.
+      #
+      # Each message ends in exactly one of three states:
+      #   REPAIRED_OK    maddy accepted it (250 to DATA).
+      #   REPAIRED_DEFER a transient failure. If it happened before DATA was
+      #                  sent (connect/EHLO/MAIL/RCPT, 4xx) it was already
+      #                  retried in-run. A failure during/after DATA (e.g. the
+      #                  2026-10-13 "SMTPServerDisconnected: timed out") is
+      #                  ambiguous - maddy may have stored it - so it is NOT
+      #                  retried here; the next run (3h) re-diffs first and
+      #                  only re-sends if it is still absent. No duplicates.
+      #   REPAIRED_FAIL  a permanent 5xx rejection; retrying cannot help.
       cut -f5 "$TMP/missing.tsv" > "$TMP/missing.ids"
 
       $SSH ubuntu@10.0.0.6 "docker exec -i google-workspace-mcp sh -c 'cat > /tmp/recon_missing_ids.txt'" < "$TMP/missing.ids"
 
       $SSH ubuntu@10.0.0.6 "docker exec -i google-workspace-mcp sh -c 'cat > /tmp/recon_repair.py'" <<'PYEOF'
-      import os, base64, email, smtplib
+      import os, base64, email
+      # >>> deliver
+      import smtplib, time
+
+      SMTP_HOST, SMTP_PORT, RCPT = "10.0.0.3", 25, "me@diegonmarcos.com"
+      PRE_HANDOVER_ATTEMPTS = 3
+
+
+      class Deferred(Exception):
+          """Transient failure; the next run re-diffs before re-sending."""
+
+
+      def is_permanent(exc):
+          if isinstance(exc, smtplib.SMTPRecipientsRefused):
+              codes = [c for c, _ in exc.recipients.values()]
+              return bool(codes) and all(c >= 500 for c in codes)
+          if isinstance(exc, smtplib.SMTPResponseException):
+              return exc.smtp_code >= 500
+          return False
+
+
+      def _connect():
+          s = smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=90)
+          s.ehlo("reconcile.diegonmarcos.com")
+          return s
+
+
+      def _close(s):
+          if s is None:
+              return
+          try:
+              s.close()
+          except Exception:
+              pass
+
+
+      def deliver(return_path, data, connect=_connect, sleep=time.sleep):
+          """Send one message. Returns the number of connection attempts.
+
+          Only the steps BEFORE the message is handed over are retried:
+          nothing has been transferred yet, so a retry cannot duplicate.
+          DATA is sent once; if it fails the outcome is unknown and the
+          caller must leave it to the next run's presence check.
+          """
+          last = None
+          for attempt in range(1, PRE_HANDOVER_ATTEMPTS + 1):
+              s = None
+              try:
+                  s = connect()
+                  code, resp = s.mail(return_path)
+                  if code != 250:
+                      raise smtplib.SMTPSenderRefused(code, resp, return_path)
+                  code, resp = s.rcpt(RCPT)
+                  if code not in (250, 251):
+                      raise smtplib.SMTPRecipientsRefused({RCPT: (code, resp)})
+              except (OSError, smtplib.SMTPException) as e:
+                  _close(s)
+                  if is_permanent(e):
+                      raise
+                  last = e
+                  if attempt < PRE_HANDOVER_ATTEMPTS:
+                      sleep(15 * attempt)
+                  continue
+              # ---- handed over from here: never retried in this run ----
+              try:
+                  s.data(data)
+              except (OSError, smtplib.SMTPException) as e:
+                  _close(s)
+                  if is_permanent(e):
+                      raise
+                  raise Deferred("during DATA: %r" % (e,))
+              try:
+                  s.quit()
+              except (OSError, smtplib.SMTPException):
+                  _close(s)
+              return attempt
+          raise Deferred("before DATA, %d attempts: %r" % (PRE_HANDOVER_ATTEMPTS, last))
+      # <<< deliver
+
       from google.oauth2 import service_account
       from google.auth.transport.requests import Request
       from googleapiclient.discovery import build
@@ -228,24 +377,32 @@ steps:
       creds.refresh(Request())
       svc = build("gmail", "v1", credentials=creds, cache_discovery=False)
 
-      sent = failed = 0
+      sent = deferred = failed = 0
       for i in ids:
+          subj = ""
           try:
               raw = svc.users().messages().get(userId="me", id=i, format="raw").execute()["raw"]
               data = base64.urlsafe_b64decode(raw.encode())
               msg = email.message_from_bytes(data)
               subj = (msg.get("Subject") or "")[:70]
               rp = (msg.get("Return-Path") or "").strip("<> ") or "reconcile@diegonmarcos.com"
-              s = smtplib.SMTP("10.0.0.3", 25, timeout=90)
-              s.ehlo("reconcile.diegonmarcos.com")
-              s.sendmail(rp, ["me@diegonmarcos.com"], data)
-              s.quit()
+              tries = deliver(rp, data)
               sent += 1
-              print("REPAIRED_OK\t%s\t%s" % (i, subj), flush=True)
+              print("REPAIRED_OK\t%s\t%s\t%d" % (i, subj, tries), flush=True)
+          except Deferred as e:
+              deferred += 1
+              print("REPAIRED_DEFER\t%s\t%s" % (i, str(e)[:160]), flush=True)
           except Exception as e:
-              failed += 1
-              print("REPAIRED_FAIL\t%s\t%s" % (i, repr(e)[:160]), flush=True)
-      print("REPAIRED %d FAILED %d" % (sent, failed), flush=True)
+              # Gmail fetch errors land here too: nothing was sent, so a
+              # retry next run is safe, but they are not counted as deferred
+              # unless transient - a permanent 5xx is a real failure.
+              if is_permanent(e):
+                  failed += 1
+                  print("REPAIRED_FAIL\t%s\t%s" % (i, repr(e)[:160]), flush=True)
+              else:
+                  deferred += 1
+                  print("REPAIRED_DEFER\t%s\t%s" % (i, repr(e)[:160]), flush=True)
+      print("REPAIRED %d DEFERRED %d FAILED %d" % (sent, deferred, failed), flush=True)
       PYEOF
 
       $SSH ubuntu@10.0.0.6 \
@@ -254,29 +411,56 @@ steps:
 
       cat "$TMP/repair.log" || true
 
-      SENT=$(grep -oE '^REPAIRED [0-9]+ FAILED [0-9]+$' "$TMP/repair.log" | tail -1 | awk '{print $2}')
-      RFAILED=$(grep -oE '^REPAIRED [0-9]+ FAILED [0-9]+$' "$TMP/repair.log" | tail -1 | awk '{print $4}')
-      SENT=${SENT:-0}
-      RFAILED=${RFAILED:-$MISS}
-      echo "repaired=$SENT failed=$RFAILED"
+      # >>> verdict
+      SUMMARY=$(grep -E '^REPAIRED [0-9]+ DEFERRED [0-9]+ FAILED [0-9]+$' "$TMP/repair.log" | tail -1)
+      if [ -n "$SUMMARY" ]; then
+        SENT=$(echo "$SUMMARY" | awk '{print $2}')
+        DEFERRED=$(echo "$SUMMARY" | awk '{print $4}')
+        RFAILED=$(echo "$SUMMARY" | awk '{print $6}')
+      else
+        # The repair script itself died: nothing is known, treat all as failed.
+        SENT=0; DEFERRED=0; RFAILED=$MISS
+      fi
+      if [ "$RFAILED" -gt 0 ]; then
+        VERDICT=failed        # permanent rejection or a crashed repair run
+      elif [ "$SENT" -eq 0 ] && [ "$DEFERRED" -gt 0 ]; then
+        VERDICT=failed        # nothing got through at all: path is down
+      elif [ "$DEFERRED" -gt 0 ]; then
+        VERDICT=partial       # some transient misses; next run re-checks
+      else
+        VERDICT=ok
+      fi
+      # <<< verdict
+      echo "repaired=$SENT deferred=$DEFERRED failed=$RFAILED verdict=$VERDICT"
 
       grep '^REPAIRED_OK' "$TMP/repair.log" | cut -f3 | head -15 > "$TMP/repaired_subjects.txt"
 
-      if [ "$RFAILED" -eq 0 ] && [ "$SENT" -gt 0 ]; then
+      if [ "$VERDICT" = ok ]; then
         curl -s -X POST "$NTFY_URL/infra_mail-health" \
           -H "Title: Mail auto-repaired - $SENT message(s) recovered from Gmail" \
           -H "Priority: 3" \
           -H "Tags: email,white_check_mark" \
-          -d "$(printf '%s message(s) present in Gmail for after:%s before:%s were missing from maddy and have been re-injected via SMTP.\n\nRepaired:\n%s\n' \
+          -d "$(printf '%s message(s) present in Gmail for %s .. %s were missing from maddy and have been re-injected via SMTP.\n\nRepaired:\n%s\n' \
                 "$SENT" "$FROM" "$TO" "$(cat "$TMP/repaired_subjects.txt")")"
-        echo "auto-repair complete: $SENT repaired, 0 failed"
+        echo "auto-repair complete: $SENT repaired, 0 deferred, 0 failed"
+        exit 0
+      fi
+
+      if [ "$VERDICT" = partial ]; then
+        curl -s -X POST "$NTFY_URL/infra_mail-health" \
+          -H "Title: Mail auto-repaired - $SENT recovered, $DEFERRED deferred to next run" \
+          -H "Priority: 3" \
+          -H "Tags: email,hourglass" \
+          -d "$(printf 'Auto-repair for %s .. %s: %s re-injected into maddy, %s hit a transient SMTP failure. The next run (every 3h) re-checks those against maddy and re-sends only the ones still absent.\n\nRepaired:\n%s\n' \
+                "$FROM" "$TO" "$SENT" "$DEFERRED" "$(cat "$TMP/repaired_subjects.txt")")"
+        echo "auto-repair partial: $SENT repaired, $DEFERRED deferred to the next run"
         exit 0
       fi
 
       curl -s -X POST "$NTFY_URL/infra_mail-health" \
-        -H "Title: Mail auto-repair incomplete - $RFAILED of $MISS message(s) failed" \
+        -H "Title: Mail auto-repair FAILED - $SENT of $MISS re-injected" \
         -H "Priority: 5" \
         -H "Tags: rotating_light,email" \
-        -d "$(printf 'Auto-repair for after:%s before:%s: %s repaired, %s FAILED to re-inject into maddy. See this DAG run log for the per-message REPAIRED_FAIL lines. Manual review needed.\n\nRepaired:\n%s\n' \
-              "$FROM" "$TO" "$SENT" "$RFAILED" "$(cat "$TMP/repaired_subjects.txt")")"
+        -d "$(printf 'Auto-repair for %s .. %s: %s repaired, %s deferred, %s FAILED permanently (or the repair run crashed). See this DAG run log for the REPAIRED_FAIL/REPAIRED_DEFER lines. Manual review needed.\n\nRepaired:\n%s\n' \
+              "$FROM" "$TO" "$SENT" "$DEFERRED" "$RFAILED" "$(cat "$TMP/repaired_subjects.txt")")"
       exit 1
