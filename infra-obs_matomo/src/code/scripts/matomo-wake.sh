@@ -42,8 +42,8 @@ supervisorctl start matomo-nginx
 
 # Wait for Matomo Nginx to be ready
 for i in $(seq 1 10); do
-    if curl -sf http://127.0.0.1:8081/ >/dev/null 2>&1; then
-        echo "[wake] Matomo Nginx ready on port 8081"
+    if curl -sf http://127.0.0.1:18081/ >/dev/null 2>&1; then
+        echo "[wake] Matomo Nginx ready on port 18081"
         break
     fi
     sleep 1
@@ -77,6 +77,6 @@ supervisorctl start matomo-archiver
 echo ""
 echo "=== Matomo is AWAKE ==="
 echo "  UI:       http://127.0.0.1:8080/"
-echo "  Internal: http://127.0.0.1:8081/"
+echo "  Internal: http://127.0.0.1:18081/"
 echo ""
 supervisorctl status

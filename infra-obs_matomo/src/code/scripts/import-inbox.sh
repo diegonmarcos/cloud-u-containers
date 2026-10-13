@@ -3,7 +3,7 @@
 set -e
 
 INBOX_DIR="/inbox"
-MATOMO_URL="http://127.0.0.1:8081/matomo.php"
+MATOMO_URL="http://127.0.0.1:18081/matomo.php"
 TOKEN="${MATOMO_API_TOKEN:-}"
 BATCH_SIZE=50
 

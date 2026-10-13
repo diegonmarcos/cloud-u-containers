@@ -20,7 +20,7 @@ in
       container_name = app.container_name;
       # External port → internal 8080 (receiver-nginx default_server).
       # receiver-nginx handles public tracker endpoints and proxies admin
-      # traffic to matomo-nginx on 8081 internally.
+      # traffic to matomo-nginx on 127.0.0.1:18081 internally (never 8081: see test-matomo-ports.sh).
       # host networking, NOT published ports. The docker daemon runs with
       # iptables = false (vm-pilot container/daemon-firewall.nix), so -p
       # publishing installs no DNAT rule: dockerd holds the socket and never

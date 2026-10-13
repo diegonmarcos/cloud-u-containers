@@ -132,5 +132,11 @@
   },
   "ports": {
     "app": 8080
+  },
+  "tests": {
+    "host-ports": {
+      "cmd": "bash test-matomo-ports.sh",
+      "cwd": "src"
+    }
   }
 }
