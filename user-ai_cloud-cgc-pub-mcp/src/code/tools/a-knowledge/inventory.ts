@@ -32,6 +32,7 @@ import {
 import { rawHttpRequest, getBearerToken } from "../../shared/libs/http.js";
 import { getConfigPath } from "../../shared/libs/paths.js";
 import { getConfigFile } from "../../shared/libs/files.js";
+import { filterRepoMap, isRepoAllowed, refusal, resolveInsideRepo } from "../../surface.js";
 
 // ── Helpers ──
 
@@ -48,7 +49,12 @@ function missingParam(param: string): { isError: true; content: { type: "text"; 
   return { isError: true, content: [{ type: "text" as const, text: `Missing required parameter: ${param}` }] };
 }
 
-const VALID_REPOS = Object.keys(REPOS);
+// Surface-scoped view of REPOS (see surface.ts). On the PUBLIC surface this is
+// the public repos only — private names are absent from the schema enum below
+// AND refused by every handler that takes a repo, even if a checkout of one is
+// somehow mounted. On the private surface (CGC_SURFACE=pvt) it is REPOS as-is.
+const SURFACE_REPOS: Record<string, string> = filterRepoMap(REPOS);
+const VALID_REPOS = Object.keys(SURFACE_REPOS);
 // z.enum needs a non-empty tuple type; VALID_REPOS is populated at runtime
 // from REPOS (data-driven from build.json — see shared/libs/paths.ts). Was a
 // hardcoded ["cloud", "unix", "vault", "front", "tools"] literal that still
@@ -58,12 +64,12 @@ const VALID_REPOS = Object.keys(REPOS);
 const REPO_ENUM = VALID_REPOS as [string, ...string[]];
 
 function validateRepoPath(repo: string, path: string): string {
-  const repoBase = REPOS[repo];
+  if (!isRepoAllowed(repo)) throw new Error(refusal(repo));
+  const repoBase = SURFACE_REPOS[repo];
   if (!repoBase) throw new Error(`Unknown repo: ${repo}. Valid: ${VALID_REPOS.join(", ")}`);
-  const resolved = resolve(repoBase, path);
-  if (!resolved.startsWith(repoBase)) {
-    throw new Error("Path traversal detected — access denied");
-  }
+  // Was a bare startsWith(repoBase): '/repos/front' accepted '../front-data/x'
+  // and symlinks were never resolved. resolveInsideRepo checks both.
+  const resolved = resolveInsideRepo(repoBase, path);
   if (resolved.includes("/dist/.env")) {
     throw new Error("Access to dist/.env files is denied (plaintext secrets)");
   }
@@ -343,17 +349,22 @@ export function registerInventoryTools(server: McpServer) {
         case "search_repos": {
           if (!pattern) return missingParam("pattern");
           const limit = maxResults ?? 50;
-          const repos = repo ? { [repo]: REPOS[repo] } : REPOS;
+          if (repo && !isRepoAllowed(repo)) {
+            return { content: [{ type: "text" as const, text: `Error: ${refusal(repo)}` }], isError: true };
+          }
+          const repos = repo ? { [repo]: SURFACE_REPOS[repo] } : SURFACE_REPOS;
           const allResults: string[] = [];
 
           for (const [name, base] of Object.entries(repos)) {
-            const args = ["-rn", "--include", fileGlob ?? "*", "-l", pattern, base];
+            if (!base) continue;
+            // -e/-- so a pattern starting with '-' is a pattern, not a grep option.
+            const args = ["-rn", "--include", fileGlob ?? "*", "-l", "-e", pattern, "--", base];
             const result = exec("grep", args, { timeout: 15_000 });
             if (result.ok && result.stdout.trim()) {
               const files = result.stdout.trim().split("\n");
               for (const file of files) {
                 if (allResults.length >= limit) break;
-                const lineResult = exec("grep", ["-n", pattern, file], { timeout: 5_000 });
+                const lineResult = exec("grep", ["-n", "-e", pattern, "--", file], { timeout: 5_000 });
                 if (lineResult.ok) {
                   const relPath = file.replace(base + "/", "");
                   const lines = lineResult.stdout.trim().split("\n").slice(0, 5);

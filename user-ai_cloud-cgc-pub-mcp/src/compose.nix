@@ -72,6 +72,35 @@ let
   fileAssociations = toString (builtins.attrValues
     (builtins.mapAttrs (ext: lang: "${ext}=${lang}") (oct.file_associations or { })));
 
+  # ── Repos mount, per surface (2026-10-13) ─────────────────────────────────
+  # Both MCPs used to mount the WHOLE shared octocode_repos volume at /repos.
+  # That volume (written by Dagu ops_git-sync) also holds checkouts of the
+  # PRIVATE repos, so the public endpoint's knowledge.inventory list_directory /
+  # read_file / search_repos walked cloud-data's tree, secrets/ included. The DB
+  # volumes were split at the 2026-08-30 pub/pvt split; the repos mount never was.
+  #
+  # The public container now gets one read-only SUBPATH mount per PUBLIC repo
+  # (docker >= 26 volume.subpath; oci-apps runs 27.5.1 / compose 2.30.3), so a
+  # private checkout is not in its mount namespace at all. Same single writer,
+  # same volume, no second clone set to keep in sync. The private container
+  # keeps the whole volume. Public = index_repos minus private_repos minus
+  # sync_exclude, all from build.json — a repo declared private disappears
+  # from the public mount on the next ship with no edit here.
+  # surface.ts refuses private names in code as well (defence in depth).
+  denyRepos = (oct.private_repos or [ ]) ++ builtins.attrNames (oct.sync_exclude or { });
+  pubRepos  = builtins.filter (r: !(builtins.elem r denyRepos)) oct.index_repos;
+  pubReposMounts =
+    assert builtins.all (r: !(builtins.elem r denyRepos)) pubRepos;
+    assert pubRepos != [ ];
+    map (r: {
+      type      = "volume";
+      source    = oct.repos_volume;
+      target    = "${oct.repos_path}/${r}";
+      read_only = true;
+      volume    = { subpath = r; nocopy = true; };
+    }) pubRepos;
+  fullReposMounts = [ "${oct.repos_volume}:${oct.repos_path}:ro" ];
+
   # ── Private MCP surface (cloud-cgc-pvt-mcp) ────────────────────────────────
   # Read from build.json, not hardcoded here: the port has to be in the port
   # registry the derive pipeline builds from `ports`, and the volume name has to
@@ -162,7 +191,7 @@ let
   # needs it remapped onto KG_STORE_PASS before the app starts. The command
   # override below does that remap via a one-line shell indirection; for the
   # pvt container kgPassVar is already "KG_STORE_PASS" so the remap is a no-op.
-  mcpService = { containerName, port, dbVolume, kgStore, kgPassVar }: {
+  mcpService = { containerName, port, dbVolume, kgStore, kgPassVar, surface, reposMounts }: {
     image = binariesImage;
     container_name = containerName;
     network_mode = "host";
@@ -189,6 +218,10 @@ let
       KG_STORE_NS    = kgStore.ns;
       KG_STORE_DB    = kgStore.db;
       KG_STORE_USER  = kgStore.user;
+      # surface.ts: "pvt" ONLY when set to exactly that; anything else is the
+      # public surface, which refuses CGC_PRIVATE_REPOS (+ a hard floor).
+      CGC_SURFACE       = surface;
+      CGC_PRIVATE_REPOS = toString denyRepos;
     } // kgRotatedPass;
     env_file = [ ".secrets" ];
     # Dockerfile.native sets `ENTRYPOINT [] / CMD ["npx","tsx","index.ts"]` — no
@@ -212,10 +245,12 @@ let
     command = [ "sh" "-c" "exec env KG_STORE_PASS=\"$$${kgPassVar}\" npx tsx index.ts" ];
     volumes = [
       "./data:${buildJson.runtime.data_path}:ro"
-      # Read the FastEmbed/GraphRAG index + cloned repos maintained by the Dagu
-      # octocode-reindex DAG. GIT_ROOT (=oct.repos_path) makes the MCP's octocode
-      # query path match the DAG's index path, so the LanceDB project-hash resolves.
-      "${oct.repos_volume}:${oct.repos_path}:ro"
+    ]
+    # Cloned repos maintained by Dagu ops_git-sync. GIT_ROOT (=oct.repos_path)
+    # makes the MCP's octocode query path match the index path, so the LanceDB
+    # project-hash resolves. Per surface — see pubReposMounts above.
+    ++ reposMounts
+    ++ [
       # NOT :ro, however much we would like it to be. `octocode search` and
       # `octocode graphrag` open the queried repo's LanceDB project dir
       # read-write even for a pure read, so with a :ro mount EVERY tool call
@@ -324,6 +359,8 @@ in
       # its own secrets key so it can never be the same credential as pvt's.
       kgStore       = oct.kg_store_pub;
       kgPassVar     = "KG_STORE_PASS_PUB";
+      surface       = "pub";
+      reposMounts   = pubReposMounts;
     };
 
     # ── Private surface (mesh-only) ────────────────────────────────────────────
@@ -340,6 +377,8 @@ in
       # password/env-var name it always used.
       kgStore       = oct.kg_store_pvt;
       kgPassVar     = "KG_STORE_PASS";
+      surface       = "pvt";
+      reposMounts   = fullReposMounts;
     };
 
     # ── DB restore (profile-gated; NOT auto-started) ────────────────────────────
@@ -431,9 +470,10 @@ in
       environment = octocodeJob.environment // { OCTOCODE_CLEAR = "0"; };
     };
   };
-  # External named volumes owned by the Dagu DAG ops_octocode-reindex: it clones the
-  # repos into octocode_repos and writes the octocode index into octocode_db, then
-  # restarts this container. Mounting them here (read-only) is what makes the daily
+  # External named volumes. octocode_repos is written by Dagu ops_git-sync (the
+  # retired ops_octocode-reindex used to clone into it); octocode_db/_pvt are
+  # written by cloud-cgc-db-restore-all.sh. The pub container sees octocode_repos
+  # only through per-public-repo subpath mounts (pubReposMounts above). Mounting them here (read-only) is what makes the daily
   # reindex actually reach the live MCP — previously the container mounted neither, so
   # octocode search hit an empty store regardless of how often the DAG ran.
   # Fixed names (no project prefix) so this matches the raw `docker run -v octocode_db`

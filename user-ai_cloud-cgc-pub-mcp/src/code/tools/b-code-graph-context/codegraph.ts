@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { join, dirname, resolve } from "node:path";
+import { isRepoDenied } from "../../surface.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CodeGraph — unified, queryable knowledge graph served by the cgc MCP.
@@ -65,8 +66,17 @@ function loadExplicit(g: Graph, path: string, layer: string): void {
   // build-kg-graph_delta.json (and any explicit {nodes[],edges[]} source).
   let d: { nodes?: GNode[]; edges?: GEdge[] };
   try { d = JSON.parse(readFileSync(path, "utf8")); } catch { return; }
-  for (const n of d.nodes ?? []) if (n?.key) addNode(g, n, layer);
-  for (const e of d.edges ?? []) if (e?.from && e?.to) addEdge(g, { ...e, key: e.key ?? `${e.from}->${e.table}->${e.to}` }, layer);
+  // Public surface: drop private repos' own nodes (repo:cloud_data, anything
+  // carrying properties.repo of a private repo) and every edge touching them.
+  const dropped = new Set<string>();
+  for (const n of d.nodes ?? []) {
+    if (!n?.key) continue;
+    const repoKey = n.table === "repo" ? String(n.key).replace(/^repo:/, "") : null;
+    const propRepo = (n.properties as { repo?: unknown } | undefined)?.repo;
+    if ((repoKey && isRepoDenied(repoKey)) || (typeof propRepo === "string" && isRepoDenied(propRepo))) { dropped.add(n.key); continue; }
+    addNode(g, n, layer);
+  }
+  for (const e of d.edges ?? []) if (e?.from && e?.to && !dropped.has(e.from) && !dropped.has(e.to)) addEdge(g, { ...e, key: e.key ?? `${e.from}->${e.table}->${e.to}` }, layer);
   g.sources.push(`${layer}:${path.split("/").pop()}`);
 }
 
@@ -74,6 +84,9 @@ function loadSignatures(g: Graph, path: string): void {
   let d: { repo?: string; files?: Array<{ path: string; lang: string; role: string; exports: string[]; imports: string[]; symbols: string[] }> };
   try { d = JSON.parse(readFileSync(path, "utf8")); } catch { return; }
   const repo = d.repo ?? "unknown";
+  // Public surface: a private repo's code-signatures (paths, symbols, imports)
+  // are private-repo content — skip the whole file.
+  if (isRepoDenied(repo)) return;
   const byPath = new Map<string, string>(); // repo-rel path → node key
   const symName = (s: string): string => s.replace(/\(.*$/, "").replace(/^class\s+/, "").replace(/^[^A-Za-z0-9_$].*/, "").trim();
   for (const f of d.files ?? []) {

@@ -23,7 +23,11 @@ env:
   - CGC_DB_IMAGE_PREFIX: ghcr.io/diegonmarcos/cgc-db-
   - CGC_DB_BASE_IMAGE: ghcr.io/diegonmarcos/cgc-db-base:latest
   - CGC_DB_TAG: latest
-  - CGC_INDEX_REPOS: "cloud-infra cloud-infra-desktop front cloud-mykonsole-dtk cloud-data front-data cloud-u-android"
+  # PUBLIC repos only: this DAG restores into octocode_db, the volume the PUBLIC
+  # cloud-cgc-pub-mcp serves. cloud-data (private) and cloud-mykonsole-dtk (no
+  # longer indexed at all) removed 2026-10-13; private DBs go to octocode_db_pvt
+  # via the restore-multi-pvt compose profile, never through this DAG.
+  - CGC_INDEX_REPOS: "cloud-infra cloud-infra-desktop front front-data cloud-u-android"
   - MCP_CONTAINER: cloud-cgc-pub-mcp
   - NTFY_URL: http://10.0.0.6:8090
 mail_on:

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { getOctocodeRepos } from "../../shared/libs/paths.js";
+import { filterRepoMap, isRepoAllowed, isInside, refusal } from "../../surface.js";
 
 const exec = promisify(execFile);
 const OCTOCODE_BIN = process.env.OCTOCODE_BIN ?? "octocode";
@@ -13,7 +14,9 @@ const OCTOCODE_BIN = process.env.OCTOCODE_BIN ?? "octocode";
 // after the cloud-* rename — octocode returns EMPTY results for an unknown
 // project key (no error), so the drift silently served nothing for every
 // renamed repo. 2026-08-21.
-const REPOS: Record<string, string> = getOctocodeRepos();
+// Scoped to this surface (surface.ts): on cloud-cgc-pub-mcp the private repos
+// are neither in the enum nor resolvable.
+const REPOS: Record<string, string> = filterRepoMap(getOctocodeRepos());
 // z.enum's TS type wants a non-empty tuple; the values themselves are only
 // known at runtime (from build.json). If the config load ever fails,
 // getOctocodeRepoConfig() degrades to an empty list (see paths.ts) rather
@@ -50,6 +53,7 @@ export function registerOctocodeTools(server: McpServer): void {
       threshold: z.number().optional().describe("Similarity threshold 0.0-1.0 (higher = stricter, default: 0.3)"),
     },
     async ({ query, repo, mode, format, threshold }) => {
+      if (!isRepoAllowed(repo)) return { isError: true, content: [{ type: "text" as const, text: refusal(repo) }] };
       const args = ["search", query, "--format", format ?? "text", "--threshold", String(threshold ?? 0.3)];
       if (mode) args.push("--mode", mode);
       const cwd = REPOS[repo];
@@ -73,6 +77,7 @@ export function registerOctocodeTools(server: McpServer): void {
       format: z.enum(["json", "md", "text"]).optional().describe("Output format (default: text)"),
     },
     async ({ operation, repo, query, node_id, source_id, target_id, max_depth, format }) => {
+      if (!isRepoAllowed(repo)) return { isError: true, content: [{ type: "text" as const, text: refusal(repo) }] };
       const cwd = REPOS[repo];
       if (!cwd) return { content: [{ type: "text" as const, text: `Unknown repo: ${repo}` }] };
       const args = ["graphrag", operation, "--format", format ?? "text"];
@@ -93,6 +98,12 @@ export function registerOctocodeTools(server: McpServer): void {
       path: z.string().describe("Absolute path to the repository or directory to index"),
     },
     async ({ path }) => {
+      // Only a directory inside one of THIS surface's repos may be indexed —
+      // an arbitrary absolute path would let the public surface index (and
+      // then serve) anything the container can see.
+      if (!Object.values(REPOS).some((base) => isInside(base, path))) {
+        return { isError: true, content: [{ type: "text" as const, text: `Refused: ${path} is not inside a repo served by this surface (${Object.keys(REPOS).join(", ")}).` }] };
+      }
       const result = await runOctocode(["index"], path);
       return { content: [{ type: "text" as const, text: result }] };
     }
