@@ -138,6 +138,9 @@
   "infra-net_wireguard-mesh": {
    "licence": "LicenseRef-NoLicenseGranted"
   },
+  "infra-net_cloudflared": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
   "infra-net_wireguard-mesh-ws-tunnel": {
    "licence": "LicenseRef-NoLicenseGranted"
   },
@@ -450,6 +453,10 @@
   "ghcr.io/openclaw/openclaw": {
    "licence": "MIT",
    "note": "OpenClaw (github.com/openclaw/openclaw), MIT, Copyright (c) 2026 OpenClaw Foundation; upstream's own release image, used unmodified (pinned tag). Bundled third-party components are listed in upstream THIRD_PARTY_NOTICES.md inside the image."
+  },
+  "cloudflare/cloudflared": {
+   "licence": "Apache-2.0",
+   "note": "Cloudflare's own release image of cloudflared (github.com/cloudflare/cloudflared, Apache-2.0), used unmodified (pinned tag)."
   },
   "ghcr.io/erebe/wstunnel": {
    "licence": "BSD-3-Clause"
