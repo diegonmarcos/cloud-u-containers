@@ -36,7 +36,6 @@
         "contacts.diegonmarcos.com": "c_data-apps/cloud-contacts",
         "crowdsec.diegonmarcos.com": "c_configs/cloud-c3",
         "db.diegonmarcos.com": "c_configs/cloud-c3",
-        "git.diegonmarcos.com": "c_data-apps/cloud-drive",
         "ide.diegonmarcos.com": "c_agi/cloud-myterminal",
         "mail.diegonmarcos.com": "c_inboxes/cloud-mail",
         "mesh.diegonmarcos.com": "c_configs/cloud-c3",
