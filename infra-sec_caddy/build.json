@@ -212,12 +212,67 @@
     },
     "catch_all": {
       "domain": "*.diegonmarcos.com",
-      "page": "/srv/error.html"
+      "page": "/srv/error.html",
+      "redirect_to": "https://diegonmarcos.github.io/c__Cloud/",
+      "_redirect_doc": "Unknown subdomains 302 to the landing hub instead of the 404 error page (caddyfile.nix catchAllBlock). page stays as the edge's fallback file."
     },
     "messages": {
       "portless_placeholder": "Portless worker/sidecar \u2014 no HTTP endpoint",
       "db_catalog_template": "DB catalog \u2014 container={container} engine={engine} port={port} upstream={upstream} path={path} vm={vm}",
       "app_hub_fallback": "Not Found"
+    },
+    "url_scheme": {
+      "_doc": "Fleet URL scheme (cloud-infra a0_docs/eng-specs/url-scheme.md). container_prefix: every container gets c3-{container}.diegonmarcos.com (wg_only, 403 off-mesh) and c3-{container}.app. APKs get cloud-{name}.diegonmarcos.com (public, never wg_only, Authelia, anonymous -> landing) and, when they declare a container web target, cloud-{name}.app. Both lists are GENERATED: manifests.apk is cloud-u-android's 2_configs/apk-manifest.json (relative to the cloud-infra root), manifests.mcp is cloud-u-containers' _shared/mcp-manifest.json (relative to a_solutions). Nothing here lists an APK, container or MCP by hand. groups documents the special address groups and is asserted by test-url-scheme.sh. extra_routes are additive vhosts: mails. serves the JMAP config URLs (well-known paths public, rest of the vhost mesh-only, like jmap.).",
+      "container_prefix": "c3-",
+      "manifests": {
+        "apk": "../cloud-u-android/2_configs/apk-manifest.json",
+        "mcp": "_shared/mcp-manifest.json"
+      },
+      "groups": {
+        "SPECIAL": {
+          "open": [
+            "auth.diegonmarcos.com",
+            "diegonmarcos.com",
+            "www.diegonmarcos.com",
+            "linktree.diegonmarcos.com",
+            "nexus.diegonmarcos.com",
+            "suite.diegonmarcos.com",
+            "maps.diegonmarcos.com"
+          ],
+          "comment": "Authelia must be open (wg_only:false); the rest are GitHub Pages."
+        },
+        "MAIL": {
+          "open": [
+            "mail.diegonmarcos.com",
+            "mails.diegonmarcos.com",
+            "imap.diegonmarcos.com",
+            "smtps.diegonmarcos.com",
+            "mta-sts.diegonmarcos.com"
+          ],
+          "l4_ports": [
+            25
+          ],
+          "well_known": [
+            "/.well-known/jmap"
+          ],
+          "comment": "All open as before; mails. is the new JMAP config-URL host."
+        },
+        "NETWORK": {
+          "wg_only": [
+            "vpn.diegonmarcos.com"
+          ],
+          "comment": "vpn. is mesh-only."
+        }
+      },
+      "extra_routes": [
+        {
+          "domain": "mails.diegonmarcos.com",
+          "service": "stalwart",
+          "auth": "none",
+          "wg_only": true,
+          "comment": "JMAP config URLs (well-known grafts public; rest of the vhost mesh-only)"
+        }
+      ]
     }
   },
   "proxy": {
@@ -239,6 +294,27 @@
         "upstream": "10.0.0.3:2443",
         "tls_skip_verify": true,
         "comment": "JMAP session/api/download/upload/eventsource follow-through on jmap vhost"
+      },
+      {
+        "path": "/.well-known/jmap",
+        "target_domain": "mails.diegonmarcos.com",
+        "upstream": "10.0.0.3:2443",
+        "tls_skip_verify": true,
+        "rewrite_to": "/jmap/session",
+        "comment": "JMAP discovery on the mails vhost"
+      },
+      {
+        "path": "/jmap/*",
+        "target_domain": "mails.diegonmarcos.com",
+        "upstream": "10.0.0.3:2443",
+        "tls_skip_verify": true,
+        "comment": "JMAP session/api follow-through on the mails vhost"
+      },
+      {
+        "path": "/",
+        "target_domain": "mails.diegonmarcos.com",
+        "redirect_to": "/.well-known/jmap",
+        "comment": "Bare mails host -> JMAP discovery URL (308)"
       }
     ],
     "proxy_dashboard": {

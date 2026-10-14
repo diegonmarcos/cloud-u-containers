@@ -339,7 +339,27 @@ ${plainOut}${sniMuxBlock}
       }
   '';
 
-  mkSubdomainRoute = route:
+  # ── APK vhost with no web target: landing redirect even when signed in ──
+  # (url-scheme.md). cloud-{apk}.diegonmarcos.com for an APK that declares no
+  # container web target. Nothing to proxy, so no auth wall either: every
+  # request 302s to the app's landing page; /login still hands off to Authelia.
+  mkLandingOnlyRoute = route:
+    let
+      pl = caddyRoutes.public_landing or {};
+      loginPath = pl.login_path or "/login";
+      authPortal = pl.auth_portal or "https://auth.diegonmarcos.com/";
+    in ''
+    # ${route.comment or route.domain}
+    ${route.domain} {
+  ${publicBindLine}
+  ${sec}
+      redir ${loginPath} ${authPortal}?rd=https://{host}/ 302
+      redir ${route.landing} 302
+      ${handleErrors}
+    }
+  '';
+
+  mkSubdomainRoute = route: if (route.landing_only or false) then mkLandingOnlyRoute route else
     let
       # Shadow the shared builders with this route's per-vhost options.
       mkProtected       = mkProtectedOpt route;
@@ -1142,7 +1162,8 @@ ${handleErrors}
     "@SEC_NO_LIMIT@"     = secNoLimit;
     "@CATCH_ROOT@"       = lib.removeSuffix ("/" + baseNameOf catchPage) catchPage;
     "@CATCH_FILE@"       = baseNameOf catchPage;
-  } (readTpl "99-catch-all.caddy.tpl");
+    "@CATCH_REDIRECT@"   = catch.redirect_to or "";
+  } (readTpl (if (catch.redirect_to or null) != null then "99-catch-all-redirect.caddy.tpl" else "99-catch-all.caddy.tpl"));
 
 in ''
 ${globalsBlock}

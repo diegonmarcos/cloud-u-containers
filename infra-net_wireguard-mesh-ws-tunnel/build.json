@@ -72,7 +72,7 @@
   },
   "proxy": {
     "primary": {
-      "wg_only": false,
+      "wg_only": true,
       "domain": "vpn.diegonmarcos.com",
       "auth": "none",
       "_doc": "auth=none required: wstunnel client cannot do 2FA cookies. Scanner defence is enforced by the wstunnel server itself via --http-upgrade-path-prefix ${WSTUNNEL_PATH_PREFIX} — Caddy passes WebSocket upgrades through natively (Caddy v2 reverse_proxy handles WS by default)."

@@ -1,0 +1,107 @@
+{
+  "_generated_by": "_shared/gen-mcp-manifest.sh",
+  "_doc": "GENERATED. Declared MCP endpoints on the MCP hub, from each solution build.json. Do not edit; change the build.json and re-run the generator.",
+  "schema": "mcp-manifest/v1",
+  "access": "token",
+  "mcps": [
+    {
+      "name": "cloud-infra-mcp",
+      "folder": "infra-api_cloud-infra-mcp",
+      "base_path": "/c3-infra-mcp",
+      "parent_domain": "mcp.diegonmarcos.com",
+      "source": "proxy.primary",
+      "auth": "token",
+      "public": true
+    },
+    {
+      "name": "cloud-services-mcp",
+      "folder": "infra-api_cloud-services-mcp",
+      "base_path": "/c3-services-mcp",
+      "parent_domain": "mcp.diegonmarcos.com",
+      "source": "proxy.primary",
+      "auth": "token",
+      "public": true
+    },
+    {
+      "name": "cloud-cgc-pub-mcp",
+      "folder": "user-ai_cloud-cgc-pub-mcp",
+      "base_path": "/cloud-cgc-pub-mcp",
+      "parent_domain": "mcp.diegonmarcos.com",
+      "source": "proxy.primary",
+      "auth": "token",
+      "public": true
+    },
+    {
+      "name": "cloud-cgc-pub-mcp-pvt",
+      "folder": "user-ai_cloud-cgc-pub-mcp",
+      "base_path": "/cloud-cgc-pvt-mcp",
+      "parent_domain": "mcp.diegonmarcos.com",
+      "source": "containers.pvt",
+      "auth": "token",
+      "public": true
+    },
+    {
+      "name": "cloud-drive-mcp",
+      "folder": "infra-api_cloud-drive-mcp",
+      "base_path": "/cloud-drive-mcp",
+      "parent_domain": "mcp.diegonmarcos.com",
+      "source": "proxy.primary",
+      "auth": "token",
+      "public": true
+    },
+    {
+      "name": "cloud-superapp-mcp",
+      "folder": "infra-api_cloud-superapp-mcp",
+      "base_path": "/cloud-superapp-mcp",
+      "parent_domain": "mcp.diegonmarcos.com",
+      "source": "proxy.primary",
+      "auth": "token",
+      "public": true
+    },
+    {
+      "name": "cloud-vault-mcp",
+      "folder": "infra-api_cloud-vault-mcp",
+      "base_path": "/cloud-vault-mcp",
+      "parent_domain": "mcp.diegonmarcos.com",
+      "source": "proxy.primary",
+      "auth": "token",
+      "public": true
+    },
+    {
+      "name": "google-personal-mcp",
+      "folder": "infra-api_google-personal-mcp",
+      "base_path": "/g-personal",
+      "parent_domain": "mcp.diegonmarcos.com",
+      "source": "proxy.primary",
+      "auth": "token",
+      "public": true
+    },
+    {
+      "name": "google-workspace-mcp",
+      "folder": "infra-api_google-workspace-mcp",
+      "base_path": "/g-workspace",
+      "parent_domain": "mcp.diegonmarcos.com",
+      "source": "proxy.primary",
+      "auth": "token",
+      "public": true
+    },
+    {
+      "name": "cloud-mail-mcp",
+      "folder": "infra-api_cloud-mail-mcp",
+      "base_path": "/mail-mcp",
+      "parent_domain": "mcp.diegonmarcos.com",
+      "source": "proxy.primary",
+      "auth": "token",
+      "public": true
+    },
+    {
+      "name": "cloud-mattermost-mcp",
+      "folder": "infra-api_cloud-mattermost-mcp",
+      "base_path": "/mattermost-mcp",
+      "parent_domain": "mcp.diegonmarcos.com",
+      "source": "proxy.primary",
+      "auth": "token",
+      "public": true
+    }
+  ]
+}
