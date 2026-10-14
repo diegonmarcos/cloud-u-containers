@@ -274,6 +274,7 @@ respond @not_wg "Forbidden" 403
 
 
 
+
     handle {
   reverse_proxy 10.0.0.6:8010 {
     header_up X-Real-IP {http.request.remote.host}
@@ -305,6 +306,13 @@ import security
 import request_limits
       request_header -X-WEBAUTH-USER
 
+@landing_anon {
+  not header Authorization *
+  not header Cookie *authelia_session=*
+  not path /login
+}
+redir @landing_anon https://diegonmarcos.github.io/c__Cloud/c_data-apps/cloud-drive/ 302
+redir /login https://auth.diegonmarcos.com/?rd=https://{host}/ 302
 
 
 
@@ -419,6 +427,13 @@ import security
 import request_limits
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
 respond @not_wg "Forbidden" 403
+@landing_anon {
+  not header Authorization *
+  not header Cookie *authelia_session=*
+  not path /login
+}
+redir @landing_anon https://diegonmarcos.github.io/c__Cloud/c_configs/cloud-c3/ 302
+redir /login https://auth.diegonmarcos.com/?rd=https://{host}/ 302
 
 
 
@@ -430,7 +445,7 @@ respond @not_wg "Forbidden" 403
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.0.0.6:8080 {
+      reverse_proxy 10.0.0.6:8084 {
         header_up X-Real-IP {http.request.remote.host}
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -465,7 +480,7 @@ respond @not_wg "Forbidden" 403
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.0.0.6:8080 {
+      reverse_proxy 10.0.0.6:8084 {
         header_up X-Real-IP {http.request.remote.host}
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -524,6 +539,7 @@ import request_limits
 
 
 
+
     reverse_proxy 10.0.0.1:8080 {
     header_up X-Real-IP {http.request.remote.host}
   }
@@ -553,6 +569,13 @@ import security
 import request_limits
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
 respond @not_wg "Forbidden" 403
+@landing_anon {
+  not header Authorization *
+  not header Cookie *authelia_session=*
+  not path /login
+}
+redir @landing_anon https://diegonmarcos.github.io/c__Cloud/c_configs/cloud-c3/ 302
+redir /login https://auth.diegonmarcos.com/?rd=https://{host}/ 302
 
 
 
@@ -656,6 +679,13 @@ import security
 import request_limits
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
 respond @not_wg "Forbidden" 403
+@landing_anon {
+  not header Authorization *
+  not header Cookie *authelia_session=*
+  not path /login
+}
+redir @landing_anon https://diegonmarcos.github.io/c__Cloud/c_configs/cloud-c3/ 302
+redir /login https://auth.diegonmarcos.com/?rd=https://{host}/ 302
 
 
 
@@ -762,6 +792,7 @@ import request_limits
   not path /.well-known/openid-configuration /api/oidc/token /jwks.json
 }
 respond @not_wg "Forbidden" 403
+
 handle /.well-known/openid-configuration {
   reverse_proxy 172.18.0.3:9091
 }
@@ -873,6 +904,13 @@ import security
 import request_limits
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
 respond @not_wg "Forbidden" 403
+@landing_anon {
+  not header Authorization *
+  not header Cookie *authelia_session=*
+  not path /login
+}
+redir @landing_anon https://diegonmarcos.github.io/c__Cloud/c_configs/cloud-c3/ 302
+redir /login https://auth.diegonmarcos.com/?rd=https://{host}/ 302
 
 
 
@@ -979,6 +1017,13 @@ import request_limits
   not path /api/v4/*
 }
 respond @not_wg "Forbidden" 403
+@landing_anon {
+  not header Authorization *
+  not header Cookie *authelia_session=*
+  not path /api/v4/* /login
+}
+redir @landing_anon https://diegonmarcos.github.io/c__Cloud/c_inboxes/cloud-chat/ 302
+redir /login https://auth.diegonmarcos.com/?rd=https://{host}/ 302
 handle /api/v4/* {
   reverse_proxy 10.0.0.6:8065
 }
@@ -1084,6 +1129,13 @@ import security
 import request_limits
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
 respond @not_wg "Forbidden" 403
+@landing_anon {
+  not header Authorization *
+  not header Cookie *authelia_session=*
+  not path /login
+}
+redir @landing_anon https://diegonmarcos.github.io/c__Cloud/c_inboxes/cloud-mail/ 302
+redir /login https://auth.diegonmarcos.com/?rd=https://{host}/ 302
 
 
 
@@ -1189,6 +1241,7 @@ import request_limits
 
 
 
+
     reverse_proxy 10.0.0.6:8008 {
     header_up X-Real-IP {http.request.remote.host}
   }
@@ -1218,6 +1271,13 @@ import security
 import request_limits
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
 respond @not_wg "Forbidden" 403
+@landing_anon {
+  not header Authorization *
+  not header Cookie *authelia_session=*
+  not path /login
+}
+redir @landing_anon https://diegonmarcos.github.io/c__Cloud/c_inboxes/cloud-matrix/ 302
+redir /login https://auth.diegonmarcos.com/?rd=https://{host}/ 302
 
 
 
@@ -1328,6 +1388,7 @@ request_body {
 respond @not_wg "Forbidden" 403
 
 
+
     # JMAP discovery on jmap vhost (public per RFC 8620) (well-known — public per spec)
     handle /.well-known/jmap {
         rewrite * /jmap/session
@@ -1383,6 +1444,13 @@ import security
 import request_limits
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
 respond @not_wg "Forbidden" 403
+@landing_anon {
+  not header Authorization *
+  not header Cookie *authelia_session=*
+  not path /login
+}
+redir @landing_anon https://diegonmarcos.github.io/c__Cloud/c_data-apps/cloud-gallery/ 302
+redir /login https://auth.diegonmarcos.com/?rd=https://{host}/ 302
 # Root path → landing page (proxied, keeps our domain)
 @root path =/
 handle @root {
@@ -1500,6 +1568,13 @@ import request_limits
   not path /api/auth/spotify/callback /api/auth/youtube/callback
 }
 respond @not_wg "Forbidden" 403
+@landing_anon {
+  not header Authorization *
+  not header Cookie *authelia_session=*
+  not path /api/auth/spotify/callback /api/auth/youtube/callback /login
+}
+redir @landing_anon https://diegonmarcos.github.io/c__Cloud/c_data-apps/cloud-media/ 302
+redir /login https://auth.diegonmarcos.com/?rd=https://{host}/ 302
 handle /api/auth/spotify/callback {
   reverse_proxy 10.0.0.6:8090
 }
@@ -1608,6 +1683,13 @@ import security
 import request_limits
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
 respond @not_wg "Forbidden" 403
+@landing_anon {
+  not header Authorization *
+  not header Cookie *authelia_session=*
+  not path /login
+}
+redir @landing_anon https://diegonmarcos.github.io/c__Cloud/c_data-apps/cloud-tasks/ 302
+redir /login https://auth.diegonmarcos.com/?rd=https://{host}/ 302
 
 
 
@@ -1711,6 +1793,13 @@ import security
 import request_limits
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
 respond @not_wg "Forbidden" 403
+@landing_anon {
+  not header Authorization *
+  not header Cookie *authelia_session=*
+  not path /login
+}
+redir @landing_anon https://diegonmarcos.github.io/c__Cloud/c_agi/cloud-myterminal/ 302
+redir /login https://auth.diegonmarcos.com/?rd=https://{host}/ 302
 
 
 
@@ -1814,6 +1903,13 @@ import security
 import request_limits
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
 respond @not_wg "Forbidden" 403
+@landing_anon {
+  not header Authorization *
+  not header Cookie *authelia_session=*
+  not path /login
+}
+redir @landing_anon https://diegonmarcos.github.io/c__Cloud/c_data-apps/cloud-contacts/ 302
+redir /login https://auth.diegonmarcos.com/?rd=https://{host}/ 302
 
 
 
@@ -1920,6 +2016,7 @@ respond @not_wg "Forbidden" 403
 
 
 
+
     handle {
   reverse_proxy 10.0.0.6:3011 {
     header_up X-Real-IP {http.request.remote.host}
@@ -1954,6 +2051,7 @@ respond @not_wg "Forbidden" 403
 
 
 
+
     handle {
   reverse_proxy 10.0.0.6:3016 {
     header_up X-Real-IP {http.request.remote.host}
@@ -1985,6 +2083,7 @@ import security
 import request_limits
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
 respond @not_wg "Forbidden" 403
+
 
 
 
@@ -4884,7 +4983,7 @@ file_server
         ca mesh
       }
     }
-    reverse_proxy 10.0.0.6:8080 {
+    reverse_proxy 10.0.0.6:8084 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
@@ -7011,6 +7110,3887 @@ file_server
 
 
   # ════════════════════════════════════════════════════════════
+  # PRIVATE MESH NAMES — cloud.<name>.app (WG mesh only)
+  # ════════════════════════════════════════════════════════════
+
+  cloud.c3-infra-api.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:8081 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.c3-public-api.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.4:8087 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.c3-services-api.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:8082 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.drive-mcp.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:3109 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.c3-infra-mcp.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:3100 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.mail-mcp.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:3103 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.mattermost-mcp.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:3102 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.c3-services-mcp.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:3101 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.superapp-mcp.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:3110 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.git-proxy-api.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.4:8123 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.g-personal-mcp.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:3106 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.g-workspace-mcp.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:3104 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.gitea.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:3002 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.unbound-dns64.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.4:53 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.wireguard-mesh.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:8084 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.c3-spec.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:3080 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.dagu.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:8070 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.dbgate.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:8086 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.matomo.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:8080 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.ntfy.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:8090 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.openobserve.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:5080 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.umami.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:3006 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.authelia.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 172.18.0.3:9091 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.caddy.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.1:443 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.caddy-public.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.4:443 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.crowdsec.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:8088 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.cloud-cgc-pub-mcp.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:3105 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.kg-store.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:8001 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.kg-store-pub.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:8002 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.mattermost.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:8065 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.webmail.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:3000 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.matrix-continuwuity.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:8008 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.matrix-element.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:8083 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.stalwart.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.3:2443 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.scrappers-api.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:3020 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.fin-api.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:8340 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.photoprism.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:3013 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.playlist-syncer.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:8090 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.news-gdelt.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:3019 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.calendar.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:5232 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.code-server.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:8443 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.contacts.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:5233 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.etherpad.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:3012 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.filebrowser.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:3015 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.grist.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:3011 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.hedgedoc.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:3018 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.send.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:3016 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.vaultwarden.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:8880 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.cloud-drive-mcp.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:3109 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.cloud-infra-mcp.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:3100 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.cloud-mail-mcp.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:3103 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.cloud-mattermost-mcp.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:3102 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.cloud-services-mcp.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:3101 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.cloud-superapp-mcp.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:3110 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.google-personal-mcp.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:3106 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.google-workspace-mcp.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:3104 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.cloud-spec.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:3080 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.matomo-hybrid.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:8080 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.cloud-webmail.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:3000 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.continuwuity.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:8008 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.photoprism-app.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:3013 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.calendar-radicale.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:5232 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.contacts-radicale.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:5233 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.etherpad-app.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:3012 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.filebrowser-app.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:3015 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.grist-app.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:3011 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.hedgedoc-app.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:3018 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  cloud.send-app.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:3016 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+
+  # ════════════════════════════════════════════════════════════
   # APP URL ALIASES — {container}-{protocol}-{port}.app canonical routes
   # ════════════════════════════════════════════════════════════
 
@@ -7742,7 +11722,7 @@ file_server
     }
   }
 
-  wireguard-mesh-http-8080.app {
+  wireguard-mesh-http-8084.app {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -7752,7 +11732,7 @@ file_server
         ca mesh
       }
     }
-    reverse_proxy 10.0.0.6:8080 {
+    reverse_proxy 10.0.0.6:8084 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
