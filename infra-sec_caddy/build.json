@@ -22,6 +22,31 @@
     "escape_dollars": "true"
   },
   "caddy_config": {
+    "public_landing": {
+      "_doc": "Public scheme {app}.diegonmarcos.com (cloud-infra a0_docs/eng-specs/url-scheme.md). A request to an Authelia-gated vhost with NO credential (no Authorization header, no session cookie) is redirected to base_url + the service's proxy.primary.landing (or default_path) instead of the Authelia wall. Bearer / Basic / cookie requests are untouched. Interactive sign-in: <vhost><login_path> redirects to auth_portal with rd back to the vhost.",
+      "base_url": "https://diegonmarcos.github.io/c__Cloud/",
+      "default_path": "",
+      "login_path": "/login",
+      "session_cookie": "authelia_session",
+      "auth_portal": "https://auth.diegonmarcos.com/",
+      "_landings_doc": "vhost -> c_<category>/<app> folder of diegonmarcos.github.io/c__Cloud (the Android app that fronts it). A service may override with its own proxy.primary.landing. Unlisted gated vhosts land on the c__Cloud hub (default_path).",
+      "landings": {
+        "cal.diegonmarcos.com": "c_data-apps/cloud-tasks",
+        "chat.diegonmarcos.com": "c_inboxes/cloud-chat",
+        "contacts.diegonmarcos.com": "c_data-apps/cloud-contacts",
+        "crowdsec.diegonmarcos.com": "c_configs/cloud-c3",
+        "db.diegonmarcos.com": "c_configs/cloud-c3",
+        "git.diegonmarcos.com": "c_data-apps/cloud-drive",
+        "ide.diegonmarcos.com": "c_agi/cloud-myterminal",
+        "mail.diegonmarcos.com": "c_inboxes/cloud-mail",
+        "mesh.diegonmarcos.com": "c_configs/cloud-c3",
+        "messenger.diegonmarcos.com": "c_inboxes/cloud-matrix",
+        "photos.diegonmarcos.com": "c_data-apps/cloud-gallery",
+        "playlist.diegonmarcos.com": "c_data-apps/cloud-media",
+        "webmail.diegonmarcos.com": "c_inboxes/cloud-mail",
+        "workflows.diegonmarcos.com": "c_configs/cloud-c3"
+      }
+    },
     "global": {
       "debug": true,
       "admin_bind": "localhost:2019",

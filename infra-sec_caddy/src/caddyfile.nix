@@ -358,6 +358,33 @@ ${plainOut}${sniMuxBlock}
       hasLandingPage = (route.landing_page or null) != null;
       hasBypassPaths = (route.bypass_paths or null) != null;
 
+      # Public-landing fallback (docs: cloud-infra a0_docs/eng-specs/url-scheme.md).
+      # route.landing is the app's GitHub Pages page, stamped by the derive
+      # from proxy.primary.landing + caddy proxy.public_landing. A request that
+      # carries NO credential at all (no Authorization header of any scheme, no
+      # Authelia session cookie) is redirected there instead of meeting the
+      # Authelia login wall. Anything carrying a credential falls through to the
+      # unchanged bearer/Authelia handles below, so MCP/API/Android bearer
+      # clients and DAV Basic clients behave exactly as before. `redir` sorts
+      # before `respond`, so on a wg_only vhost an anonymous off-mesh client
+      # now gets the landing page instead of a bare 403 — a credentialed
+      # off-mesh client still gets the 403 (no exposure is widened).
+      # Interactive sign-in stays reachable at <login_path>.
+      pl = caddyRoutes.public_landing or {};
+      hasLanding = (route.landing or null) != null && !isNoAuth;
+      loginPath = pl.login_path or "/login";
+      sessionCookie = pl.session_cookie or "authelia_session";
+      authPortal = pl.auth_portal or "https://auth.diegonmarcos.com/";
+      landingExempt = wgExemptPaths ++ [ loginPath ];
+      landingGateBlock = if hasLanding then ''
+      @landing_anon {
+        not header Authorization *
+        not header Cookie *${sessionCookie}=*
+        not path ${lib.concatStringsSep " " landingExempt}
+      }
+      redir @landing_anon ${route.landing} 302
+      redir ${loginPath} ${authPortal}?rd=https://{host}/ 302'' else "";
+
       # Per-route security bundle override (route.security_import, from the
       # service build.json): lets a vhost swap the shared global rate-limit
       # zone for its own without forking the rest of the (security) posture.
@@ -515,6 +542,7 @@ ${plainOut}${sniMuxBlock}
   ${publicBindLine}
   ${secLine}${uploadBlock}${(identityOf route).siteStrip}
   ${wgBlock}
+  ${landingGateBlock}
   ${bypassBlock}${landingBlock}
   ${rootJsonBlock}
   ${wellKnownBlock}
@@ -978,6 +1006,33 @@ ${bearer}
   dbTpl         = readTpl "33-db-placeholder.caddy.tpl";
   s3Tpl         = readTpl "34-s3-route.caddy.tpl";
 
+  # ── Private mesh names: cloud.<name>.app (docs: url-scheme.md) ──
+  # Rendered as their OWN site blocks so the legacy <name>.app aliases stay
+  # byte-identical for one release. Each one is gated to the WG mesh plus
+  # same-host docker/loopback sources: wg-public (10.1.0.0/24, the public
+  # edge) and every public address get 403, so a cloud.*.app name is never
+  # served to the internet even if someone points a resolver at us.
+  meshOnlySources = "${wgCidrs} 172.16.0.0/12 127.0.0.0/8 ::1/128";
+  mkPrivateMeshRoute = e: ''
+  ${e.service} {
+${publicBindLine}
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip ${meshOnlySources}
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy ${e.upstream} {
+${emptyGuard}
+      }
+    }
+${handleErrors}
+  }
+'';
+  privateMeshRoutes = caddyRoutes.private_mesh_routes or [];
+
   mkInternalRoute = route: subst {
     "@SERVICE@"          = route.service;
     "@UPSTREAM@"         = route.upstream;
@@ -1156,6 +1211,12 @@ ${mkProxyDashboardBlock}
   # ════════════════════════════════════════════════════════════
 
 ${lib.concatMapStringsSep "\n" mkInternalRoute (caddyRoutes.internal_routes or [])}
+
+  # ════════════════════════════════════════════════════════════
+  # PRIVATE MESH NAMES — cloud.<name>.app (WG mesh only)
+  # ════════════════════════════════════════════════════════════
+
+${lib.concatMapStringsSep "\n" mkPrivateMeshRoute privateMeshRoutes}
 
   # ════════════════════════════════════════════════════════════
   # APP URL ALIASES — {container}-{protocol}-{port}.app canonical routes
