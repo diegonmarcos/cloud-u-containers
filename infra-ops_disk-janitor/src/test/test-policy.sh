@@ -14,12 +14,18 @@ case "$1 $2" in
 "volume ls") echo $(printf 'f%.0s' {1..64}); echo named_data;;
 "volume inspect") if [ "$3" = "{{json .Labels}}" ]; then echo null; else echo "2026-09-01T00:00:00Z"; fi;;
 "ps --format") echo nothing;;
+"rmi "*|"builder prune") exit 0;;
 "ps -aq"*) ;;
 esac
 STUB
 chmod +x "$T/bin/docker"
-OUT=$(PATH="$T/bin:$PATH" HOST_ROOT=/ STATE_DIR="$T/state" RUN_ONCE=true NTFY_URL= ALERT_FREE_GB=0 \
-  DISPATCH_CONTAINERS=none:claude bash "$HERE/../code/entrypoint.sh")
+# Gradle fixture: one stale and one fresh transform entry, one stale downloaded artifact.
+G="$T/gradle"; mkdir -p "$G/caches/transforms-4/stale" "$G/caches/transforms-4/fresh" "$G/caches/modules-2/files-2.1/g/a/1.0/h"
+touch "$G/caches/transforms-4/fresh/f" "$G/caches/transforms-4/stale/f" "$G/caches/modules-2/files-2.1/g/a/1.0/h/a.jar"
+touch -d '90 days ago' "$G/caches/transforms-4/stale/f" "$G/caches/modules-2/files-2.1/g/a/1.0/h/a.jar"
+run() { PATH="$T/bin:$PATH" HOST_ROOT=/ STATE_DIR="$T/state" RUN_ONCE=true NTFY_URL= ALERT_FREE_GB=0 \
+  GRADLE_HOME_PATH="$G" LANCE_HOMES="$T/nolance" DISPATCH_CONTAINERS=none:claude "$@" bash "$HERE/../code/entrypoint.sh"; }
+OUT=$(MODE=dry-run run env)
 echo "$OUT"
 fail() { echo "FAIL: $*"; exit 1; }
 grep -q 'would rmi sha256:ddd' <<<"$OUT"   || fail "old dangling image not selected"
@@ -31,4 +37,14 @@ grep -q 'would remove anonymous volume ffffffffffff' <<<"$OUT" || fail "old anon
 ! grep -q 'named_data' <<<"$OUT"           || fail "named volume selected"
 ! grep -qE '\] +(rmi|removed) ' <<<"$OUT"  || fail "dry-run deleted something"
 grep -q '"mode":"dry-run"' "$T/state/metrics.json" || fail "metrics not written"
+grep -q 'would remove caches/transforms-4/stale' <<<"$OUT" || fail "stale gradle entry not selected"
+! grep -q 'caches/transforms-4/fresh' <<<"$OUT"   || fail "fresh gradle entry selected"
+[ -e "$G/caches/transforms-4/stale/f" ]    || fail "dry-run removed gradle data"
+# aggressive + enforce: same keep rules, deletion actually happens (stub docker rmi succeeds)
+OUT2=$(MODE=enforce run env AGGRESSIVE=1)
+echo "$OUT2" | grep -q 'aggressive=1'        || fail "aggressive flag not honoured"
+grep -q 'rmi sha256:ddd' <<<"$OUT2"        || fail "aggressive: dangling image not removed"
+! grep -q 'repo/a:old1\|repo/b:new\|rmi sha256:aaa' <<<"$OUT2" || fail "aggressive: previous/in-use image removed"
+[ ! -e "$G/caches/transforms-4/stale" ]    || fail "enforce: stale gradle entry kept"
+[ -e "$G/caches/transforms-4/fresh/f" ]    || fail "enforce: fresh gradle entry removed"
 echo "PASS disk-janitor dry-run policy"

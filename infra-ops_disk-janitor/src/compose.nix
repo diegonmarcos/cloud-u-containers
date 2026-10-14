@@ -10,7 +10,16 @@
 #                        the first live dry-run pass (2026-10-03) selected only
 #                        6 anonymous volumes and kept all 6 dirty _work slots.
 #   IMAGE_MIN_AGE_HOURS  an unused image must be at least this old
-#   IMAGE_KEEP_PER_REPO  newest K images per repository are always kept
+#   IMAGE_KEEP_PREVIOUS  images in use are always kept, plus this many unused
+#                        previous tagged images per repository (the rollback)
+#   DANGLING_MIN_AGE_HOURS  untagged images older than this are removed
+#   RUNNER_WORK_MIN_AGE_DAYS  idle GitHub runners: _work dirs older than this go,
+#                        with their self-update folders and old _diag logs
+#   GRADLE_HOME_PATH / GRADLE_MAX_AGE_DAYS  Gradle cache entries unused this long go
+#   LANCE_HOMES          cgc LanceDB homes trimmed of superseded manifests and
+#                        unreferenced data fragments
+# `disk-janitor --aggressive` (docker exec, called by the disk watchdog above 85%)
+# drops the age gates; the keep rules and the never-list are unchanged.
 #   BUILD_CACHE_MIN_AGE_HOURS  builder cache older than this is pruned
 #   VOLUME_MIN_AGE_DAYS  an ANONYMOUS (64-hex, no compose label) dangling volume
 #                        must be this old. Named volumes are NEVER removed.
@@ -38,7 +47,12 @@ in
         SCHEDULE                  = "\${SCHEDULE:-17 */3 * * *}";
         MODE                      = "\${MODE:-enforce}";
         IMAGE_MIN_AGE_HOURS       = "\${IMAGE_MIN_AGE_HOURS:-24}";
-        IMAGE_KEEP_PER_REPO       = "\${IMAGE_KEEP_PER_REPO:-2}";
+        IMAGE_KEEP_PREVIOUS       = "\${IMAGE_KEEP_PREVIOUS:-1}";
+        DANGLING_MIN_AGE_HOURS    = "\${DANGLING_MIN_AGE_HOURS:-1}";
+        RUNNER_WORK_MIN_AGE_DAYS  = "\${RUNNER_WORK_MIN_AGE_DAYS:-3}";
+        GRADLE_HOME_PATH          = "\${GRADLE_HOME_PATH:-/vol/my-ai-api-home/toolchain/gradle-home}";
+        GRADLE_MAX_AGE_DAYS       = "\${GRADLE_MAX_AGE_DAYS:-30}";
+        LANCE_HOMES               = "\${LANCE_HOMES:-/vol/octocode_db /vol/octocode_db_pvt}";
         BUILD_CACHE_MIN_AGE_HOURS = "\${BUILD_CACHE_MIN_AGE_HOURS:-48}";
         VOLUME_MIN_AGE_DAYS       = "\${VOLUME_MIN_AGE_DAYS:-7}";
         DISPATCH_CONTAINERS       = "\${DISPATCH_CONTAINERS:-cloud-agi-claude:claude}";
@@ -54,6 +68,11 @@ in
         "/var/run/docker.sock:/var/run/docker.sock"
         "/:/host:ro"
         "disk-janitor-logs:/var/log/disk-janitor"
+        # Cache-bearing volumes the janitor trims (never data): the Gradle cache
+        # inside my-ai-api-home and the cgc LanceDB homes.
+        "my-ai-api-home:/vol/my-ai-api-home"
+        "octocode_db:/vol/octocode_db"
+        "octocode_db_pvt:/vol/octocode_db_pvt"
       ];
       healthcheck = {
         test     = [ "CMD" "test" "-S" "/var/run/docker.sock" ];
@@ -70,5 +89,11 @@ in
 
   volumes = {
     disk-janitor-logs = { name = "disk-janitor-logs"; };
+    # Existing volumes owned by other services (fixed names, same as their own
+    # compose files). Not `external`, mirroring cloud-cgc-pub-mcp: a missing one
+    # becomes an empty volume and the janitor logs SKIP instead of failing to start.
+    my-ai-api-home  = { name = "my-ai-api-home"; };
+    octocode_db     = { name = "octocode_db"; };
+    octocode_db_pvt = { name = "octocode_db_pvt"; };
   };
 }
