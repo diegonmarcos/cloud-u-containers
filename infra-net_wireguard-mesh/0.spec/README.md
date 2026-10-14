@@ -72,7 +72,9 @@ https://mesh.diegonmarcos.com (Authelia-walled).
 
 - Container: nginx-alpine + ~200 KB static bundle
 - `mem_limit: 32m`, `read_only: true`, no volumes
-- Listens on 8080 inside the container; Caddy on gcp-proxy proxies WG-IP-to-host
+- Listens on 8080 inside the container, published on the host as 10.0.0.6:8084
+  (build.json ports.app); Caddy on gcp-proxy proxies mesh.diegonmarcos.com there.
+  Host 8080 belongs to matomo-hybrid (network_mode: host) — do not move it back.
 
 ## Future extensions (not v1)
 

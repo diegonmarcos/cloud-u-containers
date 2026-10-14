@@ -13,12 +13,12 @@
     "custom": true
   },
   "ports": {
-    "app": 8080
+    "app": 8084
   },
   "containers": {
     "app": {
       "container_name": "wireguard-mesh",
-      "port": 8080,
+      "port": 8084,
       "port_format": "colon",
       "protocol": "http",
       "public": true,

@@ -13,6 +13,10 @@ let
   # paths that are never rsync'd to the VM (only dist/ ships), so compose
   # could not build and the service never deployed.
   binariesImage = "ghcr.io/diegonmarcos/${buildJson.name}-binaries:latest";
+
+  # nginx `listen 8080` in src/code/nginx.conf, inside the container's own
+  # network namespace. Not a host port, so it is not declared in build.json.
+  containerPort = 8080;
 in
 {
   services = {
@@ -23,8 +27,13 @@ in
       tmpfs = app.tmpfs or [ "/var/cache/nginx" "/var/run" ];
       # Tier-3 wg-only bind: data-driven IP from container.services.<self>.ip
       # (cloud-data-config-derive emits svc.<name>.ip per VM WG address).
+      # Host side is build.json ports.app (8084); the container side is the
+      # port nginx.conf listens on inside this bridge-networked container
+      # (8080), the same split filebrowser uses (3015:8080). The host port was
+      # 8080 until 2026-10-14, which is matomo-hybrid's receiver port on the
+      # same host (network_mode: host), so each deploy evicted the other.
       ports = [
-        "${svc.wireguard-mesh.ip}:${toString buildJson.ports.app}:${toString app.port}"
+        "${svc.wireguard-mesh.ip}:${toString buildJson.ports.app}:${toString containerPort}"
       ];
       environment = {
         TZ = buildJson.timezone or "Europe/Madrid";
