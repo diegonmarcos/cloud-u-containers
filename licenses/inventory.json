@@ -59,7 +59,8 @@
    "MIT-0": 2,
    "(MIT OR GPL-3.0-or-later)": 1,
    "(MPL-2.0 OR Apache-2.0)": 1,
-   "BSD-2-Clause": 1
+   "BSD-2-Clause": 1,
+   "MIT OR Apache-2.0": 1
   },
   "pypi": {
    "Apache-2.0": 33,
@@ -5250,6 +5251,17 @@
    "licence_source": "registry.npmjs.org latest (1.4.3)",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)",
    "within_upstream_module": "cloud-webmail"
+  },
+  "npm:wrangler": {
+   "kind": "npm",
+   "declared_in": [
+    "infra-api_cloud-infra-mcp/src/code/package.json"
+   ],
+   "version": "4.144.0",
+   "scope": "shipped",
+   "licence": "MIT OR Apache-2.0",
+   "licence_source": "registry.npmjs.org latest (4.151.0)",
+   "transitive": "not resolved (needs a package-manager resolution; see script docstring)"
   },
   "npm:yaml": {
    "kind": "npm",
