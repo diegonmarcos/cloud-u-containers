@@ -1,0 +1,55 @@
+{
+  "name": "cloudflared",
+  "description": "Cloudflare Tunnel connector (remotely-managed tunnel 'fleet-edge') — the network half of the Cloudflare One (Zero Trust) edge. Outbound-only: no inbound port is opened anywhere. Hostnames, Access apps and ingress rules are declared in cloud-infra c_vps/ba-clo_cloudflare (terraform.json .zero_trust + zero-trust.tf); this container only carries the connector. Origins are reached over the WireGuard mesh (10.0.0.0/24), so one tunnel can front any VM. Design: cloud-infra a0_docs/eng-specs/cloudflare-zero-trust.md. Caddy + Authelia on gcp-proxy stay the fallback path and do not depend on this.",
+  "category": "infra-net",
+  "subcategory": "net",
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/cloudflared"
+  },
+  "compose": {
+    "custom": true
+  },
+  "containers": {
+    "app": {
+      "container_name": "cloudflared",
+      "image": "cloudflare/cloudflared:2026.9.3",
+      "_doc_image": "Pinned (released 2026-09-24), multi-arch (arm64 for oci-apps). The image ENTRYPOINT is `cloudflared --no-autoupdate`; bumps are deliberate, never a silent :latest pull.",
+      "command": [
+        "tunnel",
+        "--metrics", "127.0.0.1:20241",
+        "run"
+      ],
+      "_doc_command": "Remotely-managed tunnel: `run` with no name reads TUNNEL_TOKEN from the env (sops secret). Ingress lives in Cloudflare (terraform), not in a local config.yml. Metrics + /ready on 127.0.0.1:20241 only (host network, loopback bind).",
+      "public": false,
+      "network_mode": "host",
+      "_doc_network_mode": "host: origins are WG-mesh addresses (10.0.0.x) and the connector must reach them exactly as the host does. Nothing listens publicly — the only socket is the loopback metrics bind.",
+      "read_only": true,
+      "env_file": true,
+      "protocol": "none",
+      "depends_on": [],
+      "resources": {
+        "mem_limit": "256m",
+        "mem_reservation": "32m"
+      },
+      "healthcheck": null,
+      "monitoring": null
+    }
+  },
+  "monitoring": {
+    "tls_check": false,
+    "dns_check": false,
+    "endpoint_check": false,
+    "_doc": "No vhost of its own. Health = the tunnel's connector status in Cloudflare (cf-zero-trust workflow [zt:probe]) and http://127.0.0.1:20241/ready on oci-apps."
+  },
+  "build": {
+    "headers_enforced": true
+  },
+  "secrets": {
+    "escape_dollars": false,
+    "_doc": "TUNNEL_TOKEN — the remotely-managed tunnel token (base64 of account id + tunnel id + tunnel secret). Produced by terraform (output zt_tunnel_token) and written by the cf-zero-trust pilot runner straight into a sops file encrypted to the public age recipient; copied here verbatim as src/secrets.tunnel.yaml (a secret FRAGMENT). Never stored in plaintext anywhere.",
+    "required": [
+      "TUNNEL_TOKEN"
+    ]
+  }
+}
