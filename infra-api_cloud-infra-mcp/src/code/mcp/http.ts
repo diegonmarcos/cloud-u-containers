@@ -20,6 +20,7 @@ import { registerObservabilityExecTools } from "./tools/observability.js";
 // B) DevOps
 import { registerWorkflowTools } from "./tools/workflows.js";
 import { registerVpsOpsTools } from "./tools/vps-ops.js";
+import { registerCloudflareTools } from "./tools/cloudflare.js";
 import { registerDeliveryTools } from "./tools/delivery.js";
 import { registerOperationsTools } from "./tools/operations.js";
 import { registerVmFilesTools } from "./tools/vm-files.js";
@@ -47,6 +48,7 @@ function createMcpServer(): McpServer {
   // B) DevOps
   registerWorkflowTools(server);
   registerVpsOpsTools(server);
+  registerCloudflareTools(server);
   registerDeliveryTools(server);
   registerOperationsTools(server);
   registerVmFilesTools(server);

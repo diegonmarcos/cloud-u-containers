@@ -4,6 +4,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { execAsync } from "../../shared/libs/exec.js";
+import { cfRead, cliRead, scrub } from "./cloudflare.js";
 
 const log = (msg: string) => process.stderr.write(`[vps-ops] ${msg}\n`);
 
@@ -70,12 +71,15 @@ const PRESETS: Record<string, Record<string, string[]>> = {
     "auth": ["auth", "status"],
   },
   wrangler: {
-    "workers": ["d1", "list"],
+    // Run through cloudflare.ts cliRead: read-only classification + redaction.
+    // Writes go to devops.cf.wrangler_write (confirm + audit).
+    "auth": ["whoami"],
+    "version": ["--version"],
     "kv": ["kv", "namespace", "list"],
     "r2": ["r2", "bucket", "list"],
+    "d1": ["d1", "list"],
     "pages": ["pages", "project", "list"],
-    "tail": ["tail", "--format", "pretty"],
-    "auth": ["whoami"],
+    "queues": ["queues", "list"],
   },
   hcloud: {
     "servers": ["server", "list", "-o", "columns=id,name,status,server_type,datacenter,ipv4,ipv6"],
@@ -92,13 +96,16 @@ const PRESETS: Record<string, Record<string, string[]>> = {
     "tf-output": ["__terraform__", "output", "-json"],
   },
   cloudflare: {
-    // Cloudflare uses API, not CLI — we wrap curl calls
-    "zones": ["__cf_api__", "/zones?per_page=50", "result[].{name,status,plan.name}"],
-    "dns": ["__cf_api__", "/zones/${CF_ZONE_ID}/dns_records?per_page=100", "result[].{type,name,content,proxied}"],
-    "workers": ["__cf_api__", "/accounts/${CF_ACCOUNT_ID}/workers/scripts", "result[].{id,modified_on}"],
-    "firewall": ["__cf_api__", "/zones/${CF_ZONE_ID}/firewall/rules", "result[].{description,action,filter.expression}"],
-    "analytics": ["__cf_api__", "/zones/${CF_ZONE_ID}/analytics/dashboard?since=-1440", "result.totals"],
-    "auth": ["__cf_api__", "/user/tokens/verify", "result.status"],
+    // API presets are served by cloudflare.ts (obs.debug.cf_api) — auth from
+    // CF_API_TOKEN or CF_API_KEY+CF_API_EMAIL, headers never on argv, output redacted.
+    "zones": ["__cf_api__", "zones"],
+    "dns": ["__cf_api__", "dns"],
+    "workers": ["__cf_api__", "workers"],
+    "firewall": ["__cf_api__", "firewall"],
+    "auth": ["__cf_api__", "auth"],
+    "tunnels": ["__cf_api__", "tunnels"],
+    "access": ["__cf_api__", "access_apps"],
+    "scopes": ["__cf_api__", "scopes"],
     "tf-plan": ["__terraform__", "plan"],
     "tf-apply": ["__terraform__", "apply"],
     "tf-drift": ["__terraform__", "plan", "-detailed-exitcode"],
@@ -120,31 +127,6 @@ const TF_DIRS: Record<string, string> = {
   cloudflare: "b_infra/terraform/cloudflare",
   hcloud: "b_infra/terraform/hetzner",
 };
-
-async function runCloudflareApi(path: string, jqFilter?: string): Promise<string> {
-  const token = process.env.CF_API_TOKEN ?? process.env.CLOUDFLARE_API_TOKEN ?? "";
-  if (!token) return "CF_API_TOKEN not set. Export it or add to .secrets.";
-
-  // Expand env vars in path
-  const expandedPath = path
-    .replace("${CF_ZONE_ID}", process.env.CF_ZONE_ID ?? "")
-    .replace("${CF_ACCOUNT_ID}", process.env.CF_ACCOUNT_ID ?? "");
-
-  const url = `https://api.cloudflare.com/client/v4${expandedPath}`;
-  const curlArgs = ["-sf", "--max-time", "10", "-H", `Authorization: Bearer ${token}`, "-H", "Content-Type: application/json", url];
-
-  const r = await execAsync("curl", curlArgs, { timeout: 15_000 });
-  if (!r.ok) return `API call failed: ${r.stderr.trim()}`;
-
-  if (jqFilter) {
-    const jq = await execAsync("bash", ["-c", `echo '${r.stdout.replace(/'/g, "'\\''")}' | jq '.${jqFilter}'`], { timeout: 5_000 });
-    return jq.ok ? jq.stdout.trim() : r.stdout.trim();
-  }
-
-  // Pretty-print JSON
-  const jq = await execAsync("bash", ["-c", `echo '${r.stdout.replace(/'/g, "'\\''")}' | jq '.'`], { timeout: 5_000 });
-  return jq.ok ? jq.stdout.trim() : r.stdout.trim();
-}
 
 // ──────────────────────────────────────────────────────────────────────────────
 // GENERIC HANDLER
@@ -249,7 +231,7 @@ async function handleVpsCommand(provider: string, command: string): Promise<stri
     sections.push("═".repeat(50));
     if (presets) {
       for (const [name, args] of Object.entries(presets)) {
-        const preview = args[0] === "__cf_api__" ? `API: ${args[1]}` : args.join(" ").slice(0, 60);
+        const preview = args[0] === "__cf_api__" ? `API preset: ${args[1]}` : args.join(" ").slice(0, 60);
         sections.push(`  ${name.padEnd(15)} ${preview}`);
       }
     }
@@ -263,7 +245,11 @@ async function handleVpsCommand(provider: string, command: string): Promise<stri
 
     // Cloudflare API special handling
     if (args[0] === "__cf_api__") {
-      return runCloudflareApi(args[1], args[2]);
+      return cfRead({ preset: args[1] });
+    }
+
+    if (provider === "wrangler") {
+      return cliRead("wrangler", args.map((a) => (/\s/.test(a) ? `'${a}'` : a)).join(" "));
     }
 
     // Terraform special handling
@@ -288,7 +274,7 @@ async function handleVpsCommand(provider: string, command: string): Promise<stri
 
     sections.push(`${provider.toUpperCase()} → ${command}`);
     sections.push("─".repeat(50));
-    sections.push(await runCli(provider === "cloudflare" ? "curl" : provider, expandedArgs));
+    sections.push(await runCli(provider, expandedArgs));
     return sections.join("\n");
   }
 
@@ -299,8 +285,10 @@ async function handleVpsCommand(provider: string, command: string): Promise<stri
   sections.push("─".repeat(50));
 
   if (provider === "cloudflare") {
-    // For raw cloudflare, treat as API path
-    sections.push(await runCloudflareApi(cleanArgs[0], cleanArgs[1]));
+    // Raw cloudflare = a GET API path (validated, read-only). Writes: devops.cf.api_write.
+    return scrub(await cfRead({ path: cleanArgs[0], full: true }));
+  } else if (provider === "wrangler") {
+    return cliRead("wrangler", command);
   } else {
     sections.push(await runCli(provider, cleanArgs));
   }
@@ -411,9 +399,9 @@ export function registerVpsOpsTools(server: McpServer): void {
     { name: "obs.debug.vps_gcloud", cli: "gcloud", desc: "Google Cloud CLI proxy — instances, disks, billing, firewall, IAM" },
     { name: "obs.debug.vps_oci", cli: "oci", desc: "Oracle Cloud CLI proxy — instances, volumes, VCN, budgets, limits" },
     { name: "obs.debug.vps_gh", cli: "gh", desc: "GitHub CLI proxy — repos, issues, PRs, runs, workflows, secrets" },
-    { name: "obs.debug.vps_wrangler", cli: "wrangler", desc: "Cloudflare Wrangler CLI proxy — workers, KV, R2, pages" },
+    { name: "obs.debug.vps_wrangler", cli: "wrangler", desc: "Cloudflare Wrangler CLI proxy, READ-ONLY — whoami, KV, R2, D1, pages, queues (writes: devops.cf.wrangler_write)" },
     { name: "obs.debug.vps_hetzner", cli: "hcloud", desc: "Hetzner Cloud CLI proxy — servers, volumes, firewalls, networks" },
-    { name: "obs.debug.vps_cloudflare", cli: "cloudflare", desc: "Cloudflare API proxy — zones, DNS, workers, firewall, analytics, tf-*" },
+    { name: "obs.debug.vps_cloudflare", cli: "cloudflare", desc: "Cloudflare API proxy, READ-ONLY — zones, DNS, workers, firewall, tunnels, access, scopes, tf-* (full Zero Trust surface: obs.debug.cf_api)" },
     { name: "obs.debug.vps_ghcr", cli: "ghcr", desc: "GitHub Container Registry — list images, tags, auth" },
   ];
 

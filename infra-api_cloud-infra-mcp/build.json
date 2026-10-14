@@ -14,7 +14,8 @@
     "arch": "arm64",
     "native_build": {
       "type": "image-wrapper",
-      "cmd": "pip install --break-system-packages --no-cache-dir oci-cli awscli && npm ci --omit=dev && npm install tsx",
+      "_cmd_comment": "cloudflared FIRST: upstream static release 2026.9.2, sha256 pinned per arch (arm64 is what ships; amd64 only so an x86 builder fails closed instead of fetching an unverified binary). wrangler is NOT fetched here: it is an exact-pinned dependency in code/package.json, so npm ci installs it with the lockfile's sha512 integrity (workerd/esbuild arm64 optional deps included); the trailing --version proves it runs on the target arch. Both back the Cloudflare bridge tools in mcp/tools/cloudflare.ts.",
+      "cmd": "A=$(dpkg --print-architecture) && case $A in arm64) S=39f23e7c55ce2c2e502a0b3e070b978bf69135b19246b5b7581dadb94cf2144d;; amd64) S=ea2c9bb2d5017a796b64bf36e605d727accf76a5500014bb12952ce11ae1f932;; *) echo \"cloudflared: unsupported arch $A\"; exit 1;; esac && curl -fsSL -o /usr/local/bin/cloudflared https://github.com/cloudflare/cloudflared/releases/download/2026.9.2/cloudflared-linux-$A && echo \"$S  /usr/local/bin/cloudflared\" | sha256sum -c - && chmod 0755 /usr/local/bin/cloudflared && cloudflared --version && pip install --break-system-packages --no-cache-dir oci-cli awscli && npm ci --omit=dev && npm install tsx && ./node_modules/.bin/wrangler --version",
       "entrypoint": "./entrypoint.sh",
       "base_image": "node:22-bookworm-slim",
       "apt": "ca-certificates openssh-client iputils-ping curl git python3 python3-pip build-essential dnsutils openssl netcat-openbsd",
@@ -91,7 +92,7 @@
   "mcp": {
     "transport": "streamable-http",
     "endpoint_path": "/mcp",
-    "tools_count": 109,
+    "tools_count": 116,
     "resources_count": 0,
     "prompts_count": 0,
     "display_name": "C3 Infra MCP",
@@ -124,6 +125,10 @@
     },
     "inspect-redact": {
       "cmd": "node --experimental-strip-types test-inspect-redact.mjs",
+      "cwd": "src/code"
+    },
+    "cf-bridge": {
+      "cmd": "node --experimental-strip-types test-cf-bridge.mjs",
       "cwd": "src/code"
     }
   }
