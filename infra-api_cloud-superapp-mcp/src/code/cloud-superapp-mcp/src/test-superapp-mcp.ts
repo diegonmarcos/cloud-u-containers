@@ -9,7 +9,7 @@
  */
 import { strict as assert } from "node:assert";
 import { execFileSync } from "node:child_process";
-import { PORT_DEVCONTROL, run, scan, sq } from "../../lib-mcp/src/device.js";
+import { PORT_DEVCONTROL, PORT_LAST, parseGatewayApps, run, scan, sq, urlOf } from "../../lib-mcp/src/device.js";
 import { ROUTE_RE, label, resolve } from "../../lib-mcp/src/tools.js";
 
 let n = 0;
@@ -79,6 +79,19 @@ assert.throws(() => resolve(fleet, "39000"), /nothing on port/);
 assert.throws(() => resolve([], "mail"), /no app is serving/);
 ok("misses name what is actually live");
 
+// ── #ipc the gateway: one door per phone ─────────────────────────────────────
+const gw = parseGatewayApps(JSON.stringify({ apps: [{ id: "mail", pkg: "com.diegonmarcos.comms.mail", door: true }, { id: "x" }] }));
+assert.deepEqual(gw, [{ pkg: "com.diegonmarcos.comms.mail", port: PORT_DEVCONTROL, gateway: true }]);
+ok("the gateway's /api/fleet/apps becomes one App per member, all on the gateway port");
+assert.equal(parseGatewayApps("not found — see /api/docs\n"), null);
+assert.equal(parseGatewayApps(""), null);
+ok("a phone with no gateway (old SuperApp, or none) falls back to the port sweep");
+assert.equal(urlOf(gw![0], "system/info", "n=1"), `http://127.0.0.1:${PORT_DEVCONTROL}/app/com.diegonmarcos.comms.mail/api/system/info?n=1`);
+assert.equal(urlOf({ pkg: "com.x", port: 38154 }, "/docs"), "http://127.0.0.1:38154/api/docs");
+ok("a gateway app is asked at /app/<pkg>/api/<op>; a pre-gateway app on its own port");
+assert.equal(resolve(gw!, "mail").pkg, "com.diegonmarcos.comms.mail");
+ok("gateway apps resolve by name like port-swept ones");
+
 // ── live, only if the phone answers ──────────────────────────────────────────
 const reachable = await run("echo up").then((s) => s.trim() === "up").catch(() => false);
 if (!reachable) {
@@ -88,7 +101,7 @@ if (!reachable) {
   const live = await scan();
   assert.ok(live.length > 0, "no app answered /api/system/ping");
   ok(`scan found ${live.length}: ${live.map((a) => `${label(a)}@${a.port}`).join(", ")}`);
-  assert.ok(live.every((a) => a.port >= PORT_DEVCONTROL && a.port <= 38139));
+  assert.ok(live.every((a) => a.port >= PORT_DEVCONTROL && a.port <= PORT_LAST));
   ok("every discovered port is in range");
   process.stdout.write(`\n${n} checks passed (live)\n`);
 }

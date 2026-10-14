@@ -12,7 +12,7 @@
  * be the thing that puts those routes on a network.
  */
 import { createServer } from "node:http";
-import { get, scan } from "../../lib-mcp/src/device.js";
+import { type App, call, scan } from "../../lib-mcp/src/device.js";
 import { loadModules, type AppModule } from "../../lib-mcp/src/registry.js";
 import { CONTRACT, path as routePath } from "../../lib-api/src/contract.js";
 
@@ -26,14 +26,15 @@ function pkgOf(q: string): string {
   return m?.pkg || q;
 }
 
-async function portOf(q: string): Promise<number> {
+/** #ipc the live app for [q]: through the SuperApp gateway on a current phone, its own port on an older one. */
+async function appOf(q: string): Promise<App> {
   const wanted = pkgOf(q);
   const live = await scan();
   const hit =
     live.find((a) => a.pkg === wanted) ??
     live.find((a) => a.pkg.toLowerCase().includes(wanted.toLowerCase()));
   if (!hit) throw new Error(`no live app matches "${q}" — live: ${live.map((a) => a.pkg || a.port).join(", ")}`);
-  return hit.port;
+  return hit;
 }
 
 const server = createServer(async (req, res) => {
@@ -63,7 +64,7 @@ const server = createServer(async (req, res) => {
       const route = rest.join("/");
       if (!ROUTE_RE.test(route)) return send(400, `bad route "${route}"`);
       const q = Object.fromEntries(url.searchParams);
-      return send(200, await get(await portOf(app), route, q, 30));
+      return send(200, await call(await appOf(app), route, q, 30));
     }
     send(404, "GET /apps | /contract | /modules | /call/<app>/<group>/<op>");
   } catch (e) {

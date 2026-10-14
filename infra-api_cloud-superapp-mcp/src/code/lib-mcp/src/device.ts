@@ -1,9 +1,15 @@
 /**
  * Transport to the phone's on-device debug API.
  *
- * Every constellation app links libs:core, which pulls in libs:devtools and
- * starts AppDebugServer on the first free loopback port in 38090..38139
- * (38080 is the older app-owned DevControlServer in SuperApp and cloud-nav).
+ * #ipc (cloud-u-android a0_docs/eng-specs/fleet-ipc.md) ONE DOOR PER PHONE: the
+ * SuperApp's DevControlServer on 127.0.0.1:38080 is the only fleet app that
+ * listens. It lists what is behind it at /api/fleet/apps and forwards
+ * /app/<pkg>/api/<op> to that app over Android IPC (signature-checked, waking
+ * the app), with the one fleet token. Older phones still run builds where
+ * every app bound its own loopback port in 38090..38389: when the gateway does
+ * not answer /api/fleet/apps, scan() sweeps those ports as before, and each
+ * App says which way it is reached (`gateway`).
+ *
  * Those sockets bind 127.0.0.1, so nothing off-device can reach them — a
  * container on oci-apps never could. We go in the way a human already does:
  * `ssh phone` (nix-on-droid, 10.0.0.9:8024) and curl from inside.
@@ -43,8 +49,10 @@ export function fleetToken(): string {
 const TOKEN = fleetToken();
 
 export const PORT_DEVCONTROL = 38080;
+/** The pre-gateway per-app range (cloud-u-android 1_cicd/src/data/debug-ports.json), swept only
+ *  when the gateway does not answer: a phone whose SuperApp predates it. */
 export const PORT_FIRST = 38090;
-export const PORT_LAST = 38139;
+export const PORT_LAST = 38389;
 
 let goodHost: string | null = null;
 
@@ -113,7 +121,30 @@ export type App = {
    *  the package suffix. */
   pkg: string;
   port: number;
+  /** #ipc reached through the SuperApp gateway (port = PORT_DEVCONTROL), not its own port. */
+  gateway?: boolean;
 };
+
+/** The gateway's member list: one App per fleet member behind the door. Null when the
+ *  gateway does not answer (no SuperApp, or one from before the gateway). */
+export function parseGatewayApps(body: string): App[] | null {
+  try {
+    const o = JSON.parse(body);
+    if (!o || !Array.isArray(o.apps)) return null;
+    return o.apps
+      .filter((a: { pkg?: unknown }) => typeof a.pkg === "string" && a.pkg)
+      .map((a: { pkg: string }) => ({ pkg: a.pkg, port: PORT_DEVCONTROL, gateway: true }));
+  } catch {
+    return null;
+  }
+}
+
+/** /app/<pkg>/api/<path> on the gateway, or /api/<path> on the app's own legacy port. */
+export function urlOf(a: App, path: string, qs = ""): string {
+  const p = path.replace(/^\/+/, "");
+  const base = a.gateway ? `http://127.0.0.1:${PORT_DEVCONTROL}/app/${a.pkg}/api/${p}` : `http://127.0.0.1:${a.port}/api/${p}`;
+  return base + (qs ? `?${qs}` : "");
+}
 
 /**
  * One sweep of the port range. /api/system/ping is deliberately the OPEN
@@ -121,6 +152,8 @@ export type App = {
  * it answers `pong <applicationId>`.
  */
 export async function scan(): Promise<App[]> {
+  const viaGateway = parseGatewayApps(await get(PORT_DEVCONTROL, "fleet/apps", {}, 8).catch(() => ""));
+  if (viaGateway && viaGateway.length) return viaGateway;
   const script = `
 for p in ${PORT_DEVCONTROL} $(seq ${PORT_FIRST} ${PORT_LAST}); do
   r=$(curl -s -m 1 "http://127.0.0.1:$p/api/system/ping" 2>/dev/null) || continue
@@ -137,21 +170,38 @@ exit 0
   return apps;
 }
 
-/**
- * GET /api/<path> on one app's port. `path` and every query value are escaped
- * into the script; the caller has already validated `path` against the
- * route-shape allowlist in tools.ts.
- */
+/** GET /api/<path> on one port (the gateway's own routes, or a pre-gateway app's). */
 export async function get(
   port: number,
   path: string,
   query: Record<string, string> = {},
   timeoutSec = 20,
 ): Promise<string> {
-  const qs = Object.entries(query)
+  return fetchUrl(urlOf({ pkg: "", port }, path, qs(query)), timeoutSec);
+}
+
+/** #ipc one app's route, through the gateway when that is how it was found. */
+export async function call(
+  a: App,
+  path: string,
+  query: Record<string, string> = {},
+  timeoutSec = 20,
+): Promise<string> {
+  return fetchUrl(urlOf(a, path, qs(query)), timeoutSec);
+}
+
+function qs(query: Record<string, string>): string {
+  return Object.entries(query)
     .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
     .join("&");
-  const url = `http://127.0.0.1:${port}/api/${path.replace(/^\/+/, "")}${qs ? `?${qs}` : ""}`;
+}
+
+/**
+ * curl one loopback URL on the phone. `path` and every query value are escaped
+ * into the script; the caller has already validated `path` against the
+ * route-shape allowlist in tools.ts.
+ */
+async function fetchUrl(url: string, timeoutSec: number): Promise<string> {
   const auth = TOKEN ? `-H "Authorization: Bearer $T" ` : "";
   const script = `
 T=${sq(TOKEN)}

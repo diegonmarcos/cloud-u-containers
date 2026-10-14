@@ -31,22 +31,35 @@ boot automation is the standing TODO that would make this permanent.
 
 ## Where the API actually lives
 
-Not here. `ab_cloud-libs-shared/libs/devtools/AppDebugServer.kt` is the API:
-every app that links `libs:core` binds a loopback port (38090-38139; 38080 is
-the older DevControlServer in SuperApp and cloud-nav) and serves the contract
-— `system/ping`, `system/info`, `diagnostics/logcat`, `diagnostics/crashes`,
-`fleet/peers`, `fleet/wake` — plus anything it registers through
-`AppDebugServer.route("<group>") { op, query -> ... }`, self-catalogued into
-`/api/docs`.
+Not here. `ab_cloud-libs-shared/libs/devtools/AppDebugServer.kt` (cloud-u-android) is the
+route table every app serves: `system/ping`, `system/info`, `diagnostics/logcat`,
+`diagnostics/crashes`, `fleet/peers`, `fleet/wake`, `net/dns`, `net/resolve`, plus anything it
+registers through `AppDebugServer.route("<group>") { op, query -> ... }`, self-catalogued into
+its `docs`.
 
-`src/code/lib-api/src/contract.ts` is a **mirror** of that, so the two faces here agree
+**One door per phone** (cloud-u-android `a0_docs/eng-specs/fleet-ipc.md`). No app binds a port
+of its own any more. The SuperApp's DevControlServer, `127.0.0.1:38080`, is the only fleet
+listener:
+
+- `GET /api/fleet/apps` lists the apps behind it;
+- `GET|POST /app/<pkg>/api/<op>` forwards to that app over Android IPC (a signature-guarded
+  provider call that wakes the app);
+- one fleet token (`SUPERAPP_FLEET_TOKEN`) on every gateway route.
+
+`scan()` asks the gateway first. Only a phone whose SuperApp predates the gateway is swept the
+old way, over each app's own port in 38090..38389, where a pre-gateway build still listens. Each
+`App` records which way it was found (`gateway`), and `call()` asks it the same way. With no
+SuperApp on the phone, remote access to the other apps stops; on the phone the apps keep talking
+to each other over IPC.
+
+`src/code/lib-api/src/contract.ts` is a **mirror** of the route table, so the two faces here agree
 on what an app must answer without either hardcoding it. A mirror can drift;
 `superapp_docs` asks the device and is always the truth. Prefer it whenever
 the two could disagree.
 
 Those sockets bind 127.0.0.1, so nothing off-device reaches them. Both faces
 go in the way a human does: `ssh phone`, curl from inside. One remote script
-per call, because a port sweep is 60 probes and 60 ssh handshakes is a minute.
+per call.
 
 ## One process, not twenty
 

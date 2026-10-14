@@ -15,7 +15,7 @@
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { App, PORT_DEVCONTROL, get, scan } from "./device.js";
+import { App, PORT_DEVCONTROL, call, get, scan } from "./device.js";
 import type { AppModule } from "./registry.js";
 
 /** /api/<group>/<op>. No dots, no %, no scheme — a route name, not a URL. The
@@ -87,7 +87,7 @@ export function registerTools(server: McpServer, appModules: AppModule[] = []): 
 
   server.tool(
     "superapp_apps",
-    "List every constellation app currently serving the on-device debug API on the phone: applicationId, bound port, label, version and device. Start here — the other tools take one of these as `app`.",
+    "List every constellation app behind the phone's debug API: through the SuperApp gateway (one port, every member reached over Android IPC, woken on demand) or, on an older phone, each app's own loopback port. applicationId, door, label, version and device. Start here — the other tools take one of these as `app`.",
     {
       refresh: z.boolean().optional().describe("Re-scan the port range instead of using the cached sweep"),
     },
@@ -96,8 +96,8 @@ export function registerTools(server: McpServer, appModules: AppModule[] = []): 
       if (!list.length) return text("no app is serving the debug API right now");
       const rows = await Promise.all(
         list.map(async (a) => {
-          const info = await get(a.port, "system/info", {}, 8).catch(() => "");
-          return { port: a.port, name: label(a), info: info.trim() || "(needs SUPERAPP_FLEET_TOKEN)" };
+          const info = await call(a, "system/info", {}, 8).catch(() => "");
+          return { port: a.gateway ? `gateway :${a.port}` : a.port, name: label(a), info: info.trim() || "(needs SUPERAPP_FLEET_TOKEN)" };
         }),
       );
       return text(rows.map((r) => `${r.name} @ ${r.port}\n  ${r.info}`).join("\n\n"));
@@ -114,7 +114,7 @@ export function registerTools(server: McpServer, appModules: AppModule[] = []): 
     async ({ app, lines }) => {
       const a = resolve(await apps(), app);
       const q: Record<string, string> = lines ? { n: String(lines) } : {};
-      return text(await get(a.port, "diagnostics/logcat", q, 30));
+      return text(await call(a, "diagnostics/logcat", q, 30));
     },
   );
 
@@ -122,14 +122,14 @@ export function registerTools(server: McpServer, appModules: AppModule[] = []): 
     "superapp_crashes",
     "Stored crash reports for one app, newest first, as written by AppCrashLogger.",
     { app: z.string().describe("applicationId, a substring of it, or a port") },
-    async ({ app }) => text(await get((resolve(await apps(), app)).port, "diagnostics/crashes")),
+    async ({ app }) => text(await call(resolve(await apps(), app), "diagnostics/crashes")),
   );
 
   server.tool(
     "superapp_docs",
     "One app's route catalog: the universal endpoints plus any group the app registered with AppDebugServer.route(). Read this before superapp_call to learn what that app actually serves.",
     { app: z.string().describe("applicationId, a substring of it, or a port") },
-    async ({ app }) => text(await get((resolve(await apps(), app)).port, "docs")),
+    async ({ app }) => text(await call(resolve(await apps(), app), "docs")),
   );
 
   server.tool(
@@ -141,7 +141,7 @@ export function registerTools(server: McpServer, appModules: AppModule[] = []): 
     },
     async ({ app, target }) => {
       if (!/^[A-Za-z0-9_.]+$/.test(target)) throw new Error(`not an applicationId: ${target}`);
-      return text(await get((resolve(await apps(), app)).port, "fleet/wake", { pkg: target }));
+      return text(await call(resolve(await apps(), app), "fleet/wake", { pkg: target }));
     },
   );
 
@@ -157,7 +157,7 @@ export function registerTools(server: McpServer, appModules: AppModule[] = []): 
       if (!ROUTE_RE.test(path)) {
         throw new Error(`bad route "${path}" — expected /api/<group>/<op>, letters, digits, _ and - only`);
       }
-      return text(await get((resolve(await apps(), app)).port, path, params ?? {}, 30));
+      return text(await call(resolve(await apps(), app), path, params ?? {}, 30));
     },
   );
 
