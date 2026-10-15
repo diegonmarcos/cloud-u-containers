@@ -10,7 +10,9 @@
 #
 # Access policy (url-scheme.md): every MCP is PUBLIC with TOKEN auth — reachable
 # off-mesh only with a valid Authelia-issued bearer token (WG peers pass
-# straight through); never mesh-only. Encoded once here, below.
+# straight through). One exception: an endpoint whose build.json proxy sets
+# mesh_only:true (cloud-vault-mcp — it hands out vault material) is listed with
+# auth "mesh", public false: WG peers only, no bearer door. Encoded once here.
 #
 # Usage: gen-mcp-manifest.sh [--check]
 set -euo pipefail
@@ -22,7 +24,7 @@ for f in */build.json; do
   case "$f" in z_archive/*|_*) continue ;; esac
   jq -c --arg dir "$(dirname "$f")" '
     def ep($n; $p; $src): select($p.streaming == true and ($p.base_path // "") != "" and $p.parent_domain == "mcp.diegonmarcos.com")
-      | {name: $n, folder: $dir, base_path: $p.base_path, parent_domain: $p.parent_domain, source: $src};
+      | {name: $n, folder: $dir, base_path: $p.base_path, parent_domain: $p.parent_domain, source: $src, mesh_only: ($p.mesh_only == true)};
     ( ep(.name; (.proxy.primary // {}); "proxy.primary") ),
     ( .name as $svc | (.containers // {}) | to_entries[]
         | ep(($svc + (if .key=="app" then "" else "-" + .key end)); (.value.proxy // {}); "containers." + .key) )
@@ -35,7 +37,7 @@ done | jq -s '
     _doc: "GENERATED. Declared MCP endpoints on the MCP hub, from each solution build.json. Do not edit; change the build.json and re-run the generator.",
     schema: "mcp-manifest/v1",
     access: "token",
-    mcps: ($eps | map(. + {auth: "token", public: true}) | sort_by(.base_path))
+    mcps: ($eps | map((if .mesh_only then {auth: "mesh", public: false} else {auth: "token", public: true} end) as $a | del(.mesh_only) + $a) | sort_by(.base_path))
   }' > "$tmp"
 if [ "${1:-}" = "--check" ]; then
   cmp -s "$tmp" "$OUT" || { echo "mcp-manifest.json is stale; run $0" >&2; exit 1; }

@@ -32,7 +32,9 @@
       "type": "path",
       "parent_domain": "mcp.diegonmarcos.com",
       "base_path": "/cloud-vault-mcp",
-      "wg_only": true
+      "wg_only": true,
+      "mesh_only": true,
+      "_doc_mesh_only": "mesh_only:true keeps this endpoint WG-only with NO bearer door: gen-mcp-manifest.sh lists it with auth mesh, so the caddy derive does not set bearer_auth. Every other MCP stays token-public."
     },
     "app_hub": false
   },

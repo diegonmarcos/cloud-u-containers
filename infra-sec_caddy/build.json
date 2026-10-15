@@ -258,10 +258,11 @@
           "comment": "All open as before; mails. is the new JMAP config-URL host."
         },
         "NETWORK": {
-          "wg_only": [
+          "wg_only": [],
+          "pending_wg_only": [
             "vpn.diegonmarcos.com"
           ],
-          "comment": "vpn. is mesh-only."
+          "comment": "vpn. stays at its previous exposure (wg_only:false, wstunnel path-prefix gated) until the owner confirms they do not join the mesh via WireGuard-over-443 on vpn.; making it wg_only could lock them out. test-url-scheme.sh skips the vpn wg_only check with a TODO."
         }
       },
       "extra_routes": [

@@ -2382,7 +2382,9 @@
           "type": "path",
           "parent_domain": "mcp.diegonmarcos.com",
           "base_path": "/cloud-vault-mcp",
-          "wg_only": true
+          "wg_only": true,
+          "mesh_only": true,
+          "_doc_mesh_only": "mesh_only:true keeps this endpoint WG-only with NO bearer door: gen-mcp-manifest.sh lists it with auth mesh, so the caddy derive does not set bearer_auth. Every other MCP stays token-public."
         },
         "app_hub": false
       },
@@ -3947,7 +3949,7 @@
       },
       "proxy": {
         "primary": {
-          "wg_only": true,
+          "wg_only": false,
           "domain": "vpn.diegonmarcos.com",
           "auth": "none",
           "_doc": "auth=none required: wstunnel client cannot do 2FA cookies. Scanner defence is enforced by the wstunnel server itself via --http-upgrade-path-prefix ${WSTUNNEL_PATH_PREFIX} — Caddy passes WebSocket upgrades through natively (Caddy v2 reverse_proxy handles WS by default)."
@@ -5900,10 +5902,11 @@
               "comment": "All open as before; mails. is the new JMAP config-URL host."
             },
             "NETWORK": {
-              "wg_only": [
+              "wg_only": [],
+              "pending_wg_only": [
                 "vpn.diegonmarcos.com"
               ],
-              "comment": "vpn. is mesh-only."
+              "comment": "vpn. stays at its previous exposure (wg_only:false, wstunnel path-prefix gated) until the owner confirms they do not join the mesh via WireGuard-over-443 on vpn.; making it wg_only could lock them out. test-url-scheme.sh skips the vpn wg_only check with a TODO."
             }
           },
           "extra_routes": [

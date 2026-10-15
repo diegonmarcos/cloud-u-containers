@@ -64,8 +64,8 @@
       "base_path": "/cloud-vault-mcp",
       "parent_domain": "mcp.diegonmarcos.com",
       "source": "proxy.primary",
-      "auth": "token",
-      "public": true
+      "auth": "mesh",
+      "public": false
     },
     {
       "name": "google-personal-mcp",
