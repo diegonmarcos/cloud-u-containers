@@ -695,10 +695,10 @@ handle_path /cloud-cgc-pvt-mcp/* {
   # OIDC PUBLIC MACHINE ENDPOINTS (token/discovery/JWKS only; portal 403s)
   # ════════════════════════════════════════════════════════════
 
-# oidc-public: machine endpoints only; portal stays mesh-only
+# oidc-public: wg_only:false — whole IdP host open (owner decision 2026-10-15)
 auth.diegonmarcos.com {
 import security
-handle /.well-known/openid-configuration {
+handle  {
   reverse_proxy https://10.1.0.2:443 {
     header_up Host auth.diegonmarcos.com
     header_up X-Real-IP {http.request.remote.host}
@@ -708,29 +708,6 @@ handle /.well-known/openid-configuration {
     }
   }
 }
-handle /api/oidc/token {
-  reverse_proxy https://10.1.0.2:443 {
-    header_up Host auth.diegonmarcos.com
-    header_up X-Real-IP {http.request.remote.host}
-    transport http {
-      tls
-      tls_server_name auth.diegonmarcos.com
-    }
-  }
-}
-handle /jwks.json {
-  reverse_proxy https://10.1.0.2:443 {
-    header_up Host auth.diegonmarcos.com
-    header_up X-Real-IP {http.request.remote.host}
-    transport http {
-      tls
-      tls_server_name auth.diegonmarcos.com
-    }
-  }
-}
-  handle {
-    respond "Forbidden" 403
-  }
     handle_errors {
       @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
       handle @backend_error {

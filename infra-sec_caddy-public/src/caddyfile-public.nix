@@ -397,6 +397,12 @@ ${bearer}
   # Deliberately NOT `fwd` (plain HTTP at the hub's TLS port, untested) and
   # deliberately not the portal-wide mkSubdomainRoute: explicit paths only,
   # fail closed.
+  # OWNER DECISION (2026-10-15): auth.diegonmarcos.com must be FULLY open to
+  # the internet — the Authelia login page reachable off-mesh. Declared in data:
+  # when authelia's proxy.primary.wg_only is false (→ oidc_public.wg_only=false)
+  # this site proxies ALL paths to Authelia via the hub (security / request
+  # limits / crowdsec / TLS kept via the sec snippet); the explicit-paths + 403 shape
+  # above applies only while wg_only is true/absent (fail closed).
   # oidc_public.upstream carries the hub-auth-vhost mesh endpoint (data-driven;
   # see the derive comment for WHY it is the hub over wg0, not authelia:9091).
   oidcPub = caddyPublic.oidc_public or null;
@@ -404,6 +410,7 @@ ${bearer}
     if oidcPub == null then "" else
     let
       oidcUpstream = oidcPub.upstream or "https://10.0.0.1:8443";
+      fullyOpen = (oidcPub.wg_only or true) == false;
       mkOidcHandle = p: ''
       handle ${p} {
         reverse_proxy ${oidcUpstream} {
@@ -416,7 +423,13 @@ ${bearer}
         }
       }'';
       handles = lib.concatMapStringsSep "\n" mkOidcHandle (oidcPub.paths or []);
-    in ''
+    in if fullyOpen then ''
+    # oidc-public: wg_only:false — whole IdP host open (owner decision 2026-10-15)
+    ${oidcPub.domain} {
+    ${sec}
+    ${mkOidcHandle ""}
+      ${handleErrors}
+    }'' else ''
     # oidc-public: machine endpoints only; portal stays mesh-only
     ${oidcPub.domain} {
     ${sec}
