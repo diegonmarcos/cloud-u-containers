@@ -16,6 +16,7 @@ import {
   containerPause,
   containerUnpause,
   containerExecCmd,
+  caddyCertRepair,
   logsSearch,
   logsMulti,
   dockerSystemDf,
@@ -24,6 +25,7 @@ import {
   pullUpVmFleet,
   pullUpCloudFleet,
 } from "../../shared/libs/docker.js";
+import { CONTAINER_RE } from "../../shared/libs/caddy-cert-repair.js";
 import {
   vmStart,
   vmStop,
@@ -511,6 +513,28 @@ export function registerOperationsTools(server: McpServer) {
         content: [{ type: "text", text: result.ok ? result.output : `Error: ${result.output}` }],
         isError: !result.ok,
       };
+    }
+  );
+
+  // ── Caddy cert repair (1 tool) ──
+  // 2026-10-15: caddy on gcp-proxy crash-looped on "tls: private key does not match
+  // public key" (mesh-CA certs) after overlapping deploys. docker.exec fails while
+  // caddy restarts, so this works on the HOST side of the /data mount. Moves — never
+  // deletes — and every run is audit-logged. Logic + parsers: shared/libs/caddy-cert-repair.ts.
+  server.tool(
+    "devops.caddy.cert_repair",
+    "Repair a caddy restart loop caused by 'tls: private key does not match public key': resolves the container's /data mount on the host, checks every caddy/certificates/<issuer>/<name> .crt against its .key, moves ONLY mismatched dirs to /data/caddy/bad-cert-<name>-<ts> (all_mesh=true: the whole certificates/mesh dir), restarts the container, waits, then reports status, remaining mismatch log lines and the last startup error. dry_run (default true) changes nothing. Caddy re-issues the moved certs on start.",
+    {
+      vm: z.string().optional().describe("VM ID or SSH alias (default gcp-proxy)"),
+      container: z.string().regex(CONTAINER_RE).optional().describe("Caddy container name (default caddy)"),
+      dry_run: z.boolean().optional().describe("Report only: no move, no restart (default true)"),
+      all_mesh: z.boolean().optional().describe("Quarantine the whole certificates/mesh dir instead of only mismatched certs (default false)"),
+    },
+    async ({ vm, container, dry_run, all_mesh }) => {
+      const name = container ?? "caddy";
+      validateContainerName(name);
+      const r = caddyCertRepair(vm ?? "gcp-proxy", name, dry_run ?? true, all_mesh ?? false);
+      return { content: [{ type: "text" as const, text: r.output }], isError: !r.ok };
     }
   );
 

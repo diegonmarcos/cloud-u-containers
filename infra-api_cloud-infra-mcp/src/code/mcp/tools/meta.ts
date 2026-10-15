@@ -21,7 +21,7 @@ import { BUILD_SCRIPT, SOLUTIONS_DIR, FRONT_DIR, CLOUD_DATA_DIR, resolveCloudDat
 import { audit } from "../../shared/libs/audit.js";
 import {
   containerTop, containerDiff, containerInspectFull, containerEvents,
-  containerPause, containerUnpause, containerExecCmd,
+  containerPause, containerUnpause, containerExecCmd, caddyCertRepair,
   logsSearch, logsMulti, dockerSystemDf, composeUpAll,
 } from "../../shared/libs/docker.js";
 import {
@@ -841,6 +841,7 @@ export function registerMetaDevops(server: McpServer): void {
     {
       method: z.enum([
         "build.all","build.backup","build.docker","build.secrets_status","build.service","build.ship",
+        "caddy.cert_repair",
         "container.restart","container.start","container.stop",
         "docker.compose_up","docker.compose_up_all","docker.control","docker.diff","docker.events",
         "docker.exec","docker.inspect","docker.pause","docker.ps","docker.system_df","docker.top","docker.unpause",
@@ -971,6 +972,7 @@ export function registerMetaDevops(server: McpServer): void {
           case "docker.pause": { validateContainerName(p.container); const r = containerPause(p.vm, p.container); return { content: [{ type: "text" as const, text: r.output }], isError: !r.ok }; }
           case "docker.unpause": { validateContainerName(p.container); const r = containerUnpause(p.vm, p.container); return { content: [{ type: "text" as const, text: r.output }], isError: !r.ok }; }
           case "docker.exec": { validateContainerName(p.container); const r = containerExecCmd(p.vm, p.container, p.command); return r.ok ? text(r.output) : errText(`Error: ${r.output}`); }
+          case "caddy.cert_repair": { const c = p.container ?? "caddy"; validateContainerName(c); const r = caddyCertRepair(p.vm ?? "gcp-proxy", c, p.dry_run ?? true, p.all_mesh ?? false); return r.ok ? text(r.output) : errText(r.output); }
           case "docker.system_df": { const r = dockerSystemDf(p.vm); return r.ok ? text(r.output) : errText(`Error: ${r.output}`); }
           // ── vm ──
           case "vm.start": return formatControl(vmStart(p.vm));

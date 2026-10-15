@@ -92,7 +92,7 @@
   "mcp": {
     "transport": "streamable-http",
     "endpoint_path": "/mcp",
-    "tools_count": 116,
+    "tools_count": 117,
     "resources_count": 0,
     "prompts_count": 0,
     "display_name": "C3 Infra MCP",
@@ -125,6 +125,14 @@
     },
     "inspect-redact": {
       "cmd": "node --experimental-strip-types test-inspect-redact.mjs",
+      "cwd": "src/code"
+    },
+    "caddy-cert-repair": {
+      "cmd": "node --experimental-strip-types test-caddy-cert-repair.mjs",
+      "cwd": "src/code"
+    },
+    "caddy-cert-repair": {
+      "cmd": "node --experimental-strip-types test-caddy-cert-repair.mjs",
       "cwd": "src/code"
     },
     "cf-bridge": {
