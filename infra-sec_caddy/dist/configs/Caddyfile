@@ -16322,6 +16322,120 @@ file_server
     }
   }
 
+  c3-cloud-cgc-pvt-mcp.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:3107 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
+  c3-cloud-vault-mcp.app {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    respond @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:3111 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
+        # backend error (upstream down/unreachable) must NOT masquerade as 200. A
+        # plain `file_server` serves the error page with 200, a FALSE GREEN that
+        # hides genuinely-down services behind the edge. Serve the page but
+        # PRESERVE the real upstream status and tag it for probes.
+        header X-Edge-Fallback "1"
+        header X-Edge-Upstream-Status "{err.status_code}"
+        root * /srv
+        rewrite * /error.html
+        file_server {
+          status {err.status_code}
+        }
+      }
+    }
+  }
+
   cloud-chat.app {
   bind 0.0.0.0 10.0.0.1
     tls {
