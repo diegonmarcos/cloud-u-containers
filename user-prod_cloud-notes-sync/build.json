@@ -1,6 +1,7 @@
 {
+  "enabled": false,
   "name": "cloud-notes-sync",
-  "description": "Cloud Notes sync server: Yjs documents (Hocuspocus) and the HTTP delta API at notes-sync.diegonmarcos.com behind the edge gate (fleet Bearer or Authelia). Built by cloud-u-android ship-cloud-notes.yml (ghcr.io/diegonmarcos/cloud-notes-sync).",
+  "description": "DISABLED pending GHCR package visibility (owner action: make the upstream ghcr package public, then enabled:true). Cloud Notes sync server: Yjs documents (Hocuspocus) and the HTTP delta API at notes-sync.diegonmarcos.com behind the edge gate (fleet Bearer or Authelia). Built by cloud-u-android ship-cloud-notes.yml (ghcr.io/diegonmarcos/cloud-notes-sync).",
   "dns": "cloud-notes-sync.app",
   "category": "app",
   "timezone": "Europe/Madrid",
