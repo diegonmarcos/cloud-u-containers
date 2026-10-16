@@ -107,6 +107,30 @@ function mailboxIdsReplacement(
   return { mailboxIds };
 }
 
+/**
+ * A JMAP server on a sibling subdomain (jmap.<domain> from webmail.<domain>) sits behind the edge auth
+ * gate, which reads the Authelia session cookie (domain-wide). A cross-origin fetch only carries that
+ * cookie with `credentials: 'include'`. Servers on another site keep the default: they answer CORS with
+ * `*`, which the browser refuses together with credentials.
+ */
+export function gateCredentials(url: string): RequestCredentials {
+  try {
+    if (typeof window === 'undefined') return 'same-origin';
+    const u = new URL(url, window.location.href);
+    const site = (host: string) => host.split('.').slice(-2).join('.');
+    return u.origin !== window.location.origin && site(u.hostname) === site(window.location.hostname)
+      ? 'include'
+      : 'same-origin';
+  } catch {
+    return 'same-origin';
+  }
+}
+
+/** `{ credentials: 'include' }` for a gate-protected sibling subdomain, else nothing (the default request). */
+export function gateInit(url: string): { credentials?: RequestCredentials } {
+  return gateCredentials(url) === 'include' ? { credentials: 'include' } : {};
+}
+
 export class RateLimitError extends Error {
   retryAfterMs: number;
   constructor(retryAfterMs: number) {
@@ -849,7 +873,7 @@ export class JMAPClient implements IJMAPClient {
     }, timeoutMs);
 
     try {
-      return await fetch(url, { ...init, headers, signal: controller.signal });
+      return await fetch(url, { ...gateInit(url), ...init, headers, signal: controller.signal });
     } catch (error) {
       if (timedOut) throw new RequestTimeoutError(timeoutMs);
       throw error;
@@ -963,6 +987,7 @@ export class JMAPClient implements IJMAPClient {
 
     return fetch(response.url, {
       method: 'GET',
+      ...gateInit(response.url),
       headers: { 'Authorization': this.authHeader },
     });
   }
@@ -3985,6 +4010,7 @@ export class JMAPClient implements IJMAPClient {
       }
       const xhr = new XMLHttpRequest();
       xhr.open('POST', url, true);
+      xhr.withCredentials = gateCredentials(url) === 'include';
       xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
       xhr.setRequestHeader('Authorization', this.authHeader);
       xhr.responseType = 'text';
