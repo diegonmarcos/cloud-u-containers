@@ -26,6 +26,9 @@
  ],
  "maven_repos": [],
  "directories": {
+  ".claude": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
   ".githooks": {
    "licence": "LicenseRef-NoLicenseGranted"
   },

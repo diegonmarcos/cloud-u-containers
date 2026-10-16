@@ -18,7 +18,7 @@
    "CDLA-Permissive-2.0": 1
   },
   "dir": {
-   "LicenseRef-NoLicenseGranted": 90
+   "LicenseRef-NoLicenseGranted": 91
   },
   "docker": {
    "LicenseRef-NoLicenseGranted": 44,
@@ -2053,6 +2053,14 @@
    "licence": "MIT OR Apache-2.0",
    "licence_source": "crates.io 0.6.5",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)"
+  },
+  "dir:.claude": {
+   "kind": "dir",
+   "declared_in": [
+    "(tree)"
+   ],
+   "licence": "LicenseRef-NoLicenseGranted",
+   "licence_source": "licenses/curated.json::directories"
   },
   "dir:.githooks": {
    "kind": "dir",
