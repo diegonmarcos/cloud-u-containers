@@ -96,7 +96,7 @@ env:
 steps:
   - name: reconcile
     # The Stalwart step must still run when this one alerts (exit 1).
-    continueOn:
+    continue_on:
       failure: true
     command: |
       set -u

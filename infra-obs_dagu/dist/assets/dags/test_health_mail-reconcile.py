@@ -263,8 +263,8 @@ with tempfile.TemporaryDirectory() as td:
           "crashed repair run -> failed")
 
 # ---- 6. Stalwart leg (reconcile-stalwart step) ----------------------------
-check(re.search(r"continueOn:\s*\n\s*failure:\s*true", raw) is not None,
-      "maddy step cannot block the Stalwart step (continueOn.failure)")
+check(re.search(r"continue_on:\s*\n\s*failure:\s*true", raw) is not None,
+      "maddy step cannot block the Stalwart step (continue_on.failure)")
 check(re.search(r"name: reconcile-stalwart\n\s+depends:\s*\n\s+- reconcile\n", raw) is not None,
       "reconcile-stalwart runs after reconcile")
 sw = raw[raw.index("name: reconcile-stalwart"):]
