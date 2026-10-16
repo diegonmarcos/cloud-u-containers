@@ -258,36 +258,36 @@ export function caddyCertRepair(
     audit("devops.caddy.cert_repair", tag, `FAILED ${msg.slice(0, 120)}`);
     return { ok: false, output: `caddy cert repair ${target}: ${msg}` };
   };
-  // ONE ssh: mount lookup + scan (+ async restart, or state/logs on dry run) all run in a single
-  // remote script as root, capped at 25s scan / 35s total so the MCP client's 60s limit holds.
-  const script = buildRepairScript({ container, allMesh, dryRun, ts: tsStamp(), budgetSec: 25 });
+  // ONE fast ssh as root (<10s): returns the fresh scan result, reports a running scan, or starts the
+  // detached scan on the host. The slow openssl loop never runs inside this call (MCP client 60s limit).
+  const script = buildRepairScript({ container, allMesh, dryRun, ts: tsStamp() });
   const scan = sshExec(
     vmId,
-    `echo ${Buffer.from(script).toString("base64")} | base64 -d | ( [ "$(id -u)" = 0 ] && timeout 35 bash -s || sudo -n timeout 35 bash -s )`,
-    40_000,
+    `echo ${Buffer.from(script).toString("base64")} | base64 -d | if [ "$(id -u)" = 0 ]; then timeout 40 bash -s; else sudo -n timeout 40 bash -s; fi`,
+    45_000,
   );
   const [head, logs = ""] = scan.stdout.split("===LOGS===\n");
-  const lines = parseScanOutput(head);
-  const dataDir = /^DATA (\S+)$/m.exec(head)?.[1] ?? "(unresolved)";
-  if (!lines.some((l) => l.kind === "done")) {
-    return fail(`scan did not finish (exit ${scan.exitCode}): ${[scan.stdout, scan.stderr].join(" ").trim().slice(0, 300)}`);
+  const parsed = parseScanOutput(head);
+  const dataDir = parsed.data ?? "(unresolved)";
+  if (!parsed.status) {
+    return fail(`control script did not report (exit ${scan.exitCode}): ${[scan.stdout, scan.stderr].join(" ").trim().slice(0, 300)}`);
   }
-  const restarted = dryRun ? null : /^RESTARTING$/m.test(head) ? "restarted (async, not waited); re-run dry_run to confirm" : "FAILED";
+  const restarted = dryRun || parsed.status !== "complete" ? null : parsed.restarting ? "restarted (async, not waited); re-run dry_run to confirm" : "FAILED";
   const state = parseState(/^STATE (.+)$/m.exec(head)?.[1] ?? "");
 
   const remaining = mismatchLines(logs);
   const domains = new Set<string>([
-    ...lines.filter((l) => l.kind === "bad").map((l) => certDomain((l as { cert: string }).cert)),
+    ...(parsed.result?.bad ?? []).map(certDomain),
     ...mismatchDomains(logs),
   ]);
   const output = formatReport({
-    vm: vmId, container, dataDir, dryRun, allMesh, scan: lines, restarted, state, remaining,
+    vm: vmId, container, dataDir, dryRun, allMesh, scan: parsed, restarted, state, remaining,
     startupErrors: [...domains].slice(0, 10).map((domain) => ({ domain, error: lastStartupError(logs, domain) })),
     lastError: lastStartupError(logs),
   });
-  const moved = lines.filter((l) => l.kind === "moved" || l.kind === "mesh_moved").length;
-  const bad = lines.some((l) => l.kind === "err") || restarted === "FAILED";
-  audit("devops.caddy.cert_repair", tag, bad ? "FAILED see report" : `OK moved=${moved} remaining=${remaining.length}`);
+  const moved = parsed.moved.length + (parsed.meshMoved ? 1 : 0);
+  const bad = parsed.errs.length > 0 || parsed.status === "stale" || restarted === "FAILED";
+  audit("devops.caddy.cert_repair", tag, bad ? "FAILED see report" : `OK status=${parsed.status} moved=${moved} remaining=${remaining.length}`);
   return { ok: !bad, output };
 }
 
