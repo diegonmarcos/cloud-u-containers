@@ -6,6 +6,7 @@
   @CATCH_DOMAIN@ {
   @PUBLIC_BIND_LINE@
 @SEC_NO_LIMIT@
+    @EDGE_GATE@
     tls {
       dns cloudflare {env.CF_API_TOKEN}
       resolvers 1.1.1.1 8.8.8.8
@@ -14,5 +15,8 @@
     }
     header X-Edge-Fallback "1"
     header X-Edge-Route "catch-all"
-    redir @CATCH_REDIRECT@ 302
+    # redir sorts before forward_auth: keep it inside a handle so the gate runs first.
+    handle {
+      redir @CATCH_REDIRECT@ 302
+    }
   }

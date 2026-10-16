@@ -133,6 +133,26 @@ let
     "@INTROSPECT_COPY@"     = lib.concatStringsSep " " auth.introspect_copy;
   } (readTpl "21-bearer.caddy.tpl"));
 
+  # ── Shared public-edge auth gate (owner rule 2026-10-16) ──
+  # ONE definition, rendered into this Caddyfile and into the edge's
+  # (_shared/edge-auth.nix). `ea.gate <domain>` is the `import` line every
+  # public site carries (empty only for hosts declared public_open in
+  # build.json caddy_config.edge_auth); `ea.gateOff` is the same gate enforced
+  # only against non-mesh sources, for sites whose mesh peers the WG gate
+  # already trusts. This hub dials Authelia on the docker bridge.
+  ea = import ../../_shared/edge-auth.nix {
+    inherit lib auth wgCidrs introspectUpstream autheliaUpstream;
+    edgeAuth = caddyRoutes.edge_auth or {};
+  };
+
+  # Mesh-only guard for the private *.app / *.db / s3 names (tier a). These
+  # sites bind 0.0.0.0, and the edge's layer4 tier forwards every non-public SNI
+  # here untouched, so without this a public client could present any *.app SNI
+  # and be proxied with no auth at all. Same sources as mkPrivateMeshRoute.
+  meshGuard = ''
+    @not_mesh not remote_ip ${meshOnlySources}
+    respond @not_mesh "Forbidden" 403'';
+
   handleErrors = let
     eh = caddyRoutes.error_handler or { status_codes = [502 503 504]; error_html = "/srv/error.html"; };
     codesExpr = lib.concatMapStringsSep " || " (c: "{err.status_code} == ${toString c}") eh.status_codes;
@@ -343,18 +363,20 @@ ${plainOut}${sniMuxBlock}
   # (url-scheme.md). cloud-{apk}.diegonmarcos.com for an APK that declares no
   # container web target. Nothing to proxy, so no auth wall either: every
   # request 302s to the app's landing page; /login still hands off to Authelia.
+  # Owner rule 2026-10-16: no anonymous 302 to GitHub Pages any more -- the
+  # shared gate runs first (anonymous -> Authelia login), and only a caller that
+  # passed it is sent on to the landing page. `redir` sorts BEFORE forward_auth,
+  # so it must live inside a handle, never at site level.
   mkLandingOnlyRoute = route:
-    let
-      pl = caddyRoutes.public_landing or {};
-      loginPath = pl.login_path or "/login";
-      authPortal = pl.auth_portal or "https://auth.diegonmarcos.com/";
-    in ''
+    ''
     # ${route.comment or route.domain}
     ${route.domain} {
   ${publicBindLine}
   ${sec}
-      redir ${loginPath} ${authPortal}?rd=https://{host}/ 302
-      redir ${route.landing} 302
+      ${ea.gate route.domain}
+      handle {
+        redir ${route.landing} 302
+      }
       ${handleErrors}
     }
   '';
@@ -378,32 +400,23 @@ ${plainOut}${sniMuxBlock}
       hasLandingPage = (route.landing_page or null) != null;
       hasBypassPaths = (route.bypass_paths or null) != null;
 
-      # Public-landing fallback (docs: cloud-infra a0_docs/eng-specs/url-scheme.md).
-      # route.landing is the app's GitHub Pages page, stamped by the derive
-      # from proxy.primary.landing + caddy proxy.public_landing. A request that
-      # carries NO credential at all (no Authorization header of any scheme, no
-      # Authelia session cookie) is redirected there instead of meeting the
-      # Authelia login wall. Anything carrying a credential falls through to the
-      # unchanged bearer/Authelia handles below, so MCP/API/Android bearer
-      # clients and DAV Basic clients behave exactly as before. `redir` sorts
-      # before `respond`, so on a wg_only vhost an anonymous off-mesh client
-      # now gets the landing page instead of a bare 403 — a credentialed
-      # off-mesh client still gets the 403 (no exposure is widened).
-      # Interactive sign-in stays reachable at <login_path>.
-      pl = caddyRoutes.public_landing or {};
-      hasLanding = (route.landing or null) != null && !isNoAuth;
-      loginPath = pl.login_path or "/login";
-      sessionCookie = pl.session_cookie or "authelia_session";
-      authPortal = pl.auth_portal or "https://auth.diegonmarcos.com/";
-      landingExempt = wgExemptPaths ++ [ loginPath ];
-      landingGateBlock = if hasLanding then ''
-      @landing_anon {
-        not header Authorization *
-        not header Cookie *${sessionCookie}=*
-        not path ${lib.concatStringsSep " " landingExempt}
-      }
-      redir @landing_anon ${route.landing} 302
-      redir ${loginPath} ${authPortal}?rd=https://{host}/ 302'' else "";
+      # Public-landing fallback REMOVED (owner rule 2026-10-16: no route may
+      # answer an anonymous request, and a 302 to GitHub Pages was one). The
+      # shared gate (import edge_auth, below) now sends an anonymous browser to
+      # Authelia instead. caddy_config.public_landing is left in the data for
+      # the url-scheme docs/tests but no longer renders anything here.
+      #
+      # Which gate flavour this vhost carries (tier b / tier a):
+      #  · public (not wg_only)            -> edge_auth, enforced for every source
+      #  · wg_only with off-mesh exemptions (well-known grafts, bypass_paths: JMAP
+      #    discovery, mobile-app login, ...) -> edge_auth_offmesh: those paths are
+      #    reachable off-mesh, so off-mesh callers must authenticate; mesh peers
+      #    keep the WG gate's trust
+      #  · wg_only, nothing exposed        -> no gate; @not_wg 403s every non-mesh source
+      gateLine =
+        if !isWgOnly then ea.gate route.domain
+        else if wgExemptPaths != [] then ea.gateOff route.domain
+        else "";
 
       # Per-route security bundle override (route.security_import, from the
       # service build.json): lets a vhost swap the shared global rate-limit
@@ -561,8 +574,8 @@ ${plainOut}${sniMuxBlock}
     ${route.domain} {
   ${publicBindLine}
   ${secLine}${uploadBlock}${(identityOf route).siteStrip}
+  ${gateLine}
   ${wgBlock}
-  ${landingGateBlock}
   ${bypassBlock}${landingBlock}
   ${rootJsonBlock}
   ${wellKnownBlock}
@@ -637,6 +650,7 @@ ${plainOut}${sniMuxBlock}
     ${route.domain} {
   ${publicBindLine}
   ${sec}
+  ${ea.gate route.domain}
   ${wkdBlock}
       ${handleErrors}
     }
@@ -712,6 +726,7 @@ ${plainOut}${sniMuxBlock}
     ${group.parent_domain} {
   ${publicBindLine}
   ${sec}
+  ${ea.gate group.parent_domain}
   ${landingRootBlock}${pathBlocks}
   ${fallbackBlock}
       ${handleErrors}
@@ -782,6 +797,7 @@ ${bearer}
     ${group.parent_domain} {
   ${publicBindLine}
   ${secMcp}
+  ${ea.gateOff group.parent_domain}
   ${endpointBlocks}
       handle {
         respond "${fallbackMsg}" 200
@@ -795,7 +811,10 @@ ${bearer}
     ${route.domain} {
   ${publicBindLine}
   ${sec}
-      redir ${route.target} permanent
+      ${ea.gate route.domain}
+      handle {
+        redir ${route.target} permanent
+      }
       ${handleErrors}
     }
   '';
@@ -861,6 +880,7 @@ ${bearer}
     ${mail.domain} {
   ${publicBindLine}
   ${sec}
+      ${ea.gate mail.domain}
       @root path =/
       handle @root {
         ${mkGithubProxy mail.landing_page}
@@ -917,6 +937,7 @@ ${bearer}
     ${ntfy.domain} {
   ${publicBindLine}
   ${sec}
+      ${if (ntfy.wg_only or false) then "" else ea.gate ntfy.domain}
       ${wgSiteLine (ntfy.wg_only or false)}
       handle /setup {
   ${authelia}
@@ -953,6 +974,7 @@ ${bearer}
     ${a.domain} {
   ${publicBindLine}
   ${sec}
+      ${ea.gate a.domain}
       @tracking {
         path ${trackingPaths}
       }
@@ -1004,6 +1026,7 @@ ${bearer}
     ${pd.domain} {
   ${publicBindLine}
   ${sec}
+      ${if (pd.wg_only or false) then "" else ea.gate pd.domain}
       ${wgSiteLine (pd.wg_only or false)}
       ${if isNoAuth then dashboardServe else ''
       @bearer header Authorization Bearer*
@@ -1054,6 +1077,7 @@ ${handleErrors}
   privateMeshRoutes = caddyRoutes.private_mesh_routes or [];
 
   mkInternalRoute = route: subst {
+    "@MESH_GUARD@"       = meshGuard;
     "@SERVICE@"          = route.service;
     "@UPSTREAM@"         = route.upstream;
     "@EMPTY_GUARD@"      = emptyGuard;
@@ -1062,6 +1086,7 @@ ${handleErrors}
   } internalTpl;
 
   mkS3Route = route: subst {
+    "@MESH_GUARD@"       = meshGuard;
     "@SERVICE@"          = route.service;
     "@BUCKET@"           = route.bucket;
     "@S3_ENDPOINT@"      = route.s3_endpoint;
@@ -1070,6 +1095,7 @@ ${handleErrors}
   } s3Tpl;
 
   mkCanonicalAppRoute = entry: subst {
+    "@MESH_GUARD@"       = meshGuard;
     "@SERVICE@"          = entry.service;
     "@UPSTREAM@"         = entry.upstream;
     "@EMPTY_GUARD@"      = emptyGuard;
@@ -1079,6 +1105,7 @@ ${handleErrors}
 
   msgs = caddyRoutes.messages or {};
   mkPortlessAppRoute = entry: subst {
+    "@MESH_GUARD@"       = meshGuard;
     "@SERVICE@"          = entry.service;
     "@PLACEHOLDER_MSG@"  = msgs.portless_placeholder;
     "@PUBLIC_BIND_LINE@" = publicBindLine;
@@ -1107,6 +1134,7 @@ ${handleErrors}
   dbCatalogEntries = caddyRoutes.all_db_urls or [];
 
   mkDbPlaceholderRoute = e: subst {
+    "@MESH_GUARD@"       = meshGuard;
     "@SERVICE@"          = e.service;
     "@CONTAINER@"        = e.container or "?";
     "@ENGINE@"           = e.engine or "?";
@@ -1143,6 +1171,7 @@ ${handleErrors}
     "@MTA_DOMAIN@"      = mta.domain or "";
     "@PUBLIC_BIND_LINE@" = publicBindLine;
     "@SEC_NO_LIMIT@"    = secNoLimit;
+    "@EDGE_GATE@"       = ea.gate (mta.domain or "");
     "@MTA_POLICY_PATH@" = mta.policy_path or "";
     "@MTA_MODE@"        = mta.mode or "";
     "@MTA_MX_LINES@"    = mtaMxLines;
@@ -1160,6 +1189,7 @@ ${handleErrors}
     "@CATCH_DOMAIN@"     = catch.domain or "";
     "@PUBLIC_BIND_LINE@" = publicBindLine;
     "@SEC_NO_LIMIT@"     = secNoLimit;
+    "@EDGE_GATE@"        = ea.gate (catch.domain or "");
     "@CATCH_ROOT@"       = lib.removeSuffix ("/" + baseNameOf catchPage) catchPage;
     "@CATCH_FILE@"       = baseNameOf catchPage;
     "@CATCH_REDIRECT@"   = catch.redirect_to or "";
@@ -1185,6 +1215,8 @@ ${odtAskBlock}
   ${securityMcpSnippet}
   ${securityJmapSnippet}
 
+  # ── Shared public-edge auth gate (see ea in caddyfile.nix / _shared/edge-auth.nix) ──
+${ea.snippets}
   # ════════════════════════════════════════════════════════════
   # SUBDOMAIN ROUTES (from routes[])
   # ════════════════════════════════════════════════════════════

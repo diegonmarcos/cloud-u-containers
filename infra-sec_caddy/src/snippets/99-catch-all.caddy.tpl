@@ -1,6 +1,7 @@
   @CATCH_DOMAIN@ {
   @PUBLIC_BIND_LINE@
 @SEC_NO_LIMIT@
+    @EDGE_GATE@
     tls {
       dns cloudflare {env.CF_API_TOKEN}
       resolvers 1.1.1.1 8.8.8.8

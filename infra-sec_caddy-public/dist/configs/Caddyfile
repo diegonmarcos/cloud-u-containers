@@ -165,6 +165,131 @@ route @m_smtps_diegonmarcos_com {
   }
 
 
+  # ── Shared public-edge auth gate (_shared/edge-auth.nix; same text as the hub's) ──
+  # (edge_auth) -- the ONE public-edge auth gate (cloud-u-containers _shared/edge-auth.*).
+  # Owner rule 2026-10-16: PUBLIC URL = fleet Bearer OR Authelia session cookie.
+  #   - `Authorization: Bearer ...` -> introspect-proxy (the same door the MCP routes
+  #     use); an invalid token gets the introspector's own 401/403.
+  #   - anything else -> Authelia forward-auth: a valid session cookie passes;
+  #     otherwise Authelia answers 401 to API / non-browser clients and 302 to
+  #     auth. (with rd=) to browsers. Nothing reaches an upstream anonymously.
+  #   - Tier c (public_open in build.json caddy_config.edge_auth) is exempted by
+  #     the PATH ARGS of the import: `import edge_auth <path>...` -- always
+  #     /.well-known/acme-challenge/* plus that host's own declared paths.
+  #   - CORS preflight (OPTIONS + Access-Control-Request-Method) cannot carry
+  #     credentials: it is answered 204 right here and never proxied. Plain
+  #     OPTIONS (WebDAV) is still gated.
+  # forward_auth sorts before handle / respond / reverse_proxy, so importing this
+  # at the top of a site gates every handle in it. `redir` sorts BEFORE
+  # forward_auth: a site-level `redir` next to this import would run ungated, so
+  # it must be wrapped in `handle { }` (the CI guard rejects a bare one).
+  # edge_auth: enforced for every source.
+  (edge_auth) {
+    @ea_pre {
+      method OPTIONS
+      header Access-Control-Request-Method *
+    }
+    @ea_bearer {
+      header Authorization Bearer*
+      not path {args[:]}
+      not {
+        method OPTIONS
+        header Access-Control-Request-Method *
+      }
+    }
+    @ea_session {
+      not header Authorization Bearer*
+      not path {args[:]}
+      not {
+        method OPTIONS
+        header Access-Control-Request-Method *
+      }
+    }
+    respond @ea_pre 204
+    forward_auth @ea_bearer 10.0.0.1:4182 {
+      method GET
+      uri /auth
+      copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+    }
+    forward_auth @ea_session 10.0.0.1:9091 {
+      uri /api/authz/forward-auth
+      header_up X-Forwarded-Uri {http.request.orig_uri}
+      copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+    }
+  }
+  # edge_auth_offmesh: same gate, enforced only against NON-mesh sources (mesh peers are trusted by the WG gate).
+  (edge_auth_offmesh) {
+    @ea_pre {
+      method OPTIONS
+      header Access-Control-Request-Method *
+    }
+    @ea_bearer {
+      header Authorization Bearer*
+      not path {args[:]}
+      not {
+        method OPTIONS
+        header Access-Control-Request-Method *
+      }
+      not remote_ip 10.0.0.0/24 fd0c:1d00::/64
+    }
+    @ea_session {
+      not header Authorization Bearer*
+      not path {args[:]}
+      not {
+        method OPTIONS
+        header Access-Control-Request-Method *
+      }
+      not remote_ip 10.0.0.0/24 fd0c:1d00::/64
+    }
+    respond @ea_pre 204
+    forward_auth @ea_bearer 10.0.0.1:4182 {
+      method GET
+      uri /auth
+      copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+    }
+    forward_auth @ea_session 10.0.0.1:9091 {
+      uri /api/authz/forward-auth
+      header_up X-Forwarded-Uri {http.request.orig_uri}
+      copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+    }
+  }
+  # edge_auth_ws: enforced for every source EXCEPT `Upgrade: websocket` requests (wstunnel on vpn.).
+  (edge_auth_ws) {
+    @ea_pre {
+      method OPTIONS
+      header Access-Control-Request-Method *
+    }
+    @ea_bearer {
+      header Authorization Bearer*
+      not path {args[:]}
+      not {
+        method OPTIONS
+        header Access-Control-Request-Method *
+      }
+      not header Upgrade websocket
+    }
+    @ea_session {
+      not header Authorization Bearer*
+      not path {args[:]}
+      not {
+        method OPTIONS
+        header Access-Control-Request-Method *
+      }
+      not header Upgrade websocket
+    }
+    respond @ea_pre 204
+    forward_auth @ea_bearer 10.0.0.1:4182 {
+      method GET
+      uri /auth
+      copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+    }
+    forward_auth @ea_session 10.0.0.1:9091 {
+      uri /api/authz/forward-auth
+      header_up X-Forwarded-Uri {http.request.orig_uri}
+      copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+    }
+  }
+
   # ════════════════════════════════════════════════════════════
   # GITHUB PAGES PROXIES (served at edge — public static sites)
   # ════════════════════════════════════════════════════════════
@@ -172,6 +297,7 @@ route @m_smtps_diegonmarcos_com {
 # gh-pages: Landing page + WKD (Web Key Directory for PGP)
 diegonmarcos.com, www.diegonmarcos.com {
 import security
+  import edge_auth /.well-known/acme-challenge/*
   handle /.well-known/openpgpkey/* {
   reverse_proxy 10.1.0.2:443
 }
@@ -222,6 +348,7 @@ reverse_proxy https://diegonmarcos.github.io {
 # gh-pages: linktree.diegonmarcos.com
 linktree.diegonmarcos.com {
 import security
+  
         rewrite * /linktree{uri}
 reverse_proxy https://diegonmarcos.github.io {
   header_up Host diegonmarcos.github.io
@@ -251,6 +378,7 @@ reverse_proxy https://diegonmarcos.github.io {
 # gh-pages: nexus.diegonmarcos.com
 nexus.diegonmarcos.com {
 import security
+  import edge_auth /.well-known/acme-challenge/*
         rewrite * /nexus{uri}
 reverse_proxy https://diegonmarcos.github.io {
   header_up Host diegonmarcos.github.io
@@ -280,6 +408,7 @@ reverse_proxy https://diegonmarcos.github.io {
 # gh-pages: suite.diegonmarcos.com
 suite.diegonmarcos.com {
 import security
+  import edge_auth /.well-known/acme-challenge/*
         rewrite * /suite{uri}
 reverse_proxy https://diegonmarcos.github.io {
   header_up Host diegonmarcos.github.io
@@ -309,6 +438,7 @@ reverse_proxy https://diegonmarcos.github.io {
 # gh-pages: maps.diegonmarcos.com
 maps.diegonmarcos.com {
 import security
+  import edge_auth /.well-known/acme-challenge/*
         rewrite * /mymaps{uri}
 reverse_proxy https://diegonmarcos.github.io {
   header_up Host diegonmarcos.github.io
@@ -342,6 +472,7 @@ reverse_proxy https://diegonmarcos.github.io {
 # subdomain: WireGuard-over-TCP/443 fallback for hostile networks (airport / hotel / corporate guest Wi-Fi blocking UDP). Sibling to bb-net_wireguard-mesh (the panel) — this folder owns the wstunnel-server that terminates WSS on gcp-proxy and forwards UDP to the kernel WG listener at 127.0.0.1:51820. UDP/51820 remains the primary transport; this kicks in only when clients can't reach UDP.
 vpn.diegonmarcos.com {
 import security
+import edge_auth_ws /.well-known/acme-challenge/*
 reverse_proxy 10.0.0.1:8080 {
       header_up X-Real-IP {http.request.remote.host}
     }
@@ -369,6 +500,7 @@ reverse_proxy 10.0.0.1:8080 {
 # subdomain: Continuwuity Matrix homeserver (maintained conduwuit fork, Rust/RocksDB) — central hub for chat bridges. Federation enabled via .well-known delegation over :443.
 matrix.diegonmarcos.com {
 import security
+import edge_auth /.well-known/acme-challenge/* /_matrix/federation/* /_matrix/key/* /.well-known/matrix/*
 reverse_proxy 10.0.0.6:8008 {
       header_up X-Real-IP {http.request.remote.host}
     }
@@ -400,6 +532,7 @@ reverse_proxy 10.0.0.6:8008 {
 # mcp-hub: MCP -- Streamable HTTP endpoints for Claude Code MCP clients
 mcp.diegonmarcos.com {
 import security
+import edge_auth_offmesh /.well-known/acme-challenge/* /.well-known/oauth-protected-resource* /.well-known/oauth-authorization-server*
 handle_path /cloud-drive-mcp/* {
   @wg remote_ip 10.0.0.0/24 fd0c:1d00::/64
         handle @wg {
@@ -698,6 +831,7 @@ handle_path /cloud-cgc-pvt-mcp/* {
 # oidc-public: wg_only:false — whole IdP host open (owner decision 2026-10-15)
 auth.diegonmarcos.com {
 import security
+
 handle  {
   reverse_proxy https://10.1.0.2:443 {
     header_up Host auth.diegonmarcos.com

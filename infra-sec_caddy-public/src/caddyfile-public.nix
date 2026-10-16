@@ -106,6 +106,20 @@ let
   } (readTpl "21-bearer.caddy.tpl"));
   wgCidrs = (caddyPublic.global or {}).wg_cidrs or "10.0.0.0/24 fd0c:1d00::/64";
 
+  # ── Shared public-edge auth gate (owner rule 2026-10-16) ──
+  # The SAME definition the hub renders (_shared/edge-auth.nix). Every site below
+  # carries `ea.gate <domain>` unless the host is declared public_open in
+  # build.json caddy_config.edge_auth. Bearer branch = the introspect-proxy over
+  # the mesh (as for the MCP routes). Session branch = Authelia's published port
+  # on the hub's wg0 address (auth_upstreams.authelia_mesh) -- NOT the hub's auth
+  # vhost, whose reverse_proxy would overwrite the X-Forwarded-Host/-Uri that
+  # tell Authelia which site is being gated.
+  ea = import ../../_shared/edge-auth.nix {
+    inherit lib auth wgCidrs introspectUpstream;
+    edgeAuth = caddyPublic.edge_auth or {};
+    autheliaUpstream = (caddyPublic.auth_upstreams or {}).authelia_mesh or "10.0.0.1:9091";
+  };
+
   # ── Error handler (snippet-driven from caddyPublic.error_handler) ──
   eh = caddyPublic.error_handler or { status_codes = [ 502 503 504 ]; error_html = "/srv/error.html"; };
   codesExpr = lib.concatMapStringsSep " || " (c: "{err.status_code} == ${toString c}") eh.status_codes;
@@ -242,6 +256,7 @@ ${lib.concatMapStringsSep "\n" mkMailL4Route mailL4}
     # gh-pages: ${group.comment or group.domain}
     ${group.domain} {
     ${sec}
+      ${ea.gate group.domain}
       ${body}
       ${handleErrors}
     }'';
@@ -255,6 +270,7 @@ ${lib.concatMapStringsSep "\n" mkMailL4Route mailL4}
     # subdomain: ${route.comment or route.domain}
     ${route.domain} {
     ${sec}
+    ${ea.gate route.domain}
     ${if isNoAuth then ''  reverse_proxy ${route.upstream} {
         ${xreal}
       }'' else "  ${fwd}"}
@@ -284,6 +300,7 @@ ${lib.concatMapStringsSep "\n" mkMailL4Route mailL4}
     # path-host: ${group.comment or group.parent_domain}
     ${group.parent_domain} {
     ${sec}
+    ${ea.gate group.parent_domain}
     ${publicHandles}
       handle {
         ${fwd}
@@ -306,6 +323,7 @@ ${lib.concatMapStringsSep "\n" mkMailL4Route mailL4}
     # well-known host: ${domain}
     ${domain} {
     ${sec}
+    ${ea.gate domain}
     ${blocks}
       handle {
         ${fwd}
@@ -371,6 +389,7 @@ ${bearer}
     # mcp-hub: ${group.comment or group.parent_domain}
     ${group.parent_domain} {
     ${sec}
+    ${ea.gateOff group.parent_domain}
     ${endpointBlocks}
       # Bare host: human hint. Any other path is not a public MCP route
       # (mesh-only / wg_only, or unknown): answer 404 JSON so MCP clients
@@ -427,12 +446,14 @@ ${bearer}
     # oidc-public: wg_only:false — whole IdP host open (owner decision 2026-10-15)
     ${oidcPub.domain} {
     ${sec}
+    ${ea.gate oidcPub.domain}
     ${mkOidcHandle ""}
       ${handleErrors}
     }'' else ''
     # oidc-public: machine endpoints only; portal stays mesh-only
     ${oidcPub.domain} {
     ${sec}
+    ${ea.gate oidcPub.domain}
     ${handles}
       handle {
         respond "Forbidden" 403
@@ -462,6 +483,8 @@ ${globalsBlock}
   ${accessLog}
   ${securitySnippet}
 
+  # ── Shared public-edge auth gate (_shared/edge-auth.nix; same text as the hub's) ──
+${ea.snippets}
   # ════════════════════════════════════════════════════════════
   # GITHUB PAGES PROXIES (served at edge — public static sites)
   # ════════════════════════════════════════════════════════════
