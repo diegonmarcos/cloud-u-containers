@@ -144,6 +144,10 @@
           "type": ["string", "boolean"],
           "description": "When true, copy cloud-data/ generated configs into the build output"
         },
+        "ship_hold": {
+          "type": "string",
+          "description": "Reason string: hold this registered service out of the ship (build/deploy) until the blocker is resolved, without disabling its routes or removing its config"
+        },
         "dist_volatile": {
           "type": ["string", "boolean"],
           "description": "When true, the committed dist/ embeds the fleet declaration (changes whenever any service is registered) and is re-rendered by every ship, so the CI committed-dist guard does not compare it"

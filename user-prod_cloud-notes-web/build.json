@@ -6,6 +6,7 @@
   "category": "app",
   "timezone": "Europe/Madrid",
   "build": {
+    "ship_hold": "pending GHCR package visibility (owner action): ghcr.io/diegonmarcos/cloud-notes-web is private, the wrap build gets 403",
     "include_cloud_data": "true"
   },
   "domain": "notes.diegonmarcos.com",
