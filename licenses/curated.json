@@ -282,6 +282,12 @@
   "user-prod_calendar-radicale": {
    "licence": "LicenseRef-NoLicenseGranted"
   },
+  "user-prod_cloud-notes-sync": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "user-prod_cloud-notes-web": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
   "user-prod_code-server": {
    "licence": "LicenseRef-NoLicenseGranted"
   },
