@@ -165,8 +165,32 @@
         {
           "host": "matrix.diegonmarcos.com",
           "scope": "paths",
-          "paths": ["/_matrix/federation/*", "/_matrix/key/*", "/.well-known/matrix/*"],
-          "reason": "Owner decision 2026-10-16: other homeservers federate and discover this one without credentials. Client API (/_matrix/client/*, media) stays protected."
+          "paths": ["/_matrix/federation/*", "/_matrix/key/*", "/.well-known/matrix/*", "/_matrix/client/*"],
+          "reason": "Owner decision 2026-10-16: other homeservers federate and discover this one without credentials. Owner decision 22: the Matrix client API (/_matrix/client/*) is open for Element web and token-less clients -- the homeserver does its own auth. Media and everything else stays protected."
+        },
+        {
+          "host": "chat.diegonmarcos.com",
+          "scope": "paths",
+          "paths": ["/api/v4/*"],
+          "reason": "Owner decision 22: Mattermost mobile login and API -- Mattermost does its own authentication on /api/v4/*. The web UI stays gated."
+        },
+        {
+          "host": "git.diegonmarcos.com",
+          "scope": "paths",
+          "paths": ["/*/*/info/refs", "/*/*/git-upload-pack", "/*/*/git-receive-pack", "/api/v1/*"],
+          "reason": "Owner decision 22: git-over-HTTPS (smart HTTP) with Basic auth and the Gitea API -- Gitea does its own authentication; git clients cannot do a cookie/bearer handshake. The web UI stays gated."
+        },
+        {
+          "host": "diegonmarcos.com",
+          "scope": "paths",
+          "paths": ["/.well-known/openpgpkey/*", "/.well-known/jmap"],
+          "reason": "Owner decision 22: WKD (OpenPGP key discovery, public keys by design) and the apex /.well-known/jmap autoconfig redirect (redirect only, no content)."
+        },
+        {
+          "host": "mta-sts.diegonmarcos.com",
+          "scope": "paths",
+          "paths": ["/.well-known/mta-sts.txt"],
+          "reason": "Owner decision 22: MTA-STS policy (RFC 8461) is fetched anonymously by sending MTAs."
         },
         {
           "host": "vpn.diegonmarcos.com",

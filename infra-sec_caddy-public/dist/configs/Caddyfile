@@ -363,7 +363,7 @@ route @m_smtps_diegonmarcos_com {
 # gh-pages: Landing page + WKD (Web Key Directory for PGP)
 diegonmarcos.com, www.diegonmarcos.com {
 import security
-  import edge_auth /.well-known/acme-challenge/*
+  import edge_auth /.well-known/acme-challenge/* /.well-known/openpgpkey/* /.well-known/jmap
   handle /.well-known/openpgpkey/* {
   reverse_proxy 10.1.0.2:443
 }
@@ -566,7 +566,7 @@ reverse_proxy 10.0.0.1:8080 {
 # subdomain: Continuwuity Matrix homeserver (maintained conduwuit fork, Rust/RocksDB) — central hub for chat bridges. Federation enabled via .well-known delegation over :443.
 matrix.diegonmarcos.com {
 import security
-import edge_auth /.well-known/acme-challenge/* /_matrix/federation/* /_matrix/key/* /.well-known/matrix/*
+import edge_auth /.well-known/acme-challenge/* /_matrix/federation/* /_matrix/key/* /.well-known/matrix/* /_matrix/client/*
 reverse_proxy 10.0.0.6:8008 {
       header_up X-Real-IP {http.request.remote.host}
     }

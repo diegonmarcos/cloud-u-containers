@@ -505,7 +505,7 @@ respond @not_wg "Forbidden" 403
 import security
 import request_limits
       request_header -X-WEBAUTH-USER
-import edge_auth /.well-known/acme-challenge/*
+import edge_auth /.well-known/acme-challenge/* /*/*/info/refs /*/*/git-upload-pack /*/*/git-receive-pack /api/v1/*
 
 
 
@@ -1176,7 +1176,7 @@ respond @not_wg "Forbidden" 403
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
-import edge_auth_offmesh /.well-known/acme-challenge/*
+import edge_auth_offmesh /.well-known/acme-challenge/* /api/v4/*
 @not_wg {
   not remote_ip 10.0.0.0/24 fd0c:1d00::/64
   not path /api/v4/*
@@ -1389,7 +1389,7 @@ respond @not_wg "Forbidden" 403
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
-import edge_auth /.well-known/acme-challenge/* /_matrix/federation/* /_matrix/key/* /.well-known/matrix/*
+import edge_auth /.well-known/acme-challenge/* /_matrix/federation/* /_matrix/key/* /.well-known/matrix/* /_matrix/client/*
 
 
 
@@ -5193,7 +5193,7 @@ reverse_proxy https://10.0.0.3:2443 {
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
-import edge_auth /.well-known/acme-challenge/*
+import edge_auth /.well-known/acme-challenge/* /.well-known/openpgpkey/* /.well-known/jmap
     # WKD — PGP public key discovery (no auth — must be public per spec)
     handle_path /.well-known/openpgpkey/* {
       root * /srv/wkd
@@ -20077,7 +20077,7 @@ respond @not_mesh "Forbidden" 403
   mta-sts.diegonmarcos.com {
     bind 0.0.0.0 10.0.0.1
 import security
-    import edge_auth /.well-known/acme-challenge/*
+    import edge_auth /.well-known/acme-challenge/* /.well-known/mta-sts.txt
     tls {
       dns cloudflare {env.CF_API_TOKEN}
       resolvers 1.1.1.1 8.8.8.8
