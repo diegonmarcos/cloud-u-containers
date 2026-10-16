@@ -1,4 +1,6 @@
-# Gmail <-> maddy reconciliation.
+# Gmail <-> maddy AND Gmail <-> Stalwart (JMAP) reconciliation. The second step
+# (reconcile-stalwart, 2026-10-16) is described at the bottom of this file.
+#
 #
 # health_mail-ingest answers "is mail still arriving?". It cannot answer "did we
 # lose a specific message?" — during the 2026-08-13..08-21 blackout the INBOX was
@@ -67,7 +69,7 @@
 #     next run's diff re-checks presence first, so it cannot duplicate.
 # Tester: test_health_mail-reconcile.py (registered in build.json tests).
 name: health_mail-reconcile
-description: Verify every Gmail message in a lagged window is present in maddy
+description: Verify every Gmail message in a lagged window is present in maddy and Stalwart
 group: health
 tags:
   - mail
@@ -79,6 +81,8 @@ schedule: "23 */3 * * *"
 env:
   - SSH: "ssh -i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=10"
   - NTFY_URL: "http://10.0.0.6:8090"
+  # Stalwart JMAP read (me@) for the reconcile-stalwart step.
+  - STALWART_LOGIN_PASSWORD: ${STALWART_LOGIN_PASSWORD}
   # Days of history to verify each run. The window ends LAG_MINUTES before
   # now so mail still in flight is never counted as lost.
   - WINDOW_DAYS: "8"
@@ -91,9 +95,19 @@ env:
 
 steps:
   - name: reconcile
+    # The Stalwart step must still run when this one alerts (exit 1).
+    continueOn:
+      failure: true
     command: |
       set -u
       TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
+      # Hand-off to the reconcile-stalwart step: fingerprints this step found
+      # missing from maddy (and re-injected). Those reach Stalwart through
+      # maddy's durable stalwart_queue, so the Stalwart step must not also
+      # inject them. Removed first: absent file = this step did not get to
+      # its maddy diff, and the Stalwart step then refuses to run.
+      EXCL=/tmp/recon_maddy_missing.fps
+      rm -f "$EXCL"
 
       # Epoch seconds, never yyyy/mm/dd: Gmail reads search DATES as midnight
       # US Pacific, which silently cut the newest 1.5-2 days out of the window.
@@ -233,6 +247,7 @@ steps:
       comm -23 "$TMP/gmail.fps" "$TMP/maddy.fps" > "$TMP/missing.fps"
       MISS=$(wc -l < "$TMP/missing.fps" | tr -d ' ')
       echo "missing_from_maddy=$MISS"
+      cp "$TMP/missing.fps" "$EXCL"
 
       if [ "$MISS" -le "$MISS_THRESHOLD" ]; then
         echo "reconciliation clean"
@@ -463,4 +478,268 @@ steps:
         -H "Tags: rotating_light,email" \
         -d "$(printf 'Auto-repair for %s .. %s: %s repaired, %s deferred, %s FAILED permanently (or the repair run crashed). See this DAG run log for the REPAIRED_FAIL/REPAIRED_DEFER lines. Manual review needed.\n\nRepaired:\n%s\n' \
               "$FROM" "$TO" "$SENT" "$DEFERRED" "$RFAILED" "$(cat "$TMP/repaired_subjects.txt")")"
+      exit 1
+
+  # ---- Stalwart leg (2026-10-16) -------------------------------------------
+  # Stalwart (JMAP store) is a first-class inbound copy, fed by maddy's durable
+  # stalwart_queue (max_tries 20). If that queue exhausts, the message is in
+  # Gmail and maddy but not Stalwart - nothing else would notice. This step
+  # fingerprints the WHOLE Stalwart store over JMAP (Email/get messageId, same
+  # md5(Message-ID)[:10] as the Gmail side), diffs Gmail against it, and:
+  #   * fingerprints just repaired into maddy by the step above are skipped
+  #     (maddy's queue delivers them to Stalwart);
+  #   * everything else is re-injected straight into Stalwart's MX-style SMTP
+  #     ingest (10.0.0.3:2025), NOT via maddy: maddy already holds these and
+  #     has no Message-ID dedup, so going through it would duplicate in maddy.
+  # Neither Stalwart nor maddy dedups on Message-ID, so presence is always
+  # checked first (the diff) and a failure during/after DATA is never retried
+  # in-run (same rule as the maddy repair).
+  - name: reconcile-stalwart
+    depends:
+      - reconcile
+    command: |
+      set -u
+      TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
+      EXCL=/tmp/recon_maddy_missing.fps
+      if [ ! -f "$EXCL" ]; then
+        echo "maddy phase did not complete; skipping Stalwart diff"; exit 1
+      fi
+      NOW=${NOW:-$(date -u +%s)}
+      TO_EPOCH=$((NOW - LAG_MINUTES * 60))
+      FROM_EPOCH=$((TO_EPOCH - WINDOW_DAYS * 86400))
+      GMAIL_QUERY="after:$FROM_EPOCH before:$TO_EPOCH"
+      echo "window: $GMAIL_QUERY"
+
+      # Gmail side: same service-account path as the step above; the script
+      # /tmp/recon_gmail.py was left in the container by that step.
+      $SSH ubuntu@10.0.0.6 \
+        "docker exec google-workspace-mcp /app/.venv/bin/python /tmp/recon_gmail.py '$GMAIL_QUERY'" \
+        > "$TMP/gmail.tsv" 2>"$TMP/gmail.err" || true
+      if [ ! -s "$TMP/gmail.tsv" ]; then
+        echo "Gmail read produced nothing"; head -5 "$TMP/gmail.err" || true; exit 1
+      fi
+      cut -f1 "$TMP/gmail.tsv" | sort -u > "$TMP/gmail.fps"
+
+      # Stalwart side: whole store over JMAP (read-only), password on stdin.
+      $SSH ubuntu@10.0.0.6 "docker exec -i google-workspace-mcp sh -c 'cat > /tmp/recon_stalwart.py'" <<'PYEOF'
+      # >>> jmap
+      import sys, json, base64, hashlib, ssl, urllib.request
+
+      BASE = "https://10.0.0.3:2443"
+      USER = "me@diegonmarcos.com"
+      PAGE = 500
+
+
+      def fingerprints(message_ids):
+          return sorted({hashlib.md5(m.strip().lstrip("<").split(">")[0].encode()).hexdigest()[:10]
+                         for m in message_ids if m and m.strip()})
+
+
+      def run(call, page=PAGE):
+          """call(method_calls) -> JMAP methodResponses. Yields every messageId."""
+          pos = 0
+          while True:
+              r = call([
+                  ["Email/query", {"accountId": ACCT, "position": pos, "limit": page}, "q"],
+                  ["Email/get", {"accountId": ACCT, "properties": ["messageId"],
+                                 "#ids": {"resultOf": "q", "name": "Email/query", "path": "/ids"}}, "g"],
+              ])
+              ids = r[0][1]["ids"]
+              for e in r[1][1]["list"]:
+                  for m in e.get("messageId") or []:
+                      yield m
+              if len(ids) < page:
+                  return
+              pos += len(ids)
+      # <<< jmap
+
+      ACCT = None
+      if __name__ == "__main__":
+          pw = sys.stdin.read().strip()
+          auth = "Basic " + base64.b64encode(("%s:%s" % (USER, pw)).encode()).decode()
+          ctx = ssl.create_default_context()
+          ctx.check_hostname = False
+          ctx.verify_mode = ssl.CERT_NONE
+
+          def http(url, body=None):
+              req = urllib.request.Request(url, data=body, headers={"Authorization": auth,
+                                           "Content-Type": "application/json"})
+              return json.load(urllib.request.urlopen(req, timeout=120, context=ctx))
+
+          sess = http(BASE + "/.well-known/jmap")
+          ACCT = sess["primaryAccounts"]["urn:ietf:params:jmap:mail"]
+          api = sess["apiUrl"]
+          if api.startswith("http") and "://" in api:
+              api = BASE + "/" + api.split("/", 3)[3]
+
+          def call(mc):
+              return http(api, json.dumps({"using": ["urn:ietf:params:jmap:core",
+                          "urn:ietf:params:jmap:mail"], "methodCalls": mc}).encode())["methodResponses"]
+
+          for fp in fingerprints(run(call)):
+              print(fp)
+      PYEOF
+
+      printf '%s' "$STALWART_LOGIN_PASSWORD" | $SSH ubuntu@10.0.0.6 \
+        "docker exec -i google-workspace-mcp /app/.venv/bin/python /tmp/recon_stalwart.py" \
+        > "$TMP/stalwart.fps" 2>"$TMP/stalwart.err" || true
+      if [ ! -s "$TMP/stalwart.fps" ]; then
+        echo "Stalwart JMAP fingerprint scan produced nothing"; head -5 "$TMP/stalwart.err" || true
+        curl -s -X POST "$NTFY_URL/infra_mail-health" \
+          -H "Title: Mail reconciliation could not read Stalwart" \
+          -H "Priority: 4" -H "Tags: warning,email" \
+          -d "The reconciliation DAG could not fingerprint the Stalwart JMAP store on oci-mail. Silent loss of the Stalwart copy is undetectable while this is failing."
+        exit 1
+      fi
+      sort -u "$TMP/stalwart.fps" -o "$TMP/stalwart.fps"
+      echo "stalwart_distinct_fps=$(wc -l < "$TMP/stalwart.fps")"
+
+      # >>> stalwart-diff
+      sort -u "$EXCL" > "$TMP/excl.fps"
+      comm -23 "$TMP/gmail.fps" "$TMP/stalwart.fps" | comm -23 - "$TMP/excl.fps" > "$TMP/missing.fps"
+      # <<< stalwart-diff
+      MISS=$(wc -l < "$TMP/missing.fps" | tr -d ' ')
+      echo "missing_from_stalwart=$MISS"
+      if [ "$MISS" -le "$MISS_THRESHOLD" ]; then echo "stalwart reconciliation clean"; exit 0; fi
+
+      awk -F'\t' 'NR==FNR { want[$1]; next } ($1 in want) && !seen[$1]++' \
+        "$TMP/missing.fps" "$TMP/gmail.tsv" > "$TMP/missing.tsv"
+      cut -f2-4 "$TMP/missing.tsv" | head -15 > "$TMP/sample.txt"
+      echo "--- missing sample ---"; cat "$TMP/sample.txt"
+      if [ "$MISS" -gt "$MAX_REPAIR" ]; then
+        curl -s -X POST "$NTFY_URL/infra_mail-health" \
+          -H "Title: Stalwart copy LOST - $MISS message(s) exceed auto-repair cap ($MAX_REPAIR)" \
+          -H "Priority: 5" -H "Tags: rotating_light,email" \
+          -d "$(printf '%s message(s) in Gmail+maddy never reached Stalwart (%s). Auto-repair skipped (above MAX_REPAIR). Sample:\n%s\n' "$MISS" "$GMAIL_QUERY" "$(cat "$TMP/sample.txt")")"
+        exit 1
+      fi
+
+      cut -f5 "$TMP/missing.tsv" > "$TMP/missing.ids"
+      $SSH ubuntu@10.0.0.6 "docker exec -i google-workspace-mcp sh -c 'cat > /tmp/recon_missing_ids_sw.txt'" < "$TMP/missing.ids"
+      $SSH ubuntu@10.0.0.6 "docker exec -i google-workspace-mcp sh -c 'cat > /tmp/recon_repair_sw.py'" <<'PYEOF'
+      import os, base64, email
+      # >>> deliver-stalwart
+      import smtplib, time
+
+      SMTP_HOST, SMTP_PORT, RCPT = "10.0.0.3", 2025, "me@diegonmarcos.com"
+      PRE_HANDOVER_ATTEMPTS = 3
+
+
+      class Deferred(Exception):
+          """Transient failure; the next run re-diffs before re-sending."""
+
+
+      def is_permanent(exc):
+          if isinstance(exc, smtplib.SMTPRecipientsRefused):
+              codes = [c for c, _ in exc.recipients.values()]
+              return bool(codes) and all(c >= 500 for c in codes)
+          if isinstance(exc, smtplib.SMTPResponseException):
+              return exc.smtp_code >= 500
+          return False
+
+
+      def deliver(return_path, data, connect=None, sleep=time.sleep):
+          """Send one message to Stalwart's MX ingest; only pre-DATA steps retry."""
+          connect = connect or (lambda: smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=90))
+          last = None
+          for attempt in range(1, PRE_HANDOVER_ATTEMPTS + 1):
+              s = None
+              try:
+                  s = connect()
+                  s.ehlo("reconcile.diegonmarcos.com")
+                  code, resp = s.mail(return_path)
+                  if code != 250:
+                      raise smtplib.SMTPSenderRefused(code, resp, return_path)
+                  code, resp = s.rcpt(RCPT)
+                  if code not in (250, 251):
+                      raise smtplib.SMTPRecipientsRefused({RCPT: (code, resp)})
+              except (OSError, smtplib.SMTPException) as e:
+                  try:
+                      s and s.close()
+                  except Exception:
+                      pass
+                  if is_permanent(e):
+                      raise
+                  last = e
+                  if attempt < PRE_HANDOVER_ATTEMPTS:
+                      sleep(15 * attempt)
+                  continue
+              try:
+                  s.data(data)
+              except (OSError, smtplib.SMTPException) as e:
+                  try:
+                      s.close()
+                  except Exception:
+                      pass
+                  if is_permanent(e):
+                      raise
+                  raise Deferred("during DATA: %r" % (e,))
+              try:
+                  s.quit()
+              except (OSError, smtplib.SMTPException):
+                  pass
+              return attempt
+          raise Deferred("before DATA, %d attempts: %r" % (PRE_HANDOVER_ATTEMPTS, last))
+      # <<< deliver-stalwart
+
+      from google.oauth2 import service_account
+      from google.auth.transport.requests import Request
+      from googleapiclient.discovery import build
+
+      ids = [l.strip() for l in open("/tmp/recon_missing_ids_sw.txt") if l.strip()]
+      creds = service_account.Credentials.from_service_account_file(
+          os.environ.get("GOOGLE_SERVICE_ACCOUNT_KEY_PATH", "/run/secrets/GOOGLE_SERVICE_ACCOUNT_KEY"),
+          scopes=["https://www.googleapis.com/auth/gmail.readonly"],
+          subject="me@diegonmarcos.com")
+      creds.refresh(Request())
+      svc = build("gmail", "v1", credentials=creds, cache_discovery=False)
+
+      sent = deferred = failed = 0
+      for i in ids:
+          try:
+              raw = svc.users().messages().get(userId="me", id=i, format="raw").execute()["raw"]
+              data = base64.urlsafe_b64decode(raw.encode())
+              msg = email.message_from_bytes(data)
+              subj = (msg.get("Subject") or "")[:70]
+              rp = (msg.get("Return-Path") or "").strip("<> ") or "reconcile@diegonmarcos.com"
+              tries = deliver(rp, data)
+              sent += 1
+              print("REPAIRED_OK\t%s\t%s\t%d" % (i, subj, tries), flush=True)
+          except Deferred as e:
+              deferred += 1
+              print("REPAIRED_DEFER\t%s\t%s" % (i, str(e)[:160]), flush=True)
+          except Exception as e:
+              if is_permanent(e):
+                  failed += 1
+                  print("REPAIRED_FAIL\t%s\t%s" % (i, repr(e)[:160]), flush=True)
+              else:
+                  deferred += 1
+                  print("REPAIRED_DEFER\t%s\t%s" % (i, repr(e)[:160]), flush=True)
+      print("REPAIRED %d DEFERRED %d FAILED %d" % (sent, deferred, failed), flush=True)
+      PYEOF
+
+      $SSH ubuntu@10.0.0.6 \
+        "docker exec google-workspace-mcp /app/.venv/bin/python /tmp/recon_repair_sw.py" \
+        > "$TMP/repair.log" 2>"$TMP/repair.err" || true
+      cat "$TMP/repair.log" || true
+
+      SUMMARY=$(grep -E '^REPAIRED [0-9]+ DEFERRED [0-9]+ FAILED [0-9]+$' "$TMP/repair.log" | tail -1)
+      if [ -n "$SUMMARY" ]; then
+        SENT=$(echo "$SUMMARY" | awk '{print $2}'); DEFERRED=$(echo "$SUMMARY" | awk '{print $4}'); RFAILED=$(echo "$SUMMARY" | awk '{print $6}')
+      else
+        SENT=0; DEFERRED=0; RFAILED=$MISS
+      fi
+      echo "stalwart repaired=$SENT deferred=$DEFERRED failed=$RFAILED"
+      grep '^REPAIRED_OK' "$TMP/repair.log" | cut -f3 | head -15 > "$TMP/repaired_subjects.txt"
+      if [ "$RFAILED" -eq 0 ] && { [ "$SENT" -gt 0 ] || [ "$DEFERRED" -eq 0 ]; }; then
+        curl -s -X POST "$NTFY_URL/infra_mail-health" \
+          -H "Title: Stalwart auto-repaired - $SENT recovered, $DEFERRED deferred" \
+          -H "Priority: 3" -H "Tags: email,white_check_mark" \
+          -d "$(printf '%s message(s) were in Gmail+maddy but missing from Stalwart and were re-injected into Stalwart:2025 (%s deferred to the next run).\n\n%s\n' "$SENT" "$DEFERRED" "$(cat "$TMP/repaired_subjects.txt")")"
+        exit 0
+      fi
+      curl -s -X POST "$NTFY_URL/infra_mail-health" \
+        -H "Title: Stalwart auto-repair FAILED - $SENT of $MISS re-injected" \
+        -H "Priority: 5" -H "Tags: rotating_light,email" \
+        -d "Stalwart repair: $SENT repaired, $DEFERRED deferred, $RFAILED failed. See the DAG run log."
       exit 1

@@ -18,9 +18,11 @@ account_id = "e5cb0a0c6f448e54f217de484259f0ae"
 # Email Routing architecture:
 #   Internet → Cloudflare MX (route1/2/3.mx.cloudflare.net)
 #     → Email Routing rule: me@diegonmarcos.com → Worker "email-forwarder"
-#     → In parallel:
-#       Copy 1: ALWAYS → Stalwart via http-to-smtp-proxy-api (self-hosted primary)
-#       Copy 2: ALWAYS → Google Workspace via Gmail API (service account JWT)
+#     → In parallel (Promise.allSettled; accept if Google OR Maddy lands, reject only if both fail):
+#       Leg 1: Google Workspace via Gmail API (service account JWT)
+#       Leg 2: Maddy via c3-public-api /mail/http-to-smtp (maddy's durable stalwart_queue
+#              then feeds Stalwart; no direct worker->Stalwart leg, it would duplicate)
+#       Each leg: own inline attempt + background retry + MESH_LEG_LOST/GOOGLE_LEG_LOST log.
 #       Copy 3: ONLY if C3 health unhealthy → live.com (disaster backup)
 # NOTE: Phase 5 (cf-worker-bridge on oci-analytics) reverted on 2026-05-09 —
 #       the new /cf-worker-bridge Caddy route on gcp-proxy hadn't shipped (Phase 4

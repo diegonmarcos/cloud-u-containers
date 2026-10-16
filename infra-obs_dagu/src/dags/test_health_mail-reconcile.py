@@ -262,6 +262,69 @@ with tempfile.TemporaryDirectory() as td:
     check(judge("Traceback (most recent call last):\n") == "failed",
           "crashed repair run -> failed")
 
+# ---- 6. Stalwart leg (reconcile-stalwart step) ----------------------------
+check(re.search(r"continueOn:\s*\n\s*failure:\s*true", raw) is not None,
+      "maddy step cannot block the Stalwart step (continueOn.failure)")
+check(re.search(r"name: reconcile-stalwart\n\s+depends:\s*\n\s+- reconcile\n", raw) is not None,
+      "reconcile-stalwart runs after reconcile")
+sw = raw[raw.index("name: reconcile-stalwart"):]
+sw_cmd = command_block(sw)
+check("STALWART_LOGIN_PASSWORD" in raw.split("steps:")[0], "JMAP password is a DAG env")
+
+# JMAP fingerprints must equal the Gmail-side md5(Message-ID)[:10].
+jm = {}
+exec(between(sw_cmd, "# >>> jmap\n", "# <<< jmap").replace("ACCT", "ACCT_"), jm)
+jm["ACCT_"] = "a1"
+check(jm["fingerprints"](["one@example.test", " <two@example.test> ", "", None])
+      == sorted([fp("one@example.test"), fp("two@example.test")]),
+      "JMAP fingerprints match the Gmail-side md5(Message-ID)[:10]")
+
+store = ["m%04d@example.test" % i for i in range(1203)]  # forces 3 pages of 500
+
+
+def fake_call(mc):
+    pos, limit = mc[0][1]["position"], mc[0][1]["limit"]
+    ids = list(range(pos, min(pos + limit, len(store))))
+    return [["Email/query", {"ids": ["e%d" % i for i in ids]}, "q"],
+            ["Email/get", {"list": [{"messageId": [store[i]]} for i in ids]}, "g"]]
+
+
+check(list(jm["run"](fake_call)) == store, "JMAP scan pages through the whole store")
+check(list(jm["run"](fake_call, page=1203)) == store, "JMAP scan stops on an exactly-full page")
+
+diff = between(sw_cmd, "# >>> stalwart-diff\n", "# <<< stalwart-diff")
+with tempfile.TemporaryDirectory() as td:
+    def w(n, lines):
+        open(os.path.join(td, n), "w").write("".join(l + "\n" for l in lines))
+    w("gmail.fps", ["a", "b", "c", "d"])      # Gmail has a..d
+    w("stalwart.fps", ["a", "x"])             # Stalwart has a (+ older x)
+    w("ex.fps", ["c"])                        # c was just re-injected via maddy
+    r = sh(diff + "cat \"$TMP/missing.fps\"",
+           {"TMP": td, "EXCL": os.path.join(td, "ex.fps")})
+    check(r.stdout.split() == ["b", "d"],
+          "Stalwart diff = Gmail - Stalwart - maddy-just-repaired (%r)" % r.stdout)
+
+nsw = {}
+exec(between(sw_cmd, "# >>> deliver-stalwart\n", "# <<< deliver-stalwart"), nsw)
+check(nsw["SMTP_PORT"] == 2025 and nsw["SMTP_HOST"] == "10.0.0.3",
+      "Stalwart repair talks to the MX ingest 10.0.0.3:2025, not maddy")
+d2, D2 = nsw["deliver"], nsw["Deferred"]
+lg = []
+class FS(FakeSMTP):
+    def ehlo(self, n):
+        lg.append("ehlo")
+check(d2("rp@x", b"m", connect=lambda: FS(lg), sleep=lambda s: None) == 1
+      and lg.count("data") == 1, "Stalwart repair: clean send is one DATA")
+lg.clear()
+try:
+    d2("rp@x", b"m", connect=lambda: FS(lg, data_exc=smtplib.SMTPServerDisconnected("t")),
+       sleep=lambda s: None)
+    res = None
+except D2 as e:
+    res = e
+check(res is not None and lg.count("data") == 1,
+      "Stalwart repair: failure during DATA is deferred, never retried in-run")
+
 print()
 if failures:
     print("FAILED (%d)" % len(failures))

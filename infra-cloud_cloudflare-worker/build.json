@@ -1,10 +1,16 @@
 {
   "name": "cloudflare-worker",
-  "description": "Cloudflare Email Worker — inbound mail forwarder. Triple-delivers to Maddy (via http-to-smtp-proxy-api), Google Workspace (Gmail API), and live.com (disaster backup).",
+  "description": "Cloudflare Email Worker — inbound mail forwarder. Parallel legs (Promise.allSettled): Google Workspace (Gmail API) and Maddy (via c3-public-api http-to-smtp; Maddy's durable stalwart_queue feeds Stalwart). Accept if either lands, reject only if both fail; each leg has its own retries and lost-leg log. live.com disaster backup when mail health is unhealthy.",
   "category": "cloud",
   "build": {
     "copy_only": "true",
     "headers_enforced": true
+  },
+  "tests": {
+    "email-forwarder": {
+      "cmd": "node test-email-forwarder.mjs",
+      "cwd": "src"
+    }
   },
   "deploy": {
     "wrangler": "true",
