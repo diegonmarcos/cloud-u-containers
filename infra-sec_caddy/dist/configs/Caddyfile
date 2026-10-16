@@ -265,6 +265,10 @@
   # Owner rule 2026-10-16: PUBLIC URL = fleet Bearer OR Authelia session cookie.
   #   - `Authorization: Bearer ...` -> introspect-proxy (the same door the MCP routes
   #     use); an invalid token gets the introspector's own 401/403.
+  #   - `X-Fleet-Authorization: Bearer ...` -> the same introspect-proxy (the token is
+  #     moved into Authorization on the sub-request only); it wins over Authorization
+  #     and is stripped before proxying, so a mailbox credential in `Authorization`
+  #     (Stalwart Basic/Bearer on jmap./mails.) reaches the upstream untouched.
   #   - anything else -> Authelia forward-auth: a valid session cookie passes;
   #     otherwise Authelia answers 401 to API / non-browser clients and 302 to
   #     auth. (with rd=) to browsers. Nothing reaches an upstream anonymously.
@@ -284,8 +288,17 @@
       method OPTIONS
       header Access-Control-Request-Method *
     }
+    @ea_fleet {
+      header X-Fleet-Authorization Bearer*
+      not path {args[:]}
+      not {
+        method OPTIONS
+        header Access-Control-Request-Method *
+      }
+    }
     @ea_bearer {
       header Authorization Bearer*
+      not header X-Fleet-Authorization Bearer*
       not path {args[:]}
       not {
         method OPTIONS
@@ -294,6 +307,7 @@
     }
     @ea_session {
       not header Authorization Bearer*
+      not header X-Fleet-Authorization Bearer*
       not path {args[:]}
       not {
         method OPTIONS
@@ -301,6 +315,16 @@
       }
     }
     respond @ea_pre 204
+    # Dedicated fleet-token header for clients whose Authorization carries another
+    # credential (Stalwart Basic/Bearer on jmap./mails.). Wins over Authorization.
+    forward_auth @ea_fleet 10.0.0.1:4182 {
+      method GET
+      uri /auth
+      header_up Authorization {http.request.header.X-Fleet-Authorization}
+      copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+    }
+    # Never forward the fleet token to an upstream; Authorization passes untouched.
+    request_header -X-Fleet-Authorization
     forward_auth @ea_bearer 10.0.0.1:4182 {
       method GET
       uri /auth
@@ -318,8 +342,18 @@
       method OPTIONS
       header Access-Control-Request-Method *
     }
+    @ea_fleet {
+      header X-Fleet-Authorization Bearer*
+      not path {args[:]}
+      not {
+        method OPTIONS
+        header Access-Control-Request-Method *
+      }
+      not remote_ip 10.0.0.0/24 fd0c:1d00::/64
+    }
     @ea_bearer {
       header Authorization Bearer*
+      not header X-Fleet-Authorization Bearer*
       not path {args[:]}
       not {
         method OPTIONS
@@ -329,6 +363,7 @@
     }
     @ea_session {
       not header Authorization Bearer*
+      not header X-Fleet-Authorization Bearer*
       not path {args[:]}
       not {
         method OPTIONS
@@ -337,6 +372,16 @@
       not remote_ip 10.0.0.0/24 fd0c:1d00::/64
     }
     respond @ea_pre 204
+    # Dedicated fleet-token header for clients whose Authorization carries another
+    # credential (Stalwart Basic/Bearer on jmap./mails.). Wins over Authorization.
+    forward_auth @ea_fleet 10.0.0.1:4182 {
+      method GET
+      uri /auth
+      header_up Authorization {http.request.header.X-Fleet-Authorization}
+      copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+    }
+    # Never forward the fleet token to an upstream; Authorization passes untouched.
+    request_header -X-Fleet-Authorization
     forward_auth @ea_bearer 10.0.0.1:4182 {
       method GET
       uri /auth
@@ -354,8 +399,18 @@
       method OPTIONS
       header Access-Control-Request-Method *
     }
+    @ea_fleet {
+      header X-Fleet-Authorization Bearer*
+      not path {args[:]}
+      not {
+        method OPTIONS
+        header Access-Control-Request-Method *
+      }
+      not header Upgrade websocket
+    }
     @ea_bearer {
       header Authorization Bearer*
+      not header X-Fleet-Authorization Bearer*
       not path {args[:]}
       not {
         method OPTIONS
@@ -365,6 +420,7 @@
     }
     @ea_session {
       not header Authorization Bearer*
+      not header X-Fleet-Authorization Bearer*
       not path {args[:]}
       not {
         method OPTIONS
@@ -373,6 +429,16 @@
       not header Upgrade websocket
     }
     respond @ea_pre 204
+    # Dedicated fleet-token header for clients whose Authorization carries another
+    # credential (Stalwart Basic/Bearer on jmap./mails.). Wins over Authorization.
+    forward_auth @ea_fleet 10.0.0.1:4182 {
+      method GET
+      uri /auth
+      header_up Authorization {http.request.header.X-Fleet-Authorization}
+      copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+    }
+    # Never forward the fleet token to an upstream; Authorization passes untouched.
+    request_header -X-Fleet-Authorization
     forward_auth @ea_bearer 10.0.0.1:4182 {
       method GET
       uri /auth

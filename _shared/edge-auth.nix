@@ -73,6 +73,10 @@ in rec {
   # Owner rule 2026-10-16: PUBLIC URL = fleet Bearer OR Authelia session cookie.
   #   - `Authorization: Bearer ...` -> introspect-proxy (the same door the MCP routes
   #     use); an invalid token gets the introspector's own 401/403.
+  #   - `X-Fleet-Authorization: Bearer ...` -> the same introspect-proxy (the token is
+  #     moved into Authorization on the sub-request only); it wins over Authorization
+  #     and is stripped before proxying, so a mailbox credential in `Authorization`
+  #     (Stalwart Basic/Bearer on jmap./mails.) reaches the upstream untouched.
   #   - anything else -> Authelia forward-auth: a valid session cookie passes;
   #     otherwise Authelia answers 401 to API / non-browser clients and 302 to
   #     auth. (with rd=) to browsers. Nothing reaches an upstream anonymously.

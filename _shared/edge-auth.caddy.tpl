@@ -3,8 +3,17 @@
       method OPTIONS
       header Access-Control-Request-Method *
     }
+    @ea_fleet {
+      header X-Fleet-Authorization Bearer*
+      not path {args[:]}
+      not {
+        method OPTIONS
+        header Access-Control-Request-Method *
+      }@EA_EXTRA@@EA_OFFMESH@
+    }
     @ea_bearer {
       header Authorization Bearer*
+      not header X-Fleet-Authorization Bearer*
       not path {args[:]}
       not {
         method OPTIONS
@@ -13,6 +22,7 @@
     }
     @ea_session {
       not header Authorization Bearer*
+      not header X-Fleet-Authorization Bearer*
       not path {args[:]}
       not {
         method OPTIONS
@@ -20,6 +30,16 @@
       }@EA_EXTRA@@EA_OFFMESH@
     }
     respond @ea_pre 204
+    # Dedicated fleet-token header for clients whose Authorization carries another
+    # credential (Stalwart Basic/Bearer on jmap./mails.). Wins over Authorization.
+    forward_auth @ea_fleet @INTROSPECT_UPSTREAM@ {
+      method GET
+      uri @INTROSPECT_URI@
+      header_up Authorization {http.request.header.X-Fleet-Authorization}
+      copy_headers @INTROSPECT_COPY@
+    }
+    # Never forward the fleet token to an upstream; Authorization passes untouched.
+    request_header -X-Fleet-Authorization
     forward_auth @ea_bearer @INTROSPECT_UPSTREAM@ {
       method GET
       uri @INTROSPECT_URI@
