@@ -367,6 +367,7 @@
     "arch": "arm64"
   },
   "build": {
+    "dist_volatile": true,
     "headers_enforced": true
   },
   "api": {

@@ -144,6 +144,10 @@
           "type": ["string", "boolean"],
           "description": "When true, copy cloud-data/ generated configs into the build output"
         },
+        "dist_volatile": {
+          "type": ["string", "boolean"],
+          "description": "When true, the committed dist/ embeds the fleet declaration (changes whenever any service is registered) and is re-rendered by every ship, so the CI committed-dist guard does not compare it"
+        },
         "copy_only": {
           "type": ["string", "boolean"],
           "description": "When true, skip nix build and just copy src/ to dist/"
