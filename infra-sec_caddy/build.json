@@ -153,8 +153,8 @@
         {
           "host": "mcp.diegonmarcos.com",
           "scope": "paths",
-          "paths": ["/.well-known/oauth-protected-resource*", "/.well-known/oauth-authorization-server*"],
-          "reason": "Owner decision 2026-10-16: MCP OAuth discovery metadata (RFC 9728 / RFC 8414) is read by a client BEFORE it holds a token. Only these two documents; every MCP endpoint stays Bearer-protected."
+          "paths": ["/.well-known/oauth-protected-resource*", "/.well-known/oauth-authorization-server*", "/.well-known/openid-configuration*", "/register", "/authorize", "/token", "/callback", "/oauth/*", "/*/.well-known/oauth-protected-resource*", "/*/.well-known/oauth-authorization-server*", "/*/register", "/*/authorize", "/*/token", "/*/callback"],
+          "reason": "Owner decision 2026-10-16 + item 5 (MCP auth discovery): a claude.ai MCP connector completes the OAuth sign-in BEFORE it holds a token -- discovery metadata (RFC 9728 / RFC 8414, incl. per-resource variants), Dynamic Client Registration (/register), /authorize, /token and the callback. The tool endpoints (/<route>/mcp) stay Bearer-protected; a request to any of these paths is answered by the MCP side itself."
         },
         {
           "host": "analytics.diegonmarcos.com",

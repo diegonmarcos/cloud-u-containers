@@ -6706,7 +6706,7 @@ handle {
   bind 0.0.0.0 10.0.0.1
 import security_mcp
 import request_limits
-import edge_auth_offmesh /.well-known/acme-challenge/* /.well-known/oauth-protected-resource* /.well-known/oauth-authorization-server*
+import edge_auth_offmesh /.well-known/acme-challenge/* /.well-known/oauth-protected-resource* /.well-known/oauth-authorization-server* /.well-known/openid-configuration* /register /authorize /token /callback /oauth/* /*/.well-known/oauth-protected-resource* /*/.well-known/oauth-authorization-server* /*/register /*/authorize /*/token /*/callback
 handle_path /cloud-drive-mcp/* {
   @wg remote_ip 10.0.0.0/24 fd0c:1d00::/64
         handle @wg {
