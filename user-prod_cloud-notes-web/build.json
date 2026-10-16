@@ -1,12 +1,10 @@
 {
-  "enabled": false,
   "name": "cloud-notes-web",
-  "description": "DISABLED pending GHCR package visibility (owner action: make the upstream ghcr package public, then enabled:true). Cloud Notes web: the AFFiNE-based notes app (Miro + Notion + Obsidian) served as static files at notes.diegonmarcos.com behind the edge gate (Authelia 2FA or fleet Bearer). Built by cloud-u-android ship-cloud-notes.yml (ghcr.io/diegonmarcos/cloud-notes-web).",
+  "description": "Cloud Notes web: the AFFiNE-based notes app (Miro + Notion + Obsidian) served as static files at notes.diegonmarcos.com behind the edge gate (Authelia 2FA or fleet Bearer). Built by cloud-u-android ship-cloud-notes.yml (ghcr.io/diegonmarcos/cloud-notes-web).",
   "dns": "cloud-notes-web.app",
   "category": "app",
   "timezone": "Europe/Madrid",
   "build": {
-    "ship_hold": "pending GHCR package visibility (owner action): ghcr.io/diegonmarcos/cloud-notes-web is private, the wrap build gets 403",
     "include_cloud_data": "true"
   },
   "domain": "notes.diegonmarcos.com",
