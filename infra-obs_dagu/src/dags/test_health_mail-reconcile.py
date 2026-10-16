@@ -265,8 +265,9 @@ with tempfile.TemporaryDirectory() as td:
 # ---- 6. Stalwart leg (reconcile-stalwart step) ----------------------------
 check(re.search(r"continue_on:\s*\n\s*failure:\s*true", raw) is not None,
       "maddy step cannot block the Stalwart step (continue_on.failure)")
-check(re.search(r"name: reconcile-stalwart\n\s+depends:\s*\n\s+- reconcile\n", raw) is not None,
-      "reconcile-stalwart runs after reconcile")
+check(raw.index("name: reconcile-stalwart") > raw.index("name: reconcile\n"),
+      "reconcile-stalwart is listed after reconcile (chain DAG: runs in order)")
+check(not re.search(r"^\s*depends:", raw, re.M), "no depends: (rejected by chain-type DAGs)")
 sw = raw[raw.index("name: reconcile-stalwart"):]
 sw_cmd = command_block(sw)
 check("STALWART_LOGIN_PASSWORD" in raw.split("steps:")[0], "JMAP password is a DAG env")

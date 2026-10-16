@@ -495,8 +495,7 @@ steps:
   # checked first (the diff) and a failure during/after DATA is never retried
   # in-run (same rule as the maddy repair).
   - name: reconcile-stalwart
-    depends:
-      - reconcile
+    # DAG type is chain: steps run in order; `depends` is rejected (needs type graph).
     command: |
       set -u
       TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
