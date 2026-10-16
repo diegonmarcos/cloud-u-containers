@@ -5,8 +5,8 @@ import { dockerExecShell } from "./shell-quote.js";
 import { validateContainerName, validateSince, validatePathComponent } from "./validators.js";
 import { redactInspectArgv } from "./redact-argv.js";
 import {
-  DATA_MOUNT_TEMPLATE, STATE_TEMPLATE, buildRepairScript, certDomain, formatReport, lastStartupError,
-  mismatchDomains, mismatchLines, parseDataMount, parseScanOutput, parseState, tsStamp,
+  buildRepairScript, certDomain, formatReport, lastStartupError,
+  mismatchDomains, mismatchLines, parseScanOutput, parseState, tsStamp,
 } from "./caddy-cert-repair.js";
 import type { z } from "zod";
 import type { ContainerStatusSchema } from "./schemas.js";
@@ -258,34 +258,22 @@ export function caddyCertRepair(
     audit("devops.caddy.cert_repair", tag, `FAILED ${msg.slice(0, 120)}`);
     return { ok: false, output: `caddy cert repair ${target}: ${msg}` };
   };
-  const q = (v: string) => `'${v.replace(/'/g, "'\\''")}'`;
-
-  const mount = sshExec(vmId, `docker inspect -f ${q(DATA_MOUNT_TEMPLATE)} ${container}`, 15_000);
-  if (!mount.ok) return fail(`docker inspect failed: ${(mount.stderr || mount.stdout).trim()}`);
-  const dataDir = parseDataMount(mount.stdout);
-  if (!dataDir) return fail(`no usable /data mount on ${container} (got "${mount.stdout.trim().slice(0, 100)}")`);
-
-  // The script goes over as base64 and runs as root (docker volumes are root-owned); it prints verdicts only.
-  const script = buildRepairScript({ dataDir, allMesh, dryRun, ts: tsStamp() });
+  // ONE ssh: mount lookup + scan (+ async restart, or state/logs on dry run) all run in a single
+  // remote script as root, capped at 25s scan / 35s total so the MCP client's 60s limit holds.
+  const script = buildRepairScript({ container, allMesh, dryRun, ts: tsStamp(), budgetSec: 25 });
   const scan = sshExec(
     vmId,
-    `echo ${Buffer.from(script).toString("base64")} | base64 -d | ( [ "$(id -u)" = 0 ] && bash -s || sudo -n bash -s )`,
-    120_000,
+    `echo ${Buffer.from(script).toString("base64")} | base64 -d | ( [ "$(id -u)" = 0 ] && timeout 35 bash -s || sudo -n timeout 35 bash -s )`,
+    40_000,
   );
-  const lines = parseScanOutput(scan.stdout);
+  const [head, logs = ""] = scan.stdout.split("===LOGS===\n");
+  const lines = parseScanOutput(head);
+  const dataDir = /^DATA (\S+)$/m.exec(head)?.[1] ?? "(unresolved)";
   if (!lines.some((l) => l.kind === "done")) {
     return fail(`scan did not finish (exit ${scan.exitCode}): ${[scan.stdout, scan.stderr].join(" ").trim().slice(0, 300)}`);
   }
-
-  // Live: restart, wait, read state + logs since the restart. Dry run: current state + recent logs only.
-  const inspect = `docker inspect -f ${q(STATE_TEMPLATE)} ${container}`;
-  const collect = dryRun
-    ? `${inspect}; echo '===LOGS==='; docker logs --tail 400 ${container} 2>&1`
-    : `T=$(date -u +%Y-%m-%dT%H:%M:%SZ); docker restart ${container} >/dev/null && echo RESTARTED || echo RESTART_FAILED; sleep 15; ${inspect}; echo '===LOGS==='; docker logs --since "$T" --tail 400 ${container} 2>&1`;
-  const after = sshExec(vmId, collect, dryRun ? 30_000 : 120_000);
-  const [head, logs = ""] = after.stdout.split("===LOGS===\n");
-  const restarted = dryRun ? null : /RESTARTED/.test(head) && !/RESTART_FAILED/.test(head) ? "restarted, waited 15s" : "FAILED";
-  const state = parseState(head.split("\n").filter((l) => l.includes("|")).pop() ?? "");
+  const restarted = dryRun ? null : /^RESTARTING$/m.test(head) ? "restarted (async, not waited); re-run dry_run to confirm" : "FAILED";
+  const state = parseState(/^STATE (.+)$/m.exec(head)?.[1] ?? "");
 
   const remaining = mismatchLines(logs);
   const domains = new Set<string>([

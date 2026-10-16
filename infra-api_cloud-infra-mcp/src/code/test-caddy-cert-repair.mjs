@@ -37,7 +37,9 @@ t("healthy tree: all match, nothing to repair", () => {
   const d = fresh("healthy");
   mk(d, "mesh", "filebrowser.app"); mk(d, "acme-v02.api.letsencrypt.org-directory", "example.com");
   const r = run(d);
-  assert.deepEqual(r.lines.map((l) => l.kind).sort(), ["done", "ok", "ok"]);
+  assert.deepEqual(r.lines.map((l) => l.kind).sort(), ["done", "okn"]);
+  assert.deepEqual(r.lines.find((l) => l.kind === "okn"), { kind: "okn", n: 2 });
+  assert.doesNotMatch(r.stdout, /^OK /m, "only mismatches are emitted per cert");
   assert.match(formatReport({ vm: "gcp-proxy", container: "caddy", dataDir: d, dryRun: true, allMesh: false, scan: r.lines, restarted: null, state: null, remaining: [], startupErrors: [], lastError: null }), /nothing to repair/);
 });
 
@@ -89,6 +91,28 @@ t("incomplete / unreadable dirs are skipped, never moved", () => {
   assert.ok(existsSync(join(d, "caddy/certificates/mesh/junk.app")) && existsSync(join(d, "caddy/certificates/mesh/nokey.app")));
 });
 
+t("time budget: unchecked dirs are reported as TIMEOUT, scan still finishes", () => {
+  const d = fresh("budget"); mk(d, "mesh", "a.app"); mk(d, "mesh", "b.app");
+  const r = run(d, { budgetSec: 0 }); // clamped to 1s by the builder; force expiry via SECONDS preset
+  assert.ok(r.lines.some((l) => l.kind === "done"));
+  const script = buildRepairScript({ dataDir: d, allMesh: false, dryRun: true, ts: TS, budgetSec: 1 }).replace("SECONDS=0", "SECONDS=5");
+  const p = spawnSync("bash", ["-s"], { input: script, encoding: "utf8" });
+  const lines = parseScanOutput(p.stdout);
+  assert.deepEqual(lines.find((l) => l.kind === "timeout"), { kind: "timeout", left: 2 });
+  assert.match(formatReport({ vm: "v", container: "caddy", dataDir: d, dryRun: true, allMesh: false, scan: lines, restarted: null, state: null, remaining: [], startupErrors: [], lastError: null }), /PARTIAL.*2 cert dirs NOT checked/);
+});
+
+t("container mode resolves the mount and, live, restarts async without waiting", () => {
+  const d = fresh("ctr"); mk(d, "mesh", "a.app", { mismatch: true });
+  const bin = join(tmp, "bin"); mkdirSync(bin, { recursive: true });
+  sh(`printf '#!/bin/bash\\ncase "$1" in inspect) case "$*" in *Mounts*) echo ${d};; *) echo "running|false|0|t";; esac;; logs) echo "serving";; restart) echo "$*" >> ${join(tmp, "calls")};; esac\\n' > docker; chmod +x docker`, bin);
+  const go = (dryRun) => spawnSync("bash", ["-s"], { input: buildRepairScript({ container: "caddy", allMesh: false, dryRun, ts: TS }), encoding: "utf8", env: { ...process.env, PATH: `${bin}:${process.env.PATH}` } });
+  const dry = go(true);
+  assert.match(dry.stdout, new RegExp(`^DATA ${d}$`, "m")); assert.match(dry.stdout, /^STATE running\|false\|0\|t$/m); assert.match(dry.stdout, /===LOGS===\nserving/);
+  const live = go(false);
+  assert.match(live.stdout, /^MOVED mesh\/a\.app /m); assert.match(live.stdout, /^RESTARTING$/m); assert.doesNotMatch(live.stdout, /===LOGS===/);
+});
+
 t("missing certificates dir is an ERR, not a crash", () => {
   const d = join(tmp, "empty"); mkdirSync(d);
   const r = run(d);
@@ -100,6 +124,8 @@ t("script inputs are validated (no injection through data dir or ts)", () => {
     assert.throws(() => buildRepairScript({ dataDir, allMesh: false, dryRun: true, ts: TS }), /Invalid data dir/, dataDir);
   for (const ts of ["", "x", "20261015T120000Z;id", "2026-10-15"])
     assert.throws(() => buildRepairScript({ dataDir: "/data", allMesh: false, dryRun: true, ts }), /Invalid timestamp/, ts);
+  assert.throws(() => buildRepairScript({ allMesh: false, dryRun: true, ts: TS }), /Invalid data dir/);
+  assert.throws(() => buildRepairScript({ container: "caddy;id", allMesh: false, dryRun: true, ts: TS }), /Invalid container/);
   assert.ok(CONTAINER_RE.test("caddy") && !CONTAINER_RE.test("caddy;id") && !CONTAINER_RE.test("-x") && !CONTAINER_RE.test(""));
 });
 
@@ -152,15 +178,17 @@ t("parseState", () => {
 });
 
 t("formatReport: live run lists moves, restart, remaining lines and errors", () => {
-  const scan = parseScanOutput("OK mesh/a.app\nBAD mesh/filebrowser.app\nMOVED mesh/filebrowser.app /d/caddy/bad-cert-filebrowser.app-X\nSKIP mesh/z no .key\nDONE\n");
+  const scan = parseScanOutput("OKN 1\nBAD mesh/filebrowser.app\nMOVED mesh/filebrowser.app /d/caddy/bad-cert-filebrowser.app-X\nSKIP mesh/z no .key\nDONE\n");
   const rep = formatReport({
     vm: "gcp-proxy", container: "caddy", dataDir: "/d", dryRun: false, allMesh: false, scan,
-    restarted: "restarted, waited 15s", state: parseState("running|false|0|t"), remaining: mismatchLines(LOGS),
+    restarted: "restarted (async, not waited); re-run dry_run to confirm", state: parseState("running|false|0|t"), remaining: mismatchLines(LOGS),
     startupErrors: [{ domain: "filebrowser.app", error: lastStartupError(LOGS, "filebrowser.app") }], lastError: lastStartupError(LOGS),
   });
-  for (const re of [/LIVE/, /1 mismatched/, /moved mesh\/filebrowser\.app -> \/d\/caddy\/bad-cert-/, /skipped mesh\/z/, /restart: restarted/, /container: running/, /remaining .* \(2\)/, /last log error for filebrowser\.app: error \| tls/, /last startup error:/])
+  for (const re of [/LIVE/, /1 mismatched/, /moved mesh\/filebrowser\.app -> \/d\/caddy\/bad-cert-/, /skipped mesh\/z/, /restart: restarted .*re-run dry_run/, /container: running/])
     assert.match(rep, re);
-  assert.doesNotMatch(rep, /nothing to repair/);
+  assert.doesNotMatch(rep, /nothing to repair|remaining/);
+  const dry = formatReport({ vm: "gcp-proxy", container: "caddy", dataDir: "/d", dryRun: true, allMesh: false, scan, restarted: null, state: parseState("running|false|0|t"), remaining: mismatchLines(LOGS), startupErrors: [{ domain: "filebrowser.app", error: lastStartupError(LOGS, "filebrowser.app") }], lastError: lastStartupError(LOGS) });
+  for (const re of [/remaining .* \(2\)/, /last log error for filebrowser\.app: error \| tls/, /last startup error:/]) assert.match(dry, re);
   assert.equal(certDomain("mesh/filebrowser.app"), "filebrowser.app");
 });
 

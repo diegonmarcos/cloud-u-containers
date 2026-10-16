@@ -32,7 +32,9 @@ export function tsStamp(d: Date = new Date()): string {
 }
 
 export type ScanLine =
-  | { kind: "ok" | "bad"; cert: string }
+  | { kind: "bad"; cert: string }
+  | { kind: "okn"; n: number }
+  | { kind: "timeout"; left: number }
   | { kind: "skip"; cert: string; why: string }
   | { kind: "moved"; cert: string; to: string }
   | { kind: "mesh"; entries: number }
@@ -41,16 +43,28 @@ export type ScanLine =
   | { kind: "done" };
 
 /**
- * Bash run on the HOST (as root). `allMesh` quarantines the whole certificates/mesh
- * dir instead of probing each cert. `dryRun` reports only; it never touches a file.
- * Prints only sha256 comparisons' verdicts — no key material ever reaches stdout.
+ * Bash run on the HOST (as root) in ONE ssh invocation. `allMesh` quarantines the whole
+ * certificates/mesh dir instead of probing each cert. `dryRun` reports only; it never
+ * touches a file. Only mismatches are emitted (OK certs are just counted: `OKN <n>`);
+ * the pubkey of cert and key are compared in-shell, so no key material reaches stdout.
+ * `budgetSec` caps the scan (`TIMEOUT <n>` = certs not checked). With `container` (and
+ * no `dataDir`) the /data mount is resolved on the host; a dry run then appends state +
+ * recent logs, a live run issues an ASYNC restart and returns immediately.
  */
-export function buildRepairScript(o: { dataDir: string; allMesh: boolean; dryRun: boolean; ts: string }): string {
-  if (!HOST_PATH_RE.test(o.dataDir) || o.dataDir.split("/").includes("..")) throw new Error(`Invalid data dir: ${o.dataDir}`);
+export function buildRepairScript(o: { dataDir?: string; container?: string; allMesh: boolean; dryRun: boolean; ts: string; budgetSec?: number }): string {
+  if (o.dataDir !== undefined && (!HOST_PATH_RE.test(o.dataDir) || o.dataDir.split("/").includes(".."))) throw new Error(`Invalid data dir: ${o.dataDir}`);
+  if (o.dataDir === undefined && !o.container) throw new Error("Invalid data dir: need dataDir or container");
+  if (o.container !== undefined && !CONTAINER_RE.test(o.container)) throw new Error(`Invalid container: ${o.container}`);
   if (!/^[0-9]{8}T[0-9]{6}Z$/.test(o.ts)) throw new Error(`Invalid timestamp: ${o.ts}`);
+  const budget = Math.max(1, Math.min(Math.floor(o.budgetSec ?? 25), 40));
+  const c = o.container;
   return [
     "set -u",
-    `D='${o.dataDir}'; TS='${o.ts}'; ALL=${o.allMesh ? 1 : 0}; DRY=${o.dryRun ? 1 : 0}`,
+    `D='${o.dataDir ?? ""}'; TS='${o.ts}'; ALL=${o.allMesh ? 1 : 0}; DRY=${o.dryRun ? 1 : 0}; BUDGET=${budget}; SECONDS=0`,
+    ...(c ? [`[ -n "$D" ] || D=$(docker inspect -f '${DATA_MOUNT_TEMPLATE}' ${c} 2>/dev/null)`] : []),
+    'D="${D%/}"',
+    'if [[ ! "$D" =~ ^/[A-Za-z0-9_./-]+$ ]] || [[ "$D" == *..* ]]; then echo "ERR no usable /data mount (got: ${D:0:80})"; exit 5; fi',
+    'echo "DATA $D"',
     'ROOT="$D/caddy/certificates"',
     'command -v openssl >/dev/null 2>&1 || { echo "ERR openssl not installed on the host"; exit 3; }',
     '[ -d "$ROOT" ] || { echo "ERR no certificates dir at $ROOT"; exit 4; }',
@@ -62,22 +76,23 @@ export function buildRepairScript(o: { dataDir: string; allMesh: boolean; dryRun
     "    fi",
     "  else echo \"MESH 0\"; fi",
     "fi",
+    "okn=0; left=0",
     'for idir in "$ROOT"/*/; do',
     '  [ -d "$idir" ] || continue',
-    '  iss=$(basename "$idir")',
+    '  iss="${idir%/}"; iss="${iss##*/}"',
     '  if [ "$ALL" = 1 ] && [ "$iss" = mesh ]; then continue; fi',
     '  for d in "$idir"*/; do',
     '    [ -d "$d" ] || continue',
-    '    name=$(basename "$d")',
+    '    if [ "$SECONDS" -ge "$BUDGET" ]; then left=$((left+1)); continue; fi',
+    '    name="${d%/}"; name="${name##*/}"',
     '    crt=""; for c in "$d"*.crt; do [ -f "$c" ] && { crt="$c"; break; }; done',
     '    if [ -z "$crt" ]; then echo "SKIP $iss/$name no .crt"; continue; fi',
     '    key="${crt%.crt}.key"',
     '    if [ ! -f "$key" ]; then echo "SKIP $iss/$name no .key"; continue; fi',
-    '    pa=$(openssl x509 -in "$crt" -noout -pubkey 2>/dev/null | sha256sum | cut -c1-64)',
-    '    pb=$(openssl pkey -in "$key" -pubout 2>/dev/null | sha256sum | cut -c1-64)',
-    '    empty=$(printf "" | sha256sum | cut -c1-64)',
-    '    if [ "$pa" = "$empty" ] || [ "$pb" = "$empty" ]; then echo "SKIP $iss/$name unreadable cert or key"; continue; fi',
-    '    if [ "$pa" = "$pb" ]; then echo "OK $iss/$name"; continue; fi',
+    '    pa=$(openssl x509 -in "$crt" -noout -pubkey 2>/dev/null)',
+    '    pb=$(openssl pkey -in "$key" -pubout 2>/dev/null)',
+    '    if [ -z "$pa" ] || [ -z "$pb" ]; then echo "SKIP $iss/$name unreadable cert or key"; continue; fi',
+    '    if [ "$pa" = "$pb" ]; then okn=$((okn+1)); continue; fi',
     '    echo "BAD $iss/$name"',
     '    if [ "$DRY" = 0 ]; then',
     '      dst="$D/caddy/bad-cert-$name-$TS"; [ -e "$dst" ] && dst="$dst-$iss"',
@@ -85,7 +100,21 @@ export function buildRepairScript(o: { dataDir: string; allMesh: boolean; dryRun
     "    fi",
     "  done",
     "done",
+    'echo "OKN $okn"',
+    '[ "$left" = 0 ] || echo "TIMEOUT $left"',
     'echo "DONE"',
+    ...(c
+      ? [
+          'if [ "$DRY" = 1 ]; then',
+          `  echo "STATE $(docker inspect -f '${STATE_TEMPLATE}' ${c} 2>&1)"`,
+          '  echo "===LOGS==="',
+          `  timeout 8 docker logs --tail 400 ${c} 2>&1`,
+          "else",
+          `  nohup docker restart -t 5 ${c} >/dev/null 2>&1 </dev/null &`,
+          '  echo "RESTARTING"',
+          "fi",
+        ]
+      : []),
   ].join("\n");
 }
 
@@ -94,7 +123,9 @@ export function parseScanOutput(out: string): ScanLine[] {
   for (const raw of out.split("\n")) {
     const l = raw.trim();
     let m: RegExpExecArray | null;
-    if ((m = /^(OK|BAD) (\S+)$/.exec(l))) res.push({ kind: m[1] === "OK" ? "ok" : "bad", cert: m[2] });
+    if ((m = /^BAD (\S+)$/.exec(l))) res.push({ kind: "bad", cert: m[1] });
+    else if ((m = /^OKN (\d+)$/.exec(l))) res.push({ kind: "okn", n: Number(m[1]) });
+    else if ((m = /^TIMEOUT (\d+)$/.exec(l))) res.push({ kind: "timeout", left: Number(m[1]) });
     else if ((m = /^SKIP (\S+) (.+)$/.exec(l))) res.push({ kind: "skip", cert: m[1], why: m[2] });
     else if ((m = /^MOVED (\S+) (\S+)$/.exec(l))) res.push({ kind: "moved", cert: m[1], to: m[2] });
     else if ((m = /^MESH (\d+)$/.exec(l))) res.push({ kind: "mesh", entries: Number(m[1]) });
@@ -171,7 +202,8 @@ export function formatReport(r: RepairReport): string {
   const moved = r.scan.filter((s) => s.kind === "moved") as { cert: string; to: string }[];
   const mesh = r.scan.find((s) => s.kind === "mesh") as { entries: number } | undefined;
   const meshMoved = r.scan.find((s) => s.kind === "mesh_moved") as { to: string } | undefined;
-  const ok = r.scan.filter((s) => s.kind === "ok").length;
+  const ok = (r.scan.find((s) => s.kind === "okn") as { n: number } | undefined)?.n ?? 0;
+  const left = (r.scan.find((s) => s.kind === "timeout") as { left: number } | undefined)?.left ?? 0;
   const skipped = r.scan.filter((s) => s.kind === "skip") as { cert: string; why: string }[];
   const errs = r.scan.filter((s) => s.kind === "err") as { msg: string }[];
   const toRepair = bad.length > 0 || (r.allMesh && (mesh?.entries ?? 0) > 0);
@@ -180,15 +212,18 @@ export function formatReport(r: RepairReport): string {
     `/data host source: ${r.dataDir}`,
     `checked ${ok + bad.length} cert dirs: ${ok} match, ${bad.length} mismatched, ${skipped.length} skipped`,
   ];
+  if (left) out.push(`  PARTIAL: time budget hit, ${left} cert dirs NOT checked; re-run to continue`);
   for (const b of bad) out.push(`  MISMATCH ${b.cert}${r.dryRun ? " (would move)" : ""}`);
   for (const s of skipped) out.push(`  skipped ${s.cert}: ${s.why}`);
   if (r.allMesh) out.push(`mesh dir: ${mesh?.entries ?? 0} entries${meshMoved ? ` -> moved to ${meshMoved.to}` : r.dryRun && mesh?.entries ? " (would move whole dir)" : ""}`);
   for (const m of moved) out.push(`  moved ${m.cert} -> ${m.to}`);
   for (const e of errs) out.push(`  ERROR ${e.msg}`);
-  if (!toRepair && !errs.length) out.push("nothing to repair: every cert key matches its certificate");
+  if (!toRepair && !errs.length && !left) out.push("nothing to repair: every cert key matches its certificate");
+  else if (!toRepair && left) out.push("no mismatch among the checked certs (scan was partial)");
   else if (r.dryRun && toRepair) out.push("dry_run=true: nothing was moved or restarted. Re-run with dry_run=false to repair.");
   if (r.restarted) out.push(`restart: ${r.restarted}`);
   if (r.state) out.push(`container: ${r.state.status}${r.state.restarting ? " (restarting)" : ""}, restart count ${r.state.restartCount}`);
+  if (r.restarted && !r.dryRun) return out.join("\n");
   out.push(r.remaining.length ? `remaining "private key does not match" log lines (${r.remaining.length}):` : 'no remaining "private key does not match" log lines');
   for (const l of r.remaining) out.push(`  ${l}`);
   for (const s of r.startupErrors) out.push(`last log error for ${s.domain}: ${s.error ?? "(none)"}`);
