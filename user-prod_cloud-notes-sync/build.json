@@ -1,0 +1,74 @@
+{
+  "name": "cloud-notes-sync",
+  "description": "Cloud Notes sync server: Yjs documents (Hocuspocus) and the HTTP delta API at notes-sync.diegonmarcos.com behind the edge gate (fleet Bearer or Authelia). Built by cloud-u-android ship-cloud-notes.yml (ghcr.io/diegonmarcos/cloud-notes-sync).",
+  "dns": "cloud-notes-sync.app",
+  "category": "app",
+  "timezone": "Europe/Madrid",
+  "build": {
+    "include_cloud_data": "true"
+  },
+  "domain": "notes-sync.diegonmarcos.com",
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/cloud-notes-sync",
+    "compose_flags": "--build"
+  },
+  "proxy": {
+    "primary": {
+      "domain": "notes-sync.diegonmarcos.com",
+      "auth": "two_factor"
+    }
+  },
+  "health": {
+    "path": "/healthz"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
+  },
+  "ports": {
+    "app": 8098
+  },
+  "containers": {
+    "app": {
+      "container_name": "cloud-notes-sync",
+      "image": "ghcr.io/diegonmarcos/cloud-notes-sync-binaries:latest",
+      "port": 8098,
+      "port_env": null,
+      "dns": "cloud-notes-sync.app",
+      "public": true,
+      "proxy": {
+        "domain": "notes-sync.diegonmarcos.com",
+        "auth": "two_factor"
+      },
+      "healthcheck": "/healthz",
+      "monitoring": {
+        "tls_check": true,
+        "dns_check": true,
+        "endpoint_check": true
+      },
+      "volumes": [
+        "cloud_notes_sync_data:/data"
+      ],
+      "env_file": false,
+      "depends_on": [],
+      "resources": null,
+      "read_only": false,
+      "protocol": "http"
+    }
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "cloud-notes-sync-binaries",
+    "dockerfile": "Dockerfile",
+    "arch": "arm64"
+  },
+  "upstream_image": "ghcr.io/diegonmarcos/cloud-notes-sync:latest",
+  "resources": {
+    "mem_reservation": "16M"
+  },
+  "api": {
+    "type": "no-api"
+  }
+}
