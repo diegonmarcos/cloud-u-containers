@@ -20,47 +20,13 @@
       # ║ Source: ~/git/cloud-infra/a_solutions/ca-dat_postlite/src/flake.nix   ║
       # ║ Rebuild: ~/git/cloud-infra/a_solutions/ca-dat_postlite/build.sh ship  ║
       # ╚══════════════════════════════════════════════════════════════════╝
-      # SQLite REST API servers (ws4sqlite + postlite)
+      # postlite (Postgres wire protocol over SQLite). The former sqlite-* REST containers were
+      # removed: they ran this image with ws4sqlite flags (-port/-db), which postlite rejects, so
+      # they exited 2 on every start and failed the deploy liveness check.
       # Deployed on: gcp-E2-f_0 (35.226.147.64)
       # Access via WireGuard only (10.0.0.1:8890-8893, 5433-5436)
 
       services:
-        sqlite-npm:
-          image: ghcr.io/diegonmarcos/postlite:latest
-          container_name: sqlite-npm
-          restart: "no"  # container-init handles startup
-          network_mode: host
-          volumes:
-            - /home/diego/npm/data:/data
-          command: ["-port", "8890", "-db", "/data/database.sqlite?mode=ro"]
-
-        sqlite-vaultwarden:
-          image: ghcr.io/diegonmarcos/postlite:latest
-          container_name: sqlite-vaultwarden
-          restart: "no"  # container-init handles startup
-          network_mode: host
-          volumes:
-            - /home/diego/vaultwarden/data:/data
-          command: ["-port", "8891", "-db", "/data/db.sqlite3?mode=ro"]
-
-        sqlite-ntfy:
-          image: ghcr.io/diegonmarcos/postlite:latest
-          container_name: sqlite-ntfy
-          restart: "no"  # container-init handles startup
-          network_mode: host
-          volumes:
-            - /home/diego/ntfy/cache:/data
-          command: ["-port", "8892", "-db", "/data/cache.db?mode=ro"]
-
-        sqlite-authelia:
-          image: ghcr.io/diegonmarcos/postlite:latest
-          container_name: sqlite-authelia
-          restart: "no"  # container-init handles startup
-          network_mode: host
-          volumes:
-            - /home/diego/authelia/config:/data
-          command: ["-port", "8893", "-db", "/data/db.sqlite3?mode=ro"]
-
         postlite-npm:
           build:
             context: .
