@@ -69,12 +69,18 @@ in
         # listener). bind_host is data-driven from build.json (10.0.0.1 on gcp-proxy).
         test = [
           "CMD" "python3" "-c"
-          "import urllib.request; urllib.request.urlopen('http://${buildJson.bind_host}:${toString buildJson.ports.app}/health')"
+          "import urllib.request; urllib.request.urlopen('http://${buildJson.bind_host}:${toString buildJson.ports.app}/health', timeout=25)"
         ];
+        # The request itself answers in ~10 ms; what costs time is `docker exec` + python3 start-up on
+        # gcp-proxy (944 MB RAM, swapping, load 10 during a ship). Measured 2026-10-17: a passing probe
+        # took 9.3 s of the old 10 s budget, and probes timed out (exit -1) for 3+ hours of "unhealthy"
+        # while /health answered 200 from the host. The address is right (wg0-only bind, no localhost
+        # listener), so the budget is what changed: 30 s for the probe, 25 s for the socket inside it so
+        # a hung request cannot outlive docker's timeout and stack probes.
         interval     = "60s";
-        timeout      = "10s";
+        timeout      = "30s";
         retries      = 3;
-        start_period = "40s";
+        start_period = "60s";
       };
         # mem_limit/mem_reservation are optional in build.json (only
         # mem_reservation is declared fleet-wide today). Reading them
