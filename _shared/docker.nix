@@ -107,7 +107,6 @@ in {
     configFiles ? [],                        # [ { src = "file"; dst = "/path/in/image"; } ]
     extraDockerfileLines ? [],               # Extra Dockerfile lines (RUN, ENV, etc.) after COPY
     registry ? "ghcr.io/diegonmarcos",       # GHCR registry prefix
-    source ? "https://github.com/diegonmarcos/cloud-u-containers", # repo whose code builds it; GHCR links the package there
   }: {
     image = "${registry}/${name}:latest";
     build = {
@@ -119,7 +118,7 @@ in {
         # Self-documenting: bake docker-compose.yml into image for inspection
         + "\nCOPY docker-compose.yml /opt/cloud-docs/docker-compose.yml"
         # OCI standard labels
-        + "\nLABEL org.opencontainers.image.source=\"${source}\""
+        + "\nLABEL org.opencontainers.image.source=\"https://github.com/diegonmarcos/cloud-infra\""
         + "\nLABEL org.opencontainers.image.description=\"${description}\""
         + "\nLABEL org.opencontainers.image.title=\"${name}\""
         + "\nLABEL cloud.diegonmarcos.from-image=\"${fromImage}\""
