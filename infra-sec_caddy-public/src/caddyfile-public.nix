@@ -59,6 +59,10 @@ let
       "@RL_KEY@"    = r.key;
       "@RL_EVENTS@" = toString r.events;
       "@RL_WINDOW@" = r.window;
+      "@RL_STATIC_ZONE@"   = r.static_zone or "static";
+      "@RL_STATIC_EVENTS@" = toString (r.static_events or 3000);
+      "@RL_STATIC_WINDOW@" = r.static_window or "1m";
+      "@RL_STATIC_RE@"     = r.static_path_regexp or ''(?i)\.(svg|png|jpe?g|gif|webp|avif|ico|css|js|mjs|map|woff2?|ttf|otf|json|webmanifest|mp4|webm)$'';
     } (readTpl "11-rate-limiting.caddy.tpl");
 
   blockBots = let uas = lib.concatStringsSep "|" ss.bot_blocker.user_agents; in
@@ -196,7 +200,18 @@ ${lib.concatMapStringsSep "\n" mkMailL4Route mailL4}
 
   wellKnownRoutes = caddyPublic.well_known_routes or [];
 
+  # Static assets on gh-pages sites: GitHub Pages sends max-age=600, so a
+  # WebView re-entry after 10 min refetches every icon. Serve them with a day
+  # of freshness + a week of stale-while-revalidate; the upstream ETag is kept
+  # so revalidation is a cheap 304. HTML stays on GitHub's short max-age.
+  ghStaticRe = (ss.rate_limit or {}).static_path_regexp or ''(?i)\.(svg|png|jpe?g|gif|webp|avif|ico|css|js|mjs|map|woff2?|ttf|otf|json|webmanifest|mp4|webm)$'';
   mkGithubProxy = path: ''
+    @gh_static path_regexp gh_static `${ghStaticRe}`
+    header @gh_static {
+      Cache-Control "public, max-age=86400, stale-while-revalidate=604800"
+      -Expires
+      defer
+    }
     rewrite * /${path}{uri}
     reverse_proxy https://diegonmarcos.github.io {
       header_up Host diegonmarcos.github.io
