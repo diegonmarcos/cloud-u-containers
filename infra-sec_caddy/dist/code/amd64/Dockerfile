@@ -25,4 +25,3 @@ COPY Dockerfile /opt/cloud-builder/Dockerfile
 LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
 LABEL org.opencontainers.image.dockerfile-path="a_solutions/infra-sec_caddy/src/code/Dockerfile"
 
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-u-containers"
