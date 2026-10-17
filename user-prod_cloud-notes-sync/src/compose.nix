@@ -24,6 +24,17 @@ in
         # the same check the edge gate runs (infra-sec_introspect-proxy, mesh address of gcp-proxy)
         SYNC_FORWARD_AUTH_URL = "http://10.0.0.1:4182/auth";
       };
+      # The image's own HEALTHCHECK probes 127.0.0.1:$PORT. On the host network the server binds the
+      # WG IP only (never 0.0.0.0: wg-only policy), so that probe finds no listener and the container
+      # reads "unhealthy" while serving fine. Probe the address it actually binds.
+      healthcheck = {
+        test = [ "CMD" "node" "-e"
+          "fetch('http://${self.ip}:${toString buildJson.ports.app}/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))" ];
+        interval     = "30s";
+        timeout      = "10s";
+        retries      = 3;
+        start_period = "20s";
+      };
       volumes = [ "cloud_notes_sync_data:/data" ];
       deploy.resources =
            { limits = { cpus = "0.5"; } // (if buildJson.resources ? mem_limit then { memory = buildJson.resources.mem_limit; } else {}); }
