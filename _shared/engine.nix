@@ -45,6 +45,13 @@ let
   # svcDirName is derived from srcDir (data-driven, no hardcoding).
   # ──────────────────────────────────────────────────────────────
   svcDirName = baseNameOf (dirOf srcDir);
+  # The repository whose code builds this image. GHCR links a package to the repo
+  # named by org.opencontainers.image.source when it is CREATED and gives it that
+  # repo's visibility (owner rule: packages follow their repo). The code lives
+  # here, in cloud-u-containers; a service may name another repo through
+  # build.json#docker.labels."org.opencontainers.image.source".
+  imageSource = (buildJson.docker.labels or {})."org.opencontainers.image.source"
+    or "https://github.com/diegonmarcos/cloud-u-containers";
   svcPath    = "a_solutions/${svcDirName}";
 
   bannerLines = [
@@ -548,6 +555,7 @@ let
               [ "@AGENT_TOOLBELT_APT@" "@AGENT_TOOLBELT_EXTRA_RUN@" "@AGENT_TOOLBELT_NPM@" ]
               [ toolbeltApt toolbeltExtraRun toolbeltNpmRun ]
               (builtins.readFile nativeBuild.dockerfile)}
+          LABEL org.opencontainers.image.source="${imageSource}"
         ''
       else
         pkgs.writeText "Dockerfile" ''
@@ -556,7 +564,7 @@ let
           ${lib.optionalString (nativeBuild.apt or "" != "")
             "RUN apt-get update && apt-get install -y --no-install-recommends ${nativeBuild.apt} && rm -rf /var/lib/apt/lists/*"}
           COPY ${baseNameOf nativeBuild.binary} /usr/local/bin/${baseNameOf nativeBuild.binary}
-          LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
+          LABEL org.opencontainers.image.source="${imageSource}"
           CMD ["${baseNameOf nativeBuild.binary}"]
         ''
     else
@@ -592,7 +600,7 @@ let
       pkgs.writeText "Dockerfile" ''
         ${mkBanner "#"}# Type B — wrap upstream, arch=${arch}
         FROM ${upstream}
-        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
+        LABEL org.opencontainers.image.source="${imageSource}"
         LABEL cloud.diegonmarcos.from-image="${upstream}"
         ${lib.optionalString (apkList != "")
           "RUN apk add --no-cache ${apkList}"}
