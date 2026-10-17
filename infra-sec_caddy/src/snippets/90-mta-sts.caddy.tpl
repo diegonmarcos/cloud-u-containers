@@ -16,5 +16,9 @@ mode: @MTA_MODE@
 max_age: @MTA_MAX_AGE@
 " 200
     }
-    respond 404
+    # Wrapped in handle: the global options carry `order respond before handle`, so a
+    # bare site-level `respond 404` ran BEFORE the policy handle above and 404ed it.
+    handle {
+      respond 404
+    }
   }

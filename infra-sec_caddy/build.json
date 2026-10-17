@@ -497,6 +497,10 @@
     "authelia-rd-keeps-prefix": {
       "cmd": "bash test/test-authelia-rd-keeps-prefix.sh",
       "cwd": "src"
+    },
+    "no-site-respond-before-handle": {
+      "cmd": "bash test/test-no-site-respond-before-handle.sh",
+      "cwd": "src"
     }
   }
 }
