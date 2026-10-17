@@ -35,6 +35,16 @@
 #   9. lance       octocode_db / octocode_db_pvt: superseded manifests and the data
 #                  fragments only they named (same functions as the cgc-db restore),
 #                  so the live volumes stay trimmed between restores.
+#
+# Added 2026-10-17 (oci-apps back at 94%; a manual pass freed ~17 GB):
+#  10. caches      a) host ~/.cache/cgc-db-staging.* older than STAGING_MAX_AGE_HOURS
+#                     (a cgc-db restore killed by a signal left 1-4 GB each).
+#                  b) npm _cacache in NPM_CACHE_HOMES once it exceeds NPM_CACHE_MAX_MB
+#                     and no npm process runs in NPM_CACHE_CONTAINER (npm re-downloads).
+#                  c) git clones under GIT_GC_ROOTS: plain `git gc` (default 2-week
+#                     prune, so objects a live agent just wrote are safe) when loose
+#                     objects exceed GIT_GC_LOOSE_MB or packs exceed GIT_GC_MAX_PACKS.
+#                  Gradle step 8 now also judges caches/<gradle-version>/* entries.
 # images now keep: every image a container references + the newest
 # IMAGE_KEEP_PREVIOUS unused tagged image per repo (the rollback). Dangling images
 # go after DANGLING_MIN_AGE_HOURS.
@@ -61,6 +71,14 @@ RUNNER_IMAGE_MATCH="${RUNNER_IMAGE_MATCH:-github-runner}"
 GRADLE_HOME_PATH="${GRADLE_HOME_PATH:-/vol/my-ai-api-home/toolchain/gradle-home}"
 GRADLE_MAX_AGE_DAYS="${GRADLE_MAX_AGE_DAYS:-30}"
 LANCE_HOMES="${LANCE_HOMES:-/vol/octocode_db /vol/octocode_db_pvt}"
+STAGING_PARENT="${STAGING_PARENT:-/vol/host-cache}"
+STAGING_MAX_AGE_HOURS="${STAGING_MAX_AGE_HOURS:-24}"
+NPM_CACHE_HOMES="${NPM_CACHE_HOMES:-/vol/claude-superset-api-home}"
+NPM_CACHE_MAX_MB="${NPM_CACHE_MAX_MB:-1024}"
+NPM_CACHE_CONTAINER="${NPM_CACHE_CONTAINER:-cloud-agi-claude}"
+GIT_GC_ROOTS="${GIT_GC_ROOTS:-/vol/cloud-git-gh /vol/octocode_repos}"
+GIT_GC_LOOSE_MB="${GIT_GC_LOOSE_MB:-200}"
+GIT_GC_MAX_PACKS="${GIT_GC_MAX_PACKS:-20}"
 AGGRESSIVE="${AGGRESSIVE:-0}"
 for a in "$@"; do [ "$a" = "--aggressive" ] && AGGRESSIVE=1; done
 BUILD_CACHE_MIN_AGE_HOURS="${BUILD_CACHE_MIN_AGE_HOURS:-48}"
@@ -78,10 +96,13 @@ STATE_DIR="${STATE_DIR:-/var/log/disk-janitor}"
 # busybox crond starts each firing with an empty environment.
 export SCHEDULE MODE IMAGE_MIN_AGE_HOURS IMAGE_KEEP_PREVIOUS DANGLING_MIN_AGE_HOURS BUILD_CACHE_MIN_AGE_HOURS \
   RUNNER_WORK_MIN_AGE_DAYS RUNNER_IMAGE_MATCH GRADLE_HOME_PATH GRADLE_MAX_AGE_DAYS LANCE_HOMES \
+  STAGING_PARENT STAGING_MAX_AGE_HOURS NPM_CACHE_HOMES NPM_CACHE_MAX_MB NPM_CACHE_CONTAINER \
+  GIT_GC_ROOTS GIT_GC_LOOSE_MB GIT_GC_MAX_PACKS \
   VOLUME_MIN_AGE_DAYS DISPATCH_CONTAINERS DISPATCH_ROOT REAP_SCRIPT LOG_RETENTION_DAYS ALERT_FREE_GB \
   NTFY_URL NTFY_TOPIC HOST_ROOT STATE_DIR
 
-for v in IMAGE_MIN_AGE_HOURS IMAGE_KEEP_PREVIOUS DANGLING_MIN_AGE_HOURS BUILD_CACHE_MIN_AGE_HOURS VOLUME_MIN_AGE_DAYS LOG_RETENTION_DAYS ALERT_FREE_GB RUNNER_WORK_MIN_AGE_DAYS GRADLE_MAX_AGE_DAYS; do
+for v in IMAGE_MIN_AGE_HOURS IMAGE_KEEP_PREVIOUS DANGLING_MIN_AGE_HOURS BUILD_CACHE_MIN_AGE_HOURS VOLUME_MIN_AGE_DAYS LOG_RETENTION_DAYS ALERT_FREE_GB RUNNER_WORK_MIN_AGE_DAYS GRADLE_MAX_AGE_DAYS \
+  STAGING_MAX_AGE_HOURS NPM_CACHE_MAX_MB GIT_GC_LOOSE_MB GIT_GC_MAX_PACKS; do
   case "${!v}" in ''|*[!0-9]*) log "REFUSE: $v='${!v}' is not a non-negative integer"; exit 64 ;; esac
 done
 [ "$MODE" = enforce ] || MODE=dry-run
@@ -96,7 +117,7 @@ DRY=1; [ "$MODE" = enforce ] && DRY=0
 free_kb() { df -Pk "$HOST_ROOT" 2>/dev/null | awk 'NR==2{print $4}'; }
 pct_used() { df -Pk "$HOST_ROOT" 2>/dev/null | awk 'NR==2{gsub("%","",$5); print $5}'; }
 
-N_IMG=0; N_VOL=0; KEPT_SLOTS=""; N_LOGS=0; N_RUNNER=0; N_GRADLE=0
+N_IMG=0; N_VOL=0; KEPT_SLOTS=""; N_LOGS=0; N_RUNNER=0; N_GRADLE=0; N_CACHE=0
 
 # ── 1. images ─────────────────────────────────────────────────────────────
 # Keep: every image a container (any state) references, plus the newest
@@ -239,10 +260,10 @@ gradle_rm() {
 trim_gradle() {
   [ -d "$GRADLE_HOME_PATH/caches" ] || { log "  SKIP: $GRADLE_HOME_PATH/caches not mounted"; return 0; }
   local d
-  for d in "$GRADLE_HOME_PATH"/caches/transforms-* "$GRADLE_HOME_PATH"/caches/jars-* "$GRADLE_HOME_PATH"/caches/build-cache-* "$GRADLE_HOME_PATH"/caches/modules-2/files-2.1/*/*/* "$GRADLE_HOME_PATH"/wrapper/dists/*/*; do
+  for d in "$GRADLE_HOME_PATH"/caches/transforms-* "$GRADLE_HOME_PATH"/caches/jars-* "$GRADLE_HOME_PATH"/caches/build-cache-* "$GRADLE_HOME_PATH"/caches/[0-9]*.* "$GRADLE_HOME_PATH"/caches/modules-2/files-2.1/*/*/* "$GRADLE_HOME_PATH"/wrapper/dists/*/*; do
     [ -d "$d" ] || continue
     case "$d" in
-      */transforms-*|*/jars-*|*/build-cache-*) # the cache roots: judge each entry, not the root
+      */transforms-*|*/jars-*|*/build-cache-*|*/caches/[0-9]*.*) # the cache roots (incl. per-gradle-version caches/8.13): judge each entry, not the root
         for e in "$d"/*; do [ -d "$e" ] && gradle_stale "$e" && gradle_rm "$e"; done ;;
       *) gradle_stale "$d" && gradle_rm "$d" ;;
     esac
@@ -333,6 +354,54 @@ gc_lance_volumes() {
   done
 }
 
+# ── 10. regenerable caches ────────────────────────────────────────────────
+cache_rm() { # $1 path, $2 label
+  if [ $DRY = 1 ]; then log "  [dry-run] would remove $2"; else rm -rf "$1" && log "  removed $2"; fi
+  N_CACHE=$((N_CACHE + 1))
+}
+trim_caches() {
+  local d m n mb loose packs
+  # a) cgc-db restore staging orphans (the restore now cleans up on signals too;
+  #    this catches SIGKILL / VM reset). A live restore is far younger than the window.
+  if [ -d "$STAGING_PARENT" ]; then
+    for d in "$STAGING_PARENT"/cgc-db-staging.*; do
+      [ -d "$d" ] || continue
+      [ -n "$(find "$d" -maxdepth 0 -mmin +$((STAGING_MAX_AGE_HOURS * 60)) 2>/dev/null)" ] || continue
+      [ -z "$(find "$d" -mmin -$((STAGING_MAX_AGE_HOURS * 60)) 2>/dev/null | head -n 1)" ] || continue
+      cache_rm "$d" "staging orphan ${d##*/} ($(du -sm "$d" 2>/dev/null | cut -f1) MB)"
+    done
+  else log "  SKIP staging: $STAGING_PARENT not mounted"; fi
+  # b) npm content cache: npm verifies integrity and refetches anything missing.
+  for d in $NPM_CACHE_HOMES; do
+    [ -d "$d/.npm/_cacache" ] || continue
+    mb=$(du -sm "$d/.npm/_cacache" 2>/dev/null | cut -f1)
+    [ "${mb:-0}" -gt "$NPM_CACHE_MAX_MB" ] || continue
+    n=$(docker exec "$NPM_CACHE_CONTAINER" sh -c 'grep -l "npm\|npx" /proc/[0-9]*/cmdline 2>/dev/null | wc -l' 2>/dev/null || echo 0)
+    if [ "${n:-0}" != 0 ]; then log "  SKIP npm cache in $d: npm is running in $NPM_CACHE_CONTAINER"; continue; fi
+    cache_rm "$d/.npm/_cacache" "npm _cacache in $d (${mb} MB > ${NPM_CACHE_MAX_MB} MB)"
+  done
+  # c) git clones: repack loose objects / many packs. Never --prune=now.
+  command -v git >/dev/null 2>&1 || { log "  SKIP git gc: git not installed"; return 0; }
+  for m in $GIT_GC_ROOTS; do
+    [ -d "$m" ] || continue
+    for d in "$m"/*/; do
+      [ -d "$d.git/objects" ] || continue
+      loose=$(git -c safe.directory='*' -C "$d" count-objects -v 2>/dev/null | awk '/^size:/{print int($2/1024)}')
+      packs=$(git -c safe.directory='*' -C "$d" count-objects -v 2>/dev/null | awk '/^packs:/{print $2}')
+      [ "${loose:-0}" -gt "$GIT_GC_LOOSE_MB" ] || [ "${packs:-0}" -gt "$GIT_GC_MAX_PACKS" ] || continue
+      [ ! -e "$d.git/index.lock" ] && [ ! -e "$d.git/gc.pid" ] || { log "  SKIP git gc ${d}: repo busy"; continue; }
+      if [ $DRY = 1 ]; then log "  [dry-run] would git gc $d (loose ${loose} MB, ${packs} packs)"
+      else
+        owner=$(stat -c %u:%g "$d.git")
+        nice -n 19 git -c safe.directory='*' -c pack.threads=1 -C "$d" gc --quiet 2>&1 | tail -n 2 | while IFS= read -r l; do log "  $l"; done
+        chown -R "$owner" "$d.git" 2>/dev/null
+        log "  git gc $d (was loose ${loose} MB, ${packs} packs)"
+      fi
+      N_CACHE=$((N_CACHE + 1))
+    done
+  done
+}
+
 notify() {
   [ -n "$NTFY_URL" ] || return 0
   curl -fsS -m 10 -H "Title: $1" -H "Priority: ${3:-default}" -H "Tags: floppy_disk" \
@@ -363,11 +432,12 @@ run_pass() {
   log "github runners: self-update folders, _diag, _work >${RUNNER_WORK_MIN_AGE_DAYS}d"; sweep_runners
   log "gradle cache >${GRADLE_MAX_AGE_DAYS}d unused"; trim_gradle
   log "cgc lance volumes"; gc_lance_volumes
+  log "caches: staging >${STAGING_MAX_AGE_HOURS}h, npm >${NPM_CACHE_MAX_MB}MB, git loose >${GIT_GC_LOOSE_MB}MB/packs >${GIT_GC_MAX_PACKS}"; trim_caches
   after=$(free_kb)
   local free_gb=$((after / 1048576)) used; used=$(pct_used)
-  log "done — images=$N_IMG volumes=$N_VOL logs=$N_LOGS runner_paths=$N_RUNNER gradle_dirs=$N_GRADLE kept_slots='${KEPT_SLOTS# }' free ${free_gb} GB (${used}% used), reclaimed $(((after - before) / 1024)) MB"
+  log "done — images=$N_IMG volumes=$N_VOL logs=$N_LOGS runner_paths=$N_RUNNER gradle_dirs=$N_GRADLE caches=$N_CACHE kept_slots='${KEPT_SLOTS# }' free ${free_gb} GB (${used}% used), reclaimed $(((after - before) / 1024)) MB"
   cat >"$STATE_DIR/metrics.json.tmp" <<EOF
-{"ts":"$(date -u +%FT%TZ)","mode":"$MODE","free_gb":$free_gb,"used_pct":${used:-null},"reclaimed_mb":$(((after - before) / 1024)),"images":$N_IMG,"volumes":$N_VOL,"logs":$N_LOGS,"runner_paths":$N_RUNNER,"gradle_dirs":$N_GRADLE,"aggressive":$AGGRESSIVE,"kept_slots":"${KEPT_SLOTS# }","alert_free_gb":$ALERT_FREE_GB}
+{"ts":"$(date -u +%FT%TZ)","mode":"$MODE","free_gb":$free_gb,"used_pct":${used:-null},"reclaimed_mb":$(((after - before) / 1024)),"images":$N_IMG,"volumes":$N_VOL,"logs":$N_LOGS,"runner_paths":$N_RUNNER,"gradle_dirs":$N_GRADLE,"caches":$N_CACHE,"aggressive":$AGGRESSIVE,"kept_slots":"${KEPT_SLOTS# }","alert_free_gb":$ALERT_FREE_GB}
 EOF
   mv "$STATE_DIR/metrics.json.tmp" "$STATE_DIR/metrics.json"
   if [ -n "$after" ] && [ "$free_gb" -lt "$ALERT_FREE_GB" ]; then

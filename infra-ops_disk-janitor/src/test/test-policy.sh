@@ -23,7 +23,10 @@ chmod +x "$T/bin/docker"
 G="$T/gradle"; mkdir -p "$G/caches/transforms-4/stale" "$G/caches/transforms-4/fresh" "$G/caches/modules-2/files-2.1/g/a/1.0/h"
 touch "$G/caches/transforms-4/fresh/f" "$G/caches/transforms-4/stale/f" "$G/caches/modules-2/files-2.1/g/a/1.0/h/a.jar"
 touch -d '90 days ago' "$G/caches/transforms-4/stale/f" "$G/caches/modules-2/files-2.1/g/a/1.0/h/a.jar"
-run() { PATH="$T/bin:$PATH" HOST_ROOT=/ STATE_DIR="$T/state" RUN_ONCE=true NTFY_URL= ALERT_FREE_GB=0 \
+# Staging fixture: one 3-day-old orphan, one live (fresh) staging dir.
+S="$T/hostcache"; mkdir -p "$S/cgc-db-staging.OLD" "$S/cgc-db-staging.NEW"
+touch "$S/cgc-db-staging.NEW/f"; touch -d '3 days ago' "$S/cgc-db-staging.OLD" "$S/cgc-db-staging.OLD"/. 
+run() { STAGING_PARENT="$S" NPM_CACHE_HOMES="$T/nonpm" GIT_GC_ROOTS="$T/nogit" PATH="$T/bin:$PATH" HOST_ROOT=/ STATE_DIR="$T/state" RUN_ONCE=true NTFY_URL= ALERT_FREE_GB=0 \
   GRADLE_HOME_PATH="$G" LANCE_HOMES="$T/nolance" DISPATCH_CONTAINERS=none:claude "$@" bash "$HERE/../code/entrypoint.sh"; }
 OUT=$(MODE=dry-run run env)
 echo "$OUT"
@@ -40,6 +43,8 @@ grep -q '"mode":"dry-run"' "$T/state/metrics.json" || fail "metrics not written"
 grep -q 'would remove caches/transforms-4/stale' <<<"$OUT" || fail "stale gradle entry not selected"
 ! grep -q 'caches/transforms-4/fresh' <<<"$OUT"   || fail "fresh gradle entry selected"
 [ -e "$G/caches/transforms-4/stale/f" ]    || fail "dry-run removed gradle data"
+grep -q 'would remove staging orphan cgc-db-staging.OLD' <<<"$OUT" || fail "old staging orphan not selected"
+! grep -q 'cgc-db-staging.NEW' <<<"$OUT" || fail "live staging dir selected"
 # aggressive + enforce: same keep rules, deletion actually happens (stub docker rmi succeeds)
 OUT2=$(MODE=enforce run env AGGRESSIVE=1)
 echo "$OUT2" | grep -q 'aggressive=1'        || fail "aggressive flag not honoured"
@@ -47,4 +52,5 @@ grep -q 'rmi sha256:ddd' <<<"$OUT2"        || fail "aggressive: dangling image n
 ! grep -q 'repo/a:old1\|repo/b:new\|rmi sha256:aaa' <<<"$OUT2" || fail "aggressive: previous/in-use image removed"
 [ ! -e "$G/caches/transforms-4/stale" ]    || fail "enforce: stale gradle entry kept"
 [ -e "$G/caches/transforms-4/fresh/f" ]    || fail "enforce: fresh gradle entry removed"
+[ ! -e "$S/cgc-db-staging.OLD" ] && [ -e "$S/cgc-db-staging.NEW/f" ] || fail "enforce: staging sweep wrong"
 echo "PASS disk-janitor dry-run policy"
