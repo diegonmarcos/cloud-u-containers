@@ -1,0 +1,21 @@
+name: edge-auth websocket guard
+
+# Every forward_auth in the shared edge gate must strip Connection/Upgrade so a
+# websocket upgrade is not forwarded to the auth backend (it hung notes-sync).
+on:
+  push:
+    branches: [main]
+    paths: ['_shared/edge-auth.caddy.tpl', '_shared/test/edge-auth-ws-guard.sh', '.github/workflows/edge-auth-ws-guard.yml']
+  pull_request:
+    paths: ['_shared/edge-auth.caddy.tpl', '_shared/test/edge-auth-ws-guard.sh']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash _shared/test/edge-auth-ws-guard.sh
