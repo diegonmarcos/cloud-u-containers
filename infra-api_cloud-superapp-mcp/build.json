@@ -31,6 +31,37 @@
     "keys": [
       "vault_id_rsa",
       "vault_id_rsa.pub"
+    ],
+    "_extra_hosts_doc": "Ssh aliases the MCP dials (SUPERAPP_HOSTS in src/compose.nix). The phone's sshd is provided by OUR terminals (cloud-u-android ac_cloud-nix-on-droid / ac_cloud-termux; ports and users as declared in ac_cloud-myterminal/data/terminal-targets.json: nix 8024 user nix-on-droid, termux 8023 user termux). Address = the phone's wg0 mesh client `termux` (config.json native.wireguard.clients), resolved by the derive into /opt/ssh-keys/cloud-superapp-mcp/config. MESH ONLY: the phone has no public ssh route by design (sshd is reached over WireGuard; ide-endpoints.json: public surface is 443+51820+25), so there is no phone-pub. The key offered is vault_id_rsa (keys above); it is authorised on the phone by cloud-u-linux da__my-konsole/termux/authorized_keys. test-superapp-hosts.sh fails if an alias in SUPERAPP_HOSTS has no entry here.",
+    "extra_hosts": [
+      {
+        "host": "phone",
+        "wg_client": "termux",
+        "family": "v4",
+        "user": "nix-on-droid",
+        "port": 8024
+      },
+      {
+        "host": "phone-v6",
+        "wg_client": "termux",
+        "family": "v6",
+        "user": "nix-on-droid",
+        "port": 8024
+      },
+      {
+        "host": "phone-termux",
+        "wg_client": "termux",
+        "family": "v4",
+        "user": "termux",
+        "port": 8023
+      },
+      {
+        "host": "phone-termux-v6",
+        "wg_client": "termux",
+        "family": "v6",
+        "user": "termux",
+        "port": 8023
+      }
     ]
   },
   "deploy": {
@@ -93,6 +124,11 @@
         "-c",
         "\"${MCP_LOCAL_LAUNCH:-$HOME/.claude/mcp-local-launch.sh}\" \"${CLOUD_INFRA_DIR:-$HOME/git/cloud-infra}/a_solutions/infra-api_cloud-superapp-mcp/src/code/cloud-superapp-mcp/src/index.ts\""
       ]
+    }
+  },
+  "tests": {
+    "superapp-hosts-declared": {
+      "cmd": "bash test/test-superapp-hosts.sh"
     }
   }
 }

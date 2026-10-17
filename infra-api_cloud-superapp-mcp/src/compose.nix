@@ -48,7 +48,9 @@ in
         # otherwise sit on every host interface (it currently binds 0.0.0.0).
         # Same MCP_HTTP_HOST convention as the sibling host-mode MCPs.
         MCP_HTTP_HOST = vmIp;
-        SUPERAPP_HOSTS = "phone,phone-v6,phone-pub";
+        # Every alias here MUST be a build.json ssh.extra_hosts entry
+        # (test/test-superapp-hosts.sh). Mesh only: no public route to the phone.
+        SUPERAPP_HOSTS = "phone,phone-v6,phone-termux,phone-termux-v6";
       };
     };
   };

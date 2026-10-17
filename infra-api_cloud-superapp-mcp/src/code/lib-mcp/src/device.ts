@@ -12,7 +12,9 @@
  *
  * Those sockets bind 127.0.0.1, so nothing off-device can reach them — a
  * container on oci-apps never could. We go in the way a human already does:
- * `ssh phone` (nix-on-droid, 10.0.0.9:8024) and curl from inside.
+ * `ssh phone` (our Cloud Terminal (nix) sshd, mesh 10.0.0.9:8024; phone-termux = the
+ * termux build on :8023) and curl from inside. Aliases come from build.json
+ * ssh.extra_hosts; mesh only, there is no public route to the phone.
  *
  * The primitive is "run this shell script over there", not "fetch this URL",
  * because the port scan is 60 probes. One remote loop is one round trip;
@@ -22,7 +24,7 @@ import { spawn } from "node:child_process";
 
 /** Try in order, remember the first that answers. `local` = run here (the
  *  termux/on-device Claude, where 127.0.0.1 already IS the phone). */
-const HOSTS = (process.env.SUPERAPP_HOSTS ?? "phone,phone-v6,phone-pub")
+const HOSTS = (process.env.SUPERAPP_HOSTS ?? "phone,phone-v6,phone-termux,phone-termux-v6")
   .split(",")
   .map((h) => h.trim())
   .filter(Boolean);
