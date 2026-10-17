@@ -62,6 +62,10 @@
     "unit": {
       "cmd": "python3 -m pip install -q flask==3.0.0 'PyJWT[crypto]==2.9.0' pytest && python3 -m pytest -q -p no:cacheprovider test",
       "cwd": "src"
+    },
+    "caddy-render": {
+      "cmd": "bash test/test-caddy-render.sh",
+      "cwd": "src"
     }
   },
   "api": {

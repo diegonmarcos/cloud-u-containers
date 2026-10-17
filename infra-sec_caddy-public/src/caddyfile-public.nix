@@ -120,6 +120,17 @@ let
     autheliaUpstream = (caddyPublic.auth_upstreams or {}).authelia_mesh or "10.0.0.1:9091";
   };
 
+  # MCP OAuth AS routes on the public MCP hub (WIP option 31.1,
+  # _shared/mcp-oauth.nix). Same renderer and data as the hub; the AS upstream
+  # and Authelia are both dialled over the mesh. Inert while
+  # build-caddy-edge.json carries no `mcp_oauth` block.
+  mo = import ../../_shared/mcp-oauth.nix {
+    inherit lib auth;
+    cfg = caddyPublic.mcp_oauth or null;
+    edgeAuth = caddyPublic.edge_auth or {};
+    autheliaUpstream = (caddyPublic.auth_upstreams or {}).authelia_mesh or "10.0.0.1:9091";
+  };
+
   # ── Error handler (snippet-driven from caddyPublic.error_handler) ──
   eh = caddyPublic.error_handler or { status_codes = [ 502 503 504 ]; error_html = "/srv/error.html"; };
   codesExpr = lib.concatMapStringsSep " || " (c: "{err.status_code} == ${toString c}") eh.status_codes;
@@ -366,6 +377,10 @@ ${lib.concatMapStringsSep "\n" mkMailL4Route mailL4}
 ${bearer}
           ${proxyBody}
         }
+${denyBlock}'';
+          # 401 + WWW-Authenticate when the MCP OAuth AS is configured (_shared/mcp-oauth.nix).
+          denyBlock = let d = mo.deny group.parent_domain ep.base_path; in
+            if d != null then d else ''
         handle {
           respond "Forbidden" 403
         }'';
@@ -390,6 +405,7 @@ ${bearer}
     ${group.parent_domain} {
     ${sec}
     ${ea.gateOff group.parent_domain}
+    ${mo.block group.parent_domain}
     ${endpointBlocks}
       # Bare host: human hint. Any other path is not a public MCP route
       # (mesh-only / wg_only, or unknown): answer 404 JSON so MCP clients
