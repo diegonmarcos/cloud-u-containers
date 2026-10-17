@@ -223,6 +223,10 @@ route @m_smtps_diegonmarcos_com {
     # Dedicated fleet-token header for clients whose Authorization carries another
     # credential (Stalwart Basic/Bearer on jmap./mails.). Wins over Authorization.
     forward_auth @ea_fleet 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       header_up Authorization {http.request.header.X-Fleet-Authorization}
@@ -231,11 +235,19 @@ route @m_smtps_diegonmarcos_com {
     # Never forward the fleet token to an upstream; Authorization passes untouched.
     request_header -X-Fleet-Authorization
     forward_auth @ea_bearer 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
     forward_auth @ea_session 10.0.0.1:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -280,6 +292,10 @@ route @m_smtps_diegonmarcos_com {
     # Dedicated fleet-token header for clients whose Authorization carries another
     # credential (Stalwart Basic/Bearer on jmap./mails.). Wins over Authorization.
     forward_auth @ea_fleet 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       header_up Authorization {http.request.header.X-Fleet-Authorization}
@@ -288,11 +304,19 @@ route @m_smtps_diegonmarcos_com {
     # Never forward the fleet token to an upstream; Authorization passes untouched.
     request_header -X-Fleet-Authorization
     forward_auth @ea_bearer 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
     forward_auth @ea_session 10.0.0.1:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -337,6 +361,10 @@ route @m_smtps_diegonmarcos_com {
     # Dedicated fleet-token header for clients whose Authorization carries another
     # credential (Stalwart Basic/Bearer on jmap./mails.). Wins over Authorization.
     forward_auth @ea_fleet 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       header_up Authorization {http.request.header.X-Fleet-Authorization}
@@ -345,11 +373,19 @@ route @m_smtps_diegonmarcos_com {
     # Never forward the fleet token to an upstream; Authorization passes untouched.
     request_header -X-Fleet-Authorization
     forward_auth @ea_bearer 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
     forward_auth @ea_session 10.0.0.1:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
