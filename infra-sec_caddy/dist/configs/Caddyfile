@@ -549,6 +549,10 @@ import edge_auth /.well-known/acme-challenge/* /*/*/info/refs /*/*/git-upload-pa
         @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -591,6 +595,10 @@ import edge_auth /.well-known/acme-challenge/* /*/*/info/refs /*/*/git-upload-pa
     }
     handle {
       forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -665,6 +673,10 @@ respond @not_wg "Forbidden" 403
       @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -700,6 +712,10 @@ respond @not_wg "Forbidden" 403
     }
     handle {
       forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -801,6 +817,10 @@ respond @not_wg "Forbidden" 403
       @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -836,6 +856,10 @@ respond @not_wg "Forbidden" 403
     }
     handle {
       forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -905,6 +929,10 @@ respond @not_wg "Forbidden" 403
       @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -940,6 +968,10 @@ respond @not_wg "Forbidden" 403
     }
     handle {
       forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -1015,6 +1047,10 @@ handle /jwks.json {
         @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -1050,6 +1086,10 @@ handle /jwks.json {
     }
     handle {
       forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -1118,6 +1158,10 @@ respond @not_wg "Forbidden" 403
       @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -1153,6 +1197,10 @@ respond @not_wg "Forbidden" 403
     }
     handle {
       forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -1227,6 +1275,10 @@ handle /api/v4/* {
       @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -1262,6 +1314,10 @@ handle /api/v4/* {
     }
     handle {
       forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -1331,6 +1387,10 @@ respond @not_wg "Forbidden" 403
       @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -1366,6 +1426,10 @@ respond @not_wg "Forbidden" 403
     }
     handle {
       forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -1467,6 +1531,10 @@ respond @not_wg "Forbidden" 403
       @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -1502,6 +1570,10 @@ respond @not_wg "Forbidden" 403
     }
     handle {
       forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -1645,6 +1717,10 @@ reverse_proxy https://diegonmarcos.github.io {
       @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -1680,6 +1756,10 @@ reverse_proxy https://diegonmarcos.github.io {
     }
     handle {
       forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -1757,6 +1837,10 @@ handle /api/auth/youtube/callback {
       @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -1792,6 +1876,10 @@ handle /api/auth/youtube/callback {
     }
     handle {
       forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -1861,6 +1949,10 @@ respond @not_wg "Forbidden" 403
       @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -1896,6 +1988,10 @@ respond @not_wg "Forbidden" 403
     }
     handle {
       forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -1963,6 +2059,10 @@ import edge_auth /.well-known/acme-challenge/*
         @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -1998,6 +2098,10 @@ import edge_auth /.well-known/acme-challenge/*
     }
     handle {
       forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -2064,6 +2168,10 @@ import edge_auth /.well-known/acme-challenge/*
         @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -2099,6 +2207,10 @@ import edge_auth /.well-known/acme-challenge/*
     }
     handle {
       forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -2167,6 +2279,10 @@ respond @not_wg "Forbidden" 403
       @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -2202,6 +2318,10 @@ respond @not_wg "Forbidden" 403
     }
     handle {
       forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -2271,6 +2391,10 @@ respond @not_wg "Forbidden" 403
       @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -2306,6 +2430,10 @@ respond @not_wg "Forbidden" 403
     }
     handle {
       forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -4277,6 +4405,10 @@ import edge_auth /.well-known/acme-challenge/*
         @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -4312,6 +4444,10 @@ import edge_auth /.well-known/acme-challenge/*
     }
     handle {
       forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -4406,6 +4542,10 @@ import edge_auth /.well-known/acme-challenge/*
         @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -4441,6 +4581,10 @@ import edge_auth /.well-known/acme-challenge/*
     }
     handle {
       forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -4563,6 +4707,10 @@ import edge_auth /.well-known/acme-challenge/*
         @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -4598,6 +4746,10 @@ import edge_auth /.well-known/acme-challenge/*
     }
     handle {
       forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -4692,6 +4844,10 @@ import edge_auth /.well-known/acme-challenge/*
         @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -4727,6 +4883,10 @@ import edge_auth /.well-known/acme-challenge/*
     }
     handle {
       forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -4793,6 +4953,10 @@ import edge_auth /.well-known/acme-challenge/*
         @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -4828,6 +4992,10 @@ import edge_auth /.well-known/acme-challenge/*
     }
     handle {
       forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -5174,6 +5342,10 @@ import edge_auth /.well-known/acme-challenge/*
         @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -5209,6 +5381,10 @@ import edge_auth /.well-known/acme-challenge/*
     }
     handle {
       forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -5731,6 +5907,10 @@ handle_path /c3-infra-api/* {
               @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -5766,6 +5946,10 @@ handle_path /c3-infra-api/* {
     }
     handle {
       forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -5821,6 +6005,10 @@ handle_path /pub/* {
       @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -5856,6 +6044,10 @@ handle_path /pub/* {
     }
     handle {
       forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -5898,6 +6090,10 @@ handle_path /c3-services-api/* {
               @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -5933,6 +6129,10 @@ handle_path /c3-services-api/* {
     }
     handle {
       forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -5980,6 +6180,10 @@ handle_path /git/* {
       @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -6015,6 +6219,10 @@ handle_path /git/* {
     }
     handle {
       forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -6062,6 +6270,10 @@ handle_path /scrappers/* {
       @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -6097,6 +6309,10 @@ handle_path /scrappers/* {
     }
     handle {
       forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -6139,6 +6355,10 @@ handle_path /fin-api/* {
               @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -6174,6 +6394,10 @@ handle_path /fin-api/* {
     }
     handle {
       forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -6262,6 +6486,10 @@ handle_path /spec/* {
               @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -6297,6 +6525,10 @@ handle_path /spec/* {
     }
     handle {
       forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -6343,6 +6575,10 @@ handle_path /probe/* {
               @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -6378,6 +6614,10 @@ handle_path /probe/* {
     }
     handle {
       forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -6486,6 +6726,10 @@ handle_path /matomo/* {
       @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -6521,6 +6765,10 @@ handle_path /matomo/* {
     }
     handle {
       forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -6561,6 +6809,10 @@ handle_path /openobserve/* {
       @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -6596,6 +6848,10 @@ handle_path /openobserve/* {
     }
     handle {
       forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -6643,6 +6899,10 @@ handle_path /umami/* {
       @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -6678,6 +6938,10 @@ handle_path /umami/* {
     }
     handle {
       forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -6746,6 +7010,10 @@ handle_path /etherpad/* {
               @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -6781,6 +7049,10 @@ handle_path /etherpad/* {
     }
     handle {
       forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -6827,6 +7099,10 @@ handle_path /filebrowser/* {
               @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -6862,6 +7138,10 @@ handle_path /filebrowser/* {
     }
     handle {
       forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -6908,6 +7188,10 @@ handle_path /hedgedoc/* {
               @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -6943,6 +7227,10 @@ handle_path /hedgedoc/* {
     }
     handle {
       forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -7027,6 +7315,10 @@ handle_path /cloud-drive-mcp/* {
         @bearer header Authorization Bearer*
         handle @bearer {
     forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -7053,6 +7345,10 @@ handle_path /c3-infra-mcp/* {
         @bearer header Authorization Bearer*
         handle @bearer {
     forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -7079,6 +7375,10 @@ handle_path /mail-mcp/* {
         @bearer header Authorization Bearer*
         handle @bearer {
     forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -7105,6 +7405,10 @@ handle_path /mattermost-mcp/* {
         @bearer header Authorization Bearer*
         handle @bearer {
     forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -7131,6 +7435,10 @@ handle_path /c3-services-mcp/* {
         @bearer header Authorization Bearer*
         handle @bearer {
     forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -7157,6 +7465,10 @@ handle_path /cloud-superapp-mcp/* {
         @bearer header Authorization Bearer*
         handle @bearer {
     forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -7196,6 +7508,10 @@ handle_path /g-personal/* {
         @bearer header Authorization Bearer*
         handle @bearer {
     forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -7222,6 +7538,10 @@ handle_path /g-workspace/* {
         @bearer header Authorization Bearer*
         handle @bearer {
     forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -7248,6 +7568,10 @@ handle_path /cloud-cgc-pub-mcp/* {
         @bearer header Authorization Bearer*
         handle @bearer {
     forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -7274,6 +7598,10 @@ handle_path /cloud-cgc-pvt-mcp/* {
         @bearer header Authorization Bearer*
         handle @bearer {
     forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -7374,6 +7702,10 @@ import request_limits
       @umami_bearer header Authorization Bearer*
       handle @umami_bearer {
     forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -7382,6 +7714,10 @@ import request_limits
       }
       handle {
     forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -7397,6 +7733,10 @@ import request_limits
         @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -7432,6 +7772,10 @@ import request_limits
     }
     handle {
       forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -7497,6 +7841,10 @@ import request_limits
       respond @not_wg "Forbidden" 403
     handle /setup {
     forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -7512,6 +7860,10 @@ import request_limits
     @authelia_jwt header_regexp Authorization "^Bearer eyJ"
     handle @authelia_jwt {
     forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -7524,6 +7876,10 @@ import request_limits
     }
     handle {
     forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
@@ -7561,6 +7917,10 @@ import request_limits
         @bearer header Authorization Bearer*
     handle @bearer {
     forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -7571,6 +7931,10 @@ file_server
     }
     handle {
     forward_auth 172.18.0.3:9091 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       uri /api/authz/forward-auth
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name

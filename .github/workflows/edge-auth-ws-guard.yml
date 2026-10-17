@@ -5,9 +5,9 @@ name: edge-auth websocket guard
 on:
   push:
     branches: [main]
-    paths: ['_shared/edge-auth.caddy.tpl', '_shared/test/edge-auth-ws-guard.sh', '.github/workflows/edge-auth-ws-guard.yml']
+    paths: ['_shared/edge-auth.caddy.tpl', 'infra-sec_caddy*/src/snippets/**', 'infra-sec_caddy*/dist/configs/Caddyfile', '_shared/test/edge-auth-ws-guard.sh', '.github/workflows/edge-auth-ws-guard.yml']
   pull_request:
-    paths: ['_shared/edge-auth.caddy.tpl', '_shared/test/edge-auth-ws-guard.sh']
+    paths: ['_shared/edge-auth.caddy.tpl', 'infra-sec_caddy*/src/snippets/**', 'infra-sec_caddy*/dist/configs/Caddyfile', '_shared/test/edge-auth-ws-guard.sh']
   workflow_dispatch:
 
 permissions:

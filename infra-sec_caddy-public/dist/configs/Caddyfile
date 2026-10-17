@@ -647,6 +647,10 @@ handle_path /cloud-drive-mcp/* {
         @bearer header Authorization Bearer*
         handle @bearer {
     forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -673,6 +677,10 @@ handle_path /c3-infra-mcp/* {
         @bearer header Authorization Bearer*
         handle @bearer {
     forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -699,6 +707,10 @@ handle_path /mail-mcp/* {
         @bearer header Authorization Bearer*
         handle @bearer {
     forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -725,6 +737,10 @@ handle_path /mattermost-mcp/* {
         @bearer header Authorization Bearer*
         handle @bearer {
     forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -751,6 +767,10 @@ handle_path /c3-services-mcp/* {
         @bearer header Authorization Bearer*
         handle @bearer {
     forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -777,6 +797,10 @@ handle_path /cloud-superapp-mcp/* {
         @bearer header Authorization Bearer*
         handle @bearer {
     forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -803,6 +827,10 @@ handle_path /g-personal/* {
         @bearer header Authorization Bearer*
         handle @bearer {
     forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -829,6 +857,10 @@ handle_path /g-workspace/* {
         @bearer header Authorization Bearer*
         handle @bearer {
     forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -855,6 +887,10 @@ handle_path /cloud-cgc-pub-mcp/* {
         @bearer header Authorization Bearer*
         handle @bearer {
     forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -881,6 +917,10 @@ handle_path /cloud-cgc-pvt-mcp/* {
         @bearer header Authorization Bearer*
         handle @bearer {
     forward_auth 10.0.0.1:4182 {
+      # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
+      # backend that gets Connection: Upgrade never answers and the edge hangs.
+      header_up -Connection
+      header_up -Upgrade
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
