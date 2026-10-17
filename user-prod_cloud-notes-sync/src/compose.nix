@@ -12,9 +12,14 @@ in
     cloud-notes-sync = {
       image = binariesImage;
       container_name = buildJson.containers.app.container_name;
-      ports = [ "${self.ip}:${toString buildJson.ports.app}:1234" ];
+      # Host network, bound to the WG IP (the oci-apps convention, like continuwuity/gitea). A bridge
+      # network cannot reach the introspect-proxy on gcp-proxy: compose puts it in 192.168.x, outside the
+      # 172.16.0.0/12 the VM masquerades, so its packets leave via wg0 with an unroutable source and the
+      # verifier fails closed (every authenticated call answered 401).
+      network_mode = "host";
       environment = {
-        PORT = "1234";
+        HOST = self.ip;
+        PORT = toString buildJson.ports.app;
         SYNC_DB = "/data/sync.sqlite";
         # the same check the edge gate runs (infra-sec_introspect-proxy, mesh address of gcp-proxy)
         SYNC_FORWARD_AUTH_URL = "http://10.0.0.1:4182/auth";
