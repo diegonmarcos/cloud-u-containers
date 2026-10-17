@@ -63,6 +63,68 @@ def get_jwks_client():
     return _jwks_client
 
 
+# ── MCP OAuth opaque tokens (infra-sec_mcp-oauth, WIP option 31.1) ──────────
+# Tokens prefixed `mcpat_` are minted by the MCP OAuth server for claude.ai /
+# claude.com connectors. They are opaque, so they are checked with an RFC 7662
+# POST to that server's mesh-only /introspect (shared secret header). Unset
+# MCP_OAUTH_INTROSPECT_URL = feature off: such tokens get 401, nothing else
+# changes. Positive answers are cached briefly; negatives never are.
+MCP_OAUTH_PREFIX = "mcpat_"
+MCP_OAUTH_INTROSPECT_URL = os.environ.get("MCP_OAUTH_INTROSPECT_URL", "")
+MCP_OAUTH_INTROSPECT_SECRET = os.environ.get("MCP_OAUTH_INTROSPECT_SECRET", "")
+MCP_OAUTH_TIMEOUT = float(os.environ.get("MCP_OAUTH_TIMEOUT", "3"))
+MCP_OAUTH_CACHE_TTL = int(os.environ.get("MCP_OAUTH_CACHE_TTL", "30"))
+_mcp_cache = {}  # sha256(token) -> (expires_at, claims)
+
+
+def _mcp_introspect(token):
+    import hashlib
+    import json
+    import urllib.parse
+    import urllib.request
+
+    key = hashlib.sha256(token.encode()).hexdigest()
+    hit = _mcp_cache.get(key)
+    if hit and hit[0] > time.time():
+        return hit[1]
+    req = urllib.request.Request(
+        MCP_OAUTH_INTROSPECT_URL,
+        data=urllib.parse.urlencode({"token": token}).encode(),
+        headers={"X-Introspect-Secret": MCP_OAUTH_INTROSPECT_SECRET,
+                 "Content-Type": "application/x-www-form-urlencoded"},
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=MCP_OAUTH_TIMEOUT) as r:
+        claims = json.loads(r.read())
+    if claims.get("active"):
+        ttl = min(MCP_OAUTH_CACHE_TTL, max(0, int(claims.get("exp", 0)) - int(time.time())))
+        if len(_mcp_cache) > 1000:
+            _mcp_cache.clear()
+        _mcp_cache[key] = (time.time() + ttl, claims)
+    return claims
+
+
+def mcp_oauth_auth(token):
+    if not MCP_OAUTH_INTROSPECT_URL:
+        return Response("Invalid token", status=401)
+    try:
+        claims = _mcp_introspect(token)
+    except Exception as e:  # network/HTTP/JSON: fail closed, fast
+        logger.error(f"MCP OAuth introspection failed: {e}")
+        return Response("Auth server unavailable", status=503)
+    if not claims.get("active"):
+        return Response("Invalid token", status=401)
+    sub = claims.get("sub", "")
+    logger.info(f"MCP OAuth token valid for client: {claims.get('client_id', '')}, sub: {sub}")
+    response = Response("OK", status=200)
+    # Same header contract as the fleet bearer: the human owner is the subject.
+    response.headers["X-Auth-User"] = sub
+    response.headers["X-Auth-Subject"] = sub
+    response.headers["X-Auth-Email"] = sub
+    response.headers["X-Auth-Client"] = claims.get("client_id", "")
+    return response
+
+
 @app.route("/auth", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
 def auth():
     """
@@ -91,6 +153,11 @@ def auth():
     if not token.isascii():
         logger.warning(f"Non-ASCII chars in token (len={len(token)}), stripping")
         token = token.encode('ascii', errors='ignore').decode('ascii')
+
+    # Opaque MCP OAuth access token (infra-sec_mcp-oauth, option 31.1): never a
+    # JWT, so ask its issuer instead of the JWKS. Disabled unless configured.
+    if token.startswith(MCP_OAUTH_PREFIX):
+        return mcp_oauth_auth(token)
 
     try:
         jwks_client = get_jwks_client()
