@@ -308,6 +308,7 @@
     @ea_bearer {
       header Authorization Bearer*
       not header X-Fleet-Authorization Bearer*
+      not host jmap.diegonmarcos.com mails.diegonmarcos.com
       not path {args[:]}
       not {
         method OPTIONS
@@ -375,6 +376,7 @@
     @ea_bearer {
       header Authorization Bearer*
       not header X-Fleet-Authorization Bearer*
+      not host jmap.diegonmarcos.com mails.diegonmarcos.com
       not path {args[:]}
       not {
         method OPTIONS
@@ -444,6 +446,7 @@
     @ea_bearer {
       header Authorization Bearer*
       not header X-Fleet-Authorization Bearer*
+      not host jmap.diegonmarcos.com mails.diegonmarcos.com
       not path {args[:]}
       not {
         method OPTIONS

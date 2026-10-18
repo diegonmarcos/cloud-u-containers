@@ -198,6 +198,16 @@
           "reason": "Owner decision 2026-10-16: the wstunnel client opens a WebSocket upgrade to a secret path prefix and cannot do a cookie/bearer handshake. The exemption is `Upgrade: websocket` only; wstunnel itself rejects every upgrade whose path is not its secret --http-upgrade-path-prefix, and every non-upgrade request to vpn. is gated."
         }
       ],
+      "bearer_passthrough": [
+        {
+          "host": "jmap.diegonmarcos.com",
+          "reason": "Owner decision 2026-10-18: mail clients log in with a Stalwart OAuth or API token in `Authorization: Bearer`, which introspect-proxy (Authelia/fleet tokens) can never recognise, so the edge answered 401 and the client never reached Stalwart. The edge no longer introspects Bearer here; Stalwart validates it and answers its own 401. Still protected: Stalwart requires auth on every JMAP route, a request with NO Authorization still goes to the Authelia branch and is refused at the edge, X-Fleet-Authorization is still introspected, and the jmap rate limit stays."
+        },
+        {
+          "host": "mails.diegonmarcos.com",
+          "reason": "Same as jmap.: the mails. vhost serves the same Stalwart JMAP surface to the same clients."
+        }
+      ],
       "held": [],
       "technical": [
         {

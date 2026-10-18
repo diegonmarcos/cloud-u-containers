@@ -14,7 +14,7 @@
     @ea_bearer {
       header Authorization Bearer*
       not header X-Fleet-Authorization Bearer*
-      not path {args[:]}
+@EA_PASS@      not path {args[:]}
       not {
         method OPTIONS
         header Access-Control-Request-Method *

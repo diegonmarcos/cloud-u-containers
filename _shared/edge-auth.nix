@@ -40,6 +40,11 @@ let
 
   mk = name: offmesh: ws: note name offmesh ws + "\n" + lib.removeSuffix "\n" (subst {
     "@GATE@"                = name;
+    # edge_auth.bearer_passthrough: on these hosts the edge does NOT introspect
+    # `Authorization: Bearer` (@ea_bearer never matches, and @ea_session already
+    # excludes Bearer), so the upstream validates it. No Authorization at all still
+    # reaches the Authelia branch and is refused.
+    "@EA_PASS@"             = if passHosts == [] then "" else "      not host ${lib.concatStringsSep " " passHosts}\n";
     "@EA_OFFMESH@"          = if offmesh then "\n      not remote_ip ${wgCidrs}" else "";
     # WebSocket-upgrade exemption (wstunnel on vpn.): the client cannot do a
     # bearer/cookie handshake; the server enforces its own secret path prefix.
@@ -62,6 +67,7 @@ let
   # held back until their client can authenticate (edge_auth.held). Remove the
   # entry to gate them.
   heldHosts = map (e: e.host) (edgeAuth.held or []);
+  passHosts = map (e: e.host) (edgeAuth.bearer_passthrough or []);
   wsHosts = map (e: e.host) (lib.filter (e: (e.scope or "") == "websocket") entries);
   argsFor = domain: lib.concatStringsSep " " ([ acmePath ] ++ lib.concatMap pathsOf (hostsOf domain));
 in rec {

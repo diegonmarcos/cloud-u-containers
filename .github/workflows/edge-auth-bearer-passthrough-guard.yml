@@ -1,0 +1,22 @@
+name: edge-auth bearer passthrough guard
+
+# jmap./mails. must pass an unrecognised Authorization: Bearer through to Stalwart
+# (which validates it); every other host keeps the edge introspection.
+on:
+  push:
+    branches: [main]
+    paths: ['_shared/edge-auth.*', 'infra-sec_caddy*/build.json', 'infra-sec_caddy*/dist/configs/Caddyfile', '_shared/test/edge-auth-bearer-passthrough-guard.sh', '.github/workflows/edge-auth-bearer-passthrough-guard.yml']
+  pull_request:
+    paths: ['_shared/edge-auth.*', 'infra-sec_caddy*/build.json', 'infra-sec_caddy*/dist/configs/Caddyfile', '_shared/test/edge-auth-bearer-passthrough-guard.sh']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v27
+      - run: bash _shared/test/edge-auth-bearer-passthrough-guard.sh
