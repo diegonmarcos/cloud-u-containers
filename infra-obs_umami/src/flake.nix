@@ -46,6 +46,8 @@
           inherit buildJson container containerDb containerSetup svc;
         };
         extraAssets = [ ./migrate-from-matomo ];
+        # Multi-stage wrapper that drops upstream's pnpm content store.
+        nativeBuild = { dockerfile = ./Dockerfile; };
         title = "Umami Analytics";
       };
     });
