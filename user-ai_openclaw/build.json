@@ -15,6 +15,10 @@
   "proxy": {
     "app_hub": false
   },
+  "agent": {
+    "_comment": "Explicit opt-OUT, required by 9_others/test/test_agent_git_tree_declared.sh in cloud-infra. openclaw is upstream's stock image, unmodified, reached only through the agent gateway on loopback; it is not wired to read or commit the fleet repositories, and a writable shared tree would widen its blast radius for nothing. Flip to true (with git_tree_writable true) only together with a decision that this agent works in the checkout.",
+    "git_tree": false
+  },
   "runtime": {
     "_comment": "THE ONE DECLARATION of what OpenClaw runs. src/openclaw-config.nix renders configs/openclaw.json from it (a pure function, evaluated by the tester too), compose.nix mounts that read-only and the container copies it into its state volume at every start, so a hand edit inside the container lasts until the next restart and never longer. `model` is the fleet's agent model (the same one goose and hermes declare); `provider` is the fleet gateway's OpenAI-compatible face on the WireGuard bind, which injects the OpenRouter key — the apiKey OpenClaw sends is a placeholder the gateway ignores (passthrough_auth false there).",
     "model": "deepseek/deepseek-v4-flash-0731",
