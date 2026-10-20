@@ -58,7 +58,7 @@ in
         NPM_CACHE_HOMES           = "\${NPM_CACHE_HOMES:-/vol/claude-superset-api-home}";
         NPM_CACHE_MAX_MB          = "\${NPM_CACHE_MAX_MB:-1024}";
         NPM_CACHE_CONTAINER       = "\${NPM_CACHE_CONTAINER:-cloud-agi-claude}";
-        GIT_GC_ROOTS              = "\${GIT_GC_ROOTS:-/vol/cloud-git-gh /vol/octocode_repos}";
+        GIT_GC_ROOTS              = "\${GIT_GC_ROOTS:-/home/appuser/git /vol/octocode_repos}";
         GIT_GC_LOOSE_MB           = "\${GIT_GC_LOOSE_MB:-200}";
         GIT_GC_MAX_PACKS          = "\${GIT_GC_MAX_PACKS:-20}";
         BUILD_CACHE_MIN_AGE_HOURS = "\${BUILD_CACHE_MIN_AGE_HOURS:-48}";
@@ -85,7 +85,6 @@ in
         # claude home, and the git clones the janitor `git gc`s (never deletes).
         "/home/ubuntu/.cache:/vol/host-cache"
         "claude-superset-api-home:/vol/claude-superset-api-home"
-        "cloud-git-gh:/vol/cloud-git-gh"
         "octocode_repos:/vol/octocode_repos"
       ];
       healthcheck = {
@@ -110,7 +109,6 @@ in
     octocode_db     = { name = "octocode_db"; };
     octocode_db_pvt = { name = "octocode_db_pvt"; };
     claude-superset-api-home = { name = "claude-superset-api-home"; };
-    cloud-git-gh    = { name = "cloud-git-gh"; };
     octocode_repos  = { name = "octocode_repos"; };
   };
 }

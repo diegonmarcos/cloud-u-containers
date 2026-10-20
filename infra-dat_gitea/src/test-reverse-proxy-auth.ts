@@ -160,25 +160,51 @@ try {
 
   const fixture = JSON.parse(readFileSync(join(here, "test-reverse-proxy-auth.fixture.json"), "utf8"));
   fixture.auth_upstreams.introspect_proxy = `127.0.0.1:${port(introspect)}`;
+  // The edge auth policy has ONE declaration (infra-sec_caddy/build.json
+  // caddy_config.edge_auth); the renderer refuses to render without it, so the
+  // fixture takes it from there instead of keeping a second copy that rots.
+  fixture.edge_auth = JSON.parse(readFileSync(join(caddySrc, "../build.json"), "utf8")).caddy_config.edge_auth;
   fixture.routes = [{ domain, upstream: `127.0.0.1:${port(upstream)}`,
     strip_authorization: build.proxy.primary.strip_authorization, identity }];
   const fixtureFile = join(work, "routes.json");
   writeFileSync(fixtureFile, JSON.stringify(fixture));
   const hub = nixEval(`import ${caddySrc}/caddyfile.nix { lib = ${libExpr}; caddyRoutes = builtins.fromJSON (builtins.readFile ${fixtureFile}); }`);
-  const start = hub.indexOf(`\n  ${domain} {`);
-  let depth = 0, end = start + 1;
-  for (let i = start + 1; i < hub.length; i++) {
-    if (hub[i] === "{") depth++;
-    if (hub[i] === "}" && --depth === 0) { end = i + 1; break; }
+  // The block that opens at `head` (e.g. `\n  git.example {` or `\n  (edge_auth) {`), brace-matched.
+  const blockAt = (head: string): string => {
+    const start = hub.indexOf(head);
+    if (start < 0) return "";
+    let depth = 0, end = start + 1;
+    for (let i = start + 1; i < hub.length; i++) {
+      if (hub[i] === "{") depth++;
+      if (hub[i] === "}" && --depth === 0) { end = i + 1; break; }
+    }
+    return hub.slice(start, end);
+  };
+  const vhost = blockAt(`\n  ${domain} {`);
+  // The shared edge auth gate is a snippet the vhost IMPORTS (edge_auth, since the
+  // one-shared-gate change), so the harness must carry the real snippet or it would
+  // be testing a Caddyfile the hub no longer renders. Take every snippet the vhost
+  // imports, transitively, from the rendered hub; the stubs below cover the rest.
+  const stubbed = new Set(["security", "request_limits"]);
+  const snippets: string[] = [], imported = new Set<string>();
+  const want = [vhost];
+  while (want.length) {
+    for (const m of want.pop()!.matchAll(/^\s*import\s+([A-Za-z0-9_]+)/gm)) {
+      const name = m[1];
+      if (stubbed.has(name) || imported.has(name)) continue;
+      imported.add(name);
+      const b = blockAt(`\n  (${name}) {`);
+      if (b) { snippets.push(b); want.push(b); }
+    }
   }
-  const vhost = hub.slice(start, end);
+  t("hub: the vhost's gate snippet (edge_auth) is rendered by the hub", snippets.some((b) => b.includes("(edge_auth)")));
   t("hub: user header stripped at site level, before any handle / forward_auth",
     new RegExp(`request_header -${identity.header}\\n`).test(vhost) &&
     vhost.indexOf(`request_header -${identity.header}`) < vhost.indexOf("forward_auth"));
   const hubPort = await freePort();
   const harness = `{\n  admin off\n  auto_https off\n  order respond before handle\n}\n(security) {\n}\n(request_limits) {\n}\n` +
-    vhost.replace(`${domain} {`, `http://${domain}:${hubPort} {`)
-      .replace(/^\s*bind .*$/m, "  bind 127.0.0.1")
+    (snippets.join("\n") + "\n" + vhost.replace(`${domain} {`, `http://${domain}:${hubPort} {`)
+      .replace(/^\s*bind .*$/m, "  bind 127.0.0.1"))
       .replaceAll("172.18.0.3:9091", `127.0.0.1:${port(authelia)}`);
   procs.push(await startCaddy(harness, hubPort));
   const hubReq = (h: Record<string, string>) => req(hubPort, "/api/v1/user", { Host: domain, ...h });

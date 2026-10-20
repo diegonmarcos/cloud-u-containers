@@ -51,5 +51,18 @@ jobs:
       # nix-instantiate is absent, so this step is load-bearing, not optional.
       - uses: cachix/install-nix-action@v27
 
+      # Some testers render the edge Caddyfiles from the build-caddy*.json the
+      # cloud-infra derive emits (caddy/multi-sso). They read that data from
+      # $MULTI_SSO_JSON_DIR; with only this repository checked out the data is
+      # simply not there and the tester fails closed. cloud-infra is public, so
+      # fetch just that directory beside the workspace's checkout.
+      - uses: actions/checkout@v4
+        with:
+          repository: diegonmarcos/cloud-infra
+          path: _cloud-infra
+          sparse-checkout: 1_cloud-configs/dist
+
       - name: Discover and execute every declared per-service tester
+        env:
+          MULTI_SSO_JSON_DIR: ${{ github.workspace }}/_cloud-infra/1_cloud-configs/dist
         run: bash .github/scripts/run-service-tests.sh

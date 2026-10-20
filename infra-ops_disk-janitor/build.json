@@ -1,6 +1,11 @@
 {
   "name": "disk-janitor",
   "description": "oci-apps disk janitor (#811) \u2014 declared, scheduled cleanup so agents and ships never hit disk-full: unused images older than N hours (keeping every image a container references and the newest K per repository), build cache, ANONYMOUS dangling volumes only after an age + label safety check, finished dispatch _work slots via the dispatcher's own reap.sh (slots with unpushed or uncommitted work are kept and reported), and dispatch logs past retention. Alerts ntfy when root free space is below a threshold and writes a metrics JSON each pass. MODE=dry-run reports only; MODE=enforce deletes.",
+  "agent": {
+    "_comment": "The janitor `git gc`s the fleet's shared checkout (cloud-git-gh), never deletes from it. It takes the tree through the ONE engine-declared mechanism (agent.git_tree), not a hand-written mount, so the pinned volume name and the mount path stay in _shared/engine.nix (test-git-tree-one-mount-pattern S1). Writable because git gc rewrites packs.",
+    "git_tree": true,
+    "git_tree_writable": true
+  },
   "category": "tools",
   "timezone": "Europe/Berlin",
   "deploy": {
