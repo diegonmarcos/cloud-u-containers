@@ -190,6 +190,9 @@
   "tests": {
     "jev-fallback": {
       "cmd": "bash src/test-jev-fallback.sh"
+    },
+    "sorter-jev": {
+      "cmd": "cargo test --manifest-path src/crate/Cargo.toml"
     }
   }
 }

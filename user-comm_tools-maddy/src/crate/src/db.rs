@@ -361,6 +361,25 @@ pub fn parse_email(cached_header: &[u8]) -> anyhow::Result<Email> {
     Email::from_cached_header_json(cached_header)
 }
 
+pub fn now_secs() -> u64 {
+    SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_secs()
+}
+
+/// Names of the mailboxes (other than INBOX) of this user that hold a copy of INBOX message `msg_id`'s body.
+pub fn folders_holding_copy(conn: &Connection, inbox_id: i64, user_id: i64, msg_id: i64) -> anyhow::Result<Vec<String>> {
+    let mut stmt = conn.prepare(
+        "SELECT DISTINCT b.name FROM msgs m
+           JOIN msgs t ON t.extBodyKey = m.extBodyKey
+           JOIN mboxes b ON b.id = t.mboxId
+          WHERE m.mboxId = ?1 AND m.msgId = ?2 AND m.extBodyKey IS NOT NULL
+            AND b.uid = ?3 AND t.mboxId != ?1",
+    )?;
+    let rows = stmt
+        .query_map(params![inbox_id, msg_id, user_id], |r| r.get::<_, String>(0))?
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(rows)
+}
+
 /// `(id, name)` of every mailbox this user owns.
 pub fn list_mailboxes(conn: &Connection, user_id: i64) -> anyhow::Result<Vec<(i64, String)>> {
     let mut stmt = conn.prepare("SELECT id, name FROM mboxes WHERE uid = ?1")?;

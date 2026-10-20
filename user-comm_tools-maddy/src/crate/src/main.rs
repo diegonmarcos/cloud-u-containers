@@ -21,10 +21,11 @@
 mod axes;
 mod db;
 mod email;
+mod jev;
 mod rules;
 
 use anyhow::Result;
-use rules::{Rules, AXIS_AUTH};
+use rules::{Rules, AXIS_AUTH, AXIS_SENDER};
 use std::time::Duration;
 
 fn env_or<T: std::str::FromStr>(key: &str, default: T) -> T {
@@ -73,6 +74,7 @@ fn one_run(db_path: &str, rules_path: &str, rules: &Rules) -> Result<()> {
     }
 
     let fallback_id = db::find_mailbox_id(&conn, user_id, &rules.routing_default)?;
+    settle_jev_outcomes(db_path, rules, &conn, inbox_id, user_id);
 
     // Ruleset-change detection: if the SENDER rules changed since the last run, re-open ($distributed
     // cleared) any INBOX message whose only existing category copy is in the fallback folder, so the next
@@ -107,6 +109,13 @@ fn one_run(db_path: &str, rules_path: &str, rules: &Rules) -> Result<()> {
     }
     tracing::info!("{} undistributed INBOX message(s)", candidates.len());
 
+    // #882 S1: Jev may refile FALLBACK rows of the sender axis (no opinion = the rules' folder, unchanged)
+    let advisor = jev::Sidecar::from_env();
+    let jev_cands = jev::candidates(rules);
+    let jev_cap: usize = env_or("JEV_SORTER_MAX", 20usize);
+    let mut jev_asked = 0usize;
+    let mut jev_pending: Vec<jev::Pending> = Vec::new();
+
     let mut plans = Vec::new();
     let mut all_ids = Vec::with_capacity(candidates.len());
     for (msg_id, cached_header) in &candidates {
@@ -124,8 +133,24 @@ fn one_run(db_path: &str, rules_path: &str, rules: &Rules) -> Result<()> {
         // inflating every unread count with a second copy of everything.
         for axis in axes::declared_axes(rules) {
             if let Some(folder) = axes::folder_for(rules, &email, axis) {
+                let mut target = folder.to_string();
+                if axis == AXIS_SENDER {
+                    let (t, call) = jev::refine(
+                        rules,
+                        &email,
+                        folder,
+                        advisor.as_ref().map(|a| a as &dyn jev::Advisor),
+                        &jev_cands,
+                        &mut jev_asked,
+                        jev_cap,
+                    );
+                    if let Some(call) = call {
+                        jev_pending.push(jev::Pending { call, src_msg_id: *msg_id, at: db::now_secs() });
+                    }
+                    target = t;
+                }
                 plans.push(db::Plan {
-                    target_folder: folder.to_string(),
+                    target_folder: target,
                     src_msg_id: *msg_id,
                     keep_seen: axis == AXIS_AUTH,
                 });
@@ -136,12 +161,49 @@ fn one_run(db_path: &str, rules_path: &str, rules: &Rules) -> Result<()> {
     db::backup(db_path)?;
     let (copied, skipped) = db::apply_plan(&mut conn, inbox_id, user_id, &plans, &all_ids)?;
     tracing::info!("copied={copied} skipped={skipped} of {} planned", plans.len());
+    if !jev_pending.is_empty() {
+        let path = jev::pending_path(db_path);
+        let mut all = jev::load_pending(&path);
+        all.extend(jev_pending);
+        jev::save_pending(&path, &all);
+    }
 
     db::resync_msgs_count(&conn, user_id)?;
     db::write_state_hash(&state_path, new_hash)?;
     db::write_state_hash(&sender_state_path, new_sender_hash)?;
     auth_backfill(db_path, rules_path, rules, &mut conn, inbox_id, user_id)?;
     Ok(())
+}
+
+/// #882: post the outcome of Jev decisions old enough to have been acted on: the one declared sender folder
+/// that now holds the message (where the user left or moved it). Entries with nothing to learn are dropped
+/// after JEV_OUTCOME_MAX_DAYS. Best effort; never fails the run.
+fn settle_jev_outcomes(db_path: &str, rules: &Rules, conn: &rusqlite::Connection, inbox_id: i64, user_id: i64) {
+    let Some(sc) = jev::Sidecar::from_env() else { return };
+    let path = jev::pending_path(db_path);
+    let list = jev::load_pending(&path);
+    if list.is_empty() {
+        return;
+    }
+    let after: u64 = env_or("JEV_OUTCOME_AFTER_S", 3 * 86400u64);
+    let give_up: u64 = env_or("JEV_OUTCOME_MAX_DAYS", 30u64) * 86400;
+    let cands = jev::candidates(rules);
+    let now = db::now_secs();
+    let mut keep = Vec::new();
+    for p in list {
+        let age = now.saturating_sub(p.at);
+        if age < after {
+            keep.push(p);
+            continue;
+        }
+        let holding = db::folders_holding_copy(conn, inbox_id, user_id, p.src_msg_id).unwrap_or_default();
+        match jev::observed_label(&holding, &cands) {
+            Some(label) => jev::send_outcome(&sc.base, &p.call, &label, sc.timeout),
+            None if age < give_up => keep.push(p),
+            None => {}
+        }
+    }
+    jev::save_pending(&path, &keep);
 }
 
 static DRY_RUN_LOGGED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);

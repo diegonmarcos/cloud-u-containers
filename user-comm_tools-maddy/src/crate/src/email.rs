@@ -32,6 +32,11 @@ impl Email {
             .unwrap_or_default()
     }
 
+    /// A header's value(s) joined with ", " (empty when absent), for Jev's headers-only state.
+    pub fn header(&self, name: &str) -> String {
+        self.header_joined(name)
+    }
+
     fn header_exists(&self, name: &str) -> bool {
         !self.header_joined(name).trim().is_empty()
     }
