@@ -96,7 +96,8 @@
         ],
         "min_labelled": 30,
         "min_precision": 0.85
-      }
+      },
+      "implicit_accept_days": 7
     },
     "alert_priority": {
       "enabled": true,
@@ -170,7 +171,8 @@
         ],
         "min_labelled": 30,
         "min_precision": 0.85
-      }
+      },
+      "implicit_accept_days": 7
     },
     "deploy_pullup_rc": {
       "enabled": true,
@@ -190,7 +192,8 @@
         ],
         "min_labelled": 30,
         "min_precision": 0.85
-      }
+      },
+      "implicit_accept_days": 7
     },
     "security_digest": {
       "enabled": true,
@@ -206,7 +209,8 @@
         ],
         "min_labelled": 30,
         "min_precision": 0.85
-      }
+      },
+      "implicit_accept_days": 7
     },
     "ops_report": {
       "enabled": true,
@@ -215,14 +219,15 @@
       "ttl_s": 21600,
       "max_calls_per_hour": 24,
       "wave": 2,
-      "_doc": "#883 S11: backup/capacity/prune stay deterministic. Observe-only until its own journal shows it right: gate.after is itself, so the sidecar scores and journals but answers gate_closed (callers behave exactly as before) until `jev-gate precision` shows >= min_precision over >= min_labelled outcome-labelled confident answers.",
+      "_doc": "#883 S11: backup/capacity/prune stay deterministic. Observe-only until its own journal shows it right: gate.after is itself, so the sidecar scores and journals but answers gate_closed (callers behave exactly as before) until `jev-gate precision` shows >= min_precision over >= min_labelled outcome-labelled confident answers. Called from the Dagu ops_backup-check and ops_capacity-review reports (lib/jev-ask.sh).",
       "gate": {
         "after": [
           "ops_report"
         ],
         "min_labelled": 30,
         "min_precision": 0.85
-      }
+      },
+      "implicit_accept_days": 7
     },
     "gha_flake_vs_real": {
       "enabled": true,
@@ -237,7 +242,8 @@
         ],
         "min_labelled": 30,
         "min_precision": 0.85
-      }
+      },
+      "implicit_accept_days": 7
     },
     "remediation_preflight": {
       "enabled": true,
@@ -336,6 +342,54 @@
         ],
         "min_labelled": 50,
         "min_precision": 0.9
+      }
+    },
+    "router_ponytail": {
+      "enabled": true,
+      "class": "user_facing",
+      "threshold": 0.8,
+      "max_calls_per_hour": 600,
+      "wave": 1,
+      "implicit_accept_days": 7,
+      "_doc": "#882 S9: the compression profile (lite|full|ultra, never off) when the request carries no x-ponytail-mode header; header and bot state win.",
+      "gate": {
+        "after": [
+          "router_ponytail"
+        ],
+        "min_labelled": 30,
+        "min_precision": 0.85
+      }
+    },
+    "desktop_commit_msg": {
+      "enabled": true,
+      "class": "user_facing",
+      "threshold": 0.85,
+      "max_calls_per_hour": 120,
+      "wave": 2,
+      "implicit_accept_days": 7,
+      "_doc": "#883 D2: noul 'the commit message describes the staged diff' - an advisory stderr warning from the commit-msg hook, never a block.",
+      "gate": {
+        "after": [
+          "desktop_commit_msg"
+        ],
+        "min_labelled": 30,
+        "min_precision": 0.85
+      }
+    },
+    "desktop_secret_miss": {
+      "enabled": true,
+      "class": "user_facing",
+      "threshold": 0.9,
+      "max_calls_per_hour": 120,
+      "wave": 2,
+      "implicit_accept_days": 7,
+      "_doc": "#883 D2: noul 'this staged diff contains a secret the regexes missed' - advisory only, after redact, never for vault paths.",
+      "gate": {
+        "after": [
+          "desktop_secret_miss"
+        ],
+        "min_labelled": 30,
+        "min_precision": 0.85
       }
     }
   },

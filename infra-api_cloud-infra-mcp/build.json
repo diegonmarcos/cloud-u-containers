@@ -119,6 +119,10 @@
       "cmd": "node --experimental-strip-types test-gha-policy.mjs",
       "cwd": "src/code"
     },
+    "jev-flake": {
+      "cmd": "node --experimental-strip-types test-jev-flake.mjs",
+      "cwd": "src/code"
+    },
     "shell-quote": {
       "cmd": "node --experimental-strip-types test-shell-quote.mjs",
       "cwd": "src/code"

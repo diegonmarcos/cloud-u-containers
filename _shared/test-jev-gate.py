@@ -770,6 +770,20 @@ def decide_suite(mod, check):
         rep = mod.precision_report(cfg)
         check("t_hard" in [g["use"] for g in rep["gates"]] and any(u["use"] == "t_src" for u in rep["uses"]), "the report lists uses and gates")
         check(mod.outcome(cfg, "t_src", "", "a")["ok"] is False, "outcome needs a call id")
+        # implicit accept: an answer nobody corrected within the declared days counts as accepted; an explicit outcome wins
+        cfg["uses"]["t_imp"] = {"enabled": True, "class": "user_facing", "threshold": 0.8, "implicit_accept_days": 7}
+        cfg["uses"]["t_noimp"] = {"enabled": True, "class": "user_facing", "threshold": 0.8}
+        day = 86400
+        ev = []
+        for use in ("t_imp", "t_noimp"):
+            ev += [{"ts": 1000, "use": use, "verdict": "answered", "call": "o1", "picks": {"q": "a"}},
+                   {"ts": 1000, "use": use, "verdict": "answered", "call": "o2", "picks": {"q": "a"}},
+                   {"ts": 1000 + 6 * day, "use": use, "verdict": "answered", "call": "n1", "picks": {"q": "a"}}]
+        ev.append({"ts": 2000, "use": "t_imp", "verdict": "outcome", "call": "o2", "label": {"q": "b"}})
+        p1 = mod.precision(cfg, "t_imp", ev, now=1000 + 8 * day)
+        check(p1["labelled"] == 2 and p1["correct"] == 1, "implicit: old unlabelled counts accepted, explicit wrong stays wrong, a young one waits")
+        check(mod.precision(cfg, "t_imp", ev, now=1000 + 6 * day)["labelled"] == 1, "implicit: before the days pass only the explicit label counts")
+        check(mod.precision(cfg, "t_noimp", ev, now=1000 + 99 * day)["labelled"] == 0, "no implicit_accept_days = no implicit accept")
         # the goose flip follows its own gate
         cfg["uses"]["goose_pretool"]["on_unsafe"] = "block_when_gate_open"
         cfg["uses"]["goose_pretool"]["gate"] = {"after": ["goose_pretool"], "min_labelled": 1, "min_precision": 0.9}
@@ -859,6 +873,8 @@ MUTANTS_DECIDE = [
     ("gate never closes", 'if not u.get("gate") or gate_status(cfg, use)["open"]:', "if True:"),
     ("gate ignores precision", "elif p[\"precision\"] < g[\"min_precision\"]:", "elif False:"),
     ("gate ignores sample size", 'if p["labelled"] < g["min_labelled"]:', "if False:"),
+    ("implicit accept ignores the age", 'if call not in labels and now - at[call] >= days * 86400:', "if call not in labels:"),
+    ("implicit accept overrides a label", 'if call not in labels and now - at[call] >= days * 86400:', "if now - at[call] >= days * 86400:"),
     ("outcome never matched", "correct += 1 if want == pk else 0", "correct += 1"),
     ("goose flip ignores gate", 'u.get("on_unsafe") == "block_when_gate_open" and gate_status(cfg, "goose_pretool")["open"]', 'u.get("on_unsafe") == "block_when_gate_open"'),
     ("hook call not budgeted", "answers, meta = decide(state, asked, cfg, use=use)", "answers, meta = decide(state, asked, cfg)"),

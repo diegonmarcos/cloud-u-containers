@@ -77,5 +77,58 @@
    "",
    "Dagu: https://workflows.diegonmarcos.com"
   ]
+ ],
+ "ops_backup-check": [
+  [
+   "http://10.0.0.6:8090/ops_backups|Title: Backup Alert|Priority: 4|Tags: floppy_disk,warning|-e Backup freshness issues:",
+   "  oci-x (10.0.0.9): NO backups in last 24h",
+   "    Latest files:",
+   "      0",
+   "",
+   "Action:",
+   "  ssh <user>@<ip> 'ls -lt /var/backups/ | head -10'",
+   "  Check backup cron: ssh <user>@<ip> 'crontab -l'",
+   "",
+   "Dagu: https://workflows.diegonmarcos.com"
+  ]
+ ],
+ "ops_capacity-review": [
+  [
+   "http://10.0.0.6:8090/ops_reports|Title: Weekly Capacity Review|Priority: 2|Tags: bar_chart|-e Weekly Capacity Review:",
+   "",
+   "gcp-proxy (10.0.0.1):",
+   "  Disk: ",
+   "  Docker storage:",
+   "",
+   "  Largest data dirs:",
+   "",
+   "",
+   "oci-mail (10.0.0.3):",
+   "  Disk: ",
+   "  Docker storage:",
+   "",
+   "  Largest data dirs:",
+   "",
+   "",
+   "oci-analytics (10.0.0.4):",
+   "  Disk: ",
+   "  Docker storage:",
+   "",
+   "  Largest data dirs:",
+   "",
+   "",
+   "oci-apps (10.0.0.6):",
+   "  Disk: ",
+   "  Docker storage:",
+   "",
+   "  Largest data dirs:",
+   "",
+   "",
+   "Action:",
+   "  ssh <user>@<ip> 'docker system prune -f'",
+   "  ssh <user>@<ip> 'du -sh /opt/containers/*/data | sort -rh'",
+   "",
+   "Dagu: https://workflows.diegonmarcos.com"
+  ]
  ]
 }

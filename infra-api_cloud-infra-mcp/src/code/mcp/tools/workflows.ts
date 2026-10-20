@@ -6,6 +6,7 @@ import { z } from "zod";
 import { execAsync } from "../../shared/libs/exec.js";
 import { DAGU_API, DAGU_API_PATH, daguHeaders } from "../../shared/libs/ops.js";
 import { audit } from "../../shared/libs/audit.js";
+import { jevFlake } from "../../shared/libs/jev-flake.js";
 import {
   validRepo, validId, validArtifactName, safeRelPath, planInline, rerunnable,
   validSha, cancellable, grepLines,
@@ -355,6 +356,9 @@ async function workflowsGhaErrors(): Promise<string> {
       for (const line of relevant) {
         sections.push(`    ${line}`);
       }
+      // #883 S12: Jev may add ONE advisory line (flake vs real); no opinion = nothing added, as before
+      const advice = await jevFlake(r.workflowName, relevant);
+      if (advice.line) sections.push(advice.line);
     } else {
       sections.push("  (no failed logs available)");
     }

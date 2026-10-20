@@ -16,6 +16,12 @@ CASES = {  # dag -> (stub ssh output, ssh exit code)
     "health_docker-containers": ("", 0),
     "ops_deploy-pull-up": ("", 1),
     "security_auth-events": ("1", 0),
+    "ops_backup-check": ("0", 0),
+    "ops_capacity-review": ("", 0),
+}
+FAKE_CONSOLIDATED = {
+    "vms": {"v1": {"ssh_alias": "oci-x", "wg_ip": "10.0.0.9", "user": "ubuntu"}},
+    "services": {"s": {"vm": "v1", "backup": {"enabled": True}, "containers": {"c": {"db_engine": "postgres"}}}},
 }
 LATEST = json.dumps({"containers": [{"name": "caddy", "health": "unhealthy", "status": "x"}]})
 
@@ -46,17 +52,22 @@ exit 0
 def run_dag(name, answer):
     doc = yaml.safe_load(open(os.path.join(HERE, name + ".yaml")))
     env = {k: str(v) for e in doc.get("env", []) for k, v in e.items()}
+    data_root = "/var/lib/dagu/data"
     env["JEV_ASK"] = os.path.join(HERE, "lib", "jev-ask.sh")
     out = []
     for step in doc["steps"]:
         with tempfile.TemporaryDirectory() as d:
             stubs(d, answer)
             log = os.path.join(d, "log")
+            os.makedirs(os.path.join(d, "data", "cloud-data"), exist_ok=True)
+            json.dump(FAKE_CONSOLIDATED, open(os.path.join(d, "data", "cloud-data", "_cloud-data-consolidated.json"), "w"))
             e = dict(os.environ, PATH=d + os.pathsep + os.environ["PATH"], TMPDIR=d, STUB_LOG=log, STUB_OUTCOMES=os.path.join(d, "outcomes"), JEV_STATE_DIR=os.path.join(d, "state"), STUB_LATEST=LATEST,
                      STUB_SSH=CASES[name][0], STUB_SSH_RC=str(CASES[name][1]), STUB_ANSWER=answer or "", **env)
             if answer is None:
                 e["JEV_ASK_DISABLE"] = "1"
-            subprocess.run(["sh", "-c", step["command"]], env=e, capture_output=True, timeout=60)
+            e = {k: v.replace(data_root, os.path.join(d, "data")) if isinstance(v, str) else v for k, v in e.items()}
+            cmd = step["command"].replace(data_root, os.path.join(d, "data"))
+            subprocess.run(["sh", "-c", cmd], env=e, capture_output=True, timeout=60)
             out.append(open(log).read().splitlines() if os.path.exists(log) else [])
     return out
 
@@ -102,6 +113,13 @@ def outcome_test(fails):
 
 
 def main():
+    if "--capture-only" in sys.argv:
+        only = sys.argv[sys.argv.index("--capture-only") + 1].split(",")
+        gold = json.load(open(GOLD)) if os.path.exists(GOLD) else {}
+        gold.update({n: run_dag(n, None) for n in only})
+        json.dump(gold, open(GOLD, "w"), indent=1)
+        print("captured", only)
+        return 0
     if "--capture" in sys.argv:
         json.dump({n: run_dag(n, None) for n in CASES}, open(GOLD, "w"), indent=1)
         print("captured", GOLD)
@@ -117,7 +135,8 @@ def main():
                 fails.append("%s [%s]: payloads differ from today's\n  got  %r\n  want %r" % (name, label, got, gold[name]))
         op = {"ok": True, "use": "x", "results": {"q": {"type": "noul", "value": True, "p": 0.97, "confident": True},
                                                   "abnormal": {"type": "noul", "value": True, "p": 0.97, "confident": True},
-                                                  "anomalous": {"type": "noul", "value": True, "p": 0.97, "confident": True}}}
+                                                  "anomalous": {"type": "noul", "value": True, "p": 0.97, "confident": True},
+                                                  "attention": {"type": "noul", "value": True, "p": 0.97, "confident": True}}}
         got = run_dag(name, json.dumps(op))
         if not any("Jev suggests" in l for step in got for l in step):
             fails.append("%s: an opinion never reaches the alert" % name)

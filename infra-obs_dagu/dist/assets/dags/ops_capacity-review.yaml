@@ -1,6 +1,7 @@
 schedule: "0 9 * * 1"
 env:
   - NTFY_URL: http://10.0.0.6:8090
+  - JEV_ASK: /var/lib/dagu/dags/lib/jev-ask.sh
 mail_on:
   failure: false
   success: false
@@ -21,8 +22,12 @@ steps:
         REPORT="${REPORT}$name ($ip):\n  Disk: $DISK_DETAIL\n  Docker storage:\n$DOCKER_IMAGES\n  Largest data dirs:\n$LARGEST\n\n"
       done
       MSG=$(echo -e "Weekly Capacity Review:\n\n${REPORT}Action:\n  ssh <user>@<ip> 'docker system prune -f'\n  ssh <user>@<ip> 'du -sh /opt/containers/*/data | sort -rh'\n\nDagu: https://workflows.diegonmarcos.com")
+      # #883 S11: Jev may bump the weekly review above P2 when it reads as needing attention (no opinion = P2, as before)
+      PRIO=2
+      ADV=$(JEV_TRACK=capacity sh "$JEV_ASK" ops_report kind=capacity report="$(printf '%s' "$MSG" | head -c 3000)")
+      case "$ADV" in *"not confident"*) ADV="" ;; *attention=yes*) PRIO=3; MSG="$MSG$(printf '\n\n')$ADV" ;; esac
       curl -s -X POST "$NTFY_URL/ops_reports" \
         -H "Title: Weekly Capacity Review" \
-        -H "Priority: 2" \
+        -H "Priority: $PRIO" \
         -H "Tags: bar_chart" \
         -d "$MSG"

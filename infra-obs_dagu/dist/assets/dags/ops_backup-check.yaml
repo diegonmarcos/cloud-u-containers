@@ -1,6 +1,7 @@
 schedule: "0 11 * * *"
 env:
   - NTFY_URL: http://10.0.0.6:8090
+  - JEV_ASK: /var/lib/dagu/dags/lib/jev-ask.sh
   - BACKUP_TARGETS: /var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json
 mail_on:
   failure: false
@@ -76,6 +77,9 @@ steps:
       done
       if [ -n "$ALERTS" ]; then
         MSG=$(echo -e "Backup freshness issues:\n${ALERTS}\nAction:\n  ssh <user>@<ip> 'ls -lt /var/backups/ | head -10'\n  Check backup cron: ssh <user>@<ip> 'crontab -l'\n\nDagu: https://workflows.diegonmarcos.com")
+        # #883 S11: Jev may add one advisory line (backups themselves stay deterministic; no opinion = no line)
+        ADV=$(JEV_TRACK=backup sh "$JEV_ASK" ops_report kind=backup report="$(printf '%s' "$MSG" | head -c 3000)")
+        [ -n "$ADV" ] && MSG="$MSG$(printf '\n\n')$ADV"
         curl -s -X POST "$NTFY_URL/ops_backups" \
           -H "Title: Backup Alert" \
           -H "Priority: 4" \

@@ -313,11 +313,40 @@ const jevTier = async (messages, headers, env = process.env, fetchImpl = globalT
     } finally { clearTimeout(timer); }
   } catch { return null; }
 };
+// #882 S9 Ponytail: the compression profile when the request names none (no x-ponytail-mode header; bots send it
+// only when a chat pinned one). Options are lite|full|ultra - NEVER "off": Jev may tune compression, not remove it.
+// Same doubt rule as jevTier: any failure/doubt returns null and getPonytailProfile keeps PONYTAIL_DEFAULT.
+const jevPonytail = async (messages, headers, env = process.env, fetchImpl = globalThis.fetch) => {
+  try {
+    if (headers?.["x-ponytail-mode"] || (headers?.["x-jev"] || "").toLowerCase() === "off" || env.JEV_ROUTER === "0") return null;
+    const arr = Array.isArray(messages) ? messages : [];
+    const chars = arr.reduce((n, m) => n + (typeof m?.content === "string" ? m.content.length : JSON.stringify(m?.content ?? "").length), 0);
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), Number(env.JEV_TIMEOUT_MS || 2500));
+    try {
+      const res = await fetchImpl(`${env.JEV_SIDECAR_URL || "http://10.0.0.6:3110"}/decide/router_ponytail`, {
+        method: "POST", headers: { "content-type": "application/json" }, signal: ctl.signal,
+        body: JSON.stringify({
+          state: { history_length: arr.length, total_chars: chars },
+          questions: { profile: { type: "choice",
+            instructions: "How aggressively can this conversation's context be compressed (`history_length` messages, `total_chars` characters) without losing what the next answer needs?",
+            criteria: { lite: "Little compression: short or precise context where every word matters.",
+                        full: "The usual compression.",
+                        ultra: "Heavy compression: long, repetitive context." } } },
+        }),
+      });
+      if (!res.ok) return null;
+      const ans = await res.json();
+      const r = ans?.ok === true ? ans.results?.profile : null;
+      return r && r.confident === true && ["lite", "full", "ultra"].includes(r.pick) ? r.pick : null;
+    } finally { clearTimeout(timer); }
+  } catch { return null; }
+};
 // jev:end
 
 // ── Plugin: Ponytail profile resolver ────────────────────────────────────────
-const getPonytailProfile = (headers) => {
-  const mode = ((headers?.["x-ponytail-mode"] || "") || PONYTAIL_DEFAULT).toLowerCase().trim();
+const getPonytailProfile = (headers, advised = null) => {
+  const mode = ((headers?.["x-ponytail-mode"] || "") || advised || PONYTAIL_DEFAULT).toLowerCase().trim();
   return (mode in PONYTAIL_PROFILES) ? PONYTAIL_PROFILES[mode] : HR_PROFILE;
 };
 
@@ -356,7 +385,7 @@ const compress = async (messages, model, savingsProfile, headers) => {
 const pipeline = async (messages, model, headers) => {
   const withPrinciples = injectPrinciples(messages, headers);
   const rtkd = applyRTK(withPrinciples, headers);
-  return compress(rtkd, model, getPonytailProfile(headers), headers);
+  return compress(rtkd, model, getPonytailProfile(headers, await jevPonytail(rtkd, headers)), headers);
 };
 
 // ── Agent mode detection ──────────────────────────────────────────────────────

@@ -917,12 +917,19 @@ def outcome(cfg, use, call, label):
     return {"ok": True, "use": use, "call": call}
 
 
-def precision(cfg, use, events=None):
+def precision(cfg, use, events=None, now=None):
     """{labelled, correct, precision, answered} for a use: of its CONFIDENT answers that have an outcome,
-    how many matched it. The latest outcome of a call wins; a call with no outcome is not counted."""
+    how many matched it. The latest outcome of a call wins; a call with no outcome is not counted - EXCEPT
+    for a use that declares `implicit_accept_days` (a result nobody can observe: a digest priority, a router
+    tier): an answer left standing that long with no correction counts as accepted, so the gate is not
+    waiting for a label that can never come. An explicit outcome always wins over the implicit one."""
     events = journal(cfg) if events is None else events
+    now = time.time() if now is None else now
     picks = {e["call"]: e["picks"] for e in events
              if e.get("use") == use and e.get("verdict") != "outcome" and e.get("call") and e.get("picks")}
+    at = {e["call"]: e.get("ts", now) for e in events
+          if e.get("use") == use and e.get("verdict") != "outcome" and e.get("call") and e.get("picks")}
+    days = ((cfg.get("uses") or {}).get(use) or {}).get("implicit_accept_days")
     labels = {e["call"]: e.get("label") for e in events
               if e.get("use") == use and e.get("verdict") == "outcome" and e.get("call")}
     labelled = correct = 0
@@ -936,6 +943,11 @@ def precision(cfg, use, events=None):
                 continue
             labelled += 1
             correct += 1 if want == pk else 0
+    if isinstance(days, (int, float)) and days > 0:
+        for call, mine in picks.items():
+            if call not in labels and now - at[call] >= days * 86400:
+                labelled += len(mine)
+                correct += len(mine)
     return {"use": use, "answered": len(picks), "labelled": labelled, "correct": correct,
             "precision": round(correct / labelled, 4) if labelled else None}
 
