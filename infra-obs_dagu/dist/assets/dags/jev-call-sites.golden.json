@@ -1,0 +1,81 @@
+{
+ "health_mail-ingest": [
+  [
+   "http://10.0.0.6:8090/infra_mail-health|Title: Mail ingest STALLED - no inbound for 30h|Priority: 5|Tags: rotating_light,email|No message has reached maddy INBOX for 30h.",
+   "",
+   "Inbound (leg B) is probably down: check the Cloudflare Worker, api.diegonmarcos.com/pub/mail/http-to-smtp, and the Authelia/introspect-proxy auth chain.",
+   "",
+   "Check the reconciliation leg too. If gws-primary is failing, lost mail will NOT be recovered automatically."
+  ],
+  [
+   "http://10.0.0.6:8090/infra_mail-health|Title: Mail reconciliation leg DOWN|Priority: 4|Tags: warning,email|Failing mail-puller sources: 30",
+   "",
+   "These legs re-pull the upstream copy into maddy. While they are down, any mail dropped by leg B is NOT recovered - the safety net is off."
+  ]
+ ],
+ "health_docker-containers": [
+  [
+   "http://10.0.0.6:8090/health_containers|Title: Container Health Issues|Priority: 4|Tags: whale,warning|Container issues:",
+   "gcp-proxy UNHEALTHY: caddy",
+   "oci-mail UNHEALTHY: caddy",
+   "oci-analytics UNHEALTHY: caddy",
+   "oci-apps UNHEALTHY: caddy",
+   "",
+   "Dagu: https://workflows.diegonmarcos.com"
+  ]
+ ],
+ "ops_deploy-pull-up": [
+  [
+   "http://10.0.0.6:8090/deploy_containers|Title: [gcp-proxy] pull-up FAILED|Priority: 4|exit=1"
+  ],
+  [
+   "http://10.0.0.6:8090/deploy_containers|Title: [oci-mail] pull-up FAILED|Priority: 4|exit=1"
+  ],
+  [
+   "http://10.0.0.6:8090/deploy_containers|Title: [oci-analytics] pull-up FAILED|Priority: 4|exit=1"
+  ],
+  [
+   "http://10.0.0.6:8090/deploy_containers|Title: [oci-apps] pull-up FAILED|Priority: 4|exit=1"
+  ]
+ ],
+ "security_auth-events": [
+  [
+   "http://10.0.0.6:8090/sec_connections|Title: Daily Connection Report|Priority: 2|Tags: key,shield|-e Daily Connection Report (Oct 20):",
+   "",
+   "gcp-proxy (10.0.0.1):",
+   "  SSH accepted: 1 | failed: 1",
+   "  Sudo events: 1",
+   "  Active TCP: 1 | Docker listeners: 1",
+   "  Recent logins:",
+   "1",
+   "",
+   "oci-mail (10.0.0.3):",
+   "  SSH accepted: 1 | failed: 1",
+   "  Sudo events: 1",
+   "  Active TCP: 1 | Docker listeners: 1",
+   "  Recent logins:",
+   "1",
+   "",
+   "oci-analytics (10.0.0.4):",
+   "  SSH accepted: 1 | failed: 1",
+   "  Sudo events: 1",
+   "  Active TCP: 1 | Docker listeners: 1",
+   "  Recent logins:",
+   "1",
+   "",
+   "oci-apps (10.0.0.6):",
+   "  SSH accepted: 1 | failed: 1",
+   "  Sudo events: 1",
+   "  Active TCP: 1 | Docker listeners: 1",
+   "  Recent logins:",
+   "1",
+   "",
+   "Inspect:",
+   "  ssh <user>@<ip> 'journalctl -u ssh --since yesterday'",
+   "  ssh <user>@<ip> 'last -20'",
+   "  ssh <user>@<ip> 'ss -tunap'",
+   "",
+   "Dagu: https://workflows.diegonmarcos.com"
+  ]
+ ]
+}

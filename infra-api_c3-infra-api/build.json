@@ -54,6 +54,10 @@
     "drift-multi-container": {
       "cmd": "node test-drift-multi-container.ts",
       "cwd": "src"
+    },
+    "jev-alert-priority": {
+      "cmd": "node test-jev-alert-priority.ts",
+      "cwd": "src"
     }
   },
   "monitoring": {

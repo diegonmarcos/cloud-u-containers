@@ -1,0 +1,24 @@
+{
+  "_doc": "#882/#883 the Jev questions every Dagu DAG asks, in ONE place (jev-ask.sh builds the state from key=value args and posts it to the sidecar's /decide/<use>). The uses themselves (threshold, allowed, class, gate) are declared in _shared/jev-gate/jev-gate.json. Jev only suggests: a DAG appends the one-line advice to its alert body when the sidecar has an opinion and otherwise sends exactly the alert it sent before.",
+  "mail_ingest_stall": {
+    "abnormal": {"type": "noul", "instructions": "A gap of `age_hours` hours without any inbound mail, on weekday `weekday` at hour `hour` UTC, is abnormal for a personal mailbox that normally receives mail every few hours."}
+  },
+  "remediation_suggestion": {
+    "action": {"type": "choice", "instructions": "Which single remediation, if any, fits the unhealthy or crashed containers listed in `issues`?",
+      "criteria": {
+        "none": "Nothing should be done automatically; the issue is transient or needs no action.",
+        "container.restart": "Restarting the one named container is a proportionate, reversible fix.",
+        "service.restart": "The whole service (all its containers) needs a restart.",
+        "page": "A human must look at it; touching it automatically could lose data or access."}}
+  },
+  "deploy_pullup_rc": {
+    "action": {"type": "choice", "instructions": "A pull-and-up of the containers on VM `vm` exited with code `rc`. What is the best next step?",
+      "criteria": {
+        "retry-once": "The failure looks transient (network, registry, lock); one retry is likely to succeed.",
+        "rollback-tag": "A bad image or tag was deployed; rolling back to the previous tag is the fix.",
+        "page": "The cause is unclear or serious; a human should look."}}
+  },
+  "security_digest": {
+    "anomalous": {"type": "noul", "instructions": "The daily connection report in `report` shows activity that is anomalous compared with a normal day on these four personal servers (unusual failed logins, sudo events or logins)."}
+  }
+}

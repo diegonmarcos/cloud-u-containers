@@ -1,6 +1,7 @@
 schedule: "0 10 * * *"
 env:
   - NTFY_URL: http://10.0.0.6:8090
+  - JEV_ASK: /var/lib/dagu/dags/lib/jev-ask.sh
 mail_on:
   failure: false
   success: false
@@ -26,7 +27,10 @@ steps:
         fi
       done
       if [ -n "$ALERTS" ]; then
-        printf "Container issues:\n%b\nDagu: https://workflows.diegonmarcos.com" "$ALERTS" | \
+        # #882 S5: Jev may suggest a remediation in the body; nothing is executed (no opinion = no line)
+        NL=$(printf '\n')
+        ADV=$(sh "$JEV_ASK" remediation_suggestion issues="$(printf '%b' "$ALERTS" | head -c 1500)")
+        printf "Container issues:\n%b\n%sDagu: https://workflows.diegonmarcos.com" "$ALERTS" "${ADV:+$ADV$NL}" | \
           curl -sf -X POST "$NTFY_URL/health_containers" \
             -H "Title: Container Health Issues" -H "Priority: 4" -H "Tags: whale,warning" -d @-
         printf "%b" "$ALERTS"

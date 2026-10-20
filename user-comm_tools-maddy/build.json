@@ -186,5 +186,10 @@
   },
   "build": {
     "headers_enforced": true
+  },
+  "tests": {
+    "jev-fallback": {
+      "cmd": "bash src/test-jev-fallback.sh"
+    }
   }
 }

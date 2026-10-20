@@ -1,6 +1,7 @@
 schedule: "0 9 * * *"
 env:
   - NTFY_URL: http://10.0.0.6:8090
+  - JEV_ASK: /var/lib/dagu/dags/lib/jev-ask.sh
 mail_on:
   failure: false
   success: false
@@ -25,8 +26,12 @@ steps:
         REPORT="${REPORT}$name ($ip):\n  SSH accepted: $ACCEPTED | failed: $FAILED_SSH\n  Sudo events: $SUDO_EVENTS\n  Active TCP: $ACTIVE_CONN | Docker listeners: $DOCKER_CONN\n  Recent logins:\n$RECENT_LOGINS\n\n"
       done
       MSG=$(echo -e "Daily Connection Report ($TODAY):\n\n${REPORT}Inspect:\n  ssh <user>@<ip> 'journalctl -u ssh --since yesterday'\n  ssh <user>@<ip> 'last -20'\n  ssh <user>@<ip> 'ss -tunap'\n\nDagu: https://workflows.diegonmarcos.com")
+      # #883 S10: Jev may bump the priority above P2 when the day looks anomalous (no opinion = P2, as before)
+      PRIO=2
+      ADV=$(sh "$JEV_ASK" security_digest report="$(printf '%b' "$REPORT" | head -c 3000)")
+      case "$ADV" in *"not confident"*) ;; *anomalous=yes*) PRIO=3; MSG="$MSG$(printf '\n\n')$ADV";; esac
       curl -s -X POST "$NTFY_URL/sec_connections" \
         -H "Title: Daily Connection Report" \
-        -H "Priority: 2" \
+        -H "Priority: $PRIO" \
         -H "Tags: key,shield" \
         -d "$MSG"

@@ -102,6 +102,9 @@
     },
     "dag-keys": {
       "cmd": "python3 src/dags/test_dag-keys.py"
+    },
+    "jev-call-sites": {
+      "cmd": "python3 src/dags/test_jev-call-sites.py"
     }
   }
 }

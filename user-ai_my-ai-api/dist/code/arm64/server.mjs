@@ -283,6 +283,38 @@ const applyRTK = (messages, headers) => {
   });
 };
 
+// jev:begin  #882 S9 — Jev may pick a model TIER when the request names no model. Advisory: explicit `model` and
+// the x-jev header win, and ANY doubt (no BRIDGE_TIER_MODELS, no sidecar/key, timeout, gate closed, not
+// confident, unmapped tier) returns null so the caller keeps DEFAULT_MODEL exactly as before.
+// BRIDGE_TIER_MODELS = {"fast":"<model>","strong":"<model>"} declares the tiers (unset = Jev never asked).
+const jevTier = async (messages, headers, env = process.env, fetchImpl = globalThis.fetch) => {
+  try {
+    if ((headers?.["x-jev"] || "").toLowerCase() === "off" || env.JEV_ROUTER === "0") return null;
+    const tiers = JSON.parse(env.BRIDGE_TIER_MODELS || "null");
+    if (!tiers || typeof tiers !== "object" || Object.keys(tiers).length < 2) return null;
+    const last = [...(Array.isArray(messages) ? messages : [])].reverse().find((m) => m?.role === "user");
+    const text = typeof last?.content === "string" ? last.content : JSON.stringify(last?.content ?? "");
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), Number(env.JEV_TIMEOUT_MS || 2500));
+    try {
+      const res = await fetchImpl(`${env.JEV_SIDECAR_URL || "http://10.0.0.6:3110"}/decide/router_tier`, {
+        method: "POST", headers: { "content-type": "application/json" }, signal: ctl.signal,
+        body: JSON.stringify({
+          state: { last_message: text.slice(0, 1500), history_length: Array.isArray(messages) ? messages.length : 0 },
+          questions: { tier: { type: "choice",
+            instructions: "Which model tier is enough to answer `last_message` well, given `history_length` earlier messages?",
+            criteria: Object.fromEntries(Object.keys(tiers).map((k) => [k, `The ${k} tier is the right size for this request.`])) } },
+        }),
+      });
+      if (!res.ok) return null;
+      const ans = await res.json();
+      const r = ans?.ok === true ? ans.results?.tier : null;
+      return r && r.confident === true && typeof tiers[r.pick] === "string" ? tiers[r.pick] : null;
+    } finally { clearTimeout(timer); }
+  } catch { return null; }
+};
+// jev:end
+
 // ── Plugin: Ponytail profile resolver ────────────────────────────────────────
 const getPonytailProfile = (headers) => {
   const mode = ((headers?.["x-ponytail-mode"] || "") || PONYTAIL_DEFAULT).toLowerCase().trim();
@@ -574,7 +606,7 @@ const handleAnthropic = async (payload, res, reqHeaders) => {
     messages.push({ role: "system", content: sysText });
   }
   for (const m of payload.messages || []) messages.push(m);
-  const model = payload.model || DEFAULT_MODEL;
+  const model = payload.model || (await jevTier(messages, reqHeaders)) || DEFAULT_MODEL;
   const extra = {
     max_tokens: payload.max_tokens,
     temperature: payload.temperature,
@@ -749,7 +781,7 @@ const server = http.createServer(async (req, res) => {
       if (req.url.startsWith("/v1/messages")) return await handleAnthropic(payload, res, req.headers);
 
       if (!Array.isArray(payload.messages)) return send(404, { error: { message: "no messages in body" } });
-      const model = payload.model || DEFAULT_MODEL;
+      const model = payload.model || (await jevTier(payload.messages, req.headers)) || DEFAULT_MODEL;
       const extra = { ...payload };
       delete extra.messages; delete extra.model; delete extra.stream;
       const wantStream = !!payload.stream;

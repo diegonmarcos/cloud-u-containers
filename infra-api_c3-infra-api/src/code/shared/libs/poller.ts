@@ -23,6 +23,7 @@
 import { EventEmitter } from "events";
 import { getConfig } from "./config.js";
 import { sshExecAsync } from "./async-ssh.js";
+import { jevAlertPriority } from "./jev.js";
 import {
   recordMetricSample,
   rollupMetrics,
@@ -178,7 +179,8 @@ export async function evaluateAlertRules(): Promise<void> {
       sendNotification({
         title: `ALERT: ${rule.name}`,
         message: `${rule.target} ${rule.metric} ${rule.op} ${rule.threshold} (current: ${point.value})`,
-        priority: "high",
+        // #882 S3: Jev may re-rank (default|high|urgent, never below default); no opinion = "high" as before
+        priority: (await jevAlertPriority({ rule: rule.name, target: rule.target, metric: rule.metric, op: rule.op, threshold: rule.threshold, value: point.value })) ?? "high",
         tags: ["rotating_light", "alert"],
       });
       pollerEvents.emit("alert", fired);

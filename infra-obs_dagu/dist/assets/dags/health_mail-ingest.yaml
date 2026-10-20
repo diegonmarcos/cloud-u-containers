@@ -21,6 +21,7 @@ env:
   - SSH: ssh -i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=10
   - NTFY_URL: http://10.0.0.6:8090
   - STALE_HOURS: "24"
+  - JEV_ASK: /var/lib/dagu/dags/lib/jev-ask.sh
 mail_on:
   failure: false
   success: false
@@ -54,11 +55,14 @@ steps:
 
       echo "hours_since_last_inbound_delivery=$AGE (threshold ${STALE_HOURS}h)"
       if [ "$AGE" -ge "$STALE_HOURS" ]; then
+        # #882 S2: Jev may add one advisory line to the page, never lower or suppress it (no opinion = no line)
+        NL=$(printf '\n')
+        ADV=$(sh "$JEV_ASK" mail_ingest_stall age_hours="$AGE" weekday="$(date -u +%A)" hour="$(date -u +%H)")
         curl -s -X POST "$NTFY_URL/infra_mail-health" \
           -H "Title: Mail ingest STALLED - no inbound for ${AGE}h" \
           -H "Priority: 5" \
           -H "Tags: rotating_light,email" \
-          -d "$(printf 'No message has reached maddy INBOX for %sh.\n\nInbound (leg B) is probably down: check the Cloudflare Worker, api.diegonmarcos.com/pub/mail/http-to-smtp, and the Authelia/introspect-proxy auth chain.\n\nCheck the reconciliation leg too. If gws-primary is failing, lost mail will NOT be recovered automatically.' "$AGE")"
+          -d "$(printf 'No message has reached maddy INBOX for %sh.\n\nInbound (leg B) is probably down: check the Cloudflare Worker, api.diegonmarcos.com/pub/mail/http-to-smtp, and the Authelia/introspect-proxy auth chain.\n\nCheck the reconciliation leg too. If gws-primary is failing, lost mail will NOT be recovered automatically.%s' "$AGE" "${ADV:+$NL$ADV}")"
         exit 1
       fi
 

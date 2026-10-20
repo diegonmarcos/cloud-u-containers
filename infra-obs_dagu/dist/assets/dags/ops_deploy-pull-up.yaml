@@ -4,6 +4,7 @@ env:
   - SSH_KEY: /home/dagu/.ssh/vault_id_rsa
   - SSH_OPTS: -i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -o ConnectTimeout=10
   - NTFY_URL: http://10.0.0.6:8090
+  - JEV_ASK: /var/lib/dagu/dags/lib/jev-ask.sh
 mail_on:
   failure: true
   success: false
@@ -26,7 +27,7 @@ steps:
         fi
       " 2>&1
       RC=$?
-      [ $RC -ne 0 ] && curl -sf -X POST "$NTFY_URL/deploy_containers" -H "Title: [$VM] pull-up FAILED" -H "Priority: 4" -d "exit=$RC" 2>/dev/null
+      [ $RC -ne 0 ] && curl -sf -X POST "$NTFY_URL/deploy_containers" -H "Title: [$VM] pull-up FAILED" -H "Priority: 4" -d "exit=$RC$(ADV=$(sh "$JEV_ASK" deploy_pullup_rc vm="$VM" rc="$RC"); [ -n "$ADV" ] && printf '\n%s' "$ADV")" 2>/dev/null
       exit $RC
   - name: oci-mail
     command: |
@@ -46,7 +47,7 @@ steps:
         fi
       " 2>&1
       RC=$?
-      [ $RC -ne 0 ] && curl -sf -X POST "$NTFY_URL/deploy_containers" -H "Title: [$VM] pull-up FAILED" -H "Priority: 4" -d "exit=$RC" 2>/dev/null
+      [ $RC -ne 0 ] && curl -sf -X POST "$NTFY_URL/deploy_containers" -H "Title: [$VM] pull-up FAILED" -H "Priority: 4" -d "exit=$RC$(ADV=$(sh "$JEV_ASK" deploy_pullup_rc vm="$VM" rc="$RC"); [ -n "$ADV" ] && printf '\n%s' "$ADV")" 2>/dev/null
       exit $RC
   - name: oci-analytics
     command: |
@@ -66,7 +67,7 @@ steps:
         fi
       " 2>&1
       RC=$?
-      [ $RC -ne 0 ] && curl -sf -X POST "$NTFY_URL/deploy_containers" -H "Title: [$VM] pull-up FAILED" -H "Priority: 4" -d "exit=$RC" 2>/dev/null
+      [ $RC -ne 0 ] && curl -sf -X POST "$NTFY_URL/deploy_containers" -H "Title: [$VM] pull-up FAILED" -H "Priority: 4" -d "exit=$RC$(ADV=$(sh "$JEV_ASK" deploy_pullup_rc vm="$VM" rc="$RC"); [ -n "$ADV" ] && printf '\n%s' "$ADV")" 2>/dev/null
       exit $RC
   - name: oci-apps
     command: |
@@ -86,5 +87,5 @@ steps:
         fi
       " 2>&1
       RC=$?
-      [ $RC -ne 0 ] && curl -sf -X POST "$NTFY_URL/deploy_containers" -H "Title: [$VM] pull-up FAILED" -H "Priority: 4" -d "exit=$RC" 2>/dev/null
+      [ $RC -ne 0 ] && curl -sf -X POST "$NTFY_URL/deploy_containers" -H "Title: [$VM] pull-up FAILED" -H "Priority: 4" -d "exit=$RC$(ADV=$(sh "$JEV_ASK" deploy_pullup_rc vm="$VM" rc="$RC"); [ -n "$ADV" ] && printf '\n%s' "$ADV")" 2>/dev/null
       exit $RC

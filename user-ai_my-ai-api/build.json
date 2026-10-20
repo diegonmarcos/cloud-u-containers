@@ -117,6 +117,10 @@
       "cmd": "node test-my-ai-resume-by-name.mjs",
       "cwd": "src/code"
     },
+    "jev-tier": {
+      "cmd": "node test-my-ai-jev-tier.mjs",
+      "cwd": "src/code"
+    },
     "src-dist-parity": {
       "cmd": "node test-my-ai-src-dist-parity.mjs",
       "cwd": "src/code"

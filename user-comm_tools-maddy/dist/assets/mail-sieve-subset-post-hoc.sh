@@ -169,6 +169,34 @@ ensure_writable() {
   backup_db
 }
 
+# jev:begin  #882 S1 — Jev may pick a category folder for FALLBACK rows only (copy-only, idempotent, easy undo).
+# jev_pick <headers-text> <candidate folders, one per line>  ->  prints the folder or nothing. ALWAYS exits 0
+# and prints nothing on any failure or doubt (no curl/jq, no key, sidecar down, observe-only/gate closed,
+# not confident, folder not in the list): the row then stays in the fallback exactly as before.
+# JEV_SIDECAR_URL overrides the mesh address; MAIL_JEV=0 turns it off; the sidecar owns the budget.
+jev_pick() {
+  [ "${MAIL_JEV:-1}" = "0" ] && return 0
+  command -v curl >/dev/null 2>&1 && command -v jq >/dev/null 2>&1 || return 0
+  _jreq="$(printf '%s\n' "$1" | jq -Rsc --arg cands "$2" '
+      (split("\n") | map(select(test("^(From|Subject|List-Id):"; "i")) | .[0:300])) as $h
+      | ($cands | split("\n") | map(select(length > 0))) as $c
+      | select(($c | length) >= 2)
+      | {state: {headers: $h},
+         questions: {folder: {type: "choice",
+           instructions: "Which category folder should this message from `headers` be filed in? Pick the closest fit by sender and subject.",
+           criteria: ($c | map({(.): ("Mail that belongs in the folder " + .)}) | add)}}}' 2>/dev/null)" || return 0
+  [ -n "$_jreq" ] || return 0
+  _jans="$(curl -s --max-time "${JEV_ASK_TIMEOUT:-8}" -X POST -H 'Content-Type: application/json' -d "$_jreq" \
+      "${JEV_SIDECAR_URL:-http://10.0.0.6:3110}/decide/mail_fallback_folder" 2>/dev/null)" || return 0
+  printf '%s' "$_jans" | jq -r --arg cands "$2" '
+      select(.ok == true and .results.folder.confident == true)
+      | .results.folder.pick as $p
+      | select(($cands | split("\n")) | index($p))
+      | $p' 2>/dev/null || true
+  return 0
+}
+# jev:end
+
 # ── Subcommands ─────────────────────────────────────────────────────
 
 cmd_integrity_check() {
@@ -636,6 +664,9 @@ cmd_apply_rules() {
                      # propagates and loop body's exit status is the
                      # parent shell's (controlled with trailing `:`).
   SCANNED=0
+  JEV_ASKED=0
+  # numbered category folders other than the fallback itself and the 9x system ones (Jev's option set)
+  JEV_CANDS="$(sq "SELECT name FROM mboxes WHERE uid = $USER_ID AND name GLOB '[0-9][0-9]*' AND name NOT GLOB '9[0-9]*' ORDER BY name" 2>/dev/null || true)"
 
   sq "SELECT m.msgId, hex(m.cachedHeader)
       FROM msgs m
@@ -660,6 +691,12 @@ cmd_apply_rules() {
     )"
     target="$(printf '%s' "$output" | awk 'NR==1')"
     flags="$(printf '%s' "$output" | awk 'NR>1 && NF' | paste -sd, -)"
+    # #882 S1: a row the rules left in the fallback may be filed by Jev instead (copy-only; no opinion = unchanged)
+    if [ -n "$FALLBACK_NAME" ] && [ "$target" = "$FALLBACK_NAME" ] && [ "$JEV_ASKED" -lt "${MAIL_JEV_MAX:-20}" ]; then
+      JEV_ASKED=$((JEV_ASKED + 1))
+      jev_target="$(jev_pick "$(printf '%s' "$hex" | xxd -r -p | jq -r 'to_entries[] | "\(.key): \(.value | join(", "))"')" "$JEV_CANDS")"
+      [ -n "$jev_target" ] && [ "$jev_target" != "$FALLBACK_NAME" ] && target="$jev_target" && log "  jev: msg $msgid -> '$target'"
+    fi
     if [ -n "$target" ] && [ "$target" != "INBOX" ]; then
       printf '%s\t%s\t%s\n' "$target" "$msgid" "$flags" >> "$PLAN"
     fi

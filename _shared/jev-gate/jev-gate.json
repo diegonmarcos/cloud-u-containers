@@ -89,7 +89,14 @@
       "ttl_s": 86400,
       "max_calls_per_hour": 120,
       "wave": 1,
-      "_doc": "#882 spec §4 S1 (maddy fallback rows only): served by the sidecar; advisory only, today's behaviour is the fallback and the caller wires it in observe mode first."
+      "_doc": "#882 spec §4 S1 (maddy fallback rows only): served by the sidecar; advisory only, today's behaviour is the fallback and the caller wires it in observe mode first. Observe-only until its own journal shows it right: gate.after is itself, so the sidecar scores and journals but answers gate_closed (callers behave exactly as before) until `jev-gate precision` shows >= min_precision over >= min_labelled outcome-labelled confident answers.",
+      "gate": {
+        "after": [
+          "mail_fallback_folder"
+        ],
+        "min_labelled": 30,
+        "min_precision": 0.85
+      }
     },
     "alert_priority": {
       "enabled": true,
@@ -104,7 +111,14 @@
       ],
       "max_calls_per_hour": 120,
       "wave": 1,
-      "_doc": "#882 spec §4 S3 (re-rank ntfy priority; never suppress): served by the sidecar; advisory only, today's behaviour is the fallback and the caller wires it in observe mode first."
+      "_doc": "#882 spec §4 S3 (re-rank ntfy priority; never suppress): served by the sidecar; advisory only, today's behaviour is the fallback and the caller wires it in observe mode first. Observe-only until its own journal shows it right: gate.after is itself, so the sidecar scores and journals but answers gate_closed (callers behave exactly as before) until `jev-gate precision` shows >= min_precision over >= min_labelled outcome-labelled confident answers.",
+      "gate": {
+        "after": [
+          "alert_priority"
+        ],
+        "min_labelled": 30,
+        "min_precision": 0.85
+      }
     },
     "remediation_suggestion": {
       "enabled": true,
@@ -118,7 +132,14 @@
       ],
       "max_calls_per_hour": 60,
       "wave": 1,
-      "_doc": "#882 spec §4 S5 suggestion (vm.reset is never an option): served by the sidecar; advisory only, today's behaviour is the fallback and the caller wires it in observe mode first."
+      "_doc": "#882 spec §4 S5 suggestion (vm.reset is never an option): served by the sidecar; advisory only, today's behaviour is the fallback and the caller wires it in observe mode first. Observe-only until its own journal shows it right: gate.after is itself, so the sidecar scores and journals but answers gate_closed (callers behave exactly as before) until `jev-gate precision` shows >= min_precision over >= min_labelled outcome-labelled confident answers.",
+      "gate": {
+        "after": [
+          "remediation_suggestion"
+        ],
+        "min_labelled": 30,
+        "min_precision": 0.85
+      }
     },
     "mail_ingest_stall": {
       "enabled": true,
@@ -127,7 +148,14 @@
       "ttl_s": 3600,
       "max_calls_per_hour": 12,
       "wave": 1,
-      "_doc": "#882 spec §4 S2 (lower priority only, never suppress the page): served by the sidecar; advisory only, today's behaviour is the fallback and the caller wires it in observe mode first."
+      "_doc": "#882 spec §4 S2 (lower priority only, never suppress the page): served by the sidecar; advisory only, today's behaviour is the fallback and the caller wires it in observe mode first. Observe-only until its own journal shows it right: gate.after is itself, so the sidecar scores and journals but answers gate_closed (callers behave exactly as before) until `jev-gate precision` shows >= min_precision over >= min_labelled outcome-labelled confident answers.",
+      "gate": {
+        "after": [
+          "mail_ingest_stall"
+        ],
+        "min_labelled": 30,
+        "min_precision": 0.85
+      }
     },
     "router_tier": {
       "enabled": true,
@@ -135,7 +163,14 @@
       "threshold": 0.8,
       "max_calls_per_hour": 600,
       "wave": 1,
-      "_doc": "#882 spec §4 S9 (model tier / compression profile; explicit headers win): served by the sidecar; advisory only, today's behaviour is the fallback and the caller wires it in observe mode first."
+      "_doc": "#882 spec §4 S9 (model tier / compression profile; explicit headers win): served by the sidecar; advisory only, today's behaviour is the fallback and the caller wires it in observe mode first. Observe-only until its own journal shows it right: gate.after is itself, so the sidecar scores and journals but answers gate_closed (callers behave exactly as before) until `jev-gate precision` shows >= min_precision over >= min_labelled outcome-labelled confident answers.",
+      "gate": {
+        "after": [
+          "router_tier"
+        ],
+        "min_labelled": 30,
+        "min_precision": 0.85
+      }
     },
     "deploy_pullup_rc": {
       "enabled": true,
@@ -148,7 +183,14 @@
       ],
       "max_calls_per_hour": 30,
       "wave": 2,
-      "_doc": "#883 S8 advisory in the alert body."
+      "_doc": "#883 S8 advisory in the alert body. Observe-only until its own journal shows it right: gate.after is itself, so the sidecar scores and journals but answers gate_closed (callers behave exactly as before) until `jev-gate precision` shows >= min_precision over >= min_labelled outcome-labelled confident answers.",
+      "gate": {
+        "after": [
+          "deploy_pullup_rc"
+        ],
+        "min_labelled": 30,
+        "min_precision": 0.85
+      }
     },
     "security_digest": {
       "enabled": true,
@@ -157,7 +199,14 @@
       "ttl_s": 86400,
       "max_calls_per_hour": 6,
       "wave": 2,
-      "_doc": "#883 S10: bump above P2 only."
+      "_doc": "#883 S10: bump above P2 only. Observe-only until its own journal shows it right: gate.after is itself, so the sidecar scores and journals but answers gate_closed (callers behave exactly as before) until `jev-gate precision` shows >= min_precision over >= min_labelled outcome-labelled confident answers.",
+      "gate": {
+        "after": [
+          "security_digest"
+        ],
+        "min_labelled": 30,
+        "min_precision": 0.85
+      }
     },
     "ops_report": {
       "enabled": true,
@@ -166,7 +215,14 @@
       "ttl_s": 21600,
       "max_calls_per_hour": 24,
       "wave": 2,
-      "_doc": "#883 S11: backup/capacity/prune stay deterministic."
+      "_doc": "#883 S11: backup/capacity/prune stay deterministic. Observe-only until its own journal shows it right: gate.after is itself, so the sidecar scores and journals but answers gate_closed (callers behave exactly as before) until `jev-gate precision` shows >= min_precision over >= min_labelled outcome-labelled confident answers.",
+      "gate": {
+        "after": [
+          "ops_report"
+        ],
+        "min_labelled": 30,
+        "min_precision": 0.85
+      }
     },
     "gha_flake_vs_real": {
       "enabled": true,
@@ -174,7 +230,14 @@
       "threshold": 0.85,
       "max_calls_per_hour": 60,
       "wave": 2,
-      "_doc": "#883 S12: advisory; one audited rerun at most."
+      "_doc": "#883 S12: advisory; one audited rerun at most. Observe-only until its own journal shows it right: gate.after is itself, so the sidecar scores and journals but answers gate_closed (callers behave exactly as before) until `jev-gate precision` shows >= min_precision over >= min_labelled outcome-labelled confident answers.",
+      "gate": {
+        "after": [
+          "gha_flake_vs_real"
+        ],
+        "min_labelled": 30,
+        "min_precision": 0.85
+      }
     },
     "remediation_preflight": {
       "enabled": true,
