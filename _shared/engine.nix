@@ -513,23 +513,6 @@ let
       else banner + body
     else banner + body;
 
-  # A plain-path shell asset is copied verbatim EXCEPT when the service opts in
-  # to build.headers_enforced: then it carries the GENERATED-FILE banner like
-  # every other dist/ file (9_others/test/test_service_header_present.sh checks
-  # dist/assets/X against src/assets/X). The banner goes AFTER the shebang line,
-  # so the script still runs. Shell, not nix regex, so non-ASCII text in the
-  # script cannot make the splice fall back to a banner-before-shebang.
-  headersEnforced = (buildJson.build.headers_enforced or false) == true;
-  stampAsset = a:
-    if headersEnforced && builtins.isPath a && lib.hasSuffix ".sh" (toString a)
-    then pkgs.runCommand (baseNameOf a) { } ''
-      head -n 1 ${a} > $out
-      printf '%s' ${lib.escapeShellArg (mkBanner "#")} >> $out
-      tail -n +2 ${a} >> $out
-      chmod --reference=${a} $out
-    ''
-    else a;
-
   renderTemplate = t: let
     # JSON has no comment syntax — banner would invalidate the file (e.g.
     # Stalwart's `Failed to parse data store settings: expected value at
@@ -741,7 +724,7 @@ pkgs.runCommand "${buildJson.name}-dist-v2" {
       chmod -R u+w "$out/assets/${a.name}"
     ''
     else ''
-      cp -rL ${stampAsset a} "$out/assets/${baseNameOf a}"
+      cp -rL ${a} "$out/assets/${baseNameOf a}"
       chmod -R u+w "$out/assets/${baseNameOf a}"
     ''
   ) extraAssets}
