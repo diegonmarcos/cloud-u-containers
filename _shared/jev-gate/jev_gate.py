@@ -12,7 +12,8 @@ Entry points:
   select_tools(request, cfg)        hermes llm_request middleware (see __init__.py)
   route_context(cli, prompt, ...)   hermes pre_llm_call hook (see __init__.py)
   python3 jev_gate.py decide --use <name>   generic: {state, questions} on stdin -> verdict JSON on stdout (#881)
-  python3 jev_gate.py serve         the oci-apps sidecar: POST /decide/<use> on the mesh (#881)
+  python3 jev_gate.py serve         the oci-apps sidecar: POST /decide/<use>, POST /outcome/<use>, GET /precision (#881, #884)
+  python3 jev_gate.py outcome|precision   record what really happened / the journal-precision report and gate state (#884)
 
 #765: Jev cannot call tools, so the gate does. route_context asks Jev whether a prompt needs code-graph
 context and, on a confident pick, runs that cloud-cgc MCP lookup and returns capped text to inject;
@@ -265,7 +266,8 @@ def safety(use, tool, tool_input, project, task, cfg, cli=None, session_id=None)
         t = u["threshold"]
         verdict = ("allow" if all(s >= t for s in scores.values())
                    else "unsafe" if all(s <= 1 - t for s in scores.values()) else "defer")
-        log(cfg, use=use, tool=tool, verdict=verdict, scores=scores, threshold=t, **meta)
+        log(cfg, use=use, tool=tool, verdict=verdict, scores=scores, threshold=t,
+            call=meta.get("state_sha"), picks={"safe": verdict == "allow"} if verdict != "defer" else {}, **meta)
         return verdict, scores
     except Exception as e:  # noqa: BLE001
         log(cfg, use=use, tool=tool, verdict="defer", reason="exception:" + type(e).__name__)
@@ -296,7 +298,8 @@ def goose_hook(event, cfg):
     verdict, scores = safety("goose_pretool", event.get("tool_name"), event.get("tool_input") or {},
                              event.get("working_dir"), None, cfg, "goose", event.get("session_id"))
     u = use_cfg(cfg, "goose_pretool")
-    if verdict == "unsafe" and u and u.get("on_unsafe") == "block":
+    if verdict == "unsafe" and u and (u.get("on_unsafe") == "block" or (
+            u.get("on_unsafe") == "block_when_gate_open" and gate_status(cfg, "goose_pretool")["open"])):
         return {"decision": "block", "reason": "jev-gate: judged unsafe/irreversible (%s); ask the operator"
                 % ", ".join("%s=%.2f" % kv for kv in sorted(scores.items()))}
     return None
@@ -840,8 +843,8 @@ def run_use(use, payload, cfg):
         if ttl:
             hit = _cache_get(cfg, key)
             if hit is not None:
-                log(cfg, verdict="cached", **ev)
-                return _result(use, u, hit, True)
+                log(cfg, verdict="cached", call=key[:12], **ev)
+                return _held(cfg, use, u, ev, key[:12]) or _result(use, u, hit, True, key[:12])
         answers, meta = decide(state, questions, cfg, use=use)
         results = read_verdicts(answers, questions, u) if answers else None
         if results is None:
@@ -850,9 +853,10 @@ def run_use(use, payload, cfg):
             return {"ok": False, "use": use, "reason": reason}
         if ttl:
             _cache_set(cfg, key, results, ttl)
-        log(cfg, verdict="answered", scores={q: r["p"] for q, r in results.items()},
+        log(cfg, verdict="answered", call=key[:12], scores={q: r["p"] for q, r in results.items()},
+            picks={q: _pick_of(r) for q, r in results.items() if r["confident"]},
             threshold=u["threshold"], **ev, **meta)
-        return _result(use, u, results, False)
+        return _held(cfg, use, u, ev, key[:12]) or _result(use, u, results, False, key[:12])
     except Exception as e:  # noqa: BLE001 — every failure is "no opinion"
         log(cfg, verdict="none", reason="exception:" + type(e).__name__,
             latency_ms=int((time.monotonic() - t0) * 1000), **ev)
@@ -868,16 +872,114 @@ def _no_opinion(cfg, use, ev, reason):
     return {"ok": False, "use": use, "reason": reason}
 
 
-def _result(use, u, results, cached):
+def _result(use, u, results, cached, call=None):
     out = {"ok": True, "use": use, "class": u["class"], "cached": cached, "threshold": u["threshold"],
-           "results": results}
+           "call": call, "results": results}
     if u["class"] == "gating":
         out["advice_only"] = True   # a suggestion or a confirm, never an automatic action
     return out
 
 
+def _pick_of(r):
+    return r["pick"] if r["type"] == "choice" else r["level"] if r["type"] == "score" else r["value"]
+
+
+# ── outcomes, precision and the evidence gate (#884) ───────────────────────────────────────
+# A use that can lose data, money or access declares `gate` = {after: [uses], min_labelled, min_precision}.
+# Until the journal proves those `after` uses (wave 1-2) right often enough against what really happened
+# (outcomes the caller reports), the gated use is observe-only: scored and journaled, answered as "no
+# opinion" (gate_closed), so the caller keeps today's behaviour. The gate opens by itself when the
+# evidence arrives, and closes again if precision falls. A static deny list still runs first, in the caller.
+
+def journal(cfg):
+    """The decisions journal as a list of events (the local JSONL; the sidecar's is its own file)."""
+    out = []
+    try:
+        with open(os.path.expanduser(os.environ.get("JEV_GATE_LOG") or cfg["log_path"])) as f:
+            for line in f:
+                try:
+                    ev = json.loads(line)
+                    if isinstance(ev, dict):
+                        out.append(ev)
+                except ValueError:
+                    pass
+    except OSError:
+        pass
+    return out
+
+
+def outcome(cfg, use, call, label):
+    """Record what really happened for decision `call` of `use`: label is the option the user/operator
+    ended up with (choice), true/false (noul), or {question: label}. Never the state."""
+    if not (isinstance(use, str) and isinstance(call, str) and call):
+        return {"ok": False, "reason": "usage: outcome --use <name> --call <id> --label <json>"}
+    log(cfg, use=use, verdict="outcome", call=call, label=label)
+    return {"ok": True, "use": use, "call": call}
+
+
+def precision(cfg, use, events=None):
+    """{labelled, correct, precision, answered} for a use: of its CONFIDENT answers that have an outcome,
+    how many matched it. The latest outcome of a call wins; a call with no outcome is not counted."""
+    events = journal(cfg) if events is None else events
+    picks = {e["call"]: e["picks"] for e in events
+             if e.get("use") == use and e.get("verdict") != "outcome" and e.get("call") and e.get("picks")}
+    labels = {e["call"]: e.get("label") for e in events
+              if e.get("use") == use and e.get("verdict") == "outcome" and e.get("call")}
+    labelled = correct = 0
+    for call, lab in labels.items():
+        mine = picks.get(call)
+        if not mine:
+            continue
+        for q, pk in mine.items():
+            want = lab.get(q) if isinstance(lab, dict) else lab if len(mine) == 1 else None
+            if want is None:
+                continue
+            labelled += 1
+            correct += 1 if want == pk else 0
+    return {"use": use, "answered": len(picks), "labelled": labelled, "correct": correct,
+            "precision": round(correct / labelled, 4) if labelled else None}
+
+
+def gate_status(cfg, use, events=None):
+    """{open, reasons, evidence} for a gated use; ungated uses are open. Fails closed on any problem."""
+    g = ((cfg.get("uses") or {}).get(use) or {}).get("gate")
+    if not g:
+        return {"use": use, "open": True, "gated": False}
+    try:
+        events = journal(cfg) if events is None else events
+        ev, why = [], []
+        for a in g["after"]:
+            p = precision(cfg, a, events)
+            ev.append(p)
+            if p["labelled"] < g["min_labelled"]:
+                why.append("%s: %d/%d labelled" % (a, p["labelled"], g["min_labelled"]))
+            elif p["precision"] < g["min_precision"]:
+                why.append("%s: precision %.2f < %.2f" % (a, p["precision"], g["min_precision"]))
+        return {"use": use, "gated": True, "open": not why, "reasons": why, "evidence": ev,
+                "min_labelled": g["min_labelled"], "min_precision": g["min_precision"]}
+    except Exception as e:  # noqa: BLE001
+        return {"use": use, "gated": True, "open": False, "reasons": ["gate_error:" + type(e).__name__]}
+
+
+def _held(cfg, use, u, ev, call):
+    """The no-opinion answer for a gated use whose evidence is not in yet, else None."""
+    if not u.get("gate") or gate_status(cfg, use)["open"]:
+        return None
+    log(cfg, verdict="held", reason="gate_closed", call=call, **ev)
+    return {"ok": False, "use": use, "reason": "gate_closed", "call": call}
+
+
+def precision_report(cfg):
+    """The journal-precision report: per declared use its evidence, and per gated use whether it is open."""
+    events = journal(cfg)
+    uses = sorted(n for n, u in (cfg.get("uses") or {}).items() if isinstance(u, dict) and u.get("class"))
+    return {"uses": [precision(cfg, n, events) for n in uses],
+            "gates": [gate_status(cfg, n, events) for n in uses if cfg["uses"][n].get("gate")]}
+
+
 def decide_cli(argv, stdin, cfg):
-    """`decide --use <name>`: stdin {state, questions} -> the run_use dict as one JSON line."""
+    """`decide --use <name>`: stdin {state, questions} -> the run_use dict as one JSON line.
+    `outcome --use <name> --call <id> --label <json>` and `precision` are the evidence side (#884)."""
     use = argv[argv.index("--use") + 1] if "--use" in argv[:-1] else None
     if not use:
         return {"ok": False, "reason": "usage: jev-gate decide --use <name> < {state, questions}"}
@@ -908,10 +1010,12 @@ def make_handler(cfg):
             if self.path == "/health":
                 names = sorted(n for n in cfg["uses"] if generic_use(cfg, n)[0])
                 return self._send(200, {"ok": True, "uses": names, "key": bool(_key(cfg))})
+            if self.path == "/precision":
+                return self._send(200, precision_report(cfg))
             self._send(404, {"ok": False, "reason": "not_found"})
 
         def do_POST(self):
-            m = re.fullmatch(r"/decide/([A-Za-z0-9_.-]{1,64})", self.path)
+            m = re.fullmatch(r"/(decide|outcome)/([A-Za-z0-9_.-]{1,64})", self.path)
             if not m:
                 return self._send(404, {"ok": False, "reason": "not_found"})
             try:
@@ -924,7 +1028,10 @@ def make_handler(cfg):
                 payload = json.loads(self.rfile.read(n))
             except ValueError:
                 return self._send(400, {"ok": False, "reason": "bad_request"})
-            self._send(200, run_use(m.group(1), payload, cfg))
+            if m.group(1) == "outcome":
+                return self._send(200, outcome(cfg, m.group(2), (payload or {}).get("call"), (payload or {}).get("label"))
+                                  if isinstance(payload, dict) else {"ok": False, "reason": "bad_request"})
+            self._send(200, run_use(m.group(2), payload, cfg))
     return Handler
 
 
@@ -950,6 +1057,24 @@ def main(argv):
         # shell caller's `set -e` never turns the gate's silence into a failure of its own job
         try:
             out = decide_cli(argv[2:], sys.stdin.read(), load_config())
+        except Exception as e:  # noqa: BLE001
+            out = {"ok": False, "reason": "exception:" + type(e).__name__}
+        print(json.dumps(out))
+        return 0
+    if mode in ("outcome", "precision"):
+        try:
+            cfg = load_config()
+            a = argv[2:]
+            opt = lambda n: a[a.index(n) + 1] if n in a[:-1] else None  # noqa: E731
+            if mode == "precision":
+                out = precision_report(cfg)
+            else:
+                lab = opt("--label")
+                try:
+                    lab = json.loads(lab)
+                except (TypeError, ValueError):
+                    pass
+                out = outcome(cfg, opt("--use"), opt("--call"), lab)
         except Exception as e:  # noqa: BLE001
             out = {"ok": False, "reason": "exception:" + type(e).__name__}
         print(json.dumps(out))

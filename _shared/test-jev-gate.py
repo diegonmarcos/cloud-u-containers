@@ -735,6 +735,55 @@ def decide_suite(mod, check):
     check(cli([], "{}")["reason"].startswith("usage"), "decide without --use explains its usage")
     check(cli(["--use", "t_ui"], "not json")["reason"] == "bad_request", "decide on bad JSON is no opinion")
 
+    # #884 evidence gate: a gated use is observe-only until the journal shows precision, then opens by itself
+    jl = os.path.join(TMP, "gate-%d.jsonl" % time.monotonic_ns())
+    os.environ["JEV_GATE_LOG"] = jl
+    try:
+        cfg["uses"]["t_src"] = {"enabled": True, "class": "user_facing", "threshold": 0.8, "allowed": ["a", "b"]}
+        cfg["uses"]["t_hard"] = {"enabled": True, "class": "gating", "threshold": 0.8,
+                                 "gate": {"after": ["t_src"], "min_labelled": 4, "min_precision": 0.75}}
+        reset(nouls(ok=0.95))
+        held = run("t_hard", {"n": 0}, noul_q())
+        check(not held["ok"] and held["reason"] == "gate_closed", "a gated use with no evidence answers no opinion")
+        check(any(e.get("verdict") == "held" for e in mod.journal(cfg)), "a held answer is still journaled")
+        check(not mod.gate_status(cfg, "t_hard")["open"] and mod.gate_status(cfg, "t_src")["open"], "gate_status: gated closed, ungated open")
+        calls = []
+        reset(choice_reply("a", 0.9))
+        for i in range(4):
+            r = run("t_src", {"i": i}, choice_q("a", "b"))
+            calls.append(r["call"])
+        check(all(calls) and len(set(calls)) == 4, "every answer carries a distinct call id")
+        for c in calls[:3]:
+            mod.outcome(cfg, "t_src", c, "a")
+        check(mod.precision(cfg, "t_src")["labelled"] == 3 and not mod.gate_status(cfg, "t_hard")["open"], "too few labelled outcomes keep the gate closed")
+        mod.outcome(cfg, "t_src", calls[3], "b")
+        p = mod.precision(cfg, "t_src")
+        check(p["labelled"] == 4 and p["correct"] == 3 and p["precision"] == 0.75 and mod.gate_status(cfg, "t_hard")["open"],
+              "enough labelled outcomes at the precision opens the gate by itself")
+        reset(nouls(ok=0.95))
+        check(run("t_hard", {"n": 1}, noul_q())["ok"], "an open gate serves the gated use")
+        mod.outcome(cfg, "t_src", calls[2], "b")
+        check(not mod.gate_status(cfg, "t_hard")["open"] and run("t_hard", {"n": 2}, noul_q()).get("reason") == "gate_closed",
+              "a later outcome that drops precision closes it again")
+        cfg["uses"]["t_hard"]["gate"]["after"] = ["t_missing"]
+        check(not mod.gate_status(cfg, "t_hard")["open"], "evidence of a use that never answered is no evidence")
+        rep = mod.precision_report(cfg)
+        check("t_hard" in [g["use"] for g in rep["gates"]] and any(u["use"] == "t_src" for u in rep["uses"]), "the report lists uses and gates")
+        check(mod.outcome(cfg, "t_src", "", "a")["ok"] is False, "outcome needs a call id")
+        # the goose flip follows its own gate
+        cfg["uses"]["goose_pretool"]["on_unsafe"] = "block_when_gate_open"
+        cfg["uses"]["goose_pretool"]["gate"] = {"after": ["goose_pretool"], "min_labelled": 1, "min_precision": 0.9}
+        reset(nouls(all=0.02))
+        ev = {"tool_name": "Bash", "tool_input": {"command": "ls"}, "working_dir": "/p"}
+        check(mod.goose_hook(ev, cfg) is None, "goose logs instead of blocking while its gate is closed")
+        last = [e for e in mod.journal(cfg) if e.get("use") == "goose_pretool" and e.get("call")][-1]
+        mod.outcome(cfg, "goose_pretool", last["call"], False)
+        reset(nouls(all=0.02))
+        ev["tool_input"] = {"command": "ls -a"}
+        check((mod.goose_hook(ev, cfg) or {}).get("decision") == "block", "goose blocks once its journal shows precision")
+    finally:
+        os.environ.pop("JEV_GATE_LOG", None)
+
 
 def sidecar_suite(mod):
     """`serve`: POST /decide/<use> over a real socket, health by names, the body cap, the stdout journal."""
@@ -807,6 +856,11 @@ MUTANTS_DECIDE = [
     ("memory ledger fallback dropped", "        with _MEM_LOCK:\n            return txn(_MEM_LEDGER)", "        return None"),
     ("cache key ignores state", 'key = _sha(json.dumps([use, state, questions], sort_keys=True))', 'key = _sha(json.dumps([use, questions], sort_keys=True))'),
     ("body cap dropped", "if not 0 < n <= MAX_BODY:", "if False:"),
+    ("gate never closes", 'if not u.get("gate") or gate_status(cfg, use)["open"]:', "if True:"),
+    ("gate ignores precision", "elif p[\"precision\"] < g[\"min_precision\"]:", "elif False:"),
+    ("gate ignores sample size", 'if p["labelled"] < g["min_labelled"]:', "if False:"),
+    ("outcome never matched", "correct += 1 if want == pk else 0", "correct += 1"),
+    ("goose flip ignores gate", 'u.get("on_unsafe") == "block_when_gate_open" and gate_status(cfg, "goose_pretool")["open"]', 'u.get("on_unsafe") == "block_when_gate_open"'),
     ("hook call not budgeted", "answers, meta = decide(state, asked, cfg, use=use)", "answers, meta = decide(state, asked, cfg)"),
 ]
 
