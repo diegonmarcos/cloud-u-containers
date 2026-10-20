@@ -54,6 +54,9 @@
   "infra-ai_languagetool": {
    "licence": "LicenseRef-NoLicenseGranted"
   },
+  "infra-sec_auth-broker": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
   "infra-api_c3-infra-api": {
    "licence": "LicenseRef-NoLicenseGranted"
   },
@@ -431,6 +434,10 @@
   "erikvl87/languagetool": {
    "licence": "LGPL-2.1-only",
    "note": "Image wrapper LGPL-2.1 (erikvl87/docker-languagetool); LanguageTool itself LGPL-2.1."
+  },
+  "quay.io/oauth2-proxy/oauth2-proxy": {
+   "licence": "MIT",
+   "note": "oauth2-proxy identity broker for the multi-SSO sign-in (#1066)."
   },
   "etherpad/etherpad": {
    "licence": "Apache-2.0"
