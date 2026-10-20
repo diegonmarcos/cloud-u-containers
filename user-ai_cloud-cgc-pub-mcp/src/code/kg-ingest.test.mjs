@@ -98,15 +98,24 @@ test("shrink guard: a comparable delta replaces normally", async () => {
 
 // The repo-scoped delete must never be one unbounded statement: a single
 // `DELETE FROM imports WHERE in.repo = ...` over cloud-u-containers' ~461k edges ran
-// kg-store-pub (SurrealDB, 1G memcg) out of memory on 2026-10-10 (#888). The fake store
-// holds 12 rows per table and answers each bounded DELETE with the ids it removed.
+// kg-store-pub (SurrealDB, 1G memcg) out of memory on 2026-10-10 (#888). Nodes go in LIMITed
+// batches; edges (#1061) are reached from the repo's own nodes through the graph index, one
+// NODE_PAGE of nodes per request, never by scanning the edge table with in.repo/out.repo.
+// The fake store holds 12 nodes and answers each node page with the edges it "removed".
 test("the repo-scoped delete runs in bounded batches until the scope is empty", async () => {
-  const left = new Map([["imports", 12], ["file", 12]]), deletes = [];
+  const left = new Map([["file", 12]]), deletes = [], pages = [];
   const srv = http.createServer((req, res) => {
     let body = "";
     req.on("data", (c) => (body += c));
     req.on("end", () => {
       res.setHeader("Content-Type", "application/json");
+      if (body.startsWith("LET $n")) {
+        pages.push(body);
+        const start = Number(body.match(/START (\d+)/)[1]), lim = Number(body.match(/LIMIT (\d+)/)[1]);
+        const n = Math.max(0, Math.min(lim, 12 - start));
+        return res.end(JSON.stringify([{ status: "OK", result: null }, { status: "OK", result: null },
+          { status: "OK", result: Array.from({ length: n }, (_, i) => `imports:${start + i}`) }, { status: "OK", result: n }]));
+      }
       if (body.startsWith("DELETE")) {
         deletes.push(body);
         const lim = body.match(/LIMIT (\d+)/), t = body.match(/FROM (\w+) WHERE/)?.[1];
@@ -121,7 +130,7 @@ test("the repo-scoped delete runs in bounded batches until the scope is empty", 
   const dir = mkdtempSync(join(tmpdir(), "kgi-"));
   writeFileSync(join(dir, "d.json"), JSON.stringify(delta()));
   const env = { ...process.env, KG_STORE_URL: `http://127.0.0.1:${srv.address().port}`, KG_STORE_PASS: "x",
-    KG_DELTA: join(dir, "d.json"), KG_INGEST_DELETE_BATCH: "5", KG_INGEST_BACKOFF_MS: "5" };
+    KG_DELTA: join(dir, "d.json"), KG_INGEST_DELETE_BATCH: "5", KG_INGEST_NODE_PAGE: "5", KG_INGEST_BACKOFF_MS: "5" };
   const out = await new Promise((resolve) => {
     const p = spawn(process.execPath, [SCRIPT], { env });
     let err = ""; p.stderr.on("data", (c) => (err += c));
@@ -130,6 +139,51 @@ test("the repo-scoped delete runs in bounded batches until the scope is empty", 
   srv.close(); rmSync(dir, { recursive: true });
   assert.equal(out.code, 0, out.err);
   assert.ok(deletes.every((b) => /LIMIT 5\b/.test(b)), `unbounded delete: ${deletes.find((b) => !/LIMIT 5\b/.test(b))}`);
-  assert.equal(left.get("imports"), 0); assert.equal(left.get("file"), 0);
-  assert.equal(deletes.length, 8, "3 full batches + 1 empty probe per table");
+  assert.equal(left.get("file"), 0);
+  assert.equal(deletes.length, 4, "3 node batches + 1 empty probe");
+  assert.deepEqual(pages.map((b) => Number(b.match(/START (\d+)/)[1])), [0, 5, 10], "node pages 0,5,10; the short third page ends the walk");
+  assert.ok(pages.every((b) => b.includes("->imports, <-imports") && /LIMIT 5\b/.test(b)), "edges are reached through the graph, one bounded page of nodes at a time");
+  assert.ok(![...pages, ...deletes].some((b) => /\bin\.repo\b|\bout\.repo\b/.test(b)), "no edge-table scan by in.repo/out.repo");
+});
+
+// #1061: the repo-scoped DELETE scans a whole edge table even when it matches nothing, so it
+// can legitimately outlast the 120s request timeout. At the shared timeout the client aborted
+// mid-scan, the server dropped the transaction and the delete never finished. The fake store
+// answers every DELETE only after a pause longer than the shared timeout: the ingest must
+// still complete on the delete's own budget, and with the retries it is allowed (2) a
+// delete that never answers must abort loudly rather than be re-queued 8 times.
+test("the repo-scoped delete has its own, longer timeout and fewer retries", async () => {
+  let deletes = 0;
+  const srv = http.createServer((req, res) => {
+    let body = "";
+    req.on("data", (c) => (body += c));
+    req.on("end", () => {
+      res.setHeader("Content-Type", "application/json");
+      if (body.startsWith("DELETE") || body.startsWith("LET $n")) {
+        deletes++;
+        return setTimeout(() => res.end(JSON.stringify([{ status: "OK", result: [] }])), 400);
+      }
+      res.end("[]");
+    });
+  });
+  await new Promise((r) => srv.listen(0, "127.0.0.1", r));
+  const dir = mkdtempSync(join(tmpdir(), "kgi-"));
+  writeFileSync(join(dir, "d.json"), JSON.stringify(delta()));
+  const base = { ...process.env, KG_STORE_URL: `http://127.0.0.1:${srv.address().port}`, KG_STORE_PASS: "x",
+    KG_DELTA: join(dir, "d.json"), KG_INGEST_BACKOFF_MS: "5", KG_INGEST_TIMEOUT_MS: "150" };
+  const go = (extra) => new Promise((resolve) => {
+    const p = spawn(process.execPath, [SCRIPT], { env: { ...base, ...extra } });
+    let err = ""; p.stderr.on("data", (c) => (err += c));
+    p.on("close", (code) => resolve({ code, err }));
+  });
+  const ok = await go({ KG_INGEST_DELETE_TIMEOUT_MS: "5000" });
+  assert.equal(ok.code, 0, ok.err);
+  assert.doesNotMatch(ok.err, /transport error/, "a slow delete inside its own budget must not be retried");
+  deletes = 0;
+  const bad = await go({ KG_INGEST_DELETE_TIMEOUT_MS: "100" });
+  srv.close(); rmSync(dir, { recursive: true });
+  assert.notEqual(bad.code, 0, "a delete that outlasts its budget must abort");
+  assert.match(bad.err, /retry 2\/2/);
+  assert.doesNotMatch(bad.err, /retry 3\/2|retry 3\/8/);
+  assert.match(bad.err, /repo-scoped edge delete failed after 0 edges of \[r\]/);
 });

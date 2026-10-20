@@ -23,6 +23,16 @@ const BATCH = parseInt(process.env.KG_INGEST_BATCH || "500", 10);
 const RETRIES    = parseInt(process.env.KG_INGEST_RETRIES || "8", 10);
 const BACKOFF_MS = parseInt(process.env.KG_INGEST_BACKOFF_MS || "500", 10);
 const TIMEOUT_MS = parseInt(process.env.KG_INGEST_TIMEOUT_MS || "120000", 10);
+// The repo-scoped DELETE needs its own, longer budget (#1061). Its WHERE fetches the in/out
+// record of every edge row, so a batch that finds few or no rows (every repo but the one
+// with the biggest edge tables) still scans the whole 1M-row table. At the 120s default
+// the client aborted mid-scan, SurrealDB dropped the transaction ("A transaction was
+// dropped without being committed" every ~2 min in kg-store-pub), nothing was deleted, and
+// 8 retries repeated the same doomed scan: ~20 min per repo, 4 of 6 repos aborted, the
+// 2026-10-20 pub restore ran 3h14m, and the pvt one was cut at the 4h job timeout. A long
+// timeout lets one scan finish; few retries stop an unfinished scan being re-queued.
+const DELETE_TIMEOUT_MS = parseInt(process.env.KG_INGEST_DELETE_TIMEOUT_MS || "900000", 10);
+const DELETE_RETRIES    = parseInt(process.env.KG_INGEST_DELETE_RETRIES || "2", 10);
 // KG_INGEST_RESUME=1: re-run after an aborted ingest WITHOUT the repo-scoped delete, so
 // rows already written are kept (re-sent ones are no-ops) and the run continues the load.
 const RESUME = process.env.KG_INGEST_RESUME === "1";
@@ -114,14 +124,14 @@ const auth = "Basic " + Buffer.from(`${USER}:${PASS}`).toString("base64");
 // edges). Parse per-statement status and surface the first error.
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 class Transient extends Error {}
-const sqlOnce = async (body) => {
+const sqlOnce = async (body, timeoutMs = TIMEOUT_MS) => {
   let r;
   try {
     r = await fetch(`${URL_.replace(/\/$/, "")}/sql`, {
       method: "POST",
       headers: { Authorization: auth, "surreal-ns": NS, "surreal-db": DB, Accept: "application/json", "Content-Type": "text/plain" },
       body,
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+      signal: AbortSignal.timeout(timeoutMs),
     });
   } catch (e) {
     throw new Transient(`${e.message}${e.cause ? ` (${e.cause.code || e.cause.message})` : ""}`);
@@ -144,13 +154,13 @@ const sqlOnce = async (body) => {
 };
 // Retry transport failures only; per-statement errors come back as {errs} for the caller.
 // Throws after RETRIES retries so the caller can abort loudly with how far it got.
-const sql = async (body) => {
+const sql = async (body, { timeoutMs = TIMEOUT_MS, retries = RETRIES } = {}) => {
   for (let attempt = 0; ; attempt++) {
-    try { return await sqlOnce(body); }
+    try { return await sqlOnce(body, timeoutMs); }
     catch (e) {
-      if (!(e instanceof Transient) || attempt >= RETRIES) throw e;
+      if (!(e instanceof Transient) || attempt >= retries) throw e;
       const wait = Math.min(30000, BACKOFF_MS * 2 ** attempt) + Math.floor(Math.random() * BACKOFF_MS);
-      console.error(`\n[kg-ingest] transport error (${e.message}) — retry ${attempt + 1}/${RETRIES} in ${wait}ms`);
+      console.error(`\n[kg-ingest] transport error (${e.message}) — retry ${attempt + 1}/${retries} in ${wait}ms`);
       await sleep(wait);
     }
   }
@@ -171,12 +181,44 @@ const edgeTables = new Set(edges.map((e) => e.table).filter(Boolean));
 // 2026-10-10 15:32 and 15:47 (kernel "Memory cgroup out of memory: Killed process
 // (surreal)"), the retries met a restarting server, and the repo kept its old 2123 rows.
 const DELETE_BATCH = parseInt(process.env.KG_INGEST_DELETE_BATCH || "5000", 10);
-const deleteStmts = [];  // [table, where] scopes
-for (const repo of repos) {
-  for (const t of edgeTables) deleteStmts.push([t, `in.repo = ${q(repo)} OR out.repo = ${q(repo)}`]);
-  for (const t of nodeTables) deleteStmts.push([t, `repo = ${q(repo)}`]);
-}
-if (deleteStmts.length && !ALLOW_SHRINK) {
+// Edges are NOT found by `WHERE in.repo = X OR out.repo = X` any more (#1061): that predicate
+// fetches the in/out record of every row of the edge table, so even a repo with nothing to
+// delete cost a scan of the whole ~1M-row table, took longer than any request timeout, and
+// SurrealDB dropped the transaction every time (4 of 6 repos aborted per restore). They are
+// reached through the graph index from the repo's own nodes instead (`->t`, `<-t` of the
+// nodes with repo = X, a few ms per page) and deleted by record id. Same set of rows: an edge
+// is gone when either endpoint is a node of the repo; nodes are paged NODE_PAGE at a time so a
+// request stays about as big as the old 5000-row batch.
+const NODE_PAGE = parseInt(process.env.KG_INGEST_NODE_PAGE || "25", 10);
+// Hub files carry tens of thousands of edges (50 cloud-u-android files = 38,629), so one page
+// deletes at most EDGE_CAP ids per request and is repeated until it comes back short.
+const EDGE_CAP = parseInt(process.env.KG_INGEST_EDGE_CAP || "20000", 10);
+const deleteStmts = [];  // [table, where] scopes (nodes only; edges: deleteEdgesOfRepo)
+for (const repo of repos) for (const t of nodeTables) deleteStmts.push([t, `repo = ${q(repo)}`]);
+const deleteEdgesOfRepo = async (repo) => {
+  if (!edgeTables.size) return;
+  const reach = [...edgeTables].map((t) => `->${t}, <-${t}`).join(", ");
+  for (const nt of nodeTables) {
+    let gone = 0;
+    for (let off = 0; ; ) {
+      const st = `LET $n = (SELECT VALUE id FROM ${nt} WHERE repo = ${q(repo)} LIMIT ${NODE_PAGE} START ${off});\n` +
+        `LET $e = array::distinct(array::flatten(array::flatten((SELECT VALUE [${reach}] FROM $n))));\n` +
+        `DELETE array::slice($e, 0, ${EDGE_CAP}) RETURN VALUE $before.id;\nRETURN array::len($n);`;
+      const { errs, firstErr, out } = await sql(st, { timeoutMs: DELETE_TIMEOUT_MS, retries: DELETE_RETRIES }).catch((e) =>
+        die(`repo-scoped edge delete failed after ${gone} edges of [${repo}] via ${nt}: ${e.message} — re-run; the delete resumes where it stopped`));
+      if (errs) die(`repo-scoped edge delete failed — first: ${firstErr}`);
+      const del = Array.isArray(out) && out.length > 1 ? out[out.length - 2]?.result : null;
+      const nPage = Array.isArray(out) && out.length ? Number(out[out.length - 1]?.result ?? 0) : 0;
+      const nDel = Array.isArray(del) ? del.length : 0;
+      gone += nDel;
+      if (nDel >= EDGE_CAP) { process.stderr.write(`\r[kg-ingest] deleted ${gone} edges of ${repo}`); continue; }  // same page again
+      if (nPage < NODE_PAGE) break;
+      off += NODE_PAGE;
+    }
+    if (gone >= 5000) process.stderr.write("\n");
+  }
+};
+if ((deleteStmts.length || edgeTables.size) && !ALLOW_SHRINK) {
   for (const repo of repos) {
     const incoming = nodes.filter((n) => n.properties?.repo === repo).length;
     let stored = 0;
@@ -189,17 +231,18 @@ if (deleteStmts.length && !ALLOW_SHRINK) {
       die(`shrink guard: delta has ${incoming} nodes for [${repo}] but kg-store holds ${stored} — a partial export would wipe the repo (KG_INGEST_ALLOW_SHRINK=1 if it really shrank)`);
   }
 }
-if (RESUME && deleteStmts.length) console.error("[kg-ingest] KG_INGEST_RESUME=1 — keeping existing rows, no repo-scoped delete");
-else if (deleteStmts.length) {
+if (RESUME && (deleteStmts.length || edgeTables.size)) console.error("[kg-ingest] KG_INGEST_RESUME=1 — keeping existing rows, no repo-scoped delete");
+else if (deleteStmts.length || edgeTables.size) {
   console.error(`[kg-ingest] repo-scoped replace: deleting existing rows for [${[...repos].join(", ")}]`);
   // One request per batch: the single multi-table request is what dropped the socket on
   // the private surface for cloud-u-containers (8 retries, UND_ERR_SOCKET), and one
   // statement per table still OOM-killed the server. Each batch is idempotent.
+  for (const repo of repos) await deleteEdgesOfRepo(repo);
   for (const [t, where] of deleteStmts) {
     let gone = 0;
     for (;;) {
       const st = `DELETE (SELECT VALUE id FROM ${t} WHERE ${where} LIMIT ${DELETE_BATCH}) RETURN VALUE $before.id;`;
-      const { errs, firstErr, out } = await sql(st).catch((e) =>
+      const { errs, firstErr, out } = await sql(st, { timeoutMs: DELETE_TIMEOUT_MS, retries: DELETE_RETRIES }).catch((e) =>
         die(`repo-scoped delete failed after ${gone} ${t} rows: ${e.message} — re-run; the delete resumes where it stopped`));
       if (errs) die(`repo-scoped delete failed — first: ${firstErr}`);
       const res = Array.isArray(out) && out.length ? out[out.length - 1]?.result : null;
