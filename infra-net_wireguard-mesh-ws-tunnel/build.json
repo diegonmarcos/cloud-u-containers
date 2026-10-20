@@ -63,6 +63,7 @@
       "env_file": true,
       "depends_on": [],
       "resources": {
+        "mem_limit": "64M"
       },
       "healthcheck": null,
       "monitoring": {

@@ -12,6 +12,9 @@ in
       image = binariesImage;
       container_name = app.container_name;
       restart = "no";
+      # 0.4 MiB resident on gcp-proxy (944 MB VM): size the ceiling to the
+      # workload, not the api category default (2G).
+      deploy.resources.limits.memory = "64M";
       network_mode = "host";
       env_file = [ ".secrets" ];
       environment = {

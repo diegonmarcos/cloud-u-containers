@@ -153,7 +153,7 @@ let
     @not_mesh not remote_ip ${meshOnlySources}
     respond @not_mesh "Forbidden" 403'';
 
-  handleErrors = let
+  handleErrorsBody = let
     eh = caddyRoutes.error_handler or { status_codes = [502 503 504]; error_html = "/srv/error.html"; };
     codesExpr = lib.concatMapStringsSep " || " (c: "{err.status_code} == ${toString c}") eh.status_codes;
     errPath = eh.error_html;
@@ -162,6 +162,12 @@ let
     "@ERR_ROOT@"   = lib.removeSuffix "/error.html" errPath;
     "@ERR_FILE@"   = baseNameOf errPath;
   } (readTpl "22-handle-errors.caddy.tpl"));
+
+  # Rendered ONCE as the (edge_errors) snippet and `import`ed by every site.
+  # Inlining the body per site made it ~15 lines x 336 sites (about 235 KB of
+  # an 870 KB Caddyfile) that caddy parsed and held in memory on a 944 MB VM.
+  edgeErrorsSnippet = "(edge_errors) {\n" + handleErrorsBody + "\n  }";
+  handleErrors = "  import edge_errors";
 
   protectedTpl       = readTpl "23-protected.caddy.tpl";
   protectedCustomTpl = readTpl "24-protected-custom.caddy.tpl";
@@ -1198,6 +1204,8 @@ ${handleErrors}
 in ''
 ${globalsBlock}
 ${odtAskBlock}
+
+  ${edgeErrorsSnippet}
   # ════════════════════════════════════════════════════════════
   # SECURITY SNIPPETS
   # ════════════════════════════════════════════════════════════
