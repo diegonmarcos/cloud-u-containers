@@ -42,8 +42,8 @@
         "caddy_config:/config"
       ];
       deploy.resources = {
-        limits       = { memory = "128M"; };
-        reservations = { memory = "48M"; };
+        limits       = { memory = "256M"; };
+        reservations = { memory = "96M"; };
       };
     };
   };
