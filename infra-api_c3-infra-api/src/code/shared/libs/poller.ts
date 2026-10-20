@@ -23,7 +23,7 @@
 import { EventEmitter } from "events";
 import { getConfig } from "./config.js";
 import { sshExecAsync } from "./async-ssh.js";
-import { jevAlertPriority } from "./jev.js";
+import { jevAlertOutcome, jevAlertPriority } from "./jev.js";
 import {
   recordMetricSample,
   rollupMetrics,
@@ -165,6 +165,9 @@ function compareOp(value: number, op: string, threshold: number): boolean {
  * transition; resolves it (+ recovery notification) on 1->0. Idempotent: a
  * rule that stays breached across ticks does not re-fire or re-notify.
  */
+// call id + fire time of the Jev decision made for each open alert rule (for the outcome on resolve)
+const jevCalls = new Map<number | string, { call: string; at: number }>();
+
 export async function evaluateAlertRules(): Promise<void> {
   const rules = listAlertRules().filter((r) => r.enabled);
   for (const rule of rules) {
@@ -176,16 +179,21 @@ export async function evaluateAlertRules(): Promise<void> {
 
     if (breached && !open) {
       const fired = recordAlertFired(rule.id, rule.target, rule.metric, point.value);
+      const jev = await jevAlertPriority({ rule: rule.name, target: rule.target, metric: rule.metric, op: rule.op, threshold: rule.threshold, value: point.value });
+      if (jev.call) jevCalls.set(rule.id, { call: jev.call, at: Date.now() });
       sendNotification({
         title: `ALERT: ${rule.name}`,
         message: `${rule.target} ${rule.metric} ${rule.op} ${rule.threshold} (current: ${point.value})`,
         // #882 S3: Jev may re-rank (default|high|urgent, never below default); no opinion = "high" as before
-        priority: (await jevAlertPriority({ rule: rule.name, target: rule.target, metric: rule.metric, op: rule.op, threshold: rule.threshold, value: point.value })) ?? "high",
+        priority: jev.priority ?? "high",
         tags: ["rotating_light", "alert"],
       });
       pollerEvents.emit("alert", fired);
     } else if (!breached && open) {
       recordAlertResolved(open.id);
+      // #882 outcome: how long the alert stayed open is the observed answer to "how urgent was it"
+      const asked = jevCalls.get(rule.id);
+      if (asked) { jevCalls.delete(rule.id); void jevAlertOutcome(asked.call, Date.now() - asked.at); }
       sendNotification({
         title: `RESOLVED: ${rule.name}`,
         message: `${rule.target} ${rule.metric} back within bounds (current: ${point.value})`,

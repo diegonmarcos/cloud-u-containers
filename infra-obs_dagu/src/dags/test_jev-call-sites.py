@@ -31,6 +31,7 @@ while [ $# -gt 0 ]; do case "$1" in
 case "$url" in
   *:8199/*) printf '%s' "$STUB_LATEST";;
   *:3110/decide/*) [ -n "$STUB_ANSWER" ] && printf '%s' "$STUB_ANSWER"; [ "$STUB_ANSWER" = DOWN ] && exit 7;;
+  *:3110/outcome/*) printf '%s\\n' "$url|$data" >> "$STUB_OUTCOMES";;
   *infra_jev*) ;;
   *) printf '%s\\n' "$url$hdr|$data" >> "$STUB_LOG";;
 esac
@@ -51,7 +52,7 @@ def run_dag(name, answer):
         with tempfile.TemporaryDirectory() as d:
             stubs(d, answer)
             log = os.path.join(d, "log")
-            e = dict(os.environ, PATH=d + os.pathsep + os.environ["PATH"], TMPDIR=d, STUB_LOG=log, STUB_LATEST=LATEST,
+            e = dict(os.environ, PATH=d + os.pathsep + os.environ["PATH"], TMPDIR=d, STUB_LOG=log, STUB_OUTCOMES=os.path.join(d, "outcomes"), JEV_STATE_DIR=os.path.join(d, "state"), STUB_LATEST=LATEST,
                      STUB_SSH=CASES[name][0], STUB_SSH_RC=str(CASES[name][1]), STUB_ANSWER=answer or "", **env)
             if answer is None:
                 e["JEV_ASK_DISABLE"] = "1"
@@ -67,6 +68,37 @@ ANSWERS = {  # no opinion in every way the sidecar or the network can fail
     "gate_closed": json.dumps({"ok": False, "use": "x", "reason": "gate_closed"}),
     "malformed": "<html>502</html>",
 }
+
+
+def outcome_test(fails):
+    """The automatic outcome: an answer's call id is remembered, and when the situation resolves the observed
+    result is posted to /outcome (never when nothing was asked, never twice)."""
+    with tempfile.TemporaryDirectory() as d:
+        stubs(d, None)
+        out = os.path.join(d, "outcomes")
+        e = dict(os.environ, PATH=d + os.pathsep + os.environ["PATH"], TMPDIR=d, STUB_LOG=os.path.join(d, "log"), STUB_OUTCOMES=out,
+                 JEV_STATE_DIR=os.path.join(d, "state"), STUB_SSH="", STUB_SSH_RC="0", STUB_LATEST="",
+                 STUB_ANSWER=json.dumps({"ok": False, "reason": "gate_closed", "call": "abc123"}))
+        ask = os.path.join(HERE, "lib", "jev-ask.sh")
+        run = lambda *a, **kw: subprocess.run(["sh", ask, *a], env=dict(e, **kw), capture_output=True, text=True)
+        run("settle-age", "mail_ingest_stall", "stall", "7200", "abnormal", "true", "false")
+        if os.path.exists(out):
+            fails.append("outcome: posted although nothing was asked")
+        r = run("mail_ingest_stall", "age_hours=30", JEV_TRACK="stall")
+        if r.returncode != 0 or r.stdout:
+            fails.append("outcome: a held answer must print nothing")
+        run("settle-age", "mail_ingest_stall", "stall", "7200", "abnormal", "true", "false")
+        got = open(out).read() if os.path.exists(out) else ""
+        if "outcome/mail_ingest_stall" not in got or '"call":"abc123"' not in got.replace(" ", "") or '"abnormal":false' not in got.replace(" ", ""):
+            fails.append("outcome: a quickly resolved stall must post abnormal=false for the call, got %r" % got)
+        open(out, "w").close()
+        run("settle-age", "mail_ingest_stall", "stall", "7200", "abnormal", "true", "false")
+        if open(out).read():
+            fails.append("outcome: posted twice for one call")
+        run("mail_ingest_stall", "age_hours=30", JEV_TRACK="stall")
+        run("settle-age", "mail_ingest_stall", "stall", "0", "abnormal", "true", "false")
+        if '"abnormal":true' not in open(out).read().replace(" ", ""):
+            fails.append("outcome: a stall past the threshold must post abnormal=true")
 
 
 def main():
@@ -96,6 +128,7 @@ def main():
         if r.returncode != 0 or r.stdout:
             fails.append("jev-ask.sh must exit 0 and print nothing when the sidecar is down")
         break
+    outcome_test(fails)
     for f in fails:
         print("FAIL", f)
     print("FAILED" if fails else "PASS")

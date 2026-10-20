@@ -19,13 +19,19 @@ export interface JevAlertState {
   value: number;
 }
 
+export interface JevAlertAnswer {
+  priority: JevPriority | null; // null = no opinion: the caller keeps its hard-coded priority
+  call: string | null; // the sidecar's id of this decision, even when held (observe-only): the outcome joins on it
+}
+const NONE: JevAlertAnswer = { priority: null, call: null };
+
 export async function jevAlertPriority(
   state: JevAlertState,
   fetchImpl: typeof fetch = fetch,
   env: Record<string, string | undefined> = process.env,
-): Promise<JevPriority | null> {
+): Promise<JevAlertAnswer> {
   try {
-    if (env.JEV_ALERTS === "0") return null;
+    if (env.JEV_ALERTS === "0") return NONE;
     const base = env.JEV_SIDECAR_URL ?? "http://10.0.0.6:3110";
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), Number(env.JEV_TIMEOUT_MS ?? 2500));
@@ -50,15 +56,45 @@ export async function jevAlertPriority(
           },
         }),
       });
-      if (!res.ok) return null;
+      if (!res.ok) return NONE;
       const ans: any = await res.json();
+      const call = typeof ans?.call === "string" ? ans.call : null;
       const r = ans?.ok === true ? ans.results?.priority : null;
-      if (!r || r.confident !== true || !OPTIONS.includes(r.pick)) return null;
-      return r.pick as JevPriority;
+      if (!r || r.confident !== true || !OPTIONS.includes(r.pick)) return { priority: null, call };
+      return { priority: r.pick as JevPriority, call };
     } finally {
       clearTimeout(timer);
     }
   } catch {
-    return null;
+    return NONE;
+  }
+}
+
+/**
+ * The OUTCOME of an alert, from what was observed: how long it stayed open. Resolved within 10 min = it
+ * could wait ("default"); within 2 h = the normal level ("high"); longer = it needed a human ("urgent").
+ * Posted to the sidecar's /outcome so the use's precision (and the gates that wait on it) can be measured
+ * without a manual label. Never throws.
+ */
+export function jevAlertLabel(openMs: number): JevPriority {
+  return openMs < 10 * 60_000 ? "default" : openMs < 2 * 3_600_000 ? "high" : "urgent";
+}
+
+export async function jevAlertOutcome(
+  call: string | null,
+  openMs: number,
+  fetchImpl: typeof fetch = fetch,
+  env: Record<string, string | undefined> = process.env,
+): Promise<void> {
+  try {
+    if (!call || env.JEV_ALERTS === "0") return;
+    await fetchImpl(`${env.JEV_SIDECAR_URL ?? "http://10.0.0.6:3110"}/outcome/alert_priority`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      signal: AbortSignal.timeout(Number(env.JEV_TIMEOUT_MS ?? 2500)),
+      body: JSON.stringify({ call, label: { priority: jevAlertLabel(openMs) } }),
+    });
+  } catch {
+    /* an outcome is best effort */
   }
 }

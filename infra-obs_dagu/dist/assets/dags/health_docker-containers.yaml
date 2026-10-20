@@ -29,11 +29,14 @@ steps:
       if [ -n "$ALERTS" ]; then
         # #882 S5: Jev may suggest a remediation in the body; nothing is executed (no opinion = no line)
         NL=$(printf '\n')
-        ADV=$(sh "$JEV_ASK" remediation_suggestion issues="$(printf '%b' "$ALERTS" | head -c 1500)")
+        ADV=$(JEV_TRACK=issues sh "$JEV_ASK" remediation_suggestion issues="$(printf '%b' "$ALERTS" | head -c 1500)")
         printf "Container issues:\n%b\n%sDagu: https://workflows.diegonmarcos.com" "$ALERTS" "${ADV:+$ADV$NL}" | \
           curl -sf -X POST "$NTFY_URL/health_containers" \
             -H "Title: Container Health Issues" -H "Priority: 4" -H "Tags: whale,warning" -d @-
         printf "%b" "$ALERTS"
         exit 1
       fi
+      # outcome: the issues of the earlier run cleared by themselves ("none" was right) -- an issue that
+      # outlived a run is settled "page" by the stamp's age when it finally clears
+      sh "$JEV_ASK" settle-age remediation_suggestion issues 129600 action page none
       echo "All containers healthy"

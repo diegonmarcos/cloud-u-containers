@@ -57,13 +57,16 @@ steps:
       if [ "$AGE" -ge "$STALE_HOURS" ]; then
         # #882 S2: Jev may add one advisory line to the page, never lower or suppress it (no opinion = no line)
         NL=$(printf '\n')
-        ADV=$(sh "$JEV_ASK" mail_ingest_stall age_hours="$AGE" weekday="$(date -u +%A)" hour="$(date -u +%H)")
+        ADV=$(JEV_TRACK=stall sh "$JEV_ASK" mail_ingest_stall age_hours="$AGE" weekday="$(date -u +%A)" hour="$(date -u +%H)")
         curl -s -X POST "$NTFY_URL/infra_mail-health" \
           -H "Title: Mail ingest STALLED - no inbound for ${AGE}h" \
           -H "Priority: 5" \
           -H "Tags: rotating_light,email" \
           -d "$(printf 'No message has reached maddy INBOX for %sh.\n\nInbound (leg B) is probably down: check the Cloudflare Worker, api.diegonmarcos.com/pub/mail/http-to-smtp, and the Authelia/introspect-proxy auth chain.\n\nCheck the reconciliation leg too. If gws-primary is failing, lost mail will NOT be recovered automatically.%s' "$AGE" "${ADV:+$NL$ADV}")"
         exit 1
+      else
+        # outcome: a stall that cleared within 2h was a normal gap, a longer one was abnormal
+        sh "$JEV_ASK" settle-age mail_ingest_stall stall 7200 abnormal true false
       fi
 
   - name: check-reconciliation-leg
