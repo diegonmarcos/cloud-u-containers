@@ -58,7 +58,7 @@ in
         NPM_CACHE_HOMES           = "\${NPM_CACHE_HOMES:-/vol/claude-superset-api-home}";
         NPM_CACHE_MAX_MB          = "\${NPM_CACHE_MAX_MB:-1024}";
         NPM_CACHE_CONTAINER       = "\${NPM_CACHE_CONTAINER:-cloud-agi-claude}";
-        GIT_GC_ROOTS              = "\${GIT_GC_ROOTS:-/home/appuser/git /vol/octocode_repos}";
+        GIT_GC_ROOTS              = "\${GIT_GC_ROOTS:-/vol/shared-git-tree /vol/octocode_repos}";
         GIT_GC_LOOSE_MB           = "\${GIT_GC_LOOSE_MB:-200}";
         GIT_GC_MAX_PACKS          = "\${GIT_GC_MAX_PACKS:-20}";
         BUILD_CACHE_MIN_AGE_HOURS = "\${BUILD_CACHE_MIN_AGE_HOURS:-48}";

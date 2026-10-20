@@ -105,7 +105,12 @@ check("O4d the provider key is the placeholder the gateway ignores, never a real
 // ── O5 no secret ────────────────────────────────────────────────────────────
 check("O5 no src/secrets.yaml", !existsSync(join(here, "secrets.yaml")));
 check("O5b no env_file", Array.isArray(svc.env_file) && svc.env_file.length === 0 && build.containers.app.env_file === false);
-check("O5c no agent block (no shared git tree, no GH_TOKEN)", !("agent" in build));
+// The fleet rule (cloud-infra test_agent_git_tree_declared) makes every category "agi"
+// container DECLARE its decision, so an `agent` block exists — but the only block that
+// keeps this service secret-less is the explicit opt-out: no shared tree, hence no
+// writable tree and no GH_TOKEN credential helper.
+check("O5c no shared git tree and no GH_TOKEN (agent block absent, or the explicit git_tree:false opt-out)",
+  !("agent" in build) || (build.agent.git_tree === false && !build.agent.git_tree_writable));
 
 // ── O6 the config's path into the container ─────────────────────────────────
 const flake = readFileSync(join(here, "flake.nix"), "utf8");

@@ -390,6 +390,18 @@ let
   # agent and the repair race, and the agent wins often enough to look fine.
   gitTreeDependsOn = { "${gitTreeRepairKey}" = { condition = "service_completed_successfully"; }; };
 
+  # A NON-agent that must see the shared checkout (disk-janitor `git gc`s it):
+  # build.json `git_tree_maintenance.mount`. Same volume key and pinned name as
+  # the agents' mount, so the name still has exactly one declaration; none of the
+  # agent contract (env, credential helper, owner repair) comes with it.
+  maintSpec        = buildJson.git_tree_maintenance or null;
+  wantsGitTreeMaint = maintSpec != null && !wantsGitTree;
+  mergeGitTreeMaintInto = svc:
+    if !wantsGitTreeMaint then svc
+    else svc // {
+      volumes = lib.unique ((svc.volumes or []) ++ [ "${gitTreeKey}:${maintSpec.mount}" ]);
+    };
+
   mergeGitTreeInto = svc:
     if !wantsGitTree then svc
     else svc // {
@@ -443,13 +455,14 @@ let
       # away is exactly how uncapped stays reachable.
       services = applyMemoryCeiling ((lib.mapAttrs
         (name: svc:
+          mergeGitTreeMaintInto (
           if agentCredential.isAgent name
           then mergeSecretsInto (mergeGitTreeInto (mergeSvc svc))
           # #359: not an agent — no tree, no /run/secrets, token blanked.
-          else agentCredential.withhold (mergeSecretsEnvOnly (mergeSvc svc)))
+          else agentCredential.withhold (mergeSecretsEnvOnly (mergeSvc svc))))
         (spec.services or {}))
         // (if wantsGitTree then { "${gitTreeRepairKey}" = gitTreeRepairSvc; } else {}));
-    } // (if wantsGitTree
+    } // (if wantsGitTree || wantsGitTreeMaint
           then {
             volumes = (spec.volumes or {})
               // { "${gitTreeKey}" = { name = gitTreeName; }; };
