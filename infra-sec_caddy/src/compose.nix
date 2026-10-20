@@ -4,6 +4,9 @@
 # at 127.0.0.1:4182 (or 10.0.0.1:4182 for WG-side forward_auth).
 { buildJson, container }:
 
+let
+  multiSso = ((container.edge_auth or {}).multi_sso or {}).enabled or false;
+in
 {
   services = {
     caddy = {
@@ -37,6 +40,10 @@
         "./configs/ntfy-setup.html:/srv/ntfy-setup.html:ro"
         "./configs/mail:/srv/mail:ro"
         "./configs/wkd:/srv/wkd:ro"
+      ] ++ (if multiSso then [
+        # edge_auth.multi_sso.enabled: the sign-in chooser served on auth./account.
+        "./configs/sso-chooser.html:/srv/sso-chooser.html:ro"
+      ] else []) ++ [
         "caddy_logs:/var/log/caddy"
         "caddy_data:/data"
         "caddy_config:/config"

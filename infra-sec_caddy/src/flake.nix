@@ -12,6 +12,8 @@
     engine = import ../../_shared/engine.nix;
     lib    = nixpkgs.lib;
 
+    multiSso = ((caddyRoutes.edge_auth or {}).multi_sso or {}).enabled or false;
+
     caddyfileText = import ./caddyfile.nix { inherit lib caddyRoutes; };
 
     templates = [
@@ -56,6 +58,7 @@
         cp ${withBanner ./error.html}              $out/configs/error.html
         cp ${withBanner ./dashboard.html}          $out/configs/dashboard.html
         cp ${withBanner ./ntfy-setup.html}         $out/configs/ntfy-setup.html
+        ${if multiSso then "cp ${withBanner ./sso-chooser.html} $out/configs/sso-chooser.html" else ""}
         mkdir -p $out/configs/mail
         cp ${withBanner ./servermail.html}         $out/configs/mail/servermail.html
         cp ${withBanner ./servermail-config.html}  $out/configs/mail/servermail-config.html

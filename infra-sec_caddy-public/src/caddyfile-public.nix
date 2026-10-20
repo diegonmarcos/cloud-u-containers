@@ -143,7 +143,8 @@ let
   #      gcp-proxy (private_forward_upstream). No termination ⇒ no re-encryption;
   #      gcp-proxy terminates + its @wg gate 403s public clients (source 10.1.0.1).
   mailL4     = caddyPublic.mail_l4_routes or [];
-  publicSnis = caddyPublic.public_sni_hosts or [];
+  # multi-SSO (edge_auth.multi_sso): the extra sign-in host(s) are terminated here like auth.
+  publicSnis = (caddyPublic.public_sni_hosts or []) ++ (if ea.multiSso.enabled then ea.multiSso.extraHosts else []);
   sniSlug    = h: lib.replaceStrings [ "." "-" ] [ "_" "_" ] h;
   allMuxSnis = (map (r: r.sni) mailL4) ++ publicSnis;
   mkMailL4Route = r: ''
@@ -445,21 +446,25 @@ ${bearer}
     let
       oidcUpstream = oidcPub.upstream or "https://10.0.0.1:8443";
       fullyOpen = (oidcPub.wg_only or true) == false;
+      # multi-SSO on: the vhost answers several names; forward the requested one.
+      ssoSite  = ea.multiSso.enabled && oidcPub.domain == ea.multiSso.primaryHost;
+      hostRef  = if ssoSite then "{host}" else oidcPub.domain;
+      siteName = if ssoSite then lib.concatStringsSep ", " ([ oidcPub.domain ] ++ ea.multiSso.extraHosts) else oidcPub.domain;
       mkOidcHandle = p: ''
       handle ${p} {
         reverse_proxy ${oidcUpstream} {
-          header_up Host ${oidcPub.domain}
+          header_up Host ${hostRef}
           ${xreal}
           transport http {
             tls
-            tls_server_name ${oidcPub.domain}
+            tls_server_name ${hostRef}
           }
         }
       }'';
       handles = lib.concatMapStringsSep "\n" mkOidcHandle (oidcPub.paths or []);
     in if fullyOpen then ''
     # oidc-public: wg_only:false — whole IdP host open (owner decision 2026-10-15)
-    ${oidcPub.domain} {
+    ${siteName} {
     ${sec}
     ${ea.gate oidcPub.domain}
     ${mkOidcHandle ""}

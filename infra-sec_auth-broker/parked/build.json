@@ -1,0 +1,51 @@
+{
+  "name": "auth-broker",
+  "description": "Identity broker (oauth2-proxy) for the multi-SSO sign-in: Google and GitHub, owner email only (#1066)",
+  "category": "sec",
+  "dns": "auth-broker.app",
+  "ports": { "google": 4180, "github": 4181 },
+  "bind_host": "10.0.0.6",
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/auth-broker"
+  },
+  "compose": { "custom": true },
+  "proxy": { "app_hub": false },
+  "secrets": { "file": "secrets.yaml" },
+  "auth_broker": {
+    "_doc": "THE allowlist: the only identities the broker admits. Enforced by oauth2-proxy via an authenticated-emails file rendered from this list; no email-domain rule exists on purpose (a domain-wide rule would admit every address at that domain). The guard src/test in infra-sec_caddy (test-multi-sso.sh) fails when this list holds anyone else, when the rendered file differs, or when a domain-wide rule appears.",
+    "allowed_emails": ["me@diegonmarcos.com"],
+    "cookie_name": "_diego_sso",
+    "cookie_domain": ".diegonmarcos.com",
+    "cookie_expire": "12h",
+    "providers": [
+      { "id": "google", "secret_prefix": "AUTH_BROKER_GOOGLE", "provider": "google", "port": 4180, "prefix": "/oauth2/google", "scope": "openid email profile" },
+      { "id": "github", "secret_prefix": "AUTH_BROKER_GITHUB", "provider": "github", "port": 4181, "prefix": "/oauth2/github", "scope": "user:email" }
+    ]
+  },
+  "containers": {
+    "google": {
+      "container_name": "auth-broker-google",
+      "image": "quay.io/oauth2-proxy/oauth2-proxy:v7.7.1",
+      "port": 4180,
+      "public": false,
+      "healthcheck": null,
+      "volumes": ["./configs/allowed-emails.txt:/etc/oauth2-proxy/allowed-emails.txt:ro"],
+      "env_file": true,
+      "resources": { "mem_reservation": "24m", "mem_limit": "64m" },
+      "protocol": "http"
+    },
+    "github": {
+      "container_name": "auth-broker-github",
+      "image": "quay.io/oauth2-proxy/oauth2-proxy:v7.7.1",
+      "port": 4181,
+      "public": false,
+      "healthcheck": null,
+      "volumes": ["./configs/allowed-emails.txt:/etc/oauth2-proxy/allowed-emails.txt:ro"],
+      "env_file": true,
+      "resources": { "mem_reservation": "24m", "mem_limit": "64m" },
+      "protocol": "http"
+    }
+  },
+  "build": { "headers_enforced": false }
+}

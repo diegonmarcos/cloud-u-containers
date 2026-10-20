@@ -23,7 +23,7 @@
     @ea_session {
       not header Authorization Bearer*
       not header X-Fleet-Authorization Bearer*
-      not path {args[:]}
+@EA_SSO_NOT@      not path {args[:]}
       not {
         method OPTIONS
         header Access-Control-Request-Method *
@@ -61,5 +61,5 @@
       uri @AUTHELIA_URI@
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers @AUTHELIA_COPY@
-    }
+    }@EA_SSO_BLOCK@
   }

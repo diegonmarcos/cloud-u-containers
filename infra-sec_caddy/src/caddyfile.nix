@@ -387,8 +387,42 @@ ${plainOut}${sniMuxBlock}
     }
   '';
 
+  # ── multi-SSO site additions (edge_auth.multi_sso, see _shared/edge-auth.nix) ──
+  # Only the auth vhost (multiSso.primaryHost) is touched, only when the flag is on:
+  #  · the site also answers the extra hosts (account.diegonmarcos.com)
+  #  · GET / from a browser with no Authelia session gets the three-button chooser
+  #    (Authelia button -> /?ui=authelia, which falls through to the Authelia SPA)
+  #  · /oauth2/<provider>/* is the broker (oauth2-proxy), one instance per provider
+  msSite = ea.multiSso;
+  mkSsoProviderHandle = p: ''
+      handle ${p.prefix}/* {
+        reverse_proxy ${p.upstream} {
+          header_up X-Real-IP {http.request.remote.host}
+        }
+      }
+'';
+  ssoSiteBlock = ''
+      # multi-SSO chooser (edge_auth.multi_sso): browser, no Authelia session, not ?ui=authelia
+      @sso_chooser {
+        method GET
+        path /
+        not query ui=authelia
+        not header Cookie *${msSite.autheliaCookie}=*
+        header Accept *text/html*
+      }
+      handle @sso_chooser {
+        root * /srv
+        rewrite * /sso-chooser.html
+        header Cache-Control "no-store"
+        file_server
+      }
+'' + lib.concatMapStrings mkSsoProviderHandle msSite.providers;
+
   mkSubdomainRoute = route: if (route.landing_only or false) then mkLandingOnlyRoute route else
     let
+      isSsoSite = msSite.enabled && route.domain == msSite.primaryHost;
+      siteDomain = if isSsoSite then lib.concatStringsSep ", " ([ route.domain ] ++ msSite.extraHosts) else route.domain;
+      ssoBlock = if isSsoSite then ssoSiteBlock else "";
       # Shadow the shared builders with this route's per-vhost options.
       mkProtected       = mkProtectedOpt route;
       mkProtectedCustom = mkProtectedCustomOpt route;
@@ -577,12 +611,12 @@ ${plainOut}${sniMuxBlock}
 
     in ''
     # ${route.comment or route.domain}
-    ${route.domain} {
+    ${siteDomain} {
   ${publicBindLine}
   ${secLine}${uploadBlock}${(identityOf route).siteStrip}
   ${gateLine}
   ${wgBlock}
-  ${bypassBlock}${landingBlock}
+  ${ssoBlock}${bypassBlock}${landingBlock}
   ${rootJsonBlock}
   ${wellKnownBlock}
       ${wrappedProxyBlock}

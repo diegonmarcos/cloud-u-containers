@@ -38,6 +38,46 @@ let
     else if offmesh then "  # ${name}: same gate, enforced only against NON-mesh sources (mesh peers are trusted by the WG gate)."
     else "  # ${name}: enforced for every source.";
 
+  # ── multi-SSO (edge_auth.multi_sso) ── Google/GitHub sign-in through the auth
+  # broker (oauth2-proxy) beside Authelia. ONE flag: `enabled`. With it false (or the
+  # block absent) EVERY value below is the empty string, so the rendered gate is
+  # byte-identical to the pre-multi-SSO text (guard: infra-sec_caddy/src/test/
+  # test-multi-sso.sh). With it true the gate gains a third branch:
+  #   Cookie carries the broker cookie AND no Authelia session cookie -> forward_auth
+  #   to the broker's /auth; everything else keeps the existing Authelia branch.
+  # Bearer branches are untouched (a Bearer never reaches the session matchers).
+  ms        = edgeAuth.multi_sso or {};
+  msOn      = ms.enabled or false;
+  msCookie  = ms.cookie_name or "_diego_sso";
+  msAuthCk  = ms.authelia_cookie or "authelia_session";
+  msProvs   = ms.providers or [];
+  msAuthProv = lib.head msProvs;
+  msNot = if !msOn then "" else
+    "      not {\n        header Cookie *${msCookie}=*\n        not header Cookie *${msAuthCk}=*\n      }\n";
+  msBlock = name: offmesh: ws: if !msOn then "" else
+    let extra = (if ws then "\n      not header Upgrade websocket" else "")
+              + (if offmesh then "\n      not remote_ip ${wgCidrs}" else "");
+    in ''
+
+    @ea_broker {
+      header Cookie *${msCookie}=*
+      not header Cookie *${msAuthCk}=*
+      not header Authorization Bearer*
+      not header X-Fleet-Authorization Bearer*
+      not path {args[:]}
+      not {
+        method OPTIONS
+        header Access-Control-Request-Method *
+      }${extra}
+    }
+    # Broker session (Google / GitHub, allowlisted to the owner by the broker itself).
+    forward_auth @ea_broker ${msAuthProv.upstream} {
+      header_up -Connection
+      header_up -Upgrade
+      uri ${msAuthProv.prefix}/auth
+      copy_headers X-Auth-Request-Email
+    }'';
+
   mk = name: offmesh: ws: note name offmesh ws + "\n" + lib.removeSuffix "\n" (subst {
     "@GATE@"                = name;
     # edge_auth.bearer_passthrough: on these hosts the edge does NOT introspect
@@ -55,10 +95,13 @@ let
     "@AUTHELIA_UPSTREAM@"   = autheliaUpstream;
     "@AUTHELIA_URI@"        = auth.authelia_uri or "/api/authz/forward-auth";
     "@AUTHELIA_COPY@"       = lib.concatStringsSep " " (auth.authelia_copy or [ "Remote-User" ]);
+    "@EA_SSO_NOT@"          = msNot;
+    "@EA_SSO_BLOCK@"        = msBlock name offmesh ws;
   } tpl);
 
   entries   = edgeAuth.public_open or [];
-  openHosts = map (e: e.host) (lib.filter (e: (e.scope or "host") == "host") entries);
+  openHosts = map (e: e.host) (lib.filter (e: (e.scope or "host") == "host") entries)
+              ++ (if msOn then (ms.hosts or []) else []);   # multi-SSO sign-in hosts are the IdP vhost
   hostsOf = domain: map (s: builtins.head (lib.splitString "/" s)) (lib.splitString ", " domain);
   # Always exempt on every host (owner-approved tier c): ACME http-01.
   acmePath = "/.well-known/acme-challenge/*";
@@ -72,6 +115,17 @@ let
   argsFor = domain: lib.concatStringsSep " " ([ acmePath ] ++ lib.concatMap pathsOf (hostsOf domain));
 in rec {
   inherit openHosts;
+
+  # What the auth vhost needs when multi-SSO is on (consumed by caddyfile.nix on the
+  # hub and caddyfile-public.nix on the edge). Everything is empty/false when off.
+  multiSso = {
+    enabled     = msOn;
+    primaryHost = ms.primary_host or "";
+    extraHosts  = lib.filter (h: h != (ms.primary_host or "")) (ms.hosts or []);
+    providers   = msProvs;
+    cookie      = msCookie;
+    autheliaCookie = msAuthCk;
+  };
 
   # The two (snippet) definitions, emitted once per Caddyfile.
   snippets = ''
