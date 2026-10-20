@@ -475,8 +475,25 @@ ${plainOut}${sniMuxBlock}
 
       upstreamUrl = if hasTlsServerName || hasTlsSkipVerify then "https://${route.upstream}" else route.upstream;
 
+      # #876: a Kotlin/Wasm APK host (derive: web.kind wasm + url_scheme.wasm_origin) carries
+      # web.serve_path, the path its bundle lives at on route.upstream (an https origin, e.g.
+      # GitHub Pages). The vhost is gated by the shared edge_auth import above (bearer or
+      # Authelia, anonymous -> Authelia), so this block only maps the path: the rewrite runs
+      # inside a `handle` (forced below), i.e. AFTER the site-level forward_auth, which
+      # therefore sees the original URI. Absent serve_path: nothing here changes.
+      servePath = (route.web or {}).serve_path or null;
+      hasServePath = servePath != null;
+      servePrefix = if hasServePath then lib.removeSuffix "/" servePath else "";
+      serveHost = if hasServePath then lib.removePrefix "https://" route.upstream else "";
+
       proxyBlock =
-        if isNoAuth && hasTlsSkipVerify then
+        if hasServePath then
+          ''    rewrite * ${servePrefix}{uri}
+    reverse_proxy ${route.upstream} {
+        header_up Host ${serveHost}
+        header_up X-Real-IP {http.request.remote.host}
+      }''
+        else if isNoAuth && hasTlsSkipVerify then
           ''    reverse_proxy https://${route.upstream} {
         header_up X-Real-IP {http.request.remote.host}
         transport http {
@@ -604,7 +621,7 @@ ${plainOut}${sniMuxBlock}
       # so it pre-empts `handle` blocks — but NOT a bare `reverse_proxy` (the
       # auth:none branch, e.g. vault). Wrapping guarantees the guard fires
       # before the proxy for non-WG clients regardless of auth mode.
-      wrappedProxyBlock = if (wellKnownBlock != "" || isWgOnly) then ''
+      wrappedProxyBlock = if (wellKnownBlock != "" || isWgOnly || hasServePath) then ''
       handle {
         ${proxyBlock}
       }'' else proxyBlock;
