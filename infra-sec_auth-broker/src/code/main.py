@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Fleet auth broker (#1066): GitHub and Google sign-in by the OAuth device flow (RFC 8628).
+"""Fleet auth broker (#1066): GitHub sign-in by the OAuth device flow (RFC 8628), Google by the
+standard web authorization-code flow (PKCE S256 + state). A provider's `flow` in build.json picks one.
 
 One process serves ONE provider (BROKER_PROVIDER); every instance validates the same signed
 session cookie, so `<prefix>/auth` on any instance admits a session issued by any other.
@@ -8,6 +9,7 @@ session cookie, so `<prefix>/auth` on any instance admits a session issued by an
                            and the provider's verification link, polls until approved
   POST <prefix>/device     request a device code from the provider (returns user code + link)
   POST <prefix>/poll       one poll of the provider token endpoint for a pending flow
+  GET  <prefix>/start      (flow web) 302 to the provider with state + PKCE; <prefix>/callback finishes
   GET  <prefix>/auth       forward_auth target: 202 + X-Auth-Request-Email on a valid session, else 401
   GET  <prefix>/health     200 {"enabled": bool, "provider": id}
 
@@ -16,7 +18,7 @@ Identity: the provider's user is checked against the allowlist declared in build
 refused and gets no cookie. The session cookie is HMAC-SHA256 signed with AUTH_BROKER_COOKIE_SECRET.
 Stdlib only. Config: build.json (path in BROKER_CONFIG); secrets only from the environment.
 """
-import base64, hashlib, hmac, json, os, secrets, sys, threading, time
+import base64, hashlib, hmac, html, json, os, secrets, sys, threading, time
 import urllib.error, urllib.parse, urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -36,6 +38,9 @@ class Broker:
         self.p = next(p for p in ab["providers"] if p["id"] == provider_id)
         self.enabled = bool(self.p.get("enabled", False))
         self.prefix = self.p["prefix"]
+        self.flow = self.p.get("flow", "device")
+        self.redirect_uris = list(self.p.get("redirect_uris", []))
+        self.states = {}                     # web flow: state -> pending authorization
         self.cookie_name = ab["cookie_name"]
         self.cookie_domain = ab.get("cookie_domain", "")
         self.ttl = int(ab.get("cookie_expire_seconds", 43200))
@@ -208,6 +213,63 @@ class Broker:
             return 200, {"status": "forbidden"}, None
         return 200, {"status": "ok"}, self.set_cookie(self.make_cookie(email, self.p["id"]), self.ttl)
 
+    # ---- web authorization-code flow (PKCE S256 + state) ----------------------------------------
+    STATE_COOKIE = "_sso_state"
+
+    def web_redirect_uri(self, host):
+        """The registered redirect URI for this request's Host, or None (never built from input)."""
+        host = (host or "").lower()
+        for u in self.redirect_uris:
+            if urllib.parse.urlsplit(u).netloc == host:
+                return u
+        return None
+
+    def web_start(self, host, rd):
+        if not self.enabled or self.flow != "web":
+            return 404, None, None
+        ru = self.web_redirect_uri(host)
+        if not ru:
+            return 400, None, None
+        now = time.time()
+        with self.lock:
+            for k in [k for k, v in self.states.items() if v["exp"] <= now]:
+                self.states.pop(k)
+            if len(self.states) >= MAX_FLOWS * 4:
+                return 429, None, None
+            state, verifier, bind = secrets.token_urlsafe(24), secrets.token_urlsafe(48), secrets.token_urlsafe(16)
+            self.states[state] = {"v": verifier, "bind": bind, "ru": ru, "rd": self.safe_rd(rd), "exp": now + 600}
+        q = {"client_id": self.client_id, "redirect_uri": ru, "response_type": "code", "scope": self.p["scope"],
+             "state": state, "code_challenge": b64e(hashlib.sha256(verifier.encode()).digest()),
+             "code_challenge_method": "S256", "prompt": "select_account"}
+        cookie = "%s=%s; Path=%s; Max-Age=600; Secure; HttpOnly; SameSite=Lax" % (self.STATE_COOKIE, bind, self.prefix)
+        return 302, self.p["auth_url"] + "?" + urllib.parse.urlencode(q), cookie
+
+    def web_callback(self, query, cookie_header):
+        """Returns (status, location_or_message, set_cookie). State is single use and bound to the browser."""
+        q = {k: v[0] for k, v in urllib.parse.parse_qs(query).items()}
+        with self.lock:
+            st = self.states.pop(q.get("state", ""), None)
+        bind = ""
+        for part in (cookie_header or "").split(";"):
+            k, _, v = part.strip().partition("=")
+            if k == self.STATE_COOKIE:
+                bind = v
+        clear = "%s=; Path=%s; Max-Age=0; Secure; HttpOnly; SameSite=Lax" % (self.STATE_COOKIE, self.prefix)
+        if not st or st["exp"] <= time.time() or not bind or not hmac.compare_digest(bind, st["bind"]):
+            return 400, "Sign-in expired or invalid. Start again.", clear
+        if q.get("error") or not q.get("code"):
+            return 403, "Sign-in was cancelled or denied.", clear
+        data = {"client_id": self.client_id, "client_secret": self.client_secret, "code": q["code"],
+                "code_verifier": st["v"], "redirect_uri": st["ru"], "grant_type": "authorization_code"}
+        code, d = self.call(self.p["token_url"], data)
+        if code != 200 or not d.get("access_token"):
+            print("code exchange failed: status=%s error=%s" % (code, d.get("error")), flush=True)
+            return 502, "Sign-in failed at the provider.", clear
+        email = self.identity(d["access_token"])
+        if not email:
+            return 403, "This account is not allowed.", clear
+        return 302, st["rd"], [clear, self.set_cookie(self.make_cookie(email, self.p["id"]), self.ttl)]
+
 
 PAGE = """<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex"><title>Sign in with __LABEL__</title><style>
@@ -277,6 +339,18 @@ def make_handler(b):
             if op == "/auth":
                 e = b.session_email(self.headers.get("Cookie"))
                 return self.send(202, b"", "text/plain", [("X-Auth-Request-Email", e)]) if e else self.send(401, b"", "text/plain")
+            if b.flow == "web" and op in ("/start", "/callback"):
+                if op == "/start":
+                    qs = urllib.parse.parse_qs(u.query)
+                    code, loc, ck = b.web_start(self.headers.get("Host"), (qs.get("rd") or [""])[0])
+                    if code != 302:
+                        return self.send(code, "<p>Sign-in is not available.</p>", "text/html; charset=utf-8")
+                    return self.send(302, b"", "text/plain", [("Location", loc), ("Set-Cookie", ck)])
+                code, out, ck = b.web_callback(u.query, self.headers.get("Cookie"))
+                cks = [("Set-Cookie", c) for c in (ck if isinstance(ck, list) else [ck])]
+                if code == 302:
+                    return self.send(302, b"", "text/plain", [("Location", out)] + cks)
+                return self.send(code, "<p>%s</p><p><a href=\"%s/start\">Try again</a></p>" % (html.escape(out), b.prefix), "text/html; charset=utf-8", cks)
             if op == "/start":
                 if not b.enabled:
                     return self.send(404, "<p>This sign-in method is not enabled.</p>", "text/html; charset=utf-8")
@@ -294,6 +368,8 @@ def make_handler(b):
                 body = json.loads(self.rfile.read(n) or b"{}")
             except Exception:
                 return self.send(400, {"error": "bad_request"})
+            if b.flow == "web":
+                return self.send(404, {"error": "not_found"})
             if op == "/device":
                 code, d = b.new_device(self.ip())
                 return self.send(code, d)

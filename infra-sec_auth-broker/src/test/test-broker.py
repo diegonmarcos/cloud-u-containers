@@ -78,7 +78,7 @@ def mkcfg(github_on=True, google_on=True):
         if p["id"] == "github":
             p.update(enabled=github_on, device_url=base + "/gh/device", token_url=base + "/gh/token", user_url=base + "/gh/user")
         else:
-            p.update(enabled=google_on, device_url=base + "/go/device", token_url=base + "/go/token", userinfo_url=base + "/go/userinfo")
+            p.update(enabled=google_on, auth_url="https://accounts.example/auth", token_url=base + "/go/token", userinfo_url=base + "/go/userinfo")
     return c
 
 
@@ -190,25 +190,85 @@ n0 = len(STUB.seen); ip = {"X-Real-IP": "9.9.9.9"}
 codes = [post(GH, G, "/device", headers={**XHR, **ip})[0] for _ in range(12)]
 need(codes.count(200) == 10 and codes[-1] == 429, "device-code requests are rate limited per client IP (10 per window)")
 
-# ---- Google -----------------------------------------------------------------------------------
+# ---- Google (web authorization-code flow, PKCE S256 + state) ----------------------------------
+import hashlib
+AUTH_H = "auth.diegonmarcos.com"
+
+
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *a, **k): return None
+
+
+OPENER = urllib.request.build_opener(NoRedirect)
+
+
+def raw(url, headers=None):
+    try:
+        r = OPENER.open(urllib.request.Request(url, headers=headers or {}), timeout=5)
+        return r.status, r.read(), r.headers
+    except urllib.error.HTTPError as e:
+        return e.code, e.read(), e.headers
+
+
+def g_start(rd="/", host=AUTH_H):
+    st, _, h = raw(GO + O + "/start?rd=" + urllib.parse.quote(rd), {"Host": host})
+    if st != 302:
+        return st, None, None, None
+    loc = urllib.parse.urlsplit(h["Location"]); q = {k: v[0] for k, v in urllib.parse.parse_qs(loc.query).items()}
+    return st, loc, q, h["Set-Cookie"].split(";")[0]
+
+
+def g_callback(state, cookie, code="CODE1", user=None, token=None, error=None):
+    STUB.user = user or {}
+    STUB.token_reply = token or {"access_token": "TOK"}
+    qs = {"state": state}
+    if error: qs["error"] = error
+    else: qs["code"] = code
+    return raw(GO + O + "/callback?" + urllib.parse.urlencode(qs), {"Host": AUTH_H, **({"Cookie": cookie} if cookie else {})})
+
+
 STUB.seen.clear()
-st, d, _ = post(GO, O, "/device")
-need(st == 200 and d["verification_uri"] == "https://prov.example/device" and d["user_code"] == "ABCD-1234", "google: device code issued (verification_url normalised)")
-need(STUB.seen[0][1]["client_id"] == "gid" and STUB.seen[0][1]["scope"] == "openid email", "google: client id from the secret env, identity-only scope")
-sid, st, r, h = login(GO, go_b, O, user={"email": "me@diegonmarcos.com", "email_verified": True})
-need(r["status"] == "ok" and cookie_of(h) and any(p[1].get("client_secret") == "gsec" for p in STUB.seen), "google: owner approves -> session; client secret sent to the token endpoint")
-c2 = cookie_of(h)
+st, loc, q, ck = g_start("https://suite.diegonmarcos.com/x")
+need(st == 302 and loc.netloc == "accounts.example" and q["client_id"] == "gid" and q["response_type"] == "code" and q["scope"] == "openid email",
+     "google: /start redirects to the provider authorization endpoint (code flow, identity-only scope)")
+need(q["code_challenge_method"] == "S256" and len(q["code_challenge"]) == 43 and q["state"] and q["redirect_uri"] == "https://auth.diegonmarcos.com/oauth2/google/callback",
+     "google: PKCE S256 challenge, state and the registered redirect URI are sent")
+need(ck.startswith("_sso_state="), "google: a browser-binding state cookie is set")
+OWNER_G = {"email": "me@diegonmarcos.com", "email_verified": True}
+st, body, h = g_callback(q["state"], ck, user=OWNER_G)
+form = [p for p in STUB.seen if p[0] == "/go/token"][-1][1]
+need(st == 302 and h["Location"] == "https://suite.diegonmarcos.com/x" and "_diego_sso=v1." in "".join(h.get_all("Set-Cookie")), "google: owner callback -> session cookie and redirect to rd")
+ver = form["code_verifier"]
+need(b64e_ok := broker.b64e(hashlib.sha256(ver.encode()).digest()) == q["code_challenge"], "google: the code exchange carries the verifier matching the S256 challenge")
+need(form["client_secret"] == "gsec" and form["redirect_uri"] == q["redirect_uri"] and form["grant_type"] == "authorization_code", "google: client secret and redirect URI sent to the token endpoint")
+c2 = [c.split(";")[0] for c in h.get_all("Set-Cookie") if c.startswith("_diego_sso=")][0]
 need(http(GH + G + "/auth", headers={"Cookie": c2})[0] == 202, "a Google session is accepted by the GitHub instance")
+need(g_callback(q["state"], ck, user=OWNER_G)[0] == 400, "google: state is single use (replay refused)")
+st, _, q, ck = g_start()
+need(g_callback(q["state"], None, user=OWNER_G)[0] == 400, "google: callback without the binding cookie refused (login CSRF)")
+st, _, q, ck = g_start()
+need(g_callback(q["state"], "_sso_state=other", user=OWNER_G)[0] == 400, "google: callback with another browser's cookie refused")
+need(g_callback("forged", ck, user=OWNER_G)[0] == 400, "google: unknown state refused")
+st, _, q, ck = g_start()
+st, body, h = g_callback(q["state"], ck, error="access_denied")
+need(st == 403 and "_diego_sso" not in "".join(h.get_all("Set-Cookie") or []), "google: user cancels at the provider -> no session")
+st, _, q, ck = g_start()
+need(g_callback(q["state"], ck, token={"error": "invalid_grant"})[0] == 502, "google: failed code exchange -> no session")
 for who, why in [({"email": "mallory@example.com", "email_verified": True}, "non-owner email"),
                  ({"email": "me@diegonmarcos.com", "email_verified": False}, "owner email unverified"),
                  ({"email": "me@diegonmarcos.com.evil.example", "email_verified": True}, "lookalike domain"),
                  ({"email": "ME@diegonmarcos.com ", "email_verified": "true"}, "non-boolean verified flag")]:
-    sid, st, r, h = login(GO, go_b, O, user=who)
-    need(r["status"] == "forbidden" and not h.get("Set-Cookie"), "google: %s rejected, no cookie" % why)
+    st, _, q, ck = g_start()
+    st, body, h = g_callback(q["state"], ck, user=who)
+    need(st == 403 and "_diego_sso" not in "".join(h.get_all("Set-Cookie") or []), "google: %s rejected, no cookie" % why)
+need(g_start(host="evil.example")[0] == 400, "google: a Host that is not a registered redirect host is refused")
+need(g_start("https://evil.example/")[3] is not None and urllib.parse.urlsplit(raw(GO + O + "/start?rd=https%3A%2F%2Fevil.example%2F", {"Host": "account.diegonmarcos.com"})[2]["Location"]).query.find("account.diegonmarcos.com") > 0,
+     "google: account.diegonmarcos.com redirect URI is used for that host")
+need(post(GO, O, "/device")[0] == 404, "google: device endpoints do not exist on the web flow")
 
 # ---- flags and fail-closed startup ------------------------------------------------------------
 off_b, OFF = start(mkcfg(google_on=False), "google", GP + 10)
-need(post(OFF, O, "/device")[0] == 404 and http(OFF + O + "/start")[0] == 404, "disabled provider: no device code, no sign-in page")
+need(raw(OFF + O + "/start", {"Host": AUTH_H})[0] == 404 and http(OFF + O + "/start")[0] == 404, "disabled provider: no device code, no sign-in page")
 need(json.loads(http(OFF + O + "/health")[1])["enabled"] is False, "disabled provider reports enabled=false")
 need(http(OFF + O + "/auth", headers={"Cookie": c})[0] == 202, "disabled provider still validates an existing session")
 for mut, msg in [(lambda c: c["auth_broker"].update(allowed_emails=[]), "empty google allowlist"),
