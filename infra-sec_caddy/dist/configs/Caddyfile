@@ -4739,15 +4739,29 @@ handle_path /git/* {
 
 }
 handle /scrappers/health {
-  uri strip_prefix /scrappers
+  @wg remote_ip 10.0.0.0/24 fd0c:1d00::/64
+        handle @wg {
+          uri strip_prefix /scrappers
         reverse_proxy 10.0.0.6:3020
+        }
+        handle {
+          respond "Forbidden" 403
+        }
 }
 handle /scrappers/openapi.json {
-  uri strip_prefix /scrappers
+  @wg remote_ip 10.0.0.0/24 fd0c:1d00::/64
+        handle @wg {
+          uri strip_prefix /scrappers
         reverse_proxy 10.0.0.6:3020
+        }
+        handle {
+          respond "Forbidden" 403
+        }
 }
 handle_path /scrappers/* {
-      @bearer header Authorization Bearer*
+  @wg remote_ip 10.0.0.0/24 fd0c:1d00::/64
+        handle @wg {
+              @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
       # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
@@ -4827,6 +4841,10 @@ handle_path /scrappers/* {
       }
     }
 
+        }
+        handle {
+          respond "Forbidden" 403
+        }
 }
 
 handle_path /fin-api/* {
