@@ -284,7 +284,7 @@ let
   # out (CGC_INCLUDE_PRIVATE=0 + CGC_PRIVATE_REPOS); the private one takes the
   # lot. Splitting these into two hand-written services is how the two would
   # drift until one day the public one stopped filtering.
-  restoreMultiService = { containerName, profile, targetVolume, includePrivate, mcpContainerName }: {
+  restoreMultiService = { containerName, profile, targetVolume, includePrivate, mcpContainerName, indexRepos }: {
     image = "docker:cli";
     container_name = containerName;
     profiles = [ profile ];
@@ -307,7 +307,7 @@ let
       CGC_DB_IMAGE_PREFIX = perRepoImagePrefix;
       CGC_DB_BASE_IMAGE = perRepoBaseImage;
       CGC_DB_TAG = perRepoTag;
-      CGC_INDEX_REPOS = toString oct.index_repos;
+      CGC_INDEX_REPOS = toString indexRepos;
       # This container has no build.json, so the private list cannot be read
       # from there — pass it explicitly. Without it the restore's public/private
       # filter has nothing to filter on and a private repo's DB would be
@@ -436,19 +436,22 @@ in
       targetVolume   = oct.db_volume;
       includePrivate = "0";
       mcpContainerName = app.container_name;
+      indexRepos     = oct.index_repos;
     };
 
     # Same restore, private target. CGC_INCLUDE_PRIVATE=1 disables the
     # public/private filter, and the script REQUIRES it be paired with a
     # CGC_DB_TARGET_VOLUME that is not the public one — see the guard at the top
-    # of cloud-cgc-db-restore-all.sh. The pvt volume is a superset: every repo,
-    # public and private, so the private surface answers about everything.
+    # of cloud-cgc-db-restore-all.sh. The pvt volume holds ONLY the private
+    # repos (#996): the public ones are served by the pub MCP, and duplicating
+    # them here cost ~6.5 GB of the oci-apps root disk.
     "${pvtName}-db-restore-multi" = restoreMultiService {
       containerName  = "${pvtName}-db-restore-multi";
       profile        = "restore-multi-pvt";
       targetVolume   = pvtDbVolume;
       includePrivate = "1";
       mcpContainerName = pvtName;
+      indexRepos     = oct.private_repos;
     };
 
     # ── One-shot octocode jobs (profile-gated; never start on `compose up`) ──────
