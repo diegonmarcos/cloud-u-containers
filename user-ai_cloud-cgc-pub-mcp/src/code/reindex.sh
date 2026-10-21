@@ -170,6 +170,7 @@ else
 fi
 command -v git >/dev/null 2>&1 && git config --global --add safe.directory '*' >/dev/null 2>&1 || true
 
+INGEST_FAILED=0
 for repo in $REPOS; do
   d="$REPOS_ROOT/$repo"
   [ -d "$d" ] || { echo "[reindex] MISSING $d — skip"; continue; }
@@ -179,7 +180,7 @@ for repo in $REPOS; do
     if command -v python3 >/dev/null 2>&1; then
       if python3 /app/octocode-export.py "$repo" 2>&1; then
         KG_DELTA="$KG_GRAPHS_DIR/octocode-$repo.json" node /app/kg-ingest.mjs \
-          || echo "[reindex] $repo · code-graph ingest failed (continuing)"
+          || { echo "[reindex] $repo · code-graph ingest failed (continuing)"; INGEST_FAILED=1; }
       else
         echo "[reindex] $repo · octocode-export failed (continuing)"
       fi
@@ -215,7 +216,7 @@ for repo in $REPOS; do
   if [ "$ok" = 1 ] && command -v python3 >/dev/null 2>&1; then
     if python3 /app/octocode-export.py "$repo" 2>&1; then
       KG_DELTA="$KG_GRAPHS_DIR/octocode-$repo.json" node /app/kg-ingest.mjs \
-        || echo "[reindex] $repo · code-graph ingest failed (continuing)"
+        || { echo "[reindex] $repo · code-graph ingest failed (continuing)"; INGEST_FAILED=1; }
     else
       echo "[reindex] $repo · octocode-export failed (continuing)"
     fi
@@ -232,8 +233,11 @@ fi
 # into the SurrealDB. Env-gated/data-driven — no-ops cleanly if kg-store is not
 # configured (KG_STORE_URL / KG_STORE_PASS).
 if command -v node >/dev/null 2>&1; then
-  node /app/kg-ingest.mjs || echo "[reindex] kg-store ingest failed (continuing)"
+  node /app/kg-ingest.mjs || { echo "[reindex] kg-store ingest failed (continuing)"; INGEST_FAILED=1; }
 else
   echo "[reindex] node not found — kg-store ingest skipped"
 fi
 echo "[reindex] ALL DONE"
+# A kg-ingest ABORT must not end green: the store would hold stale rows (#1061).
+[ "${INGEST_FAILED:-0}" = 1 ] && { echo "[reindex] FAILED — a kg-store ingest aborted (see [kg-ingest] ABORT above)"; exit 1; }
+exit 0
