@@ -139,8 +139,8 @@
     },
     "edge_auth": {
       "multi_sso": {
-        "_doc": "MULTI-SSO (#1066). ONE flag. enabled=false (today) renders byte-identical Caddyfiles (guard: src/test/test-multi-sso.sh). enabled=true: the auth vhost also answers every host in `hosts` (account.diegonmarcos.com; DNS is covered by the wildcard record, TLS is on-demand), serves the three-button chooser on GET / for a browser with no Authelia session, proxies /oauth2/<provider>/* to the auth broker (oauth2-proxy, infra-sec_auth-broker, on oci-apps over the mesh), and the shared edge gate accepts a broker session cookie as a third credential beside the fleet Bearer and the Authelia session. The broker only admits `allowed_emails`. To turn on: create the Google and GitHub OAuth clients, put their ids and secrets in infra-sec_auth-broker/src/secrets.yaml (sops), activate the broker service (infra-sec_auth-broker/README.md), then set enabled=true.",
-        "enabled": false,
+        "_doc": "MULTI-SSO (#1066). ONE flag. ON since 2026-10-21 (guard: src/test/test-multi-sso.sh pins this state and proves the ON render only ADDS to the OFF render; OFF/absent renders the pre-multi-SSO Caddyfile). enabled=true: the auth vhost also answers every host in `hosts` (account.diegonmarcos.com; DNS is covered by the wildcard record, TLS is on-demand), serves the three-button chooser on GET / for a browser with no Authelia session, proxies /oauth2/<provider>/* to the auth broker (device flow for GitHub, web code flow + PKCE for Google; infra-sec_auth-broker, on oci-apps over the mesh), and the shared edge gate accepts a broker session cookie as a third credential beside the fleet Bearer and the Authelia session. The broker only admits `allowed_emails`. Per-provider switches live in infra-sec_auth-broker/build.json (providers[].enabled); a switched-off provider's button is hidden by the chooser.",
+        "enabled": true,
         "primary_host": "auth.diegonmarcos.com",
         "hosts": [
           "auth.diegonmarcos.com",

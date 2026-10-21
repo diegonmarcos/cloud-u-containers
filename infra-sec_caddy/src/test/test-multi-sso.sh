@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Guard for the multi-SSO sign-in (#1066): edge_auth.multi_sso in infra-sec_caddy/build.json.
 #
-#  1. OFF == today: with the flag false, absent, or the block removed, the hub and edge Caddyfiles
-#     render BYTE-IDENTICAL to the committed dist (minus the engine banner). The flag ships false, so
-#     landing this code cannot change a served byte.
+#  1. Shipped state: the flag is ON in build.json (the intended state, #1066) and the committed dist
+#     Caddyfiles equal the render of that state (minus the engine banner). The flag false and the block
+#     absent render the SAME Caddyfile (so an OFF switch is a clean revert); check 2 proves ON only adds.
 #  2. ON only ADDS: the ON render, with the multi-SSO additions removed, equals the OFF render. The fleet
 #     Bearer branches, the Authelia branch, the jmap/mails Bearer passthrough, the tier lists and every
 #     other vhost are untouched; both hosts and the broker routes are present.
@@ -41,25 +41,27 @@ render(){ # render <hub|edge> <json>
 }
 # The multi_sso block comes from build.json (the source); the derived json is what the renderer reads.
 MS="$(jq -c '.caddy_config.edge_auth.multi_sso' "$SVC/infra-sec_caddy/build.json")"
-[ "$(echo "$MS" | jq -r .enabled)" = false ] || bad "build.json edge_auth.multi_sso.enabled is not false (this guard pins the shipped OFF state; the ON checks run on a forced-on copy)"
+[ "$(echo "$MS" | jq -r .enabled)" = true ] || bad "build.json edge_auth.multi_sso.enabled is not true (this guard pins the shipped ON state; the OFF checks run on forced-off copies)"
 for k in hub edge; do
   src="$HUB_JSON"; [ $k = edge ] && src="$EDGE_JSON"
-  jq --argjson m "$MS" '.edge_auth.multi_sso=$m' "$src" > "$W/$k-off.json"
+  jq --argjson m "$MS" '.edge_auth.multi_sso=($m|.enabled=false)' "$src" > "$W/$k-off.json"
   jq --argjson m "$MS" '.edge_auth.multi_sso=($m|.enabled=true)' "$src" > "$W/$k-on.json"
   jq 'del(.edge_auth.multi_sso)' "$src" > "$W/$k-none.json"
+  jq --argjson m "$MS" '.edge_auth.multi_sso=$m' "$src" > "$W/$k-cur.json"
 done
 
-# ── 1. OFF == committed dist ────────────────────────────────────────────────────────────────
+# ── 1. committed dist == render of the shipped (ON) state; flag false == flag absent ─────────
 for k in hub edge; do
   d="$SVC/infra-sec_caddy/dist/configs/Caddyfile"; [ $k = edge ] && d="$SVC/infra-sec_caddy-public/dist/configs/Caddyfile"
   render $k "$W/$k-none.json" > "$W/$k-none.txt"
-  first="$(head -1 "$W/$k-none.txt")"; n="$(grep -n -m1 -F -x -- "$first" "$d" | cut -d: -f1)"
-  tail -n +"$n" "$d" > "$W/$k-dist.txt"
   render $k "$W/$k-off.json" > "$W/$k-off.txt"
-  for v in none off; do
-    cmp -s "$W/$k-$v.txt" "$W/$k-dist.txt" || { diff -u "$W/$k-dist.txt" "$W/$k-$v.txt" | head -400; bad "$k Caddyfile with multi_sso '$v' differs from the committed dist"; }
-  done
-  ok "$k: flag OFF or absent renders byte-identical to the committed dist ($(wc -c < "$W/$k-dist.txt") bytes)"
+  cmp -s "$W/$k-none.txt" "$W/$k-off.txt" || bad "$k: flag false and block absent render differently"
+  render $k "$W/$k-cur.json" > "$W/$k-cur.txt"
+  first="$(head -1 "$W/$k-cur.txt")"; n="$(grep -n -m1 -F -x -- "$first" "$d" | cut -d: -f1)"
+  [ -n "$n" ] || bad "$k: committed dist does not contain the rendered Caddyfile"
+  tail -n +"$n" "$d" > "$W/$k-dist.txt"
+  cmp -s "$W/$k-cur.txt" "$W/$k-dist.txt" || { diff -u "$W/$k-dist.txt" "$W/$k-cur.txt" | head -400; bad "$k Caddyfile rendered from build.json differs from the committed dist (stale dist: regenerate it)"; }
+  ok "$k: committed dist equals the render of the shipped state ($(wc -c < "$W/$k-dist.txt") bytes); flag false == absent"
 done
 
 # ── 2. ON only adds ─────────────────────────────────────────────────────────────────────────
