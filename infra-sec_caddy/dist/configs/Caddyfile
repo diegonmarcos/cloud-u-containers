@@ -858,12 +858,14 @@ error @not_wg "Forbidden" 403
 import security
 import request_limits
       request_header -X-WEBAUTH-USER
-import edge_auth /.well-known/acme-challenge/* /*/*/info/refs /*/*/git-upload-pack /*/*/git-receive-pack /api/v1/*
+
+@not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
+error @not_wg "Forbidden" 403
 
 
 
-
-        @bearer header Authorization Bearer*
+    handle {
+      @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
       # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
@@ -956,6 +958,7 @@ import edge_auth /.well-known/acme-challenge/* /*/*/info/refs /*/*/git-upload-pa
       }
     }
 
+}
       import edge_errors
   }
 
@@ -2152,12 +2155,14 @@ error @not_wg "Forbidden" 403
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
-import edge_auth /.well-known/acme-challenge/*
+
+@not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
+error @not_wg "Forbidden" 403
 
 
 
-
-        @bearer header Authorization Bearer*
+    handle {
+      @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
       # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
@@ -2237,6 +2242,7 @@ import edge_auth /.well-known/acme-challenge/*
       }
     }
 
+}
       import edge_errors
   }
 
@@ -2245,12 +2251,14 @@ import edge_auth /.well-known/acme-challenge/*
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
-import edge_auth /.well-known/acme-challenge/*
+
+@not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
+error @not_wg "Forbidden" 403
 
 
 
-
-        @bearer header Authorization Bearer*
+    handle {
+      @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
       # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
@@ -2330,6 +2338,7 @@ import edge_auth /.well-known/acme-challenge/*
       }
     }
 
+}
       import edge_errors
   }
 
@@ -4821,11 +4830,19 @@ handle_path /c3-services-api/* {
         }
 }
 handle /git/health {
-  uri strip_prefix /git
+  @wg remote_ip 10.0.0.0/24 fd0c:1d00::/64
+        handle @wg {
+          uri strip_prefix /git
         reverse_proxy 10.0.0.4:8123
+        }
+        handle {
+          error "Forbidden" 403
+        }
 }
 handle_path /git/* {
-      @bearer header Authorization Bearer*
+  @wg remote_ip 10.0.0.0/24 fd0c:1d00::/64
+        handle @wg {
+              @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
       # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
@@ -4905,6 +4922,10 @@ handle_path /git/* {
       }
     }
 
+        }
+        handle {
+          error "Forbidden" 403
+        }
 }
 handle /scrappers/health {
   @wg remote_ip 10.0.0.0/24 fd0c:1d00::/64
