@@ -1,0 +1,11 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+COPY code /app
+COPY build.json /app/build.json
+RUN id -u appuser >/dev/null 2>&1 || useradd -r -m -u 10001 appuser
+USER appuser
+ENV HOME=/home/appuser PYTHONUNBUFFERED=1
+
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-u-containers"
+CMD ["python3","main.py"]

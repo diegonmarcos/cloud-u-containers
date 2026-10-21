@@ -1,21 +1,29 @@
-# infra-sec_auth-broker (#1066) -- PARKED, not shipped
+# infra-sec_auth-broker (#1066)
 
-Identity broker for the multi-SSO sign-in on auth.diegonmarcos.com and account.diegonmarcos.com:
-two oauth2-proxy instances (Google, GitHub), email allowlist (`parked/build.json` ->
-`auth_broker.allowed_emails`, the ONE place), session cookie `_diego_sso` on `.diegonmarcos.com`.
-Runs on oci-apps (headroom), reached by the gcp-proxy hub and the oci-analytics edge over the mesh
-(10.0.0.6:4180 google, :4181 github). Caddy side: `infra-sec_caddy/build.json`
-`caddy_config.edge_auth.multi_sso` (flag `enabled`, default false).
+Identity broker for the multi-SSO sign-in on auth.diegonmarcos.com and account.diegonmarcos.com.
+GitHub and Google sign-in by the OAuth **device flow** (RFC 8628): the login page shows a code and
+the provider's verification link (github.com/login/device, google.com/device), the broker polls the
+provider, checks the provider's user against the allowlist, then sets the session cookie `_diego_sso`
+(HMAC signed, `.diegonmarcos.com`, 12h). The shared edge gate accepts that cookie beside the fleet
+Bearer and the Authelia session. Authelia is untouched.
 
-## Why `parked/`
-Ship treats any `<svc>/src/**` or `<svc>/build.json` change as a deploy. The broker has no OAuth
-clients yet, so shipping it now would crashloop. Nothing under `parked/` matches that rule.
+One stdlib Python process per provider (`src/code/main.py`), on oci-apps over the mesh
+(10.0.0.6:4180 google, :4181 github, mesh-only bind). Every instance validates the same cookie.
+Caddy side: `infra-sec_caddy/build.json` `caddy_config.edge_auth.multi_sso` (flag `enabled`).
 
-## Turn it on (owner + one agent)
-1. Owner: create the two OAuth clients (steps in backlog ticket #1066), add to sops
-   `parked/src/secrets.yaml` (copy `secrets.yaml.example`): AUTH_BROKER_GOOGLE_CLIENT_ID/SECRET,
-   AUTH_BROKER_GITHUB_CLIENT_ID/SECRET, AUTH_BROKER_COOKIE_SECRET (32 random bytes, base64url).
-2. `git mv infra-sec_auth-broker/parked/build.json infra-sec_auth-broker/build.json` and
-   `git mv infra-sec_auth-broker/parked/src infra-sec_auth-broker/src`; link `build.sh` like the other services.
-3. Set `edge_auth.multi_sso.enabled` to true in `infra-sec_caddy/build.json`. Ship regenerates both Caddyfiles.
-4. Run `infra-sec_caddy/src/test/test-multi-sso.sh` and `9_others/test/edge-auth-probe.sh`.
+## Declarative config (all in `build.json` `auth_broker`)
+- Allowlists, the ONE place: `allowed_emails` (Google, verified email) and `allowed_github`
+  (login AND numeric id must match). No domain rule exists; the guard rejects one.
+- GitHub client id: the public GitHub CLI client id (`providers[github].client_id`). No secret.
+- Per-provider flag: `providers[].enabled`. Off = no new sign-ins, the instance still validates sessions.
+- Secrets (sops, `src/secrets.yaml`): `AUTH_BROKER_COOKIE_SECRET`, `AUTH_BROKER_GOOGLE_CLIENT_ID/SECRET`.
+
+## Google status
+Google rejects the fleet's current client (`invalid_client`: not a "TVs and Limited Input devices"
+client), so `providers[google].enabled` is false. Create that client type, update `secrets.yaml`
+(and the vault b15-google-oauth), then set the flag true.
+
+## Tests
+`src/test/test-broker.py` (device flow against stub providers: code issued, polling, non-owner and
+lookalikes rejected, cookie tamper/expiry, open-redirect, rate limit, flags, fail-closed startup).
+`infra-sec_caddy/src/test/test-multi-sso.sh` (gate, chooser, allowlist guard, compose policy).

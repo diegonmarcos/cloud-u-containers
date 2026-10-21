@@ -1,0 +1,100 @@
+{
+  "name": "auth-broker",
+  "description": "Identity broker for the multi-SSO sign-in: GitHub and Google by the OAuth device flow, owner only (#1066)",
+  "category": "sec",
+  "dns": "auth-broker.app",
+  "ports": { "google": 4180, "github": 4181 },
+  "bind_host": "10.0.0.6",
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/auth-broker"
+  },
+  "compose": { "custom": true },
+  "docker": {
+    "image": "auth-broker",
+    "dockerfile": "Dockerfile",
+    "registry": "ghcr.io/diegonmarcos",
+    "arch": "amd64",
+    "native_build": {
+      "type": "image-wrapper",
+      "cmd": "true",
+      "entrypoint": "python3 main.py",
+      "base_image": "python:3.11-slim",
+      "app_dir": "code"
+    }
+  },
+  "proxy": { "app_hub": false },
+  "secrets": { "file": "secrets.yaml" },
+  "auth_broker": {
+    "_doc": "THE allowlist: the only identities the broker admits. Google: `allowed_emails` (verified email, exact match). GitHub: `allowed_github` (login AND numeric account id must both match; `email` is the identity handed to the gate). No email-domain rule exists on purpose (a domain-wide rule would admit every address at that domain). Sign-in is the OAuth device flow (RFC 8628): the broker shows a user code and the provider's verification link, polls the provider, then checks the provider's user against these lists. Each provider has its own `enabled` flag; a disabled provider refuses new sign-ins but its instance still validates the shared session cookie. The guard src/test in infra-sec_caddy (test-multi-sso.sh) fails when these lists hold anyone else, or a domain-wide rule appears; infra-sec_auth-broker/src/test/test-broker.py exercises the device flow against stub providers.",
+    "allowed_emails": ["me@diegonmarcos.com"],
+    "allowed_github": [
+      { "login": "diegonmarcos", "id": 100614489, "email": "me@diegonmarcos.com" }
+    ],
+    "cookie_name": "_diego_sso",
+    "cookie_domain": ".diegonmarcos.com",
+    "cookie_expire": "12h",
+    "cookie_expire_seconds": 43200,
+    "rd_domain": "diegonmarcos.com",
+    "providers": [
+      {
+        "id": "google",
+        "label": "Google",
+        "enabled": false,
+        "_doc_enabled": "OFF: Google answers invalid_client for the fleet's current client (514615763870-tp8jndd2...): it is not registered as a 'TVs and Limited Input devices' client, so the device flow cannot start. Create that client type, put its id and secret in secrets.yaml, then set true.",
+        "provider": "google",
+        "flow": "device",
+        "secret_prefix": "AUTH_BROKER_GOOGLE",
+        "port": 4180,
+        "prefix": "/oauth2/google",
+        "scope": "openid email",
+        "device_url": "https://oauth2.googleapis.com/device/code",
+        "token_url": "https://oauth2.googleapis.com/token",
+        "userinfo_url": "https://openidconnect.googleapis.com/v1/userinfo"
+      },
+      {
+        "id": "github",
+        "label": "GitHub",
+        "enabled": true,
+        "provider": "github",
+        "flow": "device",
+        "_doc_client_id": "The GitHub CLI's public OAuth client id (device flow, no secret). Public by design; not a credential.",
+        "client_id": "178c6fc778ccc68e1d6a",
+        "port": 4181,
+        "prefix": "/oauth2/github",
+        "scope": "read:user",
+        "device_url": "https://github.com/login/device/code",
+        "token_url": "https://github.com/login/oauth/access_token",
+        "user_url": "https://api.github.com/user"
+      }
+    ]
+  },
+  "containers": {
+    "google": {
+      "container_name": "auth-broker-google",
+      "image": "ghcr.io/diegonmarcos/auth-broker-binaries:latest",
+      "port": 4180,
+      "public": false,
+      "healthcheck": "/oauth2/google/health",
+      "volumes": [],
+      "env_file": true,
+      "resources": { "mem_reservation": "16m", "mem_limit": "64m" },
+      "protocol": "http"
+    },
+    "github": {
+      "container_name": "auth-broker-github",
+      "image": "ghcr.io/diegonmarcos/auth-broker-binaries:latest",
+      "port": 4181,
+      "public": false,
+      "healthcheck": "/oauth2/github/health",
+      "volumes": [],
+      "env_file": true,
+      "resources": { "mem_reservation": "16m", "mem_limit": "64m" },
+      "protocol": "http"
+    }
+  },
+  "build": { "headers_enforced": false },
+  "tests": {
+    "broker-device-flow": { "cmd": "python3 -I test/test-broker.py", "cwd": "src" }
+  }
+}

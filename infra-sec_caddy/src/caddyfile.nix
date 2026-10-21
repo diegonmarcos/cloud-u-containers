@@ -400,7 +400,7 @@ ${plainOut}${sniMuxBlock}
   #  · the site also answers the extra hosts (account.diegonmarcos.com)
   #  · GET / from a browser with no Authelia session gets the three-button chooser
   #    (Authelia button -> /?ui=authelia, which falls through to the Authelia SPA)
-  #  · /oauth2/<provider>/* is the broker (oauth2-proxy), one instance per provider
+  #  · /oauth2/<provider>/* is the broker (device-flow broker), one instance per provider
   msSite = ea.multiSso;
   mkSsoProviderHandle = p: ''
       handle ${p.prefix}/* {

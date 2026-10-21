@@ -10,15 +10,15 @@
 #  3. Runtime (real Caddy + stub backends) on the rendered ON snippets: no auth -> Authelia login redirect,
 #     a broker cookie is accepted only when the broker says so, Bearer rules unchanged, chooser/oauth2
 #     routes work.
-#  4. Allowlist: the broker admits ONLY me@diegonmarcos.com (exact list, an authenticated-emails file,
-#     NO email-domain rule); the checker is mutation-proven against an extra email and a domain rule.
+#  4. Allowlist: the broker admits ONLY me@diegonmarcos.com / GitHub account diegonmarcos (exact lists,
+#     NO email-domain rule); the checker is mutation-proven against an extra email, an extra GitHub account
+#     and a domain rule. The device-flow behaviour itself is tested by infra-sec_auth-broker/src/test.
 # Needs: nix (eval only), jq, python3, caddy (found in the store, else built from nixpkgs).
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 SVC="$(cd "$HERE/../../.." && pwd)"
 CADDY_SRC="$SVC/infra-sec_caddy/src"; PUB_SRC="$SVC/infra-sec_caddy-public/src"
-BROKER_JSON="$SVC/infra-sec_auth-broker/parked/build.json"
-[ -f "$BROKER_JSON" ] || BROKER_JSON="$SVC/infra-sec_auth-broker/build.json"   # after activation
+BROKER_JSON="$SVC/infra-sec_auth-broker/build.json"
 JDIR="${MULTI_SSO_JSON_DIR:-$SVC/../1_cloud-configs/dist}"
 HUB_JSON="$JDIR/build-caddy.json"; EDGE_JSON="$JDIR/build-caddy-edge.json"
 for f in "$HUB_JSON" "$EDGE_JSON" "$BROKER_JSON" "$SVC/infra-sec_caddy/dist/configs/Caddyfile" "$SVC/infra-sec_caddy-public/dist/configs/Caddyfile"; do
@@ -197,6 +197,8 @@ import json, sys
 b = json.load(open(sys.argv[1])); ab = b["auth_broker"]
 emails = [e.strip().lower() for e in ab["allowed_emails"]]
 assert emails == ["me@diegonmarcos.com"], f"allowlist must be exactly the owner, got {emails}"
+gh = [(a["login"].lower(), a["id"]) for a in ab["allowed_github"]]
+assert gh == [("diegonmarcos", 100614489)], f"GitHub allowlist must be exactly the owner account, got {gh}"
 def keys(o):
     if isinstance(o, dict):
         for k, v in o.items():
@@ -215,21 +217,26 @@ check_allow "$BROKER_JSON" || bad "broker allowlist is not exactly me@diegonmarc
 ok "broker allowlist is exactly me@diegonmarcos.com, no email-domain rule"
 jq '.auth_broker.allowed_emails += ["mallory@example.com"]' "$BROKER_JSON" > "$W/m1.json"
 if check_allow "$W/m1.json" 2>/dev/null; then bad "mutation (extra email) not caught"; else ok "mutation: a second email is refused by the guard"; fi
+jq '.auth_broker.allowed_github += [{"login":"mallory","id":1,"email":"me@diegonmarcos.com"}]' "$BROKER_JSON" > "$W/m3.json"
+if check_allow "$W/m3.json" 2>/dev/null; then bad "mutation (extra GitHub account) not caught"; else ok "mutation: a second GitHub account is refused by the guard"; fi
 jq '.auth_broker.email_domains = ["*"]' "$BROKER_JSON" > "$W/m2.json"
 if check_allow "$W/m2.json" 2>/dev/null; then bad "mutation (domain wildcard) not caught"; else ok "mutation: an email-domain rule is refused by the guard"; fi
 BDIR="$(dirname "$BROKER_JSON")"
 $NIX eval --impure --json --expr "let b=builtins.fromJSON (builtins.readFile $BROKER_JSON); in import $BDIR/src/compose.nix { buildJson=b; container=b; }" > "$W/compose.json" || bad "broker compose does not evaluate"
-python3 -I - "$W/compose.json" <<'PY' || bad "broker compose does not enforce the allowlist file"
+python3 -I - "$W/compose.json" <<'PY' || bad "broker compose does not enforce the broker policy"
 import json, sys
 d = json.load(open(sys.argv[1]))["services"]
 assert set(d) == {"auth-broker-google", "auth-broker-github"}
-for s in d.values():
+for n, s in d.items():
     e = s["environment"]
-    assert e["OAUTH2_PROXY_AUTHENTICATED_EMAILS_FILE"] == "/etc/oauth2-proxy/allowed-emails.txt"
     assert not any("EMAIL_DOMAIN" in k for k in e), "email-domain env present"
-    assert e["OAUTH2_PROXY_COOKIE_DOMAINS"] == ".diegonmarcos.com" and e["OAUTH2_PROXY_COOKIE_NAME"] == "_diego_sso"
+    assert e["BROKER_PROVIDER"] == n.split("-")[-1]
     assert s["ports"][0].startswith("10.0.0.6:"), "broker must bind the mesh address only"
-    assert e["OAUTH2_PROXY_COOKIE_SECRET"] == "${AUTH_BROKER_COOKIE_SECRET}"
+    assert e["AUTH_BROKER_COOKIE_SECRET"] == "${AUTH_BROKER_COOKIE_SECRET}", "cookie secret must come by interpolation"
+    for k, v in e.items():
+        if "SECRET" in k or k.endswith("CLIENT_ID"): assert v == "${" + k + "}", f"{k} must be interpolated, not inline"
+assert "AUTH_BROKER_GOOGLE_CLIENT_SECRET" in d["auth-broker-google"]["environment"]
+assert not any("GITHUB" in k for k in d["auth-broker-github"]["environment"]), "github device flow needs no secret"
 PY
-ok "broker compose: allowlist file, mesh-only bind, shared cookie, secrets by interpolation only"
+ok "broker compose: mesh-only bind, shared cookie secret, secrets by interpolation only"
 echo "PASS: $PASS checks"

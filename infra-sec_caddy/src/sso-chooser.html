@@ -7,7 +7,8 @@
 <title>Sign in</title>
 <!-- multi-SSO chooser (infra-sec_caddy edge_auth.multi_sso). Served on auth. and account. when no Authelia
      session exists. Authelia -> the Authelia portal (/?ui=authelia); Google / GitHub -> the auth broker
-     (oauth2-proxy), allowlisted to the owner. The page holds no secret and no client id. -->
+     (device flow: code + provider link), allowlisted to the owner. A provider whose broker flag is off
+     is hidden (its /health says enabled:false). The page holds no secret and no client id. -->
 <style>
 :root{--bg:#f6f7f9;--fg:#15171a;--card:#fff;--line:#d9dde3;--acc:#2b6cb0}
 @media (prefers-color-scheme:dark){:root{--bg:#101215;--fg:#e8eaed;--card:#181b20;--line:#2c3139;--acc:#7fb2ee}}
@@ -42,6 +43,12 @@ a.b:hover,a.b:focus{border-color:var(--acc);outline:none}
   var back = rd || "/";
   ["google", "github"].forEach(function (p) {
     document.getElementById(p).href = "/oauth2/" + p + "/start?rd=" + encodeURIComponent(back);
+  });
+  // Hide a provider the broker has switched off (flag) or cannot reach.
+  ["google", "github"].forEach(function (p) {
+    fetch("/oauth2/" + p + "/health", { credentials: "same-origin" }).then(function (r) { return r.json(); })
+      .then(function (j) { if (!j.enabled) document.getElementById(p).style.display = "none"; })
+      .catch(function () { document.getElementById(p).style.display = "none"; });
   });
   // A live broker session shows up as 200 from the broker's own auth check.
   fetch("/oauth2/google/auth", { credentials: "same-origin" }).then(function (r) {

@@ -39,7 +39,7 @@ let
     else "  # ${name}: enforced for every source.";
 
   # ── multi-SSO (edge_auth.multi_sso) ── Google/GitHub sign-in through the auth
-  # broker (oauth2-proxy) beside Authelia. ONE flag: `enabled`. With it false (or the
+  # broker (device-flow broker) beside Authelia. ONE flag: `enabled`. With it false (or the
   # block absent) EVERY value below is the empty string, so the rendered gate is
   # byte-identical to the pre-multi-SSO text (guard: infra-sec_caddy/src/test/
   # test-multi-sso.sh). With it true the gate gains a third branch:
