@@ -68,6 +68,7 @@ python3 -I - "$W" <<'PY'
 import re, sys, difflib
 W = sys.argv[1]
 GATE_NOT = "      not {\n        header Cookie *_diego_sso=*\n        not header Cookie *authelia_session=*\n      }\n"
+CF_NOT = "      not {\n        header Cf-Access-Jwt-Assertion *\n        not header Cookie *authelia_session=*\n      }\n"
 for k in ("hub", "edge"):
     on = open(f"{W}/{k}-on.txt").read(); off = open(f"{W}/{k}-off.txt").read()
     assert on.count("forward_auth @ea_broker 10.0.0.6:4180") == 3, f"{k}: broker branch must be in all 3 gate snippets"
@@ -75,7 +76,10 @@ for k in ("hub", "edge"):
     assert on.count("uri /oauth2/google/auth") == 3
     for frag in ("forward_auth @ea_fleet", "forward_auth @ea_bearer", "forward_auth @ea_session", "not host jmap.diegonmarcos.com mails.diegonmarcos.com"):
         assert on.count(frag) == off.count(frag) > 0, f"{k}: {frag!r} changed"
-    t = on.replace(GATE_NOT, "")
+    assert on.count(CF_NOT) == 3 and on.count("forward_auth @ea_cfaccess 10.0.0.6:4180") == 3 and on.count("uri /oauth2/google/cf-auth") == 3, f"{k}: Cloudflare Access branch must be in all 3 gate snippets"
+    assert off.count("cf-auth") == 0 and off.count("Cf-Access-Jwt-Assertion") == 0, f"{k}: Cloudflare Access leaked into the OFF render"
+    t = on.replace(CF_NOT, "").replace(GATE_NOT, "")
+    t = re.sub(r"\n*# Order of the chain:.*?forward_auth @ea_cfaccess [^\n]* \{\n.*?\n\}", "", t, flags=re.S)
     t = re.sub(r"\n@ea_broker \{.*?\n\}\n# Broker session[^\n]*\nforward_auth @ea_broker [^\n]* \{\n.*?\n\}", "", t, flags=re.S)
     t = t.replace("auth.diegonmarcos.com, account.diegonmarcos.com {", "auth.diegonmarcos.com {")
     if k == "hub":
@@ -115,7 +119,10 @@ class H(BaseHTTPRequestHandler):
             if a == "Bearer good": hdr = {"X-Auth-User": "svc"}
             else: code = 401
         elif role == "broker":
-            if self.path.endswith("/auth"):
+            if self.path.endswith("/cf-auth"):
+                if self.headers.get("Cf-Access-Jwt-Assertion", "") == "owner-jwt": code, hdr = 202, {"X-Auth-Request-Email": "me@diegonmarcos.com"}
+                else: code = 401
+            elif self.path.endswith("/auth"):
                 if "_diego_sso=owner" in c: code, hdr = 202, {"X-Auth-Request-Email": "me@diegonmarcos.com"}
                 else: code = 401
             else: body = b"broker:" + self.path.encode()
@@ -170,6 +177,12 @@ chk 200 -H 'Cookie: authelia_session=ok' "$U";                    ok "Authelia s
 chk 200 -H 'Cookie: _diego_sso=owner' "$U";                       ok "valid broker session -> app"
 chk 401 -H 'Cookie: _diego_sso=stranger' "$U";                    ok "broker cookie the broker rejects -> 401"
 chk 302 -H 'Cookie: _diego_sso=owner; authelia_session=bad' "$U"; ok "both cookies -> Authelia decides (the broker cannot override it)"
+chk 200 -H 'Cf-Access-Jwt-Assertion: owner-jwt' "$U";             ok "valid Cloudflare Access JWT -> app"
+chk 401 -H 'Cf-Access-Jwt-Assertion: forged-jwt' "$U";            ok "forged/non-owner Cloudflare Access JWT (broker refuses) -> 401"
+chk 302 -H 'Cf-Access-Jwt-Assertion: owner-jwt' -H 'Cookie: authelia_session=bad' "$U"; ok "Authelia cookie present -> Authelia decides, a CF JWT cannot override it"
+chk 200 -H 'Cf-Access-Jwt-Assertion: forged-jwt' -H 'Cookie: _diego_sso=owner' "$U"; ok "broker cookie is checked before the CF JWT (order: Authelia, broker, Cloudflare)"
+chk 401 -H 'Cf-Access-Jwt-Assertion: owner-jwt' -H 'Authorization: Bearer bad' "$U"; ok "a CF JWT cannot rescue a bad Bearer"
+chk 204 -X OPTIONS -H 'Cf-Access-Jwt-Assertion: forged-jwt' -H 'Access-Control-Request-Method: GET' "$U"; ok "CORS preflight still 204 with the CF header"
 chk 200 -H 'Authorization: Bearer good' "$U";                     ok "valid fleet Bearer -> app"
 chk 401 -H 'Authorization: Bearer bad' "$U";                      ok "bad Bearer -> 401"
 chk 401 -H 'Authorization: Bearer bad' -H 'Cookie: _diego_sso=owner' "$U"; ok "a broker cookie cannot rescue a bad Bearer"
@@ -211,6 +224,14 @@ for bad in ("email_domains", "email-domain", "insecure_oidc_allow_unverified_ema
     assert bad not in allk, f"forbidden broker setting present: {bad}"
 for p in ab["providers"]:
     assert p["provider"] in ("google", "github")
+cf = ab.get("cloudflare_access", {})
+if cf.get("enabled"):
+    assert cf["team_domain"] == "diegonmarcos.cloudflareaccess.com" and cf["certs_url"] == "https://diegonmarcos.cloudflareaccess.com/cdn-cgi/access/certs", "CF Access must verify against the owner's team certs"
+    assert cf["aud"] and all(len(a) == 64 and all(c in "0123456789abcdef" for c in a) for a in cf["aud"]), "CF Access needs 64-hex AUD tags"
+gw = [p for p in ab["providers"] if p["id"] == "github"][0].get("web")
+if gw:
+    assert gw["client_id"] == "Ov23li1WLY8SoctMF2hp" and gw["redirect_uris"] == ["https://auth.diegonmarcos.com/oauth2/github/callback"], "GitHub App web leg: owner app client + auth. callback only"
+    assert "client_secret" not in gw and not any("secret" in k.lower() and k != "secret_prefix" and not k.startswith("_") for k in gw), "no secret value in build.json"
 PY
 }
 check_allow "$BROKER_JSON" || bad "broker allowlist is not exactly me@diegonmarcos.com"
@@ -219,6 +240,10 @@ jq '.auth_broker.allowed_emails += ["mallory@example.com"]' "$BROKER_JSON" > "$W
 if check_allow "$W/m1.json" 2>/dev/null; then bad "mutation (extra email) not caught"; else ok "mutation: a second email is refused by the guard"; fi
 jq '.auth_broker.allowed_github += [{"login":"mallory","id":1,"email":"me@diegonmarcos.com"}]' "$BROKER_JSON" > "$W/m3.json"
 if check_allow "$W/m3.json" 2>/dev/null; then bad "mutation (extra GitHub account) not caught"; else ok "mutation: a second GitHub account is refused by the guard"; fi
+jq '.auth_broker.cloudflare_access.aud += ["abc"]' "$BROKER_JSON" > "$W/m4.json"
+if check_allow "$W/m4.json" 2>/dev/null; then bad "mutation (malformed CF AUD) not caught"; else ok "mutation: a malformed Cloudflare AUD is refused by the guard"; fi
+jq '.auth_broker.cloudflare_access.team_domain = "evil.cloudflareaccess.com"' "$BROKER_JSON" > "$W/m5.json"
+if check_allow "$W/m5.json" 2>/dev/null; then bad "mutation (foreign CF team) not caught"; else ok "mutation: a foreign Cloudflare team domain is refused by the guard"; fi
 jq '.auth_broker.email_domains = ["*"]' "$BROKER_JSON" > "$W/m2.json"
 if check_allow "$W/m2.json" 2>/dev/null; then bad "mutation (domain wildcard) not caught"; else ok "mutation: an email-domain rule is refused by the guard"; fi
 BDIR="$(dirname "$BROKER_JSON")"
@@ -234,9 +259,11 @@ for n, s in d.items():
     assert s["ports"][0].startswith("10.0.0.6:"), "broker must bind the mesh address only"
     assert e["AUTH_BROKER_COOKIE_SECRET"] == "${AUTH_BROKER_COOKIE_SECRET}", "cookie secret must come by interpolation"
     for k, v in e.items():
-        if "SECRET" in k or k.endswith("CLIENT_ID"): assert v == "${" + k + "}", f"{k} must be interpolated, not inline"
+        if "SECRET" in k or k.endswith("CLIENT_ID"):
+            ok_v = ("${" + k + "}", "${" + k + ":-}") if k == "AUTH_BROKER_GITHUB_APP_CLIENT_SECRET" else ("${" + k + "}",)  # optional until the owner supplies it
+            assert v in ok_v, f"{k} must be interpolated, not inline"
 assert "AUTH_BROKER_GOOGLE_CLIENT_SECRET" in d["auth-broker-google"]["environment"]
-assert not any("GITHUB" in k for k in d["auth-broker-github"]["environment"]), "github device flow needs no secret"
+assert [k for k in d["auth-broker-github"]["environment"] if "GITHUB" in k] == ["AUTH_BROKER_GITHUB_APP_CLIENT_SECRET"], "github: device flow needs no secret; only the OAuth App secret may be passed"
 PY
 ok "broker compose: mesh-only bind, shared cookie secret, secrets by interpolation only"
 echo "PASS: $PASS checks"

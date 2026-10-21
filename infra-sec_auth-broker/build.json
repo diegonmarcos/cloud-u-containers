@@ -84,9 +84,30 @@
         "scope": "read:user",
         "device_url": "https://github.com/login/device/code",
         "token_url": "https://github.com/login/oauth/access_token",
-        "user_url": "https://api.github.com/user"
+        "user_url": "https://api.github.com/user",
+        "web": {
+          "_doc": "The owner's own GitHub OAuth App (web redirect flow, PKCE + state). client_id is public. The client secret is sops key AUTH_BROKER_GITHUB_APP_CLIENT_SECRET: until it is present the web leg stays off and /oauth2/github/start serves the device flow (gh public client above, also reachable with ?flow=device). GitHub allows one callback URL per App: auth. only.",
+          "enabled": true,
+          "client_id": "Ov23li1WLY8SoctMF2hp",
+          "secret_prefix": "AUTH_BROKER_GITHUB_APP",
+          "scope": "read:user",
+          "auth_url": "https://github.com/login/oauth/authorize",
+          "token_url": "https://github.com/login/oauth/access_token",
+          "redirect_uris": [
+            "https://auth.diegonmarcos.com/oauth2/github/callback"
+          ]
+        }
       }
-    ]
+    ],
+    "cloudflare_access": {
+      "_doc": "Cloudflare Access (Zero Trust) as a fourth credential: the broker verifies Cf-Access-Jwt-Assertion (RS256 signature against the team certs, issuer, audience, expiry) and admits only a token whose email is in allowed_emails (service-token JWTs carry no email and are refused). `aud` lists the AUD tags of the Access applications trusted (terraform output zt_pilot_aud in cloud-infra c_vps/ba-clo_cloudflare). Served on every instance at <prefix>/cf-auth; the edge gate calls it when the request carries the header.",
+      "enabled": true,
+      "team_domain": "diegonmarcos.cloudflareaccess.com",
+      "certs_url": "https://diegonmarcos.cloudflareaccess.com/cdn-cgi/access/certs",
+      "aud": [
+        "fd961754aece540b409ee165bc028105168acece9dca1f530e38f5f62e5b8f3c"
+      ]
+    }
   },
   "containers": {
     "google": {
@@ -124,6 +145,10 @@
   "tests": {
     "broker-device-flow": {
       "cmd": "python3 -I test/test-broker.py",
+      "cwd": "src"
+    },
+    "broker-hub": {
+      "cmd": "python3 -I test/test-broker-hub.py",
       "cwd": "src"
     }
   }

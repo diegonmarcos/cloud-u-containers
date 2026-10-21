@@ -23,6 +23,10 @@ let
     } // (if p ? secret_prefix then {
       "${p.secret_prefix}_CLIENT_ID" = "\${${p.secret_prefix}_CLIENT_ID}";
       "${p.secret_prefix}_CLIENT_SECRET" = "\${${p.secret_prefix}_CLIENT_SECRET}";
+    } else {}) // (if (p.web or {}) ? secret_prefix then {
+      # Web leg of a device-flow provider (GitHub OAuth App). `:-` keeps compose quiet while the
+      # secret is not yet in sops; the broker then leaves the web leg off.
+      "${p.web.secret_prefix}_CLIENT_SECRET" = "\${${p.web.secret_prefix}_CLIENT_SECRET:-}";
     } else {});
     healthcheck = {
       test = [ "CMD" "python3" "-c"

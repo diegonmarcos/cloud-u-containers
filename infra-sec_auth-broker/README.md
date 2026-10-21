@@ -18,6 +18,16 @@ Caddy side: `infra-sec_caddy/build.json` `caddy_config.edge_auth.multi_sso` (fla
 - Per-provider flag: `providers[].enabled`. Off = no new sign-ins, the instance still validates sessions.
 - Secrets (sops, `src/secrets.yaml`): `AUTH_BROKER_COOKIE_SECRET`, `AUTH_BROKER_GOOGLE_CLIENT_ID/SECRET`.
 
+## Four-provider hub (#1083)
+Authelia is the hub. The edge gate accepts, in order: Authelia session, broker cookie `_diego_sso`, Cloudflare Access JWT.
+- GitHub web redirect flow: the owner's GitHub OAuth App (`providers[github].web`, client id public, callback
+  https://auth.diegonmarcos.com/oauth2/github/callback). Secret = sops key `AUTH_BROKER_GITHUB_APP_CLIENT_SECRET`;
+  until it is present the web leg is off and `/oauth2/github/start` serves the device flow (gh public client, also
+  at `?flow=device`).
+- Cloudflare Access: `<prefix>/cf-auth` verifies `Cf-Access-Jwt-Assertion` (RS256 vs the team certs, iss, aud, exp,
+  owner email only) per `auth_broker.cloudflare_access`; the gate branch is `edge_auth.multi_sso.cloudflare_access`.
+- Tests: `src/test/test-broker-hub.py`; gate order and forged-header cases in `infra-sec_caddy/src/test/test-multi-sso.sh`.
+
 ## Google status
 Google rejects the fleet's current client (`invalid_client`: not a "TVs and Limited Input devices"
 client), so `providers[google].enabled` is false. Create that client type, update `secrets.yaml`

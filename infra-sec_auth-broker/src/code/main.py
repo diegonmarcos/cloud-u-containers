@@ -10,6 +10,8 @@ session cookie, so `<prefix>/auth` on any instance admits a session issued by an
   POST <prefix>/device     request a device code from the provider (returns user code + link)
   POST <prefix>/poll       one poll of the provider token endpoint for a pending flow
   GET  <prefix>/start      (flow web) 302 to the provider with state + PKCE; <prefix>/callback finishes
+  GET  <prefix>/start      (github, when the OAuth App secret is present) web flow; ?flow=device keeps the device flow
+  GET  <prefix>/cf-auth    forward_auth target: 202 + X-Auth-Request-Email for a valid Cloudflare Access JWT, else 401
   GET  <prefix>/auth       forward_auth target: 202 + X-Auth-Request-Email on a valid session, else 401
   GET  <prefix>/health     200 {"enabled": bool, "provider": id}
 
@@ -39,7 +41,6 @@ class Broker:
         self.enabled = bool(self.p.get("enabled", False))
         self.prefix = self.p["prefix"]
         self.flow = self.p.get("flow", "device")
-        self.redirect_uris = list(self.p.get("redirect_uris", []))
         self.states = {}                     # web flow: state -> pending authorization
         self.cookie_name = ab["cookie_name"]
         self.cookie_domain = ab.get("cookie_domain", "")
@@ -59,6 +60,26 @@ class Broker:
         if self.enabled and not self.client_id:
             raise SystemExit("provider %s is enabled but has no client id" % provider_id)
         self.flows, self.hits, self.lock = {}, {}, threading.Lock()
+        # Web authorization-code flow: a provider with flow "web" (Google), or a device-flow provider
+        # that also declares a `web` block (GitHub OAuth App). The web leg is live only when enabled,
+        # the provider is enabled and its client secret is present in the environment.
+        w = self.p if self.flow == "web" else (self.p.get("web") or None)
+        self.w = w or {}
+        wpre = self.w.get("secret_prefix", "")
+        self.web_cid = self.w.get("client_id") or env.get(wpre + "_CLIENT_ID", "")
+        self.web_sec = env.get(wpre + "_CLIENT_SECRET", "") if wpre else ""
+        if self.flow == "web":
+            self.web_on = self.enabled
+        else:
+            self.web_on = bool(w) and self.enabled and bool(w.get("enabled", False)) and bool(self.web_cid) and bool(self.web_sec)
+        self.redirect_uris = list(self.w.get("redirect_uris", []))
+        # Cloudflare Access: verify the Access JWT (Cf-Access-Jwt-Assertion) against the team certs.
+        cf = ab.get("cloudflare_access") or {}
+        self.cf = cf
+        self.cf_on = bool(cf.get("enabled", False))
+        self.cf_keys, self.cf_keys_at = {}, 0.0
+        if self.cf_on and not (cf.get("team_domain") and cf.get("aud") and self.emails):
+            raise SystemExit("cloudflare_access is enabled without team_domain, aud and an email allowlist")
 
     # ---- session cookie -------------------------------------------------------------------
     def sign(self, body):
@@ -213,6 +234,64 @@ class Broker:
             return 200, {"status": "forbidden"}, None
         return 200, {"status": "ok"}, self.set_cookie(self.make_cookie(email, self.p["id"]), self.ttl)
 
+    # ---- Cloudflare Access JWT (RS256) ------------------------------------------------------------
+    SHA256_DI = bytes.fromhex("3031300d060960864801650304020105000420")
+
+    def cf_load_keys(self, force=False):
+        now = time.time()
+        if not force and self.cf_keys and now - self.cf_keys_at < 3600:
+            return
+        if force and now - self.cf_keys_at < 60:      # unknown kid must not make us hammer the certs URL
+            return
+        st, d = self.call(self.cf.get("certs_url") or "https://%s/cdn-cgi/access/certs" % self.cf["team_domain"])
+        if st != 200:
+            return
+        keys = {}
+        for k in d.get("keys", []):
+            if k.get("kty") == "RSA" and k.get("kid"):
+                keys[k["kid"]] = (int.from_bytes(b64d(k["n"]), "big"), int.from_bytes(b64d(k["e"]), "big"))
+        if keys:
+            self.cf_keys, self.cf_keys_at = keys, now
+
+    def cf_email(self, tok):
+        """Owner email for a valid Cloudflare Access JWT, else None. Verified: RS256 signature against the
+        team certs, issuer, audience, expiry, and the email against the allowlist (service tokens carry no email)."""
+        if not self.cf_on or not tok or len(tok) > 8192:
+            return None
+        try:
+            h64, p64, s64 = tok.split(".")
+            hdr = json.loads(b64d(h64))
+            if hdr.get("alg") != "RS256":
+                return None
+            kid = hdr.get("kid", "")
+            self.cf_load_keys()
+            if kid not in self.cf_keys:
+                self.cf_load_keys(force=True)
+            if kid not in self.cf_keys:
+                return None
+            n, e = self.cf_keys[kid]
+            k = (n.bit_length() + 7) // 8
+            sig = b64d(s64)
+            if len(sig) != k or int.from_bytes(sig, "big") >= n:
+                return None
+            em = pow(int.from_bytes(sig, "big"), e, n).to_bytes(k, "big")
+            digest = hashlib.sha256((h64 + "." + p64).encode()).digest()
+            tail = b"\x00" + self.SHA256_DI + digest
+            if not hmac.compare_digest(em, b"\x00\x01" + b"\xff" * (k - len(tail) - 2) + tail):
+                return None
+            c = json.loads(b64d(p64))
+            now = time.time()
+            aud = c.get("aud")
+            aud = [aud] if isinstance(aud, str) else list(aud or [])
+            if c.get("iss") != "https://" + self.cf["team_domain"] or not set(aud) & set(self.cf["aud"]):
+                return None
+            if float(c["exp"]) <= now or float(c.get("nbf", 0)) > now + 60:
+                return None
+            em_ = str(c.get("email", "")).strip().lower()
+            return em_ if em_ in self.emails else None
+        except Exception:
+            return None
+
     # ---- web authorization-code flow (PKCE S256 + state) ----------------------------------------
     STATE_COOKIE = "_sso_state"
 
@@ -225,7 +304,7 @@ class Broker:
         return None
 
     def web_start(self, host, rd):
-        if not self.enabled or self.flow != "web":
+        if not self.web_on:
             return 404, None, None
         ru = self.web_redirect_uri(host)
         if not ru:
@@ -238,11 +317,11 @@ class Broker:
                 return 429, None, None
             state, verifier, bind = secrets.token_urlsafe(24), secrets.token_urlsafe(48), secrets.token_urlsafe(16)
             self.states[state] = {"v": verifier, "bind": bind, "ru": ru, "rd": self.safe_rd(rd), "exp": now + 600}
-        q = {"client_id": self.client_id, "redirect_uri": ru, "response_type": "code", "scope": self.p["scope"],
+        q = {"client_id": self.web_cid, "redirect_uri": ru, "response_type": "code", "scope": self.w.get("scope", self.p["scope"]),
              "state": state, "code_challenge": b64e(hashlib.sha256(verifier.encode()).digest()),
              "code_challenge_method": "S256", "prompt": "select_account"}
         cookie = "%s=%s; Path=%s; Max-Age=600; Secure; HttpOnly; SameSite=Lax" % (self.STATE_COOKIE, bind, self.prefix)
-        return 302, self.p["auth_url"] + "?" + urllib.parse.urlencode(q), cookie
+        return 302, self.w["auth_url"] + "?" + urllib.parse.urlencode(q), cookie
 
     def web_callback(self, query, cookie_header):
         """Returns (status, location_or_message, set_cookie). State is single use and bound to the browser."""
@@ -259,9 +338,11 @@ class Broker:
             return 400, "Sign-in expired or invalid. Start again.", clear
         if q.get("error") or not q.get("code"):
             return 403, "Sign-in was cancelled or denied.", clear
-        data = {"client_id": self.client_id, "client_secret": self.client_secret, "code": q["code"],
+        if not self.web_on:
+            return 404, "Sign-in is not available.", clear
+        data = {"client_id": self.web_cid, "client_secret": self.web_sec, "code": q["code"],
                 "code_verifier": st["v"], "redirect_uri": st["ru"], "grant_type": "authorization_code"}
-        code, d = self.call(self.p["token_url"], data)
+        code, d = self.call(self.w.get("token_url") or self.p["token_url"], data)
         if code != 200 or not d.get("access_token"):
             print("code exchange failed: status=%s error=%s" % (code, d.get("error")), flush=True)
             return 502, "Sign-in failed at the provider.", clear
@@ -339,7 +420,11 @@ def make_handler(b):
             if op == "/auth":
                 e = b.session_email(self.headers.get("Cookie"))
                 return self.send(202, b"", "text/plain", [("X-Auth-Request-Email", e)]) if e else self.send(401, b"", "text/plain")
-            if b.flow == "web" and op in ("/start", "/callback"):
+            if op == "/cf-auth":
+                e = b.cf_email(self.headers.get("Cf-Access-Jwt-Assertion"))
+                return self.send(202, b"", "text/plain", [("X-Auth-Request-Email", e)]) if e else self.send(401, b"", "text/plain")
+            device_forced = op == "/start" and (urllib.parse.parse_qs(u.query).get("flow") or [""])[0] == "device" and b.flow == "device"
+            if b.web_on and op in ("/start", "/callback") and not device_forced:
                 if op == "/start":
                     qs = urllib.parse.parse_qs(u.query)
                     code, loc, ck = b.web_start(self.headers.get("Host"), (qs.get("rd") or [""])[0])

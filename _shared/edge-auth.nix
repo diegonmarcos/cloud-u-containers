@@ -52,8 +52,13 @@ let
   msAuthCk  = ms.authelia_cookie or "authelia_session";
   msProvs   = ms.providers or [];
   msAuthProv = lib.head msProvs;
+  # Cloudflare Access JWT (edge_auth.multi_sso.cloudflare_access): third credential, verified by the broker.
+  cfa       = ms.cloudflare_access or {};
+  cfOn      = msOn && (cfa.enabled or false);
+  cfHeader  = cfa.header or "Cf-Access-Jwt-Assertion";
   msNot = if !msOn then "" else
-    "      not {\n        header Cookie *${msCookie}=*\n        not header Cookie *${msAuthCk}=*\n      }\n";
+    "      not {\n        header Cookie *${msCookie}=*\n        not header Cookie *${msAuthCk}=*\n      }\n"
+    + (if cfOn then "      not {\n        header ${cfHeader} *\n        not header Cookie *${msAuthCk}=*\n      }\n" else "");
   msBlock = name: offmesh: ws: if !msOn then "" else
     let extra = (if ws then "\n      not header Upgrade websocket" else "")
               + (if offmesh then "\n      not remote_ip ${wgCidrs}" else "");
@@ -76,7 +81,28 @@ let
       header_up -Upgrade
       uri ${msAuthProv.prefix}/auth
       copy_headers X-Auth-Request-Email
-    }'';
+    }'' + (if !cfOn then "" else ''
+
+    # Order of the chain: Authelia session, else broker cookie (above), else Cloudflare Access JWT.
+    # The JWT is verified by the broker (signature, issuer, audience, expiry, owner email only).
+    @ea_cfaccess {
+      header ${cfHeader} *
+      not header Cookie *${msAuthCk}=*
+      not header Cookie *${msCookie}=*
+      not header Authorization Bearer*
+      not header X-Fleet-Authorization Bearer*
+      not path {args[:]}
+      not {
+        method OPTIONS
+        header Access-Control-Request-Method *
+      }${extra}
+    }
+    forward_auth @ea_cfaccess ${msAuthProv.upstream} {
+      header_up -Connection
+      header_up -Upgrade
+      uri ${msAuthProv.prefix}/cf-auth
+      copy_headers X-Auth-Request-Email
+    }'');
 
   mk = name: offmesh: ws: note name offmesh ws + "\n" + lib.removeSuffix "\n" (subst {
     "@GATE@"                = name;
