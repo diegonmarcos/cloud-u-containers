@@ -1,0 +1,21 @@
+name: hickory mesh split-horizon guard
+
+# The mesh resolver must answer jmap./mails. with a mesh address (#1071), else a
+# phone on WireGuard reaches the public edge and the gate answers 401.
+on:
+  push:
+    branches: [main]
+    paths: ['infra-net_hickory-dns/**', '_shared/test/hickory-mesh-split-horizon-guard.sh', '.github/workflows/hickory-mesh-split-horizon-guard.yml']
+  pull_request:
+    paths: ['infra-net_hickory-dns/**', '_shared/test/hickory-mesh-split-horizon-guard.sh']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash _shared/test/hickory-mesh-split-horizon-guard.sh
