@@ -19,7 +19,6 @@
   "proxy": {
     "primary": {
       "domain": "git.diegonmarcos.com",
-      "wg_only": false,
       "auth": "two_factor",
       "strip_authorization": true,
       "_strip_authorization_doc": "The edge withholds the fleet bearer from gitea after introspect-proxy validates it. Gitea reads any Authorization header as one of ITS OWN tokens, so forwarding the fleet JWT got a 401 from gitea on a request the gate had already passed — no bearer client could reach the API or clone, even a public repo. The identity the gate validated reaches gitea through `identity` below instead.",

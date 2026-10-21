@@ -6,15 +6,10 @@
     "infra-obs_matomo": "public-site analytics beacons",
     "infra-obs_umami": "public-site analytics beacons",
     "infra-obs_openobserve": "public-site analytics beacons",
-    "user-comm_matrix-continuwuity": "matrix federation"
+    "user-comm_matrix-continuwuity": "matrix federation",
+    "infra-sec_authelia": "SSO login portal, must be reachable off-mesh",
+    "user-ai_cloud-cgc-pub-mcp": "public, bearer-protected"
   },
   "_pending_doc": "Public today but NOT in the posture note's allowlist. Listed so the guard passes on current main without hiding them; each needs an owner decision (move to WG-only, or promote to allowed with a reason). The guard prints them as WARN, fails with STRICT=1, and fails if a service is listed here that is no longer public (remove it when fixed).",
-  "pending_owner_review": {
-    "infra-api_git-proxy-api": "kept public: phone/off-mesh bearer clients use /git",
-    "infra-dat_gitea": "kept public: git.diegonmarcos.com is used off-mesh by bearer clients and CI",
-    "infra-sec_authelia": "kept public: SSO login portal must be reachable off-mesh (belongs on the allowlist)",
-    "user-ai_cloud-cgc-pub-mcp": "kept public: remote MCP connector reached from outside the mesh",
-    "user-prod_cloud-notes-sync": "kept public: notes app syncs from the phone off-mesh",
-    "user-prod_cloud-notes-web": "kept public: notes web app opened from off-mesh browsers"
-  }
+  "pending_owner_review": {}
 }

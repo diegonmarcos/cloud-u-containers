@@ -15,7 +15,6 @@
   },
   "proxy": {
     "primary": {
-      "wg_only": false,
       "domain": "notes-sync.diegonmarcos.com",
       "auth": "two_factor"
     }

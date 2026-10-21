@@ -37,7 +37,6 @@
   "proxy": {
     "_doc": "auth=two_factor is what the deriver turns into the Caddy mkProtected block: `@bearer header Authorization Bearer*` -> forward_auth 10.0.0.1:4182 /auth (infra-sec_introspect-proxy), with the interactive Authelia session as the non-bearer fallback. That is exactly the credential the phone ALREADY holds (cloud-u-android ab_cloud-libs-shared/build.json auth.sign_in.providers[id=authelia], kind=authelia_bearer, scope authelia.bearer.authz) — no new OIDC client, no new grant. Only /git/health is pre-auth, via the engine-supported public_paths[] array, so #646's chain has an unauthenticated reachability probe.",
     "primary": {
-      "wg_only": false,
       "auth": "two_factor",
       "type": "path",
       "parent_domain": "api.diegonmarcos.com",
