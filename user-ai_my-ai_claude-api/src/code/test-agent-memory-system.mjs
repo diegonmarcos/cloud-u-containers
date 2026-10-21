@@ -52,7 +52,7 @@ const hook = readFileSync(join(here, "claude-config/hooks/a-context-inject-memor
 // be the second declaration that left goose and hermes with nothing.
 check("W1 the hook reads AGENT_MEMORY_DIR from the environment", /AGENT_MEMORY_DIR/.test(hook));
 check("W2 the hook never retypes the store path",
-  !/4___ASSETS___/4.3.Memory\/home-diego/.test(hook),
+  !/4___ASSETS___\/4\.3\.Memory\/home-diego/.test(hook),
   "a path literal here can drift from _shared/agent-memory.nix without anything failing");
 
 // ── I: index only ───────────────────────────────────────────────────────────

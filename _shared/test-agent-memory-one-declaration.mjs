@@ -230,7 +230,7 @@ check("P3 goose gets a .goosehints file",
   /\.goosehints/.test(startSh));
 check("P4 goose's hints come from the declaration, not a retyped path",
   /AGENT_MEMORY_BRIEFING/.test(startSh)
-  && !/4___ASSETS___/4.3.Memory\/home-diego/.test(startSh),
+  && !/4___ASSETS___\/4\.3\.Memory\/home-diego/.test(startSh),
   "baking the path into start.sh would be the second declaration again");
 check("P5 goose's hints land where goose looks for them",
   /XDG_CONFIG_HOME\}\/goose\/\.goosehints/.test(startSh),
@@ -245,7 +245,7 @@ check("P7 the front injects the briefing into the system prompt",
   /process\.env\.AGENT_MEMORY_BRIEFING/.test(server)
   && /parts\.push\(AGENT_MEMORY_BRIEFING\)/.test(server));
 check("P8 the front never retypes the store path",
-  !/4___ASSETS___/4.3.Memory\/home-diego/.test(server));
+  !/4___ASSETS___\/4\.3\.Memory\/home-diego/.test(server));
 check("P9 an unset briefing is LOUD on the front",
   /AGENT_MEMORY_BRIEFING unset/.test(server));
 
