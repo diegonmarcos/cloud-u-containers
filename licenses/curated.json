@@ -96,6 +96,9 @@
   "infra-api_cloud-vault-mcp": {
    "licence": "LicenseRef-NoLicenseGranted"
   },
+  "infra-api_cloud-me-api": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
   "infra-api_git-proxy-api": {
    "licence": "LicenseRef-NoLicenseGranted"
   },

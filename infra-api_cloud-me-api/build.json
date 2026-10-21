@@ -1,0 +1,195 @@
+{
+  "name": "cloud-me-api",
+  "enabled": true,
+  "description": "Cloud Me API: read-only, authenticated read path to the owner's private cloud-me-* repos. The service holds one READ-ONLY deploy key per repo server-side, keeps a shallow clone of each declared repo, and serves declared JSON datasets (and filtered config files) to fleet apps, so no app holds a GitHub credential (#1079). First consumer: the cloud-webapps c3-* sites (#1063).",
+  "dns": "cloud-me-api.app",
+  "ports": {
+    "app": 8124
+  },
+  "category": "app",
+  "domain": "api.diegonmarcos.com/me",
+  "build": {
+    "headers_enforced": true
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "cloud-me-api",
+    "dockerfile": "Dockerfile",
+    "arch": "amd64",
+    "native_build": {
+      "type": "image-wrapper",
+      "_cmd_doc": "No npm dependencies: stdlib-only ESM on node:22. RUN is a syntax check of our own sources so a parse error fails the BUILD instead of crash-looping a deployed container.",
+      "cmd": "node --check index.mjs && node --check authz.mjs && node --check contract.mjs && node --check router.mjs && node --check store.mjs",
+      "entrypoint": "node index.mjs",
+      "base_image": "node:22-bookworm-slim",
+      "_apt_doc": "git and openssh-client do the read-only deploy-key fetch; ca-certificates for the HTTPS Authelia JWKS/session calls. No curl: the healthcheck probes with node.",
+      "apt": "ca-certificates git openssh-client",
+      "app_dir": "code"
+    }
+  },
+  "deploy": {
+    "host": "oci-analytics",
+    "remote_path": "/opt/containers/cloud-me-api",
+    "compose_flags": "--no-build --pull always --force-recreate",
+    "_host_doc": "oci-analytics, same VM and same edge path family as git-proxy-api (api.diegonmarcos.com/git): reachable off-mesh behind the Authelia gate, and an oci-apps ship would recreate my-ai_claude-api and kill running agents."
+  },
+  "proxy": {
+    "_doc": "auth=two_factor is the Caddy mkProtected block: Bearer -> forward_auth introspect-proxy, with the interactive Authelia session as the non-bearer fallback. Only /me/health is pre-auth (public_paths), and it answers {status,service} and nothing about the repos. Everything else, including /me/config/*, is never reachable unauthenticated, and the service verifies the credential itself too (direct mesh dials have no edge gate).",
+    "primary": {
+      "wg_only": false,
+      "auth": "two_factor",
+      "type": "path",
+      "parent_domain": "api.diegonmarcos.com",
+      "base_path": "/me",
+      "public_paths": [
+        "/me/health"
+      ]
+    }
+  },
+  "health": {
+    "path": "/me/health"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
+  },
+  "containers": {
+    "app": {
+      "container_name": "cloud-me-api",
+      "image": "ghcr.io/diegonmarcos/cloud-me-api:latest",
+      "port": 8124,
+      "port_env": "PORT",
+      "dns": "cloud-me-api.app",
+      "public": true,
+      "proxy": {
+        "auth": "two_factor",
+        "type": "path",
+        "parent_domain": "api.diegonmarcos.com",
+        "base_path": "/me",
+        "public_paths": [
+          "/me/health"
+        ]
+      },
+      "healthcheck": "/health",
+      "monitoring": {
+        "tls_check": true,
+        "dns_check": true,
+        "endpoint_check": true
+      },
+      "volumes": [],
+      "env_file": true,
+      "depends_on": [],
+      "resources": null,
+      "read_only": false,
+      "protocol": "http"
+    }
+  },
+  "resources": {
+    "_doc": "Clones live on a size-capped tmpfs (compose.nix), never on the VM disk: oci disks have sat at 87-97%. mem_limit covers node plus that tmpfs.",
+    "mem_limit": "192M",
+    "mem_reservation": "48M"
+  },
+  "runtime": {
+    "_doc": "THE endpoint contract, declared once. The image-wrapper COPYs build.json to /app/build.json and code/contract.mjs reads this block, so GET /me/endpoints serves it verbatim.",
+    "base_path": "/me",
+    "endpoints": [
+      {
+        "method": "GET",
+        "path": "/me/health",
+        "auth": "none",
+        "description": "Liveness. The only pre-auth route. Returns {\"status\":\"ok\",\"service\":\"cloud-me-api\"} and nothing about the repos."
+      },
+      {
+        "method": "GET",
+        "path": "/me/endpoints",
+        "auth": "authelia",
+        "description": "This contract from build.json runtime, minus transport fields (ssh URLs, key env names, host key) and the filter regexes."
+      },
+      {
+        "method": "GET",
+        "path": "/me/repos",
+        "auth": "authelia",
+        "description": "The declared repos and their sync state: {repos:[{name,branch,commit,synced_at,ok}]}. A projection: no URL, key or path of the server is included."
+      },
+      {
+        "method": "GET",
+        "path": "/me/config/:name",
+        "auth": "authelia",
+        "description": "A declared dataset (runtime.datasets[name]) as JSON: the file at {repo,path} of the last sync, parsed and re-serialised. Unknown name -> 404 not_found; a dataset that has not synced yet -> 503 not_synced; a file that fails the secret filter -> 403 secret_filtered and the file is never sent."
+      },
+      {
+        "method": "GET",
+        "path": "/me/repos/:repo/file",
+        "auth": "authelia",
+        "description": "One config file of a declared repo (query `path`). Only runtime.files.allowed_ext, at most runtime.files.max_bytes, never a path matching runtime.files.deny_path, never content matching runtime.files.deny_content (403 secret_filtered). Errors {error,code}: 400 bad_path, 403 repo_not_declared/path_denied/secret_filtered, 404 not_found, 413 too_large, 503 not_synced."
+      }
+    ],
+    "repos": {
+      "_doc": "The allow-list is DATA, here. Each repo is read with its OWN read-only deploy key (GitHub allows a deploy key on one repo only), delivered as a base64 sops env_file value named by key_env. cloud-me_vault is deliberately NOT declared: it holds credentials and the test asserts it is never served.",
+      "sync_interval_s": 300,
+      "git_timeout_ms": 60000,
+      "list": [
+        { "name": "cloud-me-containers", "ssh": "git@github.com:diegonmarcos/cloud-me-containers.git", "branch": "main", "key_env": "CME_KEY_CONTAINERS_B64" },
+        { "name": "cloud-me_configs", "ssh": "git@github.com:diegonmarcos/cloud-me_configs.git", "branch": "main", "key_env": "CME_KEY_CONFIGS_B64" },
+        { "name": "cloud-me_cgc", "ssh": "git@github.com:diegonmarcos/cloud-me_cgc.git", "branch": "main", "key_env": "CME_KEY_CGC_B64" }
+      ],
+      "known_hosts": "github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl"
+    },
+    "datasets": {
+      "_doc": "name -> {repo,path}. The c3-* front ends fetch /me/config/<site>.",
+      "c3-mail": { "repo": "cloud-me-containers", "path": "c3/c3-mail.json" },
+      "c3-security-network": { "repo": "cloud-me-containers", "path": "c3/c3-security-network.json" },
+      "c3-dns-routing": { "repo": "cloud-me-containers", "path": "c3/c3-dns-routing.json" },
+      "c3-observability": { "repo": "cloud-me-containers", "path": "c3/c3-observability.json" },
+      "c3-mcp-apis": { "repo": "cloud-me-containers", "path": "c3/c3-mcp-apis.json" }
+    },
+    "files": {
+      "_doc": "The no-secrets-in-responses guard. deny_path and deny_content are regular expressions (case-insensitive); a hit refuses the whole file, nothing is partially redacted. Every string leaving the service also passes redactSecrets() against the deploy keys it holds.",
+      "allowed_ext": [".json", ".yaml", ".yml", ".md", ".txt"],
+      "max_bytes": 262144,
+      "deny_path": "(^|/)(\\.git|\\.ssh|\\.gnupg|secrets?|vault|credentials?|creds?|tokens?|keys?)(/|\\.|$)|(secret|token|credential|creds|password|passwd|private|\\.env|id_rsa|id_ed25519|\\.pem|\\.key|\\.age|sops)",
+      "deny_content": "-----BEGIN [A-Z ]*PRIVATE KEY-----|\\bgh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|AGE-SECRET-KEY-|\\bxox[abprs]-[A-Za-z0-9-]{10,}|\"[A-Za-z0-9_-]*(password|passwd|secret|token|api_?key|private_?key)[A-Za-z0-9_-]*\"\\s*:\\s*\"[^\"\\s]{6,}\"|^\\s*[A-Za-z0-9_-]*(password|passwd|secret|token|api_?key)[A-Za-z0-9_-]*\\s*[:=]\\s*['\"]?[^\\s'\"]{8,}|ENC\\[AES256_GCM"
+    },
+    "cors": {
+      "_doc": "Browser callers: the c3-* pages are static sites on another origin and send Authorization: Bearer, so the service answers the preflight and echoes ONLY a declared origin. No wildcard, and no credentials mode.",
+      "origins": [
+        "https://diegonmarcos.github.io",
+        "https://diegonmarcos.com",
+        "https://www.diegonmarcos.com"
+      ],
+      "origin_suffix": ".diegonmarcos.com"
+    },
+    "authelia": {
+      "jwks_url": "https://auth.diegonmarcos.com/jwks.json",
+      "issuer": "https://auth.diegonmarcos.com",
+      "required_scope": "authelia.bearer.authz",
+      "jwks_cache_ttl_s": 600,
+      "jwks_fetch_timeout_ms": 3000,
+      "session": {
+        "verify_url": "https://auth.diegonmarcos.com/api/authz/auth-request",
+        "public_url": "https://api.diegonmarcos.com",
+        "users": [
+          "me@diegonmarcos.com"
+        ],
+        "timeout_ms": 3000,
+        "_doc": "Same two credentials as git-proxy-api: an Authelia bearer (JWKS verified in-service) or a live Authelia session cookie asked of Authelia's auth-request endpoint; the user must be listed."
+      },
+      "_doc": "Same three values infra-sec_introspect-proxy validates on, so a token minted for any existing Authelia client works unchanged."
+    }
+  },
+  "api": {
+    "type": "custom-rest",
+    "base_path": "/me",
+    "endpoint_count": 5,
+    "display_name": "Cloud Me API",
+    "description": "Authenticated read-only access to declared datasets and config files of the owner's private cloud-me-* repos. Deploy keys stay server-side; secret-looking files are never served.",
+    "auth": "mixed"
+  },
+  "tests": {
+    "contract-and-authz": {
+      "cmd": "node test-cloud-me-api.mjs",
+      "cwd": "src"
+    }
+  }
+}

@@ -18,10 +18,10 @@
    "CDLA-Permissive-2.0": 1
   },
   "dir": {
-   "LicenseRef-NoLicenseGranted": 92
+   "LicenseRef-NoLicenseGranted": 93
   },
   "docker": {
-   "LicenseRef-NoLicenseGranted": 44,
+   "LicenseRef-NoLicenseGranted": 45,
    "Apache-2.0": 6,
    "AGPL-3.0-only": 5,
    "MIT": 7,
@@ -3868,6 +3868,8 @@
     "infra-api_cloud-mattermost-mcp/src/Dockerfile.native",
     "infra-api_cloud-mattermost-mcp/src/build.json",
     "infra-api_cloud-mattermost-mcp/src/code/Dockerfile",
+    "infra-api_cloud-me-api/build.json",
+    "infra-api_cloud-me-api/src/build.json",
     "infra-api_cloud-services-mcp/build.json",
     "infra-api_cloud-services-mcp/dist/code/arm64/Dockerfile",
     "infra-api_cloud-services-mcp/src/Dockerfile.native",
@@ -4163,6 +4165,7 @@
     "infra-api_cloud-infra-mcp/src/flake.nix",
     "infra-api_cloud-mail-mcp/src/flake.nix",
     "infra-api_cloud-mattermost-mcp/src/flake.nix",
+    "infra-api_cloud-me-api/src/flake.nix",
     "infra-api_cloud-services-mcp/src/flake.nix",
     "infra-api_cloud-superapp-mcp/src/flake.nix",
     "infra-api_cloud-vault-mcp/src/flake.nix",
@@ -6453,6 +6456,26 @@
    "licence": "Apache-2.0",
    "licence_source": "licenses/curated.json::directories",
    "note": "Build-staged copy of user-ai_my-ai-api/src/code/vendor/headroom (upstream module headroom-my-ai-api); same licence, LICENSE + NOTICE retained."
+  },
+  "dir:infra-api_cloud-me-api": {
+   "kind": "dir",
+   "declared_in": [
+    "(tree)"
+   ],
+   "licence": "LicenseRef-NoLicenseGranted",
+   "licence_source": "licenses/curated.json::directories"
+  },
+  "docker:ghcr.io/diegonmarcos/cloud-me-api": {
+   "kind": "docker",
+   "declared_in": [
+    "infra-api_cloud-me-api/build.json",
+    "infra-api_cloud-me-api/src/build.json"
+   ],
+   "version": "ghcr.io/diegonmarcos/cloud-me-api:latest",
+   "scope": "runtime",
+   "licence": "LicenseRef-NoLicenseGranted",
+   "licence_source": "licenses/curated.json::docker_licences[ghcr.io/diegonmarcos/]",
+   "note": "Image built by this fleet. The licence is that of the packaging (own code); the software inside keeps its upstream licence - see the same service's upstream image / vendored-source entries."
   }
  }
 }
