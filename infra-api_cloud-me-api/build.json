@@ -7,7 +7,6 @@
     "app": 8124
   },
   "category": "app",
-  "domain": "api.diegonmarcos.com/me",
   "build": {
     "headers_enforced": true
   },
@@ -31,20 +30,7 @@
     "host": "oci-analytics",
     "remote_path": "/opt/containers/cloud-me-api",
     "compose_flags": "--no-build --pull always --force-recreate",
-    "_host_doc": "oci-analytics, same VM and same edge path family as git-proxy-api (api.diegonmarcos.com/git): reachable off-mesh behind the Authelia gate, and an oci-apps ship would recreate my-ai_claude-api and kill running agents."
-  },
-  "proxy": {
-    "_doc": "auth=two_factor is the Caddy mkProtected block: Bearer -> forward_auth introspect-proxy, with the interactive Authelia session as the non-bearer fallback. Only /me/health is pre-auth (public_paths), and it answers {status,service} and nothing about the repos. Everything else, including /me/config/*, is never reachable unauthenticated, and the service verifies the credential itself too (direct mesh dials have no edge gate).",
-    "primary": {
-      "wg_only": false,
-      "auth": "two_factor",
-      "type": "path",
-      "parent_domain": "api.diegonmarcos.com",
-      "base_path": "/me",
-      "public_paths": [
-        "/me/health"
-      ]
-    }
+    "_host_doc": "oci-analytics, same VM as git-proxy-api: mesh-only (cloud-me-api.app over wg0, no public route), and an oci-apps ship would recreate my-ai_claude-api and kill running agents."
   },
   "health": {
     "path": "/me/health"
@@ -62,15 +48,6 @@
       "port_env": "PORT",
       "dns": "cloud-me-api.app",
       "public": true,
-      "proxy": {
-        "auth": "two_factor",
-        "type": "path",
-        "parent_domain": "api.diegonmarcos.com",
-        "base_path": "/me",
-        "public_paths": [
-          "/me/health"
-        ]
-      },
       "healthcheck": "/health",
       "monitoring": {
         "tls_check": true,

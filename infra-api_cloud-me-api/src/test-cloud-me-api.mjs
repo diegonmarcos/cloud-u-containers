@@ -29,8 +29,8 @@ const RT = loadRuntime(BUILD);
 ok(RT.repos.list.length >= 1, 'declares repos');
 ok(RT.endpoints.filter((e) => e.auth === 'none').map((e) => e.path).join() === '/me/health', 'only /me/health is unauthenticated');
 ok(!RT.repos.list.some((r) => /vault/i.test(r.name + r.ssh)), 'a vault repo is never declared');
-ok(raw.proxy.primary.auth === 'two_factor' && raw.containers.app.proxy.auth === 'two_factor', 'edge auth is two_factor, never none');
-ok(raw.proxy.primary.public_paths.join() === '/me/health', 'only /me/health is a public path at the edge');
+ok(raw.dns === 'cloud-me-api.app' && !raw.domain && !raw.proxy && !raw.containers.app.proxy && raw.containers.app.public === true, 'mesh address only: dns cloud-me-api.app (container public:true = a mesh .app route), no public domain or edge proxy route');
+ok(!JSON.stringify(raw).includes('wg_only'), 'WG-only is the fleet default, never overridden here');
 { const d = clone(); delete d.runtime.files; // the filter's own regexes legitimately name key markers
   ok(!JSON.stringify(d).match(/BEGIN [A-Z ]*PRIVATE KEY|ghp_[A-Za-z0-9]{20}|github_pat_/), 'no secret material in build.json'); }
 

@@ -1,8 +1,8 @@
 # compose.nix — docker-compose spec for cloud-me-api (Type A, own code, #1079).
 #
 # Runs on oci-analytics, host network, bound to that VM's wg0 address, next to
-# git-proxy-api. Caddy on gcp-proxy reverse-proxies api.diegonmarcos.com/me/*
-# here after forward_auth (Authelia bearer or session). The read-only deploy
+# git-proxy-api. Mesh-only: reached at cloud-me-api.app (Hickory over wg0);
+# no public route. The service verifies the bearer or session itself. The read-only deploy
 # keys arrive ONLY through .secrets (sops -> step_secrets -> env_file); clones
 # and the key files live on size-capped tmpfs mounts, never on the VM disk.
 { buildJson, container }:

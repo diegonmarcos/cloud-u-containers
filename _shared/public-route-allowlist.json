@@ -1,0 +1,21 @@
+{
+  "_doc": "THE fleet public-route allowlist. Every route is WG-only fail-closed (wgOnly(proxy) = proxy.wg_only ?? true, off-mesh -> 403) unless its service is listed here. Public means: some proxy block in build.json sets wg_only:false. Memory: cloud-data-my-ai-memory 4___ASSETS___/4.3.Memory/cloud-u-containers/infra-sec_caddy/project_wg-only-fleet-posture.md (+ feedback_cloudflare_wildcard_only.md). Guard: _shared/test-public-route-allowlist.mjs.",
+  "allowed": {
+    "infra-api_c3-public-api": "the one named public API (/pub)",
+    "infra-net_wireguard-mesh-ws-tunnel": "mesh bootstrap (vpn.)",
+    "infra-obs_matomo": "public-site analytics beacons",
+    "infra-obs_umami": "public-site analytics beacons",
+    "infra-obs_openobserve": "public-site analytics beacons",
+    "user-comm_matrix-continuwuity": "matrix federation"
+  },
+  "_pending_doc": "Public today but NOT in the posture note's allowlist. Listed so the guard passes on current main without hiding them; each needs an owner decision (move to WG-only, or promote to allowed with a reason). The guard prints them as WARN, fails with STRICT=1, and fails if a service is listed here that is no longer public (remove it when fixed).",
+  "pending_owner_review": {
+    "infra-api_git-proxy-api": "api.diegonmarcos.com/git, Authelia-gated",
+    "infra-dat_gitea": "public git host",
+    "infra-sec_authelia": "SSO portal must be reachable off-mesh to log in; likely belongs in allowed",
+    "user-ai_cloud-cgc-pub-mcp": "public MCP",
+    "user-data_scrappers-api": "public scrapers API",
+    "user-prod_cloud-notes-sync": "notes sync",
+    "user-prod_cloud-notes-web": "notes web"
+  }
+}
