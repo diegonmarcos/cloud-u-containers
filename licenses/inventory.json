@@ -21,7 +21,7 @@
    "LicenseRef-NoLicenseGranted": 93
   },
   "docker": {
-   "LicenseRef-NoLicenseGranted": 45,
+   "LicenseRef-NoLicenseGranted": 46,
    "Apache-2.0": 6,
    "AGPL-3.0-only": 5,
    "MIT": 7,
@@ -2207,6 +2207,14 @@
    "licence": "LicenseRef-NoLicenseGranted",
    "licence_source": "licenses/curated.json::directories"
   },
+  "dir:infra-api_cloud-me-api": {
+   "kind": "dir",
+   "declared_in": [
+    "(tree)"
+   ],
+   "licence": "LicenseRef-NoLicenseGranted",
+   "licence_source": "licenses/curated.json::directories"
+  },
   "dir:infra-api_cloud-services-mcp": {
    "kind": "dir",
    "declared_in": [
@@ -2335,6 +2343,14 @@
    "licence": "LicenseRef-NoLicenseGranted",
    "licence_source": "licenses/curated.json::directories"
   },
+  "dir:infra-net_cloudflared": {
+   "kind": "dir",
+   "declared_in": [
+    "(tree)"
+   ],
+   "licence": "LicenseRef-NoLicenseGranted",
+   "licence_source": "licenses/curated.json::directories"
+  },
   "dir:infra-net_hickory-dns": {
    "kind": "dir",
    "declared_in": [
@@ -2352,14 +2368,6 @@
    "licence_source": "licenses/curated.json::directories"
   },
   "dir:infra-net_wireguard-mesh": {
-   "kind": "dir",
-   "declared_in": [
-    "(tree)"
-   ],
-   "licence": "LicenseRef-NoLicenseGranted",
-   "licence_source": "licenses/curated.json::directories"
-  },
-  "dir:infra-net_cloudflared": {
    "kind": "dir",
    "declared_in": [
     "(tree)"
@@ -2910,6 +2918,17 @@
    "licence": "Apache-2.0",
    "licence_source": "licenses/curated.json::docker_licences[caddy]"
   },
+  "docker:cloudflare/cloudflared": {
+   "kind": "docker",
+   "declared_in": [
+    "infra-net_cloudflared/build.json",
+    "infra-net_cloudflared/src/build.json"
+   ],
+   "version": "cloudflare/cloudflared:2026.9.3",
+   "scope": "runtime",
+   "licence": "Apache-2.0",
+   "licence_source": "licenses/curated.json::docker_licences[cloudflare/cloudflared]"
+  },
   "docker:crowdsecurity/crowdsec": {
    "kind": "docker",
    "declared_in": [
@@ -3095,6 +3114,18 @@
    "licence_source": "licenses/curated.json::docker_licences[ghcr.io/diegonmarcos/]",
    "note": "Image built by this fleet. The licence is that of the packaging (own code); the software inside keeps its upstream licence - see the same service's upstream image / vendored-source entries."
   },
+  "docker:ghcr.io/diegonmarcos/auth-broker-binaries": {
+   "kind": "docker",
+   "declared_in": [
+    "infra-sec_auth-broker/build.json",
+    "infra-sec_auth-broker/src/build.json"
+   ],
+   "version": "ghcr.io/diegonmarcos/auth-broker-binaries:latest",
+   "scope": "runtime",
+   "licence": "LicenseRef-NoLicenseGranted",
+   "licence_source": "licenses/curated.json::docker_licences[ghcr.io/diegonmarcos/]",
+   "note": "Image built by this fleet. The licence is that of the packaging (own code); the software inside keeps its upstream licence - see the same service's upstream image / vendored-source entries."
+  },
   "docker:ghcr.io/diegonmarcos/c3-infra-api": {
    "kind": "docker",
    "declared_in": [
@@ -3258,6 +3289,18 @@
    ],
    "version": "ghcr.io/diegonmarcos/cloud-mattermost-mcp:latest",
    "scope": "base",
+   "licence": "LicenseRef-NoLicenseGranted",
+   "licence_source": "licenses/curated.json::docker_licences[ghcr.io/diegonmarcos/]",
+   "note": "Image built by this fleet. The licence is that of the packaging (own code); the software inside keeps its upstream licence - see the same service's upstream image / vendored-source entries."
+  },
+  "docker:ghcr.io/diegonmarcos/cloud-me-api": {
+   "kind": "docker",
+   "declared_in": [
+    "infra-api_cloud-me-api/build.json",
+    "infra-api_cloud-me-api/src/build.json"
+   ],
+   "version": "ghcr.io/diegonmarcos/cloud-me-api:latest",
+   "scope": "runtime",
    "licence": "LicenseRef-NoLicenseGranted",
    "licence_source": "licenses/curated.json::docker_licences[ghcr.io/diegonmarcos/]",
    "note": "Image built by this fleet. The licence is that of the packaging (own code); the software inside keeps its upstream licence - see the same service's upstream image / vendored-source entries."
@@ -3665,17 +3708,6 @@
    "licence": "LicenseRef-NoLicenseGranted",
    "licence_source": "licenses/curated.json::docker_licences[ghcr.io/diegonmarcos/]",
    "note": "Image built by this fleet. The licence is that of the packaging (own code); the software inside keeps its upstream licence - see the same service's upstream image / vendored-source entries."
-  },
-  "docker:cloudflare/cloudflared": {
-   "kind": "docker",
-   "declared_in": [
-    "infra-net_cloudflared/build.json",
-    "infra-net_cloudflared/src/build.json"
-   ],
-   "version": "cloudflare/cloudflared:2026.9.3",
-   "scope": "runtime",
-   "licence": "Apache-2.0",
-   "licence_source": "licenses/curated.json::docker_licences[cloudflare/cloudflared]"
   },
   "docker:ghcr.io/erebe/wstunnel": {
    "kind": "docker",
@@ -6476,26 +6508,6 @@
    "licence": "Apache-2.0",
    "licence_source": "licenses/curated.json::directories",
    "note": "Build-staged copy of user-ai_my-ai-api/src/code/vendor/headroom (upstream module headroom-my-ai-api); same licence, LICENSE + NOTICE retained."
-  },
-  "dir:infra-api_cloud-me-api": {
-   "kind": "dir",
-   "declared_in": [
-    "(tree)"
-   ],
-   "licence": "LicenseRef-NoLicenseGranted",
-   "licence_source": "licenses/curated.json::directories"
-  },
-  "docker:ghcr.io/diegonmarcos/cloud-me-api": {
-   "kind": "docker",
-   "declared_in": [
-    "infra-api_cloud-me-api/build.json",
-    "infra-api_cloud-me-api/src/build.json"
-   ],
-   "version": "ghcr.io/diegonmarcos/cloud-me-api:latest",
-   "scope": "runtime",
-   "licence": "LicenseRef-NoLicenseGranted",
-   "licence_source": "licenses/curated.json::docker_licences[ghcr.io/diegonmarcos/]",
-   "note": "Image built by this fleet. The licence is that of the packaging (own code); the software inside keeps its upstream licence - see the same service's upstream image / vendored-source entries."
   }
  }
 }
