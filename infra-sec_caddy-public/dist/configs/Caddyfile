@@ -76,7 +76,7 @@ route @m_smtps_diegonmarcos_com {
     upstream 10.0.0.3:2465
   }
 }
-          @public tls sni diegonmarcos.com www.diegonmarcos.com linktree.diegonmarcos.com nexus.diegonmarcos.com suite.diegonmarcos.com maps.diegonmarcos.com vpn.diegonmarcos.com matrix.diegonmarcos.com mcp.diegonmarcos.com auth.diegonmarcos.com
+          @public tls sni diegonmarcos.com www.diegonmarcos.com linktree.diegonmarcos.com nexus.diegonmarcos.com suite.diegonmarcos.com maps.diegonmarcos.com vpn.diegonmarcos.com matrix.diegonmarcos.com mcp.diegonmarcos.com auth.diegonmarcos.com account.diegonmarcos.com
           route @public {
             proxy {
               proxy_protocol v2
@@ -85,7 +85,7 @@ route @m_smtps_diegonmarcos_com {
           }
           @rest not {
             tls {
-              sni imap.diegonmarcos.com smtps.diegonmarcos.com diegonmarcos.com www.diegonmarcos.com linktree.diegonmarcos.com nexus.diegonmarcos.com suite.diegonmarcos.com maps.diegonmarcos.com vpn.diegonmarcos.com matrix.diegonmarcos.com mcp.diegonmarcos.com auth.diegonmarcos.com
+              sni imap.diegonmarcos.com smtps.diegonmarcos.com diegonmarcos.com www.diegonmarcos.com linktree.diegonmarcos.com nexus.diegonmarcos.com suite.diegonmarcos.com maps.diegonmarcos.com vpn.diegonmarcos.com matrix.diegonmarcos.com mcp.diegonmarcos.com auth.diegonmarcos.com account.diegonmarcos.com
             }
           }
           route @rest {
@@ -228,6 +228,14 @@ route @m_smtps_diegonmarcos_com {
     @ea_session {
       not header Authorization Bearer*
       not header X-Fleet-Authorization Bearer*
+      not {
+        header Cookie *_diego_sso=*
+        not header Cookie *authelia_session=*
+      }
+      not {
+        header Cf-Access-Jwt-Assertion *
+        not header Cookie *authelia_session=*
+      }
       not path {args[:]}
       not {
         method OPTIONS
@@ -267,6 +275,44 @@ route @m_smtps_diegonmarcos_com {
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
+@ea_broker {
+  header Cookie *_diego_sso=*
+  not header Cookie *authelia_session=*
+  not header Authorization Bearer*
+  not header X-Fleet-Authorization Bearer*
+  not path {args[:]}
+  not {
+    method OPTIONS
+    header Access-Control-Request-Method *
+  }
+}
+# Broker session (Google / GitHub, allowlisted to the owner by the broker itself).
+forward_auth @ea_broker 10.0.0.6:4180 {
+  header_up -Connection
+  header_up -Upgrade
+  uri /oauth2/google/auth
+  copy_headers X-Auth-Request-Email
+}
+# Order of the chain: Authelia session, else broker cookie (above), else Cloudflare Access JWT.
+# The JWT is verified by the broker (signature, issuer, audience, expiry, owner email only).
+@ea_cfaccess {
+  header Cf-Access-Jwt-Assertion *
+  not header Cookie *authelia_session=*
+  not header Cookie *_diego_sso=*
+  not header Authorization Bearer*
+  not header X-Fleet-Authorization Bearer*
+  not path {args[:]}
+  not {
+    method OPTIONS
+    header Access-Control-Request-Method *
+  }
+}
+forward_auth @ea_cfaccess 10.0.0.6:4180 {
+  header_up -Connection
+  header_up -Upgrade
+  uri /oauth2/google/cf-auth
+  copy_headers X-Auth-Request-Email
+}
   }
   # edge_auth_offmesh: same gate, enforced only against NON-mesh sources (mesh peers are trusted by the WG gate).
   (edge_auth_offmesh) {
@@ -297,6 +343,14 @@ route @m_smtps_diegonmarcos_com {
     @ea_session {
       not header Authorization Bearer*
       not header X-Fleet-Authorization Bearer*
+      not {
+        header Cookie *_diego_sso=*
+        not header Cookie *authelia_session=*
+      }
+      not {
+        header Cf-Access-Jwt-Assertion *
+        not header Cookie *authelia_session=*
+      }
       not path {args[:]}
       not {
         method OPTIONS
@@ -337,6 +391,46 @@ route @m_smtps_diegonmarcos_com {
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
+@ea_broker {
+  header Cookie *_diego_sso=*
+  not header Cookie *authelia_session=*
+  not header Authorization Bearer*
+  not header X-Fleet-Authorization Bearer*
+  not path {args[:]}
+  not {
+    method OPTIONS
+    header Access-Control-Request-Method *
+  }
+      not remote_ip 10.0.0.0/24 fd0c:1d00::/64
+}
+# Broker session (Google / GitHub, allowlisted to the owner by the broker itself).
+forward_auth @ea_broker 10.0.0.6:4180 {
+  header_up -Connection
+  header_up -Upgrade
+  uri /oauth2/google/auth
+  copy_headers X-Auth-Request-Email
+}
+# Order of the chain: Authelia session, else broker cookie (above), else Cloudflare Access JWT.
+# The JWT is verified by the broker (signature, issuer, audience, expiry, owner email only).
+@ea_cfaccess {
+  header Cf-Access-Jwt-Assertion *
+  not header Cookie *authelia_session=*
+  not header Cookie *_diego_sso=*
+  not header Authorization Bearer*
+  not header X-Fleet-Authorization Bearer*
+  not path {args[:]}
+  not {
+    method OPTIONS
+    header Access-Control-Request-Method *
+  }
+      not remote_ip 10.0.0.0/24 fd0c:1d00::/64
+}
+forward_auth @ea_cfaccess 10.0.0.6:4180 {
+  header_up -Connection
+  header_up -Upgrade
+  uri /oauth2/google/cf-auth
+  copy_headers X-Auth-Request-Email
+}
   }
   # edge_auth_ws: enforced for every source EXCEPT `Upgrade: websocket` requests (wstunnel on vpn.).
   (edge_auth_ws) {
@@ -367,6 +461,14 @@ route @m_smtps_diegonmarcos_com {
     @ea_session {
       not header Authorization Bearer*
       not header X-Fleet-Authorization Bearer*
+      not {
+        header Cookie *_diego_sso=*
+        not header Cookie *authelia_session=*
+      }
+      not {
+        header Cf-Access-Jwt-Assertion *
+        not header Cookie *authelia_session=*
+      }
       not path {args[:]}
       not {
         method OPTIONS
@@ -407,6 +509,46 @@ route @m_smtps_diegonmarcos_com {
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
+@ea_broker {
+  header Cookie *_diego_sso=*
+  not header Cookie *authelia_session=*
+  not header Authorization Bearer*
+  not header X-Fleet-Authorization Bearer*
+  not path {args[:]}
+  not {
+    method OPTIONS
+    header Access-Control-Request-Method *
+  }
+      not header Upgrade websocket
+}
+# Broker session (Google / GitHub, allowlisted to the owner by the broker itself).
+forward_auth @ea_broker 10.0.0.6:4180 {
+  header_up -Connection
+  header_up -Upgrade
+  uri /oauth2/google/auth
+  copy_headers X-Auth-Request-Email
+}
+# Order of the chain: Authelia session, else broker cookie (above), else Cloudflare Access JWT.
+# The JWT is verified by the broker (signature, issuer, audience, expiry, owner email only).
+@ea_cfaccess {
+  header Cf-Access-Jwt-Assertion *
+  not header Cookie *authelia_session=*
+  not header Cookie *_diego_sso=*
+  not header Authorization Bearer*
+  not header X-Fleet-Authorization Bearer*
+  not path {args[:]}
+  not {
+    method OPTIONS
+    header Access-Control-Request-Method *
+  }
+      not header Upgrade websocket
+}
+forward_auth @ea_cfaccess 10.0.0.6:4180 {
+  header_up -Connection
+  header_up -Upgrade
+  uri /oauth2/google/cf-auth
+  copy_headers X-Auth-Request-Email
+}
   }
 
   # ════════════════════════════════════════════════════════════
@@ -1019,16 +1161,16 @@ handle {
   # ════════════════════════════════════════════════════════════
 
 # oidc-public: wg_only:false — whole IdP host open (owner decision 2026-10-15)
-auth.diegonmarcos.com {
+auth.diegonmarcos.com, account.diegonmarcos.com {
 import security
 
 handle  {
   reverse_proxy https://10.1.0.2:443 {
-    header_up Host auth.diegonmarcos.com
+    header_up Host {host}
     header_up X-Real-IP {http.request.remote.host}
     transport http {
       tls
-      tls_server_name auth.diegonmarcos.com
+      tls_server_name {host}
     }
   }
 }
