@@ -682,6 +682,7 @@ reverse_proxy 10.0.0.6:8008 {
 mcp.diegonmarcos.com {
 import security
 import edge_auth_offmesh /.well-known/acme-challenge/* /.well-known/oauth-protected-resource* /.well-known/oauth-authorization-server* /.well-known/openid-configuration* /register /authorize /token /callback /oauth/* /*/.well-known/oauth-protected-resource* /*/.well-known/oauth-authorization-server* /*/register /*/authorize /*/token /*/callback
+
 handle_path /cloud-drive-mcp/* {
   @wg remote_ip 10.0.0.0/24 fd0c:1d00::/64
         handle @wg {
@@ -708,9 +709,9 @@ handle_path /cloud-drive-mcp/* {
           header_up Accept "application/json, text/event-stream"
         }
         }
-        handle {
-          respond "Forbidden" 403
-        }
+handle {
+  respond "Forbidden" 403
+}
 }
 handle_path /c3-infra-mcp/* {
   @wg remote_ip 10.0.0.0/24 fd0c:1d00::/64
@@ -738,9 +739,9 @@ handle_path /c3-infra-mcp/* {
           header_up Accept "application/json, text/event-stream"
         }
         }
-        handle {
-          respond "Forbidden" 403
-        }
+handle {
+  respond "Forbidden" 403
+}
 }
 handle_path /mail-mcp/* {
   @wg remote_ip 10.0.0.0/24 fd0c:1d00::/64
@@ -768,9 +769,9 @@ handle_path /mail-mcp/* {
           header_up Accept "application/json, text/event-stream"
         }
         }
-        handle {
-          respond "Forbidden" 403
-        }
+handle {
+  respond "Forbidden" 403
+}
 }
 handle_path /mattermost-mcp/* {
   @wg remote_ip 10.0.0.0/24 fd0c:1d00::/64
@@ -798,9 +799,9 @@ handle_path /mattermost-mcp/* {
           header_up Accept "application/json, text/event-stream"
         }
         }
-        handle {
-          respond "Forbidden" 403
-        }
+handle {
+  respond "Forbidden" 403
+}
 }
 handle_path /c3-services-mcp/* {
   @wg remote_ip 10.0.0.0/24 fd0c:1d00::/64
@@ -828,9 +829,9 @@ handle_path /c3-services-mcp/* {
           header_up Accept "application/json, text/event-stream"
         }
         }
-        handle {
-          respond "Forbidden" 403
-        }
+handle {
+  respond "Forbidden" 403
+}
 }
 handle_path /cloud-superapp-mcp/* {
   @wg remote_ip 10.0.0.0/24 fd0c:1d00::/64
@@ -858,9 +859,9 @@ handle_path /cloud-superapp-mcp/* {
           header_up Accept "application/json, text/event-stream"
         }
         }
-        handle {
-          respond "Forbidden" 403
-        }
+handle {
+  respond "Forbidden" 403
+}
 }
 handle_path /g-personal/* {
   @wg remote_ip 10.0.0.0/24 fd0c:1d00::/64
@@ -888,9 +889,9 @@ handle_path /g-personal/* {
           header_up Accept "application/json, text/event-stream"
         }
         }
-        handle {
-          respond "Forbidden" 403
-        }
+handle {
+  respond "Forbidden" 403
+}
 }
 handle_path /g-workspace/* {
   @wg remote_ip 10.0.0.0/24 fd0c:1d00::/64
@@ -918,9 +919,9 @@ handle_path /g-workspace/* {
           header_up Accept "application/json, text/event-stream"
         }
         }
-        handle {
-          respond "Forbidden" 403
-        }
+handle {
+  respond "Forbidden" 403
+}
 }
 handle_path /cloud-cgc-pub-mcp/* {
   @wg remote_ip 10.0.0.0/24 fd0c:1d00::/64
@@ -948,9 +949,9 @@ handle_path /cloud-cgc-pub-mcp/* {
           header_up Accept "application/json, text/event-stream"
         }
         }
-        handle {
-          respond "Forbidden" 403
-        }
+handle {
+  respond "Forbidden" 403
+}
 }
 handle_path /cloud-cgc-pvt-mcp/* {
   @wg remote_ip 10.0.0.0/24 fd0c:1d00::/64
@@ -978,9 +979,9 @@ handle_path /cloud-cgc-pvt-mcp/* {
           header_up Accept "application/json, text/event-stream"
         }
         }
-        handle {
-          respond "Forbidden" 403
-        }
+handle {
+  respond "Forbidden" 403
+}
 }
   # Bare host: human hint. Any other path is not a public MCP route
   # (mesh-only / wg_only, or unknown): answer 404 JSON so MCP clients
