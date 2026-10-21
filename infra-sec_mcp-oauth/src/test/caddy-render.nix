@@ -1,6 +1,6 @@
-{ root, cfgOverride ? null }:
+# lib is passed in (test-caddy-render.sh pins it); no <nixpkgs> / NIX_PATH dependency.
+{ root, lib, cfgOverride ? null }:
 let
-  lib = import <nixpkgs/lib>;
   bj = builtins.fromJSON (builtins.readFile (root + "/infra-sec_caddy/build.json"));
   cc = bj.caddy_config;
   mo = import (root + "/_shared/mcp-oauth.nix") {
