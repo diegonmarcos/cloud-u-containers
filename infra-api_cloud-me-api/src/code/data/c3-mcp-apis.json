@@ -882,10 +882,10 @@
             "/scrappers/health",
             "/scrappers/openapi.json"
           ],
-          "wg_only": false
+          "wg_only": true
         }
       ],
-      "exposure": "public (pending owner review)",
+      "exposure": "wg-only (mesh)",
       "health": "/health",
       "monitoring": {
         "tls_check": true,

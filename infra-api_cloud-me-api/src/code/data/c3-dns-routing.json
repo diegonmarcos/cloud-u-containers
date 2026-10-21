@@ -267,7 +267,7 @@
         "/scrappers/health",
         "/scrappers/openapi.json"
       ],
-      "wg_only": false
+      "wg_only": true
     },
     {
       "service": "user-prod_etherpad",
