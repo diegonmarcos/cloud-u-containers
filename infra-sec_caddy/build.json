@@ -547,6 +547,10 @@
     "multi-sso": {
       "cmd": "bash test/test-multi-sso.sh",
       "cwd": "src"
+    },
+    "public-route-allowlist": {
+      "cmd": "node test-public-route-allowlist.mjs",
+      "cwd": "../_shared"
     }
   }
 }
