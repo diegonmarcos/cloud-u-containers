@@ -57,7 +57,7 @@ for k in hub edge; do
   tail -n +"$n" "$d" > "$W/$k-dist.txt"
   render $k "$W/$k-off.json" > "$W/$k-off.txt"
   for v in none off; do
-    cmp -s "$W/$k-$v.txt" "$W/$k-dist.txt" || { diff "$W/$k-$v.txt" "$W/$k-dist.txt" | head; bad "$k Caddyfile with multi_sso '$v' differs from the committed dist"; }
+    cmp -s "$W/$k-$v.txt" "$W/$k-dist.txt" || { diff -u "$W/$k-dist.txt" "$W/$k-$v.txt" | head -400; bad "$k Caddyfile with multi_sso '$v' differs from the committed dist"; }
   done
   ok "$k: flag OFF or absent renders byte-identical to the committed dist ($(wc -c < "$W/$k-dist.txt") bytes)"
 done
