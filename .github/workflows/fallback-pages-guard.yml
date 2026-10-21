@@ -22,3 +22,17 @@ jobs:
         with: { node-version: 20 }
       - uses: cachix/install-nix-action@v27
       - run: bash _shared/test/fallback-pages-guard.sh
+  notify:
+    # Tell cloud-webapps to re-derive its service pages (its 3-hourly schedule covers a missing token).
+    if: github.event_name == 'push' && contains(join(github.event.commits.*.modified, ' '), '_shared/fallback-services.json')
+    needs: guard
+    runs-on: ubuntu-latest
+    env:
+      TOKEN: ${{ secrets.CLOUD_WEBAPPS_DISPATCH_TOKEN }}
+    steps:
+      - if: env.TOKEN != ''
+        run: |
+          curl -fsS -X POST -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/diegonmarcos/cloud-webapps/dispatches -d '{"event_type":"fallback-services-bump"}'
+      - if: env.TOKEN == ''
+        run: echo "CLOUD_WEBAPPS_DISPATCH_TOKEN not set; cloud-webapps picks the change up on its schedule"
