@@ -44,7 +44,7 @@ esac
 exit 0
 """)
     open(os.path.join(d, "ssh"), "w").write('#!/bin/sh\nprintf "%s" "$STUB_SSH"\nexit $STUB_SSH_RC\n')
-    open(os.path.join(d, "date"), "w").write('#!/bin/sh\ncase "$*" in *%A*) echo Tuesday;; *%H*) echo 03;; *) /bin/date "$@";; esac\n')
+    open(os.path.join(d, "date"), "w").write('#!/bin/sh\ncase "$*" in *%A*) echo Tuesday;; *%H*) echo 03;; *%b*%e*) echo "Oct 20";; *) /bin/date "$@";; esac\n')
     for n in ("curl", "ssh", "date"):
         os.chmod(os.path.join(d, n), 0o755)
 
