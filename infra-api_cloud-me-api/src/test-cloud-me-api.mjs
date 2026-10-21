@@ -6,7 +6,7 @@
 import { spawn, execFileSync } from 'node:child_process';
 import { createServer } from 'node:http';
 import { generateKeyPairSync, createSign } from 'node:crypto';
-import { mkdtempSync, writeFileSync, mkdirSync, symlinkSync, rmSync, readFileSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, mkdirSync, symlinkSync, rmSync, readFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -22,6 +22,7 @@ let pass = 0; let failN = 0;
 const ok = (c, m) => { if (c) { pass++; } else { failN++; console.error(`FAIL ${m}`); } };
 const throws = (fn, re, m) => { try { fn(); ok(false, `${m} (did not throw)`); } catch (e) { ok(re.test(String(e.message)), `${m} (got: ${e.message})`); } };
 const raw = JSON.parse(readFileSync(BUILD, 'utf8'));
+const DENY = new RegExp(raw.runtime.files.deny_content, 'im');
 const clone = () => JSON.parse(JSON.stringify(raw));
 
 // ── 1. contract ────────────────────────────────────────────────────────────
@@ -31,6 +32,8 @@ ok(RT.endpoints.filter((e) => e.auth === 'none').map((e) => e.path).join() === '
 ok(!RT.repos.list.some((r) => /vault/i.test(r.name + r.ssh)), 'a vault repo is never declared');
 ok(raw.dns === 'cloud-me-api.app' && !raw.domain && !raw.proxy && !raw.containers.app.proxy && raw.containers.app.public === true, 'mesh address only: dns cloud-me-api.app (container public:true = a mesh .app route), no public domain or edge proxy route');
 ok(!JSON.stringify(raw).includes('wg_only'), 'WG-only is the fleet default, never overridden here');
+for (const [n, d] of Object.entries(raw.runtime.datasets)) if (!n.startsWith('_')) ok(d.builtin && existsSync(join(HERE, 'code', d.builtin)), `dataset ${n} is a builtin file that exists`);
+try { execFileSync(process.execPath, [join(HERE, 'gen-c3-datasets.mjs'), '--check'], { stdio: 'pipe' }); ok(true, ''); } catch (e) { ok(false, `datasets are stale: ${e.stderr}`); }
 { const d = clone(); delete d.runtime.files; // the filter's own regexes legitimately name key markers
   ok(!JSON.stringify(d).match(/BEGIN [A-Z ]*PRIVATE KEY|ghp_[A-Za-z0-9]{20}|github_pat_/), 'no secret material in build.json'); }
 
@@ -39,7 +42,7 @@ let TMP; const tmp = () => (TMP ||= mkdtempSync(join(tmpdir(), 'cme-test-')));
 throws(() => loadRuntime(mutate((d) => d.runtime.repos.list.push({ name: 'cloud-me_vault', ssh: 'git@github.com:diegonmarcos/cloud-me_vault.git', branch: 'main', key_env: 'CME_KEY_VAULT_B64' }))), /vault/, 'vault repo rejected');
 throws(() => loadRuntime(mutate((d) => { d.runtime.endpoints[2].auth = 'none'; })), /only .* may be unauthenticated/, 'open /me/repos rejected');
 throws(() => loadRuntime(mutate((d) => { d.runtime.repos.list[0].ssh = 'https://github.com/diegonmarcos/cloud-me-containers.git'; })), /deploy-key transport only/, 'token-over-https transport rejected');
-throws(() => loadRuntime(mutate((d) => { d.runtime.datasets['c3-mail'].repo = 'nope'; })), /not declared/, 'dataset on undeclared repo rejected');
+throws(() => loadRuntime(mutate((d) => { d.runtime.datasets['x-repo'] = { repo: 'nope', path: 'a.json' }; })), /not declared/, 'dataset on undeclared repo rejected');
 throws(() => loadRuntime(mutate((d) => { d.runtime.cors.origins.push('https://*.example.com'); })), /cors/, 'wildcard CORS origin rejected');
 throws(() => loadRuntime(mutate((d) => { d.runtime.files.deny_content = '['; })), /./, 'bad filter regex stops the service');
 throws(() => buildTable(RT, {}), /no handler/, 'declared route without handler throws');
@@ -133,9 +136,15 @@ const stub = createServer((req, res) => {
 await new Promise((r) => stub.listen(0, '127.0.0.1', r));
 const SP = stub.address().port;
 const PORT = 20000 + Math.floor(Math.random() * 20000);
+// The e2e server keeps the repo-backed dataset path covered (leak filter, absent file) under the
+// old names and serves the REAL builtin datasets next to them as real-<name>.
+const E2E_BUILD = join(T, 'e2e-build.json');
+{ const d = JSON.parse(JSON.stringify(raw)); const ds = d.runtime.datasets;
+  for (const k of Object.keys(ds)) if (ds[k].builtin) { ds['real-' + k.slice(3)] = ds[k]; ds[k] = { repo: 'cloud-me-containers', path: `c3/${k}.json` }; }
+  writeFileSync(E2E_BUILD, JSON.stringify(d)); }
 const child = spawn(process.execPath, [join(HERE, 'code', 'index.mjs')], {
   env: {
-    PATH: process.env.PATH, BUILD_JSON_PATH: BUILD, PORT: String(PORT), BIND_HOST: '127.0.0.1',
+    PATH: process.env.PATH, BUILD_JSON_PATH: E2E_BUILD, PORT: String(PORT), BIND_HOST: '127.0.0.1',
     JWKS_URL: `http://127.0.0.1:${SP}/jwks.json`, AUTHELIA_VERIFY_URL: `http://127.0.0.1:${SP}/auth-request`,
     CME_DATA_DIR: join(T, 'data'), CME_KEY_DIR: join(T, 'keys'), CME_URL_OVERRIDE_DIR: REMOTES,
     CME_KEY_CONTAINERS_B64: Buffer.from(KEYVAL).toString('base64'),
@@ -186,6 +195,20 @@ try {
   ok(leak.status === 403 && leak.json?.code === 'secret_filtered' && !leak.text.includes(GHP), 'dataset holding a token is refused, never sent');
   const miss = await get('/config/c3-dns-routing', bearer(good));
   ok(miss.status === 404 && miss.json?.code === 'not_found', 'declared dataset whose file is absent -> 404 not_found');
+
+  // real fleet config, generated from build.json (gen-c3-datasets.mjs): served as-is, never a placeholder
+  const real = {};
+  for (const n of ['mail', 'security-network', 'dns-routing', 'observability', 'mcp-apis']) {
+    const r = await get(`/config/real-${n}`, bearer(good)); real[n] = r;
+    ok(r.status === 200 && r.json?.dataset === `c3-${n}` && r.json.count >= 5 && r.json.services.every((x) => x.service && x.description), `real dataset c3-${n} served with real services`);
+    ok(r.h.get('x-source-commit') === 'builtin', `c3-${n} is builtin`);
+    ok(!/example\.org|\bmx[12]\b|live\.example/i.test(r.text), `c3-${n} holds no placeholder values`);
+    ok(!DENY.test(r.text) && !r.text.includes(GHP), `c3-${n} has no secret-looking content`);
+  }
+  ok(real['dns-routing'].json.route_table.length > 20 && real['dns-routing'].json.mesh_names.some((m) => m.dns === 'cloud-me-api.app'), 'dns-routing lists the route table and the cloud-me-api mesh name');
+  ok(!real['dns-routing'].json.route_table.some((r) => r.service === 'infra-api_cloud-me-api'), 'cloud-me-api has no public route in the table');
+  ok(real['security-network'].json.public_services.length > 0 && !real['security-network'].json.public_services.some((x) => /NOT allowlisted/.test(x.exposure)), 'security-network: every public service is allowlisted or pending review');
+  ok(real['mcp-apis'].json.services.some((x) => x.mcp?.transport) && real['mail'].json.services.some((x) => x.dns === 'stalwart.app'), 'mcp-apis and mail carry real service data');
 
   const F = (p, repo = 'cloud-me-containers') => get(`/repos/${repo}/file?path=${encodeURIComponent(p)}`, bearer(good));
   ok((await F('x.json', 'cloud-me_vault')).json?.code === 'repo_not_declared', 'vault repo -> repo_not_declared');

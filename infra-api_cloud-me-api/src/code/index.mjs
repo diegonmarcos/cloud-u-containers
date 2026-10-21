@@ -11,7 +11,7 @@
 // and `git fetch` run, over per-repo read-only deploy keys. Stdlib only.
 
 import { createServer } from 'node:http';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -214,6 +214,11 @@ const HANDLERS = {
       return sendError(res, 404, 'not_found', 'no such dataset', req);
     }
     try {
+      if (ds.builtin) {
+        const text = readFileSync(join(HERE, ds.builtin), 'utf8');
+        res.setHeader('x-source-commit', 'builtin');
+        return sendJson(res, 200, JSON.parse(text), req);
+      }
       const { text, commit } = STORE.read(ds.repo, ds.path);
       let json;
       try { json = JSON.parse(text); } catch { return sendError(res, 502, 'bad_dataset', 'dataset is not valid JSON', req); }

@@ -114,12 +114,12 @@
       "known_hosts": "github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl"
     },
     "datasets": {
-      "_doc": "name -> {repo,path}. The c3-* front ends fetch /me/config/<site>.",
-      "c3-mail": { "repo": "cloud-me-containers", "path": "c3/c3-mail.json" },
-      "c3-security-network": { "repo": "cloud-me-containers", "path": "c3/c3-security-network.json" },
-      "c3-dns-routing": { "repo": "cloud-me-containers", "path": "c3/c3-dns-routing.json" },
-      "c3-observability": { "repo": "cloud-me-containers", "path": "c3/c3-observability.json" },
-      "c3-mcp-apis": { "repo": "cloud-me-containers", "path": "c3/c3-mcp-apis.json" }
+      "_doc": "name -> {builtin} | {repo,path}. The c3-* front ends fetch /me/config/<site>. builtin = real fleet config generated from this repo's build.json files by src/gen-c3-datasets.mjs into src/code/data/ (shipped in the image, never hand-edited; the test fails when stale). No placeholder seed is read.",
+      "c3-mail": { "builtin": "data/c3-mail.json" },
+      "c3-security-network": { "builtin": "data/c3-security-network.json" },
+      "c3-dns-routing": { "builtin": "data/c3-dns-routing.json" },
+      "c3-observability": { "builtin": "data/c3-observability.json" },
+      "c3-mcp-apis": { "builtin": "data/c3-mcp-apis.json" }
     },
     "files": {
       "_doc": "The no-secrets-in-responses guard. deny_path and deny_content are regular expressions (case-insensitive); a hit refuses the whole file, nothing is partially redacted. Every string leaving the service also passes redactSecrets() against the deploy keys it holds.",

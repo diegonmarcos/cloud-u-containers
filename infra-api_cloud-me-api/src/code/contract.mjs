@@ -57,6 +57,11 @@ export function loadRuntime(buildJsonPath) {
   for (const [name, d] of Object.entries(ds)) {
     if (name.startsWith('_')) continue;
     if (!NAME_RE.test(name)) throw new Error(`runtime.datasets: bad name ${name}`);
+    if (d.builtin !== undefined) {
+      // Generated at build time from the fleet's build.json (gen-c3-datasets.mjs), shipped in the image.
+      if (typeof d.builtin !== 'string' || !/^data\/[A-Za-z0-9_-]+\.json$/.test(d.builtin)) throw new Error(`runtime.datasets.${name}: builtin must be data/<name>.json`);
+      continue;
+    }
     if (!seen.has(d.repo)) throw new Error(`runtime.datasets.${name}: repo ${d.repo} is not declared in runtime.repos.list`);
     if (typeof d.path !== 'string' || !d.path.endsWith('.json')) throw new Error(`runtime.datasets.${name}: path must be a .json file`);
   }
