@@ -52,7 +52,7 @@ const hook = readFileSync(join(here, "claude-config/hooks/a-context-inject-memor
 // be the second declaration that left goose and hermes with nothing.
 check("W1 the hook reads AGENT_MEMORY_DIR from the environment", /AGENT_MEMORY_DIR/.test(hook));
 check("W2 the hook never retypes the store path",
-  !/b_projects\/home-diego/.test(hook),
+  !/4___ASSETS___/4.3.Memory\/home-diego/.test(hook),
   "a path literal here can drift from _shared/agent-memory.nix without anything failing");
 
 // ── I: index only ───────────────────────────────────────────────────────────
@@ -92,7 +92,7 @@ check("X1 the hook states pointers are relative to the index's directory",
 // memory-entries/<type>/ directory, which check-memory-layout.sh M6 fails RED.
 check("X3 the hook teaches NO by-type entries directory (memory-entries/<type>/)",
   !/_mem_entries\}\/<type>\//.test(hook) && !/memory-entries\/<type>\//.test(hook),
-  "entries are filed b_projects/<repo>/<child>/<type>_<name>.md; <type> is a file-name prefix");
+  "entries are filed 4___ASSETS___/4.3.Memory/<repo>/<child>/<type>_<name>.md; <type> is a file-name prefix");
 check("X4 the hook says a new repo/child is declared in layout.json AND created",
   /layout\.json/.test(hook) && /AND created on disk/.test(hook),
   "the layout guard fails on a repo or child declared on only one side");

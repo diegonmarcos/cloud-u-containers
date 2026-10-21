@@ -121,7 +121,9 @@
         ],
         "cloud-data-my-ai-memory": [
           "a_sessions/",
-          "a_commits/"
+          "a_commits/",
+          "a___SESSIONS___/a_sessions/",
+          "a___SESSIONS___/a_commits/"
         ],
         "cloud-u-android": [
           "**/res/values-*/",

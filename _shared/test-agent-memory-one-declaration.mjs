@@ -5,7 +5,7 @@
 // claude container by declaring `runtime.memory` in my-ai_claude-api's OWN
 // build.json. Measured inside the running containers 2026-09-24:
 //
-//   cloud-agi-claude   AGENT_MEMORY_DIR=/home/appuser/git/cloud-data-my-ai-memory/b_projects/home-diego
+//   cloud-agi-claude   AGENT_MEMORY_DIR=/home/appuser/git/cloud-data-my-ai-memory/4___ASSETS___/4.3.Memory/home-diego
 //   my-ai-api (goose)  AGENT_GIT_TREE only — no AGENT_MEMORY_* at all
 //   hermes-agent       AGENT_GIT_TREE only — no AGENT_MEMORY_* at all
 //
@@ -96,7 +96,7 @@ check("A4 engine.nix splices the per-runtime alias too",
 // committed-dist check, not here. Every source file is still scanned.
 {
   const strays = execFileSync("sh", ["-c",
-    "grep -rl --exclude-dir=dist 'b_projects/home-diego' --include='*.nix' --include='*.sh' --include='*.mjs' --include='*.yaml' --include='*.yml' . "
+    "grep -rl --exclude-dir=dist '4___ASSETS___/4.3.Memory/home-diego' --include='*.nix' --include='*.sh' --include='*.mjs' --include='*.yaml' --include='*.yml' . "
     + "| grep -v '^./_shared/agent-memory.nix$' | grep -v '^./_shared/test-agent-memory-one-declaration.mjs$' || true"],
     { cwd: ROOT, encoding: "utf8" }).trim();
   check("A5 the store path is written in exactly ONE place",
@@ -122,9 +122,9 @@ check("A7 a build.json that re-declares runtime.memory is a BUILD ERROR",
 // ── D: the values are DERIVED, not retyped ──────────────────────────────────
 const base = mem();
 check("D1 the store resolves under the shared tree mount",
-  base.dir === "/home/appuser/git/cloud-data-my-ai-memory/b_projects/home-diego", base.dir);
+  base.dir === "/home/appuser/git/cloud-data-my-ai-memory/4___ASSETS___/4.3.Memory/home-diego", base.dir);
 check("D2 the absolute path FOLLOWS the mount (mutation)",
-  mem("/mnt/elsewhere").dir === "/mnt/elsewhere/cloud-data-my-ai-memory/b_projects/home-diego",
+  mem("/mnt/elsewhere").dir === "/mnt/elsewhere/cloud-data-my-ai-memory/4___ASSETS___/4.3.Memory/home-diego",
   `got ${mem("/mnt/elsewhere").dir} — a hardcoded path would have ignored the mutated mount`);
 check("D3 the briefing FOLLOWS the mount too (mutation)",
   mem("/mnt/elsewhere").briefing.includes("/mnt/elsewhere/cloud-data-my-ai-memory")
@@ -179,7 +179,7 @@ check("X4 the entries are NOT under the index's directory",
   !base.entries.startsWith(`${posix.dirname(base.index)}/`) && base.entries !== posix.dirname(base.index));
 
 // ── Y: entries are filed BY REPO (#546), the layout guard's shape ───────────
-// b_projects/<repo>/<child>/<type>_<name>.md, reached through the per-repo
+// 4___ASSETS___/4.3.Memory/<repo>/<child>/<type>_<name>.md, reached through the per-repo
 // symlinks of <home>/memory-entries/. The first pass taught
 // memory-entries/<type>/<name>.md; an agent following it writes a real
 // memory-entries/<type>/ directory and check-memory-layout.sh M6 goes RED.
@@ -230,7 +230,7 @@ check("P3 goose gets a .goosehints file",
   /\.goosehints/.test(startSh));
 check("P4 goose's hints come from the declaration, not a retyped path",
   /AGENT_MEMORY_BRIEFING/.test(startSh)
-  && !/b_projects\/home-diego/.test(startSh),
+  && !/4___ASSETS___/4.3.Memory\/home-diego/.test(startSh),
   "baking the path into start.sh would be the second declaration again");
 check("P5 goose's hints land where goose looks for them",
   /XDG_CONFIG_HOME\}\/goose\/\.goosehints/.test(startSh),
@@ -245,7 +245,7 @@ check("P7 the front injects the briefing into the system prompt",
   /process\.env\.AGENT_MEMORY_BRIEFING/.test(server)
   && /parts\.push\(AGENT_MEMORY_BRIEFING\)/.test(server));
 check("P8 the front never retypes the store path",
-  !/b_projects\/home-diego/.test(server));
+  !/4___ASSETS___/4.3.Memory\/home-diego/.test(server));
 check("P9 an unset briefing is LOUD on the front",
   /AGENT_MEMORY_BRIEFING unset/.test(server));
 
