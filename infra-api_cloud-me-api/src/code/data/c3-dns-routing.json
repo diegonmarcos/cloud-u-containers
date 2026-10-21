@@ -638,6 +638,10 @@
       "dns": "alerts-api.app"
     },
     {
+      "service": "infra-sec_auth-broker",
+      "dns": "auth-broker.app"
+    },
+    {
       "service": "infra-sec_authelia",
       "dns": "authelia.app"
     },
