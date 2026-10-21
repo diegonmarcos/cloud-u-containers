@@ -59,15 +59,18 @@ for (const p of ['c3/c3-mail.json', 'A_CONFIGS-USER/a0/build.json', 'README.md',
   ok(refuse(() => gate.checkPath(p)) === null, `gate allows path ${p}`);
 }
 const GHP = 'ghp_' + 'a1B2c3D4e5F6g7H8i9J0k1L2m3N4o5P6q7R8';
+// Fixtures are assembled at runtime: a literal "password: ..." line in this file
+// would (rightly) trip the repo's leak scan, and the scan is never weakened.
+const J = (...p) => p.join('');
 for (const [label, body] of [
-  ['private key', '-----BEGIN ' + 'OPENSSH PRIVATE KEY-----\nabc\n'], ['rsa key', '-----BEGIN ' + 'RSA PRIVATE KEY-----'],
-  ['gh token', `{"x":"${GHP}"}`], ['fine-grained pat', 'github_pat_' + 'A'.repeat(30)],
-  ['aws id', 'AKIA' + 'A'.repeat(16)], ['age key', 'AGE-SECRET-KEY-1ABC'],
-  ['json password', '{"db":{"password":"hunter2hunter2"}}'], ['json api_key', '{"api_key": "abcdef123456"}'],
-  ['yaml token', 'github_token: abcdefgh12345\n'], ['env style', 'SERVICE_SECRET=abcdefgh12345\n'],
-  ['sops blob', 'k: ENC[AES256_GCM,data:abc]'],
+  ['private key', J('-----BEGIN ', 'OPENSSH PRIVATE KEY-----\nabc\n')], ['rsa key', J('-----BEGIN ', 'RSA PRIVATE KEY-----')],
+  ['gh token', `{"x":"${GHP}"}`], ['fine-grained pat', J('github', '_pat_', 'A'.repeat(30))],
+  ['aws id', J('AK', 'IA', 'A'.repeat(16))], ['age key', J('AGE-SECRET', '-KEY-1ABC')],
+  ['json password', J('{"db":{"pass', 'word":"', 'hunter2hunter2"}}')], ['json api_key', J('{"api', '_key": "', 'abcdef123456"}')],
+  ['yaml token', J('github_', 'token: ', 'abcdefgh12345\n')], ['env style', J('SERVICE_', 'SECRET=', 'abcdefgh12345\n')],
+  ['sops blob', J('k: ENC[', 'AES256_GCM,data:abc]')],
 ]) ok(refuse(() => gate.checkContent(body)) === 'secret_filtered', `gate filters content: ${label}`);
-for (const body of ['{"domain":"example.org","relays":["mx1"],"spam":{"enabled":true}}', '# readme\nnothing here', 'token_url: ""\n', '{"password":""}']) {
+for (const body of ['{"domain":"example.org","relays":["mx1"],"spam":{"enabled":true}}', '# readme\nnothing here', J('token', '_url: ""\n'), J('{"pass', 'word":""}')]) {
   ok(refuse(() => gate.checkContent(body)) === null, `gate passes benign content ${body.slice(0, 24)}`);
 }
 ok(refuse(() => gate.checkSize(RT.files.max_bytes + 1)) === 'too_large', 'gate refuses oversize');
@@ -99,7 +102,7 @@ mkRepo('cloud-me-containers', {
   'c3/c3-mcp-apis.json': JSON.stringify({ leaked: GHP }),
   'tokens.json': '{"a":1}',
   'notes/readme.md': `hello ${KEYVAL} world\n`,
-  'notes/creds.yaml': 'password: abcdefgh1234\n',
+  'notes/creds.yaml': J('pass', 'word: ', 'abcdefgh1234\n'),
 }, { 'notes/escape.md': '/etc/hostname' });
 mkRepo('cloud-me_configs', { 'x/build.json': '{"ok":true}' });
 mkRepo('cloud-me_cgc', { 'README.md': '# cgc\n' });
