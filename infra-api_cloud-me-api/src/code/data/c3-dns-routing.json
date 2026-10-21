@@ -228,7 +228,7 @@
       "public_paths": [
         "/git/health"
       ],
-      "wg_only": false
+      "wg_only": true
     },
     {
       "service": "infra-api_tools-http-to-smtp-proxy-api",
@@ -363,7 +363,7 @@
       "block": "primary",
       "host": "git.diegonmarcos.com",
       "auth": "two_factor",
-      "wg_only": false
+      "wg_only": true
     },
     {
       "service": "user-prod_code-server",
@@ -544,7 +544,7 @@
       "block": "primary",
       "host": "notes-sync.diegonmarcos.com",
       "auth": "two_factor",
-      "wg_only": false
+      "wg_only": true
     },
     {
       "service": "user-prod_cloud-notes-web",
@@ -552,7 +552,7 @@
       "block": "primary",
       "host": "notes.diegonmarcos.com",
       "auth": "two_factor",
-      "wg_only": false
+      "wg_only": true
     },
     {
       "service": "user-media_photoprism",

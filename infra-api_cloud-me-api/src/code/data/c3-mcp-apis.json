@@ -551,10 +551,10 @@
           "public_paths": [
             "/git/health"
           ],
-          "wg_only": false
+          "wg_only": true
         }
       ],
-      "exposure": "public (pending owner review)",
+      "exposure": "wg-only (mesh)",
       "health": "/git/health",
       "monitoring": {
         "tls_check": true,
@@ -783,7 +783,7 @@
           "wg_only": false
         }
       ],
-      "exposure": "public (pending owner review)",
+      "exposure": "public (allowlisted)",
       "mcp": {
         "transport": "streamable-http",
         "endpoint_path": "/mcp",
