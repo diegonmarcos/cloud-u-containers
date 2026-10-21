@@ -252,6 +252,13 @@
         }
       ]
     },
+    "mcp_oauth": {
+      "_doc": "WIP option 31.1 (branch wip/mcp-oauth, NOT approved). MCP OAuth authorization server (infra-sec_mcp-oauth) routes on mcp.diegonmarcos.com, rendered by _shared/mcp-oauth.nix into BOTH Caddyfiles. Every path here must already be in edge_auth.public_open for this host (the render asserts it). authorize_paths additionally require an Authelia session via forward_auth. The derive (cloud-infra) must copy this block into build-caddy.json and build-caddy-edge.json; until it does, nothing renders.",
+      "host": "mcp.diegonmarcos.com",
+      "upstream": "10.0.0.1:4183",
+      "open_paths": ["/.well-known/oauth-protected-resource*", "/.well-known/oauth-authorization-server*", "/.well-known/openid-configuration*", "/register", "/token", "/*/.well-known/oauth-protected-resource*", "/*/.well-known/oauth-authorization-server*", "/*/register", "/*/token"],
+      "authorize_paths": ["/authorize", "/*/authorize"]
+    },
     "auth": {
       "authelia_uri": "/api/authz/forward-auth",
       "authelia_copy": [

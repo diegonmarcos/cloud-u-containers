@@ -145,6 +145,14 @@ let
     edgeAuth = caddyRoutes.edge_auth or {};
   };
 
+  # MCP OAuth AS routes on the MCP hub (WIP option 31.1, _shared/mcp-oauth.nix).
+  # Inert while build-caddy.json carries no `mcp_oauth` block.
+  mo = import ../../_shared/mcp-oauth.nix {
+    inherit lib auth autheliaUpstream;
+    cfg = caddyRoutes.mcp_oauth or null;
+    edgeAuth = caddyRoutes.edge_auth or {};
+  };
+
   # Mesh-only guard for the private *.app / *.db / s3 names (tier a). These
   # sites bind 0.0.0.0, and the edge's layer4 tier forwards every non-public SNI
   # here untouched, so without this a public client could present any *.app SNI
@@ -830,6 +838,10 @@ ${plainOut}${sniMuxBlock}
 ${bearer}
           ${proxyBody}
         }
+${denyBlock}'';
+          # 401 + WWW-Authenticate when the MCP OAuth AS is configured (_shared/mcp-oauth.nix).
+          denyBlock = let d = mo.deny group.parent_domain ep.base_path; in
+            if d != null then d else ''
         handle {
           respond "Forbidden" 403
         }'';
@@ -855,6 +867,7 @@ ${bearer}
   ${publicBindLine}
   ${secMcp}
   ${ea.gateOff group.parent_domain}
+  ${mo.block group.parent_domain}
   ${endpointBlocks}
       handle {
         respond "${fallbackMsg}" 200
