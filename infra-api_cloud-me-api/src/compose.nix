@@ -37,8 +37,8 @@ in
       };
       volumes = [ ];
       tmpfs = [
-        "/data:size=96m,mode=1777"
-        "/run/keys:size=1m,mode=0700"
+        "/data:size=96m,mode=0700,uid=10001,gid=999"
+        "/run/keys:size=1m,mode=0700,uid=10001,gid=999"
       ];
       healthcheck = {
         # node, not curl: the base image needs no extra package for this, and

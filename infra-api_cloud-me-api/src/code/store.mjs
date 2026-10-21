@@ -91,7 +91,7 @@ export function createStore(o) {
     keys.set(r.name, p);
   }
 
-  const sshCmd = (keyPath) => ['ssh', '-i', keyPath, '-o', 'IdentitiesOnly=yes', '-o', 'BatchMode=yes',
+  const sshCmd = (keyPath) => ['ssh', '-F', '/dev/null', '-i', keyPath, '-o', 'IdentitiesOnly=yes', '-o', 'BatchMode=yes',
     '-o', 'StrictHostKeyChecking=yes', '-o', `UserKnownHostsFile=${knownHostsPath}`].join(' ');
 
   async function sync(repo) {
