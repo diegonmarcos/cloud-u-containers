@@ -20,10 +20,13 @@ in
       image = binariesImage;
       container_name = buildJson.containers.app.container_name;
       network_mode = "host";
+      # The image-wrapper image runs as uid 10001 but a fresh named volume is root-owned, so the sqlite file
+      # cannot be created. Start as root, hand /data to the app user, and let gunicorn drop to that user
+      # for the worker (the only process that touches a token).
+      user = "0:0";
       command = [
-        "gunicorn" "--bind" bind
-        "--workers" "1" "--threads" "4" "--timeout" "30"
-        "main:app"
+        "sh" "-c"
+        "chown 10001:999 /data && exec gunicorn --bind ${bind} --user 10001 --group 999 --workers 1 --threads 4 --timeout 30 main:app"
       ];
       environment = {
         DB_PATH     = "/data/tokens.sqlite3";
