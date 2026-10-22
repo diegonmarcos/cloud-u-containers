@@ -13,6 +13,7 @@ import assert from "node:assert";
 // Imported, not mirrored: this module is pure (no filesystem, no DB, no SSH), so
 // the self-check can exercise the REAL decision instead of a copy of it.
 import { describeSecretsStatus } from "./secrets-status.js";
+import { resolveName, readEvents, isLogFileName, telemetryAppId, apksFromFleet } from "./app-logs-core.js";
 
 // ── compareOp (mirrors poller.ts's compareOp — re-implemented here so this
 // file has zero side effects / no DB, no SSH; poller.ts's version is not
@@ -177,4 +178,30 @@ function bucket5m(ts: Date): string {
   }
 }
 
-console.log("selfcheck: all assertions passed (compareOp, alert fire/resolve transitions, rollup avg/min/max/count, weighted-avg merge, bucket5m floor, secrets status wording)");
+// ── per-app log route: declared names, event readback ──
+{
+  const apks = apksFromFleet({ apps: [{ label: "cloud-drive", package: "com.diegonmarcos.clouddrive" }, { label: "cloud-mail", package: "eu.faircode.email" }, { label: "no-package" }] });
+  assert.deepStrictEqual(apks.map((a) => a.label), ["cloud-drive", "cloud-mail"], "an app without a package is not declared");
+  assert.strictEqual(telemetryAppId("com.diegonmarcos.comms.mail"), "comms-mail");
+  assert.strictEqual(resolveName("apk", "cloud-drive", apks, []), "cloud-drive");
+  assert.strictEqual(resolveName("apk", "clouddrive", apks, []), "cloud-drive", "the Telemetry-derived id lands on the label");
+  assert.strictEqual(resolveName("apk", "eu-faircode-email", apks, []), "cloud-mail");
+  assert.strictEqual(resolveName("apk", "nope", apks, ["c3-infra-api"]), null, "an undeclared apk is refused");
+  assert.strictEqual(resolveName("containers", "c3-infra-api", apks, ["c3-infra-api"]), "c3-infra-api");
+  assert.strictEqual(resolveName("containers", "cloud-drive", apks, ["c3-infra-api"]), null, "kinds do not share names");
+  assert.strictEqual(resolveName("containers", "../etc", apks, ["../etc"]), null, "a traversal name is refused even if declared");
+  const jl = [
+    JSON.stringify({ ts: "2026-10-22T10:00:00.000Z", kind: "log" }),
+    "not json",
+    JSON.stringify({ ts: "2026-10-22T11:00:00.000Z", kind: "crash", title: "A" }),
+    JSON.stringify({ ts: "2026-10-22T12:00:00.000Z", kind: "crash", title: "B" }),
+    "",
+  ].join("\n");
+  assert.deepStrictEqual(readEvents(jl, {}).map((e) => e.ts.slice(11, 13)), ["12", "11", "10"], "newest first, bad lines skipped");
+  assert.deepStrictEqual(readEvents(jl, { kind: "crash", limit: 1 }).map((e) => e.title), ["B"]);
+  assert.strictEqual(readEvents(jl, { since: "2026-10-22T11:00:00.000Z" }).length, 1, "since is exclusive");
+  assert.ok(isLogFileName("cloud-drive-crash-1791542833487.log"));
+  assert.ok(!isLogFileName("../../etc/passwd") && !isLogFileName("events.jsonl"), "only files this route wrote can be read");
+}
+
+console.log("selfcheck: all assertions passed (per-app log route names and readback, compareOp, alert fire/resolve transitions, rollup avg/min/max/count, weighted-avg merge, bucket5m floor, secrets status wording)");

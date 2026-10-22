@@ -5,14 +5,14 @@ import { execAsync } from "../../shared/libs/exec.js";
 
 // Unauthenticated ingest for client-side log dumps (e.g. galaxy-earth's
 // "Log Export" button) — see auth.ts isPublicPath() for the /public/ allowlist.
-const LOGS_DIR = process.env.PUBLIC_LOGS_DIR ?? "/app/public/logs";
-const MAX_LOG_BYTES = 2 * 1024 * 1024; // 2MB — plenty for a browser console dump
+export const LOGS_DIR = process.env.PUBLIC_LOGS_DIR ?? "/app/public/logs";
+export const MAX_LOG_BYTES = 2 * 1024 * 1024; // 2MB — plenty for a browser console dump
 
 // ── /public/events/:app — the default telemetry endpoint every Android app
 // ships against (log/debug/action/probe/crash). Reuses LOGS_DIR for storage
 // and forwards a compact push to ntfy so events surface in real time.
 
-const EVENT_KINDS = new Set(["log", "debug", "action", "probe", "crash"]);
+export const EVENT_KINDS = new Set(["log", "debug", "action", "probe", "crash"]);
 
 // ntfy: same rss.diegonmarcos.com server shared/libs/notify.ts already posts
 // to for health alerts, just a per-app topic ("infra-<app>") instead of the
@@ -28,7 +28,7 @@ const NTFY_TOKEN = process.env.NTFY_TOKEN;
 const RATE_LIMIT_MAX = 60; // events/min/app
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const rateBuckets = new Map<string, { count: number; resetAt: number }>();
-function withinRateLimit(app: string): boolean {
+export function withinRateLimit(app: string): boolean {
   const now = Date.now();
   const bucket = rateBuckets.get(app);
   if (!bucket || now >= bucket.resetAt) {
@@ -44,7 +44,7 @@ function sanitiseIdent(raw: string): string {
 }
 
 // Fire-and-forget: an ntfy hiccup must never fail the ingest itself.
-function notifyNtfy(app: string, kind: string, title?: string, message?: string) {
+export function notifyNtfy(app: string, kind: string, title?: string, message?: string) {
   // ntfy topics must match [-_A-Za-z0-9]{1,64} — "infra-" is 6 chars, so
   // clamp the app segment to keep the full topic within the cap.
   const topic = `infra-${app.slice(0, 58)}`;

@@ -1,0 +1,221 @@
+{
+  "_generated_from": "aa_cloud-superapp/data/constellation-fleet.json",
+  "apks": [
+    {
+      "label": "c3-morpheus",
+      "package": "com.diegonmarcos.morpheus"
+    },
+    {
+      "label": "c3-watchdog",
+      "package": "com.diegonmarcos.watchdog"
+    },
+    {
+      "label": "c3-watchtower",
+      "package": "com.diegonmarcos.watchtower"
+    },
+    {
+      "label": "cloud-account",
+      "package": "com.diegonmarcos.cloudaccount"
+    },
+    {
+      "label": "cloud-browser",
+      "package": "com.diegonmarcos.cloudbrowser"
+    },
+    {
+      "label": "cloud-c3",
+      "package": "com.diegonmarcos.cloudc3"
+    },
+    {
+      "label": "cloud-c3-webserver",
+      "package": "com.diegonmarcos.cloudwebserver"
+    },
+    {
+      "label": "cloud-calc",
+      "package": "com.diegonmarcos.cloudcalc"
+    },
+    {
+      "label": "cloud-camera",
+      "package": "cld.camera"
+    },
+    {
+      "label": "cloud-chat",
+      "package": "com.diegonmarcos.comms.chat"
+    },
+    {
+      "label": "cloud-code",
+      "package": "com.diegonmarcos.code"
+    },
+    {
+      "label": "cloud-contacts",
+      "package": "com.diegonmarcos.cloudcontacts"
+    },
+    {
+      "label": "cloud-dialer",
+      "package": "com.diegonmarcos.comms.dialer"
+    },
+    {
+      "label": "cloud-drive",
+      "package": "com.diegonmarcos.clouddrive"
+    },
+    {
+      "label": "cloud-gallery",
+      "package": "com.diegonmarcos.mediacenter"
+    },
+    {
+      "label": "cloud-keyboard",
+      "package": "com.diegonmarcos.cloudkeyboard"
+    },
+    {
+      "label": "cloud-lib-analytics-sink",
+      "package": "com.diegonmarcos.cloudlib.analyticssink"
+    },
+    {
+      "label": "cloud-lib-cal",
+      "package": "com.diegonmarcos.cloudlib.cal"
+    },
+    {
+      "label": "cloud-lib-calc",
+      "package": "com.diegonmarcos.cloudlib.calc"
+    },
+    {
+      "label": "cloud-lib-decisions-engine",
+      "package": "com.diegonmarcos.cloudlib.decisionsengine"
+    },
+    {
+      "label": "cloud-lib-feed",
+      "package": "com.diegonmarcos.cloudlib.feed"
+    },
+    {
+      "label": "cloud-lib-fleetconfig",
+      "package": "com.diegonmarcos.cloudlib.fleetconfig"
+    },
+    {
+      "label": "cloud-lib-gh",
+      "package": "com.diegonmarcos.cloudlib.gh"
+    },
+    {
+      "label": "cloud-lib-git-sync-engine",
+      "package": "com.diegonmarcos.cloudlib.gitsyncengine"
+    },
+    {
+      "label": "cloud-lib-keyboard-engines",
+      "package": "com.diegonmarcos.cloudkeyboardlibs"
+    },
+    {
+      "label": "cloud-lib-ml-l-image-mlkit",
+      "package": "com.diegonmarcos.cloudlib.mllimagemlkit"
+    },
+    {
+      "label": "cloud-lib-ml-l-sound-yamnet",
+      "package": "com.diegonmarcos.cloudlib.mllsoundyamnet"
+    },
+    {
+      "label": "cloud-lib-mounts-engine",
+      "package": "com.diegonmarcos.cloudlib.mountsengine"
+    },
+    {
+      "label": "cloud-lib-net-wg",
+      "package": "com.diegonmarcos.cloudlib.netwg"
+    },
+    {
+      "label": "cloud-lib-news",
+      "package": "com.diegonmarcos.cloudlib.news"
+    },
+    {
+      "label": "cloud-lib-ops-engine",
+      "package": "com.diegonmarcos.cloudlib.opsengine"
+    },
+    {
+      "label": "cloud-lib-rclone-engine",
+      "package": "com.diegonmarcos.cloudlib.rcloneengine"
+    },
+    {
+      "label": "cloud-lib-rootfs-nixdroid",
+      "package": "com.diegonmarcos.cloudlib.rootfsnixdroid"
+    },
+    {
+      "label": "cloud-lib-rootfs-termux",
+      "package": "com.diegonmarcos.cloudlib.rootfstermux"
+    },
+    {
+      "label": "cloud-mail",
+      "package": "com.diegonmarcos.comms.mail"
+    },
+    {
+      "label": "cloud-matrix",
+      "package": "com.diegonmarcos.comms.matrix"
+    },
+    {
+      "label": "cloud-me",
+      "package": "com.diegonmarcos.cloudme"
+    },
+    {
+      "label": "cloud-media-center",
+      "package": "com.diegonmarcos.cloudmediacenter"
+    },
+    {
+      "label": "cloud-myterminal",
+      "package": "com.diegonmarcos.ide"
+    },
+    {
+      "label": "cloud-nav",
+      "package": "com.diegonmarcos.cloudnav"
+    },
+    {
+      "label": "cloud-news",
+      "package": "com.diegonmarcos.cloudnews"
+    },
+    {
+      "label": "cloud-notes",
+      "package": "com.diegonmarcos.cloudnotes"
+    },
+    {
+      "label": "cloud-office",
+      "package": "com.diegonmarcos.cloudoffice"
+    },
+    {
+      "label": "cloud-search",
+      "package": "com.diegonmarcos.cloudsearch"
+    },
+    {
+      "label": "cloud-store",
+      "package": "com.diegonmarcos.cloudstore"
+    },
+    {
+      "label": "cloud-superapp",
+      "package": "com.diegonmarcos.superapp"
+    },
+    {
+      "label": "cloud-tasks",
+      "package": "com.diegonmarcos.cloudagenda"
+    },
+    {
+      "label": "cloud-terminal-nix",
+      "package": "cld.termux.nix"
+    },
+    {
+      "label": "cloud-terminal-termux",
+      "package": "cld.termux"
+    },
+    {
+      "label": "cloud-tools-small-llms",
+      "package": "com.diegonmarcos.cloudtoolssmallllms"
+    },
+    {
+      "label": "cloud-vault",
+      "package": "com.diegonmarcos.cloudvault"
+    },
+    {
+      "label": "cloud-wallet",
+      "package": "com.diegonmarcos.cloudwallet"
+    },
+    {
+      "label": "cloud-writer",
+      "package": "com.diegonmarcos.cloudwriter"
+    },
+    {
+      "label": "termux-boot",
+      "package": "cld.termux.nix.boot"
+    }
+  ]
+}
