@@ -1,7 +1,7 @@
 {
   "_generated_from": "cloud-u-containers */build.json + _shared/public-route-allowlist.json (gen-c3-datasets.mjs); no secrets by construction",
   "dataset": "c3-security-network",
-  "count": 9,
+  "count": 10,
   "services": [
     {
       "service": "infra-sec_authelia",
@@ -162,6 +162,51 @@
         "endpoint_count": 9,
         "display_name": "MCP OAuth Authorization Server",
         "auth": "oauth2"
+      }
+    },
+    {
+      "service": "infra-sec_tokens-api",
+      "name": "tokens-api",
+      "description": "Fleet token engine: lists, generates, reveals and revokes every fleet bearer token (fleet ft_ tokens and adopted Authelia JWTs); introspect-proxy asks it before accepting a Bearer, so a revoked token stops working within 60 seconds",
+      "category": "sec",
+      "enabled": true,
+      "host": "oci-apps",
+      "dns": "tokens-api.app",
+      "domain": "tokens-api.diegonmarcos.com",
+      "ports": {
+        "app": 4184
+      },
+      "containers": [
+        {
+          "key": "app",
+          "container_name": "tokens-api",
+          "dns": "tokens-api.app",
+          "port": 4184,
+          "protocol": "http",
+          "mesh_route": true
+        }
+      ],
+      "routes": [
+        {
+          "block": "primary",
+          "host": "tokens-api.diegonmarcos.com",
+          "auth": "two_factor",
+          "wg_only": true
+        }
+      ],
+      "exposure": "wg-only (mesh)",
+      "health": "/health",
+      "monitoring": {
+        "tls_check": true,
+        "dns_check": true,
+        "endpoint_check": true
+      },
+      "api": {
+        "type": "custom-rest",
+        "base_path": "/",
+        "endpoint_count": 8,
+        "display_name": "Fleet Token Engine",
+        "auth": "bearer"
       }
     },
     {
