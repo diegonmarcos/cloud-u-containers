@@ -1,0 +1,46 @@
+name: tokens-api hub render (render the hub Caddyfile from the derived build-caddy.json, run the guards, publish the patch)
+
+# One-shot. Renders the hub Caddyfile with the repo's Nix generator from the cloud-infra derived
+# build-caddy.json (which carries tokens-api once gen-configs has run), runs every per-service tester
+# plus the fallback and resource-budget guards against the rendered file, and uploads the patch.
+# Nothing is pushed by this job.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with: { repository: diegonmarcos/cloud-infra, path: _cloud-infra, sparse-checkout: '1_cloud-configs/dist' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
+      - uses: cachix/install-nix-action@v27
+      - name: Render the hub Caddyfile
+        run: |
+          set -euo pipefail
+          NIX="nix --extra-experimental-features nix-command --extra-experimental-features flakes"
+          J=$PWD/_cloud-infra/1_cloud-configs/dist/build-caddy.json
+          grep -q '"tokens-api' "$J" || { echo "build-caddy.json has no tokens-api yet: gen-configs has not derived it"; exit 1; }
+          $NIX eval --impure --raw --expr "let lib=((builtins.getFlake \"github:NixOS/nixpkgs/nixos-24.11\").lib); caddyRoutes=builtins.fromJSON (builtins.readFile $J); in import $PWD/infra-sec_caddy/src/caddyfile.nix { inherit lib caddyRoutes; }" > /tmp/render.txt
+          D=infra-sec_caddy/dist/configs/Caddyfile
+          n=$(grep -n -m1 -F -x -- "$(head -1 /tmp/render.txt)" "$D" | cut -d: -f1)
+          { head -n $((n-1)) "$D"; cat /tmp/render.txt; } > /tmp/dist.Caddyfile
+          cp /tmp/dist.Caddyfile "$D"
+          grep -c 'tokens-api' "$D"
+      - name: Fallback and hub resource-budget guards
+        run: bash _shared/test/fallback-pages-guard.sh
+      - name: Every per-service tester
+        env:
+          MULTI_SSO_JSON_DIR: ${{ github.workspace }}/_cloud-infra/1_cloud-configs/dist
+        run: bash .github/scripts/run-service-tests.sh
+      - name: Publish the patch
+        if: always()
+        run: git diff > /tmp/final.patch; wc -l /tmp/final.patch
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: hub-caddyfile-patch, path: /tmp/final.patch }
