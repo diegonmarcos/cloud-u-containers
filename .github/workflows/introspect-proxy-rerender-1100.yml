@@ -1,0 +1,32 @@
+name: introspect-proxy rerender 1100 (render the service dist from current main and publish it)
+
+# One-shot (#1100). The Ship build step regenerates dist/ and refuses when the committed copy differs
+# (introspect-proxy compose drifted after the tokens-api change). This job builds the service flake
+# exactly as the Ship does, diffs the render against the committed dist and uploads the render for
+# committing. Nothing is pushed.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v27
+      - name: Render
+        run: |
+          set -euo pipefail
+          NIX="nix --extra-experimental-features nix-command --extra-experimental-features flakes"
+          cd infra-sec_introspect-proxy/src
+          out=$($NIX build --no-link --print-out-paths .#default)
+          mkdir -p /tmp/out
+          cp -r "$out"/. /tmp/out/
+          chmod -R u+w /tmp/out
+          ls -R /tmp/out | head -40
+          diff -ru ../dist /tmp/out | head -80 || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: introspect-dist, path: /tmp/out }
