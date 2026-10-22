@@ -286,6 +286,7 @@ converge_mirror cloud-data-my-ai-memory https://github.com/diegonmarcos/cloud-da
 converge_mirror cloud-infra https://github.com/diegonmarcos/cloud-infra.git false
 converge_mirror cloud-infra-desktop https://github.com/diegonmarcos/cloud-infra-desktop.git false
 converge_mirror cloud-me https://github.com/diegonmarcos/cloud-me.git true
+converge_mirror cloud-me-containers https://github.com/diegonmarcos/cloud-me-containers.git true
 converge_mirror cloud-me_cgc https://github.com/diegonmarcos/cloud-me_cgc.git true
 converge_mirror cloud-me_configs https://github.com/diegonmarcos/cloud-me_configs.git true
 converge_mirror cloud-me_data-private https://github.com/diegonmarcos/cloud-me_data-private.git true
@@ -295,6 +296,7 @@ converge_mirror cloud-u-android https://github.com/diegonmarcos/cloud-u-android.
 converge_mirror cloud-u-containers https://github.com/diegonmarcos/cloud-u-containers.git false
 converge_mirror cloud-u-containers_cgc https://github.com/diegonmarcos/cloud-u-containers_cgc.git false
 converge_mirror cloud-u-linux https://github.com/diegonmarcos/cloud-u-linux.git false
+converge_mirror cloud-webapps https://github.com/diegonmarcos/cloud-webapps.git false
 converge_mirror cyber-Cyberwarfare https://github.com/diegonmarcos/cyber-Cyberwarfare.git false
 converge_mirror dev https://github.com/diegonmarcos/dev.git true
 converge_mirror diegonmarcos https://github.com/diegonmarcos/diegonmarcos.git false
