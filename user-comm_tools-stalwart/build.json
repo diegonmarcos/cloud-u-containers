@@ -166,6 +166,17 @@
           "desc": "IMAPS (host:2993 → stalwart:993)"
         },
         {
+          "port": 2080,
+          "container_port": 8080,
+          "protocol": "http",
+          "bind": [
+            "10.0.0.3",
+            "10.1.0.3"
+          ],
+          "service": "jmap_mesh_http",
+          "desc": "Plain-HTTP JMAP on the MESH ONLY (host:2080 → stalwart:8080). Bound on wg0/wg-public, never on a public interface: .app is WireGuard-only and WG already encrypts, so the mesh endpoint stalwart.app is plain http (fleet convention, #1093). Cloud Mail and the fleet apps reach JMAP here first and fall back to the public jmap.diegonmarcos.com with the bearer."
+        },
+        {
           "port": 6190,
           "container_port": 4190,
           "protocol": "tls",
