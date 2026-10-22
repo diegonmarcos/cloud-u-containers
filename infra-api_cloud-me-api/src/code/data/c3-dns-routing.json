@@ -601,14 +601,6 @@
       "wg_only": true
     },
     {
-      "service": "infra-sec_tokens-api",
-      "mesh_name": "tokens-api.app",
-      "block": "primary",
-      "host": "tokens-api.diegonmarcos.com",
-      "auth": "two_factor",
-      "wg_only": true
-    },
-    {
       "service": "user-vault_vaultwarden",
       "mesh_name": "vaultwarden.app",
       "block": "primary",

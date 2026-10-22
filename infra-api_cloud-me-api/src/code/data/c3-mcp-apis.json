@@ -359,7 +359,7 @@
       "api": {
         "type": "custom-rest",
         "base_path": "/me",
-        "endpoint_count": 5,
+        "endpoint_count": 6,
         "display_name": "Cloud Me API",
         "auth": "mixed"
       },
@@ -387,6 +387,11 @@
         {
           "method": "GET",
           "path": "/me/repos/:repo/file",
+          "auth": "authelia"
+        },
+        {
+          "method": "GET",
+          "path": "/me/autocomplete",
           "auth": "authelia"
         }
       ]

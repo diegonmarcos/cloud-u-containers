@@ -167,12 +167,11 @@
     {
       "service": "infra-sec_tokens-api",
       "name": "tokens-api",
-      "description": "Fleet token engine: lists, generates, reveals and revokes every fleet bearer token (fleet ft_ tokens and adopted Authelia JWTs); introspect-proxy asks it before accepting a Bearer, so a revoked token stops working within 60 seconds",
+      "description": "Fleet token engine: lists, generates, reveals and revokes every fleet bearer token (fleet ft_ tokens and adopted Authelia JWTs); introspect-proxy asks it before accepting a Bearer, so a revoked token stops working within 60 seconds. Public address: c3-pvt.diegonmarcos.com/tokens-api (shared gate, #1104); mesh tokens-api.app",
       "category": "sec",
       "enabled": true,
       "host": "oci-apps",
       "dns": "tokens-api.app",
-      "domain": "tokens-api.diegonmarcos.com",
       "ports": {
         "app": 4184
       },
@@ -186,18 +185,11 @@
           "mesh_route": true
         }
       ],
-      "routes": [
-        {
-          "block": "primary",
-          "host": "tokens-api.diegonmarcos.com",
-          "auth": "two_factor",
-          "wg_only": true
-        }
-      ],
+      "routes": [],
       "exposure": "wg-only (mesh)",
       "health": "/health",
       "monitoring": {
-        "tls_check": true,
+        "tls_check": false,
         "dns_check": true,
         "endpoint_check": true
       },
@@ -403,6 +395,11 @@
         "reason": "Owner decision 2026-10-16: the public link page is deliberately anonymous."
       },
       {
+        "host": "c3-pub.diegonmarcos.com",
+        "scope": "host",
+        "reason": "Routing tier pub (#1104): Cloudflare-proxied, explicit unauthenticated allowlist only (_shared/fleet-addressing.json tiers.pub); every other path answers 404 and no upstream is reachable beyond the listed paths."
+      },
+      {
         "host": "mcp.diegonmarcos.com",
         "scope": "paths",
         "paths": [
@@ -469,12 +466,33 @@
       },
       {
         "host": "diegonmarcos.com",
-        "scope": "paths",
-        "paths": [
-          "/.well-known/openpgpkey/*",
-          "/.well-known/jmap"
-        ],
-        "reason": "Owner decision 22: WKD (OpenPGP key discovery, public keys by design) and the apex /.well-known/jmap autoconfig redirect (redirect only, no content)."
+        "scope": "host",
+        "reason": "Routing tier public HTML (#1104, owner ruling 2026-10-22): the apex and www are the ONLY unauthenticated public hosts. Static landing page plus WKD (OpenPGP public keys by design) and the /.well-known/jmap autoconfig redirect."
+      },
+      {
+        "host": "www.diegonmarcos.com",
+        "scope": "host",
+        "reason": "Routing tier public HTML (#1104, owner ruling 2026-10-22): www and the apex are the ONLY unauthenticated public hosts; static landing page."
+      },
+      {
+        "host": "nexus.diegonmarcos.com",
+        "scope": "host",
+        "reason": "Owner ruling 2026-10-22 (#1104): GitHub Pages custom domain, explicit public HTML host without auth; the content is public on github.io anyway."
+      },
+      {
+        "host": "suite.diegonmarcos.com",
+        "scope": "host",
+        "reason": "Owner ruling 2026-10-22 (#1104): GitHub Pages custom domain, explicit public HTML host without auth; the content is public on github.io anyway."
+      },
+      {
+        "host": "maps.diegonmarcos.com",
+        "scope": "host",
+        "reason": "Owner ruling 2026-10-22 (#1104): GitHub Pages custom domain, explicit public HTML host without auth; the content is public on github.io anyway."
+      },
+      {
+        "host": "*.diegonmarcos.com",
+        "scope": "host",
+        "reason": "Routing tier (#1104, owner ruling 2026-10-22): there is NO public wildcard route. This catch-all serves nothing: an undeclared subdomain is redirected to the apex and reaches no upstream. Guard: _shared/test-fleet-addressing.mjs."
       },
       {
         "host": "mta-sts.diegonmarcos.com",
