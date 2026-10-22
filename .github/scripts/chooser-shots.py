@@ -41,7 +41,8 @@ with sync_playwright() as pw:
             foreign, errors = [], []
             pg.on("request", lambda r: foreign.append(r.url) if not r.url.startswith(base) and not r.url.startswith("data:") else None)
             pg.on("pageerror", lambda e: errors.append(str(e)))
-            pg.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
+            # the session probe answers 401 when signed out: that resource error is expected, anything else is not
+            pg.on("console", lambda m: errors.append(m.text) if m.type == "error" and "401" not in m.text else None)
             pg.goto(base + "/?rd=" + "https%3A%2F%2Fsuite.diegonmarcos.com%2F", wait_until="networkidle")
             pg.wait_for_timeout(600)
             tag = "%s-%s" % (name, scheme)
