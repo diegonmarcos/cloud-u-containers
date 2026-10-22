@@ -95,6 +95,19 @@ let
   # `sec` imported inline at the top of every served site block.
   sec = ''  import security'';
 
+  # ── Geo-fence (#1102): _shared/geo-fence.json is the one declaration. Every site is fenced
+  # unless ALL its names are declared in global_hosts (static pages, protocol endpoints).
+  geoCfg = builtins.fromJSON (builtins.readFile ../../_shared/geo-fence.json);
+  geoFenceSnippet = subst {
+    "@GEO_EXEMPT@" = lib.concatStringsSep " " geoCfg.exempt_cidrs;
+    "@GEO_DB@"     = geoCfg.db.file;
+    "@GEO_ALLOW@"  = lib.concatStringsSep " " geoCfg.allowed_countries;
+  } (readTpl "18-geo-fence.caddy.tpl");
+  geoHosts = domain: map (x: builtins.head (lib.splitString "/" x)) (lib.splitString ", " domain);
+  geo = domain:
+    if lib.all (h: builtins.hasAttr h geoCfg.global_hosts) (geoHosts domain) then ""
+    else "  import geo_fence";
+
   # ── Bearer introspection (MCP bearer tier) — same 21-bearer snippet the hub
   # renders, pointed at the same introspection upstream over the mesh. Needed
   # here because bearer-gated MCP endpoints terminate at THIS edge: a public
@@ -139,6 +152,7 @@ let
   eh = caddyPublic.error_handler or { status_codes = [ 502 503 504 ]; error_html = "/srv/error.html"; };
   codesExpr = lib.concatMapStringsSep " || " (c: "{err.status_code} == ${toString c}") eh.status_codes;
   handleErrors = stripTrail (subst {
+    "@GEO_PAGE@"   = stripTrail (readTpl "geo-restricted.html.tpl");
     "@CODES_EXPR@" = codesExpr;
     "@ERR_ROOT@"   = lib.removeSuffix "/error.html" eh.error_html;
     "@ERR_FILE@"   = baseNameOf eh.error_html;
@@ -283,6 +297,7 @@ ${lib.concatMapStringsSep "\n" mkMailL4Route mailL4}
     # gh-pages: ${group.comment or group.domain}
     ${group.domain} {
     ${sec}
+    ${geo group.domain}
       ${ea.gate group.domain}
       ${body}
       ${handleErrors}
@@ -297,6 +312,7 @@ ${lib.concatMapStringsSep "\n" mkMailL4Route mailL4}
     # subdomain: ${route.comment or route.domain}
     ${route.domain} {
     ${sec}
+    ${geo route.domain}
     ${ea.gate route.domain}
     ${if isNoAuth then ''  reverse_proxy ${route.upstream} {
         ${xreal}
@@ -327,6 +343,7 @@ ${lib.concatMapStringsSep "\n" mkMailL4Route mailL4}
     # path-host: ${group.comment or group.parent_domain}
     ${group.parent_domain} {
     ${sec}
+    ${geo group.parent_domain}
     ${ea.gate group.parent_domain}
     ${publicHandles}
       handle {
@@ -350,6 +367,7 @@ ${lib.concatMapStringsSep "\n" mkMailL4Route mailL4}
     # well-known host: ${domain}
     ${domain} {
     ${sec}
+    ${geo domain}
     ${ea.gate domain}
     ${blocks}
       handle {
@@ -420,6 +438,7 @@ ${denyBlock}'';
     # mcp-hub: ${group.comment or group.parent_domain}
     ${group.parent_domain} {
     ${sec}
+    ${geo group.parent_domain}
     ${ea.gateOff group.parent_domain}
     ${mo.block group.parent_domain}
     ${endpointBlocks}
@@ -482,6 +501,7 @@ ${denyBlock}'';
     # oidc-public: wg_only:false — whole IdP host open (owner decision 2026-10-15)
     ${siteName} {
     ${sec}
+    ${geo oidcPub.domain}
     ${ea.gate oidcPub.domain}
     ${mkOidcHandle ""}
       ${handleErrors}
@@ -489,6 +509,7 @@ ${denyBlock}'';
     # oidc-public: machine endpoints only; portal stays mesh-only
     ${oidcPub.domain} {
     ${sec}
+    ${geo oidcPub.domain}
     ${ea.gate oidcPub.domain}
     ${handles}
       handle {
@@ -518,6 +539,8 @@ ${globalsBlock}
   ${ipBlock}
   ${accessLog}
   ${securitySnippet}
+
+${geoFenceSnippet}
 
   # ── Shared public-edge auth gate (_shared/edge-auth.nix; same text as the hub's) ──
 ${ea.snippets}

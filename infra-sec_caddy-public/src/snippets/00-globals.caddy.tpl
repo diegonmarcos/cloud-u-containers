@@ -3,6 +3,8 @@
   @DEBUG_LINE@
   admin @ADMIN_BIND@
   order @ORDER@
+  # geo-fence (#1102): `error` must run before forward_auth so a denied country never reaches auth.
+  order error first
   auto_https @AUTO_HTTPS@
   # ACME via DNS-01 (Cloudflare) — eliminates port-80 HTTP-01 dependency
   # and supports wildcard certs for *.diegonmarcos.com. Token sourced

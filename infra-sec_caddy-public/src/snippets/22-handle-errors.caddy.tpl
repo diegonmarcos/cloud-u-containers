@@ -1,4 +1,20 @@
   handle_errors {
+      # Geo-fence refusal (#1102): HTML clients get the explanation page, everyone else plain 403.
+      @geo_html {
+        expression `{err.message} == "geo-restricted"`
+        header Accept *text/html*
+      }
+      handle @geo_html {
+        header Content-Type "text/html; charset=utf-8"
+        header Cache-Control "no-store"
+        header X-Edge-Geo-Block "1"
+        respond `@GEO_PAGE@` 403
+      }
+      @geo_any expression `{err.message} == "geo-restricted"`
+      handle @geo_any {
+        header X-Edge-Geo-Block "1"
+        respond "Forbidden" 403
+      }
       @backend_error expression `@CODES_EXPR@`
       handle @backend_error {
         # Truthful fallback. A backend error (upstream down/unreachable) must NOT

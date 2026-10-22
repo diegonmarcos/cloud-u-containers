@@ -1,0 +1,51 @@
+name: Geo-fence database refresh (#1102 - monthly pinned DB-IP country database)
+
+# Proposes the newest published DB-IP country-lite database as the new pin: downloads it,
+# computes the checksum, rewrites _shared/geo-fence.json + the Dockerfile pins + the generated
+# dist Dockerfile, runs the full geo-fence guard, then commits to main. The image picks the
+# database up on the next Ship of caddy-public; nothing is ever fetched at runtime.
+on:
+  schedule:
+    - cron: '17 5 3 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with: { repository: diegonmarcos/cloud-infra, path: _ci, sparse-checkout: '1_cloud-configs/dist' }
+      - uses: cachix/install-nix-action@v27
+      - uses: actions/setup-go@v5
+        with: { go-version: '1.23' }
+      - name: Pin the newest database
+        run: |
+          set -euo pipefail
+          for m in "$(date -u +%Y-%m)" "$(date -u -d '-1 month' +%Y-%m)"; do
+            u="https://download.db-ip.com/free/dbip-country-lite-$m.mmdb.gz"
+            if curl -fsSL "$u" -o /tmp/new.gz && gzip -t /tmp/new.gz; then break; fi; u=""
+          done
+          [ -n "$u" ] || { echo "no database published"; exit 1; }
+          s=$(sha256sum /tmp/new.gz | cut -d' ' -f1)
+          old=$(jq -r .db.url _shared/geo-fence.json)
+          if [ "$old" = "$u" ]; then echo "already pinned: $u"; exit 0; fi
+          jq --arg u "$u" --arg s "$s" '.db.url=$u | .db.sha256=$s' _shared/geo-fence.json > /tmp/g.json && mv /tmp/g.json _shared/geo-fence.json
+          D=infra-sec_caddy-public/src/code/Dockerfile
+          sed -i -e "s#^ARG GEOIP_URL=.*#ARG GEOIP_URL=$u#" -e "s#^ARG GEOIP_SHA256=.*#ARG GEOIP_SHA256=$s#" "$D"
+          { head -n 10 infra-sec_caddy-public/dist/code/amd64/Dockerfile; cat "$D"; echo; } > /tmp/dist.Dockerfile
+          mv /tmp/dist.Dockerfile infra-sec_caddy-public/dist/code/amd64/Dockerfile
+          echo "CHANGED=1" >> "$GITHUB_ENV"
+      - name: Guard
+        if: env.CHANGED == '1'
+        run: EDGE_JSON="$PWD/_ci/1_cloud-configs/dist/build-caddy-edge.json" bash _shared/test/geo-fence-ci.sh
+      - name: Commit to main
+        if: env.CHANGED == '1'
+        run: |
+          git config user.name "github-actions"; git config user.email "actions@users.noreply.github.com"
+          git add _shared/geo-fence.json infra-sec_caddy-public/src/code/Dockerfile infra-sec_caddy-public/dist/code/amd64/Dockerfile
+          git commit -m "geo-fence: pin the newest country database"
+          git push origin HEAD:main
