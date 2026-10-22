@@ -197,12 +197,20 @@ try {
       if (b) { snippets.push(b); want.push(b); }
     }
   }
+  // A snippet may `invoke` a named route (&(name) { ... }, the shared error pages of (edge_errors)): the
+  // harness must carry it too, or caddy refuses the config ("cannot invoke named route ... not defined").
+  for (const b of [...snippets]) {
+    for (const m of b.matchAll(/^\s*invoke\s+([A-Za-z0-9_]+)/gm)) {
+      const r = blockAt(`\n  &(${m[1]}) {`);
+      if (r && !snippets.includes(r)) snippets.push(r);
+    }
+  }
   t("hub: the vhost's gate snippet (edge_auth) is rendered by the hub", snippets.some((b) => b.includes("(edge_auth)")));
   t("hub: user header stripped at site level, before any handle / forward_auth",
     new RegExp(`request_header -${identity.header}\\n`).test(vhost) &&
     vhost.indexOf(`request_header -${identity.header}`) < vhost.indexOf("forward_auth"));
   const hubPort = await freePort();
-  const harness = `{\n  admin off\n  auto_https off\n  order respond before handle\n}\n(security) {\n}\n(request_limits) {\n}\n` +
+  const harness = `{\n  admin off\n  auto_https off\n  order respond before handle\n  order error before handle\n}\n(security) {\n}\n(request_limits) {\n}\n` +
     (snippets.join("\n") + "\n" + vhost.replace(`${domain} {`, `http://${domain}:${hubPort} {`)
       .replace(/^\s*bind .*$/m, "  bind 127.0.0.1"))
       .replaceAll("172.18.0.3:9091", `127.0.0.1:${port(authelia)}`);
