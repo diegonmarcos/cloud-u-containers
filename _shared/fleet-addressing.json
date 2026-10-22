@@ -53,6 +53,49 @@
     "public_subdomain": [
       "c3-public-api",
       "cloud-cgc-pub-mcp"
+    ],
+    "mesh_direct": [
+      "authelia",
+      "c3-public-api",
+      "c3-services-api",
+      "caddy",
+      "caddy-public",
+      "cloud-cgc-pub-mcp",
+      "cloud-me-api",
+      "cloud-notes-sync",
+      "cloud-notes-web",
+      "code-server",
+      "crowdsec",
+      "dagu",
+      "dbgate",
+      "etherpad",
+      "filebrowser",
+      "fin-api",
+      "gitea",
+      "grist",
+      "hedgedoc",
+      "hermes-agent",
+      "http-to-smtp-proxy-api",
+      "introspect-proxy",
+      "jev-sidecar",
+      "matomo",
+      "matrix-continuwuity",
+      "matrix-element",
+      "matrix-mautrix-whatsapp",
+      "mcp-oauth",
+      "my-ai-api",
+      "ntfy",
+      "openclaw",
+      "openobserve",
+      "photoprism",
+      "playlist-syncer",
+      "redis",
+      "revealmd",
+      "scrappers-api",
+      "session-memory",
+      "tokens-api",
+      "umami",
+      "vaultwarden"
     ]
   },
   "tiers": {
@@ -82,7 +125,9 @@
     },
     "mesh": {
       "suffix": ".app",
-      "auth": "none"
+      "auth": "none",
+      "canonical": "http://{container}.app:{port}",
+      "_doc": "Architect ruling (#1104): the canonical mesh address is http://{container}.app:{port}, served directly by the container on its VM's WireGuard address (plain HTTP inside WG, no hub hop, no auth). Hickory owns a direct row per container (infra-net_hickory-dns/build.json dns.records.app); the container binds its port on wg0 only. The hub https .app vhosts are legacy; nothing may depend on them. transitional.mesh_direct lists containers still without a direct row; it only shrinks."
     },
     "public": {
       "html_hosts": [

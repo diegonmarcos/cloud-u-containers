@@ -16,6 +16,10 @@ const cfg = JSON.parse(readFileSync(join(root, "_shared/fleet-addressing.json"),
 const DOM = "diegonmarcos.com";
 const unprotected = new Set(Object.keys(cfg.unprotected_hosts));
 const apiNames = new Set(cfg.api_containers || []);
+// #1104 mesh transport: the canonical mesh address is http://<name>.app:<port>, dialled directly on the
+// container's VM wg0 address. A container with a declared port needs an owned Hickory row for <name>.
+const hk = JSON.parse(readFileSync(join(root, "infra-net_hickory-dns/build.json"), "utf8"));
+const meshDirect = new Set((hk.dns?.records?.app ?? []).map((r) => r.name));
 const found = {}; // rule -> Set(container)
 const hit = (rule, n) => (found[rule] ??= new Set()).add(n);
 
@@ -39,6 +43,8 @@ for (const d of readdirSync(root, { withFileTypes: true })) {
   const apiish = apiNames.has(n) || (!isMcp && (d.name.startsWith("infra-api_") || /(^|[-_])api($|[-_])/.test(n)));
   if (!/^[a-z0-9-]+$/.test(n) || (apiish && !n.endsWith("-api"))) hit("naming", n);
   if (typeof j.dns === "string" && j.dns.endsWith(".app") && j.dns !== `${n}.app`) hit("mesh", n);
+  const port = j.ports?.app ?? j.containers?.app?.port;
+  if (typeof j.dns === "string" && j.dns === `${n}.app` && Number.isInteger(port) && !meshDirect.has(n)) hit("mesh_direct", n);
   const ph = j.proxy?.primary?.public_host;
   if (ph !== undefined) hit("public_host", n); // never transitional (#1104): no per-app public subdomain, the public address is c3-pvt/{container}
   for (const b of blocks(j.proxy ?? {})) {
@@ -126,9 +132,9 @@ if (cfg.tiers && existsSync(CF)) {
 }
 
 const bad = (m) => { fail++; console.error(`FAIL ${m}`); };
-for (const rule of ["public_host", "naming", "mesh", "no_api_host", "public_subdomain", "protected", "pages"]) {
+for (const rule of ["public_host", "naming", "mesh", "no_api_host", "mesh_direct", "public_subdomain", "protected", "pages"]) {
   const got = found[rule] ?? new Set(), listed = new Set(cfg.transitional[rule] ?? []);
-  for (const x of got) if (!listed.has(x)) bad(`${rule}: ${x} violates the fleet addressing rule (ticket #1100); fix it, do not list it`);
+  for (const x of got) if (!listed.has(x)) bad(`${rule}: ${x} violates the fleet addressing rule (tickets #1100, #1104); fix it, do not list it`);
   for (const x of listed) if (!got.has(x)) bad(`${rule}: ${x} is on the transitional list but no longer violates; remove it`);
   console.log(`${rule}: ${got.size} violation(s), all transitional`);
 }
