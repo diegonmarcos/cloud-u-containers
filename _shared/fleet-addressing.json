@@ -1,10 +1,10 @@
 {
-  "_doc": "Fleet naming and addressing rule (ticket #1100). Private address {container}.app, public address {container}.diegonmarcos.com, every public URL bearer/session protected except unprotected_hosts, no api.* host. Guard: _shared/test-fleet-addressing.mjs. transitional lists known violations while the #1100 phases migrate them; an entry that stops violating must be removed, and every list must be empty at phase P4. Ticket #1104 (routing reorganisation) supersedes the public-host part of #1100: tiers below.",
+  "_doc": "Fleet addressing (tickets #1100 and #1104; #1104 supersedes the public-host part of #1100). Private address {container}.app (mesh only, no auth). Public address: c3-pvt.diegonmarcos.com/{container} (cookie or bearer) and the c3-pub allowlist; no per-app public subdomain, no api.* or mcp.* host. Explicit unauthenticated hosts: unprotected_hosts. Guard: _shared/test-fleet-addressing.mjs. transitional lists known violations while the #1104 stages migrate them; an entry that stops violating must be removed, and every list must be empty when #1104 closes.",
   "api_containers": [],
   "unprotected_hosts": {
     "diegonmarcos.com": "HTML only: apex landing page",
     "www.diegonmarcos.com": "HTML only: landing page",
-    "linktree.diegonmarcos.com": "HTML only: link page",
+    "linktree.diegonmarcos.com": "HTML only: GitHub Pages link page (serves /gh, /qrcode and static assets); owner ruling 2026-10-22: explicit public host",
     "auth.diegonmarcos.com": "HTML+API: Authelia login portal and OIDC endpoints, must be reachable before any session exists",
     "account.diegonmarcos.com": "HTML+API: account portal",
     "c3-pub-api.diegonmarcos.com": "API pub: analytics beacons, JMAP discovery, health",
@@ -12,7 +12,10 @@
     "analytics.diegonmarcos.com": "protocol: public-site analytics beacons (matomo, umami, openobserve); to fold into c3-pub-api",
     "matrix.diegonmarcos.com": "protocol: Matrix federation and client .well-known; matrix is federated",
     "jmap.diegonmarcos.com": "protocol: JMAP session discovery (.well-known/jmap); Stalwart enforces Basic auth itself",
-    "c3-pub.diegonmarcos.com": "API pub: Cloudflare-proxied explicit allowlist (tiers.pub.allowlist), everything else 404"
+    "c3-pub.diegonmarcos.com": "API pub: Cloudflare-proxied explicit allowlist (tiers.pub.allowlist), everything else 404",
+    "nexus.diegonmarcos.com": "HTML only: GitHub Pages static site, public on github.io anyway",
+    "suite.diegonmarcos.com": "HTML only: GitHub Pages static site, public on github.io anyway",
+    "maps.diegonmarcos.com": "HTML only: GitHub Pages static site, public on github.io anyway"
   },
   "transitional": {
     "naming": [
@@ -44,55 +47,12 @@
       "scrappers-api",
       "fin-api"
     ],
-    "host": [
-      "c3-infra-api",
-      "c3-public-api",
-      "c3-services-api",
-      "cloud-drive-mcp",
-      "cloud-infra-mcp",
-      "cloud-mail-mcp",
-      "cloud-mattermost-mcp",
-      "cloud-services-mcp",
-      "cloud-superapp-mcp",
-      "cloud-vault-mcp",
-      "git-proxy-api",
-      "google-personal-mcp",
-      "google-workspace-mcp",
-      "http-to-smtp-proxy-api",
-      "gitea",
-      "wireguard-mesh",
-      "cloud-spec",
-      "dagu",
-      "dbgate",
-      "ntfy",
-      "cloud-cgc-pub-mcp",
-      "chat-mattermost",
-      "cloud-webmail",
-      "matrix-element",
-      "maddy",
-      "stalwart",
-      "scrappers-api",
-      "fin-api",
-      "photoprism",
-      "playlist-syncer",
-      "calendar-radicale",
-      "cloud-notes-sync",
-      "cloud-notes-web",
-      "code-server",
-      "contacts-radicale",
-      "etherpad",
-      "filebrowser",
-      "grist",
-      "hedgedoc",
-      "vaultwarden"
-    ],
     "protected": [
       "cloud-cgc-pub-mcp"
     ],
-    "pages": [
-      "front-end:nexus.diegonmarcos.com",
-      "front-end:suite.diegonmarcos.com",
-      "front-end:maps.diegonmarcos.com"
+    "public_subdomain": [
+      "c3-public-api",
+      "cloud-cgc-pub-mcp"
     ]
   },
   "tiers": {
@@ -128,10 +88,17 @@
       "html_hosts": [
         "diegonmarcos.com",
         "www.diegonmarcos.com",
-        "linktree.diegonmarcos.com"
+        "linktree.diegonmarcos.com",
+        "nexus.diegonmarcos.com",
+        "suite.diegonmarcos.com",
+        "maps.diegonmarcos.com"
       ],
       "wildcard_redirect_to": "https://diegonmarcos.com/",
-      "_doc": "Owner ruling 2026-10-22: the apex, www and linktree.diegonmarcos.com (explicitly declared, serves /gh, /qrcode and static assets) are the ONLY unauthenticated public HTML hosts. There is no public wildcard route; the *.diegonmarcos.com catch-all site only redirects to the apex and reaches no upstream. The guard rejects any wildcard site that proxies, serves files or responds with content."
+      "_doc": "Owner ruling 2026-10-22: the apex, www and the GitHub Pages custom domains (linktree, nexus, suite, maps) are the ONLY unauthenticated public HTML hosts, each declared explicitly. There is no public wildcard route; the *.diegonmarcos.com catch-all site only redirects to the apex and reaches no upstream. The guard rejects any wildcard site that proxies, serves files or responds with content."
+    },
+    "redirects": {
+      "fin-api.diegonmarcos.com": "https://c3-pvt.diegonmarcos.com/fin-api",
+      "_doc": "Retired own hosts: each answers a 308 to its c3-pvt path (method and body preserved). Added per stage; the guard checks the rendered Caddyfile."
     }
   }
 }

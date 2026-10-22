@@ -252,6 +252,21 @@
           "reason": "Routing tier public HTML (#1104, owner ruling 2026-10-22): www and the apex are the ONLY unauthenticated public hosts; static landing page."
         },
         {
+          "host": "nexus.diegonmarcos.com",
+          "scope": "host",
+          "reason": "Owner ruling 2026-10-22 (#1104): GitHub Pages custom domain, explicit public HTML host without auth; the content is public on github.io anyway."
+        },
+        {
+          "host": "suite.diegonmarcos.com",
+          "scope": "host",
+          "reason": "Owner ruling 2026-10-22 (#1104): GitHub Pages custom domain, explicit public HTML host without auth; the content is public on github.io anyway."
+        },
+        {
+          "host": "maps.diegonmarcos.com",
+          "scope": "host",
+          "reason": "Owner ruling 2026-10-22 (#1104): GitHub Pages custom domain, explicit public HTML host without auth; the content is public on github.io anyway."
+        },
+        {
           "host": "*.diegonmarcos.com",
           "scope": "host",
           "reason": "Routing tier (#1104, owner ruling 2026-10-22): there is NO public wildcard route. This catch-all serves nothing: an undeclared subdomain is redirected to the apex and reaches no upstream. Guard: _shared/test-fleet-addressing.mjs."

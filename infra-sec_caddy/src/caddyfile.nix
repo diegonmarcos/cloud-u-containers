@@ -920,7 +920,7 @@ ${denyBlock}'';
   ${sec}
       ${ea.gate route.domain}
       handle {
-        redir ${route.target} permanent
+        redir ${route.target} 308
       }
       ${handleErrors}
     }
