@@ -10,13 +10,15 @@ let
   mk = p: let c = buildJson.containers.${p.id}; in {
     image = c.image;
     container_name = c.container_name;
-    # Bind to the mesh address only (wg0-only policy); the hub and the edge dial it over the mesh.
-    ports = [ "${buildJson.bind_host}:${toString p.port}:${toString p.port}" ];
+    # Host network: the bridge gave the container no route to github.com / googleapis.com (device
+    # code request timed out, 502). Same as cloud-infra-mcp. The listener binds the mesh address
+    # only (wg0-only policy); the hub and the edge dial it over the mesh.
+    network_mode = "host";
     restart = "unless-stopped";
     environment = {
       BROKER_PROVIDER = p.id;
       PORT = toString p.port;
-      BIND_HOST = "0.0.0.0";
+      BIND_HOST = buildJson.bind_host;
       BROKER_CONFIG = "/app/build.json";
       # Shared by every instance so a session from one validates on all.
       AUTH_BROKER_COOKIE_SECRET = "\${AUTH_BROKER_COOKIE_SECRET}";
@@ -30,7 +32,7 @@ let
     } else {});
     healthcheck = {
       test = [ "CMD" "python3" "-c"
-        "import urllib.request; urllib.request.urlopen('http://127.0.0.1:${toString p.port}${p.prefix}/health', timeout=4)" ];
+        "import urllib.request; urllib.request.urlopen('http://${buildJson.bind_host}:${toString p.port}${p.prefix}/health', timeout=4)" ];
       interval = "60s"; timeout = "10s"; retries = 3; start_period = "20s";
     };
     deploy.resources = {
