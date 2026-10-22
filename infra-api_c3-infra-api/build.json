@@ -58,6 +58,10 @@
     "jev-alert-priority": {
       "cmd": "node test-jev-alert-priority.ts",
       "cwd": "src"
+    },
+    "app-logs": {
+      "cmd": "node test-app-logs.ts",
+      "cwd": "src"
     }
   },
   "monitoring": {
