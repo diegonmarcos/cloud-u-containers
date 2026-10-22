@@ -159,38 +159,7 @@ let
   # and be proxied with no auth at all. Same sources as mkPrivateMeshRoute.
   meshGuard = ''
     @not_mesh not remote_ip ${meshOnlySources}
-    error @not_mesh "Forbidden" 403'';
-
-  # ── Shared 401/403 fallback (ONE handler, rendered once in (edge_errors)) ──
-  # A browser (Accept: text/html) denied with 401/403 is redirected to the static
-  # Pages fallback page of the service that owns the host; every other client keeps
-  # the plain status (bearer clients, MCPs, CI). Host -> page comes from
-  # _shared/fallback-services.json (generated from build.json): declared hosts,
-  # mesh name <name>.app and cloud.<name>.app. Unknown hosts land on the index.
-  fb = builtins.fromJSON (builtins.readFile ../../_shared/fallback-services.json);
-  fbHosts = lib.concatMap (s:
-    map (h: { inherit h; slug = s.slug; }) (s.hosts ++ lib.optionals (s.mesh != null) [ s.mesh "cloud.${s.mesh}" ])) fb.services;
-  # A host shared by several services (mcp.) has no single page: it falls to the index.
-  fbByHost = lib.groupBy (e: e.h) fbHosts;
-  fbUnique = lib.filter (h: lib.length (lib.unique (map (e: e.slug) fbByHost.${h})) == 1) (lib.attrNames fbByHost);
-  fbMapLines = lib.concatMapStringsSep "\n" (h: "        ${h} ${(lib.head fbByHost.${h}).slug}/") fbUnique;
-  fallbackBlock = ''
-      @deny_html {
-        expression `{err.status_code} == 401 || {err.status_code} == 403`
-        header Accept *text/html*
-      }
-      handle @deny_html {
-        map {host} {fb_path} {
-${fbMapLines}
-          default ""
-        }
-        header Vary Accept
-        redir ${fb.pages_base}{fb_path}?rd=https://{host}{path} 302
-      }
-      @deny_plain expression `{err.status_code} == 401 || {err.status_code} == 403`
-      handle @deny_plain {
-        respond "{err.message}" {err.status_code}
-      }'';
+    respond @not_mesh "Forbidden" 403'';
 
   handleErrorsBody = let
     eh = caddyRoutes.error_handler or { status_codes = [502 503 504]; error_html = "/srv/error.html"; };
@@ -198,20 +167,14 @@ ${fbMapLines}
     errPath = eh.error_html;
   in stripTrail (subst {
     "@CODES_EXPR@" = codesExpr;
-    "@FALLBACK_BLOCK@" = fallbackBlock;
     "@ERR_ROOT@"   = lib.removeSuffix "/error.html" errPath;
     "@ERR_FILE@"   = baseNameOf errPath;
   } (readTpl "22-handle-errors.caddy.tpl"));
 
-  # The error pages are ONE named route; every site only `invoke`s it.
-  # `import` of a snippet expands its text at every site, so the fallback host
-  # map (~160 entries) x 341 sites made the adapted config 4.5x larger and
-  # `caddy validate` peak at 230 MB against the container's 192M limit: the hub
-  # caddy was OOM-killed (outage 2026-10-22). A named route is adapted once
-  # (apps.http.named_routes); each site carries a one-line invoke handler.
-  # Guard: src/test/test-hub-resource-budget.sh.
-  edgeErrorPagesRoute = "&(edge_error_pages) {\n" + handleErrorsBody + "\n  }";
-  edgeErrorsSnippet = "(edge_errors) {\n  handle_errors {\n    invoke edge_error_pages\n  }\n  }";
+  # Rendered ONCE as the (edge_errors) snippet and `import`ed by every site.
+  # Inlining the body per site made it ~15 lines x 336 sites (about 235 KB of
+  # an 870 KB Caddyfile) that caddy parsed and held in memory on a 944 MB VM.
+  edgeErrorsSnippet = "(edge_errors) {\n" + handleErrorsBody + "\n  }";
   handleErrors = "  import edge_errors";
 
   protectedTpl       = readTpl "23-protected.caddy.tpl";
@@ -281,12 +244,12 @@ ${fbMapLines}
           ${body}
         }
         handle {
-          error "Forbidden" 403
+          respond "Forbidden" 403
         }''
     else body;
   wgSiteLine = isWg:
     if isWg then ''@not_wg not remote_ip ${wgCidrs}
-      error @not_wg "Forbidden" 403''
+      respond @not_wg "Forbidden" 403''
     else "";
 
   mkGithubProxy = path: ''
@@ -617,10 +580,10 @@ ${plainOut}${sniMuxBlock}
         not remote_ip ${wgCidrs}
         not path ${lib.concatStringsSep " " wgExemptPaths}
       }
-      error @not_wg "Forbidden" 403''
+      respond @not_wg "Forbidden" 403''
       else if isWgOnly then ''
       @not_wg not remote_ip ${wgCidrs}
-      error @not_wg "Forbidden" 403'' else "";
+      respond @not_wg "Forbidden" 403'' else "";
 
       # Static JSON at GET / — used when the upstream's runtime response
       # leaks internal details (e.g. Stalwart JMAP Session baking :2443 into
@@ -880,14 +843,14 @@ ${denyBlock}'';
           denyBlock = let d = mo.deny group.parent_domain ep.base_path; in
             if d != null then d else ''
         handle {
-          error "Forbidden" 403
+          respond "Forbidden" 403
         }'';
           wgGate = ''@wg remote_ip ${wgCidrs}
         handle @wg {
           ${proxyBody}
         }
         handle {
-          error "Forbidden" 403
+          respond "Forbidden" 403
         }'';
           inner = if (ep.bearer_auth or false) then bearerGate
                   else if (ep.wg_only or false) then wgGate
@@ -1172,7 +1135,7 @@ ${publicBindLine}
       }
     }
     @not_mesh not remote_ip ${meshOnlySources}
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy ${e.upstream} {
 ${emptyGuard}
@@ -1306,7 +1269,6 @@ in ''
 ${globalsBlock}
 ${odtAskBlock}
 
-  ${edgeErrorPagesRoute}
   ${edgeErrorsSnippet}
   # ════════════════════════════════════════════════════════════
   # SECURITY SNIPPETS

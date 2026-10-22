@@ -553,14 +553,6 @@
       "cmd": "bash test/test-multi-sso.sh",
       "cwd": "src"
     },
-    "hub-resource-budget": {
-      "cmd": "bash test/test-hub-resource-budget.sh",
-      "cwd": "src"
-    },
-    "fallback-redirect": {
-      "cmd": "bash test/test-fallback-redirect.sh",
-      "cwd": "src"
-    },
     "public-route-allowlist": {
       "cmd": "node test-public-route-allowlist.mjs",
       "cwd": "../_shared"
