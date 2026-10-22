@@ -1,0 +1,97 @@
+{
+  "_doc": "Fleet naming and addressing rule (ticket #1100). Private address {container}.app, public address {container}.diegonmarcos.com, every public URL bearer/session protected except unprotected_hosts, no api.* host. Guard: _shared/test-fleet-addressing.mjs. transitional lists known violations while the #1100 phases migrate them; an entry that stops violating must be removed, and every list must be empty at phase P4.",
+  "api_containers": [],
+  "unprotected_hosts": {
+    "diegonmarcos.com": "HTML only: apex landing page",
+    "www.diegonmarcos.com": "HTML only: landing page",
+    "linktree.diegonmarcos.com": "HTML only: link page",
+    "auth.diegonmarcos.com": "HTML+API: Authelia login portal and OIDC endpoints, must be reachable before any session exists",
+    "account.diegonmarcos.com": "HTML+API: account portal",
+    "c3-pub-api.diegonmarcos.com": "API pub: analytics beacons, JMAP discovery, health",
+    "vpn.diegonmarcos.com": "protocol: WireGuard ws-tunnel and mesh bootstrap; peers hold no bearer before the tunnel exists",
+    "analytics.diegonmarcos.com": "protocol: public-site analytics beacons (matomo, umami, openobserve); to fold into c3-pub-api",
+    "matrix.diegonmarcos.com": "protocol: Matrix federation and client .well-known; matrix is federated",
+    "jmap.diegonmarcos.com": "protocol: JMAP session discovery (.well-known/jmap); Stalwart enforces Basic auth itself"
+  },
+  "transitional": {
+    "naming": [
+      "my-ai_claude-api"
+    ],
+    "mesh": [
+      "cloud-drive-mcp",
+      "cloud-infra-mcp",
+      "cloud-mail-mcp",
+      "cloud-mattermost-mcp",
+      "cloud-services-mcp",
+      "cloud-superapp-mcp",
+      "cloud-vault-mcp",
+      "google-personal-mcp",
+      "google-workspace-mcp",
+      "cloud-spec",
+      "my-ai_claude-api",
+      "chat-mattermost",
+      "cloud-webmail",
+      "calendar-radicale",
+      "contacts-radicale"
+    ],
+    "no_api_host": [
+      "c3-infra-api",
+      "c3-public-api",
+      "c3-services-api",
+      "git-proxy-api",
+      "http-to-smtp-proxy-api",
+      "scrappers-api",
+      "fin-api"
+    ],
+    "host": [
+      "c3-infra-api",
+      "c3-public-api",
+      "c3-services-api",
+      "cloud-drive-mcp",
+      "cloud-infra-mcp",
+      "cloud-mail-mcp",
+      "cloud-mattermost-mcp",
+      "cloud-services-mcp",
+      "cloud-superapp-mcp",
+      "cloud-vault-mcp",
+      "git-proxy-api",
+      "google-personal-mcp",
+      "google-workspace-mcp",
+      "http-to-smtp-proxy-api",
+      "gitea",
+      "wireguard-mesh",
+      "cloud-spec",
+      "dagu",
+      "dbgate",
+      "ntfy",
+      "cloud-cgc-pub-mcp",
+      "chat-mattermost",
+      "cloud-webmail",
+      "matrix-element",
+      "maddy",
+      "stalwart",
+      "scrappers-api",
+      "fin-api",
+      "photoprism",
+      "playlist-syncer",
+      "calendar-radicale",
+      "cloud-notes-sync",
+      "cloud-notes-web",
+      "code-server",
+      "contacts-radicale",
+      "etherpad",
+      "filebrowser",
+      "grist",
+      "hedgedoc",
+      "vaultwarden"
+    ],
+    "protected": [
+      "cloud-cgc-pub-mcp"
+    ],
+    "pages": [
+      "front-end:nexus.diegonmarcos.com",
+      "front-end:suite.diegonmarcos.com",
+      "front-end:maps.diegonmarcos.com"
+    ]
+  }
+}
