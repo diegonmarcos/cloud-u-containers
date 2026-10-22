@@ -426,7 +426,7 @@
     {
       "slug": "auth-broker",
       "dir": "infra-sec_auth-broker",
-      "description": "Identity broker for the multi-SSO sign-in: GitHub (device flow) and Google (web code flow + PKCE), owner only (#1066)",
+      "description": "Identity broker for the multi-SSO sign-in: GitHub (device flow + web), Google (web code flow + PKCE) and Cloudflare One (Access JWT), owner only (#1066, #1083)",
       "mesh": "auth-broker.app",
       "hosts": [],
       "signin": false,
@@ -500,6 +500,17 @@
       "hosts": [],
       "signin": false,
       "bearer": false
+    },
+    {
+      "slug": "tokens-api",
+      "dir": "infra-sec_tokens-api",
+      "description": "Fleet token engine: lists, generates, reveals and revokes every fleet bearer token (fleet ft_ tokens and adopted Authelia JWTs); introspect-proxy asks it before accepting a Bearer, so a revoked token stops working within 60 seconds",
+      "mesh": "tokens-api.app",
+      "hosts": [
+        "tokens-api.diegonmarcos.com"
+      ],
+      "signin": true,
+      "bearer": true
     },
     {
       "slug": "cloud-cgc-pub-mcp",

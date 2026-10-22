@@ -125,6 +125,79 @@ def mcp_oauth_auth(token):
     return response
 
 
+# ── Fleet token engine (infra-sec_tokens-api) ────────────────────────────────
+# Every Bearer is also checked against the engine's live list, so a token the owner
+# revokes stops working within TOKENS_CACHE_TTL seconds (<= 60). `ft_` tokens exist
+# only in the engine: unreachable engine = 503, never an allow. A signed Authelia JWT
+# whose signature is already proven is registered with the engine on first sight
+# (so the owner can list/reveal/revoke it); if the engine is unreachable the JWT keeps
+# working from its last answer or, with none, on its own signature (availability of
+# existing clients beats a new hard dependency; the JWT still expires by itself).
+# Unset TOKENS_VERIFY_URL = engine off, behaviour exactly as before.
+FLEET_PREFIX = "ft_"
+TOKENS_VERIFY_URL = os.environ.get("TOKENS_VERIFY_URL", "")
+TOKENS_VERIFY_SECRET = os.environ.get("TOKENS_VERIFY_SECRET", "")
+TOKENS_TIMEOUT = float(os.environ.get("TOKENS_TIMEOUT", "3"))
+TOKENS_CACHE_TTL = min(60, int(os.environ.get("TOKENS_CACHE_TTL", "30")))
+TOKENS_STALE_MAX = int(os.environ.get("TOKENS_STALE_MAX", "300"))
+_tokens_cache = {}  # sha256(token|host) -> (fresh_until, answered_at, answer)
+TOKENS_BREAKER_S = 10      # after a failed call, do not dial the engine again for this long
+_engine_down_until = [0.0]  # (a dead engine must not hold every gunicorn thread for TOKENS_TIMEOUT)
+
+
+def _engine_ask(token, host, adopt=None):
+    import hashlib
+    import json
+    import urllib.request
+
+    key = hashlib.sha256((token + "|" + host).encode()).hexdigest()
+    now = time.time()
+    hit = _tokens_cache.get(key)
+    if hit and hit[0] > now:
+        return hit[2], True
+    if _engine_down_until[0] > now:
+        return (hit[2], True) if hit and now - hit[1] < TOKENS_STALE_MAX else (None, False)
+    body = {"token": token, "host": host}
+    if adopt:
+        body["adopt"] = adopt
+    req = urllib.request.Request(
+        TOKENS_VERIFY_URL, data=json.dumps(body).encode(),
+        headers={"X-Verify-Secret": TOKENS_VERIFY_SECRET, "Content-Type": "application/json"}, method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=TOKENS_TIMEOUT) as r:
+            ans = json.loads(r.read())
+    except Exception as e:  # network/HTTP/JSON
+        logger.error(f"token engine unreachable: {type(e).__name__}")
+        _engine_down_until[0] = now + TOKENS_BREAKER_S
+        if hit and now - hit[1] < TOKENS_STALE_MAX:
+            return hit[2], True
+        return None, False
+    if len(_tokens_cache) > 2000:
+        _tokens_cache.clear()
+    _tokens_cache[key] = (now + TOKENS_CACHE_TTL, now, ans)
+    return ans, True
+
+
+def fleet_token_auth(token):
+    """`ft_` fleet token: valid only if the engine says so."""
+    if not TOKENS_VERIFY_URL:
+        return Response("Invalid token", status=401)
+    ans, _ = _engine_ask(token, request.headers.get("X-Forwarded-Host", ""))
+    if ans is None:
+        return Response("Auth server unavailable", status=503)
+    if not ans.get("active"):
+        return Response("Invalid token", status=401)
+    name = ans.get("name", "")
+    logger.info(f"Fleet token valid: {ans.get('id', '')}")
+    response = Response("OK", status=200)
+    response.headers["X-Auth-User"] = name
+    response.headers["X-Auth-Subject"] = ans.get("subject", "") or name
+    response.headers["X-Auth-Email"] = name
+    response.headers["X-Auth-Scopes"] = " ".join(ans.get("scopes", []))
+    return response
+
+
 @app.route("/auth", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
 def auth():
     """
@@ -158,6 +231,10 @@ def auth():
     # JWT, so ask its issuer instead of the JWKS. Disabled unless configured.
     if token.startswith(MCP_OAUTH_PREFIX):
         return mcp_oauth_auth(token)
+
+    # Opaque fleet token minted by the token engine (infra-sec_tokens-api).
+    if token.startswith(FLEET_PREFIX):
+        return fleet_token_auth(token)
 
     try:
         jwks_client = get_jwks_client()
@@ -195,6 +272,14 @@ def auth():
 
     client_id = payload.get("client_id", "")
     subject = payload.get("sub", "")
+
+    # Signature is proven; the engine decides whether the owner has revoked it.
+    if TOKENS_VERIFY_URL:
+        ans, _ = _engine_ask(token, request.headers.get("X-Forwarded-Host", ""), {
+            "client_id": client_id, "sub": subject, "exp": payload.get("exp"), "scp": scopes})
+        if ans is not None and not ans.get("active"):
+            logger.info(f"Token refused by the engine: {ans.get('reason', '')}")
+            return Response("Token revoked", status=401)
 
     logger.info(f"Token valid for client: {client_id}, sub: {subject}")
 
