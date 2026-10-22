@@ -926,6 +926,81 @@ ${denyBlock}'';
     }
   '';
 
+  # ── Routing tiers (ticket #1104; declaration: _shared/fleet-addressing.json `tiers`) ──
+  # pvt : ONE site, c3-pvt.diegonmarcos.com/{container}, behind the shared edge_auth gate
+  #       (Authelia session cookie for web, fleet bearer for API/MCP clients). The path is
+  #       the route's `container`; handle_path strips it, so the upstream sees its own root.
+  #       One site with N small handles replaces N sites that each carried the full gate.
+  # pub : ONE site, c3-pub.diegonmarcos.com (Cloudflare proxied), no gate, explicit
+  #       allowlist only; every other path is a 404 and reaches no upstream.
+  fa = builtins.fromJSON (builtins.readFile ../../_shared/fleet-addressing.json);
+  c3PvtHost = fa.tiers.pvt.host;
+  c3PubHost = fa.tiers.pub.host;
+
+  # The IdP is never mounted under a path (cookie domain, OIDC issuer); the empty-body guard is
+  # NOT inlined per handle (45 copies is the 2026-10-22 OOM shape); API clients see upstream errors as-is.
+  c3PvtExcluded = [ "authelia" ];
+  c3PvtRoutes = lib.attrValues (lib.listToAttrs (map (r: lib.nameValuePair r.container r)
+    (lib.filter (r: (r.container or null) != null && !(r.landing_only or false) && !(builtins.elem r.container c3PvtExcluded)) caddyRoutes.routes)));
+
+  mkC3PvtHandle = r: let
+    flush = if lib.hasSuffix "-mcp" r.container then "        flush_interval -1\n" else "";
+  in ''
+      handle_path /${r.container}/* {
+        reverse_proxy ${r.upstream} {
+          header_up X-Real-IP {http.request.remote.host}
+${flush}        }
+      }'';
+
+  mkC3PvtSite = ''
+    # Routing tier pvt (#1104): path per container behind the shared gate (cookie or bearer)
+    ${c3PvtHost} {
+  ${publicBindLine}
+  ${sec}
+  ${ea.gate c3PvtHost}
+${lib.concatMapStringsSep "\n" mkC3PvtHandle c3PvtRoutes}
+      handle {
+        error "Not Found" 404
+      }
+      ${handleErrors}
+    }
+  '';
+
+  mkC3PubSite = let
+    an = caddyRoutes.special.analytics;
+    jmap = lib.filter (wk: wk.target_domain == "jmap.diegonmarcos.com" && wk.path == "/.well-known/jmap") wellKnownRoutes;
+    trk = lib.concatMapStringsSep " " (p: "/analytics-api" + p) an.public_tracking_paths;
+    mkPortal = path: to: ''
+      handle ${path} {
+        redir ${to}/ 302
+      }'';
+  in ''
+    # Routing tier pub (#1104): Cloudflare-proxied, no gate, explicit allowlist (fleet-addressing.json tiers.pub)
+    ${c3PubHost} {
+  ${publicBindLine}
+  ${sec}
+      handle /health {
+        respond "ok" 200
+      }
+${lib.concatStringsSep "\n" (lib.mapAttrsToList mkPortal fa.tiers.pub.portals)}
+${lib.concatMapStringsSep "\n" mkWellKnownBlock jmap}
+      @c3pub_matomo path ${trk}
+      handle @c3pub_matomo {
+        uri strip_prefix /analytics-api
+        reverse_proxy ${an.matomo_upstream}
+      }
+      @c3pub_umami path /analytics-api/umami/script.js /analytics-api/umami/api/send
+      handle @c3pub_umami {
+        uri strip_prefix /analytics-api/umami
+        reverse_proxy ${an.umami_upstream}
+      }
+      handle {
+        error "Not Found" 404
+      }
+      ${handleErrors}
+    }
+  '';
+
   # ── Special route generators ──
   mkMailBlock =
     let mail = caddyRoutes.special.mail or null;
@@ -1360,6 +1435,10 @@ ${lib.concatMapStringsSep "\n" mkRedirectRoute (caddyRoutes.redirects or [])}
   # ════════════════════════════════════════════════════════════
   # SPECIAL ROUTES (from special{})
   # ════════════════════════════════════════════════════════════
+
+${mkC3PvtSite}
+
+${mkC3PubSite}
 
 ${mkMailBlock}
 

@@ -207,6 +207,11 @@
           "reason": "Owner decision 2026-10-16: the public link page is deliberately anonymous."
         },
         {
+          "host": "c3-pub.diegonmarcos.com",
+          "scope": "host",
+          "reason": "Routing tier pub (#1104): Cloudflare-proxied, explicit unauthenticated allowlist only (_shared/fleet-addressing.json tiers.pub); every other path answers 404 and no upstream is reachable beyond the listed paths."
+        },
+        {
           "host": "mcp.diegonmarcos.com",
           "scope": "paths",
           "paths": ["/.well-known/oauth-protected-resource*", "/.well-known/oauth-authorization-server*", "/.well-known/openid-configuration*", "/register", "/authorize", "/token", "/callback", "/oauth/*", "/*/.well-known/oauth-protected-resource*", "/*/.well-known/oauth-authorization-server*", "/*/register", "/*/authorize", "/*/token", "/*/callback"],

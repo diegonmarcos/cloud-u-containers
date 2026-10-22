@@ -52,6 +52,53 @@ for (const d of readdirSync(root, { withFileTypes: true })) {
 }
 
 let fail = 0;
+// ── Tiers (ticket #1104): the rendered hub Caddyfile must carry the c3-pvt and c3-pub sites as declared ──
+const siteOf = (text, host) => {
+  const m = new RegExp(`^ {4}${host.replace(/\./g, "\\.")} \\{$`, "m").exec(text);
+  if (!m) return null;
+  let d = 0, i = m.index + m[0].length - 1;
+  for (; i < text.length; i++) { d += (text[i] === "{") - (text[i] === "}"); if (d === 0) break; }
+  return text.slice(m.index, i + 1);
+};
+const pathAllowed = (p, allow) => allow.some((a) => a.endsWith("/*") ? p === a || p.startsWith(a.slice(0, -1)) : p === a);
+const tierProblems = (text) => {
+  const out = [], T = cfg.tiers;
+  if (!T) return out;
+  const pvt = siteOf(text, T.pvt.host), pub = siteOf(text, T.pub.host);
+  if (!pvt) out.push(`tiers: ${T.pvt.host} site missing from the rendered Caddyfile`);
+  else {
+    if (!/^ *import edge_auth( |$)/m.test(pvt)) out.push(`tiers: ${T.pvt.host} must import the edge_auth gate (cookie or bearer)`);
+    if (/^ *import edge_auth_offmesh/m.test(pvt)) out.push(`tiers: ${T.pvt.host} must not use the off-mesh gate`);
+    if (/^ *(respond|redir) /m.test(pvt.replace(/handle \{[^}]*\}/g, ""))) out.push(`tiers: ${T.pvt.host} has a site-level respond/redir outside a handle`);
+    for (const m of pvt.matchAll(/handle_path (\/[^\s]*)/g)) if (!/^\/[a-z0-9_-]+\/\*$/.test(m[1])) out.push(`tiers: ${T.pvt.host} path ${m[1]} is not /{container}/*`);
+  }
+  if (!pub) out.push(`tiers: ${T.pub.host} site missing from the rendered Caddyfile`);
+  else {
+    if (/^ *import edge_auth/m.test(pub)) out.push(`tiers: ${T.pub.host} is an allowlist site and must not import a gate`);
+    const seen = [...pub.matchAll(/^ *handle (\/[^\s]*) \{/gm)].map((m) => m[1]);
+    for (const m of pub.matchAll(/^ *@\w+ path ([^\n]+)/gm)) seen.push(...m[1].trim().split(/\s+/));
+    for (const q of seen) if (!pathAllowed(q, T.pub.allowlist)) out.push(`tiers: ${T.pub.host} serves ${q}, which is not on tiers.pub.allowlist`);
+    if (/^ *handle_path /m.test(pub)) out.push(`tiers: ${T.pub.host} must not mount container paths`);
+    if (!/^ *handle \{\n\s*error "Not Found" 404/m.test(pub)) out.push(`tiers: ${T.pub.host} must end in a 404 default`);
+  }
+  return out;
+};
+const CF = join(root, "infra-sec_caddy/dist/configs/Caddyfile");
+if (cfg.tiers && existsSync(CF)) {
+  const text = readFileSync(CF, "utf8");
+  const probs = tierProblems(text);
+  // Mutation proof: each defect must be caught, or the guard above proves nothing.
+  const pubHost = cfg.tiers.pub.host, pvtHost = cfg.tiers.pvt.host;
+  const muts = {
+    "extra path on pub": text.replace(`    ${pubHost} {`, `    ${pubHost} {\n      handle /admin {\n        respond "x"\n      }`),
+    "gate on pub": text.replace(`    ${pubHost} {`, `    ${pubHost} {\n      import edge_auth`),
+    "no gate on pvt": text.replace(new RegExp(`(${pvtHost.replace(/\./g, "\\.")} \\{[\\s\\S]*?)import edge_auth [^\\n]*\\n`), "$1"),
+  };
+  for (const [name, t] of Object.entries(muts)) if (tierProblems(t).length === 0) probs.push(`tiers: mutation "${name}" was not caught; the guard is blind`);
+  for (const pr of probs) { fail++; console.error(`FAIL ${pr}`); }
+  console.log(`tiers: ${probs.length ? probs.length + " problem(s)" : "c3-pvt gated, c3-pub confined to its allowlist, 3 mutations caught"}`);
+}
+
 const bad = (m) => { fail++; console.error(`FAIL ${m}`); };
 for (const rule of ["public_host", "naming", "mesh", "no_api_host", "host", "protected", "pages"]) {
   const got = found[rule] ?? new Set(), listed = new Set(cfg.transitional[rule] ?? []);

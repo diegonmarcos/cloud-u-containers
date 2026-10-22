@@ -2,12 +2,13 @@ name: fleet addressing guard
 
 # Naming + addressing rule (ticket #1100): -api names, <name>.app mesh, <name>.<domain>
 # public hosts, bearer/session protection except the allowlist, no api.* host.
+# Routing tiers (ticket #1104): the c3-pvt and c3-pub sites of the rendered hub Caddyfile are checked too.
 on:
   push:
     branches: [main]
-    paths: ['*/build.json', '_shared/fleet-addressing.json', '_shared/test-fleet-addressing.mjs', '.github/workflows/fleet-addressing-guard.yml']
+    paths: ['*/build.json', '_shared/fleet-addressing.json', '_shared/test-fleet-addressing.mjs', 'infra-sec_caddy/dist/configs/Caddyfile', '.github/workflows/fleet-addressing-guard.yml']
   pull_request:
-    paths: ['*/build.json', '_shared/fleet-addressing.json', '_shared/test-fleet-addressing.mjs']
+    paths: ['*/build.json', '_shared/fleet-addressing.json', '_shared/test-fleet-addressing.mjs', 'infra-sec_caddy/dist/configs/Caddyfile']
   workflow_dispatch:
 
 permissions:

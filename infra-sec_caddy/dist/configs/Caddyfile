@@ -6491,6 +6491,298 @@ import request_limits
   # SPECIAL ROUTES (from special{})
   # ════════════════════════════════════════════════════════════
 
+    # Routing tier pvt (#1104): path per container behind the shared gate (cookie or bearer)
+    c3-pvt.diegonmarcos.com {
+    bind 0.0.0.0 10.0.0.1
+  import security
+import request_limits
+  import edge_auth /.well-known/acme-challenge/*
+      handle_path /c3-infra-api/* {
+        reverse_proxy 10.0.0.6:8081 {
+          header_up X-Real-IP {http.request.remote.host}
+        }
+      }
+      handle_path /c3-public-api/* {
+        reverse_proxy 10.0.0.4:8087 {
+          header_up X-Real-IP {http.request.remote.host}
+        }
+      }
+      handle_path /c3-services-api/* {
+        reverse_proxy 10.0.0.6:8082 {
+          header_up X-Real-IP {http.request.remote.host}
+        }
+      }
+      handle_path /calendar-radicale/* {
+        reverse_proxy 10.0.0.6:5232 {
+          header_up X-Real-IP {http.request.remote.host}
+        }
+      }
+      handle_path /cloud-cgc-pub-mcp/* {
+        reverse_proxy 10.0.0.6:3105 {
+          header_up X-Real-IP {http.request.remote.host}
+        flush_interval -1
+        }
+      }
+      handle_path /cloud-drive-mcp/* {
+        reverse_proxy 10.0.0.6:3109 {
+          header_up X-Real-IP {http.request.remote.host}
+        flush_interval -1
+        }
+      }
+      handle_path /cloud-infra-mcp/* {
+        reverse_proxy 10.0.0.6:3100 {
+          header_up X-Real-IP {http.request.remote.host}
+        flush_interval -1
+        }
+      }
+      handle_path /cloud-mail-mcp/* {
+        reverse_proxy 10.0.0.6:3103 {
+          header_up X-Real-IP {http.request.remote.host}
+        flush_interval -1
+        }
+      }
+      handle_path /cloud-mattermost-mcp/* {
+        reverse_proxy 10.0.0.6:3102 {
+          header_up X-Real-IP {http.request.remote.host}
+        flush_interval -1
+        }
+      }
+      handle_path /cloud-me-api/* {
+        reverse_proxy 10.0.0.4:8124 {
+          header_up X-Real-IP {http.request.remote.host}
+        }
+      }
+      handle_path /cloud-notes-sync/* {
+        reverse_proxy 10.0.0.6:8098 {
+          header_up X-Real-IP {http.request.remote.host}
+        }
+      }
+      handle_path /cloud-notes-web/* {
+        reverse_proxy 10.0.0.6:8097 {
+          header_up X-Real-IP {http.request.remote.host}
+        }
+      }
+      handle_path /cloud-services-mcp/* {
+        reverse_proxy 10.0.0.6:3101 {
+          header_up X-Real-IP {http.request.remote.host}
+        flush_interval -1
+        }
+      }
+      handle_path /cloud-spec/* {
+        reverse_proxy 10.0.0.6:3080 {
+          header_up X-Real-IP {http.request.remote.host}
+        }
+      }
+      handle_path /cloud-superapp-mcp/* {
+        reverse_proxy 10.0.0.6:3110 {
+          header_up X-Real-IP {http.request.remote.host}
+        flush_interval -1
+        }
+      }
+      handle_path /cloud-webmail/* {
+        reverse_proxy 10.0.0.6:3000 {
+          header_up X-Real-IP {http.request.remote.host}
+        }
+      }
+      handle_path /contacts-radicale/* {
+        reverse_proxy 10.0.0.6:5233 {
+          header_up X-Real-IP {http.request.remote.host}
+        }
+      }
+      handle_path /continuwuity/* {
+        reverse_proxy 10.0.0.6:8008 {
+          header_up X-Real-IP {http.request.remote.host}
+        }
+      }
+      handle_path /crowdsec/* {
+        reverse_proxy 10.0.0.6:8088 {
+          header_up X-Real-IP {http.request.remote.host}
+        }
+      }
+      handle_path /dagu/* {
+        reverse_proxy 10.0.0.6:8070 {
+          header_up X-Real-IP {http.request.remote.host}
+        }
+      }
+      handle_path /dbgate/* {
+        reverse_proxy 10.0.0.6:8086 {
+          header_up X-Real-IP {http.request.remote.host}
+        }
+      }
+      handle_path /etherpad_app/* {
+        reverse_proxy 10.0.0.6:3012 {
+          header_up X-Real-IP {http.request.remote.host}
+        }
+      }
+      handle_path /filebrowser_app/* {
+        reverse_proxy 10.0.0.6:3015 {
+          header_up X-Real-IP {http.request.remote.host}
+        }
+      }
+      handle_path /fin-api/* {
+        reverse_proxy 10.0.0.6:8340 {
+          header_up X-Real-IP {http.request.remote.host}
+        }
+      }
+      handle_path /git-proxy-api/* {
+        reverse_proxy 10.0.0.4:8123 {
+          header_up X-Real-IP {http.request.remote.host}
+        }
+      }
+      handle_path /gitea/* {
+        reverse_proxy 10.0.0.6:3002 {
+          header_up X-Real-IP {http.request.remote.host}
+        }
+      }
+      handle_path /google-personal-mcp/* {
+        reverse_proxy 10.0.0.6:3106 {
+          header_up X-Real-IP {http.request.remote.host}
+        flush_interval -1
+        }
+      }
+      handle_path /google-workspace-mcp/* {
+        reverse_proxy 10.0.0.6:3104 {
+          header_up X-Real-IP {http.request.remote.host}
+        flush_interval -1
+        }
+      }
+      handle_path /grist_app/* {
+        reverse_proxy 10.0.0.6:3011 {
+          header_up X-Real-IP {http.request.remote.host}
+        }
+      }
+      handle_path /hedgedoc_app/* {
+        reverse_proxy 10.0.0.6:3018 {
+          header_up X-Real-IP {http.request.remote.host}
+        }
+      }
+      handle_path /kg-store/* {
+        reverse_proxy 10.0.0.6:8001 {
+          header_up X-Real-IP {http.request.remote.host}
+        }
+      }
+      handle_path /kg-store-pub/* {
+        reverse_proxy 10.0.0.6:8002 {
+          header_up X-Real-IP {http.request.remote.host}
+        }
+      }
+      handle_path /matomo-hybrid/* {
+        reverse_proxy 10.0.0.6:8080 {
+          header_up X-Real-IP {http.request.remote.host}
+        }
+      }
+      handle_path /matrix-element/* {
+        reverse_proxy 10.0.0.6:8083 {
+          header_up X-Real-IP {http.request.remote.host}
+        }
+      }
+      handle_path /mattermost/* {
+        reverse_proxy 10.0.0.6:8065 {
+          header_up X-Real-IP {http.request.remote.host}
+        }
+      }
+      handle_path /news-gdelt/* {
+        reverse_proxy 10.0.0.6:3019 {
+          header_up X-Real-IP {http.request.remote.host}
+        }
+      }
+      handle_path /ntfy/* {
+        reverse_proxy 10.0.0.6:8090 {
+          header_up X-Real-IP {http.request.remote.host}
+        }
+      }
+      handle_path /openobserve/* {
+        reverse_proxy 10.0.0.6:5080 {
+          header_up X-Real-IP {http.request.remote.host}
+        }
+      }
+      handle_path /photoprism_app/* {
+        reverse_proxy 10.0.0.6:3013 {
+          header_up X-Real-IP {http.request.remote.host}
+        }
+      }
+      handle_path /playlist-syncer/* {
+        reverse_proxy 10.0.0.6:8090 {
+          header_up X-Real-IP {http.request.remote.host}
+        }
+      }
+      handle_path /scrappers-api/* {
+        reverse_proxy 10.0.0.6:3020 {
+          header_up X-Real-IP {http.request.remote.host}
+        }
+      }
+      handle_path /send_app/* {
+        reverse_proxy 10.0.0.6:3016 {
+          header_up X-Real-IP {http.request.remote.host}
+        }
+      }
+      handle_path /tokens-api/* {
+        reverse_proxy 10.0.0.6:4184 {
+          header_up X-Real-IP {http.request.remote.host}
+        }
+      }
+      handle_path /umami/* {
+        reverse_proxy 10.0.0.6:3006 {
+          header_up X-Real-IP {http.request.remote.host}
+        }
+      }
+      handle_path /vaultwarden/* {
+        reverse_proxy 10.0.0.6:8880 {
+          header_up X-Real-IP {http.request.remote.host}
+        }
+      }
+      handle_path /wireguard-mesh/* {
+        reverse_proxy 10.0.0.6:8084 {
+          header_up X-Real-IP {http.request.remote.host}
+        }
+      }
+      handle {
+        error "Not Found" 404
+      }
+        import edge_errors
+    }
+
+
+    # Routing tier pub (#1104): Cloudflare-proxied, no gate, explicit allowlist (fleet-addressing.json tiers.pub)
+    c3-pub.diegonmarcos.com {
+    bind 0.0.0.0 10.0.0.1
+  import security
+import request_limits
+      handle /health {
+        respond "ok" 200
+      }
+handle /account {
+  redir https://account.diegonmarcos.com/ 302
+}
+handle /auth {
+  redir https://auth.diegonmarcos.com/ 302
+}
+    # JMAP discovery on jmap vhost (public per RFC 8620) (well-known — public per spec)
+    handle /.well-known/jmap {
+        rewrite * /jmap/session
+reverse_proxy https://10.0.0.3:2443 {
+  transport http {
+    tls_insecure_skip_verify
+  }
+}
+    }
+      @c3pub_matomo path /analytics-api/matomo/matomo.js /analytics-api/matomo/matomo.php /analytics-api/matomo/piwik.js /analytics-api/matomo/piwik.php /analytics-api/matomo/collect.php /analytics-api/matomo/api.php /analytics-api/matomo/track.php /analytics-api/matomo/js/*
+      handle @c3pub_matomo {
+        uri strip_prefix /analytics-api
+        reverse_proxy 10.0.0.6:8080
+      }
+      @c3pub_umami path /analytics-api/umami/script.js /analytics-api/umami/api/send
+      handle @c3pub_umami {
+        uri strip_prefix /analytics-api/umami
+        reverse_proxy 10.0.0.6:3006
+      }
+      handle {
+        error "Not Found" 404
+      }
+        import edge_errors
+    }
+
+
 
 
   # Matomo (public tracking + protected admin) + Umami (path-based)

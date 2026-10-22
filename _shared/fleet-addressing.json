@@ -1,5 +1,5 @@
 {
-  "_doc": "Fleet naming and addressing rule (ticket #1100). Private address {container}.app, public address {container}.diegonmarcos.com, every public URL bearer/session protected except unprotected_hosts, no api.* host. Guard: _shared/test-fleet-addressing.mjs. transitional lists known violations while the #1100 phases migrate them; an entry that stops violating must be removed, and every list must be empty at phase P4.",
+  "_doc": "Fleet naming and addressing rule (ticket #1100). Private address {container}.app, public address {container}.diegonmarcos.com, every public URL bearer/session protected except unprotected_hosts, no api.* host. Guard: _shared/test-fleet-addressing.mjs. transitional lists known violations while the #1100 phases migrate them; an entry that stops violating must be removed, and every list must be empty at phase P4. Ticket #1104 (routing reorganisation) supersedes the public-host part of #1100: tiers below.",
   "api_containers": [],
   "unprotected_hosts": {
     "diegonmarcos.com": "HTML only: apex landing page",
@@ -11,7 +11,8 @@
     "vpn.diegonmarcos.com": "protocol: WireGuard ws-tunnel and mesh bootstrap; peers hold no bearer before the tunnel exists",
     "analytics.diegonmarcos.com": "protocol: public-site analytics beacons (matomo, umami, openobserve); to fold into c3-pub-api",
     "matrix.diegonmarcos.com": "protocol: Matrix federation and client .well-known; matrix is federated",
-    "jmap.diegonmarcos.com": "protocol: JMAP session discovery (.well-known/jmap); Stalwart enforces Basic auth itself"
+    "jmap.diegonmarcos.com": "protocol: JMAP session discovery (.well-known/jmap); Stalwart enforces Basic auth itself",
+    "c3-pub.diegonmarcos.com": "API pub: Cloudflare-proxied explicit allowlist (tiers.pub.allowlist), everything else 404"
   },
   "transitional": {
     "naming": [
@@ -93,5 +94,35 @@
       "front-end:suite.diegonmarcos.com",
       "front-end:maps.diegonmarcos.com"
     ]
+  },
+  "tiers": {
+    "_doc": "Routing tiers (ticket #1104). pub: Cloudflare proxied (orange), unauthenticated, explicit allowlist only. pvt: DNS-only (grey), path per container, Authelia session cookie (web) OR fleet bearer (API/MCP clients) through the shared edge_auth gate. mesh: {container}.app, WireGuard is the trust boundary. Guard: _shared/test-fleet-addressing.mjs reads infra-sec_caddy/dist/configs/Caddyfile.",
+    "pub": {
+      "host": "c3-pub.diegonmarcos.com",
+      "cloudflare_proxied": true,
+      "allowlist": [
+        "/health",
+        "/auth",
+        "/account",
+        "/.well-known/jmap",
+        "/analytics-api/matomo/*",
+        "/analytics-api/umami/script.js",
+        "/analytics-api/umami/api/send"
+      ],
+      "portals": {
+        "/auth": "https://auth.diegonmarcos.com",
+        "/account": "https://account.diegonmarcos.com"
+      },
+      "_portals_doc": "The Authelia portal keeps its own host (cookie domain, OIDC issuer); /auth and /account on c3-pub redirect to it until the IdP can run under a sub-path."
+    },
+    "pvt": {
+      "host": "c3-pvt.diegonmarcos.com",
+      "cloudflare_proxied": false,
+      "path_source": "route.container"
+    },
+    "mesh": {
+      "suffix": ".app",
+      "auth": "none"
+    }
   }
 }
