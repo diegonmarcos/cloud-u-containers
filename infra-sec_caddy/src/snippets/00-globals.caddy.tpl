@@ -3,8 +3,6 @@
   @DEBUG_LINE@
   admin @ADMIN_BIND@
   order @ORDER@
-  # `error` must run before `handle` like `respond`, so the mesh/WG 403 guards reach handle_errors (shared fallback redirect).
-  order error before handle
   auto_https @AUTO_HTTPS@
   # ACME via DNS-01 (Cloudflare) — eliminates port-80 HTTP-01 dependency
   # and supports wildcard certs for *.diegonmarcos.com. Token sourced

@@ -11,8 +11,6 @@
   debug
   admin localhost:2019
   order respond before handle
-  # `error` must run before `handle` like `respond`, so the mesh/WG 403 guards reach handle_errors (shared fallback redirect).
-  order error before handle
   auto_https disable_redirects
   # ACME via DNS-01 (Cloudflare) — eliminates port-80 HTTP-01 dependency
   # and supports wildcard certs for *.diegonmarcos.com. Token sourced
@@ -148,172 +146,6 @@
 
   (edge_errors) {
   handle_errors {
-      @deny_html {
-        expression `{err.status_code} == 401 || {err.status_code} == 403`
-        header Accept *text/html*
-      }
-      handle @deny_html {
-        map {host} {fb_path} {
-        alerts-api.app alerts-api/
-        auth-broker.app auth-broker/
-        auth.diegonmarcos.com authelia/
-        authelia.app authelia/
-        c3-infra-api.app c3-infra-api/
-        c3-infra-mcp.app cloud-infra-mcp/
-        c3-public-api.app c3-public-api/
-        c3-services-api.app c3-services-api/
-        c3-services-mcp.app cloud-services-mcp/
-        c3-spec.app cloud-spec/
-        caddy-public.app caddy-public/
-        caddy.app caddy/
-        cal.diegonmarcos.com calendar-radicale/
-        calendar.app calendar-radicale/
-        chat.diegonmarcos.com chat-mattermost/
-        cloud-cgc-pub-mcp.app cloud-cgc-pub-mcp/
-        cloud-me-api.app cloud-me-api/
-        cloud-notes-sync.app cloud-notes-sync/
-        cloud-notes-web.app cloud-notes-web/
-        cloud.alerts-api.app alerts-api/
-        cloud.auth-broker.app auth-broker/
-        cloud.authelia.app authelia/
-        cloud.c3-infra-api.app c3-infra-api/
-        cloud.c3-infra-mcp.app cloud-infra-mcp/
-        cloud.c3-public-api.app c3-public-api/
-        cloud.c3-services-api.app c3-services-api/
-        cloud.c3-services-mcp.app cloud-services-mcp/
-        cloud.c3-spec.app cloud-spec/
-        cloud.caddy-public.app caddy-public/
-        cloud.caddy.app caddy/
-        cloud.calendar.app calendar-radicale/
-        cloud.cloud-cgc-pub-mcp.app cloud-cgc-pub-mcp/
-        cloud.cloud-me-api.app cloud-me-api/
-        cloud.cloud-notes-sync.app cloud-notes-sync/
-        cloud.cloud-notes-web.app cloud-notes-web/
-        cloud.code-server.app code-server/
-        cloud.contacts.app contacts-radicale/
-        cloud.crowdsec.app crowdsec/
-        cloud.dagu.app dagu/
-        cloud.dbgate.app dbgate/
-        cloud.drive-mcp.app cloud-drive-mcp/
-        cloud.etherpad.app etherpad/
-        cloud.filebrowser.app filebrowser/
-        cloud.fin-api.app fin-api/
-        cloud.g-personal-mcp.app google-personal-mcp/
-        cloud.g-workspace-mcp.app google-workspace-mcp/
-        cloud.git-proxy-api.app git-proxy-api/
-        cloud.gitea.app gitea/
-        cloud.grist.app grist/
-        cloud.hedgedoc.app hedgedoc/
-        cloud.hermes-agent.app hermes-agent/
-        cloud.http-to-smtp-proxy-api.app http-to-smtp-proxy-api/
-        cloud.introspect-proxy.app introspect-proxy/
-        cloud.jev-sidecar.app jev-sidecar/
-        cloud.maddy.app maddy/
-        cloud.mail-mcp.app cloud-mail-mcp/
-        cloud.mail-puller.app mail-puller/
-        cloud.matomo.app matomo/
-        cloud.matrix-continuwuity.app matrix-continuwuity/
-        cloud.matrix-element.app matrix-element/
-        cloud.matrix-mautrix-whatsapp.app matrix-mautrix-whatsapp/
-        cloud.mattermost-mcp.app cloud-mattermost-mcp/
-        cloud.mattermost.app chat-mattermost/
-        cloud.mcp-oauth.app mcp-oauth/
-        cloud.my-ai-api.app my-ai-api/
-        cloud.my-ai-claude-api.app my-ai_claude-api/
-        cloud.ntfy.app ntfy/
-        cloud.openclaw.app openclaw/
-        cloud.openobserve.app openobserve/
-        cloud.photoprism.app photoprism/
-        cloud.playlist-syncer.app playlist-syncer/
-        cloud.redis.app redis/
-        cloud.revealmd.app revealmd/
-        cloud.scrappers-api.app scrappers-api/
-        cloud.session-memory.app session-memory/
-        cloud.stalwart.app stalwart/
-        cloud.superapp-mcp.app cloud-superapp-mcp/
-        cloud.umami.app umami/
-        cloud.vault-mcp.app cloud-vault-mcp/
-        cloud.vaultwarden.app vaultwarden/
-        cloud.webmail.app cloud-webmail/
-        code-server.app code-server/
-        contacts.app contacts-radicale/
-        contacts.diegonmarcos.com contacts-radicale/
-        crowdsec.app crowdsec/
-        crowdsec.diegonmarcos.com crowdsec/
-        dagu.app dagu/
-        db.diegonmarcos.com dbgate/
-        dbgate.app dbgate/
-        drive-mcp.app cloud-drive-mcp/
-        etherpad.app etherpad/
-        filebrowser.app filebrowser/
-        fin-api.app fin-api/
-        g-personal-mcp.app google-personal-mcp/
-        g-workspace-mcp.app google-workspace-mcp/
-        git-proxy-api.app git-proxy-api/
-        git.diegonmarcos.com gitea/
-        gitea.app gitea/
-        grist.app grist/
-        hedgedoc.app hedgedoc/
-        hermes-agent.app hermes-agent/
-        http-to-smtp-proxy-api.app http-to-smtp-proxy-api/
-        ide.diegonmarcos.com code-server/
-        introspect-proxy.app introspect-proxy/
-        jev-sidecar.app jev-sidecar/
-        jmap.diegonmarcos.com stalwart/
-        languagetool.diegonmarcos.com languagetool/
-        maddy.app maddy/
-        mail-mcp.app cloud-mail-mcp/
-        mail-puller.app mail-puller/
-        mail-puller.diegonmarcos.com mail-puller/
-        mail.diegonmarcos.com maddy/
-        matomo.app matomo/
-        matrix-continuwuity.app matrix-continuwuity/
-        matrix-element.app matrix-element/
-        matrix-mautrix-whatsapp.app matrix-mautrix-whatsapp/
-        matrix.diegonmarcos.com matrix-continuwuity/
-        mattermost-mcp.app cloud-mattermost-mcp/
-        mattermost.app chat-mattermost/
-        mcp-oauth.app mcp-oauth/
-        mesh.diegonmarcos.com wireguard-mesh/
-        messenger.diegonmarcos.com matrix-element/
-        my-ai-api.app my-ai-api/
-        my-ai-claude-api.app my-ai_claude-api/
-        notes-sync.diegonmarcos.com cloud-notes-sync/
-        notes.diegonmarcos.com cloud-notes-web/
-        ntfy.app ntfy/
-        openclaw.app openclaw/
-        openobserve.app openobserve/
-        photoprism.app photoprism/
-        photos.diegonmarcos.com photoprism/
-        playlist-syncer.app playlist-syncer/
-        playlist.diegonmarcos.com playlist-syncer/
-        proxy.diegonmarcos.com caddy/
-        redis.app redis/
-        revealmd.app revealmd/
-        rss.diegonmarcos.com ntfy/
-        scrappers-api.app scrappers-api/
-        send.diegonmarcos.com send/
-        session-memory.app session-memory/
-        sheets.diegonmarcos.com grist/
-        stalwart.app stalwart/
-        superapp-mcp.app cloud-superapp-mcp/
-        umami.app umami/
-        vault-mcp.app cloud-vault-mcp/
-        vault.diegonmarcos.com vaultwarden/
-        vaultwarden.app vaultwarden/
-        vpn.diegonmarcos.com wireguard-mesh-ws-tunnel/
-        webmail.app cloud-webmail/
-        webmail.diegonmarcos.com cloud-webmail/
-        workflows.diegonmarcos.com dagu/
-          default ""
-        }
-        header Vary Accept
-        redir https://diegonmarcos.github.io/cloud-webapps/{fb_path}?rd=https://{host}{path} 302
-      }
-      @deny_plain expression `{err.status_code} == 401 || {err.status_code} == 403`
-      handle @deny_plain {
-        respond "{err.message}" {err.status_code}
-      }
       @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
       handle @backend_error {
         # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
@@ -840,7 +672,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -860,7 +692,7 @@ import request_limits
       request_header -X-WEBAUTH-USER
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -969,7 +801,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -1081,7 +913,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -1177,7 +1009,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -1398,7 +1230,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -1497,7 +1329,7 @@ import edge_auth_offmesh /.well-known/acme-challenge/* /api/v4/*
   not remote_ip 10.0.0.0/24 fd0c:1d00::/64
   not path /api/v4/*
 }
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 handle /api/v4/* {
   reverse_proxy 10.0.0.6:8065
 }
@@ -1595,7 +1427,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -1707,7 +1539,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -1808,7 +1640,7 @@ import edge_auth_offmesh /.well-known/acme-challenge/*
   not remote_ip 10.0.0.0/24 fd0c:1d00::/64
   not path /.well-known/jmap /jmap/* /
 }
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
     # JMAP discovery on jmap vhost (public per RFC 8620) (well-known — public per spec)
@@ -1850,7 +1682,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 # Root path → landing page (proxied, keeps our domain)
 @root path =/
 handle @root {
@@ -1960,7 +1792,7 @@ import edge_auth_offmesh /.well-known/acme-challenge/*
   not remote_ip 10.0.0.0/24 fd0c:1d00::/64
   not path /api/auth/spotify/callback /api/auth/youtube/callback
 }
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 handle /api/auth/spotify/callback {
   reverse_proxy 10.0.0.6:8090
 }
@@ -2061,7 +1893,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -2157,7 +1989,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -2253,7 +2085,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -2349,7 +2181,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -2445,7 +2277,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -2541,7 +2373,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -2560,7 +2392,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -2579,7 +2411,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -2598,7 +2430,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -2617,7 +2449,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -2636,7 +2468,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -2655,7 +2487,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -2674,7 +2506,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -2693,7 +2525,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -2712,7 +2544,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -2731,7 +2563,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -2750,7 +2582,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -2769,7 +2601,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -2788,7 +2620,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -2807,7 +2639,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -2826,7 +2658,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -2845,7 +2677,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -2864,7 +2696,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -2883,7 +2715,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -2902,7 +2734,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -2921,7 +2753,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -2940,7 +2772,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -2959,7 +2791,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -2978,7 +2810,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -2997,7 +2829,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -3016,7 +2848,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -3035,7 +2867,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -3054,7 +2886,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -3073,7 +2905,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -3092,7 +2924,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -3111,7 +2943,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -3130,7 +2962,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -3149,7 +2981,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -3168,7 +3000,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -3187,7 +3019,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -3206,7 +3038,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -3225,7 +3057,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -3244,7 +3076,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -3263,7 +3095,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -3282,7 +3114,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -3301,7 +3133,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -3320,7 +3152,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -3339,7 +3171,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -3358,7 +3190,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -3377,7 +3209,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -3396,7 +3228,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -3415,7 +3247,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -3434,7 +3266,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -3453,7 +3285,7 @@ import security
 import request_limits
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
 
@@ -4369,7 +4201,7 @@ import edge_auth_offmesh /.well-known/acme-challenge/*
   not remote_ip 10.0.0.0/24 fd0c:1d00::/64
   not path /.well-known/jmap /jmap/* /
 }
-error @not_wg "Forbidden" 403
+respond @not_wg "Forbidden" 403
 
 
     # JMAP discovery on the mails vhost (well-known — public per spec)
@@ -4535,7 +4367,7 @@ handle /c3-infra-api/docs/json {
         reverse_proxy 10.0.0.6:8081
         }
         handle {
-          error "Forbidden" 403
+          respond "Forbidden" 403
         }
 }
 handle /c3-infra-api/public/logs {
@@ -4545,7 +4377,7 @@ handle /c3-infra-api/public/logs {
         reverse_proxy 10.0.0.6:8081
         }
         handle {
-          error "Forbidden" 403
+          respond "Forbidden" 403
         }
 }
 handle /c3-infra-api/public/events/* {
@@ -4555,7 +4387,7 @@ handle /c3-infra-api/public/events/* {
         reverse_proxy 10.0.0.6:8081
         }
         handle {
-          error "Forbidden" 403
+          respond "Forbidden" 403
         }
 }
 handle_path /c3-infra-api/* {
@@ -4643,7 +4475,7 @@ handle_path /c3-infra-api/* {
 
         }
         handle {
-          error "Forbidden" 403
+          respond "Forbidden" 403
         }
 }
 handle /pub/health {
@@ -4826,7 +4658,7 @@ handle_path /c3-services-api/* {
 
         }
         handle {
-          error "Forbidden" 403
+          respond "Forbidden" 403
         }
 }
 handle /git/health {
@@ -4836,7 +4668,7 @@ handle /git/health {
         reverse_proxy 10.0.0.4:8123
         }
         handle {
-          error "Forbidden" 403
+          respond "Forbidden" 403
         }
 }
 handle_path /git/* {
@@ -4924,7 +4756,7 @@ handle_path /git/* {
 
         }
         handle {
-          error "Forbidden" 403
+          respond "Forbidden" 403
         }
 }
 handle /scrappers/health {
@@ -4934,7 +4766,7 @@ handle /scrappers/health {
         reverse_proxy 10.0.0.6:3020
         }
         handle {
-          error "Forbidden" 403
+          respond "Forbidden" 403
         }
 }
 handle /scrappers/openapi.json {
@@ -4944,7 +4776,7 @@ handle /scrappers/openapi.json {
         reverse_proxy 10.0.0.6:3020
         }
         handle {
-          error "Forbidden" 403
+          respond "Forbidden" 403
         }
 }
 handle_path /scrappers/* {
@@ -5032,7 +4864,7 @@ handle_path /scrappers/* {
 
         }
         handle {
-          error "Forbidden" 403
+          respond "Forbidden" 403
         }
 }
 
@@ -5121,7 +4953,7 @@ handle_path /fin-api/* {
 
         }
         handle {
-          error "Forbidden" 403
+          respond "Forbidden" 403
         }
 }
 handle {
@@ -5236,7 +5068,7 @@ handle_path /spec/* {
 
         }
         handle {
-          error "Forbidden" 403
+          respond "Forbidden" 403
         }
 }
 
@@ -5325,7 +5157,7 @@ handle_path /probe/* {
 
         }
         handle {
-          error "Forbidden" 403
+          respond "Forbidden" 403
         }
 }
 handle {
@@ -5728,7 +5560,7 @@ handle_path /etherpad/* {
 
         }
         handle {
-          error "Forbidden" 403
+          respond "Forbidden" 403
         }
 }
 
@@ -5817,7 +5649,7 @@ handle_path /filebrowser/* {
 
         }
         handle {
-          error "Forbidden" 403
+          respond "Forbidden" 403
         }
 }
 
@@ -5906,7 +5738,7 @@ handle_path /hedgedoc/* {
 
         }
         handle {
-          error "Forbidden" 403
+          respond "Forbidden" 403
         }
 }
 handle {
@@ -5954,7 +5786,7 @@ handle_path /cloud-drive-mcp/* {
         }
         }
 handle {
-  error "Forbidden" 403
+  respond "Forbidden" 403
 }
 }
 handle_path /c3-infra-mcp/* {
@@ -5984,7 +5816,7 @@ handle_path /c3-infra-mcp/* {
         }
         }
 handle {
-  error "Forbidden" 403
+  respond "Forbidden" 403
 }
 }
 handle_path /mail-mcp/* {
@@ -6014,7 +5846,7 @@ handle_path /mail-mcp/* {
         }
         }
 handle {
-  error "Forbidden" 403
+  respond "Forbidden" 403
 }
 }
 handle_path /mattermost-mcp/* {
@@ -6044,7 +5876,7 @@ handle_path /mattermost-mcp/* {
         }
         }
 handle {
-  error "Forbidden" 403
+  respond "Forbidden" 403
 }
 }
 handle_path /c3-services-mcp/* {
@@ -6074,7 +5906,7 @@ handle_path /c3-services-mcp/* {
         }
         }
 handle {
-  error "Forbidden" 403
+  respond "Forbidden" 403
 }
 }
 handle_path /cloud-superapp-mcp/* {
@@ -6104,7 +5936,7 @@ handle_path /cloud-superapp-mcp/* {
         }
         }
 handle {
-  error "Forbidden" 403
+  respond "Forbidden" 403
 }
 }
 handle_path /cloud-vault-mcp/* {
@@ -6117,7 +5949,7 @@ handle_path /cloud-vault-mcp/* {
         }
         }
         handle {
-          error "Forbidden" 403
+          respond "Forbidden" 403
         }
 }
 handle_path /g-personal/* {
@@ -6147,7 +5979,7 @@ handle_path /g-personal/* {
         }
         }
 handle {
-  error "Forbidden" 403
+  respond "Forbidden" 403
 }
 }
 handle_path /g-workspace/* {
@@ -6177,7 +6009,7 @@ handle_path /g-workspace/* {
         }
         }
 handle {
-  error "Forbidden" 403
+  respond "Forbidden" 403
 }
 }
 handle_path /cloud-cgc-pub-mcp/* {
@@ -6207,7 +6039,7 @@ handle_path /cloud-cgc-pub-mcp/* {
         }
         }
 handle {
-  error "Forbidden" 403
+  respond "Forbidden" 403
 }
 }
 handle_path /cloud-cgc-pvt-mcp/* {
@@ -6237,7 +6069,7 @@ handle_path /cloud-cgc-pvt-mcp/* {
         }
         }
 handle {
-  error "Forbidden" 403
+  respond "Forbidden" 403
 }
 }
     handle {
@@ -6414,7 +6246,7 @@ import security
 import request_limits
     
     @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-      error @not_wg "Forbidden" 403
+      respond @not_wg "Forbidden" 403
     handle /setup {
     forward_auth 172.18.0.3:9091 {
       # A websocket upgrade must not reach the auth subrequest: an introspect/authelia
@@ -6473,7 +6305,7 @@ import security
 import request_limits
     
     @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
-      error @not_wg "Forbidden" 403
+      respond @not_wg "Forbidden" 403
         @bearer header Authorization Bearer*
     handle @bearer {
     forward_auth 10.0.0.1:4182 {
@@ -6524,7 +6356,7 @@ file_server
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -6573,7 +6405,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -6622,7 +6454,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -6671,7 +6503,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -6720,7 +6552,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -6769,7 +6601,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -6818,7 +6650,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -6867,7 +6699,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -6916,7 +6748,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -6965,7 +6797,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -7014,7 +6846,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -7063,7 +6895,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -7112,7 +6944,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -7161,7 +6993,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -7210,7 +7042,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -7259,7 +7091,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -7308,7 +7140,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -7357,7 +7189,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -7406,7 +7238,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -7455,7 +7287,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -7504,7 +7336,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -7553,7 +7385,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -7602,7 +7434,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -7651,7 +7483,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -7700,7 +7532,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -7749,7 +7581,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -7798,7 +7630,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -7847,7 +7679,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -7896,7 +7728,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -7945,7 +7777,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -7994,7 +7826,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -8043,7 +7875,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -8092,7 +7924,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -8141,7 +7973,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -8190,7 +8022,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -8239,7 +8071,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -8288,7 +8120,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -8337,7 +8169,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -8386,7 +8218,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -8435,7 +8267,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -8484,7 +8316,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -8533,7 +8365,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -8582,7 +8414,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -8631,7 +8463,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -8680,7 +8512,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -8729,7 +8561,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -8778,7 +8610,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -8827,7 +8659,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -8876,7 +8708,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -8925,7 +8757,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -8974,7 +8806,7 @@ error @not_mesh "Forbidden" 403
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -9023,7 +8855,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:8081 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -9064,7 +8896,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.4:8087 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -9105,7 +8937,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:8082 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -9146,7 +8978,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3109 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -9187,7 +9019,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3100 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -9228,7 +9060,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3103 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -9269,7 +9101,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3102 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -9310,7 +9142,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.4:8124 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -9351,7 +9183,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3101 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -9392,7 +9224,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3110 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -9433,7 +9265,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.4:8123 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -9474,7 +9306,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3106 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -9515,7 +9347,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3104 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -9556,7 +9388,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3002 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -9597,7 +9429,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.4:53 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -9638,7 +9470,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:8084 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -9679,7 +9511,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3080 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -9720,7 +9552,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:8070 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -9761,7 +9593,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:8086 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -9802,7 +9634,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:8080 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -9843,7 +9675,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:8090 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -9884,7 +9716,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:5080 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -9925,7 +9757,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3006 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -9966,7 +9798,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 172.18.0.3:9091 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -10007,7 +9839,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.1:443 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -10048,7 +9880,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.4:443 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -10089,7 +9921,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:8088 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -10130,7 +9962,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3105 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -10171,7 +10003,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:8001 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -10212,7 +10044,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:8002 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -10253,7 +10085,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:8065 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -10294,7 +10126,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3000 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -10335,7 +10167,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:8008 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -10376,7 +10208,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:8083 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -10417,7 +10249,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.3:2443 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -10458,7 +10290,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3020 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -10499,7 +10331,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:8340 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -10540,7 +10372,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3013 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -10581,7 +10413,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:8090 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -10622,7 +10454,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3019 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -10663,7 +10495,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:5232 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -10704,7 +10536,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:8098 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -10745,7 +10577,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:8097 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -10786,7 +10618,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:8443 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -10827,7 +10659,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:5233 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -10868,7 +10700,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3012 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -10909,7 +10741,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3015 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -10950,7 +10782,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3011 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -10991,7 +10823,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3018 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -11032,7 +10864,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3016 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -11073,7 +10905,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:8880 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -11114,7 +10946,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3109 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -11155,7 +10987,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3100 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -11196,7 +11028,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3103 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -11237,7 +11069,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3102 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -11278,7 +11110,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3101 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -11319,7 +11151,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3110 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -11360,7 +11192,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3106 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -11401,7 +11233,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3104 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -11442,7 +11274,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3080 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -11483,7 +11315,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:8080 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -11524,7 +11356,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3000 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -11565,7 +11397,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:8008 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -11606,7 +11438,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3013 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -11647,7 +11479,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:5232 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -11688,7 +11520,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:5233 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -11729,7 +11561,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3012 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -11770,7 +11602,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3015 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -11811,7 +11643,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3011 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -11852,7 +11684,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3018 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -11893,7 +11725,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3016 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -11934,7 +11766,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3109 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -11975,7 +11807,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3100 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -12016,7 +11848,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3103 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -12057,7 +11889,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3102 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -12098,7 +11930,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.4:8124 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -12139,7 +11971,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3101 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -12180,7 +12012,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3110 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -12221,7 +12053,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.4:8123 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -12262,7 +12094,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3106 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -12303,7 +12135,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3104 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -12344,7 +12176,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3002 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -12385,7 +12217,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:8084 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -12426,7 +12258,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3080 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -12467,7 +12299,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:8070 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -12508,7 +12340,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:8086 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -12549,7 +12381,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:8080 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -12590,7 +12422,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:8090 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -12631,7 +12463,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:5080 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -12672,7 +12504,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3006 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -12713,7 +12545,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 172.18.0.3:9091 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -12754,7 +12586,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:8088 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -12795,7 +12627,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3105 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -12836,7 +12668,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:8001 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -12877,7 +12709,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:8002 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -12918,7 +12750,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:8065 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -12959,7 +12791,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3000 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -13000,7 +12832,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:8008 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -13041,7 +12873,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:8083 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -13082,7 +12914,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3020 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -13123,7 +12955,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:8340 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -13164,7 +12996,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3013 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -13205,7 +13037,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:8090 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -13246,7 +13078,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3019 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -13287,7 +13119,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:5232 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -13328,7 +13160,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:8098 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -13369,7 +13201,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:8097 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -13410,7 +13242,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:5233 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -13451,7 +13283,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3012 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -13492,7 +13324,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3015 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -13533,7 +13365,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3011 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -13574,7 +13406,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3018 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -13615,7 +13447,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3016 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -13656,7 +13488,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:8880 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -13697,7 +13529,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3107 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -13738,7 +13570,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3111 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -13779,7 +13611,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:8065 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -13820,7 +13652,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:5233 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -13861,7 +13693,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3013 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -13902,7 +13734,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:3000 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -13943,7 +13775,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:8083 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -13984,7 +13816,7 @@ error @not_mesh "Forbidden" 403
       }
     }
     @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-    error @not_mesh "Forbidden" 403
+    respond @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:5232 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -14027,7 +13859,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -14069,7 +13901,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -14111,7 +13943,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -14153,7 +13985,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -14195,7 +14027,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -14237,7 +14069,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -14279,7 +14111,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -14321,7 +14153,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -14363,7 +14195,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -14405,7 +14237,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -14447,7 +14279,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -14489,7 +14321,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -14531,7 +14363,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -14573,7 +14405,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -14615,7 +14447,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -14657,7 +14489,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -14699,7 +14531,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -14741,7 +14573,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -14783,7 +14615,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -14825,7 +14657,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -14867,7 +14699,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -14909,7 +14741,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -14951,7 +14783,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -14993,7 +14825,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -15035,7 +14867,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -15077,7 +14909,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -15119,7 +14951,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -15161,7 +14993,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -15203,7 +15035,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -15245,7 +15077,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -15287,7 +15119,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -15329,7 +15161,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -15371,7 +15203,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -15413,7 +15245,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -15455,7 +15287,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -15497,7 +15329,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -15539,7 +15371,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -15581,7 +15413,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -15623,7 +15455,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -15665,7 +15497,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -15707,7 +15539,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -15749,7 +15581,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -15791,7 +15623,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -15833,7 +15665,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -15875,7 +15707,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -15917,7 +15749,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -15959,7 +15791,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -16001,7 +15833,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -16043,7 +15875,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -16085,7 +15917,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -16128,7 +15960,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -16148,7 +15980,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -16163,7 +15995,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -16178,7 +16010,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -16193,7 +16025,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -16208,7 +16040,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -16223,7 +16055,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -16238,7 +16070,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -16253,7 +16085,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -16268,7 +16100,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -16283,7 +16115,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -16298,7 +16130,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -16313,7 +16145,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -16328,7 +16160,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       on_demand
       issuer internal {
@@ -16348,7 +16180,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -16365,7 +16197,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -16382,7 +16214,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -16399,7 +16231,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
@@ -16416,7 +16248,7 @@ error @not_mesh "Forbidden" 403
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
 @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
-error @not_mesh "Forbidden" 403
+respond @not_mesh "Forbidden" 403
     tls {
       issuer internal {
         ca mesh
