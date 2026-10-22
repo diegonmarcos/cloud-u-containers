@@ -6,9 +6,9 @@ name: fleet addressing guard
 on:
   push:
     branches: [main]
-    paths: ['*/build.json', '_shared/fleet-addressing.json', '_shared/test-fleet-addressing.mjs', 'infra-sec_caddy/dist/configs/Caddyfile', '.github/workflows/fleet-addressing-guard.yml']
+    paths: ['*/build.json', '_shared/fleet-addressing.json', '_shared/test-fleet-addressing.mjs', 'infra-sec_caddy/dist/configs/Caddyfile', '_shared/geo-fence.json', '_shared/test/c3-pub-waf-geo-set.sh', '.github/workflows/fleet-addressing-guard.yml']
   pull_request:
-    paths: ['*/build.json', '_shared/fleet-addressing.json', '_shared/test-fleet-addressing.mjs', 'infra-sec_caddy/dist/configs/Caddyfile']
+    paths: ['*/build.json', '_shared/fleet-addressing.json', '_shared/test-fleet-addressing.mjs', 'infra-sec_caddy/dist/configs/Caddyfile', '_shared/geo-fence.json', '_shared/test/c3-pub-waf-geo-set.sh']
   workflow_dispatch:
 
 permissions:
@@ -20,3 +20,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: node _shared/test-fleet-addressing.mjs
+      - name: c3-pub WAF country set equals geo-fence.json (push only: needs the cloud-infra read token)
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.CLOUD_INFRA_DISPATCH_TOKEN }}
+        run: bash _shared/test/c3-pub-waf-geo-set.sh
