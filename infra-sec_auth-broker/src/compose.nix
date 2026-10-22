@@ -22,7 +22,12 @@ let
       BROKER_CONFIG = "/app/build.json";
       # Shared by every instance so a session from one validates on all.
       AUTH_BROKER_COOKIE_SECRET = "\${AUTH_BROKER_COOKIE_SECRET}";
-    } // (if p ? secret_prefix then {
+    } // (if p.flow == "email" then {
+      # Mail delivery secrets (sops): Stalwart submission account, Resend API key. `:-` keeps compose quiet while absent.
+      AUTH_BROKER_SMTP_USER = "\${AUTH_BROKER_SMTP_USER:-}";
+      AUTH_BROKER_SMTP_PASSWORD = "\${AUTH_BROKER_SMTP_PASSWORD:-}";
+      AUTH_BROKER_RESEND_API_KEY = "\${AUTH_BROKER_RESEND_API_KEY:-}";
+    } else {}) // (if p ? secret_prefix then {
       "${p.secret_prefix}_CLIENT_ID" = "\${${p.secret_prefix}_CLIENT_ID}";
       "${p.secret_prefix}_CLIENT_SECRET" = "\${${p.secret_prefix}_CLIENT_SECRET}";
     } else {}) // (if (p.web or {}) ? secret_prefix then {

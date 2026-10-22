@@ -229,7 +229,7 @@ allk = set(keys(b))   # settings are KEYS; prose in _doc is ignored
 for bad in ("email_domains", "email-domain", "insecure_oidc_allow_unverified_email", "allowed_groups"):
     assert bad not in allk, f"forbidden broker setting present: {bad}"
 for p in ab["providers"]:
-    assert p["provider"] in ("google", "github", "cloudflare")
+    assert p["provider"] in ("google", "github", "cloudflare", "email")
 cfp = [p for p in ab["providers"] if p["id"] == "cloudflare"][0]
 assert cfp["flow"] == "access" and cfp["login_url"].startswith("https://auth-cf.diegonmarcos.com/oauth2/cloudflare/") and set(cfp["hosts"]) <= {"auth.diegonmarcos.com", "account.diegonmarcos.com"}, "Cloudflare One sign-in: login_url on the Access-protected host, hosts only the chooser hosts"
 assert "client_id" not in cfp and "secret_prefix" not in cfp, "Cloudflare One sign-in holds no client credential"
@@ -260,7 +260,7 @@ $NIX eval --impure --json --expr "let b=builtins.fromJSON (builtins.readFile $BR
 python3 -I - "$W/compose.json" <<'PY' || bad "broker compose does not enforce the broker policy"
 import json, sys
 d = json.load(open(sys.argv[1]))["services"]
-assert set(d) == {"auth-broker-google", "auth-broker-github", "auth-broker-cloudflare"}
+assert set(d) == {"auth-broker-google", "auth-broker-github", "auth-broker-cloudflare", "auth-broker-email"}
 for n, s in d.items():
     e = s["environment"]
     assert not any("EMAIL_DOMAIN" in k for k in e), "email-domain env present"
@@ -274,6 +274,8 @@ for n, s in d.items():
 assert "AUTH_BROKER_GOOGLE_CLIENT_SECRET" in d["auth-broker-google"]["environment"]
 assert not [k for k in d["auth-broker-cloudflare"]["environment"] if "CLIENT" in k], "cloudflare provider: no client credential in the environment"
 assert [k for k in d["auth-broker-github"]["environment"] if "GITHUB" in k] == ["AUTH_BROKER_GITHUB_APP_CLIENT_SECRET"], "github: device flow needs no secret; only the OAuth App secret may be passed"
+em = d["auth-broker-email"]["environment"]
+assert [k for k in em if k.startswith("AUTH_BROKER_") and k != "AUTH_BROKER_COOKIE_SECRET"] == ["AUTH_BROKER_SMTP_USER", "AUTH_BROKER_SMTP_PASSWORD", "AUTH_BROKER_RESEND_API_KEY"] and all(v.startswith("${") for k, v in em.items() if k.startswith("AUTH_BROKER_")), "email: mail secrets by interpolation only, no client credential"
 PY
 ok "broker compose: mesh-only bind, shared cookie secret, secrets by interpolation only"
 echo "PASS: $PASS checks"

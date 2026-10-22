@@ -49,3 +49,13 @@ opens `/oauth2/cloudflare/start?rd=` on auth. / account.; the broker 302s to `lo
 expiry, owner email only), issues the shared `_diego_sso` cookie (domain `.diegonmarcos.com`) and redirects to `rd`
 (https under `rd_domain`; a relative `rd` is resolved against the declared chooser host). No valid JWT: 401, no cookie.
 Tests: `src/test/test-broker-hub.py` (forged, expired, wrong AUD, non-owner, disabled).
+
+## Email code sign-in (#1118)
+
+Provider `email` (`flow: email`, instance :4183, chooser button "Email code"). Recovery path with no dependency on the
+vault, Authelia or TOTP. `<prefix>/start` serves an address form; `POST <prefix>/request {email}` answers every address
+with the same generic 200 (the allowlist cannot be probed) and mails a code only to an address in `allowed_emails`;
+`POST <prefix>/verify {sid, code}` issues the same `_diego_sso` cookie as the other providers. Code: 6 digits, 10 minutes,
+single use, 5 attempts, only an HMAC held in memory; send limits per address and per IP (`auth_broker.email_otp`).
+Delivery: Stalwart over the mesh (implicit-TLS submission, 10.0.0.3:2465) first, the Resend API as fallback. Sops keys:
+`AUTH_BROKER_SMTP_USER`, `AUTH_BROKER_SMTP_PASSWORD`, `AUTH_BROKER_RESEND_API_KEY`. Tests: `src/test/test-broker-email.py`.

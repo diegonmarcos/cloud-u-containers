@@ -166,12 +166,18 @@
             "label": "Cloudflare One",
             "upstream": "10.0.0.6:4182",
             "prefix": "/oauth2/cloudflare"
+          },
+          {
+            "id": "email",
+            "label": "Email code",
+            "upstream": "10.0.0.6:4183",
+            "prefix": "/oauth2/email"
           }
         ],
         "chooser": {
           "_doc": "The sign-in chooser page served on the auth vhost (src/sso-chooser.html), GENERATED from this block, `providers` above and src/sso-chooser.tpl.html by src/gen-sso-chooser.py (test/test-sso-chooser.sh fails on drift). Self-contained: no third-party request at runtime. `order` is the button order (digit keys 1..n pick them); `authelia` is the portal entry that is not a broker; `hints` are the one-line captions; `links` are the footer icon links (public pages).",
           "home": "https://suite.diegonmarcos.com/",
-          "order": ["authelia", "cloudflare", "google", "github"],
+          "order": ["authelia", "cloudflare", "google", "github", "email"],
           "authelia": {
             "label": "Authelia",
             "href": "https://auth.diegonmarcos.com/?ui=authelia"
@@ -180,7 +186,8 @@
             "authelia": "fleet SSO portal",
             "cloudflare": "Zero Trust login bridge",
             "google": "owner account",
-            "github": "owner account"
+            "github": "owner account",
+            "email": "one-time code (recovery)"
           },
           "links": [
             {"id": "linktree", "label": "Linktree", "url": "https://diegonmarcos.github.io/linktree"},

@@ -3,7 +3,7 @@
 # (edge_auth.multi_sso providers + chooser) by src/gen-sso-chooser.py; it must stay self-contained.
 #   1. the committed page equals the generator output, and dist/configs/sso-chooser.html is the same page
 #      under the engine banner;
-#   2. four providers (Authelia, Cloudflare One, Google, GitHub), each a plain anchor with a working
+#   2. five providers (Authelia, Cloudflare One, Google, GitHub), each a plain anchor with a working
 #      no-JavaScript href; the footer links to Linktree, Cloud SuperApp and Cloud Store;
 #   3. nothing is fetched from a third party at runtime: no external script/style/font/image/iframe, no
 #      @import, no remote url(), no tracker; the only URLs are the declared sign-in and footer links;
@@ -24,12 +24,12 @@ ch = ms["chooser"]
 
 def check(t):
     ids = re.findall(r'<a class="b" id="([a-z]+)" href="([^"]+)"', t)
-    assert [i for i, _ in ids] == ch["order"] == ["authelia", "cloudflare", "google", "github"], f"providers/order: {ids}"
+    assert [i for i, _ in ids] == ch["order"] == ["authelia", "cloudflare", "google", "github", "email"], f"providers/order: {ids}"
     hrefs = dict(ids)
     assert hrefs["authelia"] == ch["authelia"]["href"]
     for p in ms["providers"]:
         assert hrefs[p["id"]] == p["prefix"] + "/start", f"no-JS href for {p['id']}"
-    for lab in ("Sign in with Authelia", "Sign in with Cloudflare One", "Sign in with Google", "Sign in with GitHub"):
+    for lab in ("Sign in with Authelia", "Sign in with Cloudflare One", "Sign in with Google", "Sign in with GitHub", "Sign in with Email code"):
         assert lab in t, lab
     foot = t[t.index("<footer"):t.index("</footer>")]
     for l in ch["links"]:
@@ -46,7 +46,7 @@ def check(t):
     assert 'prefers-reduced-motion' in t and 'prefers-color-scheme' in t and 'aria-live' in t and ':focus-visible' in t, "a11y/theming hooks"
 
 check(page)
-print("ok: four providers with no-JS hrefs, footer links, no third-party request, a11y and theme hooks")
+print("ok: five providers with no-JS hrefs, footer links, no third-party request, a11y and theme hooks")
 for mut, why in ((lambda t: t.replace("</head>", '<script src="https://cdn.example/x.js"></script></head>'), "remote script"),
                  (lambda t: t.replace("</head>", '<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=X"></head>'), "remote stylesheet"),
                  (lambda t: t.replace("</main>", '<img src="https://t.example/p.gif"></main>'), "remote image"),

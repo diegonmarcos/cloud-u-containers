@@ -1307,6 +1307,11 @@ handle /oauth2/cloudflare/* {
     header_up X-Real-IP {http.request.remote.host}
   }
 }
+handle /oauth2/email/* {
+  reverse_proxy 10.0.0.6:4183 {
+    header_up X-Real-IP {http.request.remote.host}
+  }
+}
 handle /.well-known/openid-configuration {
   reverse_proxy 172.18.0.3:9091
 }

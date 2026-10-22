@@ -10,6 +10,7 @@ ICON = {
     "cloudflare": '<path d="M7 18a4 4 0 010-8 5.5 5.5 0 0110.6 1.2A3.4 3.4 0 0117 18z"/>',
     "google": '<circle cx="12" cy="12" r="8.5"/><path d="M12 12h8.2M17 16.2A5.5 5.5 0 1115.5 8"/>',
     "github": '<circle cx="7" cy="6" r="2"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="9" r="2"/><path d="M7 8v8M17 11c0 4-6 2-9.6 5.2"/>',
+    "email": '<rect x="3.5" y="6" width="17" height="12" rx="2"/><path d="M4 7.5l8 6 8-6"/>',
     "linktree": '<path d="M12 3v18M12 8L6 13M12 11l6 4M12 6l4-3"/><circle cx="6" cy="13" r="1.4"/><circle cx="18" cy="15" r="1.4"/><circle cx="16" cy="3.5" r="1.2"/>',
     "superapp": '<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>',
     "store": '<path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 016 0v2"/>',

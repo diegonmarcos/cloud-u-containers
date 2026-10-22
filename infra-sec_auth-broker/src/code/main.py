@@ -14,6 +14,8 @@ session cookie, so `<prefix>/auth` on any instance admits a session issued by an
   GET  <prefix>/start      (flow access, Cloudflare One) 302 to the Access-protected callback host `login_url`
   GET  <prefix>/callback   (flow access) reached through Cloudflare Access: verifies Cf-Access-Jwt-Assertion, issues the
                            session cookie, 302 to rd; no/forged/expired/wrong-AUD/non-owner JWT -> 401, no cookie
+  GET  <prefix>/start      (flow email) address form, then 6-digit code form; POST <prefix>/request {email} and
+                           POST <prefix>/verify {sid, code}; recovery path with no vault/Authelia/TOTP dependency (#1118)
   GET  <prefix>/cf-auth    forward_auth target: 202 + X-Auth-Request-Email for a valid Cloudflare Access JWT, else 401
   GET  <prefix>/auth       forward_auth target: 202 + X-Auth-Request-Email on a valid session, else 401
   GET  <prefix>/health     200 {"enabled": bool, "provider": id}
@@ -23,7 +25,8 @@ Identity: the provider's user is checked against the allowlist declared in build
 refused and gets no cookie. The session cookie is HMAC-SHA256 signed with AUTH_BROKER_COOKIE_SECRET.
 Stdlib only. Config: build.json (path in BROKER_CONFIG); secrets only from the environment.
 """
-import base64, hashlib, hmac, html, json, os, secrets, sys, threading, time
+import base64, hashlib, hmac, html, json, os, secrets, smtplib, ssl, socket, sys, threading, time
+from email.message import EmailMessage
 import urllib.error, urllib.parse, urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -60,7 +63,7 @@ class Broker:
         pre = self.p.get("secret_prefix", "")
         self.client_id = self.p.get("client_id") or env.get(pre + "_CLIENT_ID", "")
         self.client_secret = env.get(pre + "_CLIENT_SECRET", "") if pre else ""
-        if self.enabled and not self.client_id and self.flow != "access":
+        if self.enabled and not self.client_id and self.flow not in ("access", "email"):
             raise SystemExit("provider %s is enabled but has no client id" % provider_id)
         self.flows, self.hits, self.lock = {}, {}, threading.Lock()
         # Web authorization-code flow: a provider with flow "web" (Google), or a device-flow provider
@@ -87,6 +90,127 @@ class Broker:
         self.access_on = self.flow == "access" and self.enabled and self.cf_on
         if self.flow == "access" and self.enabled and not (self.cf_on and self.p.get("login_url") and self.p.get("hosts")):
             raise SystemExit("provider %s is enabled but cloudflare_access, login_url or hosts is missing" % provider_id)
+
+        # Email one-time code (flow "email", #1118): in-memory hashed codes, generic answers, pluggable mailer.
+        eo = ab.get("email_otp") or {}
+        self.eo = eo
+        self.otp, self.otp_hits = {}, {}
+        self.otp_len = int(eo.get("code_length", 6))
+        self.otp_ttl = int(eo.get("ttl_seconds", 600))
+        self.otp_attempts = int(eo.get("max_attempts", 5))
+        self.otp_addr_n, self.otp_win = int(eo.get("send_per_address", 3)), int(eo.get("send_window_seconds", 600))
+        self.otp_ip_n = int(eo.get("send_per_ip", 10))
+        self.email_on = self.flow == "email" and self.enabled
+        if self.email_on and not eo:
+            raise SystemExit("provider %s is enabled but auth_broker.email_otp is missing" % provider_id)
+        self.env = env
+        self.mailer = self.deliver
+
+    # ---- email one-time code ---------------------------------------------------------------
+    def otp_hash(self, sid, code):
+        return hmac.new(self.secret.encode(), ("otp|%s|%s" % (sid, code)).encode(), hashlib.sha256).hexdigest()
+
+    def _window(self, table, key, limit, now):
+        h = [t for t in table.get(key, []) if now - t < self.otp_win]
+        ok = len(h) < limit
+        if ok:
+            h.append(now)
+        table[key] = h
+        return ok
+
+    def otp_request(self, address, ip):
+        """(status, body). The answer never depends on the allowlist or the per-address limit."""
+        if not self.email_on:
+            return 404, {"error": "disabled"}
+        now = time.time()
+        addr = str(address or "").strip().lower()[:254]
+        sid = secrets.token_urlsafe(24)
+        with self.lock:
+            for k in [k for k, f in self.otp.items() if f["exp"] <= now]:
+                self.otp.pop(k)
+            if not self._window(self.otp_hits, "ip:" + ip, self.otp_ip_n, now):
+                return 429, {"error": "rate_limited"}
+            if len(self.otp) >= MAX_FLOWS * 4:
+                return 429, {"error": "busy"}
+            send = addr in self.emails and self._window(self.otp_hits, "addr:" + addr, self.otp_addr_n, now)
+            code = "%0*d" % (self.otp_len, secrets.randbelow(10 ** self.otp_len))
+            # Unlisted or throttled addresses get a live-looking sid with a hash nobody knows the code for.
+            self.otp[sid] = {"h": self.otp_hash(sid, code) if send else self.otp_hash(sid, secrets.token_hex(8)),
+                             "exp": now + self.otp_ttl, "n": 0, "email": addr if send else ""}
+        if send:
+            try:
+                self.mailer(addr, code)
+            except Exception as e:
+                print("otp delivery failed: %s" % type(e).__name__, flush=True)
+        return 200, {"sid": sid, "status": "sent", "expires_in": self.otp_ttl}
+
+    def otp_verify(self, sid, code):
+        """(status, body, set_cookie). Single use; the flow dies after max_attempts wrong codes."""
+        if not self.email_on:
+            return 404, {"status": "disabled"}, None
+        sid, code = str(sid or ""), str(code or "").strip()
+        with self.lock:
+            f = self.otp.get(sid)
+            if not f or f["exp"] <= time.time():
+                self.otp.pop(sid, None)
+                return 200, {"status": "expired"}, None
+            f["n"] += 1
+            ok = bool(f["email"]) and code.isdigit() and len(code) == self.otp_len and hmac.compare_digest(self.otp_hash(sid, code), f["h"])
+            if ok:
+                self.otp.pop(sid)
+            elif f["n"] >= self.otp_attempts:
+                self.otp.pop(sid)
+                return 200, {"status": "locked"}, None
+        if not ok:
+            return 200, {"status": "wrong"}, None
+        return 200, {"status": "ok"}, self.set_cookie(self.make_cookie(f["email"], self.p["id"]), self.ttl)
+
+    def deliver(self, to, code):
+        """Stalwart over the mesh first, the Resend API as fallback. Raises when both fail."""
+        eo, errs = self.eo, []
+        subject = eo.get("subject", "Your sign-in code")
+        body = "Your sign-in code is %s. It is valid for %d minutes and works once.\nIf you did not ask for it, ignore this message.\n" % (code, self.otp_ttl // 60)
+        sm = eo.get("smtp") or {}
+        user, pw = self.env.get(sm.get("user_env", ""), ""), self.env.get(sm.get("password_env", ""), "")
+        if sm.get("host") and user and pw:
+            try:
+                self.send_smtp(sm, user, pw, to, subject, body)
+                return "stalwart"
+            except Exception as e:
+                errs.append("smtp:" + type(e).__name__)
+        rs = eo.get("resend") or {}
+        key = self.env.get(rs.get("api_key_env", ""), "")
+        if rs.get("url") and key:
+            try:
+                self.send_resend(rs, key, to, subject, body)
+                return "resend"
+            except Exception as e:
+                errs.append("resend:" + type(e).__name__)
+        raise RuntimeError(",".join(errs) or "no mail path configured")
+
+    def send_smtp(self, sm, user, pw, to, subject, body):
+        m = EmailMessage()
+        m["From"], m["To"], m["Subject"] = sm.get("from") or user, to, subject
+        m.set_content(body)
+        ctx = ssl.create_default_context()
+        if sm.get("allow_invalid_certs"):
+            ctx.check_hostname, ctx.verify_mode = False, ssl.CERT_NONE
+        name = sm.get("tls_server_name") or sm["host"]
+
+        class S(smtplib.SMTP_SSL):          # connect by mesh IP, verify the public hostname
+            def _get_socket(self, host, port, timeout):
+                return ctx.wrap_socket(socket.create_connection((host, port), timeout), server_hostname=name)
+        with S(sm["host"], int(sm["port"]), timeout=15, context=ctx) as c:
+            c.login(user, pw)
+            c.send_message(m)
+
+    def send_resend(self, rs, key, to, subject, body):
+        req = urllib.request.Request(rs["url"], method="POST", data=json.dumps(
+            {"from": rs["from"], "to": [to], "subject": subject, "text": body}).encode(),
+            headers={"Authorization": "Bearer " + key, "Content-Type": "application/json", "User-Agent": UA})
+        with urllib.request.urlopen(req, timeout=15) as r:
+            if r.status >= 300:
+                raise RuntimeError("resend status %s" % r.status)
 
     # ---- session cookie -------------------------------------------------------------------
     def sign(self, body):
@@ -407,6 +531,35 @@ post("/device").then(function(d){
 })();</script></body></html>"""
 
 
+EMAIL_PAGE = """<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex"><title>Sign in with Email code</title><style>
+:root{--bg:#f6f7f9;--fg:#15171a;--card:#fff;--line:#d9dde3;--acc:#2b6cb0}
+@media (prefers-color-scheme:dark){:root{--bg:#101215;--fg:#e8eaed;--card:#181b20;--line:#2c3139;--acc:#7fb2ee}}
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:var(--bg);color:var(--fg);font:16px/1.4 system-ui,sans-serif}
+main{width:min(92vw,380px);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:24px}
+h1{font-size:1.15rem;margin:0 0 12px}input,button{font:inherit;width:100%;box-sizing:border-box;padding:10px;margin:6px 0;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
+button{background:var(--acc);color:#fff;border:0;cursor:pointer}a{color:var(--acc)}#st{font-size:.85rem;opacity:.85;min-height:1.2em}</style></head><body><main>
+<h1>Sign in with Email code</h1>
+<form id="f1"><label>Email address<input id="em" type="email" autocomplete="email" required></label><button type="submit">Send code</button></form>
+<form id="f2" hidden><label>6-digit code<input id="cd" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required></label><button type="submit">Sign in</button></form>
+<div id="st" role="status"></div></main>
+<script>(function(){
+var P="__PREFIX__",RD=new URLSearchParams(location.search).get("rd")||"/",$=function(i){return document.getElementById(i)},sid="";
+function post(u,b){return fetch(P+u,{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json","X-Requested-With":"sso"},body:JSON.stringify(b)}).then(function(r){return r.json().then(function(j){j._s=r.status;return j})})}
+$("f1").onsubmit=function(e){e.preventDefault();$("st").textContent="Sending…";
+ post("/request",{email:$("em").value}).then(function(d){
+  if(!d.sid){$("st").textContent=d._s===429?"Too many requests. Try later.":"Could not start sign-in.";return}
+  sid=d.sid;$("f1").hidden=true;$("f2").hidden=false;$("cd").focus();
+  $("st").textContent="If the address is allowed, a code was sent. It is valid for 10 minutes."}).catch(function(){$("st").textContent="Network error."})};
+$("f2").onsubmit=function(e){e.preventDefault();
+ post("/verify",{sid:sid,code:$("cd").value,rd:RD}).then(function(r){
+  if(r.status==="ok"){$("st").textContent="Signed in.";location.href=r.rd||"/";return}
+  if(r.status==="wrong"){$("st").textContent="Wrong code.";return}
+  $("st").innerHTML='Code expired or locked. <a href="'+P+'/start?rd='+encodeURIComponent(RD)+'">Start again</a>';$("f2").hidden=true
+ }).catch(function(){$("st").textContent="Network error."})};
+})();</script></body></html>"""
+
+
 def make_handler(b):
     class H(BaseHTTPRequestHandler):
         server_version = "auth-broker"
@@ -474,6 +627,10 @@ def make_handler(b):
                 if code == 302:
                     return self.send(302, b"", "text/plain", [("Location", out)] + cks)
                 return self.send(code, "<p>%s</p><p><a href=\"%s/start\">Try again</a></p>" % (html.escape(out), b.prefix), "text/html; charset=utf-8", cks)
+            if op == "/start" and b.flow == "email":
+                if not b.email_on:
+                    return self.send(404, "<p>This sign-in method is not enabled.</p>", "text/html; charset=utf-8")
+                return self.send(200, EMAIL_PAGE.replace("__PREFIX__", b.prefix), "text/html; charset=utf-8", [("Content-Security-Policy", "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; base-uri 'none'; form-action 'none'")])
             if op == "/start":
                 if not b.enabled:
                     return self.send(404, "<p>This sign-in method is not enabled.</p>", "text/html; charset=utf-8")
@@ -491,6 +648,16 @@ def make_handler(b):
                 body = json.loads(self.rfile.read(n) or b"{}")
             except Exception:
                 return self.send(400, {"error": "bad_request"})
+            if b.flow == "email":
+                if op == "/request":
+                    code, d = b.otp_request(body.get("email", ""), self.ip())
+                    return self.send(code, d)
+                if op == "/verify":
+                    code, d, cookie = b.otp_verify(body.get("sid", ""), body.get("code", ""))
+                    if cookie:
+                        d["rd"] = b.safe_rd(body.get("rd", ""))
+                    return self.send(code, d, extra=[("Set-Cookie", cookie)] if cookie else None)
+                return self.send(404, {"error": "not_found"})
             if b.flow in ("web", "access"):
                 return self.send(404, {"error": "not_found"})
             if op == "/device":

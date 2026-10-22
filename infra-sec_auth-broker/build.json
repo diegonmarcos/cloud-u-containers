@@ -1,12 +1,13 @@
 {
   "name": "auth-broker",
-  "description": "Identity broker for the multi-SSO sign-in: GitHub (device flow + web), Google (web code flow + PKCE) and Cloudflare One (Access JWT), owner only (#1066, #1083)",
+  "description": "Identity broker for the multi-SSO sign-in: GitHub (device flow + web), Google (web code flow + PKCE) and Cloudflare One (Access JWT) and Email code (one-time code), owner only (#1066, #1083, #1118)",
   "category": "sec",
   "dns": "auth-broker.app",
   "ports": {
     "google": 4180,
     "github": 4181,
-    "cloudflare": 4182
+    "cloudflare": 4182,
+    "email": 4183
   },
   "bind_host": "10.0.0.6",
   "deploy": {
@@ -114,6 +115,16 @@
         ],
         "login_url": "https://auth-cf.diegonmarcos.com/oauth2/cloudflare/callback",
         "home_url": "https://auth.diegonmarcos.com/"
+      },
+      {
+        "id": "email",
+        "label": "Email code",
+        "enabled": true,
+        "provider": "email",
+        "flow": "email",
+        "port": 4183,
+        "prefix": "/oauth2/email",
+        "_doc_flow": "Email one-time code (#1118), the recovery path when the TOTP vault is unreachable. <prefix>/start serves the address form; POST <prefix>/request answers every address identically (the allowlist cannot be probed) and mails a code only to an address in allowed_emails; POST <prefix>/verify checks the code and issues the same _diego_sso cookie as the other providers. No dependency on the vault, Authelia or TOTP."
       }
     ],
     "cloudflare_access": {
@@ -125,6 +136,29 @@
         "fd961754aece540b409ee165bc028105168acece9dca1f530e38f5f62e5b8f3c",
         "669d709af5740d926d2f122e7752331015a22a5487b1c82e8b63d4f32f31dfc0"
       ]
+    },
+    "email_otp": {
+      "_doc": "Code: 6 digits, valid 10 minutes, single use, at most 5 attempts per code; only an HMAC of the code is held (in memory). Send limits: per allowlisted address and per client IP in a window. Delivery: Stalwart over the mesh (implicit-TLS submission at the mesh IP, certificate checked against tls_server_name) first, the Resend API as fallback. Secrets come from sops (src/secrets.yaml), referenced by env name only.",
+      "code_length": 6,
+      "ttl_seconds": 600,
+      "max_attempts": 5,
+      "send_per_address": 3,
+      "send_per_ip": 10,
+      "send_window_seconds": 600,
+      "subject": "Your sign-in code",
+      "smtp": {
+        "host": "10.0.0.3",
+        "port": 2465,
+        "tls_server_name": "mail.diegonmarcos.com",
+        "user_env": "AUTH_BROKER_SMTP_USER",
+        "password_env": "AUTH_BROKER_SMTP_PASSWORD",
+        "from": "no-reply@diegonmarcos.com"
+      },
+      "resend": {
+        "url": "https://api.resend.com/emails",
+        "api_key_env": "AUTH_BROKER_RESEND_API_KEY",
+        "from": "no-reply@diegonmarcos.com"
+      }
     }
   },
   "containers": {
@@ -169,6 +203,20 @@
         "mem_limit": "64m"
       },
       "protocol": "http"
+    },
+    "email": {
+      "container_name": "auth-broker-email",
+      "image": "ghcr.io/diegonmarcos/auth-broker-binaries:latest",
+      "port": 4183,
+      "public": false,
+      "healthcheck": "/oauth2/email/health",
+      "volumes": [],
+      "env_file": true,
+      "resources": {
+        "mem_reservation": "16m",
+        "mem_limit": "64m"
+      },
+      "protocol": "http"
     }
   },
   "build": {
@@ -181,6 +229,10 @@
     },
     "broker-hub": {
       "cmd": "python3 -I test/test-broker-hub.py",
+      "cwd": "src"
+    },
+    "broker-email-otp": {
+      "cmd": "python3 -I test/test-broker-email.py",
       "cwd": "src"
     }
   }
