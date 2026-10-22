@@ -1,4 +1,4 @@
-  handle_errors {
+@FALLBACK_BLOCK@
       @backend_error expression `@CODES_EXPR@`
       handle @backend_error {
         # Truthful fallback (parity with infra-sec_caddy-public, 2026-06-23): a
@@ -14,4 +14,3 @@
           status {err.status_code}
         }
       }
-    }
