@@ -3,7 +3,7 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { sshExec, checkVmReachable } from "../../shared/libs/ssh.js";
+import { sshExec, checkVmReachable, vmMeshAddress } from "../../shared/libs/ssh.js";
 import { getConfig, resolveVmId, getVmSshAlias, getServiceDir, composeCd } from "../../shared/libs/config.js";
 import { audit } from "../../shared/libs/audit.js";
 import { validPsPattern } from "../../shared/libs/gha-policy.js";
@@ -92,7 +92,7 @@ export function registerOperationsTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `${alias} (${vmId}) @ ${vmConfig.ip}: UNREACHABLE\n${ping.stderr}`,
+              text: `${alias} (${vmId}) @ ${vmMeshAddress(vmConfig)}: UNREACHABLE\n${ping.stderr}`,
             },
           ],
           isError: true,
@@ -102,7 +102,7 @@ export function registerOperationsTools(server: McpServer) {
       if (!detailed) {
         return {
           content: [
-            { type: "text", text: `${alias} (${vmId}) @ ${vmConfig.ip}: REACHABLE` },
+            { type: "text", text: `${alias} (${vmId}) @ ${vmMeshAddress(vmConfig)}: REACHABLE` },
           ],
         };
       }
@@ -113,7 +113,7 @@ export function registerOperationsTools(server: McpServer) {
         15_000
       );
 
-      const header = `${alias} (${vmId}) @ ${vmConfig.ip}: REACHABLE`;
+      const header = `${alias} (${vmId}) @ ${vmMeshAddress(vmConfig)}: REACHABLE`;
       if (!info.ok) {
         return {
           content: [

@@ -15,7 +15,7 @@ import { z } from "zod";
 import { existsSync, readFileSync, readdirSync, statSync } from "fs";
 import { join } from "path";
 import { exec, execAsync } from "../../shared/libs/exec.js";
-import { sshExec, sshExecAsync, checkVmReachable } from "../../shared/libs/ssh.js";
+import { sshExec, sshExecAsync, checkVmReachable, vmMeshAddress } from "../../shared/libs/ssh.js";
 import { getConfig, getServiceDir, getServiceFolder, resolveVmId, getVmSshAlias, composeCd } from "../../shared/libs/config.js";
 import { BUILD_SCRIPT, SOLUTIONS_DIR, FRONT_DIR, CLOUD_DATA_DIR, resolveCloudDataPath, getConsolidatedPath } from "../../shared/libs/paths.js";
 import { audit } from "../../shared/libs/audit.js";
@@ -926,10 +926,10 @@ export function registerMetaDevops(server: McpServer): void {
             const config = getConfig();
             const vmConfig = config.vms[vmId];
             const ping = checkVmReachable(vmId);
-            if (!ping.ok) return errText(`${alias} (${vmId}) @ ${vmConfig.ip}: UNREACHABLE\n${ping.stderr}`);
-            if (!p.detailed) return text(`${alias} (${vmId}) @ ${vmConfig.ip}: REACHABLE`);
+            if (!ping.ok) return errText(`${alias} (${vmId}) @ ${vmMeshAddress(vmConfig)}: UNREACHABLE\n${ping.stderr}`);
+            if (!p.detailed) return text(`${alias} (${vmId}) @ ${vmMeshAddress(vmConfig)}: REACHABLE`);
             const info = sshExec(vmId, 'echo "=== Uptime ===" && uptime && echo "=== Memory ===" && free -h && echo "=== Disk ===" && df -h / && echo "=== Docker ===" && docker ps --format "table {{.Names}}\\t{{.Status}}" 2>/dev/null || echo "Docker not available"', 15_000);
-            const header = `${alias} (${vmId}) @ ${vmConfig.ip}: REACHABLE`;
+            const header = `${alias} (${vmId}) @ ${vmMeshAddress(vmConfig)}: REACHABLE`;
             if (!info.ok) return text(`${header}\n\n(SSH exec failed — exit ${info.exitCode})${info.stderr ? `\n${info.stderr}` : ""}`);
             return text(`${header}\n\n${info.stdout}`);
           }

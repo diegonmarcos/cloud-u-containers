@@ -2,6 +2,7 @@ import { exec, execAsync, type ExecResult } from "./exec.js";
 import { resolveVmId, getVmSshAlias } from "./config.js";
 import { audit } from "./audit.js";
 import { remoteShellWrap } from "./shell-quote.js";
+import { sshArgv, vmMeshAddress } from "./ssh-argv.js";
 
 // ── SSH via alias ──────────────────────────────────────────────────
 // All connection logic (host, user, key, ProxyJump, mux) lives in
@@ -12,15 +13,6 @@ import { remoteShellWrap } from "./shell-quote.js";
 // `StrictHostKeyChecking accept-new` ssh accepts the key but cannot append it
 // and warns "Failed to add the host to the list of known hosts" on every
 // connection — that stderr gets spliced into MCP tool output.
-const SSH_BASE_OPTS = (connectTimeout: number | string) => [
-  "-o", "BatchMode=yes",
-  "-o", "UserKnownHostsFile=/dev/null",
-  // ...which makes every host "new", so accept-new logs a Warning each time.
-  // ERROR keeps real failures (auth, timeout) and drops that noise.
-  "-o", "LogLevel=ERROR",
-  "-o", `ConnectTimeout=${connectTimeout}`,
-];
-
 // 2026-09-06: the remote LOGIN shell on oci-apps is fish, which rejects
 // `$(...)` ("command substitutions not allowed here") and other POSIX/bash
 // syntax the 120+ call sites in this tree were written in. profile's
@@ -31,7 +23,7 @@ const SSH_BASE_OPTS = (connectTimeout: number | string) => [
 // 2026-10-10: the body is now quoted so fish AND POSIX read it identically —
 // the plain '\'' form broke under fish once the command itself held a quote
 // (see shell-quote.ts).
-export { remoteShellWrap };
+export { remoteShellWrap, vmMeshAddress };
 
 export function sshExec(
   vmNameOrAlias: string,
@@ -43,7 +35,7 @@ export function sshExec(
   const vmId = resolveVmId(vmNameOrAlias);
   const alias = getVmSshAlias(vmId);
 
-  const sshArgs = [...SSH_BASE_OPTS(connectTimeout), alias, remoteShellWrap(command)];
+  const sshArgs = sshArgv(alias, remoteShellWrap(command), connectTimeout);
   const effectiveTimeout = timeout ?? 30_000;
 
   const result = exec("ssh", sshArgs, { timeout: effectiveTimeout });
@@ -62,7 +54,7 @@ export async function sshExecAsync(
   const vmId = resolveVmId(vmNameOrAlias);
   const alias = getVmSshAlias(vmId);
 
-  const sshArgs = [...SSH_BASE_OPTS(connectTimeout), alias, remoteShellWrap(command)];
+  const sshArgs = sshArgv(alias, remoteShellWrap(command), connectTimeout);
   const effectiveTimeout = timeout ?? 30_000;
 
   const result = await execAsync("ssh", sshArgs, { timeout: effectiveTimeout });
@@ -75,6 +67,8 @@ export function checkVmReachable(vmNameOrAlias: string): ExecResult {
   const vmId = resolveVmId(vmNameOrAlias);
   const alias = getVmSshAlias(vmId);
 
-  // Quick SSH check — relies on ~/.ssh/config for host/key resolution
-  return exec("ssh", [...SSH_BASE_OPTS(5), alias, "echo ok"], { timeout: 10_000 });
+  // Same alias, options and wrapper as sshExec (mesh path via ~/.ssh/config).
+  const result = exec("ssh", sshArgv(alias, remoteShellWrap("echo ok"), 10), { timeout: 15_000 });
+  audit("ssh", `${alias}: reachability`, `exit ${result.exitCode}`);
+  return result;
 }
