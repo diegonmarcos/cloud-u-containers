@@ -15,6 +15,9 @@
     "vpn.diegonmarcos.com": "WireGuard bootstrap protocol endpoint (clients roam worldwide)",
     "matrix.diegonmarcos.com": "Matrix federation protocol endpoint (servers worldwide)"
   },
+  "edge_terminated": [
+    { "host": "c3-pvt.diegonmarcos.com", "reason": "bearer/cookie-gated container path host; terminated at the edge so the country fence sees the client, then proxied to the hub which keeps its own gate" }
+  ],
   "_global_doc": "Every other edge host is fenced by default (fail closed for new hosts): auth, account, mcp, www, the apex and anything added later. Owner ruling 2026-10-22 (#1104): www and the apex are fenced like every other grey host; only dedicated protocol hosts stay global.",
   "db": {
     "file": "/usr/share/GeoIP/country.mmdb",

@@ -169,7 +169,7 @@ let
   #      gcp-proxy terminates + its @wg gate 403s public clients (source 10.1.0.1).
   mailL4     = caddyPublic.mail_l4_routes or [];
   # multi-SSO (edge_auth.multi_sso): the extra sign-in host(s) are terminated here like auth.
-  publicSnis = (caddyPublic.public_sni_hosts or []) ++ (if ea.multiSso.enabled then ea.multiSso.extraHosts else []);
+  publicSnis = (caddyPublic.public_sni_hosts or []) ++ (if ea.multiSso.enabled then ea.multiSso.extraHosts else []) ++ (map (e: e.host) geoCfg.edge_terminated);
   sniSlug    = h: lib.replaceStrings [ "." "-" ] [ "_" "_" ] h;
   allMuxSnis = (map (r: r.sni) mailL4) ++ publicSnis;
   mkMailL4Route = r: ''
@@ -455,6 +455,26 @@ ${denyBlock}'';
       ${handleErrors}
     }'';
 
+  # ── Edge-terminated hosts (_shared/geo-fence.json edge_terminated, #1102/#1104) ──
+  # Hosts that used to be raw-TLS passthrough to the hub (which only ever sees 10.1.0.1) are
+  # terminated HERE so the country fence can see the client, then proxied to the hub over TLS
+  # (same SNI/Host). The edge gate and the hub's own gate both stay on: auth is unchanged.
+  mkEdgeTerminatedSite = e: ''
+    # edge-terminated: ${e.host} -- ${e.reason}
+    ${e.host} {
+    ${sec}
+    ${geo e.host}
+    ${ea.gate e.host}
+      reverse_proxy https://${privateUpstream} {
+        flush_interval -1
+        ${xreal}
+        transport http {
+          tls_server_name ${e.host}
+        }
+      }
+      ${handleErrors}
+    }'';
+
   # ── OIDC public machine endpoints (oidc_public) ──
   # The bearer-gated MCP tier needs its tokens MINTED from off-mesh, and the
   # hub 403s auth.diegonmarcos.com for non-WG clients by design. This serves
@@ -567,6 +587,12 @@ ${lib.concatMapStringsSep "\n\n" mkMcpRouteGroup mcpGroups}
   # ════════════════════════════════════════════════════════════
 
 ${mkOidcPublicSite}
+
+  # ════════════════════════════════════════════════════════════
+  # EDGE-TERMINATED HOSTS (fenced, then proxied to the hub)
+  # ════════════════════════════════════════════════════════════
+
+${lib.concatMapStringsSep "\n\n" mkEdgeTerminatedSite geoCfg.edge_terminated}
 
   # ════════════════════════════════════════════════════════════
   # NO L7 *.diegonmarcos.com catch-all — a named-wildcard site would force

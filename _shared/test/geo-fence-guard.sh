@@ -86,7 +86,11 @@ for addr, body in sites:
     if allglobal and has: fail(addr + " is declared global but imports geo_fence")
     if not allglobal and not has: fail(addr + " is not declared global but lacks geo_fence")
     if not allglobal: fenced.append(addr)
-for h in ("auth.diegonmarcos.com", "mcp.diegonmarcos.com"):
+for e in d["edge_terminated"]:
+    h = e["host"]
+    if not re.search(r"@public tls sni [^\n]*\b" + re.escape(h) + r"\b", t): fail(h + " is edge-terminated but missing from the layer4 @public SNI list")
+    if h in d["global_hosts"]: fail(h + " cannot be both edge-terminated (fenced) and global")
+for h in ("auth.diegonmarcos.com", "mcp.diegonmarcos.com", "c3-pvt.diegonmarcos.com"):
     if not any(h in a for a in fenced): fail(h + " is not fenced")
 print("ok: %d sites, fenced: %s" % (len(sites), "; ".join(fenced)))
 PY
