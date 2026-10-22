@@ -1,0 +1,40 @@
+name: geo-fence rerender 1102 (render the edge dist from current main and publish it)
+
+# One-shot (#1102). The Ship regenerates dist/ and refuses when the committed copy differs. This job
+# renders the edge Caddyfile / Dockerfile / source hash exactly as the Ship would and uploads them
+# for committing; it runs the geo-fence guard on the render. Nothing is pushed.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with: { repository: diegonmarcos/cloud-infra, path: _ci, sparse-checkout: '1_cloud-configs/dist' }
+      - uses: cachix/install-nix-action@v27
+      - uses: actions/setup-go@v5
+        with: { go-version: '1.23' }
+      - name: Render
+        run: |
+          set -euo pipefail
+          NIX="nix --extra-experimental-features nix-command --extra-experimental-features flakes"
+          E=$PWD/_ci/1_cloud-configs/dist/build-caddy-edge.json
+          $NIX eval --impure --raw --expr "let lib=((builtins.getFlake \"github:NixOS/nixpkgs/nixos-24.11\").lib); caddyPublic=builtins.fromJSON (builtins.readFile $E); in import $PWD/infra-sec_caddy-public/src/caddyfile-public.nix { inherit lib caddyPublic; }" > /tmp/render.txt
+          D=infra-sec_caddy-public/dist/configs/Caddyfile
+          n=$(grep -n -m1 -F -x -- "$(head -1 /tmp/render.txt)" "$D" | cut -d: -f1)
+          mkdir -p /tmp/out
+          { head -n $((n-1)) "$D"; cat /tmp/render.txt; } > /tmp/out/Caddyfile
+          diff -u "$D" /tmp/out/Caddyfile | head -200 || true
+          cp /tmp/out/Caddyfile "$D"
+          (cd infra-sec_caddy-public/src && sha256sum -- code/Dockerfile | sha256sum | cut -c1-16) > /tmp/out/src-hash
+          cat /tmp/out/src-hash; cat infra-sec_caddy-public/dist/.src-hash
+      - name: Geo-fence guard on the render
+        run: EDGE_JSON="$PWD/_ci/1_cloud-configs/dist/build-caddy-edge.json" bash _shared/test/geo-fence-ci.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: edge-dist, path: /tmp/out }
