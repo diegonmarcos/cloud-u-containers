@@ -578,7 +578,6 @@ forward_auth @ea_cfaccess 10.0.0.6:4180 {
 # gh-pages: Landing page + WKD (Web Key Directory for PGP)
 diegonmarcos.com, www.diegonmarcos.com {
 import security
-  import geo_fence
   
   handle /.well-known/openpgpkey/* {
   reverse_proxy 10.1.0.2:443
@@ -652,7 +651,6 @@ reverse_proxy https://diegonmarcos.github.io {
 # gh-pages: linktree.diegonmarcos.com
 linktree.diegonmarcos.com {
 import security
-  import geo_fence
   
         @gh_static path_regexp gh_static `(?i)\.(svg|png|jpe?g|gif|webp|avif|ico|css|js|mjs|map|woff2?|ttf|otf|json|webmanifest|mp4|webm)$`
 header @gh_static {
@@ -705,7 +703,6 @@ reverse_proxy https://diegonmarcos.github.io {
 # gh-pages: nexus.diegonmarcos.com
 nexus.diegonmarcos.com {
 import security
-  import geo_fence
   import edge_auth /.well-known/acme-challenge/*
         @gh_static path_regexp gh_static `(?i)\.(svg|png|jpe?g|gif|webp|avif|ico|css|js|mjs|map|woff2?|ttf|otf|json|webmanifest|mp4|webm)$`
 header @gh_static {
@@ -758,7 +755,6 @@ reverse_proxy https://diegonmarcos.github.io {
 # gh-pages: suite.diegonmarcos.com
 suite.diegonmarcos.com {
 import security
-  import geo_fence
   import edge_auth /.well-known/acme-challenge/*
         @gh_static path_regexp gh_static `(?i)\.(svg|png|jpe?g|gif|webp|avif|ico|css|js|mjs|map|woff2?|ttf|otf|json|webmanifest|mp4|webm)$`
 header @gh_static {
@@ -811,7 +807,6 @@ reverse_proxy https://diegonmarcos.github.io {
 # gh-pages: maps.diegonmarcos.com
 maps.diegonmarcos.com {
 import security
-  import geo_fence
   import edge_auth /.well-known/acme-challenge/*
         @gh_static path_regexp gh_static `(?i)\.(svg|png|jpe?g|gif|webp|avif|ico|css|js|mjs|map|woff2?|ttf|otf|json|webmanifest|mp4|webm)$`
 header @gh_static {

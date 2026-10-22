@@ -1,5 +1,5 @@
 {
-  "_doc": "THE geo-fence declaration (ticket #1102), one source of truth. Public requests to the Caddy public edge (infra-sec_caddy-public, the only public HTTPS terminator) are served only when the client country is in allowed_countries; every other client gets 403 (HTML: an explanatory page, other clients: plain 'Forbidden'). Rendered by infra-sec_caddy-public/src/caddyfile-public.nix; the image bakes the country database at build time (Dockerfile ARGs must equal db.url and db.sha256 here; guard: _shared/test/geo-fence-guard.sh). Nothing is downloaded at runtime; .github/workflows/geo-fence-refresh.yml proposes a newer pinned database monthly.",
+  "_doc": "THE geo-fence declaration (ticket #1102), one source of truth. Sign-in and private-access hosts on the Caddy public edge (infra-sec_caddy-public, the only public HTTPS terminator), listed in fenced_hosts, are served only when the client country is in allowed_countries; every other client gets 403 (HTML: an explanatory page, other clients: plain 'Forbidden'). Rendered by infra-sec_caddy-public/src/caddyfile-public.nix; the image bakes the country database at build time (Dockerfile ARGs must equal db.url and db.sha256 here; guard: _shared/test/geo-fence-guard.sh). Nothing is downloaded at runtime; .github/workflows/geo-fence-refresh.yml proposes a newer pinned database monthly.",
   "allowed_countries": [
     "AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR", "DE", "GR", "HU", "IE", "IT", "LV", "LT", "LU", "MT", "NL", "PL", "PT", "RO", "SK", "SI", "ES", "SE",
     "IS", "LI", "NO",
@@ -11,14 +11,16 @@
   "_allowed_doc": "EU27, EEA/EFTA (IS LI NO), UK and Crown dependencies, CH, other European countries and territories (AD AL AX BA FO GI MC MD ME MK RS SJ SM UA VA XK), plus US. Excluded on purpose: RU BY (sanctioned, high abuse), TR GE AM AZ (transcontinental). An address the database cannot place is denied (fail closed).",
   "exempt_cidrs": ["10.0.0.0/24", "10.1.0.0/24", "fd0c:1d00::/64", "127.0.0.0/8", "::1/128"],
   "_exempt_doc": "WireGuard mesh (10.0.0.0/24, fd0c:1d00::/64), wg-public (10.1.0.0/24) and loopback bypass the country check. Mail (imap/smtps SNI), MX and the raw passthrough tier are layer4 and never reach this HTTP check.",
-  "global_hosts": {
-    "vpn.diegonmarcos.com": "WireGuard bootstrap protocol endpoint (clients roam worldwide)",
-    "matrix.diegonmarcos.com": "Matrix federation protocol endpoint (servers worldwide)"
+  "fenced_hosts": {
+    "auth.diegonmarcos.com": "Authelia sign-in portal",
+    "account.diegonmarcos.com": "account self-service (sign-in gated)",
+    "mcp.diegonmarcos.com": "MCP hub private access (bearer/sign-in gated)",
+    "c3-pvt.diegonmarcos.com": "private container path host (also listed in edge_terminated)"
   },
   "edge_terminated": [
     { "host": "c3-pvt.diegonmarcos.com", "reason": "bearer/cookie-gated container path host; terminated at the edge so the country fence sees the client, then proxied to the hub which keeps its own gate" }
   ],
-  "_global_doc": "Every other edge host is fenced by default (fail closed for new hosts): auth, account, mcp, www, the apex and anything added later. Owner ruling 2026-10-22 (#1104): www and the apex are fenced like every other grey host; only dedicated protocol hosts stay global.",
+  "_fenced_doc": "Scope (architect ruling 2026-10-22): the fence covers sign-in and private access only, i.e. exactly fenced_hosts. Public read-only content (www, the apex, linktree, the Pages custom domains) and the protocol hosts (vpn, matrix) are NOT fenced. A site block is fenced when any of its names is in fenced_hosts. A new sign-in or private host must be added here.",
   "db": {
     "file": "/usr/share/GeoIP/country.mmdb",
     "url": "https://download.db-ip.com/free/dbip-country-lite-2026-10.mmdb.gz",
