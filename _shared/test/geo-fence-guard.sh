@@ -40,7 +40,7 @@ assert re.fullmatch(r"[0-9a-f]{64}", d["db"]["sha256"]), "db.sha256"
 assert d["db"]["url"].startswith("https://"), "db.url"
 for c in ("10.0.0.0/24", "10.1.0.0/24", "127.0.0.0/8"):
     assert c in d["exempt_cidrs"], c + " must be exempt"
-for h in ("auth.diegonmarcos.com", "account.diegonmarcos.com", "mcp.diegonmarcos.com"):
+for h in ("auth.diegonmarcos.com", "account.diegonmarcos.com", "mcp.diegonmarcos.com", "www.diegonmarcos.com", "diegonmarcos.com"):
     assert h not in d["global_hosts"], h + " must be fenced"
 PY
 ok "declaration is well formed"

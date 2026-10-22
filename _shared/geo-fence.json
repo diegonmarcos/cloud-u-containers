@@ -12,16 +12,10 @@
   "exempt_cidrs": ["10.0.0.0/24", "10.1.0.0/24", "fd0c:1d00::/64", "127.0.0.0/8", "::1/128"],
   "_exempt_doc": "WireGuard mesh (10.0.0.0/24, fd0c:1d00::/64), wg-public (10.1.0.0/24) and loopback bypass the country check. Mail (imap/smtps SNI), MX and the raw passthrough tier are layer4 and never reach this HTTP check.",
   "global_hosts": {
-    "diegonmarcos.com": "public static landing page",
-    "www.diegonmarcos.com": "public static landing page",
-    "linktree.diegonmarcos.com": "public static page",
-    "nexus.diegonmarcos.com": "public static page",
-    "suite.diegonmarcos.com": "public static page",
-    "maps.diegonmarcos.com": "public static page",
     "vpn.diegonmarcos.com": "WireGuard bootstrap protocol endpoint (clients roam worldwide)",
     "matrix.diegonmarcos.com": "Matrix federation protocol endpoint (servers worldwide)"
   },
-  "_global_doc": "Every other edge host is fenced by default (fail closed for new hosts): auth, account, mcp and anything added later.",
+  "_global_doc": "Every other edge host is fenced by default (fail closed for new hosts): auth, account, mcp, www, the apex and anything added later. Owner ruling 2026-10-22 (#1104): www and the apex are fenced like every other grey host; only dedicated protocol hosts stay global.",
   "db": {
     "file": "/usr/share/GeoIP/country.mmdb",
     "url": "https://download.db-ip.com/free/dbip-country-lite-2026-10.mmdb.gz",
