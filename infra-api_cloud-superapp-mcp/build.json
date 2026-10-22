@@ -33,32 +33,87 @@
       "vault_id_rsa",
       "vault_id_rsa.pub"
     ],
-    "_extra_hosts_doc": "Ssh aliases the MCP dials (SUPERAPP_HOSTS in src/compose.nix). The phone's sshd is provided by OUR terminals (cloud-u-android ac_cloud-nix-on-droid / ac_cloud-termux; ports and users as declared in ac_cloud-myterminal/data/terminal-targets.json: nix 8024 user nix-on-droid, termux 8023 user termux). Address = the phone's wg0 mesh client `termux` (config.json native.wireguard.clients), resolved by the derive into /opt/ssh-keys/cloud-superapp-mcp/config. MESH ONLY: the phone has no public ssh route by design (sshd is reached over WireGuard; ide-endpoints.json: public surface is 443+51820+25), so there is no phone-pub. The key offered is vault_id_rsa (keys above); it is authorised on the phone by cloud-u-linux da__my-konsole/termux/authorized_keys. test-superapp-hosts.sh fails if an alias in SUPERAPP_HOSTS has no entry here.",
+    "_phones_doc": "THE ONE declaration of the phones this MCP dials (two phones since #573: the S21+ on wg client `termux` 10.0.0.9 and the A37 on wg client `samsung-a37` 10.0.0.10). Each phone's mesh addresses and peer key are NOT restated here: `wg_client` names its row in cloud-infra config.json#native.wireguard.clients (the same row superapp-users.json peers point at), and the derive resolves it into /opt/ssh-keys/cloud-superapp-mcp/config. `alias` is the phone's fleet name; for each phone and each door in `doors` the MCP dials <alias><suffix> (v4) and <alias><suffix>-v6. extra_hosts below is exactly that expansion — test/test-superapp-hosts.sh fails on any drift, and on a SUPERAPP_PHONES alias that is not declared here. Every tool takes `phone` (alias or id); omitted, the phone that answered most recently is tried first, then the rest, and every result names the phone that answered.",
+    "phones": [
+      {
+        "alias": "phone1",
+        "id": "samsung-s21plus",
+        "name": "Samsung Galaxy S21+",
+        "wg_client": "termux"
+      },
+      {
+        "alias": "phone2",
+        "id": "samsung-a37",
+        "name": "Samsung Galaxy A37",
+        "wg_client": "samsung-a37"
+      }
+    ],
+    "doors": [
+      {
+        "suffix": "",
+        "user": "nix-on-droid",
+        "port": 8024
+      },
+      {
+        "suffix": "-termux",
+        "user": "termux",
+        "port": 8023
+      }
+    ],
+    "_extra_hosts_doc": "Ssh aliases the MCP dials (expanded from phones x doors; SUPERAPP_PHONES in src/compose.nix picks the order). The phone's sshd is provided by OUR terminals (cloud-u-android ac_cloud-nix-on-droid / ac_cloud-termux; ports and users as declared in ac_cloud-myterminal/data/terminal-targets.json: nix 8024 user nix-on-droid, termux 8023 user termux). Address = each phone's wg0 mesh client (phones[].wg_client) (config.json native.wireguard.clients), resolved by the derive into /opt/ssh-keys/cloud-superapp-mcp/config. MESH ONLY: the phone has no public ssh route by design (sshd is reached over WireGuard; ide-endpoints.json: public surface is 443+51820+25), so there is no phone-pub. The key offered is vault_id_rsa (keys above); it is authorised on the phone by cloud-u-linux da__my-konsole/termux/authorized_keys. test-superapp-hosts.sh fails if an alias in SUPERAPP_HOSTS has no entry here.",
     "extra_hosts": [
       {
-        "host": "phone",
+        "host": "phone1",
         "wg_client": "termux",
         "family": "v4",
         "user": "nix-on-droid",
         "port": 8024
       },
       {
-        "host": "phone-v6",
+        "host": "phone1-v6",
         "wg_client": "termux",
         "family": "v6",
         "user": "nix-on-droid",
         "port": 8024
       },
       {
-        "host": "phone-termux",
+        "host": "phone1-termux",
         "wg_client": "termux",
         "family": "v4",
         "user": "termux",
         "port": 8023
       },
       {
-        "host": "phone-termux-v6",
+        "host": "phone1-termux-v6",
         "wg_client": "termux",
+        "family": "v6",
+        "user": "termux",
+        "port": 8023
+      },
+      {
+        "host": "phone2",
+        "wg_client": "samsung-a37",
+        "family": "v4",
+        "user": "nix-on-droid",
+        "port": 8024
+      },
+      {
+        "host": "phone2-v6",
+        "wg_client": "samsung-a37",
+        "family": "v6",
+        "user": "nix-on-droid",
+        "port": 8024
+      },
+      {
+        "host": "phone2-termux",
+        "wg_client": "samsung-a37",
+        "family": "v4",
+        "user": "termux",
+        "port": 8023
+      },
+      {
+        "host": "phone2-termux-v6",
+        "wg_client": "samsung-a37",
         "family": "v6",
         "user": "termux",
         "port": 8023

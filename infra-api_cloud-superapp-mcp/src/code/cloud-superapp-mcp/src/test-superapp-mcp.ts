@@ -9,8 +9,8 @@
  */
 import { strict as assert } from "node:assert";
 import { execFileSync } from "node:child_process";
-import { PORT_DEVCONTROL, PORT_LAST, parseGatewayApps, run, scan, sq, urlOf } from "../../lib-mcp/src/device.js";
-import { ROUTE_RE, label, resolve } from "../../lib-mcp/src/tools.js";
+import { PHONES, PORT_DEVCONTROL, PORT_LAST, dialOrder, doorsOf, onPhone, parseGatewayApps, phoneAlias, run, scan, sq, urlOf } from "../../lib-mcp/src/device.js";
+import { ROUTE_RE, label, resolve, stamp } from "../../lib-mcp/src/tools.js";
 
 let n = 0;
 const ok = (what: string) => {
@@ -91,6 +91,30 @@ assert.equal(urlOf({ pkg: "com.x", port: 38154 }, "/docs"), "http://127.0.0.1:38
 ok("a gateway app is asked at /app/<pkg>/api/<op>; a pre-gateway app on its own port");
 assert.equal(resolve(gw!, "mail").pkg, "com.diegonmarcos.comms.mail");
 ok("gateway apps resolve by name like port-swept ones");
+
+// ── two phones ───────────────────────────────────────────────────────────────
+// Run with SUPERAPP_PHONES=phone2,phone1 (the compose.nix value).
+if (PHONES.join(",") === "phone2,phone1") {
+  assert.equal(phoneAlias("phone1"), "phone1");
+  assert.equal(phoneAlias("samsung-a37"), "phone2");
+  assert.equal(phoneAlias("A37"), "phone2");
+  assert.equal(phoneAlias("samsung-s21plus"), "phone1");
+  assert.throws(() => phoneAlias("phone3"), /unknown phone/);
+  ok("a phone is chosen by alias or id; an undeclared one is refused");
+
+  assert.deepEqual(doorsOf("phone2"), ["phone2", "phone2-v6", "phone2-termux", "phone2-termux-v6"]);
+  ok("each phone is dialled through its four declared doors");
+
+  assert.deepEqual(dialOrder(null), ["phone2", "phone1"]);
+  assert.deepEqual(dialOrder("phone1"), ["phone1"]);
+  ok("no phone given: declared order until one answers; a phone given: only that one");
+
+  // An explicit phone never falls through to the other one.
+  await assert.rejects(onPhone("phone1", () => run("true")), /no route to phone phone1/);
+  ok("an unreachable chosen phone fails as itself, not via the other phone");
+}
+assert.equal(stamp("phone2", { content: [{ type: "text", text: "x" }] }).content[0].text, "[phone: phone2]\nx");
+ok("every result is stamped with the phone that answered");
 
 // ── live, only if the phone answers ──────────────────────────────────────────
 const reachable = await run("echo up").then((s) => s.trim() === "up").catch(() => false);

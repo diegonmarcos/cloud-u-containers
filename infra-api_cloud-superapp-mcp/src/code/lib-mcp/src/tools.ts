@@ -15,14 +15,15 @@
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { App, PORT_DEVCONTROL, call, get, scan } from "./device.js";
+import { App, PHONES, PORT_DEVCONTROL, call, currentPhone, dialOrder, get, onPhone, pinPhone, scan } from "./device.js";
 import type { AppModule } from "./registry.js";
 
 /** /api/<group>/<op>. No dots, no %, no scheme — a route name, not a URL. The
  *  value comes from the model, and device.ts escapes it into a shell script. */
 export const ROUTE_RE = /^\/?[A-Za-z0-9_-]+(\/[A-Za-z0-9_-]+)*\/?$/;
 
-let cache: App[] | null = null;
+/** Last sweep per phone alias. */
+const cache = new Map<string, App[]>();
 let modules: AppModule[] = [];
 
 /** mcps-apps/<id>/ → applicationId. Lets a human say "cloud-mail" where the
@@ -34,8 +35,18 @@ function aliasToPkg(q: string): string | null {
 }
 
 async function apps(refresh = false): Promise<App[]> {
-  if (refresh || !cache) cache = await scan();
-  return cache;
+  // Unbound call: reuse the sweep of the phone that answered most recently,
+  // and bind the call to that phone so the app list and the route agree.
+  let phone = currentPhone();
+  if (!phone && !refresh) {
+    const recent = dialOrder(null).find((p) => cache.has(p));
+    if (recent) { pinPhone(recent); phone = recent; }
+  }
+  if (!refresh && phone && cache.has(phone)) return cache.get(phone)!;
+  const list = await scan();
+  const answered = currentPhone();
+  if (answered) cache.set(answered, list);
+  return list;
 }
 
 export function label(a: App): string {
@@ -79,15 +90,50 @@ export function resolve(list: App[], query: string): App {
 
 const text = (s: string) => ({ content: [{ type: "text" as const, text: s || "(empty response)" }] });
 
+const PHONE_ARG = z
+  .string()
+  .optional()
+  .describe(`Which phone to dial: ${PHONES.join(", ")} (alias, or its id e.g. samsung-a37). Omit for the phone seen online most recently.`);
+
+type Out = { content: { type: "text"; text: string }[] };
+
+/** Every result says which phone answered. */
+export function stamp(phone: string | null, r: Out): Out {
+  return { content: r.content.map((c, i) => (i === 0 ? { ...c, text: `[phone: ${phone ?? "none"}]\n${c.text}` } : c)) };
+}
+
+/** server.tool with a `phone` argument added, the handler run bound to that
+ *  phone, and the answering phone stamped on the result. With `fanOut`, an
+ *  omitted phone means EVERY declared phone, each reported separately. */
+function phoneTool(server: McpServer) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (name: string, desc: string, shape: Record<string, z.ZodTypeAny>, handler: (a: any) => Promise<Out>, fanOut = false) =>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    server.tool(name, desc, { ...shape, phone: PHONE_ARG }, (async (args: any) => {
+      const { phone, ...rest } = args ?? {};
+      if (!phone && fanOut) {
+        const parts = await Promise.all(PHONES.map(async (p) => {
+          try { const r = await onPhone(p, () => handler(rest)); return stamp(r.phone ?? p, r.value).content[0].text; }
+          catch (e) { return `[phone: ${p}]\nunreachable: ${(e as Error).message}`; }
+        }));
+        return text(parts.join("\n\n"));
+      }
+      const r = await onPhone(phone ?? null, () => handler(rest));
+      return stamp(r.phone, r.value);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    }) as any);
+}
+
 export function registerTools(server: McpServer, appModules: AppModule[] = []): void {
   modules = appModules;
+  const tool = phoneTool(server);
   // A module MAY add bespoke tools. None does today, on purpose — see
   // AppModule.tools in registry.ts for why that restraint is the design.
   for (const m of appModules) m.tools?.(server);
 
-  server.tool(
+  tool(
     "superapp_apps",
-    "List every constellation app behind the phone's debug API: through the SuperApp gateway (one port, every member reached over Android IPC, woken on demand) or, on an older phone, each app's own loopback port. applicationId, door, label, version and device. Start here — the other tools take one of these as `app`.",
+    "List every constellation app behind each phone's debug API: through the SuperApp gateway (one port, every member reached over Android IPC, woken on demand) or, on an older phone, each app's own loopback port. applicationId, door, label, version and device. Without `phone` it lists EVERY declared phone, each under its own [phone: …] header. Start here — the other tools take one of these as `app`.",
     {
       refresh: z.boolean().optional().describe("Re-scan the port range instead of using the cached sweep"),
     },
@@ -102,9 +148,10 @@ export function registerTools(server: McpServer, appModules: AppModule[] = []): 
       );
       return text(rows.map((r) => `${r.name} @ ${r.port}\n  ${r.info}`).join("\n\n"));
     },
+    true,
   );
 
-  server.tool(
+  tool(
     "superapp_logcat",
     "Read one app's OWN logcat. Android filters logcat by uid, so this is the only way to see a constellation app's logs — no other process, ssh session included, can read them.",
     {
@@ -118,21 +165,21 @@ export function registerTools(server: McpServer, appModules: AppModule[] = []): 
     },
   );
 
-  server.tool(
+  tool(
     "superapp_crashes",
     "Stored crash reports for one app, newest first, as written by AppCrashLogger.",
     { app: z.string().describe("applicationId, a substring of it, or a port") },
     async ({ app }) => text(await call(resolve(await apps(), app), "diagnostics/crashes")),
   );
 
-  server.tool(
+  tool(
     "superapp_docs",
     "One app's route catalog: the universal endpoints plus any group the app registered with AppDebugServer.route(). Read this before superapp_call to learn what that app actually serves.",
     { app: z.string().describe("applicationId, a substring of it, or a port") },
     async ({ app }) => text(await call(resolve(await apps(), app), "docs")),
   );
 
-  server.tool(
+  tool(
     "superapp_wake",
     "Start another constellation member's process through its content provider. No activity is launched, so Android's background-start restrictions do not apply — use it to bring an app up before reading its logs.",
     {
@@ -145,7 +192,7 @@ export function registerTools(server: McpServer, appModules: AppModule[] = []): 
     },
   );
 
-  server.tool(
+  tool(
     "superapp_call",
     "Call any route on one app's debug API, including app-specific groups registered via AppDebugServer.route(). This is what makes a new app route usable with no change to this MCP — list them with superapp_docs first.",
     {
@@ -210,7 +257,7 @@ export function registerTools(server: McpServer, appModules: AppModule[] = []): 
     "getenforce", "monkey",
   ]);
 
-  server.tool(
+  tool(
     "superapp_shell",
     "Run one command at SHELL privilege (uid 2000) on the phone through the superapp's adb/exec door — the Shizuku-class escape hatch. Allowlisted verbs only (logcat/pm/am/cmd/dumpsys/settings/input/…); compound shell syntax or other verbs need dangerously_raw:true. Returns raw stdout.",
     {
@@ -230,7 +277,7 @@ export function registerTools(server: McpServer, appModules: AppModule[] = []): 
     },
   );
 
-  server.tool(
+  tool(
     "superapp_logcat_full",
     "SYSTEM logcat via the shell door — the whole device, or one app's slice by uid (works even for apps that serve no debug API, and reads what superapp_logcat cannot: other uids). This is the full-Shizuku view of the log.",
     {
@@ -255,7 +302,7 @@ export function registerTools(server: McpServer, appModules: AppModule[] = []): 
     },
   );
 
-  server.tool(
+  tool(
     "superapp_grant",
     "Grant or revoke an Android permission on any app at shell privilege — including development permissions normal apps cannot hold (e.g. android.permission.READ_LOGS).",
     {
@@ -270,7 +317,7 @@ export function registerTools(server: McpServer, appModules: AppModule[] = []): 
     },
   );
 
-  server.tool(
+  tool(
     "superapp_force_stop",
     "Force-stop an app (am force-stop at shell privilege). Its process dies and its scheduled jobs pause until something starts it again — pair with superapp_wake to bounce an app cleanly.",
     { app: z.string().describe("applicationId, alias, or substring") },
@@ -281,7 +328,7 @@ export function registerTools(server: McpServer, appModules: AppModule[] = []): 
     },
   );
 
-  server.tool(
+  tool(
     "superapp_input",
     "Inject an input event at shell privilege: tap, swipe, keyevent or text. This is what pull-to-refresh-over-ssh needs and app-level APIs can never do.",
     {
@@ -299,7 +346,7 @@ export function registerTools(server: McpServer, appModules: AppModule[] = []): 
     },
   );
 
-  server.tool(
+  tool(
     "superapp_screencap",
     "Screenshot the device at shell privilege. Saves to /sdcard/Download/ and returns the path (pull it over ssh/scp).",
     {},
@@ -310,11 +357,11 @@ export function registerTools(server: McpServer, appModules: AppModule[] = []): 
     },
   );
 
-  server.tool(
+  tool(
     "superapp_adb_pair",
     "ONE-TIME setup that makes the privileged plane Shizuku-INDEPENDENT forever: pair the superapp's embedded adb client with Android's Wireless Debugging. On the phone open Developer options → Wireless debugging → 'Pair device with pairing code' and pass the shown ip/port/code. Pairing persists; every later boot re-arms itself via superapp_adb_autoconnect (the privileged tools even do it implicitly).",
     {
-      host: z.string().describe("IP shown in the pairing dialog (the phone's own wifi IP, e.g. 10.0.0.9)"),
+      host: z.string().describe("IP shown in the pairing dialog (the phone's own wifi IP, its wifi IP, not a mesh address)"),
       port: z.number().int().describe("The PAIRING port from the dialog (not the connect port)"),
       code: z.string().regex(/^\d{6}$/).describe("The 6-digit pairing code"),
     },
@@ -322,14 +369,14 @@ export function registerTools(server: McpServer, appModules: AppModule[] = []): 
       text(await get(PORT_DEVCONTROL, "adb/pair", { host, port: String(port), code }, 45)),
   );
 
-  server.tool(
+  tool(
     "superapp_adb_autoconnect",
     "Re-arm the embedded adb channel via mDNS discovery of the local Wireless-Debugging daemon. Needs a past superapp_adb_pair and Wireless debugging ON — then this replaces the Shizuku app entirely. The privileged tools call it implicitly when the channel looks down; use it directly to re-arm after a reboot.",
     {},
     async () => text(await get(PORT_DEVCONTROL, "adb/autoconnect", {}, 45)),
   );
 
-  server.tool(
+  tool(
     "superapp_adb_status",
     "Health of the privileged channel behind superapp_shell (Shizuku / embedded adb / bootstrapped shell server), plus — when it is down — the once-per-boot bootstrap command to re-arm it.",
     {},
@@ -342,5 +389,6 @@ export function registerTools(server: McpServer, appModules: AppModule[] = []): 
       } catch { /* status alone is fine */ }
       return text(status + hint);
     },
+    true,
   );
 }

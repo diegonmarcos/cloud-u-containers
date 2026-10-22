@@ -48,9 +48,11 @@ in
         # otherwise sit on every host interface (it currently binds 0.0.0.0).
         # Same MCP_HTTP_HOST convention as the sibling host-mode MCPs.
         MCP_HTTP_HOST = vmIp;
-        # Every alias here MUST be a build.json ssh.extra_hosts entry
-        # (test/test-superapp-hosts.sh). Mesh only: no public route to the phone.
-        SUPERAPP_HOSTS = "phone,phone-v6,phone-termux,phone-termux-v6";
+        # Every alias here MUST be a build.json ssh.phones[].alias
+        # (test/test-superapp-hosts.sh). Order = default dial order before any
+        # phone has answered; afterwards the last phone that answered goes first.
+        # Mesh only: no public route to a phone.
+        SUPERAPP_PHONES = "phone2,phone1";
       };
     };
   };

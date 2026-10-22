@@ -12,8 +12,9 @@
  *
  * Those sockets bind 127.0.0.1, so nothing off-device can reach them — a
  * container on oci-apps never could. We go in the way a human already does:
- * `ssh phone` (our Cloud Terminal (nix) sshd, mesh 10.0.0.9:8024; phone-termux = the
- * termux build on :8023) and curl from inside. Aliases come from build.json
+ * `ssh <phone>` (our Cloud Terminal (nix) sshd on :8024; <phone>-termux = the
+ * termux build on :8023; each phone's mesh address comes from its wg client row,
+ * see build.json ssh.phones) and curl from inside. Aliases come from build.json
  * ssh.extra_hosts; mesh only, there is no public route to the phone.
  *
  * The primitive is "run this shell script over there", not "fetch this URL",
@@ -22,12 +23,71 @@
  */
 import { spawn } from "node:child_process";
 
-/** Try in order, remember the first that answers. `local` = run here (the
- *  termux/on-device Claude, where 127.0.0.1 already IS the phone). */
-const HOSTS = (process.env.SUPERAPP_HOSTS ?? "phone,phone-v6,phone-termux,phone-termux-v6")
+import { AsyncLocalStorage } from "node:async_hooks";
+
+/**
+ * The phones, in default dial order (build.json ssh.phones, ordered by
+ * SUPERAPP_PHONES in compose.nix). Each alias X is dialled through the doors
+ * X, X-v6, X-termux, X-termux-v6 (build.json ssh.extra_hosts is exactly that
+ * expansion; test/test-superapp-hosts.sh holds the two together).
+ * `local` = run here (the on-device Claude, where 127.0.0.1 already IS the phone).
+ * SUPERAPP_HOSTS (a flat alias list, one phone) is still honoured for old envs.
+ */
+export const PHONES: string[] = (process.env.SUPERAPP_PHONES ?? process.env.SUPERAPP_HOSTS?.split(",")[0] ?? "phone2,phone1")
   .split(",")
   .map((h) => h.trim())
   .filter(Boolean);
+
+/** Friendly ids accepted for `phone` besides the alias (build.json ssh.phones[].id). */
+const PHONE_IDS: Record<string, string> = {
+  "samsung-s21plus": "phone1", s21: "phone1", "s21plus": "phone1", termux: "phone1",
+  "samsung-a37": "phone2", a37: "phone2",
+};
+
+export function phoneAlias(q: string): string {
+  const k = q.trim().toLowerCase();
+  const a = PHONES.includes(k) ? k : PHONE_IDS[k];
+  if (!a || !PHONES.includes(a)) throw new Error(`unknown phone "${q}" — declared: ${PHONES.join(", ")}`);
+  return a;
+}
+
+export function doorsOf(alias: string): string[] {
+  if (alias === "local") return ["local"];
+  return [alias, `${alias}-v6`, `${alias}-termux`, `${alias}-termux-v6`];
+}
+
+/** Per call: the phone asked for (null = any), and the phone that answered. */
+type Ctx = { want: string | null; answered: string | null };
+const ctx = new AsyncLocalStorage<Ctx>();
+
+/** Run fn against one phone (or, with null, whichever answers first) and
+ *  return its result together with the phone that answered. */
+export async function onPhone<T>(phone: string | null | undefined, fn: () => Promise<T>): Promise<{ phone: string | null; value: T }> {
+  const c: Ctx = { want: phone ? phoneAlias(phone) : null, answered: null };
+  const value = await ctx.run(c, fn);
+  return { phone: c.answered, value };
+}
+
+/** The phone this call is bound to: the one asked for, else the one that
+ *  already answered in this call, else null (not decided yet). */
+export function currentPhone(): string | null {
+  const c = ctx.getStore();
+  return c?.want ?? c?.answered ?? null;
+}
+
+/** Bind the rest of this call to one phone (the cached app list belongs to it). */
+export function pinPhone(phone: string): void {
+  const c = ctx.getStore();
+  if (c) c.answered = phone;
+}
+
+/** Most recent successful contact per phone (ms); drives the default order. */
+const lastSeen = new Map<string, number>();
+
+export function dialOrder(want: string | null): string[] {
+  if (want) return [want];
+  return [...PHONES].sort((a, b) => (lastSeen.get(b) ?? 0) - (lastSeen.get(a) ?? 0));
+}
 
 const SSH_TIMEOUT_MS = Number(process.env.SUPERAPP_SSH_TIMEOUT_MS ?? 30_000);
 
@@ -56,7 +116,7 @@ export const PORT_DEVCONTROL = 38080;
 export const PORT_FIRST = 38090;
 export const PORT_LAST = 38389;
 
-let goodHost: string | null = null;
+const goodDoor = new Map<string, string>();
 
 /** Single-quote for /bin/sh. Everything that reaches the remote shell goes
  *  through here — app names, paths and the fleet token all arrive from the
@@ -96,26 +156,29 @@ function exec(cmd: string, args: string[], stdin: string): Promise<string> {
  * the phone's process table.
  */
 export async function run(script: string): Promise<string> {
-  if (HOSTS.length === 1 && HOSTS[0] === "local") {
-    return exec("sh", ["-s"], script);
-  }
-  const order = goodHost ? [goodHost, ...HOSTS.filter((h) => h !== goodHost)] : HOSTS;
+  const c = ctx.getStore();
+  const phones = c?.answered ? [c.answered] : dialOrder(c?.want ?? null);
   const errors: string[] = [];
-  for (const host of order) {
-    try {
-      const out = await exec(
-        "ssh",
-        ["-o", "BatchMode=yes", "-o", "ConnectTimeout=5", host, "sh", "-s"],
-        script,
-      );
-      goodHost = host;
-      return out;
-    } catch (e) {
-      errors.push(`${host}: ${(e as Error).message}`);
-      if (goodHost === host) goodHost = null;
+  for (const phone of phones) {
+    const doors = doorsOf(phone);
+    const good = goodDoor.get(phone);
+    const order = good ? [good, ...doors.filter((h) => h !== good)] : doors;
+    for (const host of order) {
+      try {
+        const out = host === "local"
+          ? await exec("sh", ["-s"], script)
+          : await exec("ssh", ["-o", "BatchMode=yes", "-o", "ConnectTimeout=5", host, "sh", "-s"], script);
+        goodDoor.set(phone, host);
+        lastSeen.set(phone, Date.now());
+        if (c) c.answered = phone;
+        return out;
+      } catch (e) {
+        errors.push(`${host}: ${(e as Error).message}`);
+        if (goodDoor.get(phone) === host) goodDoor.delete(phone);
+      }
     }
   }
-  throw new Error(`no route to the phone — ${errors.join(" | ")}`);
+  throw new Error(`no route to ${phones.length === 1 ? `phone ${phones[0]}` : `any phone (${phones.join(", ")})`} — ${errors.join(" | ")}`);
 }
 
 export type App = {
