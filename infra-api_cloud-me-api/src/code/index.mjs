@@ -19,6 +19,7 @@ import { decideAuth, decideSession } from './authz.mjs';
 import { loadRuntime } from './contract.mjs';
 import { buildTable, match } from './router.mjs';
 import { createStore, redactSecrets } from './store.mjs';
+import { normalize as normalizeAutocomplete, empty as emptyAutocomplete } from './autocomplete.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -49,6 +50,7 @@ const STORE = createStore({
   env: process.env,
   knownHosts: RT.repos.known_hosts,
   gitTimeoutMs: RT.repos.git_timeout_ms,
+  personal: RT.autocomplete,
   urlFor: (r) => (URL_OVERRIDE_DIR ? `${URL_OVERRIDE_DIR}/${r.name}` : r.ssh),
 });
 
@@ -227,6 +229,23 @@ const HANDLERS = {
     } catch (err) { return fromError(res, err, req); }
   },
 
+  // #1103 the owner's Autocomplete rows for Cloud Account -> Cloud Keyboard. Authenticated like every route but /health.
+  // Personal data: no-store, never cached by an intermediary, never logged here.
+  '/me/autocomplete': async (req, res) => {
+    const ac = RT.autocomplete;
+    try {
+      const { text, commit } = STORE.read(ac.repo, ac.path, { personal: true });
+      const doc = normalizeAutocomplete(text);
+      if (!doc) return sendError(res, 502, 'bad_dataset', 'the autocomplete file is not a JSON object', req);
+      res.setHeader('x-source-commit', commit.slice(0, 12));
+      return sendJson(res, 200, doc, req);
+    } catch (err) {
+      // nothing entered yet is a state, not an error: the same document, empty
+      if (err && err.code === 'not_found') return sendJson(res, 200, emptyAutocomplete(), req);
+      return fromError(res, err, req);
+    }
+  },
+
   '/me/repos/:repo/file': async (req, res, { params, query }) => {
     try {
       const { text, commit } = STORE.read(params.repo, query.get('path'));
@@ -248,7 +267,10 @@ const TABLE = buildTable(RT, HANDLERS);
 
 // ── Request pipeline ──────────────────────────────────────────────────────
 async function serve(req, res, url) {
-  const path = url.pathname.replace(/(.)\/+$/, '$1');
+  // Caddy's /me/* handle strips the base path; the mesh site (cloud-me-api.app) and the private tier
+  // (c3-pvt.diegonmarcos.com/cloud-me-api, #1104) pass it through. Both reach the same local routes.
+  let path = url.pathname.replace(/(.)\/+$/, '$1');
+  if (path.startsWith(`${RT.base_path}/`)) path = path.slice(RT.base_path.length);
 
   // Preflight carries no credential by design (the browser strips it), so it is
   // answered before auth, but only for a declared origin and only with headers:

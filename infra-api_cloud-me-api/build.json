@@ -18,7 +18,7 @@
     "native_build": {
       "type": "image-wrapper",
       "_cmd_doc": "No npm dependencies: stdlib-only ESM on node:22. RUN is a syntax check of our own sources so a parse error fails the BUILD instead of crash-looping a deployed container.",
-      "cmd": "node --check index.mjs && node --check authz.mjs && node --check contract.mjs && node --check router.mjs && node --check store.mjs",
+      "cmd": "node --check index.mjs && node --check authz.mjs && node --check contract.mjs && node --check router.mjs && node --check store.mjs && node --check autocomplete.mjs",
       "entrypoint": "node index.mjs",
       "base_image": "node:22-bookworm-slim",
       "_apt_doc": "git and openssh-client do the read-only deploy-key fetch; ca-certificates for the HTTPS Authelia JWKS/session calls. No curl: the healthcheck probes with node.",
@@ -30,7 +30,7 @@
     "host": "oci-analytics",
     "remote_path": "/opt/containers/cloud-me-api",
     "compose_flags": "--no-build --pull always --force-recreate",
-    "_host_doc": "oci-analytics, same VM as git-proxy-api: mesh-only (cloud-me-api.app over wg0, no public route), and an oci-apps ship would recreate my-ai_claude-api and kill running agents."
+    "_host_doc": "oci-analytics, same VM as git-proxy-api: reached at cloud-me-api.app over wg0, and publicly only at c3-pvt.diegonmarcos.com/cloud-me-api behind the shared gate (#1104); the service itself always verifies the Authelia bearer or session. An oci-apps ship would recreate my-ai_claude-api and kill running agents."
   },
   "health": {
     "path": "/me/health"
@@ -100,8 +100,19 @@
         "path": "/me/repos/:repo/file",
         "auth": "authelia",
         "description": "One config file of a declared repo (query `path`). Only runtime.files.allowed_ext, at most runtime.files.max_bytes, never a path matching runtime.files.deny_path, never content matching runtime.files.deny_content (403 secret_filtered). Errors {error,code}: 400 bad_path, 403 repo_not_declared/path_denied/secret_filtered, 404 not_found, 413 too_large, 503 not_synced."
+      },
+      {
+        "method": "GET",
+        "path": "/me/autocomplete",
+        "auth": "authelia",
+        "description": "#1103 The owner's Autocomplete rows {v:1,ids,addresses,urls,secrets:[{label,value}]} from runtime.autocomplete {repo,path}; only the four pages, string label/value, at most 500 rows a page. The one personal file served past the secret filter, so it is authenticated (Authelia bearer or session), no-store, and never reachable through /me/config or /me/repos/:repo/file. No file yet -> 200 with empty pages; repo not synced -> 503 not_synced."
       }
     ],
+    "autocomplete": {
+      "_doc": "#1103 the ONE personal file this service serves past the secret filter, at GET /me/autocomplete: a JSON object {ids,addresses,urls,secrets: [{label,value}]} in a declared private repo. Cloud Account pulls it (mesh first, then c3-pvt.diegonmarcos.com/cloud-me-api with the fleet bearer) and hands it to Cloud Keyboard's own store. Absent file = an empty document.",
+      "repo": "cloud-me_configs",
+      "path": "autocomplete.json"
+    },
     "repos": {
       "_doc": "The allow-list is DATA, here. Each repo is read with its OWN read-only deploy key (GitHub allows a deploy key on one repo only), delivered as a base64 sops env_file value named by key_env. cloud-me_vault is deliberately NOT declared: it holds credentials and the test asserts it is never served.",
       "sync_interval_s": 300,
@@ -158,7 +169,7 @@
   "api": {
     "type": "custom-rest",
     "base_path": "/me",
-    "endpoint_count": 5,
+    "endpoint_count": 6,
     "display_name": "Cloud Me API",
     "description": "Authenticated read-only access to declared datasets and config files of the owner's private cloud-me-* repos. Deploy keys stay server-side; secret-looking files are never served.",
     "auth": "mixed"

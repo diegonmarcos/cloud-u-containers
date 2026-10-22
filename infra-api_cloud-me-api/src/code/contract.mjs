@@ -66,6 +66,14 @@ export function loadRuntime(buildJsonPath) {
     if (typeof d.path !== 'string' || !d.path.endsWith('.json')) throw new Error(`runtime.datasets.${name}: path must be a .json file`);
   }
 
+  const ac = rt.autocomplete;
+  if (ac !== undefined) {
+    if (!seen.has(ac.repo)) throw new Error(`runtime.autocomplete: repo ${ac.repo} is not declared in runtime.repos.list`);
+    if (typeof ac.path !== 'string' || !ac.path.endsWith('.json')) throw new Error('runtime.autocomplete: path must be a .json file');
+  } else if (rt.endpoints.some((e) => e.path === `${rt.base_path}/autocomplete`)) {
+    throw new Error('runtime.endpoints declares /autocomplete but runtime.autocomplete names no file');
+  }
+
   const f = rt.files;
   if (!f || !Array.isArray(f.allowed_ext) || f.allowed_ext.length === 0 || !f.allowed_ext.every((x) => /^\.[a-z0-9]+$/.test(x))
       || !(f.max_bytes > 0) || typeof f.deny_path !== 'string' || typeof f.deny_content !== 'string') {

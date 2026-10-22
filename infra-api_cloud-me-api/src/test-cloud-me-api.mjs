@@ -15,6 +15,7 @@ import { loadRuntime } from './code/contract.mjs';
 import { buildTable } from './code/router.mjs';
 import { cleanPath, makeGate, redactSecrets } from './code/store.mjs';
 import { decideAuth, decideSession } from './code/authz.mjs';
+import { normalize as acNormalize, empty as acEmpty, PAGES as AC_PAGES, MAX_PER_PAGE as AC_MAX } from './code/autocomplete.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const BUILD = join(HERE, '..', 'build.json');
@@ -47,6 +48,21 @@ throws(() => loadRuntime(mutate((d) => { d.runtime.cors.origins.push('https://*.
 throws(() => loadRuntime(mutate((d) => { d.runtime.files.deny_content = '['; })), /./, 'bad filter regex stops the service');
 throws(() => buildTable(RT, {}), /no handler/, 'declared route without handler throws');
 throws(() => buildTable(RT, Object.fromEntries([...RT.endpoints.map((e) => [e.path, () => {}]), ['/me/extra', () => {}]])), /not declared/, 'undeclared handler throws');
+
+// #1103 the Autocomplete route: declared, authenticated, on a declared repo, with its own normaliser
+ok(RT.endpoints.some((e) => e.method === 'GET' && e.path === '/me/autocomplete' && e.auth === 'authelia'), '/me/autocomplete is declared and authenticated');
+ok(RT.autocomplete?.repo === 'cloud-me_configs' && RT.autocomplete.path === 'autocomplete.json', 'the personal file is declared (repo and path)');
+throws(() => loadRuntime(mutate((d) => { d.runtime.autocomplete.repo = 'nope'; })), /autocomplete: repo/, 'autocomplete file on an undeclared repo rejected');
+throws(() => loadRuntime(mutate((d) => { d.runtime.autocomplete.path = 'a.yaml'; })), /autocomplete: path/, 'autocomplete file must be JSON');
+throws(() => loadRuntime(mutate((d) => { delete d.runtime.autocomplete; })), /names no file/, 'a declared /autocomplete route without its file is rejected');
+{ const n = acNormalize(JSON.stringify({ ids: [{ label: ' DNI ', value: 'X1' }, { label: 'blank', value: '  ' }, { label: 'n', value: 5 }, 7],
+    secrets: [{ label: 'wifi', value: 'pw' }], passwords: [{ label: 'x', value: 'y' }], urls: 'nope' }));
+  ok(n.v === 1 && AC_PAGES.every((p) => Array.isArray(n[p])) && Object.keys(n).length === 1 + AC_PAGES.length, 'normalize keeps exactly the four pages');
+  ok(n.ids.length === 1 && n.ids[0].label === 'DNI' && n.ids[0].value === 'X1' && n.urls.length === 0 && n.secrets[0].value === 'pw', 'normalize drops blanks, non-strings and unknown pages, trims labels');
+  const big = acNormalize(JSON.stringify({ ids: Array.from({ length: AC_MAX + 50 }, (_, i) => ({ label: `l${i}`, value: `v${i}` })) }));
+  ok(big.ids.length === AC_MAX, 'normalize caps a page');
+  ok(acNormalize('nonsense') === null && acNormalize('[1]') === null && acNormalize('null') === null, 'normalize refuses a non-object document');
+  ok(JSON.stringify(acEmpty()) === JSON.stringify({ v: 1, ids: [], addresses: [], urls: [], secrets: [] }), 'the empty document has the four empty pages'); }
 
 // ── 2. file gate ───────────────────────────────────────────────────────────
 for (const bad of ['', '/etc/passwd', '../x.json', 'a/../../x.json', 'a\\b.json', 'a/b/', '.', 'a\0b.json', 'x'.repeat(301)]) {
@@ -107,7 +123,10 @@ mkRepo('cloud-me-containers', {
   'notes/readme.md': `hello ${KEYVAL} world\n`,
   'notes/creds.yaml': J('pass', 'word: ', 'abcdefgh1234\n'),
 }, { 'notes/escape.md': '/etc/hostname' });
-mkRepo('cloud-me_configs', { 'x/build.json': '{"ok":true}' });
+const PERSONAL = { ids: [{ label: 'National ID', value: 'X0000000T' }], addresses: [{ label: 'Home', value: '1 Example Street, Sampletown' }],
+  urls: [{ label: 'Site', value: 'https://example.org' }], secrets: [{ label: 'Wi-Fi', value: J('fake-', 'passphrase-1234') }, { label: 'blank', value: '' }],
+  passwords: [{ label: 'dropped', value: 'zzzzzzzz' }] };
+mkRepo('cloud-me_configs', { 'x/build.json': '{"ok":true}', 'autocomplete.json': JSON.stringify(PERSONAL) });
 mkRepo('cloud-me_cgc', { 'README.md': '# cgc\n' });
 
 const { privateKey, publicKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
@@ -234,6 +253,24 @@ try {
   ok((await get('/nope', bearer(good))).status === 404, 'unknown route -> 404 JSON');
   ok((await get('/config/c3-mail', bearer(good), 'POST')).status === 405, 'POST -> 405 (read-only)');
   ok((await get('/config/c3-mail', bearer(good), 'PUT')).status === 405, 'PUT -> 405');
+
+  // #1103 /autocomplete: authenticated, the four pages only, personal values served, and ONLY here
+  ok((await get('/autocomplete')).status === 401, 'autocomplete: no credential -> 401');
+  ok((await get('/autocomplete', bearer(noScope))).status === 403, 'autocomplete: missing scope -> 403');
+  const acr = await get('/autocomplete', bearer(good));
+  ok(acr.status === 200 && acr.json?.v === 1 && acr.json.ids[0].value === 'X0000000T' && acr.json.addresses.length === 1 && acr.json.urls.length === 1, 'autocomplete: rows served to a valid bearer');
+  ok(acr.json.secrets.length === 1 && acr.json.secrets[0].value.includes('passphrase') && acr.json.passwords === undefined, 'autocomplete: secrets page served, blanks and unknown pages dropped');
+  ok(acr.h.get('cache-control') === 'no-store' && /^[0-9a-f]{12}$/.test(acr.h.get('x-source-commit') || ''), 'autocomplete: no-store and the source commit');
+  ok((await get('/autocomplete', { cookie: 'authelia_session=me' })).status === 200, 'autocomplete: served to the declared Authelia session');
+  ok((await get('/autocomplete', { cookie: 'authelia_session=other' })).status === 403, 'autocomplete: other session user -> 403');
+  ok((await get('/autocomplete', bearer(good), 'POST')).status === 405, 'autocomplete: POST -> 405');
+  ok((await F('autocomplete.json', 'cloud-me_configs')).json?.code === 'path_denied', 'autocomplete: the file is not reachable through the generic file route');
+  ok(!(await get('/endpoints', bearer(good))).text.includes('fake-'), 'autocomplete: no row value in the contract');
+
+  // the same routes under the base path, as the mesh site and c3-pvt/cloud-me-api (#1104) pass them through
+  ok((await get('/me/autocomplete', bearer(good))).json?.ids?.[0]?.value === 'X0000000T', 'autocomplete: also served under /me (mesh and private tier paths)');
+  ok((await get('/me/autocomplete')).status === 401 && (await get('/me/health')).status === 200, 'autocomplete: /me/... keeps the same auth, /me/health is open');
+  ok((await get('/me/config/c3-mail', bearer(good))).status === 200, 'existing routes also answer under /me');
 
   // CORS
   const pf = (origin) => get('/config/c3-mail', { origin, 'access-control-request-method': 'GET', 'access-control-request-headers': 'authorization' }, 'OPTIONS');

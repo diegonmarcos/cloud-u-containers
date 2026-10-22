@@ -123,12 +123,18 @@ export function createStore(o) {
 
   const byName = (n) => o.repos.find((r) => r.name === n);
 
-  function read(repoName, relRaw) {
+  // personal: the ONE declared personal file (runtime.autocomplete) skips the deny_path / deny_content secret filters
+  // (it is secrets by nature); every other check stays: declared repo, clean path, extension, size, no symlink out, no .git.
+  function read(repoName, relRaw, { personal = false } = {}) {
     const fail = (status, code, message) => Object.assign(new Error(message), { status, code });
     const repo = byName(repoName);
     if (!repo) throw fail(403, 'repo_not_declared', 'repo is not declared');
     const rel = cleanPath(relRaw);
-    gate.checkPath(rel);
+    // the personal file is served by its own route only, never through the generic file or dataset routes
+    if (!personal && o.personal && o.personal.repo === repoName && o.personal.path === rel) throw fail(403, 'path_denied', 'path is not served');
+    if (personal) {
+      if (!o.files.allowed_ext.includes(extname(rel).toLowerCase())) throw fail(403, 'path_denied', 'file type is not served');
+    } else gate.checkPath(rel);
     const st = state.get(repoName);
     const dir = join(o.dataDir, repoName);
     if (!st.commit || !existsSync(dir)) throw fail(503, 'not_synced', 'repo has not synced yet');
@@ -143,7 +149,7 @@ export function createStore(o) {
     if (!ls.isFile()) throw fail(404, 'not_found', 'no such file');
     gate.checkSize(ls.size);
     const text = readFileSync(real, 'utf8');
-    gate.checkContent(text);
+    if (!personal) gate.checkContent(text);
     return { text, commit: st.commit };
   }
 
