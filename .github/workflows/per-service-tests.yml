@@ -27,8 +27,8 @@ on:
 # Tests are cheap and a newer push supersedes an older one's verdict; cancelling
 # the stale run keeps the runner free.
 concurrency:
-  group: per-service-tests
-  cancel-in-progress: true
+  group: per-service-tests-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   run-service-testers:
