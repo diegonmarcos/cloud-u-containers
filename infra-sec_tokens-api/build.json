@@ -44,8 +44,7 @@
       "port": 4184,
       "port_env": null,
       "dns": "tokens-api.app",
-      "public": false,
-      "proxy": null,
+      "public": true,
       "healthcheck": "/health",
       "monitoring": {
         "tls_check": false,
