@@ -225,4 +225,59 @@ for mut, msg in [(lambda c: c["auth_broker"]["cloudflare_access"].update(aud=[])
         broker.Broker(c, "google", ENV); need(False, "cloudflare enabled with " + msg + " must refuse")
     except SystemExit:
         need(True, "cloudflare: enabled with %s -> refuses to start (fail closed)" % msg)
+
+# ---- Cloudflare One as a sign-in provider (flow "access"): start + callback ------------------------
+CFP = next(p for p in BJ["auth_broker"]["providers"] if p["id"] == "cloudflare")
+C = "/oauth2/cloudflare"
+need(CFP["enabled"] is True and CFP["flow"] == "access" and CFP["login_url"].startswith("https://auth-cf.diegonmarcos.com" + C + "/"), "cloudflare provider: declared once in build.json with its own enabled flag and an https login_url")
+need("cloudflare" in BJ["containers"] and BJ["containers"]["cloudflare"]["port"] == CFP["port"], "cloudflare provider: has its own container on the declared port")
+ab_b, AB = start(cfg(), "cloudflare", 19647, ENV)
+st, _, h = raw(AB + C + "/start?rd=" + urllib.parse.quote("https://suite.diegonmarcos.com/p"), {"Host": H})
+loc = urllib.parse.urlsplit(h["Location"]) if st == 302 else None
+need(st == 302 and loc.netloc == "auth-cf.diegonmarcos.com" and loc.path == C + "/callback" and urllib.parse.parse_qs(loc.query)["rd"] == ["https://suite.diegonmarcos.com/p"],
+     "cloudflare start: 302 to the Access-protected callback host carrying rd")
+st, _, h = raw(AB + C + "/start?rd=%2Fapp", {"Host": "account.diegonmarcos.com"})
+need(st == 302 and urllib.parse.parse_qs(urllib.parse.urlsplit(h["Location"]).query)["rd"] == ["https://account.diegonmarcos.com/app"], "cloudflare start: a relative rd is resolved against the chooser host it came from")
+st, _, h = raw(AB + C + "/start?rd=" + urllib.parse.quote("https://evil.example/x"), {"Host": H})
+need(st == 302 and urllib.parse.parse_qs(urllib.parse.urlsplit(h["Location"]).query)["rd"] == ["https://auth.diegonmarcos.com/"], "cloudflare start: foreign rd is replaced")
+need(raw(AB + C + "/start", {"Host": "evil.example"})[0] == 404, "cloudflare start: a Host that is not a declared chooser host is refused")
+need(raw(AB + C + "/health")[0] == 200 and json.loads(raw(AB + C + "/health")[1]) == {"enabled": True, "provider": "cloudflare"}, "cloudflare: /health reports enabled")
+
+
+def cb(tok, rd="https://suite.diegonmarcos.com/p"):
+    return raw(AB + C + "/callback?rd=" + urllib.parse.quote(rd), {"Cf-Access-Jwt-Assertion": tok} if tok else {})
+
+
+def minted(h): return "_diego_sso=v1." in "".join(h.get_all("Set-Cookie") or [])
+
+
+st, _, h = cb(jwt(KEY, KID, good))
+need(st == 302 and h["Location"] == "https://suite.diegonmarcos.com/p" and minted(h), "cloudflare callback: owner JWT -> _diego_sso cookie, 302 to rd")
+ck = [c for c in h.get_all("Set-Cookie") if c.startswith("_diego_sso=")][0]
+need("Domain=.diegonmarcos.com" in ck and "Secure" in ck and "HttpOnly" in ck, "cloudflare callback: cookie is the shared domain-wide Secure HttpOnly session")
+need(raw(W + G + "/auth", {"Cookie": ck.split(";")[0]})[0] == 202 and raw(CF + "/oauth2/google/auth", {"Cookie": ck.split(";")[0]})[0] == 202, "cloudflare callback: the issued session passes the gate on the other instances")
+st, _, h = cb(jwt(KEY, KID, good), "https://evil.example/x")
+need(st == 302 and h["Location"] == "https://auth.diegonmarcos.com/", "cloudflare callback: foreign rd is not followed")
+st, _, h = cb(jwt(KEY, KID, good), "//evil.example")
+need(st == 302 and h["Location"] == "https://auth.diegonmarcos.com/", "cloudflare callback: protocol-relative rd is not followed")
+for name, tok in [("no JWT", None), ("garbage", "a.b.c"), ("forged (other key)", jwt(OTHER, KID, good)),
+                  ("tampered payload", jwt(KEY, KID, {**good, "email": "mallory@example.com"}, tamper=True)),
+                  ("expired", jwt(KEY, KID, {**good, "exp": NOW - 5})), ("wrong AUD", jwt(KEY, KID, {**good, "aud": ["0" * 64]})),
+                  ("wrong issuer", jwt(KEY, KID, {**good, "iss": "https://evil.cloudflareaccess.com"})),
+                  ("non-owner email", jwt(KEY, KID, {**good, "email": "mallory@example.com"})),
+                  ("service token (no email)", jwt(KEY, KID, {k: v for k, v in good.items() if k != "email"})),
+                  ("alg none", jwt(KEY, KID, good, alg="none"))]:
+    st, _, h = cb(tok)
+    need(st == 401 and not minted(h) and "Location" not in h, "cloudflare callback: %s -> 401, no cookie" % name)
+need(raw(AB + C + "/callback", {"Cookie": "CF_Authorization=x"})[0] == 401, "cloudflare callback: a CF_Authorization cookie alone is not a credential")
+need(raw(AB + C + "/device", None)[0] in (403, 404), "cloudflare: no device endpoints")
+dis_c, DISC = start({**cfg(), "auth_broker": {**cfg()["auth_broker"], "providers": [dict(p, enabled=False) if p["id"] == "cloudflare" else p for p in cfg()["auth_broker"]["providers"]]}}, "cloudflare", 19648, ENV)
+need(raw(DISC + C + "/health")[0] == 200 and json.loads(raw(DISC + C + "/health")[1])["enabled"] is False, "cloudflare: provider flag off -> /health says disabled (chooser hides the button)")
+st, _, h = raw(DISC + C + "/callback", {"Cf-Access-Jwt-Assertion": jwt(KEY, KID, good)})
+need(raw(DISC + C + "/start", {"Host": H})[0] == 404 and st == 401 and not minted(h), "cloudflare: provider flag off -> start 404, a valid JWT gets no cookie")
+nocf = cfg(cf_on=False)
+try:
+    broker.Broker(nocf, "cloudflare", ENV); need(False, "cloudflare provider enabled without cloudflare_access must refuse")
+except SystemExit:
+    need(True, "cloudflare: provider enabled while cloudflare_access is off -> refuses to start (fail closed)")
 print("PASS: %d checks" % PASS)

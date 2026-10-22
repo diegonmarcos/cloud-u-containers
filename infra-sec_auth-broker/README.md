@@ -8,7 +8,7 @@ provider, checks the provider's user against the allowlist, then sets the sessio
 Bearer and the Authelia session. Authelia is untouched.
 
 One stdlib Python process per provider (`src/code/main.py`), on oci-apps over the mesh
-(10.0.0.6:4180 google, :4181 github, mesh-only bind). Every instance validates the same cookie.
+(10.0.0.6:4180 google, :4181 github, :4182 cloudflare, mesh-only bind). Every instance validates the same cookie.
 Caddy side: `infra-sec_caddy/build.json` `caddy_config.edge_auth.multi_sso` (flag `enabled`).
 
 ## Declarative config (all in `build.json` `auth_broker`)
@@ -37,3 +37,15 @@ client), so `providers[google].enabled` is false. Create that client type, updat
 `src/test/test-broker.py` (device flow against stub providers: code issued, polling, non-owner and
 lookalikes rejected, cookie tamper/expiry, open-redirect, rate limit, flags, fail-closed startup).
 `infra-sec_caddy/src/test/test-multi-sso.sh` (gate, chooser, allowlist guard, compose policy).
+
+## Cloudflare One sign-in (#1083)
+
+Provider `cloudflare` (`flow: access`, own `enabled` flag, instance :4182, no client id or secret). The chooser button
+opens `/oauth2/cloudflare/start?rd=` on auth. / account.; the broker 302s to `login_url`
+(https://auth-cf.diegonmarcos.com/oauth2/cloudflare/callback). That hostname is a Cloudflare Access application
+(cloud-infra `c_vps/ba-clo_cloudflare`, `terraform.json` `zero_trust.broker_app`: owner-only policy, tunnel
+`fleet-edge` ingress straight to this instance). After the Access login Cloudflare forwards the request with
+`Cf-Access-Jwt-Assertion`; `/callback` verifies it (RS256 against the team certs, issuer, `cloudflare_access.aud`,
+expiry, owner email only), issues the shared `_diego_sso` cookie (domain `.diegonmarcos.com`) and redirects to `rd`
+(https under `rd_domain`; a relative `rd` is resolved against the declared chooser host). No valid JWT: 401, no cookie.
+Tests: `src/test/test-broker-hub.py` (forged, expired, wrong AUD, non-owner, disabled).

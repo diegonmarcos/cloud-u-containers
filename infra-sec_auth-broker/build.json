@@ -1,11 +1,12 @@
 {
   "name": "auth-broker",
-  "description": "Identity broker for the multi-SSO sign-in: GitHub (device flow) and Google (web code flow + PKCE), owner only (#1066)",
+  "description": "Identity broker for the multi-SSO sign-in: GitHub (device flow + web), Google (web code flow + PKCE) and Cloudflare One (Access JWT), owner only (#1066, #1083)",
   "category": "sec",
   "dns": "auth-broker.app",
   "ports": {
     "google": 4180,
-    "github": 4181
+    "github": 4181,
+    "cloudflare": 4182
   },
   "bind_host": "10.0.0.6",
   "deploy": {
@@ -97,15 +98,32 @@
             "https://auth.diegonmarcos.com/oauth2/github/callback"
           ]
         }
+      },
+      {
+        "id": "cloudflare",
+        "label": "Cloudflare One",
+        "enabled": true,
+        "provider": "cloudflare",
+        "flow": "access",
+        "port": 4182,
+        "prefix": "/oauth2/cloudflare",
+        "_doc_flow": "Cloudflare One (Zero Trust) sign-in. <prefix>/start (on the chooser hosts in `hosts`) sends the browser to `login_url`, a hostname that Cloudflare Access protects (cloud-infra c_vps/ba-clo_cloudflare terraform.json zero_trust.broker_app: Access app + owner-only policy, proxied through the fleet tunnel straight to this instance). After the Access login, Cloudflare forwards the request with Cf-Access-Jwt-Assertion; <prefix>/callback verifies it (RS256 against the team certs, issuer, audience in cloudflare_access.aud, expiry, owner email only), issues the shared _diego_sso cookie and 302s to rd (an https URL under rd_domain; a relative rd is resolved against the chooser host it came from). A request without a valid JWT gets 401 and no cookie. No client id or secret exists for this provider.",
+        "hosts": [
+          "auth.diegonmarcos.com",
+          "account.diegonmarcos.com"
+        ],
+        "login_url": "https://auth-cf.diegonmarcos.com/oauth2/cloudflare/callback",
+        "home_url": "https://auth.diegonmarcos.com/"
       }
     ],
     "cloudflare_access": {
-      "_doc": "Cloudflare Access (Zero Trust) as a fourth credential: the broker verifies Cf-Access-Jwt-Assertion (RS256 signature against the team certs, issuer, audience, expiry) and admits only a token whose email is in allowed_emails (service-token JWTs carry no email and are refused). `aud` lists the AUD tags of the Access applications trusted (terraform output zt_pilot_aud in cloud-infra c_vps/ba-clo_cloudflare). Served on every instance at <prefix>/cf-auth; the edge gate calls it when the request carries the header.",
+      "_doc": "Cloudflare Access (Zero Trust) as a fourth credential: the broker verifies Cf-Access-Jwt-Assertion (RS256 signature against the team certs, issuer, audience, expiry) and admits only a token whose email is in allowed_emails (service-token JWTs carry no email and are refused). `aud` lists the AUD tags of the Access applications trusted (terraform outputs zt_pilot_aud and zt_broker_aud in cloud-infra c_vps/ba-clo_cloudflare; zt_broker_aud is the Cloudflare One sign-in app, #1083). Served on every instance at <prefix>/cf-auth; the edge gate calls it when the request carries the header.",
       "enabled": true,
       "team_domain": "diegonmarcos.cloudflareaccess.com",
       "certs_url": "https://diegonmarcos.cloudflareaccess.com/cdn-cgi/access/certs",
       "aud": [
-        "fd961754aece540b409ee165bc028105168acece9dca1f530e38f5f62e5b8f3c"
+        "fd961754aece540b409ee165bc028105168acece9dca1f530e38f5f62e5b8f3c",
+        "669d709af5740d926d2f122e7752331015a22a5487b1c82e8b63d4f32f31dfc0"
       ]
     }
   },
@@ -130,6 +148,20 @@
       "port": 4181,
       "public": false,
       "healthcheck": "/oauth2/github/health",
+      "volumes": [],
+      "env_file": true,
+      "resources": {
+        "mem_reservation": "16m",
+        "mem_limit": "64m"
+      },
+      "protocol": "http"
+    },
+    "cloudflare": {
+      "container_name": "auth-broker-cloudflare",
+      "image": "ghcr.io/diegonmarcos/auth-broker-binaries:latest",
+      "port": 4182,
+      "public": false,
+      "healthcheck": "/oauth2/cloudflare/health",
       "volumes": [],
       "env_file": true,
       "resources": {

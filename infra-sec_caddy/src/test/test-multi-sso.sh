@@ -87,8 +87,10 @@ for k in ("hub", "edge"):
     if k == "hub":
         assert "account.diegonmarcos.com" not in t.replace("# multi-SSO", "") or True
         i = t.index("# multi-SSO chooser"); g = t.index("handle /oauth2/github/* {", i)
-        j = t.index("\n  }\n}\n", g) + len("\n  }\n}\n")
-        assert "10.0.0.6:4181" in t[g:j]
+        assert t.index("handle /oauth2/cloudflare/* {", g) > g
+        c = t.index("handle /oauth2/cloudflare/* {", g)
+        j = t.index("\n  }\n}\n", c) + len("\n  }\n}\n")
+        assert "10.0.0.6:4181" in t[g:c] and "10.0.0.6:4182" in t[c:j]
         t = t[:i] + t[j:]
     else:
         assert "tls_server_name {host}" in t and "header_up Host {host}" in t
@@ -145,7 +147,7 @@ snip = m.group(0)
 intro = re.search(r"forward_auth @ea_bearer (\S+) \{", snip).group(1)
 snip = snip.replace(intro, f"127.0.0.1:{pi}").replace("172.18.0.3:9091", f"127.0.0.1:{pa}").replace("10.0.0.6:4180", f"127.0.0.1:{pb}")
 sso = t[t.index("# multi-SSO chooser"):]
-g = sso.index("handle /oauth2/github/* {"); sso = sso[:g] + 'handle /oauth2/github/* {\n  respond "gh" 200\n}\n'
+g = sso.index("handle /oauth2/github/* {"); sso = sso[:g] + 'handle /oauth2/github/* {\n  respond "gh" 200\n}\nhandle /oauth2/cloudflare/* {\n  respond "cf" 200\n}\n'
 sso = sso.replace("10.0.0.6:4180", f"127.0.0.1:{pb}").replace("root * /srv", f"root * {W}")
 open(f"{W}/snip.caddy", "w").write(snip); open(f"{W}/sso.caddy", "w").write(sso)
 PY
@@ -195,13 +197,15 @@ chk 200 -H 'Authorization: Bearer mailbox-token' -H 'Host: jmap.diegonmarcos.com
 chk 204 -X OPTIONS -H 'Access-Control-Request-Method: GET' "$U";  ok "CORS preflight 204 unchanged"
 S="http://127.0.0.1:$((PS+1))"
 chk 200 -H 'Accept: text/html' "$S/"
-for b in "Sign in with Authelia" "Sign in with Google" "Sign in with GitHub"; do grep -q "$b" "$W/body" || bad "chooser lacks '$b'"; done
-ok "no auth + browser -> chooser with all three buttons"
+for b in "Sign in with Authelia" "Sign in with Cloudflare One" "Sign in with Google" "Sign in with GitHub"; do grep -q "$b" "$W/body" || bad "chooser lacks '$b'"; done
+[ "$(grep -o 'class="b"' "$W/body" | wc -l)" = 4 ] || bad "chooser must render exactly four provider buttons"
+ok "no auth + browser -> chooser with all four buttons (Authelia, Cloudflare One, Google, GitHub)"
 chk 200 -H 'Accept: text/html' "$S/?ui=authelia"; ! grep -q "Sign in with Google" "$W/body" || bad "?ui=authelia must reach the Authelia portal"; ok "?ui=authelia falls through to Authelia"
 chk 200 -H 'Accept: text/html' -H 'Cookie: authelia_session=ok' "$S/"; ! grep -q "Sign in with Google" "$W/body" || bad "chooser shown to an Authelia session"; ok "an Authelia session skips the chooser"
 chk 200 "$S/"; ! grep -q "Sign in with Google" "$W/body" || bad "chooser shown to a non-browser"; ok "non-browser GET / is not the chooser"
 chk 200 "$S/oauth2/google/start?rd=/"; grep -q 'broker:/oauth2/google/start' "$W/body" || bad "google route not proxied to the broker"; ok "/oauth2/google/* -> broker"
 chk 200 "$S/oauth2/github/start"; ok "/oauth2/github/* routed"
+chk 200 "$S/oauth2/cloudflare/start"; grep -q cf "$W/body" || bad "cloudflare route not routed"; ok "/oauth2/cloudflare/* routed"
 # jmap/mails passthrough lives in the rendered snippet (host list), identical ON and OFF (checked in 2)
 grep -q 'not host jmap.diegonmarcos.com mails.diegonmarcos.com' "$W/snip.caddy" && ok "jmap./mails. Bearer passthrough still declared in the ON gate" || bad "bearer passthrough missing in the ON gate"
 
@@ -225,7 +229,10 @@ allk = set(keys(b))   # settings are KEYS; prose in _doc is ignored
 for bad in ("email_domains", "email-domain", "insecure_oidc_allow_unverified_email", "allowed_groups"):
     assert bad not in allk, f"forbidden broker setting present: {bad}"
 for p in ab["providers"]:
-    assert p["provider"] in ("google", "github")
+    assert p["provider"] in ("google", "github", "cloudflare")
+cfp = [p for p in ab["providers"] if p["id"] == "cloudflare"][0]
+assert cfp["flow"] == "access" and cfp["login_url"].startswith("https://auth-cf.diegonmarcos.com/oauth2/cloudflare/") and set(cfp["hosts"]) <= {"auth.diegonmarcos.com", "account.diegonmarcos.com"}, "Cloudflare One sign-in: login_url on the Access-protected host, hosts only the chooser hosts"
+assert "client_id" not in cfp and "secret_prefix" not in cfp, "Cloudflare One sign-in holds no client credential"
 cf = ab.get("cloudflare_access", {})
 if cf.get("enabled"):
     assert cf["team_domain"] == "diegonmarcos.cloudflareaccess.com" and cf["certs_url"] == "https://diegonmarcos.cloudflareaccess.com/cdn-cgi/access/certs", "CF Access must verify against the owner's team certs"
@@ -253,18 +260,19 @@ $NIX eval --impure --json --expr "let b=builtins.fromJSON (builtins.readFile $BR
 python3 -I - "$W/compose.json" <<'PY' || bad "broker compose does not enforce the broker policy"
 import json, sys
 d = json.load(open(sys.argv[1]))["services"]
-assert set(d) == {"auth-broker-google", "auth-broker-github"}
+assert set(d) == {"auth-broker-google", "auth-broker-github", "auth-broker-cloudflare"}
 for n, s in d.items():
     e = s["environment"]
     assert not any("EMAIL_DOMAIN" in k for k in e), "email-domain env present"
     assert e["BROKER_PROVIDER"] == n.split("-")[-1]
-    assert s["ports"][0].startswith("10.0.0.6:"), "broker must bind the mesh address only"
+    assert e["BIND_HOST"] == "10.0.0.6" and s["network_mode"] == "host" and "ports" not in s, "broker must bind the mesh address only (host network, listener bound to the mesh IP)"
     assert e["AUTH_BROKER_COOKIE_SECRET"] == "${AUTH_BROKER_COOKIE_SECRET}", "cookie secret must come by interpolation"
     for k, v in e.items():
         if "SECRET" in k or k.endswith("CLIENT_ID"):
             ok_v = ("${" + k + "}", "${" + k + ":-}") if k == "AUTH_BROKER_GITHUB_APP_CLIENT_SECRET" else ("${" + k + "}",)  # optional until the owner supplies it
             assert v in ok_v, f"{k} must be interpolated, not inline"
 assert "AUTH_BROKER_GOOGLE_CLIENT_SECRET" in d["auth-broker-google"]["environment"]
+assert not [k for k in d["auth-broker-cloudflare"]["environment"] if "CLIENT" in k], "cloudflare provider: no client credential in the environment"
 assert [k for k in d["auth-broker-github"]["environment"] if "GITHUB" in k] == ["AUTH_BROKER_GITHUB_APP_CLIENT_SECRET"], "github: device flow needs no secret; only the OAuth App secret may be passed"
 PY
 ok "broker compose: mesh-only bind, shared cookie secret, secrets by interpolation only"

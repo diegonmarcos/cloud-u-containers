@@ -139,7 +139,7 @@
     },
     "edge_auth": {
       "multi_sso": {
-        "_doc": "MULTI-SSO (#1066). ONE flag. ON since 2026-10-21 (guard: src/test/test-multi-sso.sh pins this state and proves the ON render only ADDS to the OFF render; OFF/absent renders the pre-multi-SSO Caddyfile). enabled=true: the auth vhost also answers every host in `hosts` (account.diegonmarcos.com; DNS is covered by the wildcard record, TLS is on-demand), serves the three-button chooser on GET / for a browser with no Authelia session, proxies /oauth2/<provider>/* to the auth broker (device flow for GitHub, web code flow + PKCE for Google; infra-sec_auth-broker, on oci-apps over the mesh), and the shared edge gate accepts a broker session cookie as a third credential beside the fleet Bearer and the Authelia session. The broker only admits `allowed_emails`. Per-provider switches live in infra-sec_auth-broker/build.json (providers[].enabled); a switched-off provider's button is hidden by the chooser.",
+        "_doc": "MULTI-SSO (#1066). ONE flag. ON since 2026-10-21 (guard: src/test/test-multi-sso.sh pins this state and proves the ON render only ADDS to the OFF render; OFF/absent renders the pre-multi-SSO Caddyfile). enabled=true: the auth vhost also answers every host in `hosts` (account.diegonmarcos.com; DNS is covered by the wildcard record, TLS is on-demand), serves the four-button chooser (Authelia, Cloudflare One, Google, GitHub) on GET / for a browser with no Authelia session, proxies /oauth2/<provider>/* to the auth broker (device flow and web flow for GitHub, web code flow + PKCE for Google, Cloudflare Access login bridge for Cloudflare One; infra-sec_auth-broker, on oci-apps over the mesh), and the shared edge gate accepts a broker session cookie as a third credential beside the fleet Bearer and the Authelia session. The broker only admits `allowed_emails`. Per-provider switches live in infra-sec_auth-broker/build.json (providers[].enabled); a switched-off provider's button is hidden by the chooser.",
         "enabled": true,
         "primary_host": "auth.diegonmarcos.com",
         "hosts": [
@@ -160,8 +160,34 @@
             "label": "GitHub",
             "upstream": "10.0.0.6:4181",
             "prefix": "/oauth2/github"
+          },
+          {
+            "id": "cloudflare",
+            "label": "Cloudflare One",
+            "upstream": "10.0.0.6:4182",
+            "prefix": "/oauth2/cloudflare"
           }
         ],
+        "chooser": {
+          "_doc": "The sign-in chooser page served on the auth vhost (src/sso-chooser.html), GENERATED from this block, `providers` above and src/sso-chooser.tpl.html by src/gen-sso-chooser.py (test/test-sso-chooser.sh fails on drift). Self-contained: no third-party request at runtime. `order` is the button order (digit keys 1..n pick them); `authelia` is the portal entry that is not a broker; `hints` are the one-line captions; `links` are the footer icon links (public pages).",
+          "home": "https://suite.diegonmarcos.com/",
+          "order": ["authelia", "cloudflare", "google", "github"],
+          "authelia": {
+            "label": "Authelia",
+            "href": "https://auth.diegonmarcos.com/?ui=authelia"
+          },
+          "hints": {
+            "authelia": "fleet SSO portal",
+            "cloudflare": "Zero Trust login bridge",
+            "google": "owner account",
+            "github": "owner account"
+          },
+          "links": [
+            {"id": "linktree", "label": "Linktree", "url": "https://diegonmarcos.github.io/linktree"},
+            {"id": "superapp", "label": "Cloud SuperApp", "url": "https://diegonmarcos.github.io/cloud-webapps/cloud-superapp"},
+            {"id": "store", "label": "Cloud Store", "url": "https://diegonmarcos.github.io/cloud-webapps/cloud-store"}
+          ]
+        },
         "cloudflare_access": {
           "_doc": "Cloudflare Access JWT as the third credential (after the Authelia session and the broker cookie): a request carrying Cf-Access-Jwt-Assertion and neither cookie is sent to the broker's <prefix>/cf-auth, which verifies it against the team certs and the AUDs in infra-sec_auth-broker/build.json auth_broker.cloudflare_access (owner email only). Only active while multi_sso.enabled is true.",
           "enabled": true,
@@ -551,6 +577,10 @@
     },
     "multi-sso": {
       "cmd": "bash test/test-multi-sso.sh",
+      "cwd": "src"
+    },
+    "sso-chooser": {
+      "cmd": "bash test/test-sso-chooser.sh",
       "cwd": "src"
     },
     "hub-resource-budget": {

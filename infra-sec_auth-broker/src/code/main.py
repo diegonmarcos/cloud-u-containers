@@ -11,6 +11,9 @@ session cookie, so `<prefix>/auth` on any instance admits a session issued by an
   POST <prefix>/poll       one poll of the provider token endpoint for a pending flow
   GET  <prefix>/start      (flow web) 302 to the provider with state + PKCE; <prefix>/callback finishes
   GET  <prefix>/start      (github, when the OAuth App secret is present) web flow; ?flow=device keeps the device flow
+  GET  <prefix>/start      (flow access, Cloudflare One) 302 to the Access-protected callback host `login_url`
+  GET  <prefix>/callback   (flow access) reached through Cloudflare Access: verifies Cf-Access-Jwt-Assertion, issues the
+                           session cookie, 302 to rd; no/forged/expired/wrong-AUD/non-owner JWT -> 401, no cookie
   GET  <prefix>/cf-auth    forward_auth target: 202 + X-Auth-Request-Email for a valid Cloudflare Access JWT, else 401
   GET  <prefix>/auth       forward_auth target: 202 + X-Auth-Request-Email on a valid session, else 401
   GET  <prefix>/health     200 {"enabled": bool, "provider": id}
@@ -49,7 +52,7 @@ class Broker:
         self.emails = [e.strip().lower() for e in ab.get("allowed_emails", [])]
         self.gh = [{"login": a["login"].lower(), "id": int(a["id"]), "email": a["email"]}
                    for a in ab.get("allowed_github", [])]
-        if not (self.emails if self.p["provider"] == "google" else self.gh):
+        if not (self.gh if self.p["provider"] == "github" else self.emails):
             raise SystemExit("allowlist for provider %s is empty: refusing to run open" % provider_id)
         self.secret = env.get("AUTH_BROKER_COOKIE_SECRET", "")
         if len(self.secret) < 32:
@@ -57,7 +60,7 @@ class Broker:
         pre = self.p.get("secret_prefix", "")
         self.client_id = self.p.get("client_id") or env.get(pre + "_CLIENT_ID", "")
         self.client_secret = env.get(pre + "_CLIENT_SECRET", "") if pre else ""
-        if self.enabled and not self.client_id:
+        if self.enabled and not self.client_id and self.flow != "access":
             raise SystemExit("provider %s is enabled but has no client id" % provider_id)
         self.flows, self.hits, self.lock = {}, {}, threading.Lock()
         # Web authorization-code flow: a provider with flow "web" (Google), or a device-flow provider
@@ -80,6 +83,10 @@ class Broker:
         self.cf_keys, self.cf_keys_at = {}, 0.0
         if self.cf_on and not (cf.get("team_domain") and cf.get("aud") and self.emails):
             raise SystemExit("cloudflare_access is enabled without team_domain, aud and an email allowlist")
+        # Cloudflare One as a sign-in provider (flow "access"): live only when the provider and the JWT check are both on.
+        self.access_on = self.flow == "access" and self.enabled and self.cf_on
+        if self.flow == "access" and self.enabled and not (self.cf_on and self.p.get("login_url") and self.p.get("hosts")):
+            raise SystemExit("provider %s is enabled but cloudflare_access, login_url or hosts is missing" % provider_id)
 
     # ---- session cookie -------------------------------------------------------------------
     def sign(self, body):
@@ -292,6 +299,27 @@ class Broker:
         except Exception:
             return None
 
+    # ---- Cloudflare One sign-in (flow "access") ------------------------------------------------------
+    def access_start(self, host, rd):
+        """Location of the Access-protected callback, with rd made absolute and validated, or None."""
+        host = (host or "").lower().split(":")[0]
+        if not self.access_on or host not in self.p["hosts"]:
+            return None
+        rd = self.safe_rd(rd)
+        if rd.startswith("/"):
+            rd = "https://%s%s" % (host, rd)
+        return self.p["login_url"] + "?" + urllib.parse.urlencode({"rd": rd})
+
+    def access_callback(self, jwt_header, rd):
+        """(location, set_cookie) for a valid owner Access JWT, else None. The JWT is verified in full."""
+        e = self.cf_email(jwt_header) if self.access_on else None
+        if not e:
+            return None
+        rd = self.safe_rd(rd)
+        if rd.startswith("/"):
+            rd = self.p["home_url"]
+        return rd, self.set_cookie(self.make_cookie(e, self.p["id"]), self.ttl)
+
     # ---- web authorization-code flow (PKCE S256 + state) ----------------------------------------
     STATE_COOKIE = "_sso_state"
 
@@ -423,6 +451,16 @@ def make_handler(b):
             if op == "/cf-auth":
                 e = b.cf_email(self.headers.get("Cf-Access-Jwt-Assertion"))
                 return self.send(202, b"", "text/plain", [("X-Auth-Request-Email", e)]) if e else self.send(401, b"", "text/plain")
+            if b.flow == "access" and op in ("/start", "/callback"):
+                qs = urllib.parse.parse_qs(u.query)
+                rd = (qs.get("rd") or [""])[0]
+                if op == "/start":
+                    loc = b.access_start(self.headers.get("Host"), rd)
+                    return self.send(302, b"", "text/plain", [("Location", loc)]) if loc else self.send(404, "<p>Sign-in is not available.</p>", "text/html; charset=utf-8")
+                out = b.access_callback(self.headers.get("Cf-Access-Jwt-Assertion"), rd)
+                if not out:
+                    return self.send(401, "<p>Cloudflare One sign-in was not verified.</p>", "text/html; charset=utf-8")
+                return self.send(302, b"", "text/plain", [("Location", out[0]), ("Set-Cookie", out[1])])
             device_forced = op == "/start" and (urllib.parse.parse_qs(u.query).get("flow") or [""])[0] == "device" and b.flow == "device"
             if b.web_on and op in ("/start", "/callback") and not device_forced:
                 if op == "/start":
@@ -453,7 +491,7 @@ def make_handler(b):
                 body = json.loads(self.rfile.read(n) or b"{}")
             except Exception:
                 return self.send(400, {"error": "bad_request"})
-            if b.flow == "web":
+            if b.flow in ("web", "access"):
                 return self.send(404, {"error": "not_found"})
             if op == "/device":
                 code, d = b.new_device(self.ip())

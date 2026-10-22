@@ -1,0 +1,36 @@
+name: SSO chooser screenshots
+
+# Renders the file Caddy serves for the sign-in chooser (infra-sec_caddy/dist/configs/sso-chooser.html) in
+# headless Chromium: desktop + phone width, light + dark, and with JavaScript off. Fails on a missing provider
+# button, horizontal scroll, console error or any request that leaves the origin. The PNGs are uploaded as the
+# artifact `sso-chooser-shots` so the page can be looked at BEFORE it is deployed.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "infra-sec_caddy/src/sso-chooser*"
+      - "infra-sec_caddy/src/gen-sso-chooser.py"
+      - "infra-sec_caddy/dist/configs/sso-chooser.html"
+      - ".github/scripts/chooser-shots.py"
+      - ".github/workflows/sso-chooser-shots.yml"
+  workflow_dispatch:
+
+jobs:
+  shots:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            infra-sec_caddy
+            .github/scripts
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install playwright==1.48.0 && playwright install --with-deps chromium
+      - run: python3 .github/scripts/chooser-shots.py infra-sec_caddy/dist/configs/sso-chooser.html shots
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sso-chooser-shots
+          path: shots/*.png
