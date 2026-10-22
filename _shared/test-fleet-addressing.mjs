@@ -39,6 +39,8 @@ for (const d of readdirSync(root, { withFileTypes: true })) {
   const apiish = apiNames.has(n) || (!isMcp && (d.name.startsWith("infra-api_") || /(^|[-_])api($|[-_])/.test(n)));
   if (!/^[a-z0-9-]+$/.test(n) || (apiish && !n.endsWith("-api"))) hit("naming", n);
   if (typeof j.dns === "string" && j.dns.endsWith(".app") && j.dns !== `${n}.app`) hit("mesh", n);
+  const ph = j.proxy?.primary?.public_host;
+  if (ph !== undefined && ph !== `${n}.${DOM}`) hit("public_host", n); // never transitional: a declared own host must be the container-name host
   for (const b of blocks(j.proxy ?? {})) {
     const h = hostOf(b);
     if (h === `api.${DOM}`) hit("no_api_host", n);
@@ -51,7 +53,7 @@ for (const d of readdirSync(root, { withFileTypes: true })) {
 
 let fail = 0;
 const bad = (m) => { fail++; console.error(`FAIL ${m}`); };
-for (const rule of ["naming", "mesh", "no_api_host", "host", "protected", "pages"]) {
+for (const rule of ["public_host", "naming", "mesh", "no_api_host", "host", "protected", "pages"]) {
   const got = found[rule] ?? new Set(), listed = new Set(cfg.transitional[rule] ?? []);
   for (const x of got) if (!listed.has(x)) bad(`${rule}: ${x} violates the fleet addressing rule (ticket #1100); fix it, do not list it`);
   for (const x of listed) if (!got.has(x)) bad(`${rule}: ${x} is on the transitional list but no longer violates; remove it`);

@@ -20,7 +20,7 @@ for (const d of readdirSync(root).sort()) {
   const b = JSON.parse(readFileSync(f, 'utf8'));
   if (!b.name) continue;
   const p = b.proxy?.primary ?? {};
-  const hosts = [...new Set([p.domain, b.domain].filter(h => typeof h === 'string' && /^[a-z0-9.-]+\.diegonmarcos\.com$/.test(h)))].sort();
+  const hosts = [...new Set([p.domain, p.public_host, b.domain].filter(h => typeof h === 'string' && /^[a-z0-9.-]+\.diegonmarcos\.com$/.test(h)))].sort();
   const auth = p.auth ?? null;
   const bearer = auth === 'bearer' || /(-mcp|-api)$/.test(b.name);
   const signin = hosts.length > 0 && !['none', 'bypass', null].includes(auth) && auth !== 'bearer';

@@ -20,6 +20,7 @@
       "type": "path",
       "parent_domain": "api.diegonmarcos.com",
       "base_path": "/fin-api",
+      "public_host": "fin-api.diegonmarcos.com",
       "auth": "two_factor",
       "paths": {
         "/health": {
