@@ -1,8 +1,7 @@
 {
   "name": "tokens-api",
-  "description": "Fleet token engine: lists, generates, reveals and revokes every fleet bearer token (fleet ft_ tokens and adopted Authelia JWTs); introspect-proxy asks it before accepting a Bearer, so a revoked token stops working within 60 seconds",
+  "description": "Fleet token engine: lists, generates, reveals and revokes every fleet bearer token (fleet ft_ tokens and adopted Authelia JWTs); introspect-proxy asks it before accepting a Bearer, so a revoked token stops working within 60 seconds. Public address: c3-pvt.diegonmarcos.com/tokens-api (shared gate, #1104); mesh tokens-api.app",
   "dns": "tokens-api.app",
-  "domain": "tokens-api.diegonmarcos.com",
   "ports": {
     "app": 4184
   },
@@ -17,17 +16,11 @@
     "remote_path": "/opt/containers/tokens-api",
     "compose_flags": "--build"
   },
-  "proxy": {
-    "primary": {
-      "domain": "tokens-api.diegonmarcos.com",
-      "auth": "two_factor"
-    }
-  },
   "health": {
     "path": "/health"
   },
   "monitoring": {
-    "tls_check": true,
+    "tls_check": false,
     "dns_check": true,
     "endpoint_check": true
   },
@@ -51,14 +44,11 @@
       "port": 4184,
       "port_env": null,
       "dns": "tokens-api.app",
-      "public": true,
-      "proxy": {
-        "domain": "tokens-api.diegonmarcos.com",
-        "auth": "two_factor"
-      },
+      "public": false,
+      "proxy": null,
       "healthcheck": "/health",
       "monitoring": {
-        "tls_check": true,
+        "tls_check": false,
         "dns_check": true,
         "endpoint_check": true
       },

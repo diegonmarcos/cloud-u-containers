@@ -1,0 +1,52 @@
+name: tokens-api render (run build.sh build for tokens-api, introspect-proxy and the hub, run the guards, publish the patch)
+
+# One-shot. Lays this repository out as cloud-infra's a_solutions (the Ship layout), runs the engine's
+# `build.sh build` for the three services the token engine touches, so dist/ is exactly what the Ship
+# build step regenerates and verifies, then runs the fallback / resource-budget guards and uploads the
+# patch (src-hash and dist included). Nothing is pushed by this job.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: diegonmarcos/cloud-infra
+          path: infra
+          sparse-checkout: |
+            1_cicd
+            1_cloud-configs/dist
+            0_git
+      - uses: actions/checkout@v4
+        with:
+          path: infra/a_solutions
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
+      - uses: cachix/install-nix-action@v27
+      - name: build.sh build for the three services
+        working-directory: infra/a_solutions
+        run: |
+          set -uo pipefail
+          for s in infra-sec_tokens-api infra-sec_introspect-proxy infra-sec_caddy; do
+            echo "::group::build $s"
+            (cd "$s" && bash ./build.sh build) || { echo "build.sh build failed for $s"; echo "::endgroup::"; exit 1; }
+            echo "::endgroup::"
+          done
+      - name: Fallback and hub resource-budget guards
+        working-directory: infra/a_solutions
+        run: bash _shared/test/fallback-pages-guard.sh
+      - name: Publish the patch
+        if: always()
+        working-directory: infra/a_solutions
+        run: |
+          git add -N infra-sec_tokens-api infra-sec_introspect-proxy infra-sec_caddy
+          git diff -- infra-sec_tokens-api infra-sec_introspect-proxy infra-sec_caddy > /tmp/final.patch
+          wc -l /tmp/final.patch; git status --short | head -20
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: tokens-api-patch, path: /tmp/final.patch }

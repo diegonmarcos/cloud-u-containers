@@ -504,12 +504,10 @@
     {
       "slug": "tokens-api",
       "dir": "infra-sec_tokens-api",
-      "description": "Fleet token engine: lists, generates, reveals and revokes every fleet bearer token (fleet ft_ tokens and adopted Authelia JWTs); introspect-proxy asks it before accepting a Bearer, so a revoked token stops working within 60 seconds",
+      "description": "Fleet token engine: lists, generates, reveals and revokes every fleet bearer token (fleet ft_ tokens and adopted Authelia JWTs); introspect-proxy asks it before accepting a Bearer, so a revoked token stops working within 60 seconds. Public ",
       "mesh": "tokens-api.app",
-      "hosts": [
-        "tokens-api.diegonmarcos.com"
-      ],
-      "signin": true,
+      "hosts": [],
+      "signin": false,
       "bearer": true
     },
     {
