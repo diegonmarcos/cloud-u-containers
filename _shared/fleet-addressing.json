@@ -127,10 +127,11 @@
     "public": {
       "html_hosts": [
         "diegonmarcos.com",
-        "www.diegonmarcos.com"
+        "www.diegonmarcos.com",
+        "linktree.diegonmarcos.com"
       ],
       "wildcard_redirect_to": "https://diegonmarcos.com/",
-      "_doc": "Owner ruling 2026-10-22: the apex and www are the ONLY unauthenticated public hosts. There is no public wildcard route; the *.diegonmarcos.com catch-all site only redirects to the apex and reaches no upstream. The guard rejects any wildcard site that proxies, serves files or responds with content."
+      "_doc": "Owner ruling 2026-10-22: the apex, www and linktree.diegonmarcos.com (explicitly declared, serves /gh, /qrcode and static assets) are the ONLY unauthenticated public HTML hosts. There is no public wildcard route; the *.diegonmarcos.com catch-all site only redirects to the apex and reaches no upstream. The guard rejects any wildcard site that proxies, serves files or responds with content."
     }
   }
 }
