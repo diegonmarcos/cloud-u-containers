@@ -233,7 +233,7 @@
       "index_repos": [
         "cloud-infra",
         "cloud-infra-desktop",
-        "front",
+        "front-diegonmarcos",
         "cloud-data",
         "front-data",
         "cloud-data-my-ai-memory",
@@ -250,7 +250,7 @@
       "repo_map": {
         "cloud-infra": "cloud-infra",
         "cloud-infra-desktop": "cloud-infra-desktop",
-        "front": "diegonmarcos.github.io",
+        "front-diegonmarcos": "diegonmarcos.github.io",
         "cloud-data": "cloud-data",
         "front-data": "front-data",
         "cloud-data-my-ai-memory": "cloud-data-my-ai-memory",

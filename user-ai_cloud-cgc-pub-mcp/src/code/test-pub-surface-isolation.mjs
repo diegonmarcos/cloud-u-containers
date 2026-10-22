@@ -46,7 +46,7 @@ check("P0 build.json declares the private repos (cloud-data, cloud-data-my-ai-me
   OCT.private_repos.includes("cloud-data") && OCT.private_repos.includes("cloud-data-my-ai-memory"),
   JSON.stringify(OCT.private_repos));
 check("P1 exactly the 6 public repos remain", JSON.stringify([...PUBLIC].sort()) ===
-  JSON.stringify(["cloud-infra", "cloud-infra-desktop", "cloud-u-android", "cloud-u-containers", "front", "front-data"]),
+  JSON.stringify(["cloud-infra", "cloud-infra-desktop", "cloud-u-android", "cloud-u-containers", "front-data", "front-diegonmarcos"]),
   PUBLIC.join(","));
 
 // ── A. compose.nix, evaluated ───────────────────────────────────────────────
@@ -108,7 +108,7 @@ try {
     writeFileSync(join(root, r, "README.md"), `readme ${r} needle-${r}\n`);
   }
   // A public repo with a symlink that points INTO a private checkout.
-  symlinkSync(join(root, "cloud-data"), join(root, "front", "escape"));
+  symlinkSync(join(root, "cloud-data"), join(root, "front-diegonmarcos", "escape"));
   process.env.GIT_ROOT = root;
   process.env.CONFIG_PATH = join(root, "config.json");
   process.env.REPO_SYNC = "off";
@@ -180,7 +180,7 @@ try {
   // Traversal from a public repo into a private sibling.
   for (const path of ["../cloud-data/secrets/CANARY.txt", "../cloud-data", "escape/secrets/CANARY.txt", "escape"]) {
     const m = path.endsWith("CANARY.txt") ? "read_file" : "list_directory";
-    const r = await inv({ method: m, repo: "front", path });
+    const r = await inv({ method: m, repo: "front-diegonmarcos", path });
     check(`C4 ${m} repo=front path=${path} cannot reach a private checkout`,
       r?.isError === true && !text(r).includes("canary-") && !text(r).includes("CANARY"), text(r).slice(0, 200));
   }
