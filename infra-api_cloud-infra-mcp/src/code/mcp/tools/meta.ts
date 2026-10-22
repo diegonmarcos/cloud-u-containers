@@ -1066,12 +1066,12 @@ export function registerMetaDevops(server: McpServer): void {
 export function registerMetaObs(server: McpServer): void {
   server.tool(
     "infra.obs",
-    "Observability / debug: docker logs, VPS CLI proxies (gcloud/oci/gh/wrangler/hcloud/cloudflare/ghcr), container profiles, VM diagnostics, test suites, status/report, DB queries.",
+    "Observability / debug: per-app crash/log events (debug.app_logs: kind apk|containers, name, event_kind, since, limit, file), docker logs, VPS CLI proxies (gcloud/oci/gh/wrangler/hcloud/cloudflare/ghcr), container profiles, VM diagnostics, test suites, status/report, DB queries.",
     {
       method: z.enum([
         "db.alert_state","db.alert_update","db.prune",
         "debug.db_audit","debug.db_deploy","debug.db_health_history","debug.db_uptime",
-        "debug.docker_logs","debug.docker_logs_multi","debug.docker_logs_search",
+        "debug.app_logs","debug.docker_logs","debug.docker_logs_multi","debug.docker_logs_search",
         "debug.profile_container","debug.profile_service","debug.profile_vm",
         "debug.report","debug.test",
         "debug.vm_disk","debug.vm_journal","debug.vm_network","debug.vm_status","debug.vm_top",
@@ -1084,6 +1084,18 @@ export function registerMetaObs(server: McpServer): void {
       const p = (params ?? {}) as any;
       try {
         switch (method) {
+          // ── per-app crash/log route of c3-infra-api: GET /{apk|containers}/{name}/logs ──
+          case "debug.app_logs": {
+            const kind = p.kind === "containers" ? "containers" : "apk";
+            if (typeof p.name !== "string" || !/^[A-Za-z0-9_.-]{1,80}$/.test(p.name)) return errText("Error: name is required (a declared apk label like cloud-drive, or a container name)");
+            const q = new URLSearchParams();
+            if (p.file) q.set("file", String(p.file));
+            else { if (p.event_kind) q.set("kind", String(p.event_kind)); if (p.since) q.set("since", String(p.since)); if (p.limit) q.set("limit", String(Math.floor(p.limit))); }
+            const base = process.env.C3_INFRA_API_URL ?? "http://c3-infra-api.app:8081";
+            const resp = await fetch(`${base}/${kind}/${p.name}/logs${q.size ? `?${q}` : ""}`, { signal: AbortSignal.timeout(15_000) });
+            const body = await resp.text();
+            return resp.ok ? text(body) : errText(`Error: HTTP ${resp.status} ${body.slice(0, 300)}`);
+          }
           // ── docker logs ──
           case "debug.docker_logs": {
             validateContainerName(p.container);
