@@ -3,9 +3,9 @@
   "_source": "cloud-data-topology.json via /cloud-data/matomo-sites",
   "sites": [
     {
-      "name": "AFFiNE Collaborative Workspace (drive-notes-affine.diegonmarcos.com) — deployed via hedgedoc flake",
-      "url": "https://drive-notes-affine.diegonmarcos.com",
-      "service": "affine"
+      "name": "Cloud Notes Collaborative Workspace (drive-notes.diegonmarcos.com) — deployed via hedgedoc flake",
+      "url": "https://drive-notes.diegonmarcos.com",
+      "service": "cloud-notes"
     },
     {
       "name": "VS Code IDE (ide.diegonmarcos.com)",

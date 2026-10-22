@@ -5,7 +5,7 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
 
     # Suite services (aa-sui_)
-    affine.url = "path:./aa-sui_affine";
+    cloud-notes.url = "path:./aa-sui_cloud_notes";
     code-server.url = "path:./aa-sui_code-server";
     etherpad.url = "path:./aa-sui_etherpad";
     filebrowser.url = "path:./aa-sui_filebrowser";
@@ -98,7 +98,7 @@
         ip = "144.24.196.72";
         services = [
           "photoprism" "photos-webhook" "nocodb" "code-server"
-          "affine" "etherpad" "filebrowser" "grist" "revealmd"
+          "cloud-notes" "etherpad" "filebrowser" "grist" "revealmd"
           "lgtm" "backup-gitea" "backup-bup" "backup-borg"
           "sauron-lite" "sauron" "db-agent"
         ];
@@ -109,7 +109,7 @@
     # Export all individual service packages
     packages.${system} = {
       # Suite services (aa-sui_)
-      affine = inputs.affine.packages.${system}.default;
+      cloud-notes = inputs.cloud-notes.packages.${system}.default;
       code-server = inputs.code-server.packages.${system}.default;
       etherpad = inputs.etherpad.packages.${system}.default;
       filebrowser = inputs.filebrowser.packages.${system}.default;
@@ -171,7 +171,7 @@
         mkdir -p $out/{aa-sui,ab-mic,ad-agi,ba-clo,bb-sec,bc-obs,ca-dat}
 
         # Suite services (aa-sui_)
-        ln -s ${inputs.affine.packages.${system}.default} $out/aa-sui/affine
+        ln -s ${inputs.cloud-notes.packages.${system}.default} $out/aa-sui/cloud-notes
         ln -s ${inputs.code-server.packages.${system}.default} $out/aa-sui/code-server
         ln -s ${inputs.etherpad.packages.${system}.default} $out/aa-sui/etherpad
         ln -s ${inputs.filebrowser.packages.${system}.default} $out/aa-sui/filebrowser
@@ -233,7 +233,7 @@
       deploy = pkgs.writeShellScriptBin "deploy-cloud" ''
         set -e
 
-        SUITE_SERVICES="affine code-server etherpad filebrowser grist mailu photoprism photos-webhook radicale revealmd smtp-proxy"
+        SUITE_SERVICES="cloud-notes code-server etherpad filebrowser grist mailu photoprism photos-webhook radicale revealmd smtp-proxy"
         MISC_SERVICES="syncthing vaultwarden"
         AGI_SERVICES="ollama"
         CLOUD_SERVICES="cloudflare gcloud oci"

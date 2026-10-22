@@ -82,7 +82,7 @@ const SYSTEM_PROMPT: &str = r#"You are an autonomous infrastructure agent managi
 - oci-mail (130.110.251.193) — Mailu, Syncthing, Radicale
 - oci-analytics (129.151.228.66) — Matomo
 - oci-apps (82.70.229.129) — C3 API, Crawlee, this agent
-- oci-apps-1 (144.24.196.72) — PhotoPrism, NocoDB, Code Server, AFFiNE
+- oci-apps-1 (144.24.196.72) — PhotoPrism, NocoDB, Code Server, Cloud Notes
 
 ## Response format
 When you have completed your task and verified the result, end your response with the word DONE on its own line.

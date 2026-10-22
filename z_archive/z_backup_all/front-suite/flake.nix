@@ -26,8 +26,8 @@
         description = "Presentation creator";
         port = 1948;
       };
-      notes-affine = {
-        name = "affine";
+      notes = {
+        name = "cloud-notes";
         description = "Workspace & notes";
         port = 3010;
       };
@@ -65,7 +65,7 @@
       docs = mkAppPackage "docs-etherpad" apps.docs-etherpad;
       sheets = mkAppPackage "sheets-ethercalc" apps.sheets-ethercalc;
       slides = mkAppPackage "slides-revealjs" apps.slides-revealjs;
-      notes = mkAppPackage "notes-affine" apps.notes-affine;
+      notes = mkAppPackage "notes" apps.notes;
       photos = mkAppPackage "photos-photoprism" apps.photos-photoprism;
       files = mkAppPackage "files-filebrowser" apps.files-filebrowser;
       powersheets = mkAppPackage "powersheets-nocodb" apps.powersheets-nocodb;
@@ -77,7 +77,7 @@
         ln -s ${self.packages.${system}.docs} $out/docs-etherpad
         ln -s ${self.packages.${system}.sheets} $out/sheets-ethercalc
         ln -s ${self.packages.${system}.slides} $out/slides-revealjs
-        ln -s ${self.packages.${system}.notes} $out/notes-affine
+        ln -s ${self.packages.${system}.notes} $out/notes
         ln -s ${self.packages.${system}.photos} $out/photos-photoprism
         ln -s ${self.packages.${system}.files} $out/files-filebrowser
         ln -s ${self.packages.${system}.powersheets} $out/powersheets-nocodb

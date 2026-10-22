@@ -135,15 +135,15 @@
     }
   },
   "services": {
-    "affine": {
+    "cloud-notes": {
       "category": "app",
       "vm": "oci-A1-f_0",
       "containers": [
         "hedgedoc_app",
         "hedgedoc_postgres"
       ],
-      "domain": "drive-notes-affine.diegonmarcos.com",
-      "description": "AFFiNE Collaborative Workspace (drive-notes-affine.diegonmarcos.com) — deployed via hedgedoc flake"
+      "domain": "drive-notes.diegonmarcos.com",
+      "description": "Cloud Notes Collaborative Workspace (drive-notes.diegonmarcos.com) — deployed via hedgedoc flake"
     },
     "code-server": {
       "category": "app",

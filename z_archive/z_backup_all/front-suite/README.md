@@ -9,7 +9,7 @@ Self-hosted productivity suite alternatives to Google/Microsoft services.
 | **Docs** | `docs-etherpad` | Collaborative document editor (Google Docs alternative) | 9001 |
 | **Sheets** | `sheets-ethercalc` | Spreadsheet editor (Google Sheets alternative) | 8765 |
 | **Slides** | `slides-revealjs` | Presentation creator (Google Slides alternative) | 1948 |
-| **Notes** | `notes-affine` | Workspace & notes (Notion alternative) | 3010 |
+| **Notes** | `notes` | Workspace & notes (Notion alternative) | 3010 |
 | **Photos** | `photos-photoprism` | AI-powered photo management (Google Photos alternative) | 2342 |
 | **Files** | `files-filebrowser` | File manager (Google Drive alternative) | 8080 |
 | **PowerSheets** | `powersheets-nocodb` | Database/spreadsheet hybrid (Airtable alternative) | 8080 |

@@ -2,9 +2,9 @@
   "_generated": "2026-03-22T19:40:25.653Z",
   "suffix": "app",
   "services": {
-    "affine": {
+    "cloud-notes": {
       "ip": "10.0.0.6",
-      "desc": "AFFiNE Collaborative Workspace (drive-notes-affine.diegonmarcos.com) — deployed via hedgedoc flake"
+      "desc": "Cloud Notes Collaborative Workspace (drive-notes.diegonmarcos.com) — deployed via hedgedoc flake"
     },
     "code-server": {
       "ip": "10.0.0.6",

@@ -81,7 +81,7 @@ Container mounts `~/git` (read-only) and `~/.ssh` (read-only) from the host.
 
 | Category | Prefix | Count | Examples |
 |----------|--------|-------|----------|
-| **App** (suite) | `aa-sui_` | 11 | photoprism, mailu, radicale, affine, code-server |
+| **App** (suite) | `aa-sui_` | 11 | photoprism, mailu, radicale, cloud-notes, code-server |
 | **Misc** | `ab-mic_` | 2 | syncthing, vaultwarden |
 | **Cloud** | `ba-clo_` | 3 | cloudflare, gcloud, oci (Terraform, local) |
 | **Security** | `bb-sec_` | 7 | authelia, caddy, rust-api, sauron, wireguard |

@@ -153,7 +153,7 @@ svc_domains = {
     "photoprism": "photos.diegonmarcos.com",
     "nocodb": "db.diegonmarcos.com",
     "code-server": "ide.diegonmarcos.com",
-    "affine": "drive-notes-affine.diegonmarcos.com",
+    "cloud_notes": "drive-notes.diegonmarcos.com",
     "grist": "sheets.diegonmarcos.com",
     "revealmd": "slides.diegonmarcos.com",
     "npm": "proxy.diegonmarcos.com",
@@ -265,13 +265,13 @@ for i, v1 in enumerate(wg_vms):
 stmts.append("RELATE service:authelia->depends_on->service:redis SET type = 'runtime';")
 # All proxied services depend on npm (reverse proxy)
 proxied = ["authelia", "vaultwarden", "ntfy", "matomo", "photoprism",
-           "nocodb", "code_server", "affine", "grist",
+           "nocodb", "code_server", "cloud_notes", "grist",
            "revealmd", "syncthing", "radicale", "flask_api", "mailu"]
 for svc in proxied:
     stmts.append(f"RELATE service:{svc}->proxied_by->service:npm;")
 # Authelia-protected services
 auth_protected = ["vaultwarden", "photoprism", "nocodb", "code_server",
-                  "affine", "grist", "revealmd", "flask_api"]
+                  "cloud_notes", "grist", "revealmd", "flask_api"]
 for svc in auth_protected:
     stmts.append(f"RELATE service:{svc}->authenticated_by->service:authelia;")
 # Backup dependencies

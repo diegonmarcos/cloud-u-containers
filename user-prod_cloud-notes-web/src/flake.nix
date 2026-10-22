@@ -1,5 +1,5 @@
 {
-  description = "Cloud Notes web — static AFFiNE-based app, dist layout v2 (flake as orchestrator)";
+  description = "Cloud Notes web — static notes app, dist layout v2 (flake as orchestrator)";
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
 

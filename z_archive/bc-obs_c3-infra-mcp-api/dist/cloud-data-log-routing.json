@@ -5,12 +5,12 @@
     "oci-apps": [
       {
         "container": "hedgedoc_app",
-        "service": "affine",
+        "service": "cloud-notes",
         "log_level": "info"
       },
       {
         "container": "hedgedoc_postgres",
-        "service": "affine",
+        "service": "cloud-notes",
         "log_level": "info"
       },
       {

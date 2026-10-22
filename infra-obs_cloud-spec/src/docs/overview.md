@@ -18,7 +18,7 @@ All services run as Docker containers, configured via Nix flakes. Each service's
 | oci-E2-f_0 | oci-mail | 10.0.0.3 | 1 GB | Mail, sync, calendar |
 | oci-E2-f_1 | oci-analytics | 10.0.0.4 | 1 GB | Analytics, workflows |
 | oci-A1-f_0 | oci-apps | 10.0.0.6 | 16 GB | Crawlee, scraping |
-| oci-A1-f_1 | oci-apps-1 | 10.0.0.2 | 8 GB | Photos, DB, IDE, AFFiNE |
+| oci-A1-f_1 | oci-apps-1 | 10.0.0.2 | 8 GB | Photos, DB, IDE, Cloud Notes |
 
 ## Service Categories
 

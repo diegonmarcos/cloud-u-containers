@@ -1,7 +1,7 @@
 /**
  * Comms tools — email, messaging, notes.
  * Email access proxies through mailu-mcp or direct IMAP.
- * WhatsApp and AFFiNE are TBD placeholders.
+ * WhatsApp and Cloud Notes are TBD placeholders.
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
@@ -47,15 +47,15 @@ Use those tools directly for email operations.`,
     })
   );
 
-  // ── Notes / AFFiNE (TBD) ─────────────────────────────────────────
+  // ── Notes / Cloud Notes (TBD) ─────────────────────────────────────────
   server.tool(
     "comms_notes",
-    "Access notes from AFFiNE/HedgeDoc — data source not yet connected.",
+    "Access notes from cloud-notes/HedgeDoc — data source not yet connected.",
     {},
     async () => ({
       content: [{
         type: "text" as const,
-        text: "# Notes\n\nData source not yet connected.\n\nPlanned: Read notes from AFFiNE (drive-notes-affine.diegonmarcos.com) via API or local export.",
+        text: "# Notes\n\nData source not yet connected.\n\nPlanned: Read notes from Cloud Notes (drive-notes.diegonmarcos.com) via API or local export.",
       }],
     })
   );

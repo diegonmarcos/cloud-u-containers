@@ -6,7 +6,7 @@
 
 # Applications (aa-sui)
 
-- [AFFiNE](../services/aa-sui_affine/index.html)
+- [Cloud Notes](../services/aa-sui_cloud_notes/index.html)
 - [Code Server](../services/aa-sui_code-server/index.html)
 - [Etherpad](../services/aa-sui_etherpad/index.html)
 - [Filebrowser](../services/aa-sui_filebrowser/index.html)

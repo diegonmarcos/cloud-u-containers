@@ -2249,7 +2249,7 @@ error @not_wg "Forbidden" 403
       import edge_errors
   }
 
-  # Cloud Notes web: the AFFiNE-based notes app (Miro + Notion + Obsidian) served as static files at notes.diegonmarcos.com behind the edge gate (Authelia 2FA or fleet Bearer). Built by cloud-u-android ship-cloud-notes.yml (ghcr.io/diegonmarcos/cloud-notes-web).
+  # Cloud Notes web: the notes app (Miro + Notion + Obsidian) served as static files at notes.diegonmarcos.com behind the edge gate (Authelia 2FA or fleet Bearer). Built by cloud-u-android ship-cloud-notes.yml (ghcr.io/diegonmarcos/cloud-notes-web).
   notes.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
 import security

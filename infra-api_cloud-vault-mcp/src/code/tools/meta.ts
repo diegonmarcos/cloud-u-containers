@@ -104,7 +104,7 @@ Use those tools directly for email operations.`,
   comms_notes: async () => ({
     content: [{
       type: "text" as const,
-      text: "# Notes\n\nData source not yet connected.\n\nPlanned: Read notes from AFFiNE (drive-notes-affine.diegonmarcos.com) via API or local export.",
+      text: "# Notes\n\nData source not yet connected.\n\nPlanned: Read notes from Cloud Notes (drive-notes.diegonmarcos.com) via API or local export.",
     }],
   }),
 

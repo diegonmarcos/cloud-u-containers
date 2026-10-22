@@ -4,11 +4,11 @@
   "zone": "diegonmarcos.com",
   "records": [
     {
-      "name": "drive-notes-affine.diegonmarcos.com",
+      "name": "drive-notes.diegonmarcos.com",
       "type": "CNAME",
       "content": "diegonmarcos.com",
       "proxied": true,
-      "service": "affine"
+      "service": "cloud-notes"
     },
     {
       "name": "ide.diegonmarcos.com",

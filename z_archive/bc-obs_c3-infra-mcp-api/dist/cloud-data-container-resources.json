@@ -2,7 +2,7 @@
   "_generated": "2026-03-21T19:08:59.189Z",
   "_source": "cloud-data-topology.json via /cloud-data/container-resources",
   "services": {
-    "affine": {
+    "cloud-notes": {
       "vm": "oci-apps",
       "vm_ram_gb": null,
       "vm_cpu": null,
