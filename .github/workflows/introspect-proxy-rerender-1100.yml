@@ -14,19 +14,39 @@ jobs:
   render:
     runs-on: ubuntu-latest
     steps:
+      # The service's build-introspect-proxy.json is a symlink into cloud-infra's derived dist, so the
+      # checkout is laid out like the Ship's: cloud-infra with this repository at a_solutions.
       - uses: actions/checkout@v4
+        with: { repository: diegonmarcos/cloud-infra, path: ci, sparse-checkout: '1_cloud-configs/dist' }
+      - uses: actions/checkout@v4
+        with: { path: ci/a_solutions }
       - uses: cachix/install-nix-action@v27
       - name: Render
         run: |
           set -euo pipefail
           NIX="nix --extra-experimental-features nix-command --extra-experimental-features flakes"
-          cd infra-sec_introspect-proxy/src
-          out=$($NIX build --no-link --print-out-paths .#default)
+          A=$PWD/ci/a_solutions
+          S=$A/infra-sec_introspect-proxy/src
+          out=$($NIX build --impure --no-link --print-out-paths --expr "
+            let
+              pkgs = (builtins.getFlake \"github:NixOS/nixpkgs/nixos-24.11\").legacyPackages.x86_64-linux;
+              buildJson = builtins.fromJSON (builtins.readFile $S/../build.json);
+              container = builtins.fromJSON (builtins.readFile $S/build-introspect-proxy.json);
+              engine = import $A/_shared/engine.nix;
+              nb = buildJson.docker.native_build;
+            in engine {
+              inherit pkgs buildJson container;
+              srcDir = $S;
+              templates = [];
+              composeSpec = import $S/compose.nix { inherit buildJson container; };
+              nativeBuild = { cmd = nb.cmd; binary = nb.entrypoint; baseImage = nb.base_image; apt = nb.apt or \"\"; };
+              title = \"Introspect Proxy (v2)\";
+            }")
           mkdir -p /tmp/out
           cp -r "$out"/. /tmp/out/
           chmod -R u+w /tmp/out
           ls -R /tmp/out | head -40
-          diff -ru ../dist /tmp/out | head -80 || true
+          diff -ru $A/infra-sec_introspect-proxy/dist /tmp/out | head -80 || true
       - uses: actions/upload-artifact@v4
         if: always()
         with: { name: introspect-dist, path: /tmp/out }
