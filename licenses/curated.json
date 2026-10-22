@@ -191,6 +191,7 @@
    "licence": "LicenseRef-NoLicenseGranted"
   },
   "infra-sec_mcp-oauth": { "licence": "LicenseRef-NoLicenseGranted" },
+  "infra-sec_tokens-api": { "licence": "LicenseRef-NoLicenseGranted" },
   "infra-sec_authelia": {
    "licence": "LicenseRef-NoLicenseGranted"
   },
