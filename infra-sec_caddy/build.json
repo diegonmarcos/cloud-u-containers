@@ -243,9 +243,18 @@
         },
         {
           "host": "diegonmarcos.com",
-          "scope": "paths",
-          "paths": ["/.well-known/openpgpkey/*", "/.well-known/jmap"],
-          "reason": "Owner decision 22: WKD (OpenPGP key discovery, public keys by design) and the apex /.well-known/jmap autoconfig redirect (redirect only, no content)."
+          "scope": "host",
+          "reason": "Routing tier public HTML (#1104, owner ruling 2026-10-22): the apex and www are the ONLY unauthenticated public hosts. Static landing page plus WKD (OpenPGP public keys by design) and the /.well-known/jmap autoconfig redirect."
+        },
+        {
+          "host": "www.diegonmarcos.com",
+          "scope": "host",
+          "reason": "Routing tier public HTML (#1104, owner ruling 2026-10-22): www and the apex are the ONLY unauthenticated public hosts; static landing page."
+        },
+        {
+          "host": "*.diegonmarcos.com",
+          "scope": "host",
+          "reason": "Routing tier (#1104, owner ruling 2026-10-22): there is NO public wildcard route. This catch-all serves nothing: an undeclared subdomain is redirected to the apex and reaches no upstream. Guard: _shared/test-fleet-addressing.mjs."
         },
         {
           "host": "mta-sts.diegonmarcos.com",
@@ -371,8 +380,8 @@
     "catch_all": {
       "domain": "*.diegonmarcos.com",
       "page": "/srv/error.html",
-      "redirect_to": "https://diegonmarcos.github.io/c__Cloud/",
-      "_redirect_doc": "Unknown subdomains 302 to the landing hub instead of the 404 error page (caddyfile.nix catchAllBlock). page stays as the edge's fallback file."
+      "redirect_to": "https://diegonmarcos.com/",
+      "_redirect_doc": "Undeclared subdomains have no route (#1104, owner ruling 2026-10-22): 302 to the apex, ungated, no upstream (caddyfile.nix catchAllBlock). page stays as the edge's fallback file."
     },
     "messages": {
       "portless_placeholder": "Portless worker/sidecar \u2014 no HTTP endpoint",

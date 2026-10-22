@@ -54,7 +54,7 @@ for (const d of readdirSync(root, { withFileTypes: true })) {
 let fail = 0;
 // ── Tiers (ticket #1104): the rendered hub Caddyfile must carry the c3-pvt and c3-pub sites as declared ──
 const siteOf = (text, host) => {
-  const m = new RegExp(`^ {4}${host.replace(/\./g, "\\.")} \\{$`, "m").exec(text);
+  const m = [...text.matchAll(/^ {2,4}([^\n{]+) \{$/gm)].find((x) => x[1].split(",").map((h) => h.trim()).includes(host) && !/^\s*(handle|route|header|tls|log|proxy|not|zone|bind)\b/.test(x[1]));
   if (!m) return null;
   let d = 0, i = m.index + m[0].length - 1;
   for (; i < text.length; i++) { d += (text[i] === "{") - (text[i] === "}"); if (d === 0) break; }
@@ -81,6 +81,24 @@ const tierProblems = (text) => {
     if (/^ *handle_path /m.test(pub)) out.push(`tiers: ${T.pub.host} must not mount container paths`);
     if (!/^ *handle \{\n\s*error "Not Found" 404/m.test(pub)) out.push(`tiers: ${T.pub.host} must end in a 404 default`);
   }
+  // Public HTML tier and wildcard (owner ruling 2026-10-22): apex + www are the only unauthenticated hosts,
+  // and the *.diegonmarcos.com site may only redirect to the apex.
+  const P = T.public;
+  if (P) {
+    for (const h of P.html_hosts) {
+      const blk = siteOf(text, h);
+      if (!blk) { out.push(`tiers: public HTML host ${h} has no site`); continue; }
+      if (/^ *import edge_auth/m.test(blk)) out.push(`tiers: public HTML host ${h} must not carry the gate`);
+    }
+    for (const k of Object.keys(cfg.unprotected_hosts)) if (k.includes("*")) out.push(`tiers: unprotected_hosts lists a wildcard (${k}); there is no public wildcard route`);
+    for (const m of text.matchAll(/^ {2,4}(\*\.diegonmarcos\.com[^\n{]*) \{$/gm)) {
+      const blk = siteOf(text, m[1]);
+      if (!blk) continue;
+      if (/reverse_proxy|file_server|^ *respond |handle_path|rewrite /m.test(blk)) out.push(`tiers: wildcard site ${m[1]} proxies, serves or responds; a wildcard may only redirect to the apex`);
+      if (!blk.includes(`redir ${P.wildcard_redirect_to} `)) out.push(`tiers: wildcard site ${m[1]} must redirect to ${P.wildcard_redirect_to}`);
+      if (/^ *import edge_auth/m.test(blk)) out.push(`tiers: wildcard site ${m[1]} carries the gate; it is a no-route redirect`);
+    }
+  }
   return out;
 };
 const CF = join(root, "infra-sec_caddy/dist/configs/Caddyfile");
@@ -92,11 +110,13 @@ if (cfg.tiers && existsSync(CF)) {
   const muts = {
     "extra path on pub": text.replace(`    ${pubHost} {`, `    ${pubHost} {\n      handle /admin {\n        respond "x"\n      }`),
     "gate on pub": text.replace(`    ${pubHost} {`, `    ${pubHost} {\n      import edge_auth`),
+    "wildcard proxies": text.replace(/(\n {2,4}\*\.diegonmarcos\.com \{\n)/, "$1      reverse_proxy 10.0.0.9:1\n"),
+    "wildcard to elsewhere": text.replace(/redir https:\/\/diegonmarcos\.com\/ 302/, "redir https://evil.example/ 302"),
     "no gate on pvt": text.replace(new RegExp(`(${pvtHost.replace(/\./g, "\\.")} \\{[\\s\\S]*?)import edge_auth [^\\n]*\\n`), "$1"),
   };
   for (const [name, t] of Object.entries(muts)) if (tierProblems(t).length === 0) probs.push(`tiers: mutation "${name}" was not caught; the guard is blind`);
   for (const pr of probs) { fail++; console.error(`FAIL ${pr}`); }
-  console.log(`tiers: ${probs.length ? probs.length + " problem(s)" : "c3-pvt gated, c3-pub confined to its allowlist, 3 mutations caught"}`);
+  console.log(`tiers: ${probs.length ? probs.length + " problem(s)" : "c3-pvt gated, c3-pub confined to its allowlist, 5 mutations caught"}`);
 }
 
 const bad = (m) => { fail++; console.error(`FAIL ${m}`); };

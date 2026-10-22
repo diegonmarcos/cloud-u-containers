@@ -4637,7 +4637,7 @@ reverse_proxy https://10.0.0.3:2443 {
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
-import edge_auth /.well-known/acme-challenge/* /.well-known/openpgpkey/* /.well-known/jmap
+
     # WKD — PGP public key discovery (no auth — must be public per spec)
     handle_path /.well-known/openpgpkey/* {
       root * /srv/wkd
@@ -17227,7 +17227,7 @@ max_age: 604800
   *.diegonmarcos.com {
     bind 0.0.0.0 10.0.0.1
 import security
-    import edge_auth /.well-known/acme-challenge/*
+    
     tls {
       dns cloudflare {env.CF_API_TOKEN}
       resolvers 1.1.1.1 8.8.8.8
@@ -17238,7 +17238,7 @@ import security
     header X-Edge-Route "catch-all"
     # redir sorts before forward_auth: keep it inside a handle so the gate runs first.
     handle {
-      redir https://diegonmarcos.github.io/c__Cloud/ 302
+      redir https://diegonmarcos.com/ 302
     }
   }
 
