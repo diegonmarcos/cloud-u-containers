@@ -38,6 +38,7 @@ jobs:
           sed -i -e "s#^ARG GEOIP_URL=.*#ARG GEOIP_URL=$u#" -e "s#^ARG GEOIP_SHA256=.*#ARG GEOIP_SHA256=$s#" "$D"
           { head -n 10 infra-sec_caddy-public/dist/code/amd64/Dockerfile; cat "$D"; echo; } > /tmp/dist.Dockerfile
           mv /tmp/dist.Dockerfile infra-sec_caddy-public/dist/code/amd64/Dockerfile
+          (cd infra-sec_caddy-public/src && sha256sum -- code/Dockerfile | sha256sum | cut -c1-16) > infra-sec_caddy-public/dist/.src-hash
           echo "CHANGED=1" >> "$GITHUB_ENV"
       - name: Guard
         if: env.CHANGED == '1'
@@ -46,6 +47,6 @@ jobs:
         if: env.CHANGED == '1'
         run: |
           git config user.name "github-actions"; git config user.email "actions@users.noreply.github.com"
-          git add _shared/geo-fence.json infra-sec_caddy-public/src/code/Dockerfile infra-sec_caddy-public/dist/code/amd64/Dockerfile
+          git add _shared/geo-fence.json infra-sec_caddy-public/src/code/Dockerfile infra-sec_caddy-public/dist/code/amd64/Dockerfile infra-sec_caddy-public/dist/.src-hash
           git commit -m "geo-fence: pin the newest country database"
           git push origin HEAD:main
