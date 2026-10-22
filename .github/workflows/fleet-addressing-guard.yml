@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: node _shared/test-fleet-addressing.mjs
-      - name: c3-pub WAF country set equals geo-fence.json (push only: needs the cloud-infra read token)
+      - name: "c3-pub WAF country set equals geo-fence.json (push only, needs the cloud-infra read token)"
         if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ secrets.CLOUD_INFRA_DISPATCH_TOKEN }}
