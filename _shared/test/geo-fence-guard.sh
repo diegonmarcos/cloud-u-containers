@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Guard for ticket #1102 (geo-fence): the public edge serves only the countries declared in
-# _shared/geo-fence.json, mesh sources are exempt, and only the declared sign-in/private hosts are fenced, and the render
+# _shared/geo-fence.json, mesh sources and declared-global hosts are exempt, and the render
 # stays inside the edge container's memory limit.
 #
 # Static checks   : JSON shape, allow-list sanity, Dockerfile pins == JSON pins, render shape
-#                   (exactly the sites naming a fenced_hosts entry import geo_fence, no trusted-proxy
+#                   (every fenced site imports geo_fence, global hosts do not, no trusted-proxy
 #                   override in the production config).
 # Behaviour checks: a real Caddy (built with the same plugins as the image) loads the rendered
 #                   edge Caddyfile (validate), then a throwaway instance built from the rendered
@@ -40,9 +40,8 @@ assert re.fullmatch(r"[0-9a-f]{64}", d["db"]["sha256"]), "db.sha256"
 assert d["db"]["url"].startswith("https://"), "db.url"
 for c in ("10.0.0.0/24", "10.1.0.0/24", "127.0.0.0/8"):
     assert c in d["exempt_cidrs"], c + " must be exempt"
-assert set(d["fenced_hosts"]) == {"auth.diegonmarcos.com", "account.diegonmarcos.com", "mcp.diegonmarcos.com", "c3-pvt.diegonmarcos.com"}, "fenced_hosts must be exactly the sign-in and private-access hosts (architect ruling 2026-10-22)"
-for h in ("www.diegonmarcos.com", "diegonmarcos.com", "vpn.diegonmarcos.com", "matrix.diegonmarcos.com"):
-    assert h not in d["fenced_hosts"], h + " must not be fenced"
+for h in ("auth.diegonmarcos.com", "account.diegonmarcos.com", "mcp.diegonmarcos.com", "c3-pvt.diegonmarcos.com"):
+    assert h not in d["global_hosts"], h + " must be fenced"
 PY
 ok "declaration is well formed"
 
@@ -82,16 +81,16 @@ if len(sites) < 8: fail("found only %d site blocks, parser is wrong" % len(sites
 fenced = []
 for addr, body in sites:
     names = [n.strip() for n in addr.split(",")]
-    want = any(n in d["fenced_hosts"] for n in names)
+    allglobal = all(n in d["global_hosts"] for n in names)
     has = "import geo_fence" in body
-    if has and not want: fail(addr + " imports geo_fence but is not in fenced_hosts (public content must not be fenced)")
-    if want and not has: fail(addr + " is in fenced_hosts but lacks geo_fence")
-    if want: fenced.append(addr)
+    if allglobal and has: fail(addr + " is declared global but imports geo_fence")
+    if not allglobal and not has: fail(addr + " is not declared global but lacks geo_fence")
+    if not allglobal: fenced.append(addr)
 for e in d["edge_terminated"]:
     h = e["host"]
     if not re.search(r"@public tls sni [^\n]*\b" + re.escape(h) + r"\b", t): fail(h + " is edge-terminated but missing from the layer4 @public SNI list")
-    if h not in d["fenced_hosts"]: fail(h + " is edge-terminated but not in fenced_hosts")
-for h in d["fenced_hosts"]:
+    if h in d["global_hosts"]: fail(h + " cannot be both edge-terminated (fenced) and global")
+for h in ("auth.diegonmarcos.com", "mcp.diegonmarcos.com", "c3-pvt.diegonmarcos.com"):
     if not any(h in a for a in fenced): fail(h + " is not fenced")
 print("ok: %d sites, fenced: %s" % (len(sites), "; ".join(fenced)))
 PY

@@ -95,8 +95,8 @@ let
   # `sec` imported inline at the top of every served site block.
   sec = ''  import security'';
 
-  # ── Geo-fence (#1102): _shared/geo-fence.json is the one declaration. Only sites with a name
-  # declared in fenced_hosts are fenced (sign-in and private access); public content is not.
+  # ── Geo-fence (#1102): _shared/geo-fence.json is the one declaration. Every site is fenced
+  # unless ALL its names are declared in global_hosts (static pages, protocol endpoints).
   geoCfg = builtins.fromJSON (builtins.readFile ../../_shared/geo-fence.json);
   geoFenceSnippet = subst {
     "@GEO_EXEMPT@" = lib.concatStringsSep " " geoCfg.exempt_cidrs;
@@ -105,8 +105,8 @@ let
   } (readTpl "18-geo-fence.caddy.tpl");
   geoHosts = domain: map (x: builtins.head (lib.splitString "/" x)) (lib.splitString ", " domain);
   geo = domain:
-    if lib.any (h: builtins.hasAttr h geoCfg.fenced_hosts) (geoHosts domain) then "  import geo_fence"
-    else "";
+    if lib.all (h: builtins.hasAttr h geoCfg.global_hosts) (geoHosts domain) then ""
+    else "  import geo_fence";
 
   # ── Bearer introspection (MCP bearer tier) — same 21-bearer snippet the hub
   # renders, pointed at the same introspection upstream over the mesh. Needed

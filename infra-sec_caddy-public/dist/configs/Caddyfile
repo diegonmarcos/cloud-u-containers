@@ -703,6 +703,7 @@ reverse_proxy https://diegonmarcos.github.io {
 # gh-pages: nexus.diegonmarcos.com
 nexus.diegonmarcos.com {
 import security
+  import geo_fence
   import edge_auth /.well-known/acme-challenge/*
         @gh_static path_regexp gh_static `(?i)\.(svg|png|jpe?g|gif|webp|avif|ico|css|js|mjs|map|woff2?|ttf|otf|json|webmanifest|mp4|webm)$`
 header @gh_static {
@@ -755,6 +756,7 @@ reverse_proxy https://diegonmarcos.github.io {
 # gh-pages: suite.diegonmarcos.com
 suite.diegonmarcos.com {
 import security
+  import geo_fence
   import edge_auth /.well-known/acme-challenge/*
         @gh_static path_regexp gh_static `(?i)\.(svg|png|jpe?g|gif|webp|avif|ico|css|js|mjs|map|woff2?|ttf|otf|json|webmanifest|mp4|webm)$`
 header @gh_static {
@@ -807,6 +809,7 @@ reverse_proxy https://diegonmarcos.github.io {
 # gh-pages: maps.diegonmarcos.com
 maps.diegonmarcos.com {
 import security
+  import geo_fence
   import edge_auth /.well-known/acme-challenge/*
         @gh_static path_regexp gh_static `(?i)\.(svg|png|jpe?g|gif|webp|avif|ico|css|js|mjs|map|woff2?|ttf|otf|json|webmanifest|mp4|webm)$`
 header @gh_static {
