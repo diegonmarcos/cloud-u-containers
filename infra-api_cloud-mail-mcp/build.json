@@ -2,6 +2,7 @@
   "name": "cloud-mail-mcp",
   "description": "Mail MCP server — IMAP/SMTP/Admin via Stalwart REST API",
   "dns": "mail-mcp.app",
+  "dns_aliases": ["cloud-mail-mcp.app"],
   "category": "app",
   "build": {
     "include_cloud_data": "true",

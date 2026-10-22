@@ -2,6 +2,7 @@
   "name": "cloud-spec",
   "description": "Unified Cloud Documentation Portal",
   "dns": "c3-spec.app",
+  "dns_aliases": ["cloud-spec.app"],
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/cloud-spec",

@@ -2,6 +2,7 @@
   "name": "cloud-infra-mcp",
   "description": "C3 MCP Server \u2014 Cloud Control Center MCP transport (stdio + HTTP)",
   "dns": "c3-infra-mcp.app",
+  "dns_aliases": ["cloud-infra-mcp.app"],
   "ports": {
     "app": 3100
   },

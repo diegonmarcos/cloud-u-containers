@@ -2,6 +2,7 @@
   "name": "cloud-drive-mcp",
   "description": "Drive MCP server — one facade over every storage unit: repos, files, photos, sync, scrapes, S3 and conversion",
   "dns": "drive-mcp.app",
+  "dns_aliases": ["cloud-drive-mcp.app"],
   "category": "app",
   "build": {
     "include_cloud_data": "true",

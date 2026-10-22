@@ -2,6 +2,7 @@
   "name": "google-personal-mcp",
   "description": "Google Personal Account MCP server — Gmail (IMAP/SMTP via App Password) for personal Google accounts, multi-account",
   "dns": "g-personal-mcp.app",
+  "dns_aliases": ["google-personal-mcp.app"],
   "category": "app",
   "domain": "mcp.diegonmarcos.com",
   "build": {

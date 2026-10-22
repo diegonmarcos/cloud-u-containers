@@ -2,6 +2,7 @@
   "name": "contacts-radicale",
   "description": "Radicale CardDAV server (contacts / address books) — contacts.diegonmarcos.com",
   "dns": "contacts.app",
+  "dns_aliases": ["contacts-radicale.app"],
   "upstream_image": "tomsquest/docker-radicale:latest",
   "ports": {
     "app": 5233

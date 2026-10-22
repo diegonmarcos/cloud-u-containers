@@ -2,6 +2,7 @@
   "name": "cloud-services-mcp",
   "description": "C3 Services MCP Server — service API gateway MCP transport (stdio + HTTP)",
   "dns": "c3-services-mcp.app",
+  "dns_aliases": ["cloud-services-mcp.app"],
   "ports": {
     "app": 3101
   },

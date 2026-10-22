@@ -2,6 +2,7 @@
   "name": "cloud-mattermost-mcp",
   "description": "Mattermost MCP server — chat tools via HTTP transport",
   "dns": "mattermost-mcp.app",
+  "dns_aliases": ["cloud-mattermost-mcp.app"],
   "category": "app",
   "upstream_image": "ghcr.io/diegonmarcos/cloud-mattermost-mcp:latest",
   "build": {

@@ -2,6 +2,7 @@
   "name": "google-workspace-mcp",
   "description": "Google Workspace MCP server — Gmail, Calendar, Drive, Docs, Sheets via HTTP transport",
   "dns": "g-workspace-mcp.app",
+  "dns_aliases": ["google-workspace-mcp.app"],
   "ports": {
     "app": 3104
   },

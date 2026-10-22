@@ -3,6 +3,7 @@
   "description": "Mattermost team chat (TE 11.x ESR) with ntfy bridge and C3 command bot",
   "port": 8065,
   "dns": "mattermost.app",
+  "dns_aliases": ["chat-mattermost.app"],
   "timezone": "America/Chicago",
   "c3": {
     "api_url": "http://c3-infra-api:8081",

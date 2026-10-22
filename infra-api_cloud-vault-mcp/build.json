@@ -2,6 +2,7 @@
   "name": "cloud-vault-mcp",
   "description": "MCP server — READ-ONLY personal data access (vault metadata, identity, comms, media, finance, health)",
   "dns": "vault-mcp.app",
+  "dns_aliases": ["cloud-vault-mcp.app"],
   "category": "data",
   "build": {
     "include_cloud_data": "true",
