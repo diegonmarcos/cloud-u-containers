@@ -1,4 +1,4 @@
-name: "Health → HTTP private (.app)"
+name: "Health → HTTP private (mesh)"
 
 on:
   workflow_run:
