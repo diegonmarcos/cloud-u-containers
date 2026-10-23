@@ -276,7 +276,7 @@ assert "AUTH_BROKER_GOOGLE_CLIENT_SECRET" in d["auth-broker-google"]["environmen
 assert not [k for k in d["auth-broker-cloudflare"]["environment"] if "CLIENT" in k], "cloudflare provider: no client credential in the environment"
 assert [k for k in d["auth-broker-github"]["environment"] if "GITHUB" in k] == ["AUTH_BROKER_GITHUB_APP_CLIENT_SECRET"], "github: device flow needs no secret; only the OAuth App secret may be passed"
 em = d["auth-broker-email"]["environment"]
-assert [k for k in em if k.startswith("AUTH_BROKER_") and k != "AUTH_BROKER_COOKIE_SECRET"] == ["AUTH_BROKER_SMTP_USER", "AUTH_BROKER_SMTP_PASSWORD", "AUTH_BROKER_RESEND_API_KEY"] and all(v.startswith("${") for k, v in em.items() if k.startswith("AUTH_BROKER_")), "email: mail secrets by interpolation only, no client credential"
+assert sorted(k for k in em if k.startswith("AUTH_BROKER_") and k != "AUTH_BROKER_COOKIE_SECRET") == sorted(["AUTH_BROKER_SMTP_USER", "AUTH_BROKER_SMTP_PASSWORD", "AUTH_BROKER_RESEND_API_KEY"]) and all(v.startswith("${") for k, v in em.items() if k.startswith("AUTH_BROKER_")), "email: mail secrets by interpolation only, no client credential"
 PY
 ok "broker compose: mesh-only bind, shared cookie secret, secrets by interpolation only"
 echo "PASS: $PASS checks"
