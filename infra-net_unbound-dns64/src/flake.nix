@@ -81,7 +81,7 @@
         log-queries: no
 
       # ── Forward zone — upstream is the internal Hickory DNS on wg0 ──────
-      # Hickory handles .app / .db / diegonmarcos.com zones AND forwards
+      # Hickory handles mesh.diegonmarcos.com / .db / diegonmarcos.com zones AND forwards
       # everything else to 1.1.1.1/8.8.8.8.  Using Hickory means WG-internal
       # FQDNs also resolve for NAT64 clients.
       forward-zone:
