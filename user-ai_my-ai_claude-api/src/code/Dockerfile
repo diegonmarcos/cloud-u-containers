@@ -32,6 +32,9 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
 WORKDIR /build
 # Vendored Headroom source (pyproject.toml + Cargo workspace + crates + python).
 COPY vendor/headroom/ /build/
+# Upstream benches/tests are pruned from the build context (dist leak scan); drop the [[bench]]
+# stanzas that point at the pruned files so cargo's manifest parse does not fail.
+RUN sed -i '/^\[\[bench\]\]/,/^harness = false/d' crates/headroom-core/Cargo.toml
 
 # Build + install the wheel with the proxy (FastAPI/uvicorn — used by the sidecar)
 # and code (AST CodeCompressor) extras. ML extras are intentionally omitted on arm64.

@@ -697,6 +697,11 @@ pkgs.runCommand "${buildJson.name}-dist-v2" {
           # the same — cp -rL on a single file behaves like cp.
           "cp -rL ${f} $out/code/${arch}/${baseNameOf (toString f)}"
         ) (nativeBuild.extraFiles or []))}
+      ${lib.concatMapStringsSep "\n" (rel:
+        # nativeBuild.prune: paths (relative to code/<arch>/) that must not ship in the image
+        # build context, e.g. vendored upstream tests/benches/fixtures. Default empty = no-op.
+        "rm -rf $out/code/${arch}/${rel}"
+      ) (nativeBuild.prune or [])}
     '' else ''
       mkdir -p $out/code/${arch}
       touch $out/code/${arch}/.skip

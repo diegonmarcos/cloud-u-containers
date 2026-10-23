@@ -56,6 +56,13 @@
             ../../_shared/jev-gate
             ./code/claude-config
           ];
+          # Vendored upstream tests, benches and fixtures do not belong in the runtime image
+          # build context (and trip the public-repo leak scan on dummy tokens): pruned from dist.
+          prune = [
+            "vendor/headroom/crates/headroom-core/tests"
+            "vendor/headroom/crates/headroom-core/benches"
+            "vendor/headroom/crates/headroom-proxy/tests"
+          ];
           cmd       = nb.cmd or "";
           binary    = nb.entrypoint or "";
           baseImage = nb.base_image;
