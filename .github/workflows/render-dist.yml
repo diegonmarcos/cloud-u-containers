@@ -1,0 +1,101 @@
+name: render-dist (re-render one service's committed dist/ in CI and push it)
+
+# Ship's Build job fails when a service's committed dist/ differs from a fresh render of src/
+# (step_verify_committed_dist). This workflow produces that render in CI so nobody needs a local build:
+# same layout as tokens-api-render (cloud-infra's 1_cicd + 1_cloud-configs/dist beside this repo checked
+# out as infra/a_solutions, nix on the runner), `./build.sh build` for the ONE named service, then a
+# commit of changes under <service>/dist/ only. Anything else changed => red, nothing pushed.
+# Pushes to main with the built-in GITHUB_TOKEN (no extra secret). A GITHUB_TOKEN push does not trigger
+# dispatch-cloud-infra, so dispatch Ship afterwards. No-op when dist/ is already fresh.
+on:
+  workflow_dispatch:
+    inputs:
+      service:
+        description: "Service directory name (e.g. infra-api_cloud-infra-mcp)"
+        required: true
+      repo:
+        description: "Repository holding the service (this workflow lives in cloud-u-containers)"
+        required: false
+        default: "cloud-u-containers"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: render-dist
+  cancel-in-progress: false
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      SERVICE: ${{ inputs.service }}
+      TARGET_REPO: ${{ inputs.repo }}
+      GITLEAKS_VERSION: "8.30.1"
+      GITLEAKS_SHA256: "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
+    steps:
+      - name: Validate inputs
+        run: |
+          set -eu
+          printf '%s' "$SERVICE" | grep -Eq '^[a-z0-9][a-z0-9_-]{1,80}$' || { echo "::error::service must match ^[a-z0-9][a-z0-9_-]{1,80}\$"; exit 1; }
+          [ "$TARGET_REPO" = "cloud-u-containers" ] || { echo "::error::repo must be cloud-u-containers (this workflow's own repository)"; exit 1; }
+      - uses: actions/checkout@v4
+        with:
+          repository: diegonmarcos/cloud-infra
+          path: infra
+          sparse-checkout: |
+            1_cicd
+            1_cloud-configs/dist
+            0_git
+      - uses: actions/checkout@v4
+        with:
+          path: infra/a_solutions
+          fetch-depth: 2
+      - name: Service directory must exist
+        working-directory: infra/a_solutions
+        run: |
+          set -eu
+          [ -d "$SERVICE" ] && [ -f "$SERVICE/build.json" ] && [ -e "$SERVICE/build.sh" ] || { echo "::error::$SERVICE is not a service directory (needs build.json and build.sh)"; exit 1; }
+          echo "SRC_SHA=$(git rev-parse --short=12 HEAD)" >> "$GITHUB_ENV"
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
+      - uses: cachix/install-nix-action@v27
+      - name: Install gitleaks (pinned, checksum-verified)
+        run: |
+          set -eu
+          tgz="$RUNNER_TEMP/gitleaks.tgz"
+          curl -sSfL -o "$tgz" "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  $tgz" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/bin" && tar -xzf "$tgz" -C "$RUNNER_TEMP/bin" gitleaks
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+      - name: build.sh build for the one service
+        working-directory: infra/a_solutions
+        run: cd "$SERVICE" && bash ./build.sh build
+      - name: Only <service>/dist/ may have changed
+        id: diff
+        working-directory: infra/a_solutions
+        run: |
+          set -eu
+          changed=$(git status --porcelain --untracked-files=all | cut -c4-)
+          if [ -z "$changed" ]; then echo "dist is fresh, nothing to commit"; echo "dirty=false" >> "$GITHUB_OUTPUT"; exit 0; fi
+          stray=$(printf '%s\n' "$changed" | grep -v "^\"\?$SERVICE/dist/" || true)
+          if [ -n "$stray" ]; then echo "::error::the render changed paths outside $SERVICE/dist/, refusing to commit:"; printf '%s\n' "$stray"; exit 1; fi
+          printf '%s\n' "$changed" | head -40
+          echo "dirty=true" >> "$GITHUB_OUTPUT"
+      - name: Commit, leak-scan the diff, push
+        if: steps.diff.outputs.dirty == 'true'
+        working-directory: infra/a_solutions
+        run: |
+          set -eu
+          git add -A -- "$SERVICE/dist"
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -q -m "ci(render-dist): re-render $SERVICE/dist from $SRC_SHA [skip ci]"
+          [ -f .gitleaks.toml ] || { echo "::error::.gitleaks.toml missing"; exit 1; }
+          gitleaks git --config .gitleaks.toml --log-opts="-1" --redact --no-banner --exit-code 1 --verbose .
+          i=0
+          until git push origin HEAD:main; do
+            i=$((i+1)); [ "$i" -lt 4 ] || { echo "::error::push failed after retries"; exit 1; }
+            git pull -q --rebase origin main
+          done
+          echo "pushed $(git rev-parse --short HEAD)"
