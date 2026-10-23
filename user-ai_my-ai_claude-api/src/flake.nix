@@ -40,10 +40,9 @@
           # build is lost (binaries image never pushed).
           dockerfile = ./code/Dockerfile;
           # Sibling build-context the Dockerfile COPYs from. cp -rL'd next to the
-          # Dockerfile by the engine. `vendor/` carries the Apache-2.0 Headroom
-          # source built with maturin.
+          # Dockerfile by the engine. Headroom (Apache-2.0) is fetched at a
+          # pinned upstream commit inside the Dockerfile, not vendored here.
           extraFiles = [
-            ./code/vendor
             ./code/py
             ./code/server.mjs
             ./code/claude-resume.mjs
@@ -55,13 +54,6 @@
             # by basename, so the Dockerfile COPYs it as jev-gate/.
             ../../_shared/jev-gate
             ./code/claude-config
-          ];
-          # Vendored upstream tests, benches and fixtures do not belong in the runtime image
-          # build context (and trip the public-repo leak scan on dummy tokens): pruned from dist.
-          prune = [
-            "vendor/headroom/crates/headroom-core/tests"
-            "vendor/headroom/crates/headroom-core/benches"
-            "vendor/headroom/crates/headroom-proxy/tests"
           ];
           cmd       = nb.cmd or "";
           binary    = nb.entrypoint or "";

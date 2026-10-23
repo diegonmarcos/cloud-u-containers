@@ -22,7 +22,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN python -m pip install --no-cache-dir uv
 
-# Rust toolchain (pinned to match vendor/headroom/rust-toolchain.toml = 1.95.0).
+# Rust toolchain (pinned to match the upstream rust-toolchain.toml = 1.95.0).
 ENV CARGO_HOME=/usr/local/cargo \
     RUSTUP_HOME=/usr/local/rustup \
     PATH=/usr/local/cargo/bin:${PATH}
@@ -30,11 +30,16 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
       | sh -s -- -y --no-modify-path --profile minimal --default-toolchain 1.95.0
 
 WORKDIR /build
-# Vendored Headroom source (pyproject.toml + Cargo workspace + crates + python).
-COPY vendor/headroom/ /build/
-# Upstream benches/tests are pruned from the build context (dist leak scan); drop the [[bench]]
-# stanzas that point at the pruned files so cargo's manifest parse does not fail.
-RUN sed -i '/^\[\[bench\]\]/,/^harness = false/d' crates/headroom-core/Cargo.toml
+# Headroom (Apache-2.0, https://github.com/chopratejas/headroom) is NOT vendored in this repo: it is
+# fetched here at a pinned upstream commit. The full 40-hex commit id is the hash pin (a git commit id
+# covers the whole tree) and the build fails loud if the checkout does not resolve to exactly it.
+# Upstream version 0.26.0. To bump: change HEADROOM_COMMIT, rebuild.
+ARG HEADROOM_COMMIT=9f7f3adfea03710d5e67c4c630b3c8061ff6d161
+RUN git init -q /build-src \
+    && git -C /build-src fetch -q --depth 1 https://github.com/chopratejas/headroom.git "${HEADROOM_COMMIT}" \
+    && git -C /build-src checkout -q FETCH_HEAD \
+    && test "$(git -C /build-src rev-parse HEAD)" = "${HEADROOM_COMMIT}" \
+    && cp -a /build-src/. /build/ && rm -rf /build/.git /build-src
 
 # Build + install the wheel with the proxy (FastAPI/uvicorn — used by the sidecar)
 # and code (AST CodeCompressor) extras. ML extras are intentionally omitted on arm64.
