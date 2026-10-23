@@ -16,11 +16,11 @@
         "runner_name": "oci-apps-arm64"
       },
       {
-        "repo_url": "https://github.com/diegonmarcos/cloud-infra-desktop",
+        "repo_url": "https://github.com/diegonmarcos/cloud-u-desktop",
         "runner_name": "oci-apps-arm64-unix"
       },
       {
-        "repo_url": "https://github.com/diegonmarcos/cloud-data",
+        "repo_url": "https://github.com/diegonmarcos/cloud-me-data-pvt",
         "runner_name": "oci-apps-arm64-data"
       }
     ],
