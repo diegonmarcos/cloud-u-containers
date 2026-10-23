@@ -281,7 +281,7 @@
     {
       "slug": "hickory-dns",
       "dir": "infra-net_hickory-dns",
-      "description": "Internal DNS server for WireGuard mesh (per-service .app zones)",
+      "description": "Internal DNS server for WireGuard mesh (per-service mesh zone)",
       "mesh": null,
       "hosts": [],
       "signin": false,
@@ -843,7 +843,7 @@
       "slug": "vaultwarden",
       "dir": "user-vault_vaultwarden",
       "description": "Bitwarden password manager",
-      "mesh": "vaultwarden.app",
+      "mesh": null,
       "hosts": [
         "vault.diegonmarcos.com"
       ],
