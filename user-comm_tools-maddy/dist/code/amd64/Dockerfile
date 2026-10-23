@@ -8,7 +8,7 @@
 # ╚══════════════════════════════════════════════════════════════════╝
 # Type B — wrap upstream, arch=amd64
 FROM foxcpp/maddy:0.9
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-t-infra"
 LABEL cloud.diegonmarcos.from-image="foxcpp/maddy:0.9"
 
 
