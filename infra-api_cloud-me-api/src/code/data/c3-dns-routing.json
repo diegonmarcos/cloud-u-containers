@@ -6,7 +6,7 @@
     {
       "service": "infra-net_hickory-dns",
       "name": "hickory-dns",
-      "description": "Internal DNS server for WireGuard mesh (per-service .app zones)",
+      "description": "Internal DNS server for WireGuard mesh (per-service mesh zone)",
       "category": "cloud",
       "enabled": true,
       "host": "gcp-proxy",
@@ -137,7 +137,6 @@
   ],
   "hickory": {
     "zones": [
-      "app",
       "db",
       "mesh.diegonmarcos.com",
       "diegonmarcos.com"
@@ -603,7 +602,6 @@
     },
     {
       "service": "user-vault_vaultwarden",
-      "mesh_name": "vaultwarden.app",
       "block": "primary",
       "host": "vault.diegonmarcos.com",
       "auth": "none",
@@ -877,10 +875,6 @@
     {
       "service": "infra-api_cloud-vault-mcp",
       "dns": "vault-mcp.mesh.diegonmarcos.com"
-    },
-    {
-      "service": "user-vault_vaultwarden",
-      "dns": "vaultwarden.app"
     },
     {
       "service": "user-comm_cloud-webmail",
