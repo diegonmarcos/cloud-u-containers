@@ -10,58 +10,10 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { bindHost } from "../shared/libs/binds.js";
 
-// A) Observability
-import { registerHealthCloudTools } from "./tools/health_cloud.js";
-import { registerHealthMailTools } from "./tools/health_mail.js";
-import { registerObservabilityReadTools } from "./tools/observability-read.js";
-import { registerFinOpsTools } from "./tools/finops.js";
-import { registerFinOpsCloudTools } from "./tools/finops-cloud.js";
-import { registerObservabilityExecTools } from "./tools/observability.js";
-// B) DevOps
-import { registerWorkflowTools } from "./tools/workflows.js";
-import { registerVpsOpsTools } from "./tools/vps-ops.js";
-import { registerCloudflareTools } from "./tools/cloudflare.js";
-import { registerDeliveryTools } from "./tools/delivery.js";
-import { registerOperationsTools } from "./tools/operations.js";
-import { registerVmFilesTools } from "./tools/vm-files.js";
-import { registerMailOpsTools } from "./tools/mail-ops.js";
-import { registerFrontendExecTools } from "./tools/frontend.js";
-import { registerTelegramTools } from "./tools/telegram.js";
-// C) Security
-import { registerSecurityExecTools } from "./tools/security.js";
-// Resources
-import { registerResources } from "./resources/index.js";
+import { createMcpServer } from "./factory.js";
 
 const log = (msg: string) => process.stderr.write(`[mcp-http] ${msg}\n`);
 const SESSION_ID = "c3-infra-mcp-session";
-
-function createMcpServer(): McpServer {
-  const server = new McpServer({ name: "cloud-infra", version: "5.0.0" });
-
-  // A) Observability
-  registerHealthCloudTools(server);
-  registerHealthMailTools(server);
-  registerObservabilityReadTools(server);
-  registerFinOpsTools(server);
-  registerFinOpsCloudTools(server);
-  registerObservabilityExecTools(server);
-  // B) DevOps
-  registerWorkflowTools(server);
-  registerVpsOpsTools(server);
-  registerCloudflareTools(server);
-  registerDeliveryTools(server);
-  registerOperationsTools(server);
-  registerVmFilesTools(server);
-  registerMailOpsTools(server);
-  registerFrontendExecTools(server);
-  registerTelegramTools(server);
-  // C) Security
-  registerSecurityExecTools(server);
-  // Resources
-  registerResources(server);
-
-  return server;
-}
 
 // ── Single persistent session ────────────────────────────────────────
 let session: { transport: StreamableHTTPServerTransport; server: McpServer } | null = null;
