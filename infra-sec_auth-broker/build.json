@@ -152,7 +152,7 @@
         "tls_server_name": "mail.diegonmarcos.com",
         "user_env": "AUTH_BROKER_SMTP_USER",
         "password_env": "AUTH_BROKER_SMTP_PASSWORD",
-        "from": "no-reply@diegonmarcos.com"
+        "from": "noreply-auth@diegonmarcos.com"
       },
       "resend": {
         "url": "https://api.resend.com/emails",

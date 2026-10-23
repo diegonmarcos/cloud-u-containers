@@ -250,6 +250,10 @@
         "noreply"
       ]
     },
+    "noreply-auth": {
+      "name": "noreply-auth",
+      "pass_env": "AUTH_NOREPLY_PASSWORD"
+    },
     "mailadmin": {
       "name": "admin",
       "pass_env": "ADMIN_PASSWORD"
