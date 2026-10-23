@@ -77,6 +77,7 @@ jobs:
         working-directory: infra/a_solutions
         run: |
           set -eu
+          rm -f -- "$SERVICE/build.log"   # the engine's own run log, not a render output
           changed=$(git status --porcelain --untracked-files=all | cut -c4-)
           if [ -z "$changed" ]; then echo "dist is fresh, nothing to commit"; echo "dirty=false" >> "$GITHUB_OUTPUT"; exit 0; fi
           stray=$(printf '%s\n' "$changed" | grep -v "^\"\?$SERVICE/dist/" || true)
