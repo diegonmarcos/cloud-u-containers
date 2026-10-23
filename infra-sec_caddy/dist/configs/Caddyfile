@@ -16765,7 +16765,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  photoprism_app-http-3013.app {
+  photoprism_app-http-3013.app, photoprism_app-http-3013.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -17101,7 +17101,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  etherpad_app-http-3012.app {
+  etherpad_app-http-3012.app, etherpad_app-http-3012.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -17143,7 +17143,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  filebrowser_app-http-3015.app {
+  filebrowser_app-http-3015.app, filebrowser_app-http-3015.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -17185,7 +17185,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  grist_app-http-3011.app {
+  grist_app-http-3011.app, grist_app-http-3011.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -17227,7 +17227,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  hedgedoc_app-http-3018.app {
+  hedgedoc_app-http-3018.app, hedgedoc_app-http-3018.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -17269,7 +17269,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  send_app-http-3016.app {
+  send_app-http-3016.app, send_app-http-3016.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
