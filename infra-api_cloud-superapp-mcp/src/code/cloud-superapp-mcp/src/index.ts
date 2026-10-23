@@ -9,7 +9,7 @@
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { registerTools } from "../../lib-mcp/src/tools.js";
+import { registerAll } from "../../lib-mcp/src/tools.js";
 import { loadModules } from "../../lib-mcp/src/registry.js";
 import { fleetToken } from "../../lib-mcp/src/device.js";
 
@@ -26,7 +26,7 @@ async function main() {
   }
 
   const modules = await loadModules();
-  registerTools(server, modules);
+  registerAll(server, modules);
 
   const transport = new StdioServerTransport();
   log(`Starting cloud-superapp-mcp v1.0.0 (stdio, hosts=${process.env.SUPERAPP_HOSTS ?? "phone,phone-v6,phone-pub"})`);

@@ -17,6 +17,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { App, PHONES, PORT_DEVCONTROL, call, currentPhone, dialOrder, get, onPhone, pinPhone, scan } from "./device.js";
 import type { AppModule } from "./registry.js";
+import { ToolRegistry, registerGrouped, registerLegacy } from "./grouped.js";
 
 /** /api/<group>/<op>. No dots, no %, no scheme — a route name, not a URL. The
  *  value comes from the model, and device.ts escapes it into a shell script. */
@@ -391,4 +392,19 @@ export function registerTools(server: McpServer, appModules: AppModule[] = []): 
     },
     true,
   );
+}
+
+/** The ONE registry every superapp_* tool is declared into. */
+export function buildRegistry(appModules: AppModule[] = []): ToolRegistry {
+  const reg = new ToolRegistry();
+  registerTools(reg as unknown as McpServer, appModules); // registerTools only calls .tool()
+  return reg;
+}
+
+/** Server entry: `superapp` dispatcher + `superapp_help`; old names only with MCP_LEGACY_TOOLS=1. */
+export function registerAll(server: McpServer, appModules: AppModule[] = [], env: NodeJS.ProcessEnv = process.env): void {
+  const reg = buildRegistry(appModules);
+  registerGrouped(server, reg);
+  // Deprecated: old per-tool names, default OFF, remove after 2026-11-22 (30 days).
+  if (env.MCP_LEGACY_TOOLS === "1") registerLegacy(server, reg);
 }

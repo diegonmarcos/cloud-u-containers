@@ -1,7 +1,7 @@
 import { createServer, IncomingMessage, ServerResponse, request as httpRequest } from "node:http";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { registerTools } from "../../lib-mcp/src/tools.js";
+import { registerAll } from "../../lib-mcp/src/tools.js";
 import { loadModules } from "../../lib-mcp/src/registry.js";
 
 const log = (msg: string) => process.stderr.write(`[cloud-superapp-mcp-http] ${msg}\n`);
@@ -10,7 +10,7 @@ const SESSION_ID = "cloud-superapp-mcp-session";
 async function createMcpServer(): Promise<McpServer> {
   const server = new McpServer({ name: "cloud-superapp-mcp", version: "1.0.0" });
   const modules = await loadModules();
-  registerTools(server, modules);
+  registerAll(server, modules);
   return server;
 }
 
