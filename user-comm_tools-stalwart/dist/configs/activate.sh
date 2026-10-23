@@ -124,7 +124,7 @@ if [ "$_ready" != 1 ]; then
 fi
 if [ "$_ready" = 1 ]; then
   echo "[activate] Reconciling accounts from declared users (admin: $ADMIN_EMAIL)..."
-  ACCOUNTS="42|User|MAIL_DEFAULT_PASSWORD| me|Admin|ME_PASSWORD| admin|User|ADMIN_PASSWORD| no-reply|User|NOREPLY_PASSWORD|noreply yo|User|MAIL_DEFAULT_PASSWORD|" BASE_DOMAIN="diegonmarcos.com" SECRETS_DIR="$SECRETS_DIR" \
+  ACCOUNTS="42|User|MAIL_DEFAULT_PASSWORD| me|Admin|ME_PASSWORD| admin|User|ADMIN_PASSWORD| no-reply|User|NOREPLY_PASSWORD|noreply noreply-auth|User|AUTH_NOREPLY_PASSWORD| yo|User|MAIL_DEFAULT_PASSWORD|" BASE_DOMAIN="diegonmarcos.com" SECRETS_DIR="$SECRETS_DIR" \
   ACCOUNTS_FLAG="$ACCOUNTS_FLAG" \
   ADMIN_EMAIL="$ADMIN_EMAIL" ADMIN_PW="$ADMIN_PW" BASE="$BASE" python3 - <<'PYEOF' \
     || { echo "[activate]   account reconcile crashed (rc $?)"; echo crashed >> "$ACCOUNTS_FLAG"; }
@@ -243,7 +243,7 @@ except Exception:
 }
 
 # ── Per-user setup ────────────────────────────────────────────────────
-for PAIR in 42=MAIL_DEFAULT_PASSWORD me=ME_PASSWORD admin=ADMIN_PASSWORD no-reply=NOREPLY_PASSWORD yo=MAIL_DEFAULT_PASSWORD; do
+for PAIR in 42=MAIL_DEFAULT_PASSWORD me=ME_PASSWORD admin=ADMIN_PASSWORD no-reply=NOREPLY_PASSWORD noreply-auth=AUTH_NOREPLY_PASSWORD yo=MAIL_DEFAULT_PASSWORD; do
   U=${PAIR%%=*}
   PASS_ENV=${PAIR#*=}
   USER="$U@diegonmarcos.com"
