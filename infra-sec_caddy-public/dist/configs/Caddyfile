@@ -7,7 +7,7 @@
 # ║ Rebuild: a_solutions/infra-sec_caddy-public/build.sh ship
 # ╚══════════════════════════════════════════════════════════════════╝
 {
-  # Upstreams use raw WG IPs (not DNS) — Caddy is the *.app target
+  # Upstreams use raw WG IPs (not DNS) — Caddy is the *.mesh.diegonmarcos.com target
   debug
   admin localhost:2019
   order respond before handle
