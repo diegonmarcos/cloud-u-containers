@@ -140,6 +140,10 @@
       "cmd": "node --experimental-strip-types test-caddy-cert-repair.mjs",
       "cwd": "src/code"
     },
+    "plugin-gh": {
+      "cmd": "node --experimental-strip-types test-plugin-gh.mjs",
+      "cwd": "src/code"
+    },
     "cf-bridge": {
       "cmd": "node --experimental-strip-types test-cf-bridge.mjs",
       "cwd": "src/code"

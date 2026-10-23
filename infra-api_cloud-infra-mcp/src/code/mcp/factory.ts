@@ -21,6 +21,7 @@ import { registerFrontendExecTools } from "./tools/frontend.js";
 import { registerTelegramTools } from "./tools/telegram.js";
 // C) Security
 import { registerSecurityExecTools } from "./tools/security.js";
+import { registerPluginTools } from "./tools/plugin.js";
 // Resources
 import { registerResources } from "./resources/index.js";
 
@@ -44,6 +45,7 @@ export function buildRegistry(): ToolRegistry {
   registerFrontendExecTools(s);
   registerTelegramTools(s);
   registerSecurityExecTools(s);
+  registerPluginTools(s);
   return reg;
 }
 
