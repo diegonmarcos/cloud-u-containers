@@ -108,7 +108,7 @@ for cand in ${CLOUD_DATA_DIR:+"$CLOUD_DATA_DIR/_cloud-data-consolidated.json"} \
             /var/lib/dagu/data/cloud-source/1_cloud-configs/dist/_cloud-data-consolidated.json \
             /root/git/cloud-infra/1_cloud-configs/dist/_cloud-data-consolidated.json \
             /root/git/cloud-data/_cloud-data-consolidated.json \
-            /home/diego/git/cloud-infra/1_cloud-configs/dist/_cloud-data-consolidated.json; do
+            /home/diego/git/cloud-t-infra/1_cloud-configs/dist/_cloud-data-consolidated.json; do
   [ -z "$cand" ] && continue
   if [ -f "$cand" ]; then
     CONSOLIDATED="$cand"

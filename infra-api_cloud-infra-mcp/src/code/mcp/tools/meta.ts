@@ -160,7 +160,7 @@ function resolveGhRepo(): string {
     // resolves to a stale repo, so gh queries silently hit the wrong one.
     return `${(config as any).owner?.github ?? "diegonmarcos"}/cloud-infra`;
   } catch {}
-  return "diegonmarcos/cloud-infra";
+  return "diegonmarcos/cloud-t-infra";
 }
 const GH_REPO = resolveGhRepo();
 
@@ -299,12 +299,12 @@ const PRESETS: Record<string, Record<string, string[]>> = {
   },
   gh: {
     "repos": ["repo","list","diegonmarcos","--json","name,visibility,updatedAt","--jq",'.[] | "\\(.name) (\\(.visibility)) \\(.updatedAt[:10])"'],
-    "issues": ["issue","list","--repo","diegonmarcos/cloud-infra","--state","open","--json","number,title,updatedAt"],
-    "prs": ["pr","list","--repo","diegonmarcos/cloud-infra","--state","open","--json","number,title,headRefName"],
-    "runs": ["run","list","--repo","diegonmarcos/cloud-infra","--limit","10","--json","name,status,conclusion,updatedAt"],
-    "workflows": ["workflow","list","--repo","diegonmarcos/cloud-infra","--json","name,id,state"],
-    "releases": ["release","list","--repo","diegonmarcos/cloud-infra","--limit","5"],
-    "secrets": ["secret","list","--repo","diegonmarcos/cloud-infra"],
+    "issues": ["issue","list","--repo","diegonmarcos/cloud-t-infra","--state","open","--json","number,title,updatedAt"],
+    "prs": ["pr","list","--repo","diegonmarcos/cloud-t-infra","--state","open","--json","number,title,headRefName"],
+    "runs": ["run","list","--repo","diegonmarcos/cloud-t-infra","--limit","10","--json","name,status,conclusion,updatedAt"],
+    "workflows": ["workflow","list","--repo","diegonmarcos/cloud-t-infra","--json","name,id,state"],
+    "releases": ["release","list","--repo","diegonmarcos/cloud-t-infra","--limit","5"],
+    "secrets": ["secret","list","--repo","diegonmarcos/cloud-t-infra"],
     "auth": ["auth","status"],
   },
   wrangler: {

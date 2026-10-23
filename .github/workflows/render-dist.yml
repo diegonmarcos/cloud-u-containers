@@ -42,7 +42,7 @@ jobs:
           [ "$TARGET_REPO" = "cloud-u-containers" ] || { echo "::error::repo must be cloud-u-containers (this workflow's own repository)"; exit 1; }
       - uses: actions/checkout@v4
         with:
-          repository: diegonmarcos/cloud-infra
+          repository: diegonmarcos/cloud-t-infra
           path: infra
           sparse-checkout: |
             1_cicd

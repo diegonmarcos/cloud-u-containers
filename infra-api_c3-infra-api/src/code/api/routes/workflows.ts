@@ -27,7 +27,7 @@ const GH_API = "https://api.github.com";
 // so a compromised app token cannot reach arbitrary repositories the
 // server-side PAT may happen to have access to.
 export const DISPATCH_REPOS = [
-  "diegonmarcos/cloud-infra",
+  "diegonmarcos/cloud-t-infra",
   "diegonmarcos/cloud-u-containers",
   "diegonmarcos/cloud-u-android",
   "diegonmarcos/front",
@@ -82,14 +82,14 @@ export const registerWorkflowsRoutes: FastifyPluginAsync = async (app) => {
             repo: {
               type: "string",
               enum: DISPATCH_REPOS as unknown as string[],
-              default: "diegonmarcos/cloud-infra",
+              default: "diegonmarcos/cloud-t-infra",
             },
           },
         },
       },
     },
     async (req, reply) => {
-      const repo = req.query?.repo ?? "diegonmarcos/cloud-infra";
+      const repo = req.query?.repo ?? "diegonmarcos/cloud-t-infra";
       if (!(DISPATCH_REPOS as readonly string[]).includes(repo))
         return reply.code(400).send({ error: `repo not allowlisted: ${repo}` });
 
@@ -149,7 +149,7 @@ export const registerWorkflowsRoutes: FastifyPluginAsync = async (app) => {
             repo: {
               type: "string",
               enum: DISPATCH_REPOS as unknown as string[],
-              default: "diegonmarcos/cloud-infra",
+              default: "diegonmarcos/cloud-t-infra",
             },
             workflow: { type: "string" },
             ref: { type: "string", default: "main" },
@@ -159,7 +159,7 @@ export const registerWorkflowsRoutes: FastifyPluginAsync = async (app) => {
       },
     },
     async (req, reply) => {
-      const repo = req.body?.repo ?? "diegonmarcos/cloud-infra";
+      const repo = req.body?.repo ?? "diegonmarcos/cloud-t-infra";
       const workflow = req.body?.workflow ?? "";
       const ref = req.body?.ref ?? "main";
       const inputs = req.body?.inputs;

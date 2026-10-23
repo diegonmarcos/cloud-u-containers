@@ -1617,7 +1617,7 @@
     "runner_workdir": "/tmp/runner/work",
     "registrations": [
       {
-        "repo_url": "https://github.com/diegonmarcos/cloud-infra",
+        "repo_url": "https://github.com/diegonmarcos/cloud-t-infra",
         "runner_name": "oci-apps-arm64"
       },
       {

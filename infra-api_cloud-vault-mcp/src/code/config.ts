@@ -12,7 +12,7 @@ export function getVaultPath(): string {
 
 export function getConfigPath(): string {
   const p = process.env.CONFIG_PATH;
-  if (!p) throw new Error("CONFIG_PATH env var not set — point it at ~/git/cloud-infra/config.json");
+  if (!p) throw new Error("CONFIG_PATH env var not set — point it at ~/git/cloud-t-infra/config.json");
   return p;
 }
 

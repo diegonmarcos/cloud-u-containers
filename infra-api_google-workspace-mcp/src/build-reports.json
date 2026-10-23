@@ -3044,7 +3044,7 @@
     "github": {
       "enabled": true,
       "repos": [
-        "diegonmarcos/cloud-infra",
+        "diegonmarcos/cloud-t-infra",
         "diegonmarcos/cloud-data",
         "diegonmarcos/cloud-infra-desktop",
         "diegonmarcos/front",
@@ -3120,7 +3120,7 @@
         "scan_tree": true
       },
       {
-        "path": "~/git/cloud-infra",
+        "path": "~/git/cloud-t-infra",
         "visibility": "public",
         "scan_history": true,
         "scan_tree": true

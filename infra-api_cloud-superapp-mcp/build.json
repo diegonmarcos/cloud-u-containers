@@ -178,7 +178,7 @@
       "command": "sh",
       "args": [
         "-c",
-        "\"${MCP_LOCAL_LAUNCH:-$HOME/.claude/mcp-local-launch.sh}\" \"${CLOUD_INFRA_DIR:-$HOME/git/cloud-infra}/a_solutions/infra-api_cloud-superapp-mcp/src/code/cloud-superapp-mcp/src/index.ts\""
+        "\"${MCP_LOCAL_LAUNCH:-$HOME/.claude/mcp-local-launch.sh}\" \"${CLOUD_INFRA_DIR:-$HOME/git/cloud-t-infra}/a_solutions/infra-api_cloud-superapp-mcp/src/code/cloud-superapp-mcp/src/index.ts\""
       ]
     }
   },

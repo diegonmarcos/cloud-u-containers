@@ -32,10 +32,10 @@ services:
       # its OWN script location (reports-common's SELF_DIR-relative DIST_DIR),
       # which now lives inside this cloud-infra checkout — so this mount must
       # be writable, or the report run fails at the first `mkdir dist/`.
-      # Reports binaries also fall back to ~/git/cloud-infra/1_cloud-configs/dist
+      # Reports binaries also fall back to ~/git/cloud-t-infra/1_cloud-configs/dist
       # for _cloud-data-consolidated.json + build-reports.json (per
       # reports-common/src/context.rs::find_cloud_data_file).
-      - ${HOME}/git/cloud-infra:/root/git/cloud-infra
+      - ${HOME}/git/cloud-t-infra:/root/git/cloud-infra
     environment:
       - GITHUB_TOKEN
       - GITHUB_ACTOR
@@ -68,7 +68,7 @@ services:
       # (checked FIRST, before cwd walk-up + $HOME fallback). On GHA the
       # consolidated json lives ONLY in the sibling `cloud` sparse-checkout,
       # mounted at /root/git/cloud-infra (line above) — but the container's HOME is
-      # not /root, so the resolver's $HOME/git/cloud-infra/1_cloud-configs/dist
+      # not /root, so the resolver's $HOME/git/cloud-t-infra/1_cloud-configs/dist
       # fallback computed /home/diego/... (unmounted) and health_full2 /
       # cloud-sec-network failed with "_cloud-data-consolidated.json not found".
       # Pinning the dir makes resolution deterministic. (build-reports.json is

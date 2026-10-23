@@ -27,7 +27,7 @@ function resolveGhRepo(): string {
     // enumeration silently returned the wrong repo instead of erroring.
     return `${config.owner?.github ?? "diegonmarcos"}/cloud-infra`;
   } catch {}
-  return "diegonmarcos/cloud-infra";
+  return "diegonmarcos/cloud-t-infra";
 }
 const GH_REPO = resolveGhRepo();
 

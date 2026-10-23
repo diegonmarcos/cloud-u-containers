@@ -205,9 +205,9 @@ flake_imports=$( grep -c 'wireguard-wstunnel.nix' "$HOME/git/cloud-infra-desktop
 echo "▶ Phase 10 · regression: declarative testers still green"
 for t in \
   "$ROOT/0.spec/test.sh" \
-  "$HOME/git/cloud-infra/a_solutions/bb-net_wireguard-mesh/0.spec/test.sh" \
+  "$HOME/git/cloud-t-infra/a_solutions/bb-net_wireguard-mesh/0.spec/test.sh" \
   "${HM_MOD%.nix}.test.sh" \
-  "$HOME/git/cloud-infra/9_others/src/engine/test-derivers-json.sh"
+  "$HOME/git/cloud-t-infra/9_others/src/engine/test-derivers-json.sh"
 do
   # Use the bare filename so the label is meaningful regardless of nesting
   name=$(basename "$t")

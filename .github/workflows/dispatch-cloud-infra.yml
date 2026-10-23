@@ -1,7 +1,7 @@
 name: containers-push dispatch → cloud-infra Ship (courier — verdict is downstream)
 
 # This repository holds the container fleet; the pipelines that build, deploy
-# and lint it live in diegonmarcos/cloud-infra.
+# and lint it live in diegonmarcos/cloud-t-infra.
 #
 # Until 2026-09-06 this tree was a SUBMODULE of cloud-infra, so a change here
 # reached the pipelines as a gitlink bump and cloud-infra's own `paths:`
@@ -96,7 +96,7 @@ jobs:
                event_type: "containers-push",
                client_payload: { before: $before, after: $after, ref: $ref }
              }' \
-          | gh api -X POST repos/diegonmarcos/cloud-infra/dispatches --input -
+          | gh api -X POST repos/diegonmarcos/cloud-t-infra/dispatches --input -
 
           echo "dispatched containers-push  ${BEFORE}..${AFTER}  (${REF})"
           echo "### containers-push dispatched" >> "$GITHUB_STEP_SUMMARY"
@@ -119,7 +119,7 @@ jobs:
           # Collect every one created around now; those are the real verdicts.
           RUNS_JSON=""
           for _i in $(seq 1 15); do
-            RUNS_JSON=$(gh api "repos/diegonmarcos/cloud-infra/actions/runs?per_page=50&event=repository_dispatch" \
+            RUNS_JSON=$(gh api "repos/diegonmarcos/cloud-t-infra/actions/runs?per_page=50&event=repository_dispatch" \
               --jq '[.workflow_runs[]
                        | select((.created_at | fromdateiso8601) > (now - 90))
                        | {name: (.name // "unknown"), status, conclusion, html_url}]' 2>/dev/null || true)
@@ -135,7 +135,7 @@ jobs:
             printf '%s' "$RUNS_JSON" | jq -r '.[] | "- **\(.name)**: [\(.status)/\(.conclusion // "n/a")](\(.html_url))" ' >> "$GITHUB_STEP_SUMMARY"
             echo "::notice::This workflow is only the dispatch courier. Verify the build/deploy outcome in the downstream cloud-infra runs listed above — a green here does NOT mean anything built or deployed."
           else
-            echo "::warning::Could not locate the downstream cloud-infra runs within ~75s. The dispatch was POSTed; check diegonmarcos/cloud-infra > Actions directly. Do NOT read this run as a build result."
+            echo "::warning::Could not locate the downstream cloud-infra runs within ~75s. The dispatch was POSTed; check diegonmarcos/cloud-t-infra > Actions directly. Do NOT read this run as a build result."
             echo "Could not auto-list the downstream runs in time. Go to the verdict directly:" >> "$GITHUB_STEP_SUMMARY"
-            echo "https://github.com/diegonmarcos/cloud-infra/actions" >> "$GITHUB_STEP_SUMMARY"
+            echo "https://github.com/diegonmarcos/cloud-t-infra/actions" >> "$GITHUB_STEP_SUMMARY"
           fi

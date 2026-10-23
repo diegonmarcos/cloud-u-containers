@@ -17,8 +17,8 @@
       # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
       # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
       # ╠══════════════════════════════════════════════════════════════════╣
-      # ║ Source: ~/git/cloud-infra/a_solutions/ca-dat_postlite/src/flake.nix   ║
-      # ║ Rebuild: ~/git/cloud-infra/a_solutions/ca-dat_postlite/build.sh ship  ║
+      # ║ Source: ~/git/cloud-t-infra/a_solutions/ca-dat_postlite/src/flake.nix   ║
+      # ║ Rebuild: ~/git/cloud-t-infra/a_solutions/ca-dat_postlite/build.sh ship  ║
       # ╚══════════════════════════════════════════════════════════════════╝
       # postlite (Postgres wire protocol over SQLite). The former sqlite-* REST containers were
       # removed: they ran this image with ws4sqlite flags (-port/-db), which postlite rejects, so

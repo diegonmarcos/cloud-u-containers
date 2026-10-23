@@ -58,7 +58,7 @@ jobs:
       # fetch just that directory beside the workspace's checkout.
       - uses: actions/checkout@v4
         with:
-          repository: diegonmarcos/cloud-infra
+          repository: diegonmarcos/cloud-t-infra
           path: _cloud-infra
           sparse-checkout: 1_cloud-configs/dist
 

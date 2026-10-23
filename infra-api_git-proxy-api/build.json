@@ -154,7 +154,7 @@
       "cache_ttl_s": 120,
       "max_per_page": 50,
       "repos": [
-        "diegonmarcos/cloud-infra",
+        "diegonmarcos/cloud-t-infra",
         "diegonmarcos/cloud-infra-desktop",
         "diegonmarcos/cloud-u-android",
         "diegonmarcos/cloud-u-containers",

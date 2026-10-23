@@ -18,7 +18,7 @@
 import { FastifyPluginAsync } from "fastify";
 
 const GH_API = "https://api.github.com";
-const OWNER_REPO = "diegonmarcos/cloud-infra";
+const OWNER_REPO = "diegonmarcos/cloud-t-infra";
 const DATA_REPO = "diegonmarcos/cloud-data";
 // `y_old/` is not a typo and not an archive. All three cloud-health-reports
 // workflows publish here, so it IS the live path — the name is historical and

@@ -17,7 +17,7 @@ jobs:
       # The service's build-introspect-proxy.json is a symlink into cloud-infra's derived dist, so the
       # checkout is laid out like the Ship's: cloud-infra with this repository at a_solutions.
       - uses: actions/checkout@v4
-        with: { repository: diegonmarcos/cloud-infra, path: ci, sparse-checkout: '1_cloud-configs/dist' }
+        with: { repository: diegonmarcos/cloud-t-infra, path: ci, sparse-checkout: '1_cloud-configs/dist' }
       - uses: actions/checkout@v4
         with: { path: ci/a_solutions }
       - uses: cachix/install-nix-action@v27

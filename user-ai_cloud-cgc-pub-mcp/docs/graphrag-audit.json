@@ -9,7 +9,7 @@
     "codegraph": {
       "tools": ["cgc_codegraph_overview", "cgc_codegraph_search", "cgc_codegraph_dependencies", "cgc_codegraph_impact_analysis", "cgc_codegraph_trace_call_path"],
       "store": "in-memory graph, rebuilt per query with a 5-min TTL cache",
-      "source": "image-baked ./graphs/*.json (CODEGRAPH_GRAPHS_DIR | bundled | $GIT_ROOT/cloud-infra/1_cloud-configs/dist): build-kg-graph_delta.json (infra) + code-signatures-<repo>.json (code)",
+      "source": "image-baked ./graphs/*.json (CODEGRAPH_GRAPHS_DIR | bundled | $GIT_ROOT/cloud-t-infra/1_cloud-configs/dist): build-kg-graph_delta.json (infra) + code-signatures-<repo>.json (code)",
       "engine_file": "src/code/tools/b-code-graph-context/codegraph.ts",
       "synthesizes": ["symbol", "file", "defines", "imports", "code_depends_on"],
       "note": "The ONLY subsystem that has symbol/defines/code_depends_on. They are synthesized from code-signatures at load time and exist nowhere else."
