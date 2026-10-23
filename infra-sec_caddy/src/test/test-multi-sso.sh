@@ -89,8 +89,9 @@ for k in ("hub", "edge"):
         i = t.index("# multi-SSO chooser"); g = t.index("handle /oauth2/github/* {", i)
         assert t.index("handle /oauth2/cloudflare/* {", g) > g
         c = t.index("handle /oauth2/cloudflare/* {", g)
-        j = t.index("\n  }\n}\n", c) + len("\n  }\n}\n")
-        assert "10.0.0.6:4181" in t[g:c] and "10.0.0.6:4182" in t[c:j]
+        e = t.index("handle /oauth2/email/* {", c)
+        j = t.index("\n  }\n}\n", e) + len("\n  }\n}\n")
+        assert "10.0.0.6:4181" in t[g:c] and "10.0.0.6:4182" in t[c:e] and "10.0.0.6:4183" in t[e:j]
         t = t[:i] + t[j:]
     else:
         assert "tls_server_name {host}" in t and "header_up Host {host}" in t
