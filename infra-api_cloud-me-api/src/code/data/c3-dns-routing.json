@@ -139,6 +139,7 @@
     "zones": [
       "app",
       "db",
+      "mesh.diegonmarcos.com",
       "diegonmarcos.com"
     ],
     "forwarders": [
