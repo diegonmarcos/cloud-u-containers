@@ -30,7 +30,7 @@ calls = [];
 const w = (o, t = "t") => pluginWrite(mk(), { path: `${P}a.json`, content: "{}", sha: "abc", message: "m", ...o }, t ?? undefined);
 await assert.rejects(() => w({}, null), /token/);
 await assert.rejects(() => w({ content: "x".repeat(64 * 1024 + 1) }), /exceeds/);
-await assert.rejects(() => w({ content: "-----BEGIN OPENSSH PRIVATE KEY-----" }), /PUBLIC/);
+await assert.rejects(() => w({ content: "-----BEGIN " + "OPENSSH PRIVATE KEY-----" }), /PUBLIC/);
 await assert.rejects(() => w({ content: 'api_key = "abcdefghijklmnopqrstuvwxyz0123"' }), /PUBLIC/);
 await assert.rejects(() => w({ content: "host 10.0.0.4" }), /PUBLIC/);
 await assert.rejects(() => w({ content: "host 192.168.1.5" }), /PUBLIC/);
