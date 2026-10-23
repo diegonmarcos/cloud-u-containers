@@ -1,5 +1,5 @@
 # ══════════════════════════════════════════════════════════════════
-# re-ship marker (#1104/#1102): the 2026-10-22 caddy deploys died on a transient scp drop and per-commit change detection then skipped them as unchanged
+# re-ship marker (#1104/#1102): earlier caddy deploys were stranded by a transient scp drop, then by stale committed dist (render mismatch); dist re-rendered
 # caddyfile.nix — pure-Nix Caddyfile generator (v2 engine)
 #
 # Reads build-caddy.json (data-driven from 1_cicd/dist/) and
