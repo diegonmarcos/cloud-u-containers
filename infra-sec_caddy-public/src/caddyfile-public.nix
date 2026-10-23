@@ -1,4 +1,5 @@
 # ══════════════════════════════════════════════════════════════════
+# re-ship marker (#1104/#1102): the 2026-10-22 caddy deploys died on a transient scp drop and per-commit change detection then skipped them as unchanged
 # caddyfile-public.nix — public-edge L7 allowlist generator
 #
 # Renders the Caddyfile for the caddy-public service on oci-analytics.
