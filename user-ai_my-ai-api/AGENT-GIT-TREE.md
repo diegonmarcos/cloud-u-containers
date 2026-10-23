@@ -15,7 +15,7 @@ inside one container, every other container sees your changes immediately.
 The following repositories are checked out at `/home/appuser/git`:
 
 - `cloud-data`
-- `cloud-data-my-ai-memory`
+- `cloud-me-my-ai`
 - `cloud-infra`
 - `cloud-u-android`
 - `cloud-u-containers` (this repository)

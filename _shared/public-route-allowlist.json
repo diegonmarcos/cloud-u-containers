@@ -1,5 +1,5 @@
 {
-  "_doc": "THE fleet public-route allowlist. Every route is WG-only fail-closed (wgOnly(proxy) = proxy.wg_only ?? true, off-mesh -> 403) unless its service is listed here. Public means: some proxy block in build.json sets wg_only:false. Memory: cloud-data-my-ai-memory 4___ASSETS___/4.3.Memory/cloud-u-containers/infra-sec_caddy/project_wg-only-fleet-posture.md (+ feedback_cloudflare_wildcard_only.md). Guard: _shared/test-public-route-allowlist.mjs.",
+  "_doc": "THE fleet public-route allowlist. Every route is WG-only fail-closed (wgOnly(proxy) = proxy.wg_only ?? true, off-mesh -> 403) unless its service is listed here. Public means: some proxy block in build.json sets wg_only:false. Memory: cloud-me-my-ai 4___ASSETS___/4.3.Memory/cloud-u-containers/infra-sec_caddy/project_wg-only-fleet-posture.md (+ feedback_cloudflare_wildcard_only.md). Guard: _shared/test-public-route-allowlist.mjs.",
   "allowed": {
     "infra-api_c3-public-api": "the one named public API (/pub)",
     "infra-net_wireguard-mesh-ws-tunnel": "mesh bootstrap (vpn.)",

@@ -5,7 +5,7 @@
 // claude container by declaring `runtime.memory` in my-ai_claude-api's OWN
 // build.json. Measured inside the running containers 2026-09-24:
 //
-//   cloud-agi-claude   AGENT_MEMORY_DIR=/home/appuser/git/cloud-data-my-ai-memory/4___ASSETS___/4.3.Memory/home-diego
+//   cloud-agi-claude   AGENT_MEMORY_DIR=/home/appuser/git/cloud-me-my-ai/4___ASSETS___/4.3.Memory/home-diego
 //   my-ai-api (goose)  AGENT_GIT_TREE only — no AGENT_MEMORY_* at all
 //   hermes-agent       AGENT_GIT_TREE only — no AGENT_MEMORY_* at all
 //
@@ -122,12 +122,12 @@ check("A7 a build.json that re-declares runtime.memory is a BUILD ERROR",
 // ── D: the values are DERIVED, not retyped ──────────────────────────────────
 const base = mem();
 check("D1 the store resolves under the shared tree mount",
-  base.dir === "/home/appuser/git/cloud-data-my-ai-memory/4___ASSETS___/4.3.Memory/home-diego", base.dir);
+  base.dir === "/home/appuser/git/cloud-me-my-ai/4___ASSETS___/4.3.Memory/home-diego", base.dir);
 check("D2 the absolute path FOLLOWS the mount (mutation)",
-  mem("/mnt/elsewhere").dir === "/mnt/elsewhere/cloud-data-my-ai-memory/4___ASSETS___/4.3.Memory/home-diego",
+  mem("/mnt/elsewhere").dir === "/mnt/elsewhere/cloud-me-my-ai/4___ASSETS___/4.3.Memory/home-diego",
   `got ${mem("/mnt/elsewhere").dir} — a hardcoded path would have ignored the mutated mount`);
 check("D3 the briefing FOLLOWS the mount too (mutation)",
-  mem("/mnt/elsewhere").briefing.includes("/mnt/elsewhere/cloud-data-my-ai-memory")
+  mem("/mnt/elsewhere").briefing.includes("/mnt/elsewhere/cloud-me-my-ai")
   && !mem("/mnt/elsewhere").briefing.includes("/home/appuser/git/cloud-data"),
   "the text an agent is shown must be derived from the same binding, not pasted");
 check("D4 the entry types are an enumerated list, not free text",

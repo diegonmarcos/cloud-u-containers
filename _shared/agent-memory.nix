@@ -9,7 +9,7 @@
 # three runtimes. `runtime.memory` was declared in my-ai_claude-api's own
 # build.json, so measured 2026-09-24 inside the running containers:
 #
-#   cloud-agi-claude  AGENT_MEMORY_DIR=/home/appuser/git/cloud-data-my-ai-memory/4___ASSETS___/4.3.Memory/home-diego
+#   cloud-agi-claude  AGENT_MEMORY_DIR=/home/appuser/git/cloud-me-my-ai/4___ASSETS___/4.3.Memory/home-diego
 #   my-ai-api (goose) AGENT_GIT_TREE only — no AGENT_MEMORY_* at all
 #   hermes-agent      AGENT_GIT_TREE only — no AGENT_MEMORY_* at all
 #
@@ -47,7 +47,7 @@ let
   # mount below, so the absolute path cannot drift from the mount: they are one
   # binding apart, which is the property that failed when the path was retyped
   # per container.
-  repoPath = "cloud-data-my-ai-memory/4___ASSETS___/4.3.Memory/home-diego";
+  repoPath = "cloud-me-my-ai/4___ASSETS___/4.3.Memory/home-diego";
 
   # The index sits in memory/ and the entries beside memory/, which is the
   # ~/.claude/projects/<slug>/ shape every device sees through its symlinks.
@@ -57,7 +57,7 @@ let
   # ${repoPath}/MEMORY.md, where every such pointer resolved to a directory that
   # does not exist.
   #
-  # BY REPO, NOT BY TYPE (#546 landed 2026-09-24, cloud-data-my-ai-memory
+  # BY REPO, NOT BY TYPE (#546 landed 2026-09-24, cloud-me-my-ai
   # 1877a7d). This module first taught memory-entries/<type>/<name>.md. #546
   # moved every entry to 4___ASSETS___/4.3.Memory/<repo>/<child>/<type>_<name>.md, and
   # <home>/memory-entries/ became a VIEW of one relative symlink per repo, so an

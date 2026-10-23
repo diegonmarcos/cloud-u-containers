@@ -282,7 +282,7 @@ converge_mirror back-System https://github.com/diegonmarcos/back-System.git fals
 converge_mirror cloud https://github.com/diegonmarcos/cloud.git false
 converge_mirror cloud-data https://github.com/diegonmarcos/cloud-data.git true
 converge_mirror cloud-data-lfs https://github.com/diegonmarcos/cloud-data-lfs.git true
-converge_mirror cloud-data-my-ai-memory https://github.com/diegonmarcos/cloud-data-my-ai-memory.git true
+converge_mirror cloud-me-my-ai https://github.com/diegonmarcos/cloud-me-my-ai.git true
 converge_mirror cloud-infra https://github.com/diegonmarcos/cloud-infra.git false
 converge_mirror cloud-infra-desktop https://github.com/diegonmarcos/cloud-infra-desktop.git false
 converge_mirror cloud-me https://github.com/diegonmarcos/cloud-me.git true

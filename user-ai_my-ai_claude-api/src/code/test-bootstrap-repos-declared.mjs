@@ -2,7 +2,7 @@
 //
 // The bootstrap used to be a hardcoded shell loop naming four repos:
 //   for repo in cloud-infra cloud-u-containers cloud-u-android cloud-u-linux
-// while the live tree held seven. Three (cloud-data, cloud-data-my-ai-memory,
+// while the live tree held seven. Three (cloud-data, cloud-me-my-ai,
 // cloud-vault) had been cloned by hand and would have vanished on the next
 // volume recreate, and the whole `front` family was missing entirely — so every
 // agent asked to touch a front project was working blind, which is the failure
@@ -102,7 +102,7 @@ check("R2 the old name is no longer declared as its own repo", !names.has("ffron
 // Including the three that were only ever cloned by hand. Dropping one here
 // would delete it from the tree on the next volume recreate, silently.
 for (const r of ["cloud-infra", "cloud-u-containers", "cloud-u-android", "cloud-u-linux",
-                 "cloud-data", "cloud-data-my-ai-memory", "cloud-me_vault"]) {
+                 "cloud-data", "cloud-me-my-ai", "cloud-me_vault"]) {
   check(`C:${r} is declared`, names.has(r), `runtime.repos has no "${r}"`);
 }
 // The vault repo was renamed diegonmarcos/cloud-vault -> cloud-me_vault (#592),
