@@ -46,6 +46,10 @@ in
         SMTP_HOST           = svc.maddy.ip;
         SMTP_PORT           = toString svc.maddy.ports.smtp;
         SMTP_FROM           = "noreply@${base_domain}";
+        # Cloud Vault brand (#1139): sender display name + template overrides (scss,
+        # admin, email) from the rendered configs mount. Web vault patch: brand.sh.
+        SMTP_FROM_NAME      = "Cloud Vault";
+        TEMPLATES_FOLDER    = "/config/brand";
         SMTP_USERNAME       = "noreply@${base_domain}";
         SMTP_SECURITY       = "force_tls";
         SMTP_PASSWORD       = "\${SMTP_PASSWORD}";

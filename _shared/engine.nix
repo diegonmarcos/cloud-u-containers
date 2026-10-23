@@ -518,7 +518,12 @@ let
     # Stalwart's `Failed to parse data store settings: expected value at
     # line 1 column 1`). Skip banner for .json files; the auto-generated
     # marker still lives in manifest.json + the file's git path.
-    isJson = lib.hasSuffix ".json" t.name;
+    # Same for template/markup/data files where a "#" banner would become visible
+    # content or corrupt the payload (.hbs, .svg, .b64).
+    isJson = lib.hasSuffix ".json" t.name
+          || lib.hasSuffix ".hbs" t.name
+          || lib.hasSuffix ".svg" t.name
+          || lib.hasSuffix ".b64" t.name;
     prefix = pickPrefix t.name;
     banner = if isJson then "" else mkBanner prefix;
     body =

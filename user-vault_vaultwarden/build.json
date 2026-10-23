@@ -91,6 +91,12 @@
     }
   },
   "upstream_image": "vaultwarden/server:latest",
+  "tests": {
+    "cloud-vault-brand": {
+      "cmd": "bash test-cloud-vault-brand.sh",
+      "cwd": "src"
+    }
+  },
   "timezone": "Europe/Madrid",
   "resources": {
     "mem_reservation": "64M"
