@@ -623,6 +623,10 @@
       "cmd": "bash test/test-hub-resource-budget.sh",
       "cwd": "src"
     },
+    "vault-mtls": {
+      "cmd": "bash test/test-vault-mtls.sh",
+      "cwd": "src"
+    },
     "fallback-redirect": {
       "cmd": "bash test/test-fallback-redirect.sh",
       "cwd": "src"

@@ -613,10 +613,27 @@ ${plainOut}${sniMuxBlock}
       # declarations do what they say; every other path stays gated.
       wgExemptPaths = (map (wk: wk.path) matchingWellKnown)
                       ++ (if hasBypassPaths then route.bypass_paths else []);
-      wgBlock = if isWgOnly && wgExemptPaths != [] then ''
+      # client_cert (vault, #1117): the route also accepts a per-device mTLS client
+      # certificate. verify_if_given REJECTS an invalid certificate at the handshake,
+      # so a non-empty verified subject is proof of a chain-valid fleet client cert and
+      # lifts the source-IP gate. No cert = the original mesh-only 403. There is no
+      # source-country gate in this Caddy, so "cert bypasses the geo-fence" holds by
+      # construction (the only source gate is @not_wg).
+      clientCaDer = route.client_ca_der or [];
+      hasClientCert = isWgOnly && clientCaDer != [];
+      certCond = if hasClientCert then "\n        expression `{http.request.tls.client.subject} == \"\"`" else "";
+      tlsClientBlock = if hasClientCert then ''
+      tls {
+        client_auth {
+          mode verify_if_given
+          trust_pool inline {
+            ${lib.concatMapStringsSep "\n            " (c: "trust_der ${c}") clientCaDer}
+          }
+        }
+      }'' else "";
+      wgBlock = if isWgOnly && (wgExemptPaths != [] || hasClientCert) then ''
       @not_wg {
-        not remote_ip ${wgCidrs}
-        not path ${lib.concatStringsSep " " wgExemptPaths}
+        not remote_ip ${wgCidrs}${if wgExemptPaths != [] then "\n        not path ${lib.concatStringsSep " " wgExemptPaths}" else ""}${certCond}
       }
       error @not_wg "Forbidden" 403''
       else if isWgOnly then ''
@@ -678,6 +695,7 @@ ${plainOut}${sniMuxBlock}
   ${publicBindLine}
   ${secLine}${uploadBlock}${(identityOf route).siteStrip}
   ${gateLine}
+  ${tlsClientBlock}
   ${wgBlock}
   ${ssoBlock}${bypassBlock}${landingBlock}
   ${rootJsonBlock}

@@ -1,7 +1,6 @@
 {
   "name": "vaultwarden",
   "description": "Bitwarden password manager",
-  "dns": "vaultwarden.app",
   "category": "mic",
   "build": {
     "include_cloud_data": "true",
@@ -26,7 +25,9 @@
     "primary": {
       "domain": "vault.diegonmarcos.com",
       "auth": "none",
-      "wg_only": true
+      "wg_only": true,
+      "client_cert": true,
+      "mesh_alias": "vault.mesh.diegonmarcos.com"
     }
   },
   "health": {
@@ -52,7 +53,6 @@
       "image": "vaultwarden/server:latest",
       "port": 8880,
       "port_env": "ROCKET_PORT",
-      "dns": "vaultwarden.app",
       "public": true,
       "proxy": {
         "domain": "vault.diegonmarcos.com",
