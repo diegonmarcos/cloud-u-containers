@@ -41,5 +41,10 @@ else
   echo "[vw-init] sqlite3 or $DB absent — skipping (non-fatal: first boot / no DB yet)"
 fi
 
+# Cloud Vault brand (web vault copy in tmpfs + WEB_VAULT_FOLDER). Failsafe: never fatal.
+if [ -r /config/brand.sh ]; then
+  . /config/brand.sh || echo "[vw-init] WARNING: brand.sh failed (non-fatal)"
+fi
+
 echo "[vw-init] handing off to upstream entrypoint /start.sh"
 exec /start.sh
