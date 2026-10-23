@@ -10,5 +10,5 @@
 FROM ghcr.io/astral-sh/uv:python3.11-bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 COPY uv run --no-sync main.py --transport streamable-http --tool-tier complete /usr/local/bin/uv run --no-sync main.py --transport streamable-http --tool-tier complete
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-infra"
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-t-infra"
 CMD ["uv run --no-sync main.py --transport streamable-http --tool-tier complete"]
