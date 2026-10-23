@@ -1,5 +1,5 @@
 {
-  # Upstreams use raw WG IPs (not DNS) — Caddy is the *.app target
+  # Upstreams use raw WG IPs (not DNS) — Caddy is the *.mesh.diegonmarcos.com target
   @DEBUG_LINE@
   admin @ADMIN_BIND@
   order @ORDER@
