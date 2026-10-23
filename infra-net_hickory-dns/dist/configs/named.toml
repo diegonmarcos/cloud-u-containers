@@ -28,6 +28,12 @@ file = "db.zone"
 
 
 [[zones]]
+zone = "mesh.diegonmarcos.com"
+zone_type = "Primary"
+file = "mesh.diegonmarcos.com.zone"
+
+
+[[zones]]
 zone = "diegonmarcos.com"
 zone_type = "Primary"
 file = "diegonmarcos.com.zone"

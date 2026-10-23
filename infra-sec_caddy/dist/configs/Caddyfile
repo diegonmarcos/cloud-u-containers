@@ -6849,7 +6849,7 @@ file_server
   # INTERNAL ROUTES — portless *.app via HTTP:80 on WireGuard
   # ════════════════════════════════════════════════════════════
 
-  c3-infra-api.app {
+  c3-infra-api.app, c3-infra-api.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -6898,7 +6898,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-public-api.app {
+  c3-public-api.app, c3-public-api.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -6947,7 +6947,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-services-api.app {
+  c3-services-api.app, c3-services-api.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -6996,7 +6996,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  drive-mcp.app {
+  drive-mcp.app, drive-mcp.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -7045,7 +7045,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud-drive-mcp.app {
+  cloud-drive-mcp.app, cloud-drive-mcp.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -7094,7 +7094,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-infra-mcp.app {
+  c3-infra-mcp.app, c3-infra-mcp.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -7143,7 +7143,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud-infra-mcp.app {
+  cloud-infra-mcp.app, cloud-infra-mcp.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -7192,7 +7192,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  mail-mcp.app {
+  mail-mcp.app, mail-mcp.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -7241,7 +7241,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud-mail-mcp.app {
+  cloud-mail-mcp.app, cloud-mail-mcp.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -7290,7 +7290,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  mattermost-mcp.app {
+  mattermost-mcp.app, mattermost-mcp.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -7339,7 +7339,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud-mattermost-mcp.app {
+  cloud-mattermost-mcp.app, cloud-mattermost-mcp.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -7388,7 +7388,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud-me-api.app {
+  cloud-me-api.app, cloud-me-api.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -7437,7 +7437,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-services-mcp.app {
+  c3-services-mcp.app, c3-services-mcp.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -7486,7 +7486,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud-services-mcp.app {
+  cloud-services-mcp.app, cloud-services-mcp.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -7535,7 +7535,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  superapp-mcp.app {
+  superapp-mcp.app, superapp-mcp.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -7584,7 +7584,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud-superapp-mcp.app {
+  cloud-superapp-mcp.app, cloud-superapp-mcp.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -7633,7 +7633,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  git-proxy-api.app {
+  git-proxy-api.app, git-proxy-api.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -7682,7 +7682,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  g-personal-mcp.app {
+  g-personal-mcp.app, g-personal-mcp.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -7731,7 +7731,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  google-personal-mcp.app {
+  google-personal-mcp.app, google-personal-mcp.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -7780,7 +7780,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  g-workspace-mcp.app {
+  g-workspace-mcp.app, g-workspace-mcp.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -7829,7 +7829,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  google-workspace-mcp.app {
+  google-workspace-mcp.app, google-workspace-mcp.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -7878,7 +7878,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  gitea.app {
+  gitea.app, gitea.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -7927,7 +7927,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  unbound-dns64.app {
+  unbound-dns64.app, unbound-dns64.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -7976,7 +7976,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  wireguard-mesh.app {
+  wireguard-mesh.app, wireguard-mesh.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -8025,7 +8025,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-spec.app {
+  c3-spec.app, c3-spec.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -8074,7 +8074,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud-spec.app {
+  cloud-spec.app, cloud-spec.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -8123,7 +8123,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  dagu.app {
+  dagu.app, dagu.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -8172,7 +8172,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  dbgate.app {
+  dbgate.app, dbgate.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -8221,7 +8221,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  matomo.app {
+  matomo.app, matomo.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -8270,7 +8270,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  ntfy.app {
+  ntfy.app, ntfy.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -8319,7 +8319,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  openobserve.app {
+  openobserve.app, openobserve.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -8368,7 +8368,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  umami.app {
+  umami.app, umami.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -8417,7 +8417,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  authelia.app {
+  authelia.app, authelia.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -8466,7 +8466,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  caddy.app {
+  caddy.app, caddy.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -8515,7 +8515,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  caddy-public.app {
+  caddy-public.app, caddy-public.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -8564,7 +8564,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  crowdsec.app {
+  crowdsec.app, crowdsec.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -8613,7 +8613,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  tokens-api.app {
+  tokens-api.app, tokens-api.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -8662,7 +8662,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud-cgc-pub-mcp.app {
+  cloud-cgc-pub-mcp.app, cloud-cgc-pub-mcp.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -8711,7 +8711,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  kg-store.app {
+  kg-store.app, kg-store.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -8760,7 +8760,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  kg-store-pub.app {
+  kg-store-pub.app, kg-store-pub.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -8809,7 +8809,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  mattermost.app {
+  mattermost.app, mattermost.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -8858,7 +8858,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  chat-mattermost.app {
+  chat-mattermost.app, chat-mattermost.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -8907,7 +8907,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  webmail.app {
+  webmail.app, webmail.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -8956,7 +8956,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud-webmail.app {
+  cloud-webmail.app, cloud-webmail.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -9005,7 +9005,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  matrix-continuwuity.app {
+  matrix-continuwuity.app, matrix-continuwuity.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -9054,7 +9054,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  matrix-element.app {
+  matrix-element.app, matrix-element.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -9103,7 +9103,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  stalwart.app {
+  stalwart.app, stalwart.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -9152,7 +9152,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  scrappers-api.app {
+  scrappers-api.app, scrappers-api.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -9201,7 +9201,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  fin-api.app {
+  fin-api.app, fin-api.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -9250,7 +9250,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  photoprism.app {
+  photoprism.app, photoprism.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -9299,7 +9299,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  playlist-syncer.app {
+  playlist-syncer.app, playlist-syncer.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -9348,7 +9348,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  news-gdelt.app {
+  news-gdelt.app, news-gdelt.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -9397,7 +9397,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  calendar.app {
+  calendar.app, calendar.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -9446,7 +9446,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  calendar-radicale.app {
+  calendar-radicale.app, calendar-radicale.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -9495,7 +9495,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud-notes-sync.app {
+  cloud-notes-sync.app, cloud-notes-sync.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -9544,7 +9544,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud-notes-web.app {
+  cloud-notes-web.app, cloud-notes-web.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -9593,7 +9593,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  code-server.app {
+  code-server.app, code-server.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -9642,7 +9642,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  contacts.app {
+  contacts.app, contacts.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -9691,7 +9691,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  contacts-radicale.app {
+  contacts-radicale.app, contacts-radicale.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -9740,7 +9740,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  etherpad.app {
+  etherpad.app, etherpad.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -9789,7 +9789,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  filebrowser.app {
+  filebrowser.app, filebrowser.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -9838,7 +9838,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  grist.app {
+  grist.app, grist.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -9887,7 +9887,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  hedgedoc.app {
+  hedgedoc.app, hedgedoc.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -9936,7 +9936,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  send.app {
+  send.app, send.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -9985,7 +9985,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  vaultwarden.app {
+  vaultwarden.app, vaultwarden.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -10039,7 +10039,7 @@ error @not_mesh "Forbidden" 403
   # PRIVATE MESH NAMES — cloud.<name>.app (WG mesh only)
   # ════════════════════════════════════════════════════════════
 
-  cloud.c3-infra-api.app {
+  cloud.c3-infra-api.app, cloud.c3-infra-api.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -10080,7 +10080,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.c3-public-api.app {
+  cloud.c3-public-api.app, cloud.c3-public-api.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -10121,7 +10121,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.c3-services-api.app {
+  cloud.c3-services-api.app, cloud.c3-services-api.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -10162,7 +10162,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.drive-mcp.app {
+  cloud.drive-mcp.app, cloud.drive-mcp.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -10203,7 +10203,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.cloud-drive-mcp.app {
+  cloud.cloud-drive-mcp.app, cloud.cloud-drive-mcp.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -10244,7 +10244,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.c3-infra-mcp.app {
+  cloud.c3-infra-mcp.app, cloud.c3-infra-mcp.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -10285,7 +10285,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.cloud-infra-mcp.app {
+  cloud.cloud-infra-mcp.app, cloud.cloud-infra-mcp.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -10326,7 +10326,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.mail-mcp.app {
+  cloud.mail-mcp.app, cloud.mail-mcp.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -10367,7 +10367,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.cloud-mail-mcp.app {
+  cloud.cloud-mail-mcp.app, cloud.cloud-mail-mcp.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -10408,7 +10408,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.mattermost-mcp.app {
+  cloud.mattermost-mcp.app, cloud.mattermost-mcp.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -10449,7 +10449,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.cloud-mattermost-mcp.app {
+  cloud.cloud-mattermost-mcp.app, cloud.cloud-mattermost-mcp.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -10490,7 +10490,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.cloud-me-api.app {
+  cloud.cloud-me-api.app, cloud.cloud-me-api.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -10531,7 +10531,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.c3-services-mcp.app {
+  cloud.c3-services-mcp.app, cloud.c3-services-mcp.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -10572,7 +10572,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.cloud-services-mcp.app {
+  cloud.cloud-services-mcp.app, cloud.cloud-services-mcp.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -10613,7 +10613,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.superapp-mcp.app {
+  cloud.superapp-mcp.app, cloud.superapp-mcp.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -10654,7 +10654,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.cloud-superapp-mcp.app {
+  cloud.cloud-superapp-mcp.app, cloud.cloud-superapp-mcp.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -10695,7 +10695,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.git-proxy-api.app {
+  cloud.git-proxy-api.app, cloud.git-proxy-api.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -10736,7 +10736,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.g-personal-mcp.app {
+  cloud.g-personal-mcp.app, cloud.g-personal-mcp.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -10777,7 +10777,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.google-personal-mcp.app {
+  cloud.google-personal-mcp.app, cloud.google-personal-mcp.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -10818,7 +10818,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.g-workspace-mcp.app {
+  cloud.g-workspace-mcp.app, cloud.g-workspace-mcp.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -10859,7 +10859,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.google-workspace-mcp.app {
+  cloud.google-workspace-mcp.app, cloud.google-workspace-mcp.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -10900,7 +10900,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.gitea.app {
+  cloud.gitea.app, cloud.gitea.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -10941,7 +10941,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.unbound-dns64.app {
+  cloud.unbound-dns64.app, cloud.unbound-dns64.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -10982,7 +10982,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.wireguard-mesh.app {
+  cloud.wireguard-mesh.app, cloud.wireguard-mesh.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -11023,7 +11023,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.c3-spec.app {
+  cloud.c3-spec.app, cloud.c3-spec.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -11064,7 +11064,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.cloud-spec.app {
+  cloud.cloud-spec.app, cloud.cloud-spec.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -11105,7 +11105,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.dagu.app {
+  cloud.dagu.app, cloud.dagu.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -11146,7 +11146,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.dbgate.app {
+  cloud.dbgate.app, cloud.dbgate.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -11187,7 +11187,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.matomo.app {
+  cloud.matomo.app, cloud.matomo.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -11228,7 +11228,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.ntfy.app {
+  cloud.ntfy.app, cloud.ntfy.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -11269,7 +11269,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.openobserve.app {
+  cloud.openobserve.app, cloud.openobserve.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -11310,7 +11310,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.umami.app {
+  cloud.umami.app, cloud.umami.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -11351,7 +11351,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.authelia.app {
+  cloud.authelia.app, cloud.authelia.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -11392,7 +11392,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.caddy.app {
+  cloud.caddy.app, cloud.caddy.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -11433,7 +11433,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.caddy-public.app {
+  cloud.caddy-public.app, cloud.caddy-public.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -11474,7 +11474,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.crowdsec.app {
+  cloud.crowdsec.app, cloud.crowdsec.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -11515,7 +11515,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.tokens-api.app {
+  cloud.tokens-api.app, cloud.tokens-api.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -11556,7 +11556,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.cloud-cgc-pub-mcp.app {
+  cloud.cloud-cgc-pub-mcp.app, cloud.cloud-cgc-pub-mcp.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -11597,7 +11597,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.kg-store.app {
+  cloud.kg-store.app, cloud.kg-store.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -11638,7 +11638,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.kg-store-pub.app {
+  cloud.kg-store-pub.app, cloud.kg-store-pub.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -11679,7 +11679,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.mattermost.app {
+  cloud.mattermost.app, cloud.mattermost.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -11720,7 +11720,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.chat-mattermost.app {
+  cloud.chat-mattermost.app, cloud.chat-mattermost.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -11761,7 +11761,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.webmail.app {
+  cloud.webmail.app, cloud.webmail.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -11802,7 +11802,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.cloud-webmail.app {
+  cloud.cloud-webmail.app, cloud.cloud-webmail.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -11843,7 +11843,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.matrix-continuwuity.app {
+  cloud.matrix-continuwuity.app, cloud.matrix-continuwuity.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -11884,7 +11884,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.matrix-element.app {
+  cloud.matrix-element.app, cloud.matrix-element.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -11925,7 +11925,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.stalwart.app {
+  cloud.stalwart.app, cloud.stalwart.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -11966,7 +11966,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.scrappers-api.app {
+  cloud.scrappers-api.app, cloud.scrappers-api.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -12007,7 +12007,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.fin-api.app {
+  cloud.fin-api.app, cloud.fin-api.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -12048,7 +12048,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.photoprism.app {
+  cloud.photoprism.app, cloud.photoprism.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -12089,7 +12089,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.playlist-syncer.app {
+  cloud.playlist-syncer.app, cloud.playlist-syncer.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -12130,7 +12130,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.news-gdelt.app {
+  cloud.news-gdelt.app, cloud.news-gdelt.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -12171,7 +12171,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.calendar.app {
+  cloud.calendar.app, cloud.calendar.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -12212,7 +12212,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.calendar-radicale.app {
+  cloud.calendar-radicale.app, cloud.calendar-radicale.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -12253,7 +12253,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.cloud-notes-sync.app {
+  cloud.cloud-notes-sync.app, cloud.cloud-notes-sync.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -12294,7 +12294,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.cloud-notes-web.app {
+  cloud.cloud-notes-web.app, cloud.cloud-notes-web.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -12335,7 +12335,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.code-server.app {
+  cloud.code-server.app, cloud.code-server.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -12376,7 +12376,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.contacts.app {
+  cloud.contacts.app, cloud.contacts.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -12417,7 +12417,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.contacts-radicale.app {
+  cloud.contacts-radicale.app, cloud.contacts-radicale.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -12458,7 +12458,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.etherpad.app {
+  cloud.etherpad.app, cloud.etherpad.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -12499,7 +12499,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.filebrowser.app {
+  cloud.filebrowser.app, cloud.filebrowser.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -12540,7 +12540,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.grist.app {
+  cloud.grist.app, cloud.grist.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -12581,7 +12581,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.hedgedoc.app {
+  cloud.hedgedoc.app, cloud.hedgedoc.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -12622,7 +12622,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.send.app {
+  cloud.send.app, cloud.send.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -12663,7 +12663,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.vaultwarden.app {
+  cloud.vaultwarden.app, cloud.vaultwarden.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -12704,7 +12704,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.matomo-hybrid.app {
+  cloud.matomo-hybrid.app, cloud.matomo-hybrid.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -12745,7 +12745,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.continuwuity.app {
+  cloud.continuwuity.app, cloud.continuwuity.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -12786,7 +12786,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.photoprism-app.app {
+  cloud.photoprism-app.app, cloud.photoprism-app.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -12827,7 +12827,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.etherpad-app.app {
+  cloud.etherpad-app.app, cloud.etherpad-app.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -12868,7 +12868,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.filebrowser-app.app {
+  cloud.filebrowser-app.app, cloud.filebrowser-app.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -12909,7 +12909,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.grist-app.app {
+  cloud.grist-app.app, cloud.grist-app.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -12950,7 +12950,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.hedgedoc-app.app {
+  cloud.hedgedoc-app.app, cloud.hedgedoc-app.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -12991,7 +12991,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.send-app.app {
+  cloud.send-app.app, cloud.send-app.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -13032,7 +13032,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-cloud-drive-mcp.app {
+  c3-cloud-drive-mcp.app, c3-cloud-drive-mcp.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -13073,7 +13073,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-cloud-infra-mcp.app {
+  c3-cloud-infra-mcp.app, c3-cloud-infra-mcp.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -13114,7 +13114,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-cloud-mail-mcp.app {
+  c3-cloud-mail-mcp.app, c3-cloud-mail-mcp.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -13155,7 +13155,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-cloud-mattermost-mcp.app {
+  c3-cloud-mattermost-mcp.app, c3-cloud-mattermost-mcp.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -13196,7 +13196,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-cloud-me-api.app {
+  c3-cloud-me-api.app, c3-cloud-me-api.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -13237,7 +13237,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-cloud-services-mcp.app {
+  c3-cloud-services-mcp.app, c3-cloud-services-mcp.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -13278,7 +13278,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-cloud-superapp-mcp.app {
+  c3-cloud-superapp-mcp.app, c3-cloud-superapp-mcp.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -13319,7 +13319,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-git-proxy-api.app {
+  c3-git-proxy-api.app, c3-git-proxy-api.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -13360,7 +13360,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-google-personal-mcp.app {
+  c3-google-personal-mcp.app, c3-google-personal-mcp.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -13401,7 +13401,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-google-workspace-mcp.app {
+  c3-google-workspace-mcp.app, c3-google-workspace-mcp.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -13442,7 +13442,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-gitea.app {
+  c3-gitea.app, c3-gitea.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -13483,7 +13483,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-wireguard-mesh.app {
+  c3-wireguard-mesh.app, c3-wireguard-mesh.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -13524,7 +13524,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-cloud-spec.app {
+  c3-cloud-spec.app, c3-cloud-spec.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -13565,7 +13565,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-dagu.app {
+  c3-dagu.app, c3-dagu.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -13606,7 +13606,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-dbgate.app {
+  c3-dbgate.app, c3-dbgate.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -13647,7 +13647,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-matomo-hybrid.app {
+  c3-matomo-hybrid.app, c3-matomo-hybrid.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -13688,7 +13688,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-ntfy.app {
+  c3-ntfy.app, c3-ntfy.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -13729,7 +13729,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-openobserve.app {
+  c3-openobserve.app, c3-openobserve.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -13770,7 +13770,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-umami.app {
+  c3-umami.app, c3-umami.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -13811,7 +13811,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-authelia.app {
+  c3-authelia.app, c3-authelia.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -13852,7 +13852,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-crowdsec.app {
+  c3-crowdsec.app, c3-crowdsec.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -13893,7 +13893,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-tokens-api.app {
+  c3-tokens-api.app, c3-tokens-api.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -13934,7 +13934,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-cloud-cgc-pub-mcp.app {
+  c3-cloud-cgc-pub-mcp.app, c3-cloud-cgc-pub-mcp.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -13975,7 +13975,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-kg-store.app {
+  c3-kg-store.app, c3-kg-store.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -14016,7 +14016,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-kg-store-pub.app {
+  c3-kg-store-pub.app, c3-kg-store-pub.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -14057,7 +14057,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-mattermost.app {
+  c3-mattermost.app, c3-mattermost.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -14098,7 +14098,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-cloud-webmail.app {
+  c3-cloud-webmail.app, c3-cloud-webmail.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -14139,7 +14139,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-continuwuity.app {
+  c3-continuwuity.app, c3-continuwuity.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -14180,7 +14180,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-matrix-element.app {
+  c3-matrix-element.app, c3-matrix-element.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -14221,7 +14221,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-scrappers-api.app {
+  c3-scrappers-api.app, c3-scrappers-api.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -14262,7 +14262,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-fin-api.app {
+  c3-fin-api.app, c3-fin-api.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -14303,7 +14303,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-photoprism-app.app {
+  c3-photoprism-app.app, c3-photoprism-app.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -14344,7 +14344,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-playlist-syncer.app {
+  c3-playlist-syncer.app, c3-playlist-syncer.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -14385,7 +14385,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-news-gdelt.app {
+  c3-news-gdelt.app, c3-news-gdelt.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -14426,7 +14426,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-calendar-radicale.app {
+  c3-calendar-radicale.app, c3-calendar-radicale.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -14467,7 +14467,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-cloud-notes-sync.app {
+  c3-cloud-notes-sync.app, c3-cloud-notes-sync.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -14508,7 +14508,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-cloud-notes-web.app {
+  c3-cloud-notes-web.app, c3-cloud-notes-web.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -14549,7 +14549,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-contacts-radicale.app {
+  c3-contacts-radicale.app, c3-contacts-radicale.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -14590,7 +14590,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-etherpad-app.app {
+  c3-etherpad-app.app, c3-etherpad-app.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -14631,7 +14631,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-filebrowser-app.app {
+  c3-filebrowser-app.app, c3-filebrowser-app.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -14672,7 +14672,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-grist-app.app {
+  c3-grist-app.app, c3-grist-app.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -14713,7 +14713,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-hedgedoc-app.app {
+  c3-hedgedoc-app.app, c3-hedgedoc-app.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -14754,7 +14754,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-send-app.app {
+  c3-send-app.app, c3-send-app.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -14795,7 +14795,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-vaultwarden.app {
+  c3-vaultwarden.app, c3-vaultwarden.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -14836,7 +14836,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-cloud-cgc-pvt-mcp.app {
+  c3-cloud-cgc-pvt-mcp.app, c3-cloud-cgc-pvt-mcp.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -14877,7 +14877,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-cloud-vault-mcp.app {
+  c3-cloud-vault-mcp.app, c3-cloud-vault-mcp.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -14918,7 +14918,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud-chat.app {
+  cloud-chat.app, cloud-chat.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -14959,7 +14959,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud-contacts.app {
+  cloud-contacts.app, cloud-contacts.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -15000,7 +15000,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud-gallery.app {
+  cloud-gallery.app, cloud-gallery.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -15041,7 +15041,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud-mail.app {
+  cloud-mail.app, cloud-mail.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -15082,7 +15082,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud-matrix.app {
+  cloud-matrix.app, cloud-matrix.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -15123,7 +15123,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud-tasks.app {
+  cloud-tasks.app, cloud-tasks.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -15169,7 +15169,7 @@ error @not_mesh "Forbidden" 403
   # APP URL ALIASES — {container}-{protocol}-{port}.app canonical routes
   # ════════════════════════════════════════════════════════════
 
-  c3-infra-api-http-8081.app {
+  c3-infra-api-http-8081.app, c3-infra-api-http-8081.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -15211,7 +15211,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-public-api-http-8087.app {
+  c3-public-api-http-8087.app, c3-public-api-http-8087.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -15253,7 +15253,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-services-api-http-8082.app {
+  c3-services-api-http-8082.app, c3-services-api-http-8082.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -15295,7 +15295,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud-drive-mcp-http-3109.app {
+  cloud-drive-mcp-http-3109.app, cloud-drive-mcp-http-3109.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -15337,7 +15337,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud-infra-mcp-http-3100.app {
+  cloud-infra-mcp-http-3100.app, cloud-infra-mcp-http-3100.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -15379,7 +15379,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud-mail-mcp-http-3103.app {
+  cloud-mail-mcp-http-3103.app, cloud-mail-mcp-http-3103.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -15421,7 +15421,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud-mattermost-mcp-http-3102.app {
+  cloud-mattermost-mcp-http-3102.app, cloud-mattermost-mcp-http-3102.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -15463,7 +15463,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud-me-api-http-8124.app {
+  cloud-me-api-http-8124.app, cloud-me-api-http-8124.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -15505,7 +15505,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud-services-mcp-http-3101.app {
+  cloud-services-mcp-http-3101.app, cloud-services-mcp-http-3101.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -15547,7 +15547,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud-superapp-mcp-http-3110.app {
+  cloud-superapp-mcp-http-3110.app, cloud-superapp-mcp-http-3110.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -15589,7 +15589,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  git-proxy-api-http-8123.app {
+  git-proxy-api-http-8123.app, git-proxy-api-http-8123.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -15631,7 +15631,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  google-personal-mcp-http-3106.app {
+  google-personal-mcp-http-3106.app, google-personal-mcp-http-3106.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -15673,7 +15673,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  google-workspace-mcp-http-3104.app {
+  google-workspace-mcp-http-3104.app, google-workspace-mcp-http-3104.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -15715,7 +15715,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  gitea-http-3002.app {
+  gitea-http-3002.app, gitea-http-3002.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -15757,7 +15757,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  wireguard-mesh-http-8084.app {
+  wireguard-mesh-http-8084.app, wireguard-mesh-http-8084.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -15799,7 +15799,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud-spec-http-3080.app {
+  cloud-spec-http-3080.app, cloud-spec-http-3080.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -15841,7 +15841,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  dagu-http-8070.app {
+  dagu-http-8070.app, dagu-http-8070.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -15883,7 +15883,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  dbgate-http-8086.app {
+  dbgate-http-8086.app, dbgate-http-8086.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -15925,7 +15925,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  matomo-hybrid-http-8080.app {
+  matomo-hybrid-http-8080.app, matomo-hybrid-http-8080.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -15967,7 +15967,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  ntfy-http-8090.app {
+  ntfy-http-8090.app, ntfy-http-8090.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -16009,7 +16009,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  openobserve-http-5080.app {
+  openobserve-http-5080.app, openobserve-http-5080.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -16051,7 +16051,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  umami-http-3006.app {
+  umami-http-3006.app, umami-http-3006.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -16093,7 +16093,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  authelia-http-9091.app {
+  authelia-http-9091.app, authelia-http-9091.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -16135,7 +16135,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  caddy-https-443.app {
+  caddy-https-443.app, caddy-https-443.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -16177,7 +16177,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  caddy-public-https-443.app {
+  caddy-public-https-443.app, caddy-public-https-443.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -16219,7 +16219,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  crowdsec-http-8088.app {
+  crowdsec-http-8088.app, crowdsec-http-8088.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -16261,7 +16261,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  tokens-api-http-4184.app {
+  tokens-api-http-4184.app, tokens-api-http-4184.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -16303,7 +16303,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud-cgc-pub-mcp-http-3105.app {
+  cloud-cgc-pub-mcp-http-3105.app, cloud-cgc-pub-mcp-http-3105.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -16345,7 +16345,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  kg-store-http-8001.app {
+  kg-store-http-8001.app, kg-store-http-8001.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -16387,7 +16387,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  kg-store-pub-http-8002.app {
+  kg-store-pub-http-8002.app, kg-store-pub-http-8002.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -16429,7 +16429,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  mattermost-http-8065.app {
+  mattermost-http-8065.app, mattermost-http-8065.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -16471,7 +16471,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud-webmail-http-3000.app {
+  cloud-webmail-http-3000.app, cloud-webmail-http-3000.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -16513,7 +16513,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  continuwuity-http-8008.app {
+  continuwuity-http-8008.app, continuwuity-http-8008.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -16555,7 +16555,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  matrix-element-http-8083.app {
+  matrix-element-http-8083.app, matrix-element-http-8083.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -16597,7 +16597,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  stalwart-https-2443.app {
+  stalwart-https-2443.app, stalwart-https-2443.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -16639,7 +16639,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  stalwart-http-2080.app {
+  stalwart-http-2080.app, stalwart-http-2080.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -16681,7 +16681,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  scrappers-api-http-3020.app {
+  scrappers-api-http-3020.app, scrappers-api-http-3020.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -16723,7 +16723,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  fin-api-http-8340.app {
+  fin-api-http-8340.app, fin-api-http-8340.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -16807,7 +16807,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  playlist-syncer-http-8090.app {
+  playlist-syncer-http-8090.app, playlist-syncer-http-8090.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -16849,7 +16849,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  news-gdelt-http-3019.app {
+  news-gdelt-http-3019.app, news-gdelt-http-3019.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -16891,7 +16891,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  calendar-radicale-http-5232.app {
+  calendar-radicale-http-5232.app, calendar-radicale-http-5232.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -16933,7 +16933,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud-notes-sync-http-8098.app {
+  cloud-notes-sync-http-8098.app, cloud-notes-sync-http-8098.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -16975,7 +16975,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud-notes-web-http-8097.app {
+  cloud-notes-web-http-8097.app, cloud-notes-web-http-8097.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -17017,7 +17017,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  code-server-https-8443.app {
+  code-server-https-8443.app, code-server-https-8443.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -17059,7 +17059,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  contacts-radicale-http-5233.app {
+  contacts-radicale-http-5233.app, contacts-radicale-http-5233.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -17311,7 +17311,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  vaultwarden-http-8880.app {
+  vaultwarden-http-8880.app, vaultwarden-http-8880.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -17354,7 +17354,7 @@ error @not_mesh "Forbidden" 403
   }
 
 
-  stalwart-sorter-null.app {
+  stalwart-sorter-null.app, stalwart-sorter-null.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -17574,7 +17574,7 @@ error @not_mesh "Forbidden" 403
   # S3 ROUTES — OCI Object Storage via .app short names
   # ════════════════════════════════════════════════════════════
 
-  s3-backups-binaries.app {
+  s3-backups-binaries.app, s3-backups-binaries.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -17591,7 +17591,7 @@ error @not_mesh "Forbidden" 403
     }
   }
 
-  s3-backups-db.app {
+  s3-backups-db.app, s3-backups-db.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -17608,7 +17608,7 @@ error @not_mesh "Forbidden" 403
     }
   }
 
-  s3-backups-media.app {
+  s3-backups-media.app, s3-backups-media.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -17625,7 +17625,7 @@ error @not_mesh "Forbidden" 403
     }
   }
 
-  s3-backups-nonbin.app {
+  s3-backups-nonbin.app, s3-backups-nonbin.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -17642,7 +17642,7 @@ error @not_mesh "Forbidden" 403
     }
   }
 
-  s3-photos.app {
+  s3-photos.app, s3-photos.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1

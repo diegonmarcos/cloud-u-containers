@@ -5,8 +5,13 @@
     "zones": [
       "app",
       "db",
+      "mesh.diegonmarcos.com",
       "diegonmarcos.com"
     ],
+    "_record_alias_of_doc": "#1123: the zone mesh.diegonmarcos.com is the fleet-only mesh namespace (<container>.mesh.diegonmarcos.com), served ONLY by this resolver; the public zone must carry no record under mesh. Its per-name rows are the `app` rows (same names, same addresses), so both namespaces answer identically until stage (d) removes `app`. The wildcard answers the Caddy hub as in every other zone.",
+    "record_alias_of": {
+      "mesh.diegonmarcos.com": "app"
+    },
     "forwarders": [
       "1.1.1.1",
       "8.8.8.8"

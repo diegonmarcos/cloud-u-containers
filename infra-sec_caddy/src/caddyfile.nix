@@ -1237,9 +1237,15 @@ ${lib.concatMapStringsSep "\n" mkWellKnownBlock jmap}
   # same-host docker/loopback sources: wg-public (10.1.0.0/24, the public
   # edge) and every public address get 403, so a cloud.*.app name is never
   # served to the internet even if someone points a resolver at us.
+  # #1123: the mesh namespace is <name>.mesh.diegonmarcos.com (a subdomain of the
+  # owner's domain, served only by fleet DNS); <name>.app stays as an alias until
+  # stage (d) removes it. One site block carries both names, so they share one
+  # handler and one internal cert (ca mesh). Names that are not *.app pass through.
+  meshAlias = s: lib.optionalString (lib.hasSuffix ".app" s) ", ${lib.removeSuffix ".app" s}.mesh.diegonmarcos.com";
+  withMesh = s: "${s}${meshAlias s}";
   meshOnlySources = "${wgCidrs} 172.16.0.0/12 127.0.0.0/8 ::1/128";
   mkPrivateMeshRoute = e: ''
-  ${e.service} {
+  ${withMesh e.service} {
 ${publicBindLine}
     tls {
       issuer internal {
@@ -1260,7 +1266,7 @@ ${handleErrors}
 
   mkInternalRoute = route: subst {
     "@MESH_GUARD@"       = meshGuard;
-    "@SERVICE@"          = route.service;
+    "@SERVICE@"          = withMesh route.service;
     "@UPSTREAM@"         = route.upstream;
     "@EMPTY_GUARD@"      = emptyGuard;
     "@HANDLE_ERRORS@"    = handleErrors;
@@ -1269,7 +1275,7 @@ ${handleErrors}
 
   mkS3Route = route: subst {
     "@MESH_GUARD@"       = meshGuard;
-    "@SERVICE@"          = route.service;
+    "@SERVICE@"          = withMesh route.service;
     "@BUCKET@"           = route.bucket;
     "@S3_ENDPOINT@"      = route.s3_endpoint;
     "@S3_HOST@"          = route.s3_host;
@@ -1278,7 +1284,7 @@ ${handleErrors}
 
   mkCanonicalAppRoute = entry: subst {
     "@MESH_GUARD@"       = meshGuard;
-    "@SERVICE@"          = entry.service;
+    "@SERVICE@"          = withMesh entry.service;
     "@UPSTREAM@"         = entry.upstream;
     "@EMPTY_GUARD@"      = emptyGuard;
     "@HANDLE_ERRORS@"    = handleErrors;
@@ -1288,7 +1294,7 @@ ${handleErrors}
   msgs = caddyRoutes.messages or {};
   mkPortlessAppRoute = entry: subst {
     "@MESH_GUARD@"       = meshGuard;
-    "@SERVICE@"          = entry.service;
+    "@SERVICE@"          = withMesh entry.service;
     "@PLACEHOLDER_MSG@"  = msgs.portless_placeholder;
     "@PUBLIC_BIND_LINE@" = publicBindLine;
   } portlessTpl;

@@ -17,6 +17,12 @@
     "suite.diegonmarcos.com": "HTML only: GitHub Pages static site, public on github.io anyway",
     "maps.diegonmarcos.com": "HTML only: GitHub Pages static site, public on github.io anyway"
   },
+  "mesh": {
+    "_doc": "#1123: mesh names must live where no stranger can own them. Private namespace: <container>.mesh.diegonmarcos.com, served ONLY by fleet DNS (Hickory 10.0.0.1); the public zone carries no record under mesh. `.app` is a real public TLD (vaultwarden.app is someone else's live Vaultwarden) and is kept as an alias only until public_tld_alias_until (30 days from the stage (a) rollout), then test-fleet-addressing.mjs fails on every remaining .app name.",
+    "private_suffixes": [".mesh.diegonmarcos.com", ".home.arpa", ".internal", ".db", ".localhost", ".test", ".invalid"],
+    "public_tld_alias": ".app",
+    "public_tld_alias_until": "2026-11-22"
+  },
   "transitional": {
     "naming": [
       "my-ai_claude-api"
