@@ -198,9 +198,9 @@ chk 200 -H 'Authorization: Bearer mailbox-token' -H 'Host: jmap.diegonmarcos.com
 chk 204 -X OPTIONS -H 'Access-Control-Request-Method: GET' "$U";  ok "CORS preflight 204 unchanged"
 S="http://127.0.0.1:$((PS+1))"
 chk 200 -H 'Accept: text/html' "$S/"
-for b in "Sign in with Authelia" "Sign in with Cloudflare One" "Sign in with Google" "Sign in with GitHub"; do grep -q "$b" "$W/body" || bad "chooser lacks '$b'"; done
-[ "$(grep -o 'class="b"' "$W/body" | wc -l)" = 4 ] || bad "chooser must render exactly four provider buttons"
-ok "no auth + browser -> chooser with all four buttons (Authelia, Cloudflare One, Google, GitHub)"
+for b in "Sign in with Authelia" "Sign in with Cloudflare One" "Sign in with Google" "Sign in with GitHub" "Sign in with Email code"; do grep -q "$b" "$W/body" || bad "chooser lacks '$b'"; done
+[ "$(grep -o 'class="b"' "$W/body" | wc -l)" = 5 ] || bad "chooser must render exactly five provider buttons"
+ok "no auth + browser -> chooser with all five buttons (Authelia, Cloudflare One, Google, GitHub, Email code)"
 chk 200 -H 'Accept: text/html' "$S/?ui=authelia"; ! grep -q "Sign in with Google" "$W/body" || bad "?ui=authelia must reach the Authelia portal"; ok "?ui=authelia falls through to Authelia"
 chk 200 -H 'Accept: text/html' -H 'Cookie: authelia_session=ok' "$S/"; ! grep -q "Sign in with Google" "$W/body" || bad "chooser shown to an Authelia session"; ok "an Authelia session skips the chooser"
 chk 200 "$S/"; ! grep -q "Sign in with Google" "$W/body" || bad "chooser shown to a non-browser"; ok "non-browser GET / is not the chooser"
