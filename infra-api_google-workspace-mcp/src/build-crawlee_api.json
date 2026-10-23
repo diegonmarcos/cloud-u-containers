@@ -32,7 +32,7 @@
     "image": "ghcr.io/diegonmarcos/crawlee-cloud-api:latest",
     "port": 3000,
     "port_env": "PORT",
-    "dns": "crawlee.app",
+    "dns": "crawlee.mesh.diegonmarcos.com",
     "public": true,
     "proxy": {
       "domain": "api.diegonmarcos.com",

@@ -32,7 +32,7 @@
     "image": "python:3.12-slim",
     "port": null,
     "port_env": null,
-    "dns": "mattermost-bots.app",
+    "dns": "mattermost-bots.mesh.diegonmarcos.com",
     "public": false,
     "healthcheck": null,
     "volumes": [

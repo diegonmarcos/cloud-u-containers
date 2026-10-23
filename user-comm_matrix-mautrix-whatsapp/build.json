@@ -1,7 +1,7 @@
 {
   "name": "matrix-mautrix-whatsapp",
   "description": "mautrix-whatsapp bridge (appservice) for the Continuwuity homeserver. WG-only, no public route. Links a WhatsApp account via QR into Matrix.",
-  "dns": "matrix-mautrix-whatsapp.app",
+  "dns": "matrix-mautrix-whatsapp.mesh.diegonmarcos.com",
   "category": "app",
   "timezone": "Europe/Madrid",
   "build": {
@@ -41,7 +41,7 @@
       "image": "ghcr.io/diegonmarcos/matrix-mautrix-whatsapp-binaries:latest",
       "port": 29318,
       "port_env": null,
-      "dns": "matrix-mautrix-whatsapp.app",
+      "dns": "matrix-mautrix-whatsapp.mesh.diegonmarcos.com",
       "public": false,
       "healthcheck": null,
       "monitoring": null,

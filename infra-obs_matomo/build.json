@@ -1,7 +1,7 @@
 {
   "name": "matomo",
   "description": "Matomo hybrid analytics (oci-apps)",
-  "dns": "matomo.app",
+  "dns": "matomo.mesh.diegonmarcos.com",
   "category": "tools",
   "build": {
     "include_cloud_data": "true",
@@ -88,7 +88,7 @@
       "port": 8080,
       "extra_ports": [],
       "port_env": null,
-      "dns": "matomo.app",
+      "dns": "matomo.mesh.diegonmarcos.com",
       "public": true,
       "proxy": {
         "type": "path",

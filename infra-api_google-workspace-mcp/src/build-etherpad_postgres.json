@@ -32,7 +32,7 @@
     "image": "postgres:16-alpine",
     "port": 5436,
     "port_env": "PGPORT",
-    "dns": "etherpad-db.app",
+    "dns": "etherpad-db.mesh.diegonmarcos.com",
     "public": false,
     "proxy": null,
     "healthcheck": "cmd",

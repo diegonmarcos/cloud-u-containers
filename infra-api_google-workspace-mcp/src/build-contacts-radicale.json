@@ -32,7 +32,7 @@
     "image": "tomsquest/docker-radicale:latest",
     "port": 5233,
     "port_env": null,
-    "dns": "contacts.app",
+    "dns": "contacts.mesh.diegonmarcos.com",
     "public": true,
     "proxy": {
       "domain": "contacts.diegonmarcos.com",

@@ -32,7 +32,7 @@
     "image": "ghcr.io/diegonmarcos/c3-services-mcp:latest",
     "port": 3101,
     "port_env": "MCP_HTTP_PORT",
-    "dns": "c3-services-mcp.app",
+    "dns": "c3-services-mcp.mesh.diegonmarcos.com",
     "public": true,
     "proxy": {
       "streaming": true,

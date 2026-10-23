@@ -32,7 +32,7 @@
     "image": "ghcr.io/diegonmarcos/chat-mattermost-binaries:latest",
     "port": 8065,
     "port_env": "MM_SERVICESETTINGS_LISTENADDRESS",
-    "dns": "mattermost.app",
+    "dns": "mattermost.mesh.diegonmarcos.com",
     "public": true,
     "proxy": {
       "domain": "chat.diegonmarcos.com",

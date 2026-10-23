@@ -68,7 +68,7 @@
   # mesh-ca.crt (NixOS security.pki on desktop, termux CA store) get valid
   # TLS on every internal name — including HSTS-preloaded TLDs like .app,
   # where browsers refuse untrusted certs with no click-through. Root cause
-  # of "snappymail.app unreachable in browsers", 2026-07-10.
+  # of "snappymail.mesh.diegonmarcos.com unreachable in browsers", 2026-07-10.
   pki {
     ca mesh {
       name "diegonmarcos mesh CA"

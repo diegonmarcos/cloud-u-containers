@@ -1,7 +1,7 @@
 {
   "name": "cloud-infra-mcp",
   "description": "C3 MCP Server — Cloud Control Center MCP transport (stdio + HTTP)",
-  "dns": "c3-infra-mcp.app",
+  "dns": "c3-infra-mcp.mesh.diegonmarcos.com",
   "ports": {
     "app": 3100
   },
@@ -47,7 +47,7 @@
     "path": "/mcp"
   },
   "env_config": {
-    "mattermost_url": "http://mattermost.app"
+    "mattermost_url": "http://mattermost.mesh.diegonmarcos.com"
   },
   "runtime": {
     "init": true,
@@ -61,7 +61,7 @@
       "image": "ghcr.io/diegonmarcos/cloud-infra-mcp:latest",
       "port": 3100,
       "port_env": "MCP_HTTP_PORT",
-      "dns": "c3-infra-mcp.app",
+      "dns": "c3-infra-mcp.mesh.diegonmarcos.com",
       "public": true,
       "proxy": {
         "streaming": true,

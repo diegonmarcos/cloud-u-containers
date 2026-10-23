@@ -32,7 +32,7 @@
     "image": "postgres:16-alpine",
     "port": 5442,
     "port_env": "PGPORT",
-    "dns": "umami-db.app",
+    "dns": "umami-db.mesh.diegonmarcos.com",
     "public": false,
     "healthcheck": "pg_isready -U umami",
     "volumes": [

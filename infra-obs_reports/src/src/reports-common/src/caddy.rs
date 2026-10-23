@@ -20,7 +20,7 @@ use serde_json::Value;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct CaddyTarget {
-    /// Hostname (e.g. `ide.diegonmarcos.com`, `code-server-https-8443.app`).
+    /// Hostname (e.g. `ide.diegonmarcos.com`, `code-server-https-8443.mesh.diegonmarcos.com`).
     pub host: String,
     /// Optional path (e.g. `/crawlee`).
     pub path: Option<String>,
@@ -306,9 +306,9 @@ mod tests {
             assert!(!t.url.is_empty());
         }
 
-        // At least one .app host uses the .app zone suffix.
-        assert!(apps.iter().any(|t| t.host.ends_with(".app")),
-                "expected ≥1 .app host in private_app targets");
+        // At least one .app host uses the mesh zone suffix.
+        assert!(apps.iter().any(|t| t.host.ends_with(".mesh.diegonmarcos.com")),
+                "expected ≥1 mesh host in private_app targets");
 
         // At least one .db host uses the .db zone suffix.
         assert!(dbs.iter().any(|t| t.host.ends_with(".db")),
@@ -326,8 +326,8 @@ mod tests {
             "https://api.diegonmarcos.com/crawlee"
         );
         assert_eq!(
-            compose_url("x.app", None, "on_demand"),
-            "https://x.app/"
+            compose_url("x.mesh.diegonmarcos.com", None, "on_demand"),
+            "https://x.mesh.diegonmarcos.com/"
         );
         assert_eq!(
             compose_url("x.local", None, "none"),

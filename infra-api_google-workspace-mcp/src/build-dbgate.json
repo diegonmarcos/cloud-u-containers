@@ -32,7 +32,7 @@
     "image": "dbgate/dbgate:latest",
     "port": 8086,
     "port_env": "PORT",
-    "dns": "dbgate.app",
+    "dns": "dbgate.mesh.diegonmarcos.com",
     "public": true,
     "proxy": {
       "domain": "db.diegonmarcos.com",

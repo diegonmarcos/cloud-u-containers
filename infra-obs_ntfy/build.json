@@ -1,7 +1,7 @@
 {
   "name": "ntfy",
   "description": "Push notification server",
-  "dns": "ntfy.app",
+  "dns": "ntfy.mesh.diegonmarcos.com",
   "category": "tools",
   "domain": "rss.diegonmarcos.com",
   "deploy": {
@@ -248,7 +248,7 @@
       "image": "binwiederhier/ntfy",
       "port": 8090,
       "port_env": null,
-      "dns": "ntfy.app",
+      "dns": "ntfy.mesh.diegonmarcos.com",
       "resources": {
         "reservations": {
           "memory": "16M"

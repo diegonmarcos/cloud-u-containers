@@ -1,8 +1,8 @@
 {
   "name": "cloud-mail-mcp",
   "description": "Mail MCP server — IMAP/SMTP/Admin via Stalwart REST API",
-  "dns": "mail-mcp.app",
-  "dns_aliases": ["cloud-mail-mcp.app"],
+  "dns": "mail-mcp.mesh.diegonmarcos.com",
+  "dns_aliases": ["cloud-mail-mcp.mesh.diegonmarcos.com"],
   "category": "app",
   "build": {
     "include_cloud_data": "true",
@@ -78,7 +78,7 @@
       "image": "ghcr.io/diegonmarcos/cloud-mail-mcp:latest",
       "port": 3103,
       "port_env": "PORT",
-      "dns": "mail-mcp.app",
+      "dns": "mail-mcp.mesh.diegonmarcos.com",
       "public": true,
       "proxy": {
         "streaming": true,

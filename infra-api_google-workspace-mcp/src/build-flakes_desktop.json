@@ -638,7 +638,7 @@
       "domain": "matrix.diegonmarcos.com",
       "flake": "user-comm_matrix-continuwuity",
       "port": 8008,
-      "dns": "matrix-continuwuity.app",
+      "dns": "matrix-continuwuity.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:8008",
       "containers": {
         "app": {
@@ -646,7 +646,7 @@
           "image": "ghcr.io/diegonmarcos/matrix-continuwuity-binaries:latest",
           "port": 8008,
           "port_env": "CONTINUWUITY_PORT",
-          "dns": "matrix-continuwuity.app",
+          "dns": "matrix-continuwuity.mesh.diegonmarcos.com",
           "public": true,
           "proxy": {
             "domain": "matrix.diegonmarcos.com",
@@ -675,7 +675,7 @@
         "8008"
       ],
       "all_dns": [
-        "matrix-continuwuity.app"
+        "matrix-continuwuity.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -737,7 +737,7 @@
       "description": "Security Alert Aggregation API",
       "enabled": true,
       "port": 5050,
-      "dns": "alerts-api.app",
+      "dns": "alerts-api.mesh.diegonmarcos.com",
       "upstream": "10.0.0.4:5050",
       "containers": {
         "app": {
@@ -745,7 +745,7 @@
           "image": "",
           "public": false,
           "port": 5050,
-          "dns": "alerts-api.app"
+          "dns": "alerts-api.mesh.diegonmarcos.com"
         }
       },
       "container_names": [
@@ -755,7 +755,7 @@
         "5050"
       ],
       "all_dns": [
-        "alerts-api.app"
+        "alerts-api.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [
@@ -781,7 +781,7 @@
       "domain": "languagetool.diegonmarcos.com",
       "flake": "infra-ai_languagetool",
       "port": 8010,
-      "dns": "languagetool.app",
+      "dns": "languagetool.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:8010",
       "containers": {
         "app": {
@@ -789,7 +789,7 @@
           "image": "erikvl87/languagetool:latest",
           "port": 8010,
           "port_env": null,
-          "dns": "languagetool.app",
+          "dns": "languagetool.mesh.diegonmarcos.com",
           "public": false,
           "proxy": {
             "domain": "languagetool.diegonmarcos.com",
@@ -818,7 +818,7 @@
         "8010"
       ],
       "all_dns": [
-        "languagetool.app"
+        "languagetool.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -905,7 +905,7 @@
       "domain": "api.diegonmarcos.com/c3-infra-api",
       "flake": "infra-api_c3-infra-api",
       "port": 8081,
-      "dns": "c3-infra-api.app",
+      "dns": "c3-infra-api.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:8081",
       "containers": {
         "app": {
@@ -913,7 +913,7 @@
           "image": "ghcr.io/diegonmarcos/c3-infra-api:latest",
           "port": 8081,
           "port_env": "PORT",
-          "dns": "c3-infra-api.app",
+          "dns": "c3-infra-api.mesh.diegonmarcos.com",
           "public": true,
           "proxy": {
             "type": "path",
@@ -948,7 +948,7 @@
         "8081"
       ],
       "all_dns": [
-        "c3-infra-api.app"
+        "c3-infra-api.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -1023,7 +1023,7 @@
       "domain": "mcp.diegonmarcos.com/c3-infra-mcp",
       "flake": "infra-api_c3-infra-mcp",
       "port": 3100,
-      "dns": "c3-infra-mcp.app",
+      "dns": "c3-infra-mcp.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:3100",
       "containers": {
         "app": {
@@ -1031,7 +1031,7 @@
           "image": "ghcr.io/diegonmarcos/c3-infra-mcp:latest",
           "port": 3100,
           "port_env": "MCP_HTTP_PORT",
-          "dns": "c3-infra-mcp.app",
+          "dns": "c3-infra-mcp.mesh.diegonmarcos.com",
           "public": true,
           "proxy": {
             "streaming": true,
@@ -1062,7 +1062,7 @@
         "3100"
       ],
       "all_dns": [
-        "c3-infra-mcp.app"
+        "c3-infra-mcp.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -1088,7 +1088,7 @@
         "path": "/mcp"
       },
       "env_config": {
-        "mattermost_url": "http://mattermost.app"
+        "mattermost_url": "http://mattermost.mesh.diegonmarcos.com"
       },
       "runtime": {
         "init": true,
@@ -1158,7 +1158,7 @@
       "domain": "api.diegonmarcos.com/pub",
       "flake": "infra-api_c3-public-api",
       "port": 8087,
-      "dns": "c3-public-api.app",
+      "dns": "c3-public-api.mesh.diegonmarcos.com",
       "upstream": "10.0.0.4:8087",
       "containers": {
         "app": {
@@ -1166,7 +1166,7 @@
           "image": "ghcr.io/diegonmarcos/c3-public-api:latest",
           "port": 8087,
           "port_env": "PORT",
-          "dns": "c3-public-api.app",
+          "dns": "c3-public-api.mesh.diegonmarcos.com",
           "public": true,
           "proxy": {
             "auth": "two_factor",
@@ -1200,7 +1200,7 @@
         "8087"
       ],
       "all_dns": [
-        "c3-public-api.app"
+        "c3-public-api.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -1311,7 +1311,7 @@
       "domain": "api.diegonmarcos.com/c3-services-api",
       "flake": "infra-api_c3-services-api",
       "port": 8082,
-      "dns": "c3-services-api.app",
+      "dns": "c3-services-api.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:8082",
       "containers": {
         "app": {
@@ -1319,7 +1319,7 @@
           "image": "ghcr.io/diegonmarcos/c3-services-api:latest",
           "port": 8082,
           "port_env": "PORT",
-          "dns": "c3-services-api.app",
+          "dns": "c3-services-api.mesh.diegonmarcos.com",
           "public": true,
           "proxy": {
             "type": "path",
@@ -1348,7 +1348,7 @@
         "8082"
       ],
       "all_dns": [
-        "c3-services-api.app"
+        "c3-services-api.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -1404,7 +1404,7 @@
       "enabled": true,
       "flake": "infra-api_c3-services-mcp",
       "port": 3101,
-      "dns": "c3-services-mcp.app",
+      "dns": "c3-services-mcp.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:3101",
       "containers": {
         "app": {
@@ -1412,7 +1412,7 @@
           "image": "ghcr.io/diegonmarcos/c3-services-mcp:latest",
           "port": 3101,
           "port_env": "MCP_HTTP_PORT",
-          "dns": "c3-services-mcp.app",
+          "dns": "c3-services-mcp.mesh.diegonmarcos.com",
           "public": true,
           "proxy": {
             "streaming": true,
@@ -1442,7 +1442,7 @@
         "3101"
       ],
       "all_dns": [
-        "c3-services-mcp.app"
+        "c3-services-mcp.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -1544,7 +1544,7 @@
       "domain": "mcp.diegonmarcos.com",
       "flake": "infra-api_google-personal-mcp",
       "port": 3106,
-      "dns": "g-personal-mcp.app",
+      "dns": "g-personal-mcp.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:3106",
       "containers": {
         "app": {
@@ -1552,7 +1552,7 @@
           "image": "ghcr.io/diegonmarcos/google-personal-mcp:latest",
           "port": 3106,
           "port_env": "PORT",
-          "dns": "g-personal-mcp.app",
+          "dns": "g-personal-mcp.mesh.diegonmarcos.com",
           "public": true,
           "proxy": {
             "streaming": true,
@@ -1577,7 +1577,7 @@
         "3106"
       ],
       "all_dns": [
-        "g-personal-mcp.app"
+        "g-personal-mcp.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -1651,7 +1651,7 @@
       "domain": "mcp.diegonmarcos.com",
       "flake": "infra-api_google-workspace-mcp",
       "port": 3104,
-      "dns": "g-workspace-mcp.app",
+      "dns": "g-workspace-mcp.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:3104",
       "containers": {
         "app": {
@@ -1659,7 +1659,7 @@
           "image": "ghcr.io/diegonmarcos/google-workspace-mcp:latest",
           "port": 3104,
           "port_env": "PORT",
-          "dns": "g-workspace-mcp.app",
+          "dns": "g-workspace-mcp.mesh.diegonmarcos.com",
           "public": true,
           "proxy": {
             "streaming": true,
@@ -1686,7 +1686,7 @@
         "3104"
       ],
       "all_dns": [
-        "g-workspace-mcp.app"
+        "g-workspace-mcp.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -1745,7 +1745,7 @@
       "domain": "mcp.diegonmarcos.com",
       "flake": "infra-api_mail-mcp",
       "port": 3103,
-      "dns": "mail-mcp.app",
+      "dns": "mail-mcp.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:3103",
       "containers": {
         "app": {
@@ -1753,7 +1753,7 @@
           "image": "ghcr.io/diegonmarcos/mail-mcp:latest",
           "port": 3103,
           "port_env": "PORT",
-          "dns": "mail-mcp.app",
+          "dns": "mail-mcp.mesh.diegonmarcos.com",
           "public": true,
           "proxy": {
             "streaming": true,
@@ -1778,7 +1778,7 @@
         "3103"
       ],
       "all_dns": [
-        "mail-mcp.app"
+        "mail-mcp.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -1867,7 +1867,7 @@
       "enabled": true,
       "flake": "infra-api_mattermost-mcp",
       "port": 3102,
-      "dns": "mattermost-mcp.app",
+      "dns": "mattermost-mcp.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:3102",
       "containers": {
         "app": {
@@ -1875,7 +1875,7 @@
           "image": "ghcr.io/diegonmarcos/mattermost-mcp:latest",
           "port": 3102,
           "port_env": "MCP_HTTP_PORT",
-          "dns": "mattermost-mcp.app",
+          "dns": "mattermost-mcp.mesh.diegonmarcos.com",
           "public": true,
           "proxy": {
             "streaming": true,
@@ -1900,7 +1900,7 @@
         "3102"
       ],
       "all_dns": [
-        "mattermost-mcp.app"
+        "mattermost-mcp.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -1958,14 +1958,14 @@
       "domain": "api.diegonmarcos.com/http-to-smtp-proxy-api",
       "flake": "infra-api_tools-http-to-smtp-proxy-api",
       "port": 8090,
-      "dns": "http-to-smtp-proxy-api.app",
+      "dns": "http-to-smtp-proxy-api.mesh.diegonmarcos.com",
       "upstream": "10.0.0.1:8090",
       "containers": {
         "app": {
           "container_name": "http-to-smtp-proxy-api",
           "port": 8090,
           "port_env": "LISTEN_PORT",
-          "dns": "http-to-smtp-proxy-api.app",
+          "dns": "http-to-smtp-proxy-api.mesh.diegonmarcos.com",
           "public": true,
           "proxy": {
             "type": "path",
@@ -1983,7 +1983,7 @@
         "8090"
       ],
       "all_dns": [
-        "http-to-smtp-proxy-api.app"
+        "http-to-smtp-proxy-api.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -2222,7 +2222,7 @@
       "enabled": false,
       "flake": "infra-dat_backup-borg",
       "port": 2224,
-      "dns": "backup-borg.app",
+      "dns": "backup-borg.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:2224",
       "containers": {
         "app": {
@@ -2268,7 +2268,7 @@
       "enabled": false,
       "flake": "infra-dat_backup-bup",
       "port": 2223,
-      "dns": "backup-bup.app",
+      "dns": "backup-bup.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:2223",
       "containers": {
         "app": {
@@ -2321,7 +2321,7 @@
       "domain": "git.diegonmarcos.com",
       "flake": "infra-dat_gitea",
       "port": 3002,
-      "dns": "gitea.app",
+      "dns": "gitea.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:3002",
       "containers": {
         "app": {
@@ -2329,7 +2329,7 @@
           "image": "gitea/gitea:latest",
           "port": 3002,
           "port_env": "GITEA__server__HTTP_PORT",
-          "dns": "gitea.app",
+          "dns": "gitea.mesh.diegonmarcos.com",
           "public": true,
           "proxy": {
             "domain": "git.diegonmarcos.com",
@@ -2364,7 +2364,7 @@
         "3002"
       ],
       "all_dns": [
-        "gitea.app"
+        "gitea.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -2599,7 +2599,7 @@
       "enabled": true,
       "flake": "infra-db_redis",
       "port": 6379,
-      "dns": "redis.app",
+      "dns": "redis.mesh.diegonmarcos.com",
       "upstream": "10.0.0.1:6379",
       "containers": {
         "app": {
@@ -2607,7 +2607,7 @@
           "image": "redis:alpine",
           "port": 6379,
           "port_env": null,
-          "dns": "redis.app",
+          "dns": "redis.mesh.diegonmarcos.com",
           "public": false,
           "proxy": null,
           "healthcheck": "redis-cli ping",
@@ -2629,7 +2629,7 @@
         "6379"
       ],
       "all_dns": [
-        "redis.app"
+        "redis.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -2674,7 +2674,7 @@
       "domain": "dns.internal",
       "flake": "infra-net_hickory-dns",
       "port": 53,
-      "dns": "hickory-dns.app",
+      "dns": "hickory-dns.mesh.diegonmarcos.com",
       "upstream": "10.0.0.1:53",
       "containers": {
         "app": {
@@ -2682,7 +2682,7 @@
           "image": "hickorydns/hickory-dns:latest",
           "port": 53,
           "port_env": null,
-          "dns": "hickory-dns.app",
+          "dns": "hickory-dns.mesh.diegonmarcos.com",
           "public": false,
           "proxy": null,
           "healthcheck": null,
@@ -2707,7 +2707,7 @@
         "53"
       ],
       "all_dns": [
-        "hickory-dns.app"
+        "hickory-dns.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -2734,7 +2734,7 @@
       "domain": "dns64.internal",
       "flake": "infra-net_unbound-dns64",
       "port": 53,
-      "dns": "unbound-dns64.app",
+      "dns": "unbound-dns64.mesh.diegonmarcos.com",
       "upstream": "10.0.0.4:53",
       "containers": {
         "app": {
@@ -2742,7 +2742,7 @@
           "image": "ghcr.io/diegonmarcos/unbound-dns64:latest",
           "port": 53,
           "port_env": null,
-          "dns": "unbound-dns64.app",
+          "dns": "unbound-dns64.mesh.diegonmarcos.com",
           "public": true,
           "proxy": null,
           "healthcheck": null,
@@ -2766,7 +2766,7 @@
         "53"
       ],
       "all_dns": [
-        "unbound-dns64.app"
+        "unbound-dns64.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -2794,7 +2794,7 @@
       "domain": "mesh.diegonmarcos.com",
       "flake": "infra-net_wireguard-mesh",
       "port": 8080,
-      "dns": "wireguard-mesh.app",
+      "dns": "wireguard-mesh.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:8080",
       "containers": {
         "app": {
@@ -2886,7 +2886,7 @@
       "domain": "vpn.diegonmarcos.com",
       "flake": "infra-net_wireguard-mesh-ws-tunnel",
       "port": 8080,
-      "dns": "wireguard-mesh-ws-tunnel.app",
+      "dns": "wireguard-mesh-ws-tunnel.mesh.diegonmarcos.com",
       "upstream": "10.0.0.1:8080",
       "containers": {
         "app": {
@@ -3092,7 +3092,7 @@
       "enabled": true,
       "flake": "infra-obs_cloud-spec",
       "port": 3080,
-      "dns": "c3-spec.app",
+      "dns": "c3-spec.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:3080",
       "containers": {
         "app": {
@@ -3100,7 +3100,7 @@
           "image": "busybox:latest",
           "port": 3080,
           "port_env": null,
-          "dns": "c3-spec.app",
+          "dns": "c3-spec.mesh.diegonmarcos.com",
           "public": true,
           "proxy": {
             "type": "path",
@@ -3126,7 +3126,7 @@
         "3080"
       ],
       "all_dns": [
-        "c3-spec.app"
+        "c3-spec.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -3171,7 +3171,7 @@
       "domain": "workflows.diegonmarcos.com",
       "flake": "infra-obs_dagu",
       "port": 8070,
-      "dns": "dagu.app",
+      "dns": "dagu.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:8070",
       "containers": {
         "app": {
@@ -3179,7 +3179,7 @@
           "image": "ghcr.io/diegonmarcos/dagu-binaries:latest",
           "port": 8070,
           "port_env": "DAGU_PORT",
-          "dns": "dagu.app",
+          "dns": "dagu.mesh.diegonmarcos.com",
           "public": true,
           "proxy": {
             "domain": "workflows.diegonmarcos.com",
@@ -3220,7 +3220,7 @@
         "8070"
       ],
       "all_dns": [
-        "dagu.app"
+        "dagu.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -3290,7 +3290,7 @@
       "domain": "db.diegonmarcos.com",
       "flake": "infra-obs_dbgate",
       "port": 8086,
-      "dns": "dbgate.app",
+      "dns": "dbgate.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:8086",
       "containers": {
         "app": {
@@ -3298,7 +3298,7 @@
           "image": "dbgate/dbgate:latest",
           "port": 8086,
           "port_env": "PORT",
-          "dns": "dbgate.app",
+          "dns": "dbgate.mesh.diegonmarcos.com",
           "public": true,
           "proxy": {
             "domain": "db.diegonmarcos.com",
@@ -3334,7 +3334,7 @@
         "8086"
       ],
       "all_dns": [
-        "dbgate.app"
+        "dbgate.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -3384,7 +3384,7 @@
       "domain": "analytics.diegonmarcos.com/matomo",
       "flake": "infra-obs_matomo",
       "port": 8084,
-      "dns": "matomo.app",
+      "dns": "matomo.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:8084",
       "containers": {
         "app": {
@@ -3393,7 +3393,7 @@
           "port": 8084,
           "extra_ports": [],
           "port_env": null,
-          "dns": "matomo.app",
+          "dns": "matomo.mesh.diegonmarcos.com",
           "public": true,
           "proxy": {
             "type": "path",
@@ -3438,7 +3438,7 @@
         "8084"
       ],
       "all_dns": [
-        "matomo.app"
+        "matomo.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -3524,7 +3524,7 @@
       "domain": "rss.diegonmarcos.com",
       "flake": "infra-obs_ntfy",
       "port": 8090,
-      "dns": "ntfy.app",
+      "dns": "ntfy.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:8090",
       "containers": {
         "app": {
@@ -3532,7 +3532,7 @@
           "image": "binwiederhier/ntfy",
           "port": 8090,
           "port_env": null,
-          "dns": "ntfy.app",
+          "dns": "ntfy.mesh.diegonmarcos.com",
           "resources": {
             "limits": {
               "memory": "64M"
@@ -3666,7 +3666,7 @@
         "8091"
       ],
       "all_dns": [
-        "ntfy.app"
+        "ntfy.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -3928,7 +3928,7 @@
       "domain": "analytics.diegonmarcos.com/openobserve",
       "flake": "infra-obs_openobserve",
       "port": 5080,
-      "dns": "openobserve.app",
+      "dns": "openobserve.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:5080",
       "containers": {
         "app": {
@@ -3936,7 +3936,7 @@
           "image": "public.ecr.aws/zinclabs/openobserve:v0.14.7",
           "port": 5080,
           "port_env": "ZO_HTTP_PORT",
-          "dns": "openobserve.app",
+          "dns": "openobserve.mesh.diegonmarcos.com",
           "public": true,
           "proxy": {
             "type": "path",
@@ -3974,7 +3974,7 @@
         "5080"
       ],
       "all_dns": [
-        "openobserve.app"
+        "openobserve.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -4030,7 +4030,7 @@
       "domain": "analytics.diegonmarcos.com",
       "flake": "infra-obs_umami",
       "port": 3006,
-      "dns": "umami.app",
+      "dns": "umami.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:3006",
       "containers": {
         "app": {
@@ -4038,7 +4038,7 @@
           "image": "ghcr.io/umami-software/umami:latest",
           "port": 3006,
           "port_env": "PORT",
-          "dns": "umami.app",
+          "dns": "umami.mesh.diegonmarcos.com",
           "public": true,
           "proxy": {
             "domain": "analytics.diegonmarcos.com",
@@ -4070,7 +4070,7 @@
           "image": "postgres:16-alpine",
           "port": 5442,
           "port_env": "PGPORT",
-          "dns": "umami-db.app",
+          "dns": "umami-db.mesh.diegonmarcos.com",
           "public": false,
           "healthcheck": "pg_isready -U umami",
           "volumes": [
@@ -4096,7 +4096,7 @@
           "image": "curlimages/curl:latest",
           "port": null,
           "port_env": null,
-          "dns": "umami-setup.app",
+          "dns": "umami-setup.mesh.diegonmarcos.com",
           "public": false,
           "healthcheck": null,
           "volumes": [
@@ -4124,9 +4124,9 @@
         "5442"
       ],
       "all_dns": [
-        "umami.app",
-        "umami-db.app",
-        "umami-setup.app"
+        "umami.mesh.diegonmarcos.com",
+        "umami-db.mesh.diegonmarcos.com",
+        "umami-setup.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -4190,7 +4190,7 @@
       "domain": "auth.diegonmarcos.com",
       "flake": "infra-sec_authelia",
       "port": 9091,
-      "dns": "authelia.app",
+      "dns": "authelia.mesh.diegonmarcos.com",
       "upstream": "10.0.0.1:9091",
       "containers": {
         "app": {
@@ -4198,7 +4198,7 @@
           "image": "authelia/authelia:4.39.15",
           "port": 9091,
           "port_env": null,
-          "dns": "authelia.app",
+          "dns": "authelia.mesh.diegonmarcos.com",
           "public": true,
           "proxy": {
             "domain": "auth.diegonmarcos.com",
@@ -4232,7 +4232,7 @@
           "image": "redis:7-bookworm",
           "port": 6380,
           "port_env": null,
-          "dns": "authelia-redis.app",
+          "dns": "authelia-redis.mesh.diegonmarcos.com",
           "public": false,
           "healthcheck": null,
           "volumes": [
@@ -4278,8 +4278,8 @@
         "6380"
       ],
       "all_dns": [
-        "authelia.app",
-        "authelia-redis.app"
+        "authelia.mesh.diegonmarcos.com",
+        "authelia-redis.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -4359,7 +4359,7 @@
       "domain": "proxy.diegonmarcos.com",
       "flake": "infra-sec_caddy",
       "port": 443,
-      "dns": "caddy.app",
+      "dns": "caddy.mesh.diegonmarcos.com",
       "upstream": "10.0.0.1:443",
       "containers": {
         "app": {
@@ -4382,7 +4382,7 @@
             }
           ],
           "port_env": null,
-          "dns": "caddy.app",
+          "dns": "caddy.mesh.diegonmarcos.com",
           "public": true,
           "proxy": {
             "type": "special",
@@ -4416,7 +4416,7 @@
         "443"
       ],
       "all_dns": [
-        "caddy.app"
+        "caddy.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -4449,7 +4449,7 @@
             "extra_paths": [
               {
                 "base_path": "/crawlee",
-                "upstream": "crawlee.app:3001",
+                "upstream": "crawlee.mesh.diegonmarcos.com:3001",
                 "comment": "Crawlee Cloud dashboard (separate from API)"
               }
             ]
@@ -4690,7 +4690,7 @@
       "enabled": true,
       "flake": "infra-sec_caddy-public",
       "port": 443,
-      "dns": "caddy-public.app",
+      "dns": "caddy-public.mesh.diegonmarcos.com",
       "upstream": "10.0.0.4:443",
       "containers": {
         "app": {
@@ -4712,7 +4712,7 @@
             }
           ],
           "port_env": null,
-          "dns": "caddy-public.app",
+          "dns": "caddy-public.mesh.diegonmarcos.com",
           "public": true,
           "proxy": {
             "type": "special",
@@ -4740,7 +4740,7 @@
         "443"
       ],
       "all_dns": [
-        "caddy-public.app"
+        "caddy-public.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -4888,7 +4888,7 @@
       "domain": "crowdsec.diegonmarcos.com",
       "flake": "infra-sec_crowdsec",
       "port": 8088,
-      "dns": "crowdsec.app",
+      "dns": "crowdsec.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:8088",
       "containers": {
         "app": {
@@ -4896,7 +4896,7 @@
           "image": "crowdsecurity/crowdsec:v1.7.8",
           "port": 8088,
           "port_env": null,
-          "dns": "crowdsec.app",
+          "dns": "crowdsec.mesh.diegonmarcos.com",
           "public": true,
           "proxy": {
             "domain": "crowdsec.diegonmarcos.com",
@@ -4933,7 +4933,7 @@
         "8088"
       ],
       "all_dns": [
-        "crowdsec.app"
+        "crowdsec.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -4980,7 +4980,7 @@
       "enabled": true,
       "flake": "infra-sec_introspect-proxy",
       "port": 4182,
-      "dns": "introspect-proxy.app",
+      "dns": "introspect-proxy.mesh.diegonmarcos.com",
       "upstream": "10.0.0.1:4182",
       "containers": {
         "app": {
@@ -4988,7 +4988,7 @@
           "image": "ghcr.io/diegonmarcos/introspect-proxy:latest",
           "port": 4182,
           "port_env": null,
-          "dns": "introspect-proxy.app",
+          "dns": "introspect-proxy.mesh.diegonmarcos.com",
           "public": false,
           "proxy": null,
           "healthcheck": "/health",
@@ -5008,7 +5008,7 @@
         "4182"
       ],
       "all_dns": [
-        "introspect-proxy.app"
+        "introspect-proxy.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -5053,7 +5053,7 @@
       "enabled": true,
       "flake": "user-ai_claude-superset-api",
       "port": 3117,
-      "dns": "claude-superset-api.app",
+      "dns": "claude-superset-api.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:3117",
       "containers": {
         "app": {
@@ -5061,7 +5061,7 @@
           "image": "ghcr.io/diegonmarcos/claude-superset-api:latest",
           "port": 3117,
           "port_env": "BRIDGE_PORT",
-          "dns": "claude-superset-api.app",
+          "dns": "claude-superset-api.mesh.diegonmarcos.com",
           "public": false,
           "healthcheck": "/health",
           "monitoring": null,
@@ -5079,7 +5079,7 @@
         "3117"
       ],
       "all_dns": [
-        "claude-superset-api.app"
+        "claude-superset-api.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -5143,7 +5143,7 @@
       "enabled": true,
       "flake": "user-ai_cloud-cgc-mcp",
       "port": 3105,
-      "dns": "cloud-cgc-mcp.app",
+      "dns": "cloud-cgc-mcp.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:3105",
       "containers": {
         "app": {
@@ -5151,7 +5151,7 @@
           "image": "ghcr.io/diegonmarcos/cloud-cgc-mcp:latest",
           "port": 3105,
           "port_env": "MCP_HTTP_PORT",
-          "dns": "cloud-cgc-mcp.app",
+          "dns": "cloud-cgc-mcp.mesh.diegonmarcos.com",
           "public": true,
           "proxy": {
             "streaming": true,
@@ -5178,7 +5178,7 @@
         "3105"
       ],
       "all_dns": [
-        "cloud-cgc-mcp.app"
+        "cloud-cgc-mcp.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -5383,7 +5383,7 @@
       "enabled": true,
       "flake": "user-ai_hermes-agent",
       "port": 8642,
-      "dns": "hermes-agent.app",
+      "dns": "hermes-agent.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:8642",
       "containers": {
         "app": {
@@ -5391,7 +5391,7 @@
           "image": "ghcr.io/diegonmarcos/hermes-agent:latest",
           "port": 8642,
           "port_env": null,
-          "dns": "hermes-agent.app",
+          "dns": "hermes-agent.mesh.diegonmarcos.com",
           "public": false,
           "healthcheck": null,
           "monitoring": null,
@@ -5409,7 +5409,7 @@
         "8642"
       ],
       "all_dns": [
-        "hermes-agent.app"
+        "hermes-agent.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -5448,7 +5448,7 @@
       "enabled": false,
       "flake": "user-ai_kg-store",
       "port": 8001,
-      "dns": "kg-store.app",
+      "dns": "kg-store.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:8001",
       "containers": {
         "app": {
@@ -5629,7 +5629,7 @@
       "enabled": true,
       "flake": "user-ai_my-ai-api",
       "port": 3217,
-      "dns": "my-ai-api.app",
+      "dns": "my-ai-api.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:3217",
       "containers": {
         "app": {
@@ -5637,7 +5637,7 @@
           "image": "ghcr.io/diegonmarcos/my-ai-api:latest",
           "port": 3217,
           "port_env": "BRIDGE_PORT",
-          "dns": "my-ai-api.app",
+          "dns": "my-ai-api.mesh.diegonmarcos.com",
           "public": false,
           "healthcheck": "/health",
           "monitoring": null,
@@ -5655,7 +5655,7 @@
         "3217"
       ],
       "all_dns": [
-        "my-ai-api.app"
+        "my-ai-api.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -5742,7 +5742,7 @@
       "enabled": true,
       "flake": "user-ai_session-memory",
       "port": 3108,
-      "dns": "session-memory.app",
+      "dns": "session-memory.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:3108",
       "containers": {
         "app": {
@@ -5750,7 +5750,7 @@
           "image": "ghcr.io/diegonmarcos/session-memory:latest",
           "port": 3108,
           "port_env": "MEM_PORT",
-          "dns": "session-memory.app",
+          "dns": "session-memory.mesh.diegonmarcos.com",
           "public": false,
           "healthcheck": "/health",
           "monitoring": null,
@@ -5768,7 +5768,7 @@
         "3108"
       ],
       "all_dns": [
-        "session-memory.app"
+        "session-memory.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -5803,7 +5803,7 @@
       "domain": "chat.diegonmarcos.com",
       "flake": "user-comm_chat-mattermost",
       "port": 8065,
-      "dns": "mattermost.app",
+      "dns": "mattermost.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:8065",
       "containers": {
         "app": {
@@ -5811,7 +5811,7 @@
           "image": "ghcr.io/diegonmarcos/chat-mattermost-binaries:latest",
           "port": 8065,
           "port_env": "MM_SERVICESETTINGS_LISTENADDRESS",
-          "dns": "mattermost.app",
+          "dns": "mattermost.mesh.diegonmarcos.com",
           "public": true,
           "proxy": {
             "domain": "chat.diegonmarcos.com",
@@ -5840,7 +5840,7 @@
           "image": "postgres:16-alpine",
           "port": 5435,
           "port_env": "PGPORT",
-          "dns": "mattermost-postgres.app",
+          "dns": "mattermost-postgres.mesh.diegonmarcos.com",
           "public": false,
           "healthcheck": "pg_isready -U mattermost -d mattermost",
           "volumes": [
@@ -5859,7 +5859,7 @@
           "image": "python:3.12-slim",
           "port": null,
           "port_env": null,
-          "dns": "mattermost-bots.app",
+          "dns": "mattermost-bots.mesh.diegonmarcos.com",
           "public": false,
           "healthcheck": null,
           "volumes": [
@@ -5884,9 +5884,9 @@
         "5435"
       ],
       "all_dns": [
-        "mattermost.app",
-        "mattermost-postgres.app",
-        "mattermost-bots.app"
+        "mattermost.mesh.diegonmarcos.com",
+        "mattermost-postgres.mesh.diegonmarcos.com",
+        "mattermost-bots.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -5969,7 +5969,7 @@
       "enabled": true,
       "domain": "mail-puller.diegonmarcos.com",
       "flake": "user-comm_mail-puller",
-      "dns": "mail-puller.app",
+      "dns": "mail-puller.mesh.diegonmarcos.com",
       "containers": {
         "app": {
           "container_name": "mail-puller",
@@ -6059,7 +6059,7 @@
       "domain": "messenger.diegonmarcos.com",
       "flake": "user-comm_matrix-element",
       "port": 8083,
-      "dns": "matrix-element.app",
+      "dns": "matrix-element.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:8083",
       "containers": {
         "app": {
@@ -6067,7 +6067,7 @@
           "image": "ghcr.io/diegonmarcos/matrix-element-binaries:latest",
           "port": 8083,
           "port_env": null,
-          "dns": "matrix-element.app",
+          "dns": "matrix-element.mesh.diegonmarcos.com",
           "public": true,
           "proxy": {
             "domain": "messenger.diegonmarcos.com",
@@ -6096,7 +6096,7 @@
         "8083"
       ],
       "all_dns": [
-        "matrix-element.app"
+        "matrix-element.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -6145,7 +6145,7 @@
       "enabled": true,
       "flake": "user-comm_matrix-mautrix-whatsapp",
       "port": 29318,
-      "dns": "matrix-mautrix-whatsapp.app",
+      "dns": "matrix-mautrix-whatsapp.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:29318",
       "containers": {
         "app": {
@@ -6153,7 +6153,7 @@
           "image": "ghcr.io/diegonmarcos/matrix-mautrix-whatsapp-binaries:latest",
           "port": 29318,
           "port_env": null,
-          "dns": "matrix-mautrix-whatsapp.app",
+          "dns": "matrix-mautrix-whatsapp.mesh.diegonmarcos.com",
           "public": false,
           "healthcheck": null,
           "monitoring": null,
@@ -6175,7 +6175,7 @@
         "29318"
       ],
       "all_dns": [
-        "matrix-mautrix-whatsapp.app"
+        "matrix-mautrix-whatsapp.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -6224,7 +6224,7 @@
       "domain": "webmail.diegonmarcos.com",
       "flake": "user-comm_snappymail",
       "port": 8888,
-      "dns": "snappymail.app",
+      "dns": "snappymail.mesh.diegonmarcos.com",
       "upstream": "10.0.0.3:8888",
       "containers": {
         "app": {
@@ -6232,7 +6232,7 @@
           "image": "djmaze/snappymail:latest",
           "port": 8888,
           "port_env": null,
-          "dns": "snappymail.app",
+          "dns": "snappymail.mesh.diegonmarcos.com",
           "public": true,
           "proxy": null,
           "healthcheck": "/",
@@ -6263,7 +6263,7 @@
         "8888"
       ],
       "all_dns": [
-        "snappymail.app"
+        "snappymail.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -6309,7 +6309,7 @@
       "enabled": true,
       "domain": "mail.diegonmarcos.com",
       "flake": "user-comm_tools-maddy",
-      "dns": "maddy.app",
+      "dns": "maddy.mesh.diegonmarcos.com",
       "containers": {
         "app": {
           "container_name": "maddy",
@@ -6358,7 +6358,7 @@
               "desc": "IMAP plain — dual-bind wg0+wg-public"
             }
           ],
-          "dns": "maddy.app",
+          "dns": "maddy.mesh.diegonmarcos.com",
           "public": false,
           "proxy": null,
           "healthcheck": null,
@@ -6390,7 +6390,7 @@
       ],
       "all_ports": [],
       "all_dns": [
-        "maddy.app"
+        "maddy.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -6500,7 +6500,7 @@
       "domain": "jmap.diegonmarcos.com",
       "flake": "user-comm_tools-stalwart",
       "port": 2443,
-      "dns": "stalwart.app",
+      "dns": "stalwart.mesh.diegonmarcos.com",
       "upstream": "10.0.0.3:2443",
       "containers": {
         "app": {
@@ -6567,7 +6567,7 @@
             }
           ],
           "port_env": null,
-          "dns": "stalwart.app",
+          "dns": "stalwart.mesh.diegonmarcos.com",
           "public": true,
           "proxy": {
             "domain": "jmap.diegonmarcos.com",
@@ -6619,7 +6619,7 @@
         "2443"
       ],
       "all_dns": [
-        "stalwart.app"
+        "stalwart.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -6749,7 +6749,7 @@
       "domain": "api.diegonmarcos.com",
       "flake": "user-data_scrappers-api",
       "port": 3020,
-      "dns": "scrappers-api.app",
+      "dns": "scrappers-api.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:3020",
       "containers": {
         "app": {
@@ -6758,7 +6758,7 @@
           "port": 3020,
           "port_env": "PORT",
           "protocol": "http",
-          "dns": "scrappers-api.app",
+          "dns": "scrappers-api.mesh.diegonmarcos.com",
           "public": true,
           "proxy": {
             "domain": "api.diegonmarcos.com",
@@ -6776,7 +6776,7 @@
         "3020"
       ],
       "all_dns": [
-        "scrappers-api.app"
+        "scrappers-api.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -6835,7 +6835,7 @@
       "domain": "api.diegonmarcos.com/fin-api",
       "flake": "user-fin_fin-api",
       "port": 8340,
-      "dns": "fin-api.app",
+      "dns": "fin-api.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:8340",
       "containers": {
         "app": {
@@ -6843,7 +6843,7 @@
           "image": "ghcr.io/diegonmarcos/fin-api:latest",
           "port": 8340,
           "port_env": "FIN_API_PORT",
-          "dns": "fin-api.app",
+          "dns": "fin-api.mesh.diegonmarcos.com",
           "public": true,
           "proxy": {
             "type": "path",
@@ -6877,7 +6877,7 @@
         "8340"
       ],
       "all_dns": [
-        "fin-api.app"
+        "fin-api.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -6935,7 +6935,7 @@
       "domain": "photos.diegonmarcos.com",
       "flake": "user-media_photoprism",
       "port": 3013,
-      "dns": "photoprism.app",
+      "dns": "photoprism.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:3013",
       "containers": {
         "app": {
@@ -6943,7 +6943,7 @@
           "image": "photoprism/photoprism:latest",
           "port": 3013,
           "port_env": "PHOTOPRISM_HTTP_PORT",
-          "dns": "photoprism.app",
+          "dns": "photoprism.mesh.diegonmarcos.com",
           "public": true,
           "proxy": {
             "domain": "photos.diegonmarcos.com",
@@ -7020,7 +7020,7 @@
         "3013"
       ],
       "all_dns": [
-        "photoprism.app"
+        "photoprism.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -7101,7 +7101,7 @@
       "domain": "playlist.diegonmarcos.com",
       "flake": "user-media_playlist-syncer",
       "port": 8090,
-      "dns": "playlist-syncer.app",
+      "dns": "playlist-syncer.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:8090",
       "containers": {
         "app": {
@@ -7109,7 +7109,7 @@
           "image": "ghcr.io/diegonmarcos/playlist-syncer-binaries:latest",
           "port": 8090,
           "port_env": "PORT",
-          "dns": "playlist-syncer.app",
+          "dns": "playlist-syncer.mesh.diegonmarcos.com",
           "public": true,
           "proxy": {
             "domain": "playlist.diegonmarcos.com",
@@ -7149,7 +7149,7 @@
         "8090"
       ],
       "all_dns": [
-        "playlist-syncer.app"
+        "playlist-syncer.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -7208,7 +7208,7 @@
       "enabled": true,
       "flake": "user-news_news-gdelt",
       "port": 3019,
-      "dns": "news-gdelt.app",
+      "dns": "news-gdelt.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:3019",
       "containers": {
         "app": {
@@ -7254,7 +7254,7 @@
       "domain": "cal.diegonmarcos.com",
       "flake": "user-prod_calendar-radicale",
       "port": 5232,
-      "dns": "calendar.app",
+      "dns": "calendar.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:5232",
       "containers": {
         "app": {
@@ -7262,7 +7262,7 @@
           "image": "tomsquest/docker-radicale:latest",
           "port": 5232,
           "port_env": null,
-          "dns": "calendar.app",
+          "dns": "calendar.mesh.diegonmarcos.com",
           "public": true,
           "proxy": {
             "domain": "cal.diegonmarcos.com",
@@ -7298,7 +7298,7 @@
         "5232"
       ],
       "all_dns": [
-        "calendar.app"
+        "calendar.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -7350,7 +7350,7 @@
       "domain": "ide.diegonmarcos.com",
       "flake": "user-prod_code-server",
       "port": 8443,
-      "dns": "code-server.app",
+      "dns": "code-server.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:8443",
       "containers": {
         "app": {
@@ -7358,7 +7358,7 @@
           "image": "linuxserver/code-server:latest",
           "port": 8443,
           "port_env": null,
-          "dns": "code-server.app",
+          "dns": "code-server.mesh.diegonmarcos.com",
           "public": true,
           "proxy": {
             "domain": "ide.diegonmarcos.com",
@@ -7388,7 +7388,7 @@
         "8443"
       ],
       "all_dns": [
-        "code-server.app"
+        "code-server.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -7436,7 +7436,7 @@
       "domain": "contacts.diegonmarcos.com",
       "flake": "user-prod_contacts-radicale",
       "port": 5233,
-      "dns": "contacts.app",
+      "dns": "contacts.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:5233",
       "containers": {
         "app": {
@@ -7444,7 +7444,7 @@
           "image": "tomsquest/docker-radicale:latest",
           "port": 5233,
           "port_env": null,
-          "dns": "contacts.app",
+          "dns": "contacts.mesh.diegonmarcos.com",
           "public": true,
           "proxy": {
             "domain": "contacts.diegonmarcos.com",
@@ -7480,7 +7480,7 @@
         "5233"
       ],
       "all_dns": [
-        "contacts.app"
+        "contacts.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -7532,7 +7532,7 @@
       "domain": "app.diegonmarcos.com/etherpad",
       "flake": "user-prod_etherpad",
       "port": 3012,
-      "dns": "etherpad.app",
+      "dns": "etherpad.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:3012",
       "containers": {
         "app": {
@@ -7540,7 +7540,7 @@
           "image": "etherpad/etherpad:latest",
           "port": 3012,
           "port_env": "PORT",
-          "dns": "etherpad.app",
+          "dns": "etherpad.mesh.diegonmarcos.com",
           "public": true,
           "proxy": {
             "type": "path",
@@ -7581,7 +7581,7 @@
           "image": "postgres:16-alpine",
           "port": 5436,
           "port_env": "PGPORT",
-          "dns": "etherpad-db.app",
+          "dns": "etherpad-db.mesh.diegonmarcos.com",
           "public": false,
           "proxy": null,
           "healthcheck": "cmd",
@@ -7608,8 +7608,8 @@
         "5436"
       ],
       "all_dns": [
-        "etherpad.app",
-        "etherpad-db.app"
+        "etherpad.mesh.diegonmarcos.com",
+        "etherpad-db.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -7662,7 +7662,7 @@
       "domain": "app.diegonmarcos.com/filebrowser",
       "flake": "user-prod_filebrowser",
       "port": 3015,
-      "dns": "filebrowser.app",
+      "dns": "filebrowser.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:3015",
       "containers": {
         "app": {
@@ -7670,7 +7670,7 @@
           "image": "filebrowser/filebrowser:latest",
           "port": 3015,
           "port_env": null,
-          "dns": "filebrowser.app",
+          "dns": "filebrowser.mesh.diegonmarcos.com",
           "public": true,
           "proxy": {
             "type": "path",
@@ -7709,7 +7709,7 @@
         "3015"
       ],
       "all_dns": [
-        "filebrowser.app"
+        "filebrowser.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -7760,7 +7760,7 @@
       "domain": "sheets.diegonmarcos.com",
       "flake": "user-prod_grist",
       "port": 3011,
-      "dns": "grist.app",
+      "dns": "grist.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:3011",
       "containers": {
         "app": {
@@ -7768,7 +7768,7 @@
           "image": "gristlabs/grist:latest",
           "port": 3011,
           "port_env": "PORT",
-          "dns": "grist.app",
+          "dns": "grist.mesh.diegonmarcos.com",
           "public": true,
           "proxy": {
             "domain": "sheets.diegonmarcos.com",
@@ -7798,7 +7798,7 @@
         "3011"
       ],
       "all_dns": [
-        "grist.app"
+        "grist.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -7855,7 +7855,7 @@
       "domain": "app.diegonmarcos.com/hedgedoc",
       "flake": "user-prod_hedgedoc",
       "port": 3018,
-      "dns": "hedgedoc.app",
+      "dns": "hedgedoc.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:3018",
       "containers": {
         "app": {
@@ -7863,7 +7863,7 @@
           "image": "quay.io/hedgedoc/hedgedoc:latest",
           "port": 3018,
           "port_env": "CMD_PORT",
-          "dns": "hedgedoc.app",
+          "dns": "hedgedoc.mesh.diegonmarcos.com",
           "public": true,
           "proxy": {
             "type": "path",
@@ -7893,7 +7893,7 @@
           "image": "postgres:16-alpine",
           "port": 5439,
           "port_env": "PGPORT",
-          "dns": "hedgedoc-db.app",
+          "dns": "hedgedoc-db.mesh.diegonmarcos.com",
           "public": false,
           "proxy": null,
           "healthcheck": "cmd",
@@ -7920,8 +7920,8 @@
         "5439"
       ],
       "all_dns": [
-        "hedgedoc.app",
-        "hedgedoc-db.app"
+        "hedgedoc.mesh.diegonmarcos.com",
+        "hedgedoc-db.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -7976,7 +7976,7 @@
       "domain": "paca.diegonmarcos.com",
       "flake": "user-prod_paca",
       "port": 8095,
-      "dns": "paca.app",
+      "dns": "paca.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:8095",
       "containers": {
         "gateway": {
@@ -7984,7 +7984,7 @@
           "image": "nginx:1.27-alpine",
           "port": 8095,
           "port_env": null,
-          "dns": "paca.app",
+          "dns": "paca.mesh.diegonmarcos.com",
           "public": true,
           "proxy": {
             "domain": "paca.diegonmarcos.com",
@@ -8009,7 +8009,7 @@
           "image": "pacaai/paca-api:latest",
           "port": 8080,
           "port_env": "PORT",
-          "dns": "paca-api.app",
+          "dns": "paca-api.mesh.diegonmarcos.com",
           "public": false,
           "healthcheck": "wget -q --spider http://localhost:8080/api/healthz || exit 1",
           "volumes": [
@@ -8031,7 +8031,7 @@
           "image": "pacaai/paca-web:latest",
           "port": null,
           "port_env": null,
-          "dns": "paca-web.app",
+          "dns": "paca-web.mesh.diegonmarcos.com",
           "public": false,
           "healthcheck": null,
           "volumes": [],
@@ -8048,7 +8048,7 @@
           "image": "pacaai/paca-realtime:latest",
           "port": 3001,
           "port_env": "PORT",
-          "dns": "paca-realtime.app",
+          "dns": "paca-realtime.mesh.diegonmarcos.com",
           "public": false,
           "healthcheck": null,
           "volumes": [],
@@ -8066,7 +8066,7 @@
           "image": "valkey/valkey:8-alpine",
           "port": 6379,
           "port_env": null,
-          "dns": "paca-valkey.app",
+          "dns": "paca-valkey.mesh.diegonmarcos.com",
           "public": false,
           "healthcheck": "valkey-cli ping",
           "volumes": [
@@ -8082,7 +8082,7 @@
           "image": "postgres:16-alpine",
           "port": 5432,
           "port_env": "PGPORT",
-          "dns": "paca-postgres.app",
+          "dns": "paca-postgres.mesh.diegonmarcos.com",
           "public": false,
           "healthcheck": "pg_isready -U paca -d paca",
           "volumes": [
@@ -8113,12 +8113,12 @@
         "5432"
       ],
       "all_dns": [
-        "paca.app",
-        "paca-api.app",
-        "paca-web.app",
-        "paca-realtime.app",
-        "paca-valkey.app",
-        "paca-postgres.app"
+        "paca.mesh.diegonmarcos.com",
+        "paca-api.mesh.diegonmarcos.com",
+        "paca-web.mesh.diegonmarcos.com",
+        "paca-realtime.mesh.diegonmarcos.com",
+        "paca-valkey.mesh.diegonmarcos.com",
+        "paca-postgres.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -8186,7 +8186,7 @@
       "enabled": false,
       "flake": "user-prod_revealmd",
       "port": 3014,
-      "dns": "revealmd.app",
+      "dns": "revealmd.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:3014",
       "containers": {
         "app": {
@@ -8194,7 +8194,7 @@
           "image": "webpronl/reveal-md:latest",
           "port": 3014,
           "port_env": null,
-          "dns": "revealmd.app",
+          "dns": "revealmd.mesh.diegonmarcos.com",
           "public": true,
           "proxy": null,
           "healthcheck": null,
@@ -8216,7 +8216,7 @@
         "3014"
       ],
       "all_dns": [
-        "revealmd.app"
+        "revealmd.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -8244,7 +8244,7 @@
       "domain": "send.diegonmarcos.com",
       "flake": "user-prod_send",
       "port": 3016,
-      "dns": "send.app",
+      "dns": "send.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:3016",
       "containers": {
         "app": {
@@ -8252,7 +8252,7 @@
           "image": "registry.gitlab.com/timvisee/send:latest",
           "port": 3016,
           "port_env": null,
-          "dns": "send.app",
+          "dns": "send.mesh.diegonmarcos.com",
           "public": true,
           "proxy": {
             "domain": "send.diegonmarcos.com",
@@ -8316,7 +8316,7 @@
         "3016"
       ],
       "all_dns": [
-        "send.app"
+        "send.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],

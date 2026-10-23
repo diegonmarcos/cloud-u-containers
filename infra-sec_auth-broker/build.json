@@ -2,7 +2,7 @@
   "name": "auth-broker",
   "description": "Identity broker for the multi-SSO sign-in: GitHub (device flow + web), Google (web code flow + PKCE) and Cloudflare One (Access JWT) and Email code (one-time code), owner only (#1066, #1083, #1118)",
   "category": "sec",
-  "dns": "auth-broker.app",
+  "dns": "auth-broker.mesh.diegonmarcos.com",
   "ports": {
     "google": 4180,
     "github": 4181,

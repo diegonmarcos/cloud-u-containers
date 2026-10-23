@@ -10,7 +10,7 @@
       "category": "sec",
       "enabled": true,
       "host": "gcp-proxy",
-      "dns": "authelia.app",
+      "dns": "authelia.mesh.diegonmarcos.com",
       "domain": "auth.diegonmarcos.com",
       "ports": {
         "app": 9091,
@@ -20,7 +20,7 @@
         {
           "key": "app",
           "container_name": "authelia",
-          "dns": "authelia.app",
+          "dns": "authelia.mesh.diegonmarcos.com",
           "port": 9091,
           "protocol": "http",
           "mesh_route": true
@@ -28,7 +28,7 @@
         {
           "key": "redis",
           "container_name": "authelia-redis",
-          "dns": "authelia-redis.app",
+          "dns": "authelia-redis.mesh.diegonmarcos.com",
           "port": 6380,
           "protocol": "tcp",
           "mesh_route": false
@@ -70,7 +70,7 @@
       "category": "sec",
       "enabled": true,
       "host": "oci-apps",
-      "dns": "crowdsec.app",
+      "dns": "crowdsec.mesh.diegonmarcos.com",
       "domain": "crowdsec.diegonmarcos.com",
       "ports": {
         "lapi": 8088,
@@ -80,7 +80,7 @@
         {
           "key": "app",
           "container_name": "crowdsec",
-          "dns": "crowdsec.app",
+          "dns": "crowdsec.mesh.diegonmarcos.com",
           "port": 8088,
           "protocol": "http",
           "mesh_route": true
@@ -109,7 +109,7 @@
       "category": "sec",
       "enabled": true,
       "host": "gcp-proxy",
-      "dns": "introspect-proxy.app",
+      "dns": "introspect-proxy.mesh.diegonmarcos.com",
       "ports": {
         "app": 4182
       },
@@ -117,7 +117,7 @@
         {
           "key": "app",
           "container_name": "introspect-proxy",
-          "dns": "introspect-proxy.app",
+          "dns": "introspect-proxy.mesh.diegonmarcos.com",
           "port": 4182,
           "protocol": "http",
           "mesh_route": false
@@ -140,7 +140,7 @@
       "category": "sec",
       "enabled": true,
       "host": "gcp-proxy",
-      "dns": "mcp-oauth.app",
+      "dns": "mcp-oauth.mesh.diegonmarcos.com",
       "ports": {
         "app": 4183
       },
@@ -148,7 +148,7 @@
         {
           "key": "app",
           "container_name": "mcp-oauth",
-          "dns": "mcp-oauth.app",
+          "dns": "mcp-oauth.mesh.diegonmarcos.com",
           "port": 4183,
           "protocol": "http",
           "mesh_route": false
@@ -167,11 +167,11 @@
     {
       "service": "infra-sec_tokens-api",
       "name": "tokens-api",
-      "description": "Fleet token engine: lists, generates, reveals and revokes every fleet bearer token (fleet ft_ tokens and adopted Authelia JWTs); introspect-proxy asks it before accepting a Bearer, so a revoked token stops working within 60 seconds. Public address: c3-pvt.diegonmarcos.com/tokens-api (shared gate, #1104); mesh tokens-api.app",
+      "description": "Fleet token engine: lists, generates, reveals and revokes every fleet bearer token (fleet ft_ tokens and adopted Authelia JWTs); introspect-proxy asks it before accepting a Bearer, so a revoked token stops working within 60 seconds. Public address: c3-pvt.diegonmarcos.com/tokens-api (shared gate, #1104); mesh tokens-api.mesh.diegonmarcos.com",
       "category": "sec",
       "enabled": true,
       "host": "oci-apps",
-      "dns": "tokens-api.app",
+      "dns": "tokens-api.mesh.diegonmarcos.com",
       "ports": {
         "app": 4184
       },
@@ -179,7 +179,7 @@
         {
           "key": "app",
           "container_name": "tokens-api",
-          "dns": "tokens-api.app",
+          "dns": "tokens-api.mesh.diegonmarcos.com",
           "port": 4184,
           "protocol": "http",
           "mesh_route": true
@@ -208,13 +208,13 @@
       "category": "sec",
       "enabled": true,
       "host": "gcp-proxy",
-      "dns": "caddy.app",
+      "dns": "caddy.mesh.diegonmarcos.com",
       "domain": "proxy.diegonmarcos.com",
       "containers": [
         {
           "key": "app",
           "container_name": "caddy",
-          "dns": "caddy.app",
+          "dns": "caddy.mesh.diegonmarcos.com",
           "port": 443,
           "protocol": "https",
           "mesh_route": true
@@ -236,12 +236,12 @@
       "category": "sec",
       "enabled": true,
       "host": "oci-analytics",
-      "dns": "caddy-public.app",
+      "dns": "caddy-public.mesh.diegonmarcos.com",
       "containers": [
         {
           "key": "app",
           "container_name": "caddy-public",
-          "dns": "caddy-public.app",
+          "dns": "caddy-public.mesh.diegonmarcos.com",
           "port": 443,
           "protocol": "https",
           "mesh_route": true

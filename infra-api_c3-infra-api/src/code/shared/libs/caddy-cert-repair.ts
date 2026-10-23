@@ -4,7 +4,7 @@
  *
  * Incident 2026-10-15: overlapping deploys left caddy on gcp-proxy in a restart
  * loop — "caching certificate: tls: private key does not match public key" for
- * mesh-CA certs (c3-services-mcp.app, filebrowser.app, photoprism.app). While
+ * mesh-CA certs (c3-services-mcp.mesh.diegonmarcos.com, filebrowser.mesh.diegonmarcos.com, photoprism.mesh.diegonmarcos.com). While
  * caddy crash-loops `docker exec` is useless, so the repair works on the HOST
  * side of the /data mount: move the cert dirs whose .key does not match the
  * .crt out of <data>/caddy/certificates/ (caddy then re-issues), restart caddy.

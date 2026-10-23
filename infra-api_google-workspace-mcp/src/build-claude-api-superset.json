@@ -32,7 +32,7 @@
     "image": "ghcr.io/diegonmarcos/claude-api-superset:latest",
     "port": 3117,
     "port_env": "BRIDGE_PORT",
-    "dns": "claude-api-superset.app",
+    "dns": "claude-api-superset.mesh.diegonmarcos.com",
     "public": false,
     "healthcheck": "/health",
     "monitoring": null,

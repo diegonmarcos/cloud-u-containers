@@ -133,7 +133,7 @@ try {
   const gate = async (from: string, host: string) => JSON.parse((await req(gatePort, "/api/v1/user", { Host: host, ...spoof }, from)).body) as Seen;
   let seen = await gate("127.0.0.1", domain);
   t("gate: non-edge peer, right Host -> user header and X-Real-IP dropped", seen.user === null && seen.realIp === null, JSON.stringify(seen));
-  seen = await gate("127.0.0.2", "gitea.app");
+  seen = await gate("127.0.0.2", "gitea.mesh.diegonmarcos.com");
   t("gate: edge peer via the .app catalog Host -> dropped", seen.user === null && seen.realIp === null, JSON.stringify(seen));
   seen = await gate("127.0.0.2", domain);
   t("gate: edge peer for the vhost -> forwarded", seen.user === "diego" && seen.realIp === "6.6.6.6", JSON.stringify(seen));

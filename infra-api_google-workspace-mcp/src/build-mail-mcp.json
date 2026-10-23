@@ -32,7 +32,7 @@
     "image": "ghcr.io/diegonmarcos/mail-mcp:latest",
     "port": 3103,
     "port_env": "PORT",
-    "dns": "mail-mcp.app",
+    "dns": "mail-mcp.mesh.diegonmarcos.com",
     "public": true,
     "proxy": {
       "streaming": true,

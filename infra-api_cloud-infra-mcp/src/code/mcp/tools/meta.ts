@@ -1091,7 +1091,7 @@ export function registerMetaObs(server: McpServer): void {
             const q = new URLSearchParams();
             if (p.file) q.set("file", String(p.file));
             else { if (p.event_kind) q.set("kind", String(p.event_kind)); if (p.since) q.set("since", String(p.since)); if (p.limit) q.set("limit", String(Math.floor(p.limit))); }
-            const base = process.env.C3_INFRA_API_URL ?? "http://c3-infra-api.app:8081";
+            const base = process.env.C3_INFRA_API_URL ?? "http://c3-infra-api.mesh.diegonmarcos.com:8081";
             const resp = await fetch(`${base}/${kind}/${p.name}/logs${q.size ? `?${q}` : ""}`, { signal: AbortSignal.timeout(15_000) });
             const body = await resp.text();
             return resp.ok ? text(body) : errText(`Error: HTTP ${resp.status} ${body.slice(0, 300)}`);

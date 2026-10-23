@@ -1,7 +1,7 @@
 {
   "name": "cloud-cgc-pub-mcp",
   "description": "Cloud CGC Pub MCP — Code Graph Context: infra knowledge, specs, docs, semantic code search",
-  "dns": "cloud-cgc-pub-mcp.app",
+  "dns": "cloud-cgc-pub-mcp.mesh.diegonmarcos.com",
   "ports": {
     "app": 3105,
     "pvt": 3107
@@ -291,7 +291,7 @@
       "image": "ghcr.io/diegonmarcos/cloud-cgc-pub-mcp:latest",
       "port": 3105,
       "port_env": "MCP_HTTP_PORT",
-      "dns": "cloud-cgc-pub-mcp.app",
+      "dns": "cloud-cgc-pub-mcp.mesh.diegonmarcos.com",
       "public": true,
       "proxy": {
         "streaming": true,

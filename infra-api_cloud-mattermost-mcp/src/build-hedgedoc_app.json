@@ -32,7 +32,7 @@
     "image": "quay.io/hedgedoc/hedgedoc:latest",
     "port": 3018,
     "port_env": "CMD_PORT",
-    "dns": "hedgedoc.app",
+    "dns": "hedgedoc.mesh.diegonmarcos.com",
     "public": true,
     "proxy": {
       "type": "path",

@@ -32,7 +32,7 @@
     "image": "erikvl87/languagetool:latest",
     "port": 8010,
     "port_env": null,
-    "dns": "languagetool.app",
+    "dns": "languagetool.mesh.diegonmarcos.com",
     "public": false,
     "proxy": {
       "domain": "languagetool.diegonmarcos.com",

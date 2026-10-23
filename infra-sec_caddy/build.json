@@ -1,7 +1,7 @@
 {
   "name": "caddy",
   "description": "Caddy reverse proxy + security dashboard (gcp-proxy, wg0 bind)",
-  "dns": "caddy.app",
+  "dns": "caddy.mesh.diegonmarcos.com",
   "category": "sec",
   "domain": "proxy.diegonmarcos.com",
   "deploy": {
@@ -201,7 +201,7 @@
           "header": "Cf-Access-Jwt-Assertion"
         }
       },
-      "_doc": "THE edge auth policy, one list, three tiers. Every public URL is exactly one of: (a) private -- mesh/WireGuard only (route wg_only:true, or a *.app/.db/s3 name), answered 403 to any non-mesh source and never served by the public edge (caddy-public); (b) public-protected -- the DEFAULT for anything public: the shared (edge_auth) snippet requires `Authorization: Bearer <fleet token>` (introspect-proxy) OR a valid Authelia session cookie, else 401 (API / non-browser) or 302 to auth. (browser); (c) public-open -- anonymous allowed, ONLY what is listed in public_open / technical below, each with a reason. Adding a host to public_open is the only way to make something anonymous; add more entries here. The CI guard (cloud-infra 9_others/test/edge-auth-gate.test.sh) fails on a public site that is in no tier, in two tiers, or open without an entry here. Rendered by _shared/edge-auth.nix into BOTH Caddyfiles (hub infra-sec_caddy, edge infra-sec_caddy-public); the derive copies this block into build-caddy.json and build-caddy-edge.json.",
+      "_doc": "THE edge auth policy, one list, three tiers. Every public URL is exactly one of: (a) private -- mesh/WireGuard only (route wg_only:true, or a *.mesh.diegonmarcos.com/.db/s3 name), answered 403 to any non-mesh source and never served by the public edge (caddy-public); (b) public-protected -- the DEFAULT for anything public: the shared (edge_auth) snippet requires `Authorization: Bearer <fleet token>` (introspect-proxy) OR a valid Authelia session cookie, else 401 (API / non-browser) or 302 to auth. (browser); (c) public-open -- anonymous allowed, ONLY what is listed in public_open / technical below, each with a reason. Adding a host to public_open is the only way to make something anonymous; add more entries here. The CI guard (cloud-infra 9_others/test/edge-auth-gate.test.sh) fails on a public site that is in no tier, in two tiers, or open without an entry here. Rendered by _shared/edge-auth.nix into BOTH Caddyfiles (hub infra-sec_caddy, edge infra-sec_caddy-public); the derive copies this block into build-caddy.json and build-caddy-edge.json.",
       "public_open": [
         {
           "host": "auth.diegonmarcos.com",
@@ -411,7 +411,7 @@
       "app_hub_fallback": "Not Found"
     },
     "url_scheme": {
-      "_doc": "Fleet URL scheme (cloud-infra a0_docs/eng-specs/url-scheme.md). container_prefix: every container gets c3-{container}.diegonmarcos.com (wg_only, 403 off-mesh) and c3-{container}.app. APKs get cloud-{name}.diegonmarcos.com (public, never wg_only, Authelia, anonymous -> landing) and, when they declare a container web target, cloud-{name}.app. Both lists are GENERATED: manifests.apk is cloud-u-android's 2_configs/apk-manifest.json (relative to the cloud-infra root), manifests.mcp is cloud-u-containers' _shared/mcp-manifest.json (relative to a_solutions). Nothing here lists an APK, container or MCP by hand. groups documents the special address groups and is asserted by test-url-scheme.sh. extra_routes are additive vhosts: mails. serves the JMAP config URLs (well-known paths public, rest of the vhost mesh-only, like jmap.).",
+      "_doc": "Fleet URL scheme (cloud-infra a0_docs/eng-specs/url-scheme.md). container_prefix: every container gets c3-{container}.diegonmarcos.com (wg_only, 403 off-mesh) and c3-{container}.mesh.diegonmarcos.com. APKs get cloud-{name}.diegonmarcos.com (public, never wg_only, Authelia, anonymous -> landing) and, when they declare a container web target, cloud-{name}.mesh.diegonmarcos.com. Both lists are GENERATED: manifests.apk is cloud-u-android's 2_configs/apk-manifest.json (relative to the cloud-infra root), manifests.mcp is cloud-u-containers' _shared/mcp-manifest.json (relative to a_solutions). Nothing here lists an APK, container or MCP by hand. groups documents the special address groups and is asserted by test-url-scheme.sh. extra_routes are additive vhosts: mails. serves the JMAP config URLs (well-known paths public, rest of the vhost mesh-only, like jmap.).",
       "container_prefix": "c3-",
       "manifests": {
         "apk": "../cloud-u-android/2_configs/apk-manifest.json",
@@ -531,7 +531,7 @@
         "extra_paths": [
           {
             "base_path": "/crawlee",
-            "upstream": "crawlee.app:3001",
+            "upstream": "crawlee.mesh.diegonmarcos.com:3001",
             "comment": "Crawlee Cloud dashboard (separate from API)"
           }
         ]
@@ -569,7 +569,7 @@
         }
       ],
       "port_env": null,
-      "dns": "caddy.app",
+      "dns": "caddy.mesh.diegonmarcos.com",
       "public": true,
       "proxy": {
         "type": "special",

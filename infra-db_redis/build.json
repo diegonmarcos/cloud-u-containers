@@ -1,7 +1,7 @@
 {
   "name": "redis",
   "description": "In-memory data store",
-  "dns": "redis.app",
+  "dns": "redis.mesh.diegonmarcos.com",
   "ports": {
     "app": 6379
   },
@@ -24,7 +24,7 @@
       "image": "redis:8.10.2-alpine@sha256:3811787313eba226a2ef38658c6ccb91cd5e110edc89c37767de373120a0e5a0",
       "port": 6379,
       "port_env": null,
-      "dns": "redis.app",
+      "dns": "redis.mesh.diegonmarcos.com",
       "public": false,
       "proxy": null,
       "healthcheck": "redis-cli -a \"$REDIS_PASSWORD\" --no-auth-warning ping | grep -q PONG",

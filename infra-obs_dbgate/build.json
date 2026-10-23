@@ -1,7 +1,7 @@
 {
   "name": "dbgate",
   "description": "DBGate - Universal database manager for all cloud databases",
-  "dns": "dbgate.app",
+  "dns": "dbgate.mesh.diegonmarcos.com",
   "ports": {
     "app": 8086
   },
@@ -39,7 +39,7 @@
       "image": "dbgate/dbgate:latest",
       "port": 8086,
       "port_env": "PORT",
-      "dns": "dbgate.app",
+      "dns": "dbgate.mesh.diegonmarcos.com",
       "public": true,
       "proxy": {
         "domain": "db.diegonmarcos.com",

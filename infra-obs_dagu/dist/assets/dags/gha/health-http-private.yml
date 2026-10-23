@@ -77,7 +77,7 @@ jobs:
           NAMES=$(jq -r '.services | keys[]' "$DNS_FILE" | sort)
           SCRIPT=""
           for name in $NAMES; do
-            SCRIPT="$SCRIPT echo \"==$name==\"; dig +short ${name}.app @10.0.0.1 2>/dev/null | head -1;"
+            SCRIPT="$SCRIPT echo \"==$name==\"; dig +short ${name}.mesh.diegonmarcos.com @10.0.0.1 2>/dev/null | head -1;"
           done
 
           echo "=== Resolving $(echo "$NAMES" | wc -w) .app names via single SSH ==="
@@ -95,11 +95,11 @@ jobs:
               RESOLVED="$line"
               EXPECTED=$(jq -r ".services[\"$CURRENT_NAME\"].ip // \"\"" "$DNS_FILE")
               if [ -z "$RESOLVED" ]; then
-                echo "WARN|${CURRENT_NAME}.app|no zone" >> "$RESULTS"
+                echo "WARN|${CURRENT_NAME}.mesh.diegonmarcos.com|no zone" >> "$RESULTS"
               elif [ "$RESOLVED" = "$EXPECTED" ]; then
-                echo "PASS|${CURRENT_NAME}.app|$RESOLVED" >> "$RESULTS"
+                echo "PASS|${CURRENT_NAME}.mesh.diegonmarcos.com|$RESOLVED" >> "$RESULTS"
               else
-                echo "FAIL|${CURRENT_NAME}.app|expected=$EXPECTED got=$RESOLVED" >> "$RESULTS"
+                echo "FAIL|${CURRENT_NAME}.mesh.diegonmarcos.com|expected=$EXPECTED got=$RESOLVED" >> "$RESULTS"
               fi
               CURRENT_NAME=""
             fi

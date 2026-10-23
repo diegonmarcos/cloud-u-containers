@@ -26,7 +26,7 @@ let
   # ── Dual-bind public *.diegonmarcos.com routes to BOTH the public socket
   # and the WG-internal IP. Hickory wildcards *.diegonmarcos.com → wgBindIp
   # for the WG fast-path (skips Cloudflare); without dual-binding here,
-  # WG traffic lands on the more-specific listener created by *.app blocks
+  # WG traffic lands on the more-specific listener created by *.mesh.diegonmarcos.com blocks
   # (which doesn't carry the public host matchers) and falls through to an
   # empty 200 response. Source-of-truth: build.json caddy_config.global.wg_bind_ip.
   wgBindIp = caddyRoutes.global.wg_bind_ip or "10.0.0.1";
@@ -154,9 +154,9 @@ let
     edgeAuth = caddyRoutes.edge_auth or {};
   };
 
-  # Mesh-only guard for the private *.app / *.db / s3 names (tier a). These
+  # Mesh-only guard for the private *.mesh.diegonmarcos.com / *.db / s3 names (tier a). These
   # sites bind 0.0.0.0, and the edge's layer4 tier forwards every non-public SNI
-  # here untouched, so without this a public client could present any *.app SNI
+  # here untouched, so without this a public client could present any *.mesh.diegonmarcos.com SNI
   # and be proxied with no auth at all. Same sources as mkPrivateMeshRoute.
   meshGuard = ''
     @not_mesh not remote_ip ${meshOnlySources}
@@ -167,7 +167,7 @@ let
   # Pages fallback page of the service that owns the host; every other client keeps
   # the plain status (bearer clients, MCPs, CI). Host -> page comes from
   # _shared/fallback-services.json (generated from build.json): declared hosts,
-  # mesh name <name>.app and cloud.<name>.app. Unknown hosts land on the index.
+  # mesh name <name>.mesh.diegonmarcos.com and cloud.<name>.mesh.diegonmarcos.com. Unknown hosts land on the index.
   fb = builtins.fromJSON (builtins.readFile ../../_shared/fallback-services.json);
   fbHosts = lib.concatMap (s:
     map (h: { inherit h; slug = s.slug; }) (s.hosts ++ lib.optionals (s.mesh != null) [ s.mesh "cloud.${s.mesh}" ])) fb.services;
@@ -1250,18 +1250,15 @@ ${lib.concatMapStringsSep "\n" mkWellKnownBlock jmap}
   dbTpl         = readTpl "33-db-placeholder.caddy.tpl";
   s3Tpl         = readTpl "34-s3-route.caddy.tpl";
 
-  # ── Private mesh names: cloud.<name>.app (docs: url-scheme.md) ──
-  # Rendered as their OWN site blocks so the legacy <name>.app aliases stay
-  # byte-identical for one release. Each one is gated to the WG mesh plus
+  # ── Private mesh names: cloud.<name>.mesh.diegonmarcos.com (docs: url-scheme.md) ──
+  # Rendered as their OWN site blocks. Each one is gated to the WG mesh plus
   # same-host docker/loopback sources: wg-public (10.1.0.0/24, the public
-  # edge) and every public address get 403, so a cloud.*.app name is never
+  # edge) and every public address get 403, so a cloud.*.mesh.diegonmarcos.com name is never
   # served to the internet even if someone points a resolver at us.
   # #1123: the mesh namespace is <name>.mesh.diegonmarcos.com (a subdomain of the
-  # owner's domain, served only by fleet DNS); <name>.app stays as an alias until
-  # stage (d) removes it. One site block carries both names, so they share one
-  # handler and one internal cert (ca mesh). Names that are not *.app pass through.
-  meshAlias = s: lib.optionalString (lib.hasSuffix ".app" s) ", ${lib.removeSuffix ".app" s}.mesh.diegonmarcos.com";
-  withMesh = s: "${s}${meshAlias s}";
+  # owner's domain, served only by fleet DNS). The public .app TLD alias is gone
+  # (owner decision, no transition): every declared name already is a mesh name.
+  withMesh = s: s;
   meshOnlySources = "${wgCidrs} 172.16.0.0/12 127.0.0.0/8 ::1/128";
   mkPrivateMeshRoute = e: ''
   ${withMesh e.service} {
@@ -1474,19 +1471,19 @@ ${mkNtfyBlock}
 ${mkProxyDashboardBlock}
 
   # ════════════════════════════════════════════════════════════
-  # INTERNAL ROUTES — portless *.app via HTTP:80 on WireGuard
+  # INTERNAL ROUTES — portless *.mesh.diegonmarcos.com via HTTP:80 on WireGuard
   # ════════════════════════════════════════════════════════════
 
 ${lib.concatMapStringsSep "\n" mkInternalRoute (caddyRoutes.internal_routes or [])}
 
   # ════════════════════════════════════════════════════════════
-  # PRIVATE MESH NAMES — cloud.<name>.app (WG mesh only)
+  # PRIVATE MESH NAMES — cloud.<name>.mesh.diegonmarcos.com (WG mesh only)
   # ════════════════════════════════════════════════════════════
 
 ${lib.concatMapStringsSep "\n" mkPrivateMeshRoute privateMeshRoutes}
 
   # ════════════════════════════════════════════════════════════
-  # APP URL ALIASES — {container}-{protocol}-{port}.app canonical routes
+  # APP URL ALIASES — {container}-{protocol}-{port}.mesh.diegonmarcos.com canonical routes
   # ════════════════════════════════════════════════════════════
 
 ${lib.concatMapStringsSep "\n" mkCanonicalAppRoute dedupedCanonicals}
@@ -1500,7 +1497,7 @@ ${lib.concatMapStringsSep "\n" mkPortlessAppRoute dedupedPortless}
 ${lib.concatMapStringsSep "\n" mkDbPlaceholderRoute dbCatalogEntries}
 
   # ════════════════════════════════════════════════════════════
-  # S3 ROUTES — OCI Object Storage via .app short names
+  # S3 ROUTES — OCI Object Storage via mesh short names
   # ════════════════════════════════════════════════════════════
 
 ${lib.concatMapStringsSep "\n" mkS3Route (caddyRoutes.s3_routes or [])}

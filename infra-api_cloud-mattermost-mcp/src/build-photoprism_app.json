@@ -32,7 +32,7 @@
     "image": "photoprism/photoprism:latest",
     "port": 3013,
     "port_env": "PHOTOPRISM_HTTP_PORT",
-    "dns": "photoprism.app",
+    "dns": "photoprism.mesh.diegonmarcos.com",
     "public": true,
     "proxy": {
       "domain": "photos.diegonmarcos.com",

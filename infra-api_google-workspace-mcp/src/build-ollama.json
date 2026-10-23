@@ -32,7 +32,7 @@
     "image": "ollama/ollama:latest",
     "port": 11434,
     "port_env": "OLLAMA_HOST",
-    "dns": "ollama.app",
+    "dns": "ollama.mesh.diegonmarcos.com",
     "public": false,
     "proxy": null,
     "healthcheck": null,

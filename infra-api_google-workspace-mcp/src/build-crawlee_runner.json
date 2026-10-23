@@ -32,7 +32,7 @@
     "image": "ghcr.io/diegonmarcos/crawlee-cloud-runner:latest",
     "port": null,
     "port_env": null,
-    "dns": "crawlee-runner.app",
+    "dns": "crawlee-runner.mesh.diegonmarcos.com",
     "public": false,
     "healthcheck": null,
     "volumes": [

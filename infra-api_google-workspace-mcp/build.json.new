@@ -1,7 +1,7 @@
 {
   "name": "google-workspace-mcp",
   "description": "Google Workspace MCP server — Gmail, Calendar, Drive, Docs, Sheets via HTTP transport",
-  "dns": "g-workspace-mcp.app",
+  "dns": "g-workspace-mcp.mesh.diegonmarcos.com",
   "ports": {
     "app": 3104
   },
@@ -46,7 +46,7 @@
       "image": "ghcr.io/diegonmarcos/google-workspace-mcp:latest",
       "port": 3104,
       "port_env": "PORT",
-      "dns": "g-workspace-mcp.app",
+      "dns": "g-workspace-mcp.mesh.diegonmarcos.com",
       "public": true,
       "proxy": {
         "streaming": true,

@@ -31,7 +31,7 @@
     "container_name": "cf-worker-http-to-wg-public-bridge",
     "port": 8092,
     "port_env": "LISTEN_PORT",
-    "dns": "cf-worker-http-to-wg-public-bridge.app",
+    "dns": "cf-worker-http-to-wg-public-bridge.mesh.diegonmarcos.com",
     "public": true,
     "bind_host": "10.1.0.1",
     "proxy": {

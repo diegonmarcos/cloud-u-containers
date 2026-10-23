@@ -1,7 +1,7 @@
 {
   "name": "hermes-agent",
   "description": "Nous Research Hermes Agent (autonomous, persistent-memory AI agent) on oci-apps. Messaging gateway (Telegram live, Mattermost scaffolded) backed by claude-superset-api (subscription CLI, no metered key). WG-internal, never public.",
-  "dns": "hermes-agent.app",
+  "dns": "hermes-agent.mesh.diegonmarcos.com",
   "ports": {
     "api": 8642,
     "dashboard": 9119
@@ -60,7 +60,7 @@
       "image": "ghcr.io/diegonmarcos/hermes-agent:latest",
       "port": 8642,
       "port_env": null,
-      "dns": "hermes-agent.app",
+      "dns": "hermes-agent.mesh.diegonmarcos.com",
       "public": false,
       "healthcheck": null,
       "monitoring": null,

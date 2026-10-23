@@ -1,7 +1,7 @@
 {
   "name": "code-server",
   "description": "VS Code IDE (ide.diegonmarcos.com)",
-  "dns": "code-server.app",
+  "dns": "code-server.mesh.diegonmarcos.com",
   "ports": {
     "app": 8443
   },
@@ -34,7 +34,7 @@
       "image": "linuxserver/code-server:latest",
       "port": 8443,
       "port_env": null,
-      "dns": "code-server.app",
+      "dns": "code-server.mesh.diegonmarcos.com",
       "public": true,
       "proxy": {
         "domain": "ide.diegonmarcos.com",

@@ -32,7 +32,7 @@
     "image": "hickorydns/hickory-dns:latest",
     "port": 53,
     "port_env": null,
-    "dns": "hickory-dns.app",
+    "dns": "hickory-dns.mesh.diegonmarcos.com",
     "public": false,
     "proxy": null,
     "healthcheck": null,

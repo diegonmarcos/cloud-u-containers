@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# ── Check all .app DNS resolution (private mesh) ──
+# ── Check all mesh DNS resolution (private mesh) ──
 # Usage: cloud-health-http-private.sh
-# Resolves all .app names via hickory-dns on gcp-proxy
+# Resolves all mesh names via hickory-dns on gcp-proxy
 set -euo pipefail
 
 REPO_ROOT="${GITHUB_WORKSPACE:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
@@ -44,12 +44,12 @@ fi
 
 NAMES=$(jq -r '.services | keys[]' "$DNS_FILE" | sort)
 TOTAL=$(echo "$NAMES" | wc -w)
-echo "Resolving $TOTAL .app names..."
+echo "Resolving $TOTAL mesh names..."
 
 # Build batch dig script for single SSH call
 SCRIPT=""
 for name in $NAMES; do
-  SCRIPT="$SCRIPT echo \"==$name==\"; dig +short ${name}.app @10.0.0.1 2>/dev/null | head -1;"
+  SCRIPT="$SCRIPT echo \"==$name==\"; dig +short ${name}.mesh.diegonmarcos.com @10.0.0.1 2>/dev/null | head -1;"
 done
 
 BATCH_RESULT=$(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 gcp-proxy "$SCRIPT" 2>/dev/null) || {
@@ -67,13 +67,13 @@ echo "$BATCH_RESULT" | while read -r line; do
     RESOLVED="$line"
     EXPECTED=$(jq -r ".services[\"$CURRENT_NAME\"].ip // \"\"" "$DNS_FILE")
     if [ -z "$RESOLVED" ]; then
-      echo "⚠ ${CURRENT_NAME}.app → no zone"
+      echo "⚠ ${CURRENT_NAME}.mesh.diegonmarcos.com → no zone"
       WARN_N=$((WARN_N + 1))
     elif [ "$RESOLVED" = "$EXPECTED" ]; then
-      echo "✓ ${CURRENT_NAME}.app → $RESOLVED"
+      echo "✓ ${CURRENT_NAME}.mesh.diegonmarcos.com → $RESOLVED"
       PASS_N=$((PASS_N + 1))
     else
-      echo "✗ ${CURRENT_NAME}.app → expected=$EXPECTED got=$RESOLVED"
+      echo "✗ ${CURRENT_NAME}.mesh.diegonmarcos.com → expected=$EXPECTED got=$RESOLVED"
       FAIL_N=$((FAIL_N + 1))
     fi
     CURRENT_NAME=""

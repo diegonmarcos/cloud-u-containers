@@ -32,7 +32,7 @@
     "image": "djmaze/snappymail:latest",
     "port": 8888,
     "port_env": null,
-    "dns": "snappymail.app",
+    "dns": "snappymail.mesh.diegonmarcos.com",
     "public": true,
     "proxy": null,
     "healthcheck": "/",

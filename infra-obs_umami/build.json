@@ -1,7 +1,7 @@
 {
   "name": "umami",
   "description": "Umami Analytics - lightweight privacy-focused web analytics",
-  "dns": "umami.app",
+  "dns": "umami.mesh.diegonmarcos.com",
   "category": "tools",
   "build": {
     "include_cloud_data": "true",
@@ -81,7 +81,7 @@
       "image": "ghcr.io/umami-software/umami:latest",
       "port": 3006,
       "port_env": "PORT",
-      "dns": "umami.app",
+      "dns": "umami.mesh.diegonmarcos.com",
       "public": true,
       "proxy": {
         "domain": "analytics.diegonmarcos.com",
@@ -110,7 +110,7 @@
       "image": "postgres:16-alpine",
       "port": 5442,
       "port_env": "PGPORT",
-      "dns": "umami-db.app",
+      "dns": "umami-db.mesh.diegonmarcos.com",
       "public": false,
       "healthcheck": "pg_isready -U umami",
       "volumes": [
@@ -133,7 +133,7 @@
       "image": "curlimages/curl:latest",
       "port": null,
       "port_env": null,
-      "dns": "umami-setup.app",
+      "dns": "umami-setup.mesh.diegonmarcos.com",
       "public": false,
       "healthcheck": null,
       "volumes": [

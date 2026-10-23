@@ -176,10 +176,10 @@ pub async fn layer_self_check(ctx: &Context) -> Vec<Check> {
     {
         let t = Instant::now();
         let resolver = hickory_resolver();
-        let ip = dns_resolve(&resolver, "caddy.app").await;
+        let ip = dns_resolve(&resolver, "caddy.mesh.diegonmarcos.com").await;
         let ok = ip.is_some();
         let detail = format!(
-            "dig caddy.app @10.0.0.1 -> {}",
+            "dig caddy.mesh.diegonmarcos.com @10.0.0.1 -> {}",
             ip.as_deref().unwrap_or("NXDOMAIN")
         );
         checks.push(Check {
@@ -666,7 +666,7 @@ pub async fn layer_private_urls(ctx: &Context) -> Vec<Check> {
     let resolver = hickory_resolver();
 
     // Test if Hickory is up (warn but don't bail — fallback to WG IPs)
-    let hickory_up = dns_resolve(&resolver, "caddy.app").await.is_some();
+    let hickory_up = dns_resolve(&resolver, "caddy.mesh.diegonmarcos.com").await.is_some();
     let mut checks = Vec::new();
     if !hickory_up {
         checks.push(Check {
@@ -741,7 +741,7 @@ pub async fn layer_private_urls(ctx: &Context) -> Vec<Check> {
                 );
 
                 Check {
-                    name: format!("{}.app:{}", name, port),
+                    name: format!("{}.mesh.diegonmarcos.com:{}", name, port),
                     passed: result.ok,
                     details: detail.clone(),
                     duration_ms: t.elapsed().as_millis() as u64,

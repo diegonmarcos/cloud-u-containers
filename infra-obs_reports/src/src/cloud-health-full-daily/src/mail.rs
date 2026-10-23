@@ -499,7 +499,7 @@ async fn check_smtp_https() -> MailCheck {
     }
 }
 
-// ── Helper: Hickory DNS resolves http-to-smtp-proxy-api.app ─────────────────────
+// ── Helper: Hickory DNS resolves http-to-smtp-proxy-api.mesh.diegonmarcos.com ─────────────────────
 
 async fn check_hickory_dns() -> MailCheck {
     let start = Instant::now();
@@ -514,7 +514,7 @@ async fn check_hickory_dns() -> MailCheck {
     opts.timeout = Duration::from_secs(3);
     let resolver = TokioAsyncResolver::tokio(rc, opts);
 
-    let result = timeout(DNS_TIMEOUT, resolver.lookup_ip("http-to-smtp-proxy-api.app")).await;
+    let result = timeout(DNS_TIMEOUT, resolver.lookup_ip("http-to-smtp-proxy-api.mesh.diegonmarcos.com")).await;
     let duration_ms = start.elapsed().as_millis() as u64;
 
     match result {
@@ -522,7 +522,7 @@ async fn check_hickory_dns() -> MailCheck {
             let ips: Vec<String> = lookup.iter().map(|ip| ip.to_string()).collect();
             let passed = !ips.is_empty();
             MailCheck {
-                name: "Hickory DNS http-to-smtp-proxy-api.app".into(),
+                name: "Hickory DNS http-to-smtp-proxy-api.mesh.diegonmarcos.com".into(),
                 passed,
                 details: if passed {
                     format!("resolved to {}", ips.join(", "))
@@ -538,14 +538,14 @@ async fn check_hickory_dns() -> MailCheck {
             }
         }
         Ok(Err(e)) => MailCheck {
-            name: "Hickory DNS http-to-smtp-proxy-api.app".into(),
+            name: "Hickory DNS http-to-smtp-proxy-api.mesh.diegonmarcos.com".into(),
             passed: false,
             details: format!("lookup failed: {}", e),
             severity: "warning".into(),
             duration_ms,
         },
         Err(_) => MailCheck {
-            name: "Hickory DNS http-to-smtp-proxy-api.app".into(),
+            name: "Hickory DNS http-to-smtp-proxy-api.mesh.diegonmarcos.com".into(),
             passed: false,
             details: format!("lookup timed out ({}:53)", HICKORY_IP),
             severity: "warning".into(),

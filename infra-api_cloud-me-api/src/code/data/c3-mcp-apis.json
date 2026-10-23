@@ -10,7 +10,7 @@
       "category": "sec",
       "enabled": true,
       "host": "oci-apps",
-      "dns": "c3-infra-api.app",
+      "dns": "c3-infra-api.mesh.diegonmarcos.com",
       "domain": "api.diegonmarcos.com/c3-infra-api",
       "ports": {
         "app": 8081
@@ -19,7 +19,7 @@
         {
           "key": "app",
           "container_name": "c3-infra-api",
-          "dns": "c3-infra-api.app",
+          "dns": "c3-infra-api.mesh.diegonmarcos.com",
           "port": 8081,
           "protocol": "http",
           "mesh_route": true
@@ -62,7 +62,7 @@
       "category": "obs",
       "enabled": true,
       "host": "oci-analytics",
-      "dns": "c3-public-api.app",
+      "dns": "c3-public-api.mesh.diegonmarcos.com",
       "domain": "api.diegonmarcos.com/pub",
       "ports": {
         "app": 8087
@@ -71,7 +71,7 @@
         {
           "key": "app",
           "container_name": "c3-public-api",
-          "dns": "c3-public-api.app",
+          "dns": "c3-public-api.mesh.diegonmarcos.com",
           "port": 8087,
           "protocol": "http",
           "mesh_route": true
@@ -114,7 +114,7 @@
       "category": "obs",
       "enabled": true,
       "host": "oci-apps",
-      "dns": "c3-services-api.app",
+      "dns": "c3-services-api.mesh.diegonmarcos.com",
       "domain": "api.diegonmarcos.com/c3-services-api",
       "ports": {
         "app": 8082
@@ -123,7 +123,7 @@
         {
           "key": "app",
           "container_name": "c3-services-api",
-          "dns": "c3-services-api.app",
+          "dns": "c3-services-api.mesh.diegonmarcos.com",
           "port": 8082,
           "protocol": "http",
           "mesh_route": true
@@ -161,7 +161,7 @@
       "category": "app",
       "enabled": true,
       "host": "oci-apps",
-      "dns": "drive-mcp.app",
+      "dns": "drive-mcp.mesh.diegonmarcos.com",
       "domain": "mcp.diegonmarcos.com",
       "ports": {
         "app": 3109
@@ -170,7 +170,7 @@
         {
           "key": "app",
           "container_name": "cloud-drive-mcp",
-          "dns": "drive-mcp.app",
+          "dns": "drive-mcp.mesh.diegonmarcos.com",
           "port": 3109,
           "protocol": "http",
           "mesh_route": true
@@ -204,7 +204,7 @@
       "category": "sec",
       "enabled": true,
       "host": "oci-apps",
-      "dns": "c3-infra-mcp.app",
+      "dns": "c3-infra-mcp.mesh.diegonmarcos.com",
       "domain": "mcp.diegonmarcos.com/c3-infra-mcp",
       "ports": {
         "app": 3100
@@ -213,7 +213,7 @@
         {
           "key": "app",
           "container_name": "cloud-infra-mcp",
-          "dns": "c3-infra-mcp.app",
+          "dns": "c3-infra-mcp.mesh.diegonmarcos.com",
           "port": 3100,
           "protocol": "http",
           "mesh_route": true
@@ -249,7 +249,7 @@
       "category": "app",
       "enabled": true,
       "host": "oci-apps",
-      "dns": "mail-mcp.app",
+      "dns": "mail-mcp.mesh.diegonmarcos.com",
       "domain": "mcp.diegonmarcos.com",
       "ports": {
         "app": 3103
@@ -258,7 +258,7 @@
         {
           "key": "app",
           "container_name": "cloud-mail-mcp",
-          "dns": "mail-mcp.app",
+          "dns": "mail-mcp.mesh.diegonmarcos.com",
           "port": 3103,
           "protocol": "http",
           "mesh_route": true
@@ -292,7 +292,7 @@
       "category": "app",
       "enabled": true,
       "host": "oci-apps",
-      "dns": "mattermost-mcp.app",
+      "dns": "mattermost-mcp.mesh.diegonmarcos.com",
       "ports": {
         "app": 3102
       },
@@ -300,7 +300,7 @@
         {
           "key": "app",
           "container_name": "cloud-mattermost-mcp",
-          "dns": "mattermost-mcp.app",
+          "dns": "mattermost-mcp.mesh.diegonmarcos.com",
           "port": 3102,
           "protocol": "http",
           "mesh_route": true
@@ -334,7 +334,7 @@
       "category": "app",
       "enabled": true,
       "host": "oci-analytics",
-      "dns": "cloud-me-api.app",
+      "dns": "cloud-me-api.mesh.diegonmarcos.com",
       "ports": {
         "app": 8124
       },
@@ -342,7 +342,7 @@
         {
           "key": "app",
           "container_name": "cloud-me-api",
-          "dns": "cloud-me-api.app",
+          "dns": "cloud-me-api.mesh.diegonmarcos.com",
           "port": 8124,
           "protocol": "http",
           "mesh_route": true
@@ -403,7 +403,7 @@
       "category": "obs",
       "enabled": true,
       "host": "oci-apps",
-      "dns": "c3-services-mcp.app",
+      "dns": "c3-services-mcp.mesh.diegonmarcos.com",
       "ports": {
         "app": 3101
       },
@@ -411,7 +411,7 @@
         {
           "key": "app",
           "container_name": "cloud-services-mcp",
-          "dns": "c3-services-mcp.app",
+          "dns": "c3-services-mcp.mesh.diegonmarcos.com",
           "port": 3101,
           "protocol": "http",
           "mesh_route": true
@@ -445,7 +445,7 @@
       "category": "app",
       "enabled": true,
       "host": "oci-apps",
-      "dns": "superapp-mcp.app",
+      "dns": "superapp-mcp.mesh.diegonmarcos.com",
       "domain": "mcp.diegonmarcos.com",
       "ports": {
         "app": 3110
@@ -454,7 +454,7 @@
         {
           "key": "app",
           "container_name": "cloud-superapp-mcp",
-          "dns": "superapp-mcp.app",
+          "dns": "superapp-mcp.mesh.diegonmarcos.com",
           "port": 3110,
           "protocol": "http",
           "mesh_route": true
@@ -488,7 +488,7 @@
       "category": "data",
       "enabled": true,
       "host": "oci-apps",
-      "dns": "vault-mcp.app",
+      "dns": "vault-mcp.mesh.diegonmarcos.com",
       "domain": "mcp.diegonmarcos.com",
       "ports": {
         "app": 3111
@@ -497,7 +497,7 @@
         {
           "key": "app",
           "container_name": "cloud-vault-mcp",
-          "dns": "vault-mcp.app",
+          "dns": "vault-mcp.mesh.diegonmarcos.com",
           "port": 3111,
           "protocol": "http",
           "mesh_route": false
@@ -531,7 +531,7 @@
       "category": "app",
       "enabled": true,
       "host": "oci-analytics",
-      "dns": "git-proxy-api.app",
+      "dns": "git-proxy-api.mesh.diegonmarcos.com",
       "domain": "api.diegonmarcos.com/git",
       "ports": {
         "app": 8123
@@ -540,7 +540,7 @@
         {
           "key": "app",
           "container_name": "git-proxy-api",
-          "dns": "git-proxy-api.app",
+          "dns": "git-proxy-api.mesh.diegonmarcos.com",
           "port": 8123,
           "protocol": "http",
           "mesh_route": true
@@ -628,7 +628,7 @@
       "category": "app",
       "enabled": true,
       "host": "oci-apps",
-      "dns": "g-personal-mcp.app",
+      "dns": "g-personal-mcp.mesh.diegonmarcos.com",
       "domain": "mcp.diegonmarcos.com",
       "ports": {
         "app": 3106
@@ -637,7 +637,7 @@
         {
           "key": "app",
           "container_name": "google-personal-mcp",
-          "dns": "g-personal-mcp.app",
+          "dns": "g-personal-mcp.mesh.diegonmarcos.com",
           "port": 3106,
           "protocol": "http",
           "mesh_route": true
@@ -671,7 +671,7 @@
       "category": "app",
       "enabled": true,
       "host": "oci-apps",
-      "dns": "g-workspace-mcp.app",
+      "dns": "g-workspace-mcp.mesh.diegonmarcos.com",
       "domain": "mcp.diegonmarcos.com",
       "ports": {
         "app": 3104
@@ -680,7 +680,7 @@
         {
           "key": "app",
           "container_name": "google-workspace-mcp",
-          "dns": "g-workspace-mcp.app",
+          "dns": "g-workspace-mcp.mesh.diegonmarcos.com",
           "port": 3104,
           "protocol": "http",
           "mesh_route": true
@@ -714,7 +714,7 @@
       "category": "app",
       "enabled": false,
       "host": "gcp-proxy",
-      "dns": "http-to-smtp-proxy-api.app",
+      "dns": "http-to-smtp-proxy-api.mesh.diegonmarcos.com",
       "domain": "api.diegonmarcos.com/http-to-smtp-proxy-api",
       "ports": {
         "app": 8090
@@ -723,7 +723,7 @@
         {
           "key": "app",
           "container_name": "http-to-smtp-proxy-api",
-          "dns": "http-to-smtp-proxy-api.app",
+          "dns": "http-to-smtp-proxy-api.mesh.diegonmarcos.com",
           "port": 8090,
           "protocol": "http",
           "mesh_route": true
@@ -755,7 +755,7 @@
       "category": "obs",
       "enabled": true,
       "host": "oci-apps",
-      "dns": "cloud-cgc-pub-mcp.app",
+      "dns": "cloud-cgc-pub-mcp.mesh.diegonmarcos.com",
       "ports": {
         "app": 3105,
         "pvt": 3107
@@ -764,7 +764,7 @@
         {
           "key": "app",
           "container_name": "cloud-cgc-pub-mcp",
-          "dns": "cloud-cgc-pub-mcp.app",
+          "dns": "cloud-cgc-pub-mcp.mesh.diegonmarcos.com",
           "port": 3105,
           "protocol": "http",
           "mesh_route": true
@@ -806,7 +806,7 @@
       "category": "agi",
       "enabled": true,
       "host": "oci-apps",
-      "dns": "my-ai-api.app",
+      "dns": "my-ai-api.mesh.diegonmarcos.com",
       "ports": {
         "app": 3217,
         "ollama": 12436,
@@ -818,7 +818,7 @@
         {
           "key": "app",
           "container_name": "cloud-agi-goose",
-          "dns": "my-ai-api.app",
+          "dns": "my-ai-api.mesh.diegonmarcos.com",
           "port": 3217,
           "protocol": "http",
           "mesh_route": false
@@ -834,7 +834,7 @@
       "category": "agi",
       "enabled": true,
       "host": "oci-apps",
-      "dns": "my-ai-claude-api.app",
+      "dns": "my-ai-claude-api.mesh.diegonmarcos.com",
       "ports": {
         "app": 3117,
         "ollama": 11436,
@@ -845,7 +845,7 @@
         {
           "key": "app",
           "container_name": "cloud-agi-claude",
-          "dns": "my-ai-claude-api.app",
+          "dns": "my-ai-claude-api.mesh.diegonmarcos.com",
           "port": 3117,
           "protocol": "http",
           "mesh_route": false
@@ -861,7 +861,7 @@
       "category": "data",
       "enabled": true,
       "host": "oci-apps",
-      "dns": "scrappers-api.app",
+      "dns": "scrappers-api.mesh.diegonmarcos.com",
       "domain": "api.diegonmarcos.com/scrappers",
       "ports": {
         "app": 3020
@@ -870,7 +870,7 @@
         {
           "key": "app",
           "container_name": "scrappers-api",
-          "dns": "scrappers-api.app",
+          "dns": "scrappers-api.mesh.diegonmarcos.com",
           "port": 3020,
           "protocol": "http",
           "mesh_route": true
@@ -911,7 +911,7 @@
       "category": "fin",
       "enabled": true,
       "host": "oci-apps",
-      "dns": "fin-api.app",
+      "dns": "fin-api.mesh.diegonmarcos.com",
       "domain": "api.diegonmarcos.com/fin-api",
       "ports": {
         "app": 8340
@@ -920,7 +920,7 @@
         {
           "key": "app",
           "container_name": "fin-api",
-          "dns": "fin-api.app",
+          "dns": "fin-api.mesh.diegonmarcos.com",
           "port": 8340,
           "protocol": "http",
           "mesh_route": true

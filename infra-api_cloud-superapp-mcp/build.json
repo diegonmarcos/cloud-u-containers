@@ -1,8 +1,8 @@
 {
   "name": "cloud-superapp-mcp",
   "description": "MCP + HTTP faces over the Android constellation's on-device debug API (libs:devtools AppDebugServer, behind the SuperApp mesh gateway), reached over ssh. lib-api/lib-mcp shared, one module per app under mcps-apps/, one server process.",
-  "dns": "superapp-mcp.app",
-  "dns_aliases": ["cloud-superapp-mcp.app"],
+  "dns": "superapp-mcp.mesh.diegonmarcos.com",
+  "dns_aliases": ["cloud-superapp-mcp.mesh.diegonmarcos.com"],
   "category": "app",
   "build": {
     "include_cloud_data": "true",
@@ -145,7 +145,7 @@
       "image": "ghcr.io/diegonmarcos/cloud-superapp-mcp:latest",
       "port": 3110,
       "port_env": "PORT",
-      "dns": "superapp-mcp.app",
+      "dns": "superapp-mcp.mesh.diegonmarcos.com",
       "public": true,
       "proxy": {
         "streaming": true,

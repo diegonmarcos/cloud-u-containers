@@ -32,7 +32,7 @@
     "image": "ghcr.io/diegonmarcos/kg-bridge:latest",
     "port": 3107,
     "port_env": "BRIDGE_PORT",
-    "dns": "kg-bridge.app",
+    "dns": "kg-bridge.mesh.diegonmarcos.com",
     "public": false,
     "healthcheck": "/health",
     "monitoring": null,

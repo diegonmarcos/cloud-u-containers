@@ -25,7 +25,7 @@
       "image": "ghcr.io/diegonmarcos/unbound-dns64:latest",
       "port": 53,
       "port_env": null,
-      "dns": "unbound-dns64.app",
+      "dns": "unbound-dns64.mesh.diegonmarcos.com",
       "public": true,
       "proxy": null,
       "healthcheck": null,

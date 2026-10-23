@@ -12,7 +12,7 @@ import { resolveName, readEvents, isLogFileName, type AppKind, type DeclaredApk 
 // The names are DECLARED, not typed here: APKs from api/declared-apks.json (generated from the
 // constellation fleet manifest by gen-declared-apks.mjs), containers from the containers manifest
 // (config services). An undeclared name is a 404.
-// AUTH is plugins/auth.ts, unchanged: the mesh (c3-infra-api.app) is trusted, the public path
+// AUTH is plugins/auth.ts, unchanged: the mesh (c3-infra-api.mesh.diegonmarcos.com) is trusted, the public path
 // (c3-pvt.diegonmarcos.com/c3-infra-api/...) is admitted when Caddy has validated the bearer or the cookie.
 // This is the same store the unauthenticated /public/events/:app writes, under a per-kind directory.
 

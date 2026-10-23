@@ -1,7 +1,7 @@
 {
   "name": "jev-sidecar",
   "description": "Jev decisions sidecar on oci-apps (#881) — `jev-gate serve`: POST /decide/<use> with {state, questions} on the WireGuard mesh for the sites that cannot carry a gate of their own (Dagu DAGs, journal-ntfy.sh, maddy post-hoc). One OPENROUTER_API_KEY, one answer cache, one daily USD cap and per-use hourly limits, one journal on stdout for the fleet's log-shipper (OpenObserve). Jev only suggests: every failure answers {ok:false, reason} and the caller keeps today's behaviour. Uses are declared in _shared/jev-gate/jev-gate.json, the same file the agent CLIs' gate reads. WG-only, never public.",
-  "dns": "jev-sidecar.app",
+  "dns": "jev-sidecar.mesh.diegonmarcos.com",
   "ports": {
     "app": 3110
   },
@@ -28,7 +28,7 @@
       "image": "ghcr.io/diegonmarcos/jev-sidecar:latest",
       "port": 3110,
       "port_env": "JEV_GATE_PORT",
-      "dns": "jev-sidecar.app",
+      "dns": "jev-sidecar.mesh.diegonmarcos.com",
       "public": false,
       "healthcheck": "/health",
       "monitoring": null,

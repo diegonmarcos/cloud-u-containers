@@ -1,8 +1,8 @@
 {
   "name": "cloud-mattermost-mcp",
   "description": "Mattermost MCP server — chat tools via HTTP transport",
-  "dns": "mattermost-mcp.app",
-  "dns_aliases": ["cloud-mattermost-mcp.app"],
+  "dns": "mattermost-mcp.mesh.diegonmarcos.com",
+  "dns_aliases": ["cloud-mattermost-mcp.mesh.diegonmarcos.com"],
   "category": "app",
   "upstream_image": "ghcr.io/diegonmarcos/cloud-mattermost-mcp:latest",
   "build": {
@@ -46,7 +46,7 @@
       "image": "ghcr.io/diegonmarcos/cloud-mattermost-mcp:latest",
       "port": 3102,
       "port_env": "MCP_HTTP_PORT",
-      "dns": "mattermost-mcp.app",
+      "dns": "mattermost-mcp.mesh.diegonmarcos.com",
       "public": true,
       "proxy": {
         "streaming": true,

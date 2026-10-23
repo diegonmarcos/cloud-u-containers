@@ -10,7 +10,7 @@
       "category": "tools",
       "enabled": true,
       "host": "oci-analytics",
-      "dns": "alerts-api.app",
+      "dns": "alerts-api.mesh.diegonmarcos.com",
       "containers": [],
       "routes": [],
       "exposure": "wg-only (mesh)"
@@ -21,7 +21,7 @@
       "description": "Unified Cloud Documentation Portal",
       "enabled": true,
       "host": "oci-apps",
-      "dns": "c3-spec.app",
+      "dns": "c3-spec.mesh.diegonmarcos.com",
       "ports": {
         "app": 3080
       },
@@ -29,7 +29,7 @@
         {
           "key": "app",
           "container_name": "cloud-spec",
-          "dns": "c3-spec.app",
+          "dns": "c3-spec.mesh.diegonmarcos.com",
           "port": 3080,
           "protocol": "http",
           "mesh_route": true
@@ -54,7 +54,7 @@
       "category": "tools",
       "enabled": true,
       "host": "oci-apps",
-      "dns": "dagu.app",
+      "dns": "dagu.mesh.diegonmarcos.com",
       "domain": "workflows.diegonmarcos.com",
       "ports": {
         "app": 8070
@@ -63,7 +63,7 @@
         {
           "key": "app",
           "container_name": "dagu",
-          "dns": "dagu.app",
+          "dns": "dagu.mesh.diegonmarcos.com",
           "port": 8070,
           "protocol": "http",
           "mesh_route": true
@@ -98,7 +98,7 @@
       "category": "tools",
       "enabled": true,
       "host": "oci-apps",
-      "dns": "dbgate.app",
+      "dns": "dbgate.mesh.diegonmarcos.com",
       "domain": "db.diegonmarcos.com",
       "ports": {
         "app": 8086
@@ -107,7 +107,7 @@
         {
           "key": "app",
           "container_name": "dbgate",
-          "dns": "dbgate.app",
+          "dns": "dbgate.mesh.diegonmarcos.com",
           "port": 8086,
           "protocol": "http",
           "mesh_route": true
@@ -136,7 +136,7 @@
       "category": "tools",
       "enabled": true,
       "host": "oci-apps",
-      "dns": "matomo.app",
+      "dns": "matomo.mesh.diegonmarcos.com",
       "domain": "analytics.diegonmarcos.com/matomo",
       "ports": {
         "app": 8080
@@ -145,7 +145,7 @@
         {
           "key": "app",
           "container_name": "matomo-hybrid",
-          "dns": "matomo.app",
+          "dns": "matomo.mesh.diegonmarcos.com",
           "port": 8080,
           "protocol": "http",
           "mesh_route": true
@@ -182,7 +182,7 @@
       "category": "tools",
       "enabled": true,
       "host": "oci-apps",
-      "dns": "ntfy.app",
+      "dns": "ntfy.mesh.diegonmarcos.com",
       "domain": "rss.diegonmarcos.com",
       "ports": {
         "app": 8090,
@@ -192,7 +192,7 @@
         {
           "key": "app",
           "container_name": "ntfy",
-          "dns": "ntfy.app",
+          "dns": "ntfy.mesh.diegonmarcos.com",
           "port": 8090,
           "protocol": "http",
           "mesh_route": true
@@ -249,7 +249,7 @@
       "category": "tools",
       "enabled": true,
       "host": "oci-apps",
-      "dns": "openobserve.app",
+      "dns": "openobserve.mesh.diegonmarcos.com",
       "domain": "analytics.diegonmarcos.com/openobserve",
       "ports": {
         "app": 5080
@@ -258,7 +258,7 @@
         {
           "key": "app",
           "container_name": "openobserve",
-          "dns": "openobserve.app",
+          "dns": "openobserve.mesh.diegonmarcos.com",
           "port": 5080,
           "protocol": "http",
           "mesh_route": true
@@ -305,7 +305,7 @@
       "category": "tools",
       "enabled": true,
       "host": "oci-apps",
-      "dns": "umami.app",
+      "dns": "umami.mesh.diegonmarcos.com",
       "domain": "analytics.diegonmarcos.com/umami",
       "ports": {
         "app": 3006,
@@ -315,7 +315,7 @@
         {
           "key": "app",
           "container_name": "umami",
-          "dns": "umami.app",
+          "dns": "umami.mesh.diegonmarcos.com",
           "port": 3006,
           "protocol": "http",
           "mesh_route": true
@@ -323,7 +323,7 @@
         {
           "key": "db",
           "container_name": "umami-db",
-          "dns": "umami-db.app",
+          "dns": "umami-db.mesh.diegonmarcos.com",
           "port": 5442,
           "protocol": "tcp",
           "mesh_route": false
@@ -331,7 +331,7 @@
         {
           "key": "setup",
           "container_name": "umami-setup",
-          "dns": "umami-setup.app",
+          "dns": "umami-setup.mesh.diegonmarcos.com",
           "port": null,
           "mesh_route": false
         }

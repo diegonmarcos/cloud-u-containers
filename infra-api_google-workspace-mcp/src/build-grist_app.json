@@ -32,7 +32,7 @@
     "image": "gristlabs/grist:latest",
     "port": 3011,
     "port_env": "PORT",
-    "dns": "grist.app",
+    "dns": "grist.mesh.diegonmarcos.com",
     "public": true,
     "proxy": {
       "domain": "sheets.diegonmarcos.com",

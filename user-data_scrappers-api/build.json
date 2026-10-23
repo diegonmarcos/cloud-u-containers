@@ -30,7 +30,7 @@
   },
   "timezone": "Europe/Paris",
   "category": "data",
-  "dns": "scrappers-api.app",
+  "dns": "scrappers-api.mesh.diegonmarcos.com",
   "domain": "api.diegonmarcos.com/scrappers",
   "proxy": {
     "primary": {
@@ -62,7 +62,7 @@
       "port": 3020,
       "port_env": "PORT",
       "protocol": "http",
-      "dns": "scrappers-api.app",
+      "dns": "scrappers-api.mesh.diegonmarcos.com",
       "public": true,
       "proxy": {
         "domain": "api.diegonmarcos.com",

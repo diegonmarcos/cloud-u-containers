@@ -1,7 +1,7 @@
 {
   "name": "c3-infra-api",
   "description": "C3 REST API — Cloud Control Center Fastify API",
-  "dns": "c3-infra-api.app",
+  "dns": "c3-infra-api.mesh.diegonmarcos.com",
   "ports": {
     "app": 8081
   },
@@ -60,7 +60,7 @@
       "image": "ghcr.io/diegonmarcos/c3-infra-api:latest",
       "port": 8081,
       "port_env": "PORT",
-      "dns": "c3-infra-api.app",
+      "dns": "c3-infra-api.mesh.diegonmarcos.com",
       "public": true,
       "proxy": {
         "type": "path",

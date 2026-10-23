@@ -638,7 +638,7 @@ echo Q | timeout 8 openssl s_client -connect {mail_wg}:465 -servername {mail_dom
 echo "===autheliaHealth==="
 # Authelia publishes on gcp-proxy's WG IP (10.0.0.1:9091), not localhost.
 # Probing localhost:9091 always returned FAIL.
-curl -skf http://{proxy_wg}:9091/api/health 2>/dev/null || curl -skf http://authelia.app:9091/api/health 2>/dev/null || echo "FAIL""#,
+curl -skf http://{proxy_wg}:9091/api/health 2>/dev/null || curl -skf http://authelia.mesh.diegonmarcos.com:9091/api/health 2>/dev/null || echo "FAIL""#,
         mail_wg = MAIL_WG_IP,
         mail_domain = MAIL_DOMAIN,
         proxy_wg = PROXY_WG_IP,

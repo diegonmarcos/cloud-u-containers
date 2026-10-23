@@ -16,12 +16,6 @@ directory = "/etc/zones"
 
 # ── Wildcard zones (catch-all → Caddy WG IP) ──
 [[zones]]
-zone = "app"
-zone_type = "Primary"
-file = "app.zone"
-
-
-[[zones]]
 zone = "db"
 zone_type = "Primary"
 file = "db.zone"

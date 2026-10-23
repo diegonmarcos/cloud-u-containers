@@ -32,7 +32,7 @@
     "image": "cypht/cypht:latest",
     "port": 8889,
     "port_env": null,
-    "dns": "cypht.app",
+    "dns": "cypht.mesh.diegonmarcos.com",
     "public": true,
     "proxy": {
       "domain": "webmail.diegonmarcos.com",

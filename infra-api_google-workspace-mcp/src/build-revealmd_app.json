@@ -32,7 +32,7 @@
     "image": "webpronl/reveal-md:latest",
     "port": 3014,
     "port_env": null,
-    "dns": "revealmd.app",
+    "dns": "revealmd.mesh.diegonmarcos.com",
     "public": true,
     "proxy": null,
     "healthcheck": null,

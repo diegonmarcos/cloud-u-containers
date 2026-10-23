@@ -327,7 +327,7 @@
       "properties": {
         "upstream": {
           "type": "string",
-          "description": "Upstream address in format 'service.app:port' (resolved via Hickory DNS over WireGuard)"
+          "description": "Upstream address in format 'service.mesh.diegonmarcos.com:port' (resolved via Hickory DNS over WireGuard)"
         },
         "auth": {
           "type": "string",
@@ -401,7 +401,7 @@
               },
               "upstream": {
                 "type": "string",
-                "description": "Upstream address in format 'service.app:port'"
+                "description": "Upstream address in format 'service.mesh.diegonmarcos.com:port'"
               },
               "comment": {
                 "type": "string",
@@ -602,7 +602,7 @@
     },
     "dns": {
       "type": "string",
-      "description": "Internal DNS name (e.g. 'service.app')"
+      "description": "Internal DNS name (e.g. 'service.mesh.diegonmarcos.com')"
     },
     "ssh_port": {
       "type": "integer",

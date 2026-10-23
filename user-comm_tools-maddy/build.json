@@ -1,7 +1,7 @@
 {
   "name": "maddy",
   "description": "Maddy Mail Server (mail.diegonmarcos.com)",
-  "dns": "maddy.app",
+  "dns": "maddy.mesh.diegonmarcos.com",
   "category": "app",
   "domain": "mail.diegonmarcos.com",
   "deploy": {
@@ -130,7 +130,7 @@
         { "port": 993, "protocol": "tls",      "bind": ["10.0.0.3", "10.1.0.3"], "service": "imap_ssl",      "desc": "IMAPS — dual-bind wg0+wg-public, reached via Caddy L4 from oci-analytics" },
         { "port": 143, "protocol": "tcp",      "bind": ["10.0.0.3", "10.1.0.3"], "service": "imap_plain",    "desc": "IMAP plain — dual-bind wg0+wg-public" }
       ],
-      "dns": "maddy.app",
+      "dns": "maddy.mesh.diegonmarcos.com",
       "public": false,
       "proxy": null,
       "healthcheck": null,

@@ -32,7 +32,7 @@
     "image": "ghcr.io/diegonmarcos/crawlee-cloud-dashboard:latest",
     "port": 3001,
     "port_env": "PORT",
-    "dns": "crawlee-dashboard.app",
+    "dns": "crawlee-dashboard.mesh.diegonmarcos.com",
     "public": false,
     "healthcheck": null,
     "volumes": [],

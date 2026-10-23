@@ -601,175 +601,175 @@
   },
   "internal_routes": [
     {
-      "service": "matrix-continuwuity.app",
+      "service": "matrix-continuwuity.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:8008"
     },
     {
-      "service": "c3-infra-api.app",
+      "service": "c3-infra-api.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:8081"
     },
     {
-      "service": "c3-infra-mcp.app",
+      "service": "c3-infra-mcp.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:3100"
     },
     {
-      "service": "c3-public-api.app",
+      "service": "c3-public-api.mesh.diegonmarcos.com",
       "upstream": "10.0.0.4:8087"
     },
     {
-      "service": "c3-services-api.app",
+      "service": "c3-services-api.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:8082"
     },
     {
-      "service": "c3-services-mcp.app",
+      "service": "c3-services-mcp.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:3101"
     },
     {
-      "service": "g-personal-mcp.app",
+      "service": "g-personal-mcp.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:3106"
     },
     {
-      "service": "g-workspace-mcp.app",
+      "service": "g-workspace-mcp.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:3104"
     },
     {
-      "service": "mail-mcp.app",
+      "service": "mail-mcp.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:3103"
     },
     {
-      "service": "mattermost-mcp.app",
+      "service": "mattermost-mcp.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:3102"
     },
     {
-      "service": "gitea.app",
+      "service": "gitea.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:3002"
     },
     {
-      "service": "unbound-dns64.app",
+      "service": "unbound-dns64.mesh.diegonmarcos.com",
       "upstream": "10.0.0.4:53"
     },
     {
-      "service": "wireguard-mesh.app",
+      "service": "wireguard-mesh.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:8080"
     },
     {
-      "service": "c3-spec.app",
+      "service": "c3-spec.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:3080"
     },
     {
-      "service": "dagu.app",
+      "service": "dagu.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:8070"
     },
     {
-      "service": "dbgate.app",
+      "service": "dbgate.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:8086"
     },
     {
-      "service": "matomo.app",
+      "service": "matomo.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:8084"
     },
     {
-      "service": "ntfy.app",
+      "service": "ntfy.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:8090"
     },
     {
-      "service": "openobserve.app",
+      "service": "openobserve.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:5080"
     },
     {
-      "service": "umami.app",
+      "service": "umami.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:3006"
     },
     {
-      "service": "authelia.app",
+      "service": "authelia.mesh.diegonmarcos.com",
       "upstream": "10.0.0.1:9091"
     },
     {
-      "service": "caddy.app",
+      "service": "caddy.mesh.diegonmarcos.com",
       "upstream": "10.0.0.1:443"
     },
     {
-      "service": "caddy-public.app",
+      "service": "caddy-public.mesh.diegonmarcos.com",
       "upstream": "10.0.0.4:443"
     },
     {
-      "service": "crowdsec.app",
+      "service": "crowdsec.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:8088"
     },
     {
-      "service": "cloud-cgc-mcp.app",
+      "service": "cloud-cgc-mcp.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:3105"
     },
     {
-      "service": "mattermost.app",
+      "service": "mattermost.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:8065"
     },
     {
-      "service": "matrix-element.app",
+      "service": "matrix-element.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:8083"
     },
     {
-      "service": "snappymail.app",
+      "service": "snappymail.mesh.diegonmarcos.com",
       "upstream": "10.0.0.3:8888"
     },
     {
-      "service": "stalwart.app",
+      "service": "stalwart.mesh.diegonmarcos.com",
       "upstream": "10.0.0.3:2443"
     },
     {
-      "service": "scrappers-api.app",
+      "service": "scrappers-api.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:3020"
     },
     {
-      "service": "fin-api.app",
+      "service": "fin-api.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:8340"
     },
     {
-      "service": "photoprism.app",
+      "service": "photoprism.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:3013"
     },
     {
-      "service": "playlist-syncer.app",
+      "service": "playlist-syncer.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:8090"
     },
     {
-      "service": "news-gdelt.app",
+      "service": "news-gdelt.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:3019"
     },
     {
-      "service": "calendar.app",
+      "service": "calendar.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:5232"
     },
     {
-      "service": "code-server.app",
+      "service": "code-server.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:8443"
     },
     {
-      "service": "contacts.app",
+      "service": "contacts.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:5233"
     },
     {
-      "service": "etherpad.app",
+      "service": "etherpad.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:3012"
     },
     {
-      "service": "filebrowser.app",
+      "service": "filebrowser.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:3015"
     },
     {
-      "service": "grist.app",
+      "service": "grist.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:3011"
     },
     {
-      "service": "hedgedoc.app",
+      "service": "hedgedoc.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:3018"
     },
     {
-      "service": "paca.app",
+      "service": "paca.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:8095"
     },
     {
-      "service": "send.app",
+      "service": "send.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:3016"
     },
     {
@@ -779,31 +779,31 @@
   ],
   "s3_routes": [
     {
-      "service": "s3-backups-binaries.app",
+      "service": "s3-backups-binaries.mesh.diegonmarcos.com",
       "s3_endpoint": "https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com",
       "s3_host": "axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com",
       "bucket": "cloud-backups-binaries-medias"
     },
     {
-      "service": "s3-backups-db.app",
+      "service": "s3-backups-db.mesh.diegonmarcos.com",
       "s3_endpoint": "https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com",
       "s3_host": "axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com",
       "bucket": "cloud-backups-db"
     },
     {
-      "service": "s3-backups-media.app",
+      "service": "s3-backups-media.mesh.diegonmarcos.com",
       "s3_endpoint": "https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com",
       "s3_host": "axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com",
       "bucket": "cloud-backups-media"
     },
     {
-      "service": "s3-backups-nonbin.app",
+      "service": "s3-backups-nonbin.mesh.diegonmarcos.com",
       "s3_endpoint": "https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com",
       "s3_host": "axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com",
       "bucket": "cloud-backups-non-binaries"
     },
     {
-      "service": "s3-photos.app",
+      "service": "s3-photos.mesh.diegonmarcos.com",
       "s3_endpoint": "https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com",
       "s3_host": "axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com",
       "bucket": "my-photos"
@@ -816,8 +816,8 @@
   "all_app_urls": [
     {
       "kind": "redirect",
-      "service": "continuwuity.app",
-      "redirect_to": "https://continuwuity-http-8008.app",
+      "service": "continuwuity.mesh.diegonmarcos.com",
+      "redirect_to": "https://continuwuity-http-8008.mesh.diegonmarcos.com",
       "container": "continuwuity",
       "container_key": "app",
       "svc": "matrix-continuwuity",
@@ -825,7 +825,7 @@
     },
     {
       "kind": "canonical",
-      "service": "continuwuity-http-8008.app",
+      "service": "continuwuity-http-8008.mesh.diegonmarcos.com",
       "container": "continuwuity",
       "container_key": "app",
       "svc": "matrix-continuwuity",
@@ -837,8 +837,8 @@
     },
     {
       "kind": "redirect",
-      "service": "c3-infra-api.app",
-      "redirect_to": "https://c3-infra-api-http-8081.app",
+      "service": "c3-infra-api.mesh.diegonmarcos.com",
+      "redirect_to": "https://c3-infra-api-http-8081.mesh.diegonmarcos.com",
       "container": "c3-infra-api",
       "container_key": "app",
       "svc": "c3-infra-api",
@@ -846,7 +846,7 @@
     },
     {
       "kind": "canonical",
-      "service": "c3-infra-api-http-8081.app",
+      "service": "c3-infra-api-http-8081.mesh.diegonmarcos.com",
       "container": "c3-infra-api",
       "container_key": "app",
       "svc": "c3-infra-api",
@@ -858,8 +858,8 @@
     },
     {
       "kind": "redirect",
-      "service": "c3-infra-mcp.app",
-      "redirect_to": "https://c3-infra-mcp-http-3100.app",
+      "service": "c3-infra-mcp.mesh.diegonmarcos.com",
+      "redirect_to": "https://c3-infra-mcp-http-3100.mesh.diegonmarcos.com",
       "container": "c3-infra-mcp",
       "container_key": "app",
       "svc": "c3-infra-mcp",
@@ -867,7 +867,7 @@
     },
     {
       "kind": "canonical",
-      "service": "c3-infra-mcp-http-3100.app",
+      "service": "c3-infra-mcp-http-3100.mesh.diegonmarcos.com",
       "container": "c3-infra-mcp",
       "container_key": "app",
       "svc": "c3-infra-mcp",
@@ -879,8 +879,8 @@
     },
     {
       "kind": "redirect",
-      "service": "c3-public-api.app",
-      "redirect_to": "https://c3-public-api-http-8087.app",
+      "service": "c3-public-api.mesh.diegonmarcos.com",
+      "redirect_to": "https://c3-public-api-http-8087.mesh.diegonmarcos.com",
       "container": "c3-public-api",
       "container_key": "app",
       "svc": "c3-public-api",
@@ -888,7 +888,7 @@
     },
     {
       "kind": "canonical",
-      "service": "c3-public-api-http-8087.app",
+      "service": "c3-public-api-http-8087.mesh.diegonmarcos.com",
       "container": "c3-public-api",
       "container_key": "app",
       "svc": "c3-public-api",
@@ -900,8 +900,8 @@
     },
     {
       "kind": "redirect",
-      "service": "c3-services-api.app",
-      "redirect_to": "https://c3-services-api-http-8082.app",
+      "service": "c3-services-api.mesh.diegonmarcos.com",
+      "redirect_to": "https://c3-services-api-http-8082.mesh.diegonmarcos.com",
       "container": "c3-services-api",
       "container_key": "app",
       "svc": "c3-services-api",
@@ -909,7 +909,7 @@
     },
     {
       "kind": "canonical",
-      "service": "c3-services-api-http-8082.app",
+      "service": "c3-services-api-http-8082.mesh.diegonmarcos.com",
       "container": "c3-services-api",
       "container_key": "app",
       "svc": "c3-services-api",
@@ -921,8 +921,8 @@
     },
     {
       "kind": "redirect",
-      "service": "c3-services-mcp.app",
-      "redirect_to": "https://c3-services-mcp-http-3101.app",
+      "service": "c3-services-mcp.mesh.diegonmarcos.com",
+      "redirect_to": "https://c3-services-mcp-http-3101.mesh.diegonmarcos.com",
       "container": "c3-services-mcp",
       "container_key": "app",
       "svc": "c3-services-mcp",
@@ -930,7 +930,7 @@
     },
     {
       "kind": "canonical",
-      "service": "c3-services-mcp-http-3101.app",
+      "service": "c3-services-mcp-http-3101.mesh.diegonmarcos.com",
       "container": "c3-services-mcp",
       "container_key": "app",
       "svc": "c3-services-mcp",
@@ -942,8 +942,8 @@
     },
     {
       "kind": "redirect",
-      "service": "google-personal-mcp.app",
-      "redirect_to": "https://google-personal-mcp-http-3106.app",
+      "service": "google-personal-mcp.mesh.diegonmarcos.com",
+      "redirect_to": "https://google-personal-mcp-http-3106.mesh.diegonmarcos.com",
       "container": "google-personal-mcp",
       "container_key": "app",
       "svc": "google-personal-mcp",
@@ -951,7 +951,7 @@
     },
     {
       "kind": "canonical",
-      "service": "google-personal-mcp-http-3106.app",
+      "service": "google-personal-mcp-http-3106.mesh.diegonmarcos.com",
       "container": "google-personal-mcp",
       "container_key": "app",
       "svc": "google-personal-mcp",
@@ -963,8 +963,8 @@
     },
     {
       "kind": "redirect",
-      "service": "google-workspace-mcp.app",
-      "redirect_to": "https://google-workspace-mcp-http-3104.app",
+      "service": "google-workspace-mcp.mesh.diegonmarcos.com",
+      "redirect_to": "https://google-workspace-mcp-http-3104.mesh.diegonmarcos.com",
       "container": "google-workspace-mcp",
       "container_key": "app",
       "svc": "google-workspace-mcp",
@@ -972,7 +972,7 @@
     },
     {
       "kind": "canonical",
-      "service": "google-workspace-mcp-http-3104.app",
+      "service": "google-workspace-mcp-http-3104.mesh.diegonmarcos.com",
       "container": "google-workspace-mcp",
       "container_key": "app",
       "svc": "google-workspace-mcp",
@@ -984,8 +984,8 @@
     },
     {
       "kind": "redirect",
-      "service": "mail-mcp.app",
-      "redirect_to": "https://mail-mcp-http-3103.app",
+      "service": "mail-mcp.mesh.diegonmarcos.com",
+      "redirect_to": "https://mail-mcp-http-3103.mesh.diegonmarcos.com",
       "container": "mail-mcp",
       "container_key": "app",
       "svc": "mail-mcp",
@@ -993,7 +993,7 @@
     },
     {
       "kind": "canonical",
-      "service": "mail-mcp-http-3103.app",
+      "service": "mail-mcp-http-3103.mesh.diegonmarcos.com",
       "container": "mail-mcp",
       "container_key": "app",
       "svc": "mail-mcp",
@@ -1005,8 +1005,8 @@
     },
     {
       "kind": "redirect",
-      "service": "mattermost-mcp.app",
-      "redirect_to": "https://mattermost-mcp-http-3102.app",
+      "service": "mattermost-mcp.mesh.diegonmarcos.com",
+      "redirect_to": "https://mattermost-mcp-http-3102.mesh.diegonmarcos.com",
       "container": "mattermost-mcp",
       "container_key": "app",
       "svc": "mattermost-mcp",
@@ -1014,7 +1014,7 @@
     },
     {
       "kind": "canonical",
-      "service": "mattermost-mcp-http-3102.app",
+      "service": "mattermost-mcp-http-3102.mesh.diegonmarcos.com",
       "container": "mattermost-mcp",
       "container_key": "app",
       "svc": "mattermost-mcp",
@@ -1026,8 +1026,8 @@
     },
     {
       "kind": "redirect",
-      "service": "gitea.app",
-      "redirect_to": "https://gitea-http-3002.app",
+      "service": "gitea.mesh.diegonmarcos.com",
+      "redirect_to": "https://gitea-http-3002.mesh.diegonmarcos.com",
       "container": "gitea",
       "container_key": "app",
       "svc": "gitea",
@@ -1035,7 +1035,7 @@
     },
     {
       "kind": "canonical",
-      "service": "gitea-http-3002.app",
+      "service": "gitea-http-3002.mesh.diegonmarcos.com",
       "container": "gitea",
       "container_key": "app",
       "svc": "gitea",
@@ -1047,8 +1047,8 @@
     },
     {
       "kind": "redirect",
-      "service": "unbound-dns64.app",
-      "redirect_to": "https://unbound-dns64-udp-53.app",
+      "service": "unbound-dns64.mesh.diegonmarcos.com",
+      "redirect_to": "https://unbound-dns64-udp-53.mesh.diegonmarcos.com",
       "container": "unbound-dns64",
       "container_key": "app",
       "svc": "unbound-dns64",
@@ -1056,7 +1056,7 @@
     },
     {
       "kind": "canonical",
-      "service": "unbound-dns64-udp-53.app",
+      "service": "unbound-dns64-udp-53.mesh.diegonmarcos.com",
       "container": "unbound-dns64",
       "container_key": "app",
       "svc": "unbound-dns64",
@@ -1068,8 +1068,8 @@
     },
     {
       "kind": "redirect",
-      "service": "wireguard-mesh.app",
-      "redirect_to": "https://wireguard-mesh-http-8080.app",
+      "service": "wireguard-mesh.mesh.diegonmarcos.com",
+      "redirect_to": "https://wireguard-mesh-http-8080.mesh.diegonmarcos.com",
       "container": "wireguard-mesh",
       "container_key": "app",
       "svc": "wireguard-mesh",
@@ -1077,7 +1077,7 @@
     },
     {
       "kind": "canonical",
-      "service": "wireguard-mesh-http-8080.app",
+      "service": "wireguard-mesh-http-8080.mesh.diegonmarcos.com",
       "container": "wireguard-mesh",
       "container_key": "app",
       "svc": "wireguard-mesh",
@@ -1089,8 +1089,8 @@
     },
     {
       "kind": "redirect",
-      "service": "cloud-spec.app",
-      "redirect_to": "https://cloud-spec-http-3080.app",
+      "service": "cloud-spec.mesh.diegonmarcos.com",
+      "redirect_to": "https://cloud-spec-http-3080.mesh.diegonmarcos.com",
       "container": "cloud-spec",
       "container_key": "app",
       "svc": "cloud-spec",
@@ -1098,7 +1098,7 @@
     },
     {
       "kind": "canonical",
-      "service": "cloud-spec-http-3080.app",
+      "service": "cloud-spec-http-3080.mesh.diegonmarcos.com",
       "container": "cloud-spec",
       "container_key": "app",
       "svc": "cloud-spec",
@@ -1110,8 +1110,8 @@
     },
     {
       "kind": "redirect",
-      "service": "dagu.app",
-      "redirect_to": "https://dagu-http-8070.app",
+      "service": "dagu.mesh.diegonmarcos.com",
+      "redirect_to": "https://dagu-http-8070.mesh.diegonmarcos.com",
       "container": "dagu",
       "container_key": "app",
       "svc": "dagu",
@@ -1119,7 +1119,7 @@
     },
     {
       "kind": "canonical",
-      "service": "dagu-http-8070.app",
+      "service": "dagu-http-8070.mesh.diegonmarcos.com",
       "container": "dagu",
       "container_key": "app",
       "svc": "dagu",
@@ -1131,8 +1131,8 @@
     },
     {
       "kind": "redirect",
-      "service": "dbgate.app",
-      "redirect_to": "https://dbgate-http-8086.app",
+      "service": "dbgate.mesh.diegonmarcos.com",
+      "redirect_to": "https://dbgate-http-8086.mesh.diegonmarcos.com",
       "container": "dbgate",
       "container_key": "app",
       "svc": "dbgate",
@@ -1140,7 +1140,7 @@
     },
     {
       "kind": "canonical",
-      "service": "dbgate-http-8086.app",
+      "service": "dbgate-http-8086.mesh.diegonmarcos.com",
       "container": "dbgate",
       "container_key": "app",
       "svc": "dbgate",
@@ -1152,8 +1152,8 @@
     },
     {
       "kind": "redirect",
-      "service": "matomo-hybrid.app",
-      "redirect_to": "https://matomo-hybrid-http-8084.app",
+      "service": "matomo-hybrid.mesh.diegonmarcos.com",
+      "redirect_to": "https://matomo-hybrid-http-8084.mesh.diegonmarcos.com",
       "container": "matomo-hybrid",
       "container_key": "app",
       "svc": "matomo",
@@ -1161,7 +1161,7 @@
     },
     {
       "kind": "canonical",
-      "service": "matomo-hybrid-http-8084.app",
+      "service": "matomo-hybrid-http-8084.mesh.diegonmarcos.com",
       "container": "matomo-hybrid",
       "container_key": "app",
       "svc": "matomo",
@@ -1173,8 +1173,8 @@
     },
     {
       "kind": "redirect",
-      "service": "ntfy.app",
-      "redirect_to": "https://ntfy-http-8090.app",
+      "service": "ntfy.mesh.diegonmarcos.com",
+      "redirect_to": "https://ntfy-http-8090.mesh.diegonmarcos.com",
       "container": "ntfy",
       "container_key": "app",
       "svc": "ntfy",
@@ -1182,7 +1182,7 @@
     },
     {
       "kind": "canonical",
-      "service": "ntfy-http-8090.app",
+      "service": "ntfy-http-8090.mesh.diegonmarcos.com",
       "container": "ntfy",
       "container_key": "app",
       "svc": "ntfy",
@@ -1194,8 +1194,8 @@
     },
     {
       "kind": "redirect",
-      "service": "openobserve.app",
-      "redirect_to": "https://openobserve-http-5080.app",
+      "service": "openobserve.mesh.diegonmarcos.com",
+      "redirect_to": "https://openobserve-http-5080.mesh.diegonmarcos.com",
       "container": "openobserve",
       "container_key": "app",
       "svc": "openobserve",
@@ -1203,7 +1203,7 @@
     },
     {
       "kind": "canonical",
-      "service": "openobserve-http-5080.app",
+      "service": "openobserve-http-5080.mesh.diegonmarcos.com",
       "container": "openobserve",
       "container_key": "app",
       "svc": "openobserve",
@@ -1215,8 +1215,8 @@
     },
     {
       "kind": "redirect",
-      "service": "umami.app",
-      "redirect_to": "https://umami-http-3006.app",
+      "service": "umami.mesh.diegonmarcos.com",
+      "redirect_to": "https://umami-http-3006.mesh.diegonmarcos.com",
       "container": "umami",
       "container_key": "app",
       "svc": "umami",
@@ -1224,7 +1224,7 @@
     },
     {
       "kind": "canonical",
-      "service": "umami-http-3006.app",
+      "service": "umami-http-3006.mesh.diegonmarcos.com",
       "container": "umami",
       "container_key": "app",
       "svc": "umami",
@@ -1236,8 +1236,8 @@
     },
     {
       "kind": "redirect",
-      "service": "authelia.app",
-      "redirect_to": "https://authelia-http-9091.app",
+      "service": "authelia.mesh.diegonmarcos.com",
+      "redirect_to": "https://authelia-http-9091.mesh.diegonmarcos.com",
       "container": "authelia",
       "container_key": "app",
       "svc": "authelia",
@@ -1245,7 +1245,7 @@
     },
     {
       "kind": "canonical",
-      "service": "authelia-http-9091.app",
+      "service": "authelia-http-9091.mesh.diegonmarcos.com",
       "container": "authelia",
       "container_key": "app",
       "svc": "authelia",
@@ -1257,8 +1257,8 @@
     },
     {
       "kind": "redirect",
-      "service": "caddy.app",
-      "redirect_to": "https://caddy-https-443.app",
+      "service": "caddy.mesh.diegonmarcos.com",
+      "redirect_to": "https://caddy-https-443.mesh.diegonmarcos.com",
       "container": "caddy",
       "container_key": "app",
       "svc": "caddy",
@@ -1266,7 +1266,7 @@
     },
     {
       "kind": "canonical",
-      "service": "caddy-https-443.app",
+      "service": "caddy-https-443.mesh.diegonmarcos.com",
       "container": "caddy",
       "container_key": "app",
       "svc": "caddy",
@@ -1278,8 +1278,8 @@
     },
     {
       "kind": "redirect",
-      "service": "caddy-public.app",
-      "redirect_to": "https://caddy-public-https-443.app",
+      "service": "caddy-public.mesh.diegonmarcos.com",
+      "redirect_to": "https://caddy-public-https-443.mesh.diegonmarcos.com",
       "container": "caddy-public",
       "container_key": "app",
       "svc": "caddy-public",
@@ -1287,7 +1287,7 @@
     },
     {
       "kind": "canonical",
-      "service": "caddy-public-https-443.app",
+      "service": "caddy-public-https-443.mesh.diegonmarcos.com",
       "container": "caddy-public",
       "container_key": "app",
       "svc": "caddy-public",
@@ -1299,8 +1299,8 @@
     },
     {
       "kind": "redirect",
-      "service": "crowdsec.app",
-      "redirect_to": "https://crowdsec-http-8088.app",
+      "service": "crowdsec.mesh.diegonmarcos.com",
+      "redirect_to": "https://crowdsec-http-8088.mesh.diegonmarcos.com",
       "container": "crowdsec",
       "container_key": "app",
       "svc": "crowdsec",
@@ -1308,7 +1308,7 @@
     },
     {
       "kind": "canonical",
-      "service": "crowdsec-http-8088.app",
+      "service": "crowdsec-http-8088.mesh.diegonmarcos.com",
       "container": "crowdsec",
       "container_key": "app",
       "svc": "crowdsec",
@@ -1320,8 +1320,8 @@
     },
     {
       "kind": "redirect",
-      "service": "cloud-cgc-mcp.app",
-      "redirect_to": "https://cloud-cgc-mcp-http-3105.app",
+      "service": "cloud-cgc-mcp.mesh.diegonmarcos.com",
+      "redirect_to": "https://cloud-cgc-mcp-http-3105.mesh.diegonmarcos.com",
       "container": "cloud-cgc-mcp",
       "container_key": "app",
       "svc": "cloud-cgc-mcp",
@@ -1329,7 +1329,7 @@
     },
     {
       "kind": "canonical",
-      "service": "cloud-cgc-mcp-http-3105.app",
+      "service": "cloud-cgc-mcp-http-3105.mesh.diegonmarcos.com",
       "container": "cloud-cgc-mcp",
       "container_key": "app",
       "svc": "cloud-cgc-mcp",
@@ -1341,8 +1341,8 @@
     },
     {
       "kind": "redirect",
-      "service": "mattermost.app",
-      "redirect_to": "https://mattermost-http-8065.app",
+      "service": "mattermost.mesh.diegonmarcos.com",
+      "redirect_to": "https://mattermost-http-8065.mesh.diegonmarcos.com",
       "container": "mattermost",
       "container_key": "app",
       "svc": "chat-mattermost",
@@ -1350,7 +1350,7 @@
     },
     {
       "kind": "canonical",
-      "service": "mattermost-http-8065.app",
+      "service": "mattermost-http-8065.mesh.diegonmarcos.com",
       "container": "mattermost",
       "container_key": "app",
       "svc": "chat-mattermost",
@@ -1362,8 +1362,8 @@
     },
     {
       "kind": "redirect",
-      "service": "matrix-element.app",
-      "redirect_to": "https://matrix-element-http-8083.app",
+      "service": "matrix-element.mesh.diegonmarcos.com",
+      "redirect_to": "https://matrix-element-http-8083.mesh.diegonmarcos.com",
       "container": "matrix-element",
       "container_key": "app",
       "svc": "matrix-element",
@@ -1371,7 +1371,7 @@
     },
     {
       "kind": "canonical",
-      "service": "matrix-element-http-8083.app",
+      "service": "matrix-element-http-8083.mesh.diegonmarcos.com",
       "container": "matrix-element",
       "container_key": "app",
       "svc": "matrix-element",
@@ -1383,8 +1383,8 @@
     },
     {
       "kind": "redirect",
-      "service": "snappymail.app",
-      "redirect_to": "https://snappymail-http-8888.app",
+      "service": "snappymail.mesh.diegonmarcos.com",
+      "redirect_to": "https://snappymail-http-8888.mesh.diegonmarcos.com",
       "container": "snappymail",
       "container_key": "app",
       "svc": "snappymail",
@@ -1392,7 +1392,7 @@
     },
     {
       "kind": "canonical",
-      "service": "snappymail-http-8888.app",
+      "service": "snappymail-http-8888.mesh.diegonmarcos.com",
       "container": "snappymail",
       "container_key": "app",
       "svc": "snappymail",
@@ -1404,8 +1404,8 @@
     },
     {
       "kind": "redirect",
-      "service": "stalwart.app",
-      "redirect_to": "https://stalwart-https-2443.app",
+      "service": "stalwart.mesh.diegonmarcos.com",
+      "redirect_to": "https://stalwart-https-2443.mesh.diegonmarcos.com",
       "container": "stalwart",
       "container_key": "app",
       "svc": "stalwart",
@@ -1413,7 +1413,7 @@
     },
     {
       "kind": "canonical",
-      "service": "stalwart-https-2443.app",
+      "service": "stalwart-https-2443.mesh.diegonmarcos.com",
       "container": "stalwart",
       "container_key": "app",
       "svc": "stalwart",
@@ -1425,7 +1425,7 @@
     },
     {
       "kind": "canonical",
-      "service": "stalwart-starttls-2025.app",
+      "service": "stalwart-starttls-2025.mesh.diegonmarcos.com",
       "container": "stalwart",
       "container_key": "app",
       "svc": "stalwart",
@@ -1437,7 +1437,7 @@
     },
     {
       "kind": "canonical",
-      "service": "stalwart-tls-2465.app",
+      "service": "stalwart-tls-2465.mesh.diegonmarcos.com",
       "container": "stalwart",
       "container_key": "app",
       "svc": "stalwart",
@@ -1449,7 +1449,7 @@
     },
     {
       "kind": "canonical",
-      "service": "stalwart-tls-2993.app",
+      "service": "stalwart-tls-2993.mesh.diegonmarcos.com",
       "container": "stalwart",
       "container_key": "app",
       "svc": "stalwart",
@@ -1461,7 +1461,7 @@
     },
     {
       "kind": "canonical",
-      "service": "stalwart-tls-6190.app",
+      "service": "stalwart-tls-6190.mesh.diegonmarcos.com",
       "container": "stalwart",
       "container_key": "app",
       "svc": "stalwart",
@@ -1473,8 +1473,8 @@
     },
     {
       "kind": "redirect",
-      "service": "stalwart-sorter.app",
-      "redirect_to": "https://stalwart-sorter-null.app",
+      "service": "stalwart-sorter.mesh.diegonmarcos.com",
+      "redirect_to": "https://stalwart-sorter-null.mesh.diegonmarcos.com",
       "container": "stalwart-sorter",
       "container_key": "sorter",
       "svc": "stalwart",
@@ -1482,7 +1482,7 @@
     },
     {
       "kind": "portless",
-      "service": "stalwart-sorter-null.app",
+      "service": "stalwart-sorter-null.mesh.diegonmarcos.com",
       "container": "stalwart-sorter",
       "container_key": "sorter",
       "svc": "stalwart",
@@ -1490,8 +1490,8 @@
     },
     {
       "kind": "redirect",
-      "service": "scrappers-api.app",
-      "redirect_to": "https://scrappers-api-http-3020.app",
+      "service": "scrappers-api.mesh.diegonmarcos.com",
+      "redirect_to": "https://scrappers-api-http-3020.mesh.diegonmarcos.com",
       "container": "scrappers-api",
       "container_key": "app",
       "svc": "scrappers-api",
@@ -1499,7 +1499,7 @@
     },
     {
       "kind": "canonical",
-      "service": "scrappers-api-http-3020.app",
+      "service": "scrappers-api-http-3020.mesh.diegonmarcos.com",
       "container": "scrappers-api",
       "container_key": "app",
       "svc": "scrappers-api",
@@ -1511,8 +1511,8 @@
     },
     {
       "kind": "redirect",
-      "service": "fin-api.app",
-      "redirect_to": "https://fin-api-http-8340.app",
+      "service": "fin-api.mesh.diegonmarcos.com",
+      "redirect_to": "https://fin-api-http-8340.mesh.diegonmarcos.com",
       "container": "fin-api",
       "container_key": "app",
       "svc": "fin-api",
@@ -1520,7 +1520,7 @@
     },
     {
       "kind": "canonical",
-      "service": "fin-api-http-8340.app",
+      "service": "fin-api-http-8340.mesh.diegonmarcos.com",
       "container": "fin-api",
       "container_key": "app",
       "svc": "fin-api",
@@ -1532,8 +1532,8 @@
     },
     {
       "kind": "redirect",
-      "service": "photoprism_app.app",
-      "redirect_to": "https://photoprism_app-http-3013.app",
+      "service": "photoprism_app.mesh.diegonmarcos.com",
+      "redirect_to": "https://photoprism_app-http-3013.mesh.diegonmarcos.com",
       "container": "photoprism_app",
       "container_key": "app",
       "svc": "photoprism",
@@ -1541,7 +1541,7 @@
     },
     {
       "kind": "canonical",
-      "service": "photoprism_app-http-3013.app",
+      "service": "photoprism_app-http-3013.mesh.diegonmarcos.com",
       "container": "photoprism_app",
       "container_key": "app",
       "svc": "photoprism",
@@ -1553,8 +1553,8 @@
     },
     {
       "kind": "redirect",
-      "service": "playlist-syncer.app",
-      "redirect_to": "https://playlist-syncer-http-8090.app",
+      "service": "playlist-syncer.mesh.diegonmarcos.com",
+      "redirect_to": "https://playlist-syncer-http-8090.mesh.diegonmarcos.com",
       "container": "playlist-syncer",
       "container_key": "app",
       "svc": "playlist-syncer",
@@ -1562,7 +1562,7 @@
     },
     {
       "kind": "canonical",
-      "service": "playlist-syncer-http-8090.app",
+      "service": "playlist-syncer-http-8090.mesh.diegonmarcos.com",
       "container": "playlist-syncer",
       "container_key": "app",
       "svc": "playlist-syncer",
@@ -1574,8 +1574,8 @@
     },
     {
       "kind": "redirect",
-      "service": "news-gdelt.app",
-      "redirect_to": "https://news-gdelt-null.app",
+      "service": "news-gdelt.mesh.diegonmarcos.com",
+      "redirect_to": "https://news-gdelt-null.mesh.diegonmarcos.com",
       "container": "news-gdelt",
       "container_key": "app",
       "svc": "news-gdelt",
@@ -1583,7 +1583,7 @@
     },
     {
       "kind": "portless",
-      "service": "news-gdelt-null.app",
+      "service": "news-gdelt-null.mesh.diegonmarcos.com",
       "container": "news-gdelt",
       "container_key": "app",
       "svc": "news-gdelt",
@@ -1591,8 +1591,8 @@
     },
     {
       "kind": "redirect",
-      "service": "calendar-radicale.app",
-      "redirect_to": "https://calendar-radicale-http-5232.app",
+      "service": "calendar-radicale.mesh.diegonmarcos.com",
+      "redirect_to": "https://calendar-radicale-http-5232.mesh.diegonmarcos.com",
       "container": "calendar-radicale",
       "container_key": "app",
       "svc": "calendar-radicale",
@@ -1600,7 +1600,7 @@
     },
     {
       "kind": "canonical",
-      "service": "calendar-radicale-http-5232.app",
+      "service": "calendar-radicale-http-5232.mesh.diegonmarcos.com",
       "container": "calendar-radicale",
       "container_key": "app",
       "svc": "calendar-radicale",
@@ -1612,8 +1612,8 @@
     },
     {
       "kind": "redirect",
-      "service": "code-server.app",
-      "redirect_to": "https://code-server-https-8443.app",
+      "service": "code-server.mesh.diegonmarcos.com",
+      "redirect_to": "https://code-server-https-8443.mesh.diegonmarcos.com",
       "container": "code-server",
       "container_key": "app",
       "svc": "code-server",
@@ -1621,7 +1621,7 @@
     },
     {
       "kind": "canonical",
-      "service": "code-server-https-8443.app",
+      "service": "code-server-https-8443.mesh.diegonmarcos.com",
       "container": "code-server",
       "container_key": "app",
       "svc": "code-server",
@@ -1633,8 +1633,8 @@
     },
     {
       "kind": "redirect",
-      "service": "contacts-radicale.app",
-      "redirect_to": "https://contacts-radicale-http-5233.app",
+      "service": "contacts-radicale.mesh.diegonmarcos.com",
+      "redirect_to": "https://contacts-radicale-http-5233.mesh.diegonmarcos.com",
       "container": "contacts-radicale",
       "container_key": "app",
       "svc": "contacts-radicale",
@@ -1642,7 +1642,7 @@
     },
     {
       "kind": "canonical",
-      "service": "contacts-radicale-http-5233.app",
+      "service": "contacts-radicale-http-5233.mesh.diegonmarcos.com",
       "container": "contacts-radicale",
       "container_key": "app",
       "svc": "contacts-radicale",
@@ -1654,8 +1654,8 @@
     },
     {
       "kind": "redirect",
-      "service": "etherpad_app.app",
-      "redirect_to": "https://etherpad_app-http-3012.app",
+      "service": "etherpad_app.mesh.diegonmarcos.com",
+      "redirect_to": "https://etherpad_app-http-3012.mesh.diegonmarcos.com",
       "container": "etherpad_app",
       "container_key": "app",
       "svc": "etherpad",
@@ -1663,7 +1663,7 @@
     },
     {
       "kind": "canonical",
-      "service": "etherpad_app-http-3012.app",
+      "service": "etherpad_app-http-3012.mesh.diegonmarcos.com",
       "container": "etherpad_app",
       "container_key": "app",
       "svc": "etherpad",
@@ -1675,8 +1675,8 @@
     },
     {
       "kind": "redirect",
-      "service": "filebrowser_app.app",
-      "redirect_to": "https://filebrowser_app-http-3015.app",
+      "service": "filebrowser_app.mesh.diegonmarcos.com",
+      "redirect_to": "https://filebrowser_app-http-3015.mesh.diegonmarcos.com",
       "container": "filebrowser_app",
       "container_key": "app",
       "svc": "filebrowser",
@@ -1684,7 +1684,7 @@
     },
     {
       "kind": "canonical",
-      "service": "filebrowser_app-http-3015.app",
+      "service": "filebrowser_app-http-3015.mesh.diegonmarcos.com",
       "container": "filebrowser_app",
       "container_key": "app",
       "svc": "filebrowser",
@@ -1696,8 +1696,8 @@
     },
     {
       "kind": "redirect",
-      "service": "grist_app.app",
-      "redirect_to": "https://grist_app-http-3011.app",
+      "service": "grist_app.mesh.diegonmarcos.com",
+      "redirect_to": "https://grist_app-http-3011.mesh.diegonmarcos.com",
       "container": "grist_app",
       "container_key": "app",
       "svc": "grist",
@@ -1705,7 +1705,7 @@
     },
     {
       "kind": "canonical",
-      "service": "grist_app-http-3011.app",
+      "service": "grist_app-http-3011.mesh.diegonmarcos.com",
       "container": "grist_app",
       "container_key": "app",
       "svc": "grist",
@@ -1717,8 +1717,8 @@
     },
     {
       "kind": "redirect",
-      "service": "hedgedoc_app.app",
-      "redirect_to": "https://hedgedoc_app-http-3018.app",
+      "service": "hedgedoc_app.mesh.diegonmarcos.com",
+      "redirect_to": "https://hedgedoc_app-http-3018.mesh.diegonmarcos.com",
       "container": "hedgedoc_app",
       "container_key": "app",
       "svc": "hedgedoc",
@@ -1726,7 +1726,7 @@
     },
     {
       "kind": "canonical",
-      "service": "hedgedoc_app-http-3018.app",
+      "service": "hedgedoc_app-http-3018.mesh.diegonmarcos.com",
       "container": "hedgedoc_app",
       "container_key": "app",
       "svc": "hedgedoc",
@@ -1738,8 +1738,8 @@
     },
     {
       "kind": "redirect",
-      "service": "paca-gateway.app",
-      "redirect_to": "https://paca-gateway-http-8095.app",
+      "service": "paca-gateway.mesh.diegonmarcos.com",
+      "redirect_to": "https://paca-gateway-http-8095.mesh.diegonmarcos.com",
       "container": "paca-gateway",
       "container_key": "gateway",
       "svc": "paca",
@@ -1747,7 +1747,7 @@
     },
     {
       "kind": "canonical",
-      "service": "paca-gateway-http-8095.app",
+      "service": "paca-gateway-http-8095.mesh.diegonmarcos.com",
       "container": "paca-gateway",
       "container_key": "gateway",
       "svc": "paca",
@@ -1759,8 +1759,8 @@
     },
     {
       "kind": "redirect",
-      "service": "send_app.app",
-      "redirect_to": "https://send_app-http-3016.app",
+      "service": "send_app.mesh.diegonmarcos.com",
+      "redirect_to": "https://send_app-http-3016.mesh.diegonmarcos.com",
       "container": "send_app",
       "container_key": "app",
       "svc": "send",
@@ -1768,7 +1768,7 @@
     },
     {
       "kind": "canonical",
-      "service": "send_app-http-3016.app",
+      "service": "send_app-http-3016.mesh.diegonmarcos.com",
       "container": "send_app",
       "container_key": "app",
       "svc": "send",
@@ -1781,7 +1781,7 @@
     {
       "kind": "redirect",
       "service": "vaultwarden.app",
-      "redirect_to": "https://vaultwarden-http-8880.app",
+      "redirect_to": "https://vaultwarden-http-8880.mesh.diegonmarcos.com",
       "container": "vaultwarden",
       "container_key": "app",
       "svc": "vaultwarden",
@@ -1789,7 +1789,7 @@
     },
     {
       "kind": "canonical",
-      "service": "vaultwarden-http-8880.app",
+      "service": "vaultwarden-http-8880.mesh.diegonmarcos.com",
       "container": "vaultwarden",
       "container_key": "app",
       "svc": "vaultwarden",
@@ -2425,7 +2425,7 @@
   ],
   "private_A0_app_short": [
     {
-      "host": "matrix-continuwuity.app",
+      "host": "matrix-continuwuity.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:8008",
       "kind": "reverse_proxy",
@@ -2435,7 +2435,7 @@
       "notes": null
     },
     {
-      "host": "c3-infra-api.app",
+      "host": "c3-infra-api.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:8081",
       "kind": "reverse_proxy",
@@ -2445,7 +2445,7 @@
       "notes": null
     },
     {
-      "host": "c3-infra-mcp.app",
+      "host": "c3-infra-mcp.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:3100",
       "kind": "reverse_proxy",
@@ -2455,7 +2455,7 @@
       "notes": null
     },
     {
-      "host": "c3-public-api.app",
+      "host": "c3-public-api.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.4:8087",
       "kind": "reverse_proxy",
@@ -2465,7 +2465,7 @@
       "notes": null
     },
     {
-      "host": "c3-services-api.app",
+      "host": "c3-services-api.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:8082",
       "kind": "reverse_proxy",
@@ -2475,7 +2475,7 @@
       "notes": null
     },
     {
-      "host": "c3-services-mcp.app",
+      "host": "c3-services-mcp.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:3101",
       "kind": "reverse_proxy",
@@ -2485,7 +2485,7 @@
       "notes": null
     },
     {
-      "host": "g-personal-mcp.app",
+      "host": "g-personal-mcp.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:3106",
       "kind": "reverse_proxy",
@@ -2495,7 +2495,7 @@
       "notes": null
     },
     {
-      "host": "g-workspace-mcp.app",
+      "host": "g-workspace-mcp.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:3104",
       "kind": "reverse_proxy",
@@ -2505,7 +2505,7 @@
       "notes": null
     },
     {
-      "host": "mail-mcp.app",
+      "host": "mail-mcp.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:3103",
       "kind": "reverse_proxy",
@@ -2515,7 +2515,7 @@
       "notes": null
     },
     {
-      "host": "mattermost-mcp.app",
+      "host": "mattermost-mcp.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:3102",
       "kind": "reverse_proxy",
@@ -2525,7 +2525,7 @@
       "notes": null
     },
     {
-      "host": "gitea.app",
+      "host": "gitea.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:3002",
       "kind": "reverse_proxy",
@@ -2535,7 +2535,7 @@
       "notes": null
     },
     {
-      "host": "unbound-dns64.app",
+      "host": "unbound-dns64.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.4:53",
       "kind": "reverse_proxy",
@@ -2545,7 +2545,7 @@
       "notes": null
     },
     {
-      "host": "wireguard-mesh.app",
+      "host": "wireguard-mesh.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:8080",
       "kind": "reverse_proxy",
@@ -2555,7 +2555,7 @@
       "notes": null
     },
     {
-      "host": "c3-spec.app",
+      "host": "c3-spec.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:3080",
       "kind": "reverse_proxy",
@@ -2565,7 +2565,7 @@
       "notes": null
     },
     {
-      "host": "dagu.app",
+      "host": "dagu.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:8070",
       "kind": "reverse_proxy",
@@ -2575,7 +2575,7 @@
       "notes": null
     },
     {
-      "host": "dbgate.app",
+      "host": "dbgate.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:8086",
       "kind": "reverse_proxy",
@@ -2585,7 +2585,7 @@
       "notes": null
     },
     {
-      "host": "matomo.app",
+      "host": "matomo.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:8084",
       "kind": "reverse_proxy",
@@ -2595,7 +2595,7 @@
       "notes": null
     },
     {
-      "host": "ntfy.app",
+      "host": "ntfy.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:8090",
       "kind": "reverse_proxy",
@@ -2605,7 +2605,7 @@
       "notes": null
     },
     {
-      "host": "openobserve.app",
+      "host": "openobserve.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:5080",
       "kind": "reverse_proxy",
@@ -2615,7 +2615,7 @@
       "notes": null
     },
     {
-      "host": "umami.app",
+      "host": "umami.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:3006",
       "kind": "reverse_proxy",
@@ -2625,7 +2625,7 @@
       "notes": null
     },
     {
-      "host": "authelia.app",
+      "host": "authelia.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.1:9091",
       "kind": "reverse_proxy",
@@ -2635,7 +2635,7 @@
       "notes": null
     },
     {
-      "host": "caddy.app",
+      "host": "caddy.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.1:443",
       "kind": "reverse_proxy",
@@ -2645,7 +2645,7 @@
       "notes": null
     },
     {
-      "host": "caddy-public.app",
+      "host": "caddy-public.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.4:443",
       "kind": "reverse_proxy",
@@ -2655,7 +2655,7 @@
       "notes": null
     },
     {
-      "host": "crowdsec.app",
+      "host": "crowdsec.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:8088",
       "kind": "reverse_proxy",
@@ -2665,7 +2665,7 @@
       "notes": null
     },
     {
-      "host": "cloud-cgc-mcp.app",
+      "host": "cloud-cgc-mcp.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:3105",
       "kind": "reverse_proxy",
@@ -2675,7 +2675,7 @@
       "notes": null
     },
     {
-      "host": "mattermost.app",
+      "host": "mattermost.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:8065",
       "kind": "reverse_proxy",
@@ -2685,7 +2685,7 @@
       "notes": null
     },
     {
-      "host": "matrix-element.app",
+      "host": "matrix-element.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:8083",
       "kind": "reverse_proxy",
@@ -2695,7 +2695,7 @@
       "notes": null
     },
     {
-      "host": "snappymail.app",
+      "host": "snappymail.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.3:8888",
       "kind": "reverse_proxy",
@@ -2705,7 +2705,7 @@
       "notes": null
     },
     {
-      "host": "stalwart.app",
+      "host": "stalwart.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.3:2443",
       "kind": "reverse_proxy",
@@ -2715,7 +2715,7 @@
       "notes": null
     },
     {
-      "host": "scrappers-api.app",
+      "host": "scrappers-api.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:3020",
       "kind": "reverse_proxy",
@@ -2725,7 +2725,7 @@
       "notes": null
     },
     {
-      "host": "fin-api.app",
+      "host": "fin-api.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:8340",
       "kind": "reverse_proxy",
@@ -2735,7 +2735,7 @@
       "notes": null
     },
     {
-      "host": "photoprism.app",
+      "host": "photoprism.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:3013",
       "kind": "reverse_proxy",
@@ -2745,7 +2745,7 @@
       "notes": null
     },
     {
-      "host": "playlist-syncer.app",
+      "host": "playlist-syncer.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:8090",
       "kind": "reverse_proxy",
@@ -2755,7 +2755,7 @@
       "notes": null
     },
     {
-      "host": "news-gdelt.app",
+      "host": "news-gdelt.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:3019",
       "kind": "reverse_proxy",
@@ -2765,7 +2765,7 @@
       "notes": null
     },
     {
-      "host": "calendar.app",
+      "host": "calendar.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:5232",
       "kind": "reverse_proxy",
@@ -2775,7 +2775,7 @@
       "notes": null
     },
     {
-      "host": "code-server.app",
+      "host": "code-server.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:8443",
       "kind": "reverse_proxy",
@@ -2785,7 +2785,7 @@
       "notes": null
     },
     {
-      "host": "contacts.app",
+      "host": "contacts.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:5233",
       "kind": "reverse_proxy",
@@ -2795,7 +2795,7 @@
       "notes": null
     },
     {
-      "host": "etherpad.app",
+      "host": "etherpad.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:3012",
       "kind": "reverse_proxy",
@@ -2805,7 +2805,7 @@
       "notes": null
     },
     {
-      "host": "filebrowser.app",
+      "host": "filebrowser.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:3015",
       "kind": "reverse_proxy",
@@ -2815,7 +2815,7 @@
       "notes": null
     },
     {
-      "host": "grist.app",
+      "host": "grist.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:3011",
       "kind": "reverse_proxy",
@@ -2825,7 +2825,7 @@
       "notes": null
     },
     {
-      "host": "hedgedoc.app",
+      "host": "hedgedoc.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:3018",
       "kind": "reverse_proxy",
@@ -2835,7 +2835,7 @@
       "notes": null
     },
     {
-      "host": "paca.app",
+      "host": "paca.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:8095",
       "kind": "reverse_proxy",
@@ -2845,7 +2845,7 @@
       "notes": null
     },
     {
-      "host": "send.app",
+      "host": "send.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:3016",
       "kind": "reverse_proxy",
@@ -2867,7 +2867,7 @@
   ],
   "private_A1_app_canonical": [
     {
-      "host": "continuwuity-http-8008.app",
+      "host": "continuwuity-http-8008.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:8008",
       "kind": "reverse_proxy",
@@ -2877,7 +2877,7 @@
       "notes": null
     },
     {
-      "host": "c3-infra-api-http-8081.app",
+      "host": "c3-infra-api-http-8081.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:8081",
       "kind": "reverse_proxy",
@@ -2887,7 +2887,7 @@
       "notes": null
     },
     {
-      "host": "c3-infra-mcp-http-3100.app",
+      "host": "c3-infra-mcp-http-3100.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:3100",
       "kind": "reverse_proxy",
@@ -2897,7 +2897,7 @@
       "notes": null
     },
     {
-      "host": "c3-public-api-http-8087.app",
+      "host": "c3-public-api-http-8087.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.4:8087",
       "kind": "reverse_proxy",
@@ -2907,7 +2907,7 @@
       "notes": null
     },
     {
-      "host": "c3-services-api-http-8082.app",
+      "host": "c3-services-api-http-8082.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:8082",
       "kind": "reverse_proxy",
@@ -2917,7 +2917,7 @@
       "notes": null
     },
     {
-      "host": "c3-services-mcp-http-3101.app",
+      "host": "c3-services-mcp-http-3101.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:3101",
       "kind": "reverse_proxy",
@@ -2927,7 +2927,7 @@
       "notes": null
     },
     {
-      "host": "google-personal-mcp-http-3106.app",
+      "host": "google-personal-mcp-http-3106.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:3106",
       "kind": "reverse_proxy",
@@ -2937,7 +2937,7 @@
       "notes": null
     },
     {
-      "host": "google-workspace-mcp-http-3104.app",
+      "host": "google-workspace-mcp-http-3104.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:3104",
       "kind": "reverse_proxy",
@@ -2947,7 +2947,7 @@
       "notes": null
     },
     {
-      "host": "mail-mcp-http-3103.app",
+      "host": "mail-mcp-http-3103.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:3103",
       "kind": "reverse_proxy",
@@ -2957,7 +2957,7 @@
       "notes": null
     },
     {
-      "host": "mattermost-mcp-http-3102.app",
+      "host": "mattermost-mcp-http-3102.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:3102",
       "kind": "reverse_proxy",
@@ -2967,7 +2967,7 @@
       "notes": null
     },
     {
-      "host": "gitea-http-3002.app",
+      "host": "gitea-http-3002.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:3002",
       "kind": "reverse_proxy",
@@ -2977,7 +2977,7 @@
       "notes": null
     },
     {
-      "host": "unbound-dns64-udp-53.app",
+      "host": "unbound-dns64-udp-53.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.4:53",
       "kind": "reverse_proxy",
@@ -2987,7 +2987,7 @@
       "notes": null
     },
     {
-      "host": "wireguard-mesh-http-8080.app",
+      "host": "wireguard-mesh-http-8080.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:8080",
       "kind": "reverse_proxy",
@@ -2997,7 +2997,7 @@
       "notes": null
     },
     {
-      "host": "cloud-spec-http-3080.app",
+      "host": "cloud-spec-http-3080.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:3080",
       "kind": "reverse_proxy",
@@ -3007,7 +3007,7 @@
       "notes": null
     },
     {
-      "host": "dagu-http-8070.app",
+      "host": "dagu-http-8070.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:8070",
       "kind": "reverse_proxy",
@@ -3017,7 +3017,7 @@
       "notes": null
     },
     {
-      "host": "dbgate-http-8086.app",
+      "host": "dbgate-http-8086.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:8086",
       "kind": "reverse_proxy",
@@ -3027,7 +3027,7 @@
       "notes": null
     },
     {
-      "host": "matomo-hybrid-http-8084.app",
+      "host": "matomo-hybrid-http-8084.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:8084",
       "kind": "reverse_proxy",
@@ -3037,7 +3037,7 @@
       "notes": null
     },
     {
-      "host": "ntfy-http-8090.app",
+      "host": "ntfy-http-8090.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:8090",
       "kind": "reverse_proxy",
@@ -3047,7 +3047,7 @@
       "notes": null
     },
     {
-      "host": "openobserve-http-5080.app",
+      "host": "openobserve-http-5080.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:5080",
       "kind": "reverse_proxy",
@@ -3057,7 +3057,7 @@
       "notes": null
     },
     {
-      "host": "umami-http-3006.app",
+      "host": "umami-http-3006.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:3006",
       "kind": "reverse_proxy",
@@ -3067,7 +3067,7 @@
       "notes": null
     },
     {
-      "host": "authelia-http-9091.app",
+      "host": "authelia-http-9091.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.1:9091",
       "kind": "reverse_proxy",
@@ -3077,7 +3077,7 @@
       "notes": null
     },
     {
-      "host": "caddy-https-443.app",
+      "host": "caddy-https-443.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.1:443",
       "kind": "reverse_proxy",
@@ -3087,7 +3087,7 @@
       "notes": null
     },
     {
-      "host": "caddy-public-https-443.app",
+      "host": "caddy-public-https-443.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.4:443",
       "kind": "reverse_proxy",
@@ -3097,7 +3097,7 @@
       "notes": null
     },
     {
-      "host": "crowdsec-http-8088.app",
+      "host": "crowdsec-http-8088.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:8088",
       "kind": "reverse_proxy",
@@ -3107,7 +3107,7 @@
       "notes": null
     },
     {
-      "host": "cloud-cgc-mcp-http-3105.app",
+      "host": "cloud-cgc-mcp-http-3105.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:3105",
       "kind": "reverse_proxy",
@@ -3117,7 +3117,7 @@
       "notes": null
     },
     {
-      "host": "mattermost-http-8065.app",
+      "host": "mattermost-http-8065.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:8065",
       "kind": "reverse_proxy",
@@ -3127,7 +3127,7 @@
       "notes": null
     },
     {
-      "host": "matrix-element-http-8083.app",
+      "host": "matrix-element-http-8083.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:8083",
       "kind": "reverse_proxy",
@@ -3137,7 +3137,7 @@
       "notes": null
     },
     {
-      "host": "snappymail-http-8888.app",
+      "host": "snappymail-http-8888.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.3:8888",
       "kind": "reverse_proxy",
@@ -3147,7 +3147,7 @@
       "notes": null
     },
     {
-      "host": "stalwart-https-2443.app",
+      "host": "stalwart-https-2443.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.3:2443",
       "kind": "reverse_proxy",
@@ -3157,7 +3157,7 @@
       "notes": null
     },
     {
-      "host": "stalwart-starttls-2025.app",
+      "host": "stalwart-starttls-2025.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.3:2025",
       "kind": "reverse_proxy",
@@ -3167,7 +3167,7 @@
       "notes": null
     },
     {
-      "host": "stalwart-tls-2465.app",
+      "host": "stalwart-tls-2465.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.3:2465",
       "kind": "reverse_proxy",
@@ -3177,7 +3177,7 @@
       "notes": null
     },
     {
-      "host": "stalwart-tls-2993.app",
+      "host": "stalwart-tls-2993.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.3:2993",
       "kind": "reverse_proxy",
@@ -3187,7 +3187,7 @@
       "notes": null
     },
     {
-      "host": "stalwart-tls-6190.app",
+      "host": "stalwart-tls-6190.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.3:6190",
       "kind": "reverse_proxy",
@@ -3197,7 +3197,7 @@
       "notes": null
     },
     {
-      "host": "scrappers-api-http-3020.app",
+      "host": "scrappers-api-http-3020.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:3020",
       "kind": "reverse_proxy",
@@ -3207,7 +3207,7 @@
       "notes": null
     },
     {
-      "host": "fin-api-http-8340.app",
+      "host": "fin-api-http-8340.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:8340",
       "kind": "reverse_proxy",
@@ -3217,7 +3217,7 @@
       "notes": null
     },
     {
-      "host": "photoprism_app-http-3013.app",
+      "host": "photoprism_app-http-3013.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:3013",
       "kind": "reverse_proxy",
@@ -3227,7 +3227,7 @@
       "notes": "underscore → TLS broken"
     },
     {
-      "host": "playlist-syncer-http-8090.app",
+      "host": "playlist-syncer-http-8090.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:8090",
       "kind": "reverse_proxy",
@@ -3237,7 +3237,7 @@
       "notes": null
     },
     {
-      "host": "calendar-radicale-http-5232.app",
+      "host": "calendar-radicale-http-5232.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:5232",
       "kind": "reverse_proxy",
@@ -3247,7 +3247,7 @@
       "notes": null
     },
     {
-      "host": "code-server-https-8443.app",
+      "host": "code-server-https-8443.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:8443",
       "kind": "reverse_proxy",
@@ -3257,7 +3257,7 @@
       "notes": null
     },
     {
-      "host": "contacts-radicale-http-5233.app",
+      "host": "contacts-radicale-http-5233.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:5233",
       "kind": "reverse_proxy",
@@ -3267,7 +3267,7 @@
       "notes": null
     },
     {
-      "host": "etherpad_app-http-3012.app",
+      "host": "etherpad_app-http-3012.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:3012",
       "kind": "reverse_proxy",
@@ -3277,7 +3277,7 @@
       "notes": "underscore → TLS broken"
     },
     {
-      "host": "filebrowser_app-http-3015.app",
+      "host": "filebrowser_app-http-3015.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:3015",
       "kind": "reverse_proxy",
@@ -3287,7 +3287,7 @@
       "notes": "underscore → TLS broken"
     },
     {
-      "host": "grist_app-http-3011.app",
+      "host": "grist_app-http-3011.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:3011",
       "kind": "reverse_proxy",
@@ -3297,7 +3297,7 @@
       "notes": "underscore → TLS broken"
     },
     {
-      "host": "hedgedoc_app-http-3018.app",
+      "host": "hedgedoc_app-http-3018.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:3018",
       "kind": "reverse_proxy",
@@ -3307,7 +3307,7 @@
       "notes": "underscore → TLS broken"
     },
     {
-      "host": "paca-gateway-http-8095.app",
+      "host": "paca-gateway-http-8095.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:8095",
       "kind": "reverse_proxy",
@@ -3317,7 +3317,7 @@
       "notes": null
     },
     {
-      "host": "send_app-http-3016.app",
+      "host": "send_app-http-3016.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:3016",
       "kind": "reverse_proxy",
@@ -3327,7 +3327,7 @@
       "notes": "underscore → TLS broken"
     },
     {
-      "host": "vaultwarden-http-8880.app",
+      "host": "vaultwarden-http-8880.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:8880",
       "kind": "reverse_proxy",
@@ -3339,7 +3339,7 @@
   ],
   "private_A2_app_portless": [
     {
-      "host": "stalwart-sorter-null.app",
+      "host": "stalwart-sorter-null.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "204",
       "kind": "portless",
@@ -3349,7 +3349,7 @@
       "notes": null
     },
     {
-      "host": "news-gdelt-null.app",
+      "host": "news-gdelt-null.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "204",
       "kind": "portless",
@@ -3483,7 +3483,7 @@
   ],
   "private_B1_s3": [
     {
-      "host": "s3-backups-binaries.app",
+      "host": "s3-backups-binaries.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com",
       "kind": "reverse_proxy",
@@ -3493,7 +3493,7 @@
       "notes": "OCI bucket: cloud-backups-binaries-medias"
     },
     {
-      "host": "s3-backups-db.app",
+      "host": "s3-backups-db.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com",
       "kind": "reverse_proxy",
@@ -3503,7 +3503,7 @@
       "notes": "OCI bucket: cloud-backups-db"
     },
     {
-      "host": "s3-backups-media.app",
+      "host": "s3-backups-media.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com",
       "kind": "reverse_proxy",
@@ -3513,7 +3513,7 @@
       "notes": "OCI bucket: cloud-backups-media"
     },
     {
-      "host": "s3-backups-nonbin.app",
+      "host": "s3-backups-nonbin.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com",
       "kind": "reverse_proxy",
@@ -3523,7 +3523,7 @@
       "notes": "OCI bucket: cloud-backups-non-binaries"
     },
     {
-      "host": "s3-photos.app",
+      "host": "s3-photos.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com",
       "kind": "reverse_proxy",

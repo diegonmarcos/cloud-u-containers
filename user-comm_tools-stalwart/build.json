@@ -1,7 +1,7 @@
 {
   "name": "stalwart",
   "description": "Stalwart Mail Server — JMAP webmail backend (jmap.diegonmarcos.com)",
-  "dns": "stalwart.app",
+  "dns": "stalwart.mesh.diegonmarcos.com",
   "category": "app",
   "domain": "jmap.diegonmarcos.com",
   "deploy": {
@@ -174,7 +174,7 @@
             "10.1.0.3"
           ],
           "service": "jmap_mesh_http",
-          "desc": "Plain-HTTP JMAP on the MESH ONLY (host:2080 → stalwart:8080). Bound on wg0/wg-public, never on a public interface: .app is WireGuard-only and WG already encrypts, so the mesh endpoint stalwart.app is plain http (fleet convention, #1093). Cloud Mail and the fleet apps reach JMAP here first and fall back to the public jmap.diegonmarcos.com with the bearer."
+          "desc": "Plain-HTTP JMAP on the MESH ONLY (host:2080 → stalwart:8080). Bound on wg0/wg-public, never on a public interface: .app is WireGuard-only and WG already encrypts, so the mesh endpoint stalwart.mesh.diegonmarcos.com is plain http (fleet convention, #1093). Cloud Mail and the fleet apps reach JMAP here first and fall back to the public jmap.diegonmarcos.com with the bearer."
         },
         {
           "port": 6190,
@@ -189,7 +189,7 @@
         }
       ],
       "port_env": null,
-      "dns": "stalwart.app",
+      "dns": "stalwart.mesh.diegonmarcos.com",
       "public": true,
       "proxy": {
         "domain": "jmap.diegonmarcos.com",

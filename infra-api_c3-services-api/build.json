@@ -6,7 +6,7 @@
     "headers_enforced": true
   },
   "description": "C3 Services REST API — service API gateway Fastify API",
-  "dns": "c3-services-api.app",
+  "dns": "c3-services-api.mesh.diegonmarcos.com",
   "ports": {
     "app": 8082
   },
@@ -57,7 +57,7 @@
       "image": "ghcr.io/diegonmarcos/c3-services-api:latest",
       "port": 8082,
       "port_env": "PORT",
-      "dns": "c3-services-api.app",
+      "dns": "c3-services-api.mesh.diegonmarcos.com",
       "public": true,
       "proxy": {
         "type": "path",

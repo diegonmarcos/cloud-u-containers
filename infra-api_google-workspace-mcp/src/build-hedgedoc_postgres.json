@@ -32,7 +32,7 @@
     "image": "postgres:16-alpine",
     "port": 5439,
     "port_env": "PGPORT",
-    "dns": "hedgedoc-db.app",
+    "dns": "hedgedoc-db.mesh.diegonmarcos.com",
     "public": false,
     "proxy": null,
     "healthcheck": "cmd",

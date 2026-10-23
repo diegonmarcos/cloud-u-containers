@@ -1,7 +1,7 @@
 {
   "name": "dagu",
   "description": "Dagu - Lightweight DAG-based workflow scheduler",
-  "dns": "dagu.app",
+  "dns": "dagu.mesh.diegonmarcos.com",
   "ports": {
     "app": 8070
   },
@@ -47,7 +47,7 @@
       "image": "ghcr.io/diegonmarcos/dagu-binaries:latest",
       "port": 8070,
       "port_env": "DAGU_PORT",
-      "dns": "dagu.app",
+      "dns": "dagu.mesh.diegonmarcos.com",
       "public": true,
       "proxy": {
         "domain": "workflows.diegonmarcos.com",

@@ -32,7 +32,7 @@
     "image": "ghcr.io/diegonmarcos/introspect-proxy:latest",
     "port": 4182,
     "port_env": null,
-    "dns": "introspect-proxy.app",
+    "dns": "introspect-proxy.mesh.diegonmarcos.com",
     "public": false,
     "proxy": null,
     "healthcheck": "/health",

@@ -28,7 +28,7 @@ for (const d of readdirSync(root).sort()) {
     slug: b.name,
     dir: d,
     description: strip(b.description).slice(0, 240),
-    mesh: typeof b.dns === 'string' && /^[a-z0-9.-]+\.app$/.test(b.dns) ? b.dns : null,
+    mesh: typeof b.dns === 'string' && /^[a-z0-9.-]+\.mesh\.diegonmarcos\.com$/.test(b.dns) ? b.dns : null,
     hosts,
     signin,
     bearer,

@@ -19,7 +19,7 @@ pub async fn collect_all(ctx: &Context) -> LiveData {
     let resolver = hickory_resolver();
 
     // Pre-check: Hickory reachable?
-    let hickory_up = dns_resolve(&resolver, "authelia.app").await.is_some();
+    let hickory_up = dns_resolve(&resolver, "authelia.mesh.diegonmarcos.com").await.is_some();
     println!("  Hickory: {}", if hickory_up { "✅" } else { "❌" });
 
     // Phase 1: VMs + mesh + public + mail + ports + DBs + storage (all parallel)

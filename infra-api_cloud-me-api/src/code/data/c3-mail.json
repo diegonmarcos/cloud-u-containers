@@ -10,13 +10,13 @@
       "category": "app",
       "enabled": true,
       "host": "oci-mail",
-      "dns": "stalwart.app",
+      "dns": "stalwart.mesh.diegonmarcos.com",
       "domain": "jmap.diegonmarcos.com",
       "containers": [
         {
           "key": "app",
           "container_name": "stalwart",
-          "dns": "stalwart.app",
+          "dns": "stalwart.mesh.diegonmarcos.com",
           "port": 2443,
           "protocol": "https",
           "mesh_route": true
@@ -57,7 +57,7 @@
       "category": "app",
       "enabled": true,
       "host": "oci-mail",
-      "dns": "maddy.app",
+      "dns": "maddy.mesh.diegonmarcos.com",
       "domain": "mail.diegonmarcos.com",
       "ports": {
         "app": 993,
@@ -68,7 +68,7 @@
         {
           "key": "app",
           "container_name": "maddy",
-          "dns": "maddy.app",
+          "dns": "maddy.mesh.diegonmarcos.com",
           "port": null,
           "mesh_route": false
         }
@@ -103,7 +103,7 @@
       "category": "app",
       "enabled": true,
       "host": "oci-apps",
-      "dns": "webmail.app",
+      "dns": "webmail.mesh.diegonmarcos.com",
       "domain": "webmail.diegonmarcos.com",
       "ports": {
         "app": 3000
@@ -112,7 +112,7 @@
         {
           "key": "app",
           "container_name": "cloud-webmail",
-          "dns": "webmail.app",
+          "dns": "webmail.mesh.diegonmarcos.com",
           "port": 3000,
           "protocol": "http",
           "mesh_route": true
@@ -135,7 +135,7 @@
       "category": "app",
       "enabled": true,
       "host": "oci-mail",
-      "dns": "mail-puller.app",
+      "dns": "mail-puller.mesh.diegonmarcos.com",
       "domain": "mail-puller.diegonmarcos.com",
       "ports": {
         "app": null
@@ -162,7 +162,7 @@
       "category": "app",
       "enabled": true,
       "host": "oci-apps",
-      "dns": "mail-mcp.app",
+      "dns": "mail-mcp.mesh.diegonmarcos.com",
       "domain": "mcp.diegonmarcos.com",
       "ports": {
         "app": 3103
@@ -171,7 +171,7 @@
         {
           "key": "app",
           "container_name": "cloud-mail-mcp",
-          "dns": "mail-mcp.app",
+          "dns": "mail-mcp.mesh.diegonmarcos.com",
           "port": 3103,
           "protocol": "http",
           "mesh_route": true
@@ -205,7 +205,7 @@
       "category": "app",
       "enabled": false,
       "host": "gcp-proxy",
-      "dns": "http-to-smtp-proxy-api.app",
+      "dns": "http-to-smtp-proxy-api.mesh.diegonmarcos.com",
       "domain": "api.diegonmarcos.com/http-to-smtp-proxy-api",
       "ports": {
         "app": 8090
@@ -214,7 +214,7 @@
         {
           "key": "app",
           "container_name": "http-to-smtp-proxy-api",
-          "dns": "http-to-smtp-proxy-api.app",
+          "dns": "http-to-smtp-proxy-api.mesh.diegonmarcos.com",
           "port": 8090,
           "protocol": "http",
           "mesh_route": true

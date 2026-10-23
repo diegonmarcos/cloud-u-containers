@@ -1,7 +1,7 @@
 {
   "name": "cloud-notes-web",
   "description": "Cloud Notes web: the notes app (Miro + Notion + Obsidian) served as static files at notes.diegonmarcos.com behind the edge gate (Authelia 2FA or fleet Bearer). Built by cloud-u-android ship-cloud-notes.yml (ghcr.io/diegonmarcos/cloud-notes-web).",
-  "dns": "cloud-notes-web.app",
+  "dns": "cloud-notes-web.mesh.diegonmarcos.com",
   "category": "app",
   "timezone": "Europe/Madrid",
   "build": {
@@ -36,7 +36,7 @@
       "image": "ghcr.io/diegonmarcos/cloud-notes-web-binaries:latest",
       "port": 8097,
       "port_env": null,
-      "dns": "cloud-notes-web.app",
+      "dns": "cloud-notes-web.mesh.diegonmarcos.com",
       "public": true,
       "proxy": {
         "domain": "notes.diegonmarcos.com",

@@ -1,13 +1,14 @@
 // Guard: fleet naming + addressing rule (ticket #1100).
 //  naming   : API containers end in -api, MCP servers in -mcp, names are valid host labels
-//  mesh     : a container's mesh name (build.json dns, *.app) is "<name>.app"
+//  mesh     : a container's mesh name (build.json dns) is "<name>.mesh.diegonmarcos.com"
 //  no_api_host : nothing is served from the api.diegonmarcos.com host
 //  public_host / public_subdomain : no per-app public subdomain (#1104): a container is public only at c3-pvt/{container}
 //  protected: a route with wg_only:false is auth-protected unless its host is on the unprotected allowlist
 //  mesh_tld : (#1123) a mesh name (any build.json dns field, any Hickory zone) must live under a namespace that cannot exist
 //             publicly: <name>.mesh.diegonmarcos.com, home.arpa, or a reserved suffix. A real public TLD (.app, .dev, ...) leaks
-//             the name to a stranger's host the moment a device resolves it off the fleet DNS. `.app` is tolerated only until
-//             mesh.public_tld_alias_until in fleet-addressing.json (the 30-day alias window, stage d), then it FAILS.
+//             the name to a stranger's host the moment a device resolves it off the fleet DNS. `.app` FAILS unconditionally
+//             (owner decision, no transition window): no alias, no expiry date.
+//  app_tld  : (#1123) no `*.app` host anywhere in a build.json value, the rendered hub Caddyfile or a Hickory zone list.
 //  pages    : github-pages hosts are on the unprotected allowlist
 // _shared/fleet-addressing.json holds the allowlist (host -> reason) and a transitional
 // list per rule. A listed entry that no longer violates FAILS (the lists only shrink);
@@ -20,20 +21,18 @@ const cfg = JSON.parse(readFileSync(join(root, "_shared/fleet-addressing.json"),
 const DOM = "diegonmarcos.com";
 const unprotected = new Set(Object.keys(cfg.unprotected_hosts));
 const apiNames = new Set(cfg.api_containers || []);
-// #1104 mesh transport: the canonical mesh address is http://<name>.app:<port>, dialled directly on the
+// #1104 mesh transport: the canonical mesh address is http://<name>.mesh.diegonmarcos.com:<port>, dialled directly on the
 // container's VM wg0 address. A container with a declared port needs an owned Hickory row for <name>.
 const hk = JSON.parse(readFileSync(join(root, "infra-net_hickory-dns/build.json"), "utf8"));
-const meshDirect = new Set((hk.dns?.records?.app ?? []).map((r) => r.name));
+const meshDirect = new Set((hk.dns?.records?.["mesh.diegonmarcos.com"] ?? []).map((r) => r.name));
 // #1123 mesh namespace policy. Suffix match on the whole name, never on the TLD alone, so
 // `x.mesh.diegonmarcos.com` passes and `x.diegonmarcos.com` (a public name) does not.
 const meshCfg = cfg.mesh ?? {};
 const privateSuffixes = meshCfg.private_suffixes ?? [".mesh.diegonmarcos.com", ".home.arpa", ".internal", ".db", ".localhost", ".test", ".invalid"];
-const aliasTld = meshCfg.public_tld_alias ?? ".app";
-const aliasUntil = meshCfg.public_tld_alias_until ?? "2026-11-22";
-const meshNameProblem = (name, today = new Date().toISOString().slice(0, 10)) => {
+const meshNameProblem = (name) => {
   const n = String(name).toLowerCase().replace(/\.$/, "");
+  if (n === "app" || n.endsWith(".app")) return `${name}: .app is a real public TLD (a stranger's host); use <name>.mesh.diegonmarcos.com (#1123, no alias)`;
   if (privateSuffixes.some((x) => n.endsWith(x) || `.${n}` === x)) return null;
-  if (n.endsWith(aliasTld) || `.${n}` === aliasTld) return today <= aliasUntil ? null : `${name}: the ${aliasTld} alias window ended ${aliasUntil}; remove the name (stage d of #1123)`;
   return `${name}: not under a private mesh namespace (${privateSuffixes.join(", ")}); a public TLD leaks the name to a stranger's host`;
 };
 const meshNames = (o, acc = []) => {
@@ -42,6 +41,15 @@ const meshNames = (o, acc = []) => {
     if (k === "dns" && typeof v === "string") acc.push(v);
     else if (k !== "records" && k !== "forwarders") meshNames(v, acc);
   }
+  return acc;
+};
+// #1123: any host under the public .app TLD in a JSON value (keys such as ports.app / containers.app are not values).
+const APP_HOST = /(^|[^A-Za-z0-9_.-])((?:[A-Za-z0-9_{}*-]+\.)+app)(?![A-Za-z0-9_-])(?!\.[A-Za-z])/g;
+const THIRD_PARTY = new Set(["railway.app", "linear.app", "vercel.app"]); // real third-party domains, not mesh names
+const appHostsIn = (o, acc = []) => {
+  if (Array.isArray(o)) o.forEach((x) => appHostsIn(x, acc));
+  else if (o && typeof o === "object") Object.values(o).forEach((x) => appHostsIn(x, acc));
+  else if (typeof o === "string") for (const m of o.matchAll(APP_HOST)) if (![...THIRD_PARTY].some((t) => m[2] === t || m[2].endsWith(`.${t}`))) acc.push(m[2]);
   return acc;
 };
 const found = {}; // rule -> Set(container)
@@ -66,11 +74,12 @@ for (const d of readdirSync(root, { withFileTypes: true })) {
   const isMcp = /-mcp$/.test(n);
   const apiish = apiNames.has(n) || (!isMcp && (d.name.startsWith("infra-api_") || /(^|[-_])api($|[-_])/.test(n)));
   if (!/^[a-z0-9-]+$/.test(n) || (apiish && !n.endsWith("-api"))) hit("naming", n);
-  if (typeof j.dns === "string" && j.dns.endsWith(".app") && j.dns !== `${n}.app`) hit("mesh", n);
+  if (typeof j.dns === "string" && j.dns.endsWith(".mesh.diegonmarcos.com") && j.dns !== `${n}.mesh.diegonmarcos.com`) hit("mesh", n);
+  if (appHostsIn(j).length) { hit("app_tld", n); console.error(`app_tld: ${n}: ${appHostsIn(j).slice(0, 3).join(", ")}`); }
   for (const nm of new Set(meshNames(j))) { const pr = meshNameProblem(nm); if (pr) { hit("mesh_tld", n); console.error(`mesh_tld: ${n}: ${pr}`); } }
   for (const z of j.dns?.zones ?? []) { const pr = meshNameProblem(`x.${z}`.replace(/^x\.(diegonmarcos\.com)$/, "x.public-apex-zone.mesh.diegonmarcos.com")); if (pr) { hit("mesh_tld", n); console.error(`mesh_tld: ${n} zone ${z}: ${pr}`); } }
   const port = j.ports?.app ?? j.containers?.app?.port;
-  if (typeof j.dns === "string" && j.dns === `${n}.app` && Number.isInteger(port) && !meshDirect.has(n)) hit("mesh_direct", n);
+  if (typeof j.dns === "string" && j.dns === `${n}.mesh.diegonmarcos.com` && Number.isInteger(port) && !meshDirect.has(n)) hit("mesh_direct", n);
   const ph = j.proxy?.primary?.public_host;
   if (ph !== undefined) hit("public_host", n); // never transitional (#1104): no per-app public subdomain, the public address is c3-pvt/{container}
   for (const b of blocks(j.proxy ?? {})) {
@@ -159,12 +168,18 @@ if (cfg.tiers && existsSync(CF)) {
 
 // Mutation proof for the mesh_tld rule: it must reject what it claims to reject.
 {
-  const cases = [["c3-infra-api.mesh.diegonmarcos.com", "2099-01-01", false], ["svc.home.arpa", "2099-01-01", false], ["svc.app", "2026-10-23", false],
-    ["svc.app", "2099-01-01", true], ["vaultwarden.app", "2099-01-01", true], ["svc.dev", "2026-10-23", true], ["svc.diegonmarcos.com", "2026-10-23", true], ["svc.mesh.diegonmarcos.com.evil.com", "2026-10-23", true]];
-  for (const [nm, day, wantBad] of cases) if (Boolean(meshNameProblem(nm, day)) !== wantBad) { fail++; console.error(`FAIL mesh_tld mutation: ${nm} on ${day} should ${wantBad ? "be rejected" : "pass"}`); }
+  const cases = [["c3-infra-api.mesh.diegonmarcos.com", false], ["svc.home.arpa", false], ["svc.app", true],
+    ["vaultwarden.app", true], ["svc.app.", true], ["svc.dev", true], ["svc.diegonmarcos.com", true], ["svc.mesh.diegonmarcos.com.evil.com", true]];
+  for (const [nm, wantBad] of cases) if (Boolean(meshNameProblem(nm)) !== wantBad) { fail++; console.error(`FAIL mesh_tld mutation: ${nm} should ${wantBad ? "be rejected" : "pass"}`); }
+}
+{
+  // app_tld mutation proof + the rendered hub Caddyfile and Hickory zone list must carry no `.app` host.
+  if (appHostsIn({ dns: "tokens-api.app" }).length !== 1 || appHostsIn({ u: "https://x.mesh.diegonmarcos.com/" }).length !== 0 || appHostsIn({ u: "https://c3-x.app:8443/mcp" }).length !== 1) { fail++; console.error("FAIL app_tld mutation: detector is blind"); }
+  if (existsSync(CF)) { const hosts = [...readFileSync(CF, "utf8").matchAll(/(^|[\s,])([A-Za-z0-9_.{}*-]+\.app)(?=[\s,:{]|$)/gm)].map((m) => m[2]).filter((h) => !THIRD_PARTY.has(h)); if (hosts.length) { fail++; console.error(`FAIL app_tld: hub Caddyfile still carries ${[...new Set(hosts)].slice(0, 5).join(", ")}`); } }
+  if ((hk.dns?.zones ?? []).includes("app") || hk.dns?.records?.app) { fail++; console.error("FAIL app_tld: Hickory still declares the app zone"); }
 }
 const bad = (m) => { fail++; console.error(`FAIL ${m}`); };
-for (const rule of ["public_host", "naming", "mesh", "no_api_host", "mesh_direct", "mesh_tld", "public_subdomain", "protected", "pages"]) {
+for (const rule of ["public_host", "naming", "mesh", "no_api_host", "mesh_direct", "mesh_tld", "app_tld", "public_subdomain", "protected", "pages"]) {
   const got = found[rule] ?? new Set(), listed = new Set(cfg.transitional[rule] ?? []);
   for (const x of got) if (!listed.has(x)) bad(`${rule}: ${x} violates the fleet addressing rule (tickets #1100, #1104); fix it, do not list it`);
   for (const x of listed) if (!got.has(x)) bad(`${rule}: ${x} is on the transitional list but no longer violates; remove it`);

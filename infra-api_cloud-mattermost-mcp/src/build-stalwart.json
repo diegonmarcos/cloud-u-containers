@@ -91,7 +91,7 @@
       }
     ],
     "port_env": null,
-    "dns": "stalwart.app",
+    "dns": "stalwart.mesh.diegonmarcos.com",
     "public": true,
     "proxy": {
       "domain": "jmap.diegonmarcos.com",

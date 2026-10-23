@@ -1,7 +1,7 @@
 {
   "name": "crowdsec",
   "description": "CrowdSec behavioral IDS/IPS engine — DORMANT placeholder (Cloudflare-off fallback). Container runs but detects/remediates nothing: empty acquisition, online API (CAPI) disabled, no bouncers wired.",
-  "dns": "crowdsec.app",
+  "dns": "crowdsec.mesh.diegonmarcos.com",
   "ports": {
     "lapi": 8088,
     "metrics": 6062
@@ -38,7 +38,7 @@
       "image": "crowdsecurity/crowdsec:v1.7.8",
       "port": 8088,
       "port_env": null,
-      "dns": "crowdsec.app",
+      "dns": "crowdsec.mesh.diegonmarcos.com",
       "public": true,
       "proxy": {
         "domain": "crowdsec.diegonmarcos.com",

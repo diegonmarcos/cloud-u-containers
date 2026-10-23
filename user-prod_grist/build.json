@@ -1,7 +1,7 @@
 {
   "name": "grist",
   "description": "Grist spreadsheet/database (sheets.diegonmarcos.com)",
-  "dns": "grist.app",
+  "dns": "grist.mesh.diegonmarcos.com",
   "ports": {
     "app": 3011
   },
@@ -41,7 +41,7 @@
       "image": "gristlabs/grist:latest",
       "port": 3011,
       "port_env": "PORT",
-      "dns": "grist.app",
+      "dns": "grist.mesh.diegonmarcos.com",
       "public": true,
       "proxy": {
         "domain": "sheets.diegonmarcos.com",

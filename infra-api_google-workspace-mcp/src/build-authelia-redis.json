@@ -32,7 +32,7 @@
     "image": "redis:7-bookworm",
     "port": 6380,
     "port_env": null,
-    "dns": "authelia-redis.app",
+    "dns": "authelia-redis.mesh.diegonmarcos.com",
     "public": false,
     "healthcheck": null,
     "volumes": [

@@ -32,7 +32,7 @@
     "image": "tomsquest/docker-radicale:latest",
     "port": 5232,
     "port_env": null,
-    "dns": "calendar.app",
+    "dns": "calendar.mesh.diegonmarcos.com",
     "public": true,
     "proxy": {
       "domain": "cal.diegonmarcos.com",

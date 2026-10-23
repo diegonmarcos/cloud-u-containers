@@ -2,7 +2,7 @@
   "name": "revealmd",
   "enabled": false,
   "description": "Reveal.js markdown presentations (not deployed)",
-  "dns": "revealmd.app",
+  "dns": "revealmd.mesh.diegonmarcos.com",
   "upstream_image": "webpronl/reveal-md:latest",
   "ports": {
     "app": 3014
@@ -23,7 +23,7 @@
       "image": "webpronl/reveal-md:latest",
       "port": 3014,
       "port_env": null,
-      "dns": "revealmd.app",
+      "dns": "revealmd.mesh.diegonmarcos.com",
       "public": true,
       "proxy": null,
       "healthcheck": null,

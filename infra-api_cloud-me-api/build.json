@@ -2,7 +2,7 @@
   "name": "cloud-me-api",
   "enabled": true,
   "description": "Cloud Me API: read-only, authenticated read path to the owner's private cloud-me-* repos. The service holds one READ-ONLY deploy key per repo server-side, keeps a shallow clone of each declared repo, and serves declared JSON datasets (and filtered config files) to fleet apps, so no app holds a GitHub credential (#1079). First consumer: the cloud-webapps c3-* sites (#1063).",
-  "dns": "cloud-me-api.app",
+  "dns": "cloud-me-api.mesh.diegonmarcos.com",
   "ports": {
     "app": 8124
   },
@@ -30,7 +30,7 @@
     "host": "oci-analytics",
     "remote_path": "/opt/containers/cloud-me-api",
     "compose_flags": "--no-build --pull always --force-recreate",
-    "_host_doc": "oci-analytics, same VM as git-proxy-api: reached at cloud-me-api.app over wg0, and publicly only at c3-pvt.diegonmarcos.com/cloud-me-api behind the shared gate (#1104); the service itself always verifies the Authelia bearer or session. An oci-apps ship would recreate my-ai_claude-api and kill running agents."
+    "_host_doc": "oci-analytics, same VM as git-proxy-api: reached at cloud-me-api.mesh.diegonmarcos.com over wg0, and publicly only at c3-pvt.diegonmarcos.com/cloud-me-api behind the shared gate (#1104); the service itself always verifies the Authelia bearer or session. An oci-apps ship would recreate my-ai_claude-api and kill running agents."
   },
   "health": {
     "path": "/me/health"
@@ -46,7 +46,7 @@
       "image": "ghcr.io/diegonmarcos/cloud-me-api:latest",
       "port": 8124,
       "port_env": "PORT",
-      "dns": "cloud-me-api.app",
+      "dns": "cloud-me-api.mesh.diegonmarcos.com",
       "public": true,
       "healthcheck": "/health",
       "monitoring": {

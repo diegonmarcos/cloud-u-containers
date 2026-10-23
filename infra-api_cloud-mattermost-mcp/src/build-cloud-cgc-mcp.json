@@ -32,7 +32,7 @@
     "image": "ghcr.io/diegonmarcos/cloud-cgc-mcp:latest",
     "port": 3105,
     "port_env": "MCP_HTTP_PORT",
-    "dns": "cloud-cgc-mcp.app",
+    "dns": "cloud-cgc-mcp.mesh.diegonmarcos.com",
     "public": true,
     "proxy": {
       "streaming": true,

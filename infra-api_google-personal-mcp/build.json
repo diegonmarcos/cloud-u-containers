@@ -1,8 +1,8 @@
 {
   "name": "google-personal-mcp",
   "description": "Google Personal Account MCP server — Gmail (IMAP/SMTP via App Password) for personal Google accounts, multi-account",
-  "dns": "g-personal-mcp.app",
-  "dns_aliases": ["google-personal-mcp.app"],
+  "dns": "g-personal-mcp.mesh.diegonmarcos.com",
+  "dns_aliases": ["google-personal-mcp.mesh.diegonmarcos.com"],
   "category": "app",
   "domain": "mcp.diegonmarcos.com",
   "build": {
@@ -63,7 +63,7 @@
       "image": "ghcr.io/diegonmarcos/google-personal-mcp:latest",
       "port": 3106,
       "port_env": "PORT",
-      "dns": "g-personal-mcp.app",
+      "dns": "g-personal-mcp.mesh.diegonmarcos.com",
       "public": true,
       "proxy": {
         "streaming": true,

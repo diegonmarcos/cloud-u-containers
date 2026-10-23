@@ -1,6 +1,6 @@
 name: fleet addressing guard
 
-# Naming + addressing rule (ticket #1100): -api names, <name>.app mesh, <name>.<domain>
+# Naming + addressing rule (ticket #1100): -api names, <name>.mesh.diegonmarcos.com mesh, <name>.<domain>
 # public hosts, bearer/session protection except the allowlist, no api.* host.
 # Routing tiers (ticket #1104): the c3-pvt and c3-pub sites of the rendered hub Caddyfile are checked too.
 on:

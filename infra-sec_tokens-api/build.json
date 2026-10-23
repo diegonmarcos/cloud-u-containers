@@ -1,7 +1,7 @@
 {
   "name": "tokens-api",
-  "description": "Fleet token engine: lists, generates, reveals and revokes every fleet bearer token (fleet ft_ tokens and adopted Authelia JWTs); introspect-proxy asks it before accepting a Bearer, so a revoked token stops working within 60 seconds. Public address: c3-pvt.diegonmarcos.com/tokens-api (shared gate, #1104); mesh tokens-api.app",
-  "dns": "tokens-api.app",
+  "description": "Fleet token engine: lists, generates, reveals and revokes every fleet bearer token (fleet ft_ tokens and adopted Authelia JWTs); introspect-proxy asks it before accepting a Bearer, so a revoked token stops working within 60 seconds. Public address: c3-pvt.diegonmarcos.com/tokens-api (shared gate, #1104); mesh tokens-api.mesh.diegonmarcos.com",
+  "dns": "tokens-api.mesh.diegonmarcos.com",
   "ports": {
     "app": 4184
   },
@@ -43,7 +43,7 @@
       "image": "ghcr.io/diegonmarcos/tokens-api-binaries:latest",
       "port": 4184,
       "port_env": null,
-      "dns": "tokens-api.app",
+      "dns": "tokens-api.mesh.diegonmarcos.com",
       "public": true,
       "healthcheck": "/health",
       "monitoring": {

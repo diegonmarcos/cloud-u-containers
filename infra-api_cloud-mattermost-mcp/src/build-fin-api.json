@@ -32,7 +32,7 @@
     "image": "ghcr.io/diegonmarcos/fin-api:latest",
     "port": 8340,
     "port_env": "FIN_API_PORT",
-    "dns": "fin-api.app",
+    "dns": "fin-api.mesh.diegonmarcos.com",
     "public": true,
     "proxy": {
       "type": "path",

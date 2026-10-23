@@ -32,7 +32,7 @@
     "image": "redis:7-alpine",
     "port": 6381,
     "port_env": null,
-    "dns": "crawlee-redis.app",
+    "dns": "crawlee-redis.mesh.diegonmarcos.com",
     "public": false,
     "healthcheck": "redis-cli -p 6381 ping",
     "volumes": [

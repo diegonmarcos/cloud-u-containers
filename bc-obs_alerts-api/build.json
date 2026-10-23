@@ -2,7 +2,7 @@
   "name": "alerts-api",
   "description": "Security Alert Aggregation API",
   "port": 5050,
-  "dns": "alerts-api.app",
+  "dns": "alerts-api.mesh.diegonmarcos.com",
   "category": "tools",
   "docker": {
     "registry": "ghcr.io/diegonmarcos",

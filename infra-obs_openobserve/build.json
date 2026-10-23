@@ -1,7 +1,7 @@
 {
   "name": "openobserve",
   "description": "OpenObserve - single-binary observability platform (logs + traces + metrics + RUM). Replaces LGTM stack.",
-  "dns": "openobserve.app",
+  "dns": "openobserve.mesh.diegonmarcos.com",
   "ports": {
     "app": 5080
   },
@@ -52,7 +52,7 @@
       "image": "public.ecr.aws/zinclabs/openobserve:v0.14.7",
       "port": 5080,
       "port_env": "ZO_HTTP_PORT",
-      "dns": "openobserve.app",
+      "dns": "openobserve.mesh.diegonmarcos.com",
       "public": true,
       "proxy": {
         "type": "path",

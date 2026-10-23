@@ -32,7 +32,7 @@
     "image": "ghcr.io/umami-software/umami:latest",
     "port": 3006,
     "port_env": "PORT",
-    "dns": "umami.app",
+    "dns": "umami.mesh.diegonmarcos.com",
     "public": true,
     "proxy": {
       "domain": "analytics.diegonmarcos.com",

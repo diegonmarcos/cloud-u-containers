@@ -31,7 +31,7 @@
       "image": "registry.gitlab.com/timvisee/send:latest",
       "port": 3016,
       "port_env": null,
-      "dns": "send.app",
+      "dns": "send.mesh.diegonmarcos.com",
       "public": true,
       "proxy": {
         "domain": "send.diegonmarcos.com",

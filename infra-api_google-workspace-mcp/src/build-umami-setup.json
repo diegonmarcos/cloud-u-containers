@@ -32,7 +32,7 @@
     "image": "curlimages/curl:latest",
     "port": null,
     "port_env": null,
-    "dns": "umami-setup.app",
+    "dns": "umami-setup.mesh.diegonmarcos.com",
     "public": false,
     "healthcheck": null,
     "volumes": [

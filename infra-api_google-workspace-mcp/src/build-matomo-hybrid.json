@@ -33,7 +33,7 @@
     "port": 8084,
     "extra_ports": [],
     "port_env": null,
-    "dns": "matomo.app",
+    "dns": "matomo.mesh.diegonmarcos.com",
     "public": true,
     "proxy": {
       "type": "path",

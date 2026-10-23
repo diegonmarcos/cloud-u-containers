@@ -31,7 +31,7 @@
     "container_name": "http-to-smtp-proxy-api",
     "port": 8090,
     "port_env": "LISTEN_PORT",
-    "dns": "http-to-smtp-proxy-api.app",
+    "dns": "http-to-smtp-proxy-api.mesh.diegonmarcos.com",
     "public": true,
     "proxy": {
       "type": "path",

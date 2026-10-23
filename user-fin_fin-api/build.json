@@ -1,7 +1,7 @@
 {
   "name": "fin-api",
   "description": "Fincept Terminal backend (fin-api) — REST + WebSocket over DataHub, 35 data connectors, 7 analytics, 17 brokers, 6 investor personas, MCP tools",
-  "dns": "fin-api.app",
+  "dns": "fin-api.mesh.diegonmarcos.com",
   "ports": {
     "app": 8340
   },
@@ -45,7 +45,7 @@
       "image": "ghcr.io/diegonmarcos/fin-api:latest",
       "port": 8340,
       "port_env": "FIN_API_PORT",
-      "dns": "fin-api.app",
+      "dns": "fin-api.mesh.diegonmarcos.com",
       "public": true,
       "proxy": {
         "type": "path",

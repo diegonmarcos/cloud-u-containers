@@ -1314,577 +1314,577 @@
   "dns_services": [
     {
       "service": "matrix-continuwuity",
-      "dns": "matrix-continuwuity.app"
+      "dns": "matrix-continuwuity.mesh.diegonmarcos.com"
     },
     {
       "service": "matrix-continuwuity",
       "container": "app",
-      "dns": "matrix-continuwuity.app"
+      "dns": "matrix-continuwuity.mesh.diegonmarcos.com"
     },
     {
       "service": "alerts-api",
-      "dns": "alerts-api.app"
+      "dns": "alerts-api.mesh.diegonmarcos.com"
     },
     {
       "service": "alerts-api",
       "container": "app",
-      "dns": "alerts-api.app"
+      "dns": "alerts-api.mesh.diegonmarcos.com"
     },
     {
       "service": "languagetool",
-      "dns": "languagetool.app"
+      "dns": "languagetool.mesh.diegonmarcos.com"
     },
     {
       "service": "languagetool",
       "container": "app",
-      "dns": "languagetool.app"
+      "dns": "languagetool.mesh.diegonmarcos.com"
     },
     {
       "service": "c3-infra-api",
-      "dns": "c3-infra-api.app"
+      "dns": "c3-infra-api.mesh.diegonmarcos.com"
     },
     {
       "service": "c3-infra-api",
       "container": "app",
-      "dns": "c3-infra-api.app"
+      "dns": "c3-infra-api.mesh.diegonmarcos.com"
     },
     {
       "service": "c3-infra-mcp",
-      "dns": "c3-infra-mcp.app"
+      "dns": "c3-infra-mcp.mesh.diegonmarcos.com"
     },
     {
       "service": "c3-infra-mcp",
       "container": "app",
-      "dns": "c3-infra-mcp.app"
+      "dns": "c3-infra-mcp.mesh.diegonmarcos.com"
     },
     {
       "service": "c3-public-api",
-      "dns": "c3-public-api.app"
+      "dns": "c3-public-api.mesh.diegonmarcos.com"
     },
     {
       "service": "c3-public-api",
       "container": "app",
-      "dns": "c3-public-api.app"
+      "dns": "c3-public-api.mesh.diegonmarcos.com"
     },
     {
       "service": "c3-services-api",
-      "dns": "c3-services-api.app"
+      "dns": "c3-services-api.mesh.diegonmarcos.com"
     },
     {
       "service": "c3-services-api",
       "container": "app",
-      "dns": "c3-services-api.app"
+      "dns": "c3-services-api.mesh.diegonmarcos.com"
     },
     {
       "service": "c3-services-mcp",
-      "dns": "c3-services-mcp.app"
+      "dns": "c3-services-mcp.mesh.diegonmarcos.com"
     },
     {
       "service": "c3-services-mcp",
       "container": "app",
-      "dns": "c3-services-mcp.app"
+      "dns": "c3-services-mcp.mesh.diegonmarcos.com"
     },
     {
       "service": "google-personal-mcp",
-      "dns": "g-personal-mcp.app"
+      "dns": "g-personal-mcp.mesh.diegonmarcos.com"
     },
     {
       "service": "google-personal-mcp",
       "container": "app",
-      "dns": "g-personal-mcp.app"
+      "dns": "g-personal-mcp.mesh.diegonmarcos.com"
     },
     {
       "service": "google-workspace-mcp",
-      "dns": "g-workspace-mcp.app"
+      "dns": "g-workspace-mcp.mesh.diegonmarcos.com"
     },
     {
       "service": "google-workspace-mcp",
       "container": "app",
-      "dns": "g-workspace-mcp.app"
+      "dns": "g-workspace-mcp.mesh.diegonmarcos.com"
     },
     {
       "service": "mail-mcp",
-      "dns": "mail-mcp.app"
+      "dns": "mail-mcp.mesh.diegonmarcos.com"
     },
     {
       "service": "mail-mcp",
       "container": "app",
-      "dns": "mail-mcp.app"
+      "dns": "mail-mcp.mesh.diegonmarcos.com"
     },
     {
       "service": "mattermost-mcp",
-      "dns": "mattermost-mcp.app"
+      "dns": "mattermost-mcp.mesh.diegonmarcos.com"
     },
     {
       "service": "mattermost-mcp",
       "container": "app",
-      "dns": "mattermost-mcp.app"
+      "dns": "mattermost-mcp.mesh.diegonmarcos.com"
     },
     {
       "service": "http-to-smtp-proxy-api",
-      "dns": "http-to-smtp-proxy-api.app"
+      "dns": "http-to-smtp-proxy-api.mesh.diegonmarcos.com"
     },
     {
       "service": "http-to-smtp-proxy-api",
       "container": "app",
-      "dns": "http-to-smtp-proxy-api.app"
+      "dns": "http-to-smtp-proxy-api.mesh.diegonmarcos.com"
     },
     {
       "service": "backup-borg",
-      "dns": "backup-borg.app"
+      "dns": "backup-borg.mesh.diegonmarcos.com"
     },
     {
       "service": "backup-bup",
-      "dns": "backup-bup.app"
+      "dns": "backup-bup.mesh.diegonmarcos.com"
     },
     {
       "service": "gitea",
-      "dns": "gitea.app"
+      "dns": "gitea.mesh.diegonmarcos.com"
     },
     {
       "service": "gitea",
       "container": "app",
-      "dns": "gitea.app"
+      "dns": "gitea.mesh.diegonmarcos.com"
     },
     {
       "service": "redis",
-      "dns": "redis.app"
+      "dns": "redis.mesh.diegonmarcos.com"
     },
     {
       "service": "redis",
       "container": "app",
-      "dns": "redis.app"
+      "dns": "redis.mesh.diegonmarcos.com"
     },
     {
       "service": "hickory-dns",
-      "dns": "hickory-dns.app"
+      "dns": "hickory-dns.mesh.diegonmarcos.com"
     },
     {
       "service": "hickory-dns",
       "container": "app",
-      "dns": "hickory-dns.app"
+      "dns": "hickory-dns.mesh.diegonmarcos.com"
     },
     {
       "service": "unbound-dns64",
-      "dns": "unbound-dns64.app"
+      "dns": "unbound-dns64.mesh.diegonmarcos.com"
     },
     {
       "service": "unbound-dns64",
       "container": "app",
-      "dns": "unbound-dns64.app"
+      "dns": "unbound-dns64.mesh.diegonmarcos.com"
     },
     {
       "service": "wireguard-mesh",
-      "dns": "wireguard-mesh.app"
+      "dns": "wireguard-mesh.mesh.diegonmarcos.com"
     },
     {
       "service": "wireguard-mesh-ws-tunnel",
-      "dns": "wireguard-mesh-ws-tunnel.app"
+      "dns": "wireguard-mesh-ws-tunnel.mesh.diegonmarcos.com"
     },
     {
       "service": "cloud-spec",
-      "dns": "c3-spec.app"
+      "dns": "c3-spec.mesh.diegonmarcos.com"
     },
     {
       "service": "cloud-spec",
       "container": "app",
-      "dns": "c3-spec.app"
+      "dns": "c3-spec.mesh.diegonmarcos.com"
     },
     {
       "service": "dagu",
-      "dns": "dagu.app"
+      "dns": "dagu.mesh.diegonmarcos.com"
     },
     {
       "service": "dagu",
       "container": "app",
-      "dns": "dagu.app"
+      "dns": "dagu.mesh.diegonmarcos.com"
     },
     {
       "service": "dbgate",
-      "dns": "dbgate.app"
+      "dns": "dbgate.mesh.diegonmarcos.com"
     },
     {
       "service": "dbgate",
       "container": "app",
-      "dns": "dbgate.app"
+      "dns": "dbgate.mesh.diegonmarcos.com"
     },
     {
       "service": "matomo",
-      "dns": "matomo.app"
+      "dns": "matomo.mesh.diegonmarcos.com"
     },
     {
       "service": "matomo",
       "container": "app",
-      "dns": "matomo.app"
+      "dns": "matomo.mesh.diegonmarcos.com"
     },
     {
       "service": "ntfy",
-      "dns": "ntfy.app"
+      "dns": "ntfy.mesh.diegonmarcos.com"
     },
     {
       "service": "ntfy",
       "container": "app",
-      "dns": "ntfy.app"
+      "dns": "ntfy.mesh.diegonmarcos.com"
     },
     {
       "service": "openobserve",
-      "dns": "openobserve.app"
+      "dns": "openobserve.mesh.diegonmarcos.com"
     },
     {
       "service": "openobserve",
       "container": "app",
-      "dns": "openobserve.app"
+      "dns": "openobserve.mesh.diegonmarcos.com"
     },
     {
       "service": "umami",
-      "dns": "umami.app"
+      "dns": "umami.mesh.diegonmarcos.com"
     },
     {
       "service": "umami",
       "container": "app",
-      "dns": "umami.app"
+      "dns": "umami.mesh.diegonmarcos.com"
     },
     {
       "service": "umami",
       "container": "db",
-      "dns": "umami-db.app"
+      "dns": "umami-db.mesh.diegonmarcos.com"
     },
     {
       "service": "umami",
       "container": "setup",
-      "dns": "umami-setup.app"
+      "dns": "umami-setup.mesh.diegonmarcos.com"
     },
     {
       "service": "authelia",
-      "dns": "authelia.app"
+      "dns": "authelia.mesh.diegonmarcos.com"
     },
     {
       "service": "authelia",
       "container": "app",
-      "dns": "authelia.app"
+      "dns": "authelia.mesh.diegonmarcos.com"
     },
     {
       "service": "authelia",
       "container": "redis",
-      "dns": "authelia-redis.app"
+      "dns": "authelia-redis.mesh.diegonmarcos.com"
     },
     {
       "service": "caddy",
-      "dns": "caddy.app"
+      "dns": "caddy.mesh.diegonmarcos.com"
     },
     {
       "service": "caddy",
       "container": "app",
-      "dns": "caddy.app"
+      "dns": "caddy.mesh.diegonmarcos.com"
     },
     {
       "service": "caddy-public",
-      "dns": "caddy-public.app"
+      "dns": "caddy-public.mesh.diegonmarcos.com"
     },
     {
       "service": "caddy-public",
       "container": "app",
-      "dns": "caddy-public.app"
+      "dns": "caddy-public.mesh.diegonmarcos.com"
     },
     {
       "service": "crowdsec",
-      "dns": "crowdsec.app"
+      "dns": "crowdsec.mesh.diegonmarcos.com"
     },
     {
       "service": "crowdsec",
       "container": "app",
-      "dns": "crowdsec.app"
+      "dns": "crowdsec.mesh.diegonmarcos.com"
     },
     {
       "service": "introspect-proxy",
-      "dns": "introspect-proxy.app"
+      "dns": "introspect-proxy.mesh.diegonmarcos.com"
     },
     {
       "service": "introspect-proxy",
       "container": "app",
-      "dns": "introspect-proxy.app"
+      "dns": "introspect-proxy.mesh.diegonmarcos.com"
     },
     {
       "service": "claude-superset-api",
-      "dns": "claude-superset-api.app"
+      "dns": "claude-superset-api.mesh.diegonmarcos.com"
     },
     {
       "service": "claude-superset-api",
       "container": "app",
-      "dns": "claude-superset-api.app"
+      "dns": "claude-superset-api.mesh.diegonmarcos.com"
     },
     {
       "service": "cloud-cgc-mcp",
-      "dns": "cloud-cgc-mcp.app"
+      "dns": "cloud-cgc-mcp.mesh.diegonmarcos.com"
     },
     {
       "service": "cloud-cgc-mcp",
       "container": "app",
-      "dns": "cloud-cgc-mcp.app"
+      "dns": "cloud-cgc-mcp.mesh.diegonmarcos.com"
     },
     {
       "service": "hermes-agent",
-      "dns": "hermes-agent.app"
+      "dns": "hermes-agent.mesh.diegonmarcos.com"
     },
     {
       "service": "hermes-agent",
       "container": "app",
-      "dns": "hermes-agent.app"
+      "dns": "hermes-agent.mesh.diegonmarcos.com"
     },
     {
       "service": "kg-store",
-      "dns": "kg-store.app"
+      "dns": "kg-store.mesh.diegonmarcos.com"
     },
     {
       "service": "my-ai-api",
-      "dns": "my-ai-api.app"
+      "dns": "my-ai-api.mesh.diegonmarcos.com"
     },
     {
       "service": "my-ai-api",
       "container": "app",
-      "dns": "my-ai-api.app"
+      "dns": "my-ai-api.mesh.diegonmarcos.com"
     },
     {
       "service": "session-memory",
-      "dns": "session-memory.app"
+      "dns": "session-memory.mesh.diegonmarcos.com"
     },
     {
       "service": "session-memory",
       "container": "app",
-      "dns": "session-memory.app"
+      "dns": "session-memory.mesh.diegonmarcos.com"
     },
     {
       "service": "chat-mattermost",
-      "dns": "mattermost.app"
+      "dns": "mattermost.mesh.diegonmarcos.com"
     },
     {
       "service": "chat-mattermost",
       "container": "app",
-      "dns": "mattermost.app"
+      "dns": "mattermost.mesh.diegonmarcos.com"
     },
     {
       "service": "chat-mattermost",
       "container": "db",
-      "dns": "mattermost-postgres.app"
+      "dns": "mattermost-postgres.mesh.diegonmarcos.com"
     },
     {
       "service": "chat-mattermost",
       "container": "bots",
-      "dns": "mattermost-bots.app"
+      "dns": "mattermost-bots.mesh.diegonmarcos.com"
     },
     {
       "service": "mail-puller",
-      "dns": "mail-puller.app"
+      "dns": "mail-puller.mesh.diegonmarcos.com"
     },
     {
       "service": "matrix-element",
-      "dns": "matrix-element.app"
+      "dns": "matrix-element.mesh.diegonmarcos.com"
     },
     {
       "service": "matrix-element",
       "container": "app",
-      "dns": "matrix-element.app"
+      "dns": "matrix-element.mesh.diegonmarcos.com"
     },
     {
       "service": "matrix-mautrix-whatsapp",
-      "dns": "matrix-mautrix-whatsapp.app"
+      "dns": "matrix-mautrix-whatsapp.mesh.diegonmarcos.com"
     },
     {
       "service": "matrix-mautrix-whatsapp",
       "container": "app",
-      "dns": "matrix-mautrix-whatsapp.app"
+      "dns": "matrix-mautrix-whatsapp.mesh.diegonmarcos.com"
     },
     {
       "service": "snappymail",
-      "dns": "snappymail.app"
+      "dns": "snappymail.mesh.diegonmarcos.com"
     },
     {
       "service": "snappymail",
       "container": "app",
-      "dns": "snappymail.app"
+      "dns": "snappymail.mesh.diegonmarcos.com"
     },
     {
       "service": "maddy",
-      "dns": "maddy.app"
+      "dns": "maddy.mesh.diegonmarcos.com"
     },
     {
       "service": "maddy",
       "container": "app",
-      "dns": "maddy.app"
+      "dns": "maddy.mesh.diegonmarcos.com"
     },
     {
       "service": "stalwart",
-      "dns": "stalwart.app"
+      "dns": "stalwart.mesh.diegonmarcos.com"
     },
     {
       "service": "stalwart",
       "container": "app",
-      "dns": "stalwart.app"
+      "dns": "stalwart.mesh.diegonmarcos.com"
     },
     {
       "service": "scrappers-api",
-      "dns": "scrappers-api.app"
+      "dns": "scrappers-api.mesh.diegonmarcos.com"
     },
     {
       "service": "scrappers-api",
       "container": "app",
-      "dns": "scrappers-api.app"
+      "dns": "scrappers-api.mesh.diegonmarcos.com"
     },
     {
       "service": "fin-api",
-      "dns": "fin-api.app"
+      "dns": "fin-api.mesh.diegonmarcos.com"
     },
     {
       "service": "fin-api",
       "container": "app",
-      "dns": "fin-api.app"
+      "dns": "fin-api.mesh.diegonmarcos.com"
     },
     {
       "service": "photoprism",
-      "dns": "photoprism.app"
+      "dns": "photoprism.mesh.diegonmarcos.com"
     },
     {
       "service": "photoprism",
       "container": "app",
-      "dns": "photoprism.app"
+      "dns": "photoprism.mesh.diegonmarcos.com"
     },
     {
       "service": "playlist-syncer",
-      "dns": "playlist-syncer.app"
+      "dns": "playlist-syncer.mesh.diegonmarcos.com"
     },
     {
       "service": "playlist-syncer",
       "container": "app",
-      "dns": "playlist-syncer.app"
+      "dns": "playlist-syncer.mesh.diegonmarcos.com"
     },
     {
       "service": "news-gdelt",
-      "dns": "news-gdelt.app"
+      "dns": "news-gdelt.mesh.diegonmarcos.com"
     },
     {
       "service": "calendar-radicale",
-      "dns": "calendar.app"
+      "dns": "calendar.mesh.diegonmarcos.com"
     },
     {
       "service": "calendar-radicale",
       "container": "app",
-      "dns": "calendar.app"
+      "dns": "calendar.mesh.diegonmarcos.com"
     },
     {
       "service": "code-server",
-      "dns": "code-server.app"
+      "dns": "code-server.mesh.diegonmarcos.com"
     },
     {
       "service": "code-server",
       "container": "app",
-      "dns": "code-server.app"
+      "dns": "code-server.mesh.diegonmarcos.com"
     },
     {
       "service": "contacts-radicale",
-      "dns": "contacts.app"
+      "dns": "contacts.mesh.diegonmarcos.com"
     },
     {
       "service": "contacts-radicale",
       "container": "app",
-      "dns": "contacts.app"
+      "dns": "contacts.mesh.diegonmarcos.com"
     },
     {
       "service": "etherpad",
-      "dns": "etherpad.app"
+      "dns": "etherpad.mesh.diegonmarcos.com"
     },
     {
       "service": "etherpad",
       "container": "app",
-      "dns": "etherpad.app"
+      "dns": "etherpad.mesh.diegonmarcos.com"
     },
     {
       "service": "etherpad",
       "container": "db",
-      "dns": "etherpad-db.app"
+      "dns": "etherpad-db.mesh.diegonmarcos.com"
     },
     {
       "service": "filebrowser",
-      "dns": "filebrowser.app"
+      "dns": "filebrowser.mesh.diegonmarcos.com"
     },
     {
       "service": "filebrowser",
       "container": "app",
-      "dns": "filebrowser.app"
+      "dns": "filebrowser.mesh.diegonmarcos.com"
     },
     {
       "service": "grist",
-      "dns": "grist.app"
+      "dns": "grist.mesh.diegonmarcos.com"
     },
     {
       "service": "grist",
       "container": "app",
-      "dns": "grist.app"
+      "dns": "grist.mesh.diegonmarcos.com"
     },
     {
       "service": "hedgedoc",
-      "dns": "hedgedoc.app"
+      "dns": "hedgedoc.mesh.diegonmarcos.com"
     },
     {
       "service": "hedgedoc",
       "container": "app",
-      "dns": "hedgedoc.app"
+      "dns": "hedgedoc.mesh.diegonmarcos.com"
     },
     {
       "service": "hedgedoc",
       "container": "db",
-      "dns": "hedgedoc-db.app"
+      "dns": "hedgedoc-db.mesh.diegonmarcos.com"
     },
     {
       "service": "paca",
-      "dns": "paca.app"
+      "dns": "paca.mesh.diegonmarcos.com"
     },
     {
       "service": "paca",
       "container": "gateway",
-      "dns": "paca.app"
+      "dns": "paca.mesh.diegonmarcos.com"
     },
     {
       "service": "paca",
       "container": "api",
-      "dns": "paca-api.app"
+      "dns": "paca-api.mesh.diegonmarcos.com"
     },
     {
       "service": "paca",
       "container": "web",
-      "dns": "paca-web.app"
+      "dns": "paca-web.mesh.diegonmarcos.com"
     },
     {
       "service": "paca",
       "container": "realtime",
-      "dns": "paca-realtime.app"
+      "dns": "paca-realtime.mesh.diegonmarcos.com"
     },
     {
       "service": "paca",
       "container": "valkey",
-      "dns": "paca-valkey.app"
+      "dns": "paca-valkey.mesh.diegonmarcos.com"
     },
     {
       "service": "paca",
       "container": "db",
-      "dns": "paca-postgres.app"
+      "dns": "paca-postgres.mesh.diegonmarcos.com"
     },
     {
       "service": "revealmd",
-      "dns": "revealmd.app"
+      "dns": "revealmd.mesh.diegonmarcos.com"
     },
     {
       "service": "revealmd",
       "container": "app",
-      "dns": "revealmd.app"
+      "dns": "revealmd.mesh.diegonmarcos.com"
     },
     {
       "service": "send",
-      "dns": "send.app"
+      "dns": "send.mesh.diegonmarcos.com"
     },
     {
       "service": "send",
       "container": "app",
-      "dns": "send.app"
+      "dns": "send.mesh.diegonmarcos.com"
     },
     {
       "service": "vaultwarden",

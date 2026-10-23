@@ -2,8 +2,8 @@
   "name": "chat-mattermost",
   "description": "Mattermost team chat (TE 11.x ESR) with ntfy bridge and C3 command bot",
   "port": 8065,
-  "dns": "mattermost.app",
-  "dns_aliases": ["chat-mattermost.app"],
+  "dns": "mattermost.mesh.diegonmarcos.com",
+  "dns_aliases": ["chat-mattermost.mesh.diegonmarcos.com"],
   "timezone": "America/Chicago",
   "c3": {
     "api_url": "http://c3-infra-api:8081",
@@ -66,7 +66,7 @@
       "image": "ghcr.io/diegonmarcos/chat-mattermost-binaries:latest",
       "port": 8065,
       "port_env": "MM_SERVICESETTINGS_LISTENADDRESS",
-      "dns": "mattermost.app",
+      "dns": "mattermost.mesh.diegonmarcos.com",
       "public": true,
       "proxy": {
         "domain": "chat.diegonmarcos.com",
@@ -95,7 +95,7 @@
       "image": "postgres:16-alpine",
       "port": 5435,
       "port_env": "PGPORT",
-      "dns": "mattermost-postgres.app",
+      "dns": "mattermost-postgres.mesh.diegonmarcos.com",
       "public": false,
       "healthcheck": "pg_isready -U mattermost -d mattermost",
       "volumes": [
@@ -114,7 +114,7 @@
       "image": "python:3.12-slim",
       "port": null,
       "port_env": null,
-      "dns": "mattermost-bots.app",
+      "dns": "mattermost-bots.mesh.diegonmarcos.com",
       "public": false,
       "healthcheck": null,
       "volumes": [

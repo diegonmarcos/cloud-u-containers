@@ -32,7 +32,7 @@
     "image": "linuxserver/code-server:latest",
     "port": 8443,
     "port_env": null,
-    "dns": "code-server.app",
+    "dns": "code-server.mesh.diegonmarcos.com",
     "public": true,
     "proxy": {
       "domain": "ide.diegonmarcos.com",

@@ -8,7 +8,7 @@
         # response that matches NO handle_response block writes NOTHING
         # (not "pass through unmodified"). Confirmed via production incident
         # 2026-07-09: this guard alone silently emptied every real response
-        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # (gitea.mesh.diegonmarcos.com 14821b -> 0b, snappymail.mesh.diegonmarcos.com 161138b -> 0b) fleet-wide,
         # a worse outage than the bug it fixed. The bare fallback block below
         # is MANDATORY and MUST come after @empty_ok — it copies through every
         # response that isn't the empty-200 false-green.

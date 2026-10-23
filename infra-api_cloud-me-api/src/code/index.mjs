@@ -267,7 +267,7 @@ const TABLE = buildTable(RT, HANDLERS);
 
 // ── Request pipeline ──────────────────────────────────────────────────────
 async function serve(req, res, url) {
-  // Caddy's /me/* handle strips the base path; the mesh site (cloud-me-api.app) and the private tier
+  // Caddy's /me/* handle strips the base path; the mesh site (cloud-me-api.mesh.diegonmarcos.com) and the private tier
   // (c3-pvt.diegonmarcos.com/cloud-me-api, #1104) pass it through. Both reach the same local routes.
   let path = url.pathname.replace(/(.)\/+$/, '$1');
   if (path.startsWith(`${RT.base_path}/`)) path = path.slice(RT.base_path.length);

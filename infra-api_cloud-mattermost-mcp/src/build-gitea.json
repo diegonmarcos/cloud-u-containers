@@ -32,7 +32,7 @@
     "image": "gitea/gitea:latest",
     "port": 3002,
     "port_env": "GITEA__server__HTTP_PORT",
-    "dns": "gitea.app",
+    "dns": "gitea.mesh.diegonmarcos.com",
     "public": true,
     "proxy": {
       "domain": "git.diegonmarcos.com",

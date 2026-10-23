@@ -12,7 +12,7 @@ in
       image = binariesImage;
       container_name = buildJson.containers.app.container_name;
       # element-web's nginx listens on :80 inside; publish on the WG IP so
-      # Caddy (edge) can reach it as matrix-element.app:8082 over WireGuard.
+      # Caddy (edge) can reach it as matrix-element.mesh.diegonmarcos.com:8082 over WireGuard.
       ports = [ "${self.ip}:${toString buildJson.ports.app}:80" ];
       volumes = [ "./configs/config.json:/app/config.json:ro" ];
         # mem_limit/mem_reservation are optional in build.json (only

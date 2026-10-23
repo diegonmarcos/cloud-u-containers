@@ -32,7 +32,7 @@
     "image": "public.ecr.aws/zinclabs/openobserve:v0.14.7",
     "port": 5080,
     "port_env": "ZO_HTTP_PORT",
-    "dns": "openobserve.app",
+    "dns": "openobserve.mesh.diegonmarcos.com",
     "public": true,
     "proxy": {
       "type": "path",

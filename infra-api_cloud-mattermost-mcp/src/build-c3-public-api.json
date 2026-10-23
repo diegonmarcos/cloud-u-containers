@@ -32,7 +32,7 @@
     "image": "ghcr.io/diegonmarcos/c3-public-api:latest",
     "port": 8087,
     "port_env": "PORT",
-    "dns": "c3-public-api.app",
+    "dns": "c3-public-api.mesh.diegonmarcos.com",
     "public": true,
     "proxy": {
       "auth": "two_factor",

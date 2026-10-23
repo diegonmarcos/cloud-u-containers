@@ -32,7 +32,7 @@
     "image": "ghcr.io/diegonmarcos/kg-mcp:latest",
     "port": 3105,
     "port_env": "MCP_HTTP_PORT",
-    "dns": "kg-mcp.app",
+    "dns": "kg-mcp.mesh.diegonmarcos.com",
     "public": true,
     "proxy": {
       "streaming": true,

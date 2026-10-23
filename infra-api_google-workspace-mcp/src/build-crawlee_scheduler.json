@@ -32,7 +32,7 @@
     "image": "ghcr.io/diegonmarcos/crawlee-cloud-api:latest",
     "port": null,
     "port_env": null,
-    "dns": "crawlee-scheduler.app",
+    "dns": "crawlee-scheduler.mesh.diegonmarcos.com",
     "public": false,
     "healthcheck": null,
     "volumes": [],

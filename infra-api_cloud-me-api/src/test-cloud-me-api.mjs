@@ -31,7 +31,7 @@ const RT = loadRuntime(BUILD);
 ok(RT.repos.list.length >= 1, 'declares repos');
 ok(RT.endpoints.filter((e) => e.auth === 'none').map((e) => e.path).join() === '/me/health', 'only /me/health is unauthenticated');
 ok(!RT.repos.list.some((r) => /vault/i.test(r.name + r.ssh)), 'a vault repo is never declared');
-ok(raw.dns === 'cloud-me-api.app' && !raw.domain && !raw.proxy && !raw.containers.app.proxy && raw.containers.app.public === true, 'mesh address only: dns cloud-me-api.app (container public:true = a mesh .app route), no public domain or edge proxy route');
+ok(raw.dns === 'cloud-me-api.mesh.diegonmarcos.com' && !raw.domain && !raw.proxy && !raw.containers.app.proxy && raw.containers.app.public === true, 'mesh address only: dns cloud-me-api.mesh.diegonmarcos.com (container public:true = a mesh .app route), no public domain or edge proxy route');
 ok(!JSON.stringify(raw).includes('wg_only'), 'WG-only is the fleet default, never overridden here');
 for (const [n, d] of Object.entries(raw.runtime.datasets)) if (!n.startsWith('_')) ok(d.builtin && existsSync(join(HERE, 'code', d.builtin)), `dataset ${n} is a builtin file that exists`);
 try { execFileSync(process.execPath, [join(HERE, 'gen-c3-datasets.mjs'), '--check'], { stdio: 'pipe' }); ok(true, ''); } catch (e) { ok(false, `datasets are stale: ${e.stderr}`); }
@@ -224,10 +224,10 @@ try {
     ok(!/example\.org|\bmx[12]\b|live\.example/i.test(r.text), `c3-${n} holds no placeholder values`);
     ok(!DENY.test(r.text) && !r.text.includes(GHP), `c3-${n} has no secret-looking content`);
   }
-  ok(real['dns-routing'].json.route_table.length > 20 && real['dns-routing'].json.mesh_names.some((m) => m.dns === 'cloud-me-api.app'), 'dns-routing lists the route table and the cloud-me-api mesh name');
+  ok(real['dns-routing'].json.route_table.length > 20 && real['dns-routing'].json.mesh_names.some((m) => m.dns === 'cloud-me-api.mesh.diegonmarcos.com'), 'dns-routing lists the route table and the cloud-me-api mesh name');
   ok(!real['dns-routing'].json.route_table.some((r) => r.service === 'infra-api_cloud-me-api'), 'cloud-me-api has no public route in the table');
   ok(real['security-network'].json.public_services.length > 0 && !real['security-network'].json.public_services.some((x) => /NOT allowlisted/.test(x.exposure)), 'security-network: every public service is allowlisted or pending review');
-  ok(real['mcp-apis'].json.services.some((x) => x.mcp?.transport) && real['mail'].json.services.some((x) => x.dns === 'stalwart.app'), 'mcp-apis and mail carry real service data');
+  ok(real['mcp-apis'].json.services.some((x) => x.mcp?.transport) && real['mail'].json.services.some((x) => x.dns === 'stalwart.mesh.diegonmarcos.com'), 'mcp-apis and mail carry real service data');
 
   const F = (p, repo = 'cloud-me-containers') => get(`/repos/${repo}/file?path=${encodeURIComponent(p)}`, bearer(good));
   ok((await F('x.json', 'cloud-me_vault')).json?.code === 'repo_not_declared', 'vault repo -> repo_not_declared');

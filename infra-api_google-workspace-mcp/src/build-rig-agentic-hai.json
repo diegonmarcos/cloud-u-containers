@@ -1669,8 +1669,8 @@
   "rig": {
     "ollama_service": "ollama-hai",
     "ollama_model": "qwen2.5:1.5b",
-    "c3_mcp_url": "http://c3-services-mcp.app",
-    "mattermost_url": "http://mattermost.app",
+    "c3_mcp_url": "http://c3-services-mcp.mesh.diegonmarcos.com",
+    "mattermost_url": "http://mattermost.mesh.diegonmarcos.com",
     "mm_bot_mention": "@hai-1.5bq4-ai",
     "guardrail_max_turns": 5,
     "self_healing_enabled": false,

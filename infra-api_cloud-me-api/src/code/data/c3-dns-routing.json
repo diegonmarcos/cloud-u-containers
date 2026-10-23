@@ -18,7 +18,7 @@
         {
           "key": "app",
           "container_name": "hickory-dns",
-          "dns": "hickory-dns.app",
+          "dns": "hickory-dns.mesh.diegonmarcos.com",
           "port": 53,
           "protocol": "udp",
           "mesh_route": false
@@ -42,7 +42,7 @@
         {
           "key": "app",
           "container_name": "unbound-dns64",
-          "dns": "unbound-dns64.app",
+          "dns": "unbound-dns64.mesh.diegonmarcos.com",
           "port": 53,
           "protocol": "udp",
           "mesh_route": true
@@ -92,13 +92,13 @@
       "category": "sec",
       "enabled": true,
       "host": "gcp-proxy",
-      "dns": "caddy.app",
+      "dns": "caddy.mesh.diegonmarcos.com",
       "domain": "proxy.diegonmarcos.com",
       "containers": [
         {
           "key": "app",
           "container_name": "caddy",
-          "dns": "caddy.app",
+          "dns": "caddy.mesh.diegonmarcos.com",
           "port": 443,
           "protocol": "https",
           "mesh_route": true
@@ -120,12 +120,12 @@
       "category": "sec",
       "enabled": true,
       "host": "oci-analytics",
-      "dns": "caddy-public.app",
+      "dns": "caddy-public.mesh.diegonmarcos.com",
       "containers": [
         {
           "key": "app",
           "container_name": "caddy-public",
-          "dns": "caddy-public.app",
+          "dns": "caddy-public.mesh.diegonmarcos.com",
           "port": 443,
           "protocol": "https",
           "mesh_route": true
@@ -151,7 +151,7 @@
   "route_table": [
     {
       "service": "infra-obs_matomo",
-      "mesh_name": "matomo.app",
+      "mesh_name": "matomo.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "analytics.diegonmarcos.com",
       "type": "path",
@@ -161,7 +161,7 @@
     },
     {
       "service": "infra-obs_openobserve",
-      "mesh_name": "openobserve.app",
+      "mesh_name": "openobserve.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "analytics.diegonmarcos.com",
       "type": "path",
@@ -171,7 +171,7 @@
     },
     {
       "service": "infra-obs_umami",
-      "mesh_name": "umami.app",
+      "mesh_name": "umami.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "analytics.diegonmarcos.com",
       "type": "path",
@@ -185,7 +185,7 @@
     },
     {
       "service": "infra-api_c3-infra-api",
-      "mesh_name": "c3-infra-api.app",
+      "mesh_name": "c3-infra-api.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "api.diegonmarcos.com",
       "type": "path",
@@ -200,7 +200,7 @@
     },
     {
       "service": "infra-api_c3-services-api",
-      "mesh_name": "c3-services-api.app",
+      "mesh_name": "c3-services-api.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "api.diegonmarcos.com",
       "type": "path",
@@ -210,7 +210,7 @@
     },
     {
       "service": "user-fin_fin-api",
-      "mesh_name": "fin-api.app",
+      "mesh_name": "fin-api.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "api.diegonmarcos.com",
       "type": "path",
@@ -220,7 +220,7 @@
     },
     {
       "service": "infra-api_git-proxy-api",
-      "mesh_name": "git-proxy-api.app",
+      "mesh_name": "git-proxy-api.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "api.diegonmarcos.com",
       "type": "path",
@@ -233,7 +233,7 @@
     },
     {
       "service": "infra-api_tools-http-to-smtp-proxy-api",
-      "mesh_name": "http-to-smtp-proxy-api.app",
+      "mesh_name": "http-to-smtp-proxy-api.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "api.diegonmarcos.com",
       "type": "path",
@@ -243,7 +243,7 @@
     },
     {
       "service": "infra-api_c3-public-api",
-      "mesh_name": "c3-public-api.app",
+      "mesh_name": "c3-public-api.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "api.diegonmarcos.com",
       "type": "path",
@@ -258,7 +258,7 @@
     },
     {
       "service": "user-data_scrappers-api",
-      "mesh_name": "scrappers-api.app",
+      "mesh_name": "scrappers-api.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "api.diegonmarcos.com",
       "type": "path",
@@ -272,7 +272,7 @@
     },
     {
       "service": "user-prod_etherpad",
-      "mesh_name": "etherpad.app",
+      "mesh_name": "etherpad.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "app.diegonmarcos.com",
       "type": "path",
@@ -282,7 +282,7 @@
     },
     {
       "service": "user-prod_filebrowser",
-      "mesh_name": "filebrowser.app",
+      "mesh_name": "filebrowser.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "app.diegonmarcos.com",
       "type": "path",
@@ -292,7 +292,7 @@
     },
     {
       "service": "user-prod_hedgedoc",
-      "mesh_name": "hedgedoc.app",
+      "mesh_name": "hedgedoc.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "app.diegonmarcos.com",
       "type": "path",
@@ -302,7 +302,7 @@
     },
     {
       "service": "infra-sec_authelia",
-      "mesh_name": "authelia.app",
+      "mesh_name": "authelia.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "auth.diegonmarcos.com",
       "auth": "bypass",
@@ -310,7 +310,7 @@
     },
     {
       "service": "user-prod_calendar-radicale",
-      "mesh_name": "calendar.app",
+      "mesh_name": "calendar.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "cal.diegonmarcos.com",
       "auth": "two_factor",
@@ -318,7 +318,7 @@
     },
     {
       "service": "user-comm_chat-mattermost",
-      "mesh_name": "mattermost.app",
+      "mesh_name": "mattermost.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "chat.diegonmarcos.com",
       "auth": "two_factor",
@@ -326,7 +326,7 @@
     },
     {
       "service": "infra-obs_cloud-spec",
-      "mesh_name": "c3-spec.app",
+      "mesh_name": "c3-spec.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "cloud.diegonmarcos.com",
       "type": "path",
@@ -336,7 +336,7 @@
     },
     {
       "service": "user-prod_contacts-radicale",
-      "mesh_name": "contacts.app",
+      "mesh_name": "contacts.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "contacts.diegonmarcos.com",
       "auth": "two_factor",
@@ -344,7 +344,7 @@
     },
     {
       "service": "infra-sec_crowdsec",
-      "mesh_name": "crowdsec.app",
+      "mesh_name": "crowdsec.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "crowdsec.diegonmarcos.com",
       "auth": "two_factor",
@@ -352,7 +352,7 @@
     },
     {
       "service": "infra-obs_dbgate",
-      "mesh_name": "dbgate.app",
+      "mesh_name": "dbgate.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "db.diegonmarcos.com",
       "auth": "two_factor",
@@ -360,7 +360,7 @@
     },
     {
       "service": "infra-dat_gitea",
-      "mesh_name": "gitea.app",
+      "mesh_name": "gitea.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "git.diegonmarcos.com",
       "auth": "two_factor",
@@ -368,7 +368,7 @@
     },
     {
       "service": "user-prod_code-server",
-      "mesh_name": "code-server.app",
+      "mesh_name": "code-server.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "ide.diegonmarcos.com",
       "auth": "two_factor",
@@ -376,7 +376,7 @@
     },
     {
       "service": "user-comm_tools-stalwart",
-      "mesh_name": "stalwart.app",
+      "mesh_name": "stalwart.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "jmap.diegonmarcos.com",
       "auth": "none",
@@ -391,7 +391,7 @@
     },
     {
       "service": "user-comm_tools-maddy",
-      "mesh_name": "maddy.app",
+      "mesh_name": "maddy.mesh.diegonmarcos.com",
       "block": "mail_hub",
       "host": "mail.diegonmarcos.com",
       "type": "static",
@@ -400,7 +400,7 @@
     },
     {
       "service": "user-comm_tools-stalwart",
-      "mesh_name": "stalwart.app",
+      "mesh_name": "stalwart.mesh.diegonmarcos.com",
       "block": "mail_hub",
       "host": "mail.diegonmarcos.com",
       "base_path": "/stalwart",
@@ -409,7 +409,7 @@
     },
     {
       "service": "user-comm_tools-maddy",
-      "mesh_name": "maddy.app",
+      "mesh_name": "maddy.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "mail.diegonmarcos.com",
       "auth": "two_factor",
@@ -417,7 +417,7 @@
     },
     {
       "service": "user-comm_matrix-continuwuity",
-      "mesh_name": "matrix-continuwuity.app",
+      "mesh_name": "matrix-continuwuity.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "matrix.diegonmarcos.com",
       "auth": "none",
@@ -425,7 +425,7 @@
     },
     {
       "service": "infra-api_cloud-infra-mcp",
-      "mesh_name": "c3-infra-mcp.app",
+      "mesh_name": "c3-infra-mcp.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "mcp.diegonmarcos.com",
       "type": "path",
@@ -436,7 +436,7 @@
     },
     {
       "service": "infra-api_cloud-services-mcp",
-      "mesh_name": "c3-services-mcp.app",
+      "mesh_name": "c3-services-mcp.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "mcp.diegonmarcos.com",
       "type": "path",
@@ -446,7 +446,7 @@
     },
     {
       "service": "user-ai_cloud-cgc-pub-mcp",
-      "mesh_name": "cloud-cgc-pub-mcp.app",
+      "mesh_name": "cloud-cgc-pub-mcp.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "mcp.diegonmarcos.com",
       "type": "path",
@@ -456,7 +456,7 @@
     },
     {
       "service": "infra-api_cloud-drive-mcp",
-      "mesh_name": "drive-mcp.app",
+      "mesh_name": "drive-mcp.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "mcp.diegonmarcos.com",
       "type": "path",
@@ -466,7 +466,7 @@
     },
     {
       "service": "infra-api_cloud-superapp-mcp",
-      "mesh_name": "superapp-mcp.app",
+      "mesh_name": "superapp-mcp.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "mcp.diegonmarcos.com",
       "type": "path",
@@ -476,7 +476,7 @@
     },
     {
       "service": "infra-api_cloud-vault-mcp",
-      "mesh_name": "vault-mcp.app",
+      "mesh_name": "vault-mcp.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "mcp.diegonmarcos.com",
       "type": "path",
@@ -486,7 +486,7 @@
     },
     {
       "service": "infra-api_google-personal-mcp",
-      "mesh_name": "g-personal-mcp.app",
+      "mesh_name": "g-personal-mcp.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "mcp.diegonmarcos.com",
       "type": "path",
@@ -496,7 +496,7 @@
     },
     {
       "service": "infra-api_google-workspace-mcp",
-      "mesh_name": "g-workspace-mcp.app",
+      "mesh_name": "g-workspace-mcp.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "mcp.diegonmarcos.com",
       "type": "path",
@@ -506,7 +506,7 @@
     },
     {
       "service": "infra-api_cloud-mail-mcp",
-      "mesh_name": "mail-mcp.app",
+      "mesh_name": "mail-mcp.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "mcp.diegonmarcos.com",
       "type": "path",
@@ -516,7 +516,7 @@
     },
     {
       "service": "infra-api_cloud-mattermost-mcp",
-      "mesh_name": "mattermost-mcp.app",
+      "mesh_name": "mattermost-mcp.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "mcp.diegonmarcos.com",
       "type": "path",
@@ -533,7 +533,7 @@
     },
     {
       "service": "user-comm_matrix-element",
-      "mesh_name": "matrix-element.app",
+      "mesh_name": "matrix-element.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "messenger.diegonmarcos.com",
       "auth": "two_factor",
@@ -541,7 +541,7 @@
     },
     {
       "service": "user-prod_cloud-notes-sync",
-      "mesh_name": "cloud-notes-sync.app",
+      "mesh_name": "cloud-notes-sync.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "notes-sync.diegonmarcos.com",
       "auth": "two_factor",
@@ -549,7 +549,7 @@
     },
     {
       "service": "user-prod_cloud-notes-web",
-      "mesh_name": "cloud-notes-web.app",
+      "mesh_name": "cloud-notes-web.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "notes.diegonmarcos.com",
       "auth": "two_factor",
@@ -557,7 +557,7 @@
     },
     {
       "service": "user-media_photoprism",
-      "mesh_name": "photoprism.app",
+      "mesh_name": "photoprism.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "photos.diegonmarcos.com",
       "auth": "two_factor",
@@ -565,7 +565,7 @@
     },
     {
       "service": "user-media_playlist-syncer",
-      "mesh_name": "playlist-syncer.app",
+      "mesh_name": "playlist-syncer.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "playlist.diegonmarcos.com",
       "auth": "two_factor",
@@ -573,14 +573,14 @@
     },
     {
       "service": "infra-sec_caddy",
-      "mesh_name": "caddy.app",
+      "mesh_name": "caddy.mesh.diegonmarcos.com",
       "block": "proxy_dashboard",
       "host": "proxy.diegonmarcos.com",
       "wg_only": true
     },
     {
       "service": "infra-obs_ntfy",
-      "mesh_name": "ntfy.app",
+      "mesh_name": "ntfy.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "rss.diegonmarcos.com",
       "auth": "ntfy-3tier",
@@ -595,7 +595,7 @@
     },
     {
       "service": "user-prod_grist",
-      "mesh_name": "grist.app",
+      "mesh_name": "grist.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "sheets.diegonmarcos.com",
       "auth": "none",
@@ -618,7 +618,7 @@
     },
     {
       "service": "user-comm_cloud-webmail",
-      "mesh_name": "webmail.app",
+      "mesh_name": "webmail.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "webmail.diegonmarcos.com",
       "auth": "two_factor",
@@ -626,7 +626,7 @@
     },
     {
       "service": "infra-obs_dagu",
-      "mesh_name": "dagu.app",
+      "mesh_name": "dagu.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "workflows.diegonmarcos.com",
       "auth": "two_factor",
@@ -636,247 +636,247 @@
   "mesh_names": [
     {
       "service": "bc-obs_alerts-api",
-      "dns": "alerts-api.app"
+      "dns": "alerts-api.mesh.diegonmarcos.com"
     },
     {
       "service": "infra-sec_auth-broker",
-      "dns": "auth-broker.app"
+      "dns": "auth-broker.mesh.diegonmarcos.com"
     },
     {
       "service": "infra-sec_authelia",
-      "dns": "authelia.app"
+      "dns": "authelia.mesh.diegonmarcos.com"
     },
     {
       "service": "infra-api_c3-infra-api",
-      "dns": "c3-infra-api.app"
+      "dns": "c3-infra-api.mesh.diegonmarcos.com"
     },
     {
       "service": "infra-api_cloud-infra-mcp",
-      "dns": "c3-infra-mcp.app"
+      "dns": "c3-infra-mcp.mesh.diegonmarcos.com"
     },
     {
       "service": "infra-api_c3-public-api",
-      "dns": "c3-public-api.app"
+      "dns": "c3-public-api.mesh.diegonmarcos.com"
     },
     {
       "service": "infra-api_c3-services-api",
-      "dns": "c3-services-api.app"
+      "dns": "c3-services-api.mesh.diegonmarcos.com"
     },
     {
       "service": "infra-api_cloud-services-mcp",
-      "dns": "c3-services-mcp.app"
+      "dns": "c3-services-mcp.mesh.diegonmarcos.com"
     },
     {
       "service": "infra-obs_cloud-spec",
-      "dns": "c3-spec.app"
+      "dns": "c3-spec.mesh.diegonmarcos.com"
     },
     {
       "service": "infra-sec_caddy-public",
-      "dns": "caddy-public.app"
+      "dns": "caddy-public.mesh.diegonmarcos.com"
     },
     {
       "service": "infra-sec_caddy",
-      "dns": "caddy.app"
+      "dns": "caddy.mesh.diegonmarcos.com"
     },
     {
       "service": "user-prod_calendar-radicale",
-      "dns": "calendar.app"
+      "dns": "calendar.mesh.diegonmarcos.com"
     },
     {
       "service": "user-ai_cloud-cgc-pub-mcp",
-      "dns": "cloud-cgc-pub-mcp.app"
+      "dns": "cloud-cgc-pub-mcp.mesh.diegonmarcos.com"
     },
     {
       "service": "infra-api_cloud-me-api",
-      "dns": "cloud-me-api.app"
+      "dns": "cloud-me-api.mesh.diegonmarcos.com"
     },
     {
       "service": "user-prod_cloud-notes-sync",
-      "dns": "cloud-notes-sync.app"
+      "dns": "cloud-notes-sync.mesh.diegonmarcos.com"
     },
     {
       "service": "user-prod_cloud-notes-web",
-      "dns": "cloud-notes-web.app"
+      "dns": "cloud-notes-web.mesh.diegonmarcos.com"
     },
     {
       "service": "user-prod_code-server",
-      "dns": "code-server.app"
+      "dns": "code-server.mesh.diegonmarcos.com"
     },
     {
       "service": "user-prod_contacts-radicale",
-      "dns": "contacts.app"
+      "dns": "contacts.mesh.diegonmarcos.com"
     },
     {
       "service": "infra-sec_crowdsec",
-      "dns": "crowdsec.app"
+      "dns": "crowdsec.mesh.diegonmarcos.com"
     },
     {
       "service": "infra-obs_dagu",
-      "dns": "dagu.app"
+      "dns": "dagu.mesh.diegonmarcos.com"
     },
     {
       "service": "infra-obs_dbgate",
-      "dns": "dbgate.app"
+      "dns": "dbgate.mesh.diegonmarcos.com"
     },
     {
       "service": "infra-api_cloud-drive-mcp",
-      "dns": "drive-mcp.app"
+      "dns": "drive-mcp.mesh.diegonmarcos.com"
     },
     {
       "service": "user-prod_etherpad",
-      "dns": "etherpad.app"
+      "dns": "etherpad.mesh.diegonmarcos.com"
     },
     {
       "service": "user-prod_filebrowser",
-      "dns": "filebrowser.app"
+      "dns": "filebrowser.mesh.diegonmarcos.com"
     },
     {
       "service": "user-fin_fin-api",
-      "dns": "fin-api.app"
+      "dns": "fin-api.mesh.diegonmarcos.com"
     },
     {
       "service": "infra-api_google-personal-mcp",
-      "dns": "g-personal-mcp.app"
+      "dns": "g-personal-mcp.mesh.diegonmarcos.com"
     },
     {
       "service": "infra-api_google-workspace-mcp",
-      "dns": "g-workspace-mcp.app"
+      "dns": "g-workspace-mcp.mesh.diegonmarcos.com"
     },
     {
       "service": "infra-api_git-proxy-api",
-      "dns": "git-proxy-api.app"
+      "dns": "git-proxy-api.mesh.diegonmarcos.com"
     },
     {
       "service": "infra-dat_gitea",
-      "dns": "gitea.app"
+      "dns": "gitea.mesh.diegonmarcos.com"
     },
     {
       "service": "user-prod_grist",
-      "dns": "grist.app"
+      "dns": "grist.mesh.diegonmarcos.com"
     },
     {
       "service": "user-prod_hedgedoc",
-      "dns": "hedgedoc.app"
+      "dns": "hedgedoc.mesh.diegonmarcos.com"
     },
     {
       "service": "user-ai_hermes-agent",
-      "dns": "hermes-agent.app"
+      "dns": "hermes-agent.mesh.diegonmarcos.com"
     },
     {
       "service": "infra-api_tools-http-to-smtp-proxy-api",
-      "dns": "http-to-smtp-proxy-api.app"
+      "dns": "http-to-smtp-proxy-api.mesh.diegonmarcos.com"
     },
     {
       "service": "infra-sec_introspect-proxy",
-      "dns": "introspect-proxy.app"
+      "dns": "introspect-proxy.mesh.diegonmarcos.com"
     },
     {
       "service": "infra-ai_jev-sidecar",
-      "dns": "jev-sidecar.app"
+      "dns": "jev-sidecar.mesh.diegonmarcos.com"
     },
     {
       "service": "user-comm_tools-maddy",
-      "dns": "maddy.app"
+      "dns": "maddy.mesh.diegonmarcos.com"
     },
     {
       "service": "infra-api_cloud-mail-mcp",
-      "dns": "mail-mcp.app"
+      "dns": "mail-mcp.mesh.diegonmarcos.com"
     },
     {
       "service": "user-comm_mail-puller",
-      "dns": "mail-puller.app"
+      "dns": "mail-puller.mesh.diegonmarcos.com"
     },
     {
       "service": "infra-obs_matomo",
-      "dns": "matomo.app"
+      "dns": "matomo.mesh.diegonmarcos.com"
     },
     {
       "service": "user-comm_matrix-continuwuity",
-      "dns": "matrix-continuwuity.app"
+      "dns": "matrix-continuwuity.mesh.diegonmarcos.com"
     },
     {
       "service": "user-comm_matrix-element",
-      "dns": "matrix-element.app"
+      "dns": "matrix-element.mesh.diegonmarcos.com"
     },
     {
       "service": "user-comm_matrix-mautrix-whatsapp",
-      "dns": "matrix-mautrix-whatsapp.app"
+      "dns": "matrix-mautrix-whatsapp.mesh.diegonmarcos.com"
     },
     {
       "service": "infra-api_cloud-mattermost-mcp",
-      "dns": "mattermost-mcp.app"
+      "dns": "mattermost-mcp.mesh.diegonmarcos.com"
     },
     {
       "service": "user-comm_chat-mattermost",
-      "dns": "mattermost.app"
+      "dns": "mattermost.mesh.diegonmarcos.com"
     },
     {
       "service": "infra-sec_mcp-oauth",
-      "dns": "mcp-oauth.app"
+      "dns": "mcp-oauth.mesh.diegonmarcos.com"
     },
     {
       "service": "user-ai_my-ai-api",
-      "dns": "my-ai-api.app"
+      "dns": "my-ai-api.mesh.diegonmarcos.com"
     },
     {
       "service": "user-ai_my-ai_claude-api",
-      "dns": "my-ai-claude-api.app"
+      "dns": "my-ai-claude-api.mesh.diegonmarcos.com"
     },
     {
       "service": "infra-obs_ntfy",
-      "dns": "ntfy.app"
+      "dns": "ntfy.mesh.diegonmarcos.com"
     },
     {
       "service": "user-ai_openclaw",
-      "dns": "openclaw.app"
+      "dns": "openclaw.mesh.diegonmarcos.com"
     },
     {
       "service": "infra-obs_openobserve",
-      "dns": "openobserve.app"
+      "dns": "openobserve.mesh.diegonmarcos.com"
     },
     {
       "service": "user-media_photoprism",
-      "dns": "photoprism.app"
+      "dns": "photoprism.mesh.diegonmarcos.com"
     },
     {
       "service": "user-media_playlist-syncer",
-      "dns": "playlist-syncer.app"
+      "dns": "playlist-syncer.mesh.diegonmarcos.com"
     },
     {
       "service": "infra-db_redis",
-      "dns": "redis.app"
+      "dns": "redis.mesh.diegonmarcos.com"
     },
     {
       "service": "user-prod_revealmd",
-      "dns": "revealmd.app"
+      "dns": "revealmd.mesh.diegonmarcos.com"
     },
     {
       "service": "user-data_scrappers-api",
-      "dns": "scrappers-api.app"
+      "dns": "scrappers-api.mesh.diegonmarcos.com"
     },
     {
       "service": "user-ai_session-memory",
-      "dns": "session-memory.app"
+      "dns": "session-memory.mesh.diegonmarcos.com"
     },
     {
       "service": "user-comm_tools-stalwart",
-      "dns": "stalwart.app"
+      "dns": "stalwart.mesh.diegonmarcos.com"
     },
     {
       "service": "infra-api_cloud-superapp-mcp",
-      "dns": "superapp-mcp.app"
+      "dns": "superapp-mcp.mesh.diegonmarcos.com"
     },
     {
       "service": "infra-sec_tokens-api",
-      "dns": "tokens-api.app"
+      "dns": "tokens-api.mesh.diegonmarcos.com"
     },
     {
       "service": "infra-obs_umami",
-      "dns": "umami.app"
+      "dns": "umami.mesh.diegonmarcos.com"
     },
     {
       "service": "infra-api_cloud-vault-mcp",
-      "dns": "vault-mcp.app"
+      "dns": "vault-mcp.mesh.diegonmarcos.com"
     },
     {
       "service": "user-vault_vaultwarden",
@@ -884,7 +884,7 @@
     },
     {
       "service": "user-comm_cloud-webmail",
-      "dns": "webmail.app"
+      "dns": "webmail.mesh.diegonmarcos.com"
     }
   ]
 }

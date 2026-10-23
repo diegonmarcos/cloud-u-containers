@@ -32,7 +32,7 @@
     "image": "postgres:16-alpine",
     "port": 5435,
     "port_env": "PGPORT",
-    "dns": "mattermost-postgres.app",
+    "dns": "mattermost-postgres.mesh.diegonmarcos.com",
     "public": false,
     "healthcheck": "pg_isready -U mattermost -d mattermost",
     "volumes": [

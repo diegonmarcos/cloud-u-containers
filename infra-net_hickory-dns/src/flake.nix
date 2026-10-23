@@ -26,8 +26,6 @@
     # before the wildcard so they override the catch-all. Empty default
     # keeps zones with no overrides as pure wildcard.
     records     = buildJson.dns.records or {};
-    # #1123: a zone may reuse another zone's per-name rows (mesh.diegonmarcos.com <- app).
-    recordAlias = buildJson.dns.record_alias_of or {};
 
     # Generated config fragments
     zoneBlocks = lib.concatMapStringsSep "\n\n" (suffix: ''
@@ -79,7 +77,7 @@
     # output regardless of source indentation.
     mkZoneText = suffix:
       let
-        zoneRecords = records.${suffix} or (records.${recordAlias.${suffix} or "_none"} or []);
+        zoneRecords = records.${suffix} or [];
         recordBlock = lib.concatMapStrings (r:
           "${r.name}  IN ${r.type}  ${r.value}\n"
         ) zoneRecords;

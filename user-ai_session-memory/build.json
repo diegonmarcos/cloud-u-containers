@@ -1,7 +1,7 @@
 {
   "name": "session-memory",
   "description": "Central SQLite store of all Claude Code session transcripts — push/list/fetch so a session started on one device can be resumed from any other. WG-only sidecar on oci-apps; Node 22 built-in node:sqlite (phone-portable, no native deps).",
-  "dns": "session-memory.app",
+  "dns": "session-memory.mesh.diegonmarcos.com",
   "ports": {
     "app": 3108
   },
@@ -40,7 +40,7 @@
       "image": "ghcr.io/diegonmarcos/session-memory:latest",
       "port": 3108,
       "port_env": "MEM_PORT",
-      "dns": "session-memory.app",
+      "dns": "session-memory.mesh.diegonmarcos.com",
       "public": false,
       "healthcheck": "/health",
       "monitoring": null,

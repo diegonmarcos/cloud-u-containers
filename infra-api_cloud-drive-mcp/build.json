@@ -1,8 +1,8 @@
 {
   "name": "cloud-drive-mcp",
   "description": "Drive MCP server — one facade over every storage unit: repos, files, photos, sync, scrapes, S3 and conversion",
-  "dns": "drive-mcp.app",
-  "dns_aliases": ["cloud-drive-mcp.app"],
+  "dns": "drive-mcp.mesh.diegonmarcos.com",
+  "dns_aliases": ["cloud-drive-mcp.mesh.diegonmarcos.com"],
   "category": "app",
   "build": {
     "include_cloud_data": "true",
@@ -220,7 +220,7 @@
       "image": "ghcr.io/diegonmarcos/cloud-drive-mcp:latest",
       "port": 3109,
       "port_env": "PORT",
-      "dns": "drive-mcp.app",
+      "dns": "drive-mcp.mesh.diegonmarcos.com",
       "public": true,
       "proxy": {
         "streaming": true,

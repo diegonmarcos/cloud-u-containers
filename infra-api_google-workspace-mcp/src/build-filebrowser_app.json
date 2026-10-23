@@ -32,7 +32,7 @@
     "image": "filebrowser/filebrowser:latest",
     "port": 3015,
     "port_env": null,
-    "dns": "filebrowser.app",
+    "dns": "filebrowser.mesh.diegonmarcos.com",
     "public": true,
     "proxy": {
       "type": "path",

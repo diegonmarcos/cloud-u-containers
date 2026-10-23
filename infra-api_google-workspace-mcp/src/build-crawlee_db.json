@@ -32,7 +32,7 @@
     "image": "postgres:16-alpine",
     "port": 5434,
     "port_env": "PGPORT",
-    "dns": "crawlee-db.app",
+    "dns": "crawlee-db.mesh.diegonmarcos.com",
     "public": false,
     "healthcheck": "pg_isready -U $POSTGRES_USER",
     "volumes": [

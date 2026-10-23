@@ -1,8 +1,8 @@
 {
   "name": "calendar-radicale",
   "description": "Radicale CalDAV server (calendars only) — cal.diegonmarcos.com",
-  "dns": "calendar.app",
-  "dns_aliases": ["calendar-radicale.app"],
+  "dns": "calendar.mesh.diegonmarcos.com",
+  "dns_aliases": ["calendar-radicale.mesh.diegonmarcos.com"],
   "upstream_image": "tomsquest/docker-radicale:latest",
   "ports": {
     "app": 5232
@@ -38,7 +38,7 @@
       "image": "tomsquest/docker-radicale:latest",
       "port": 5232,
       "port_env": null,
-      "dns": "calendar.app",
+      "dns": "calendar.mesh.diegonmarcos.com",
       "public": true,
       "proxy": {
         "domain": "cal.diegonmarcos.com",

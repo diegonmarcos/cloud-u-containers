@@ -32,7 +32,7 @@
     "image": "etherpad/etherpad:latest",
     "port": 3012,
     "port_env": "PORT",
-    "dns": "etherpad.app",
+    "dns": "etherpad.mesh.diegonmarcos.com",
     "public": true,
     "proxy": {
       "type": "path",

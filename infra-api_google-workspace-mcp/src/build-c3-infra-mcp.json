@@ -32,7 +32,7 @@
     "image": "ghcr.io/diegonmarcos/c3-infra-mcp:latest",
     "port": 3100,
     "port_env": "MCP_HTTP_PORT",
-    "dns": "c3-infra-mcp.app",
+    "dns": "c3-infra-mcp.mesh.diegonmarcos.com",
     "public": true,
     "proxy": {
       "streaming": true,
@@ -1611,7 +1611,7 @@
     }
   },
   "env_config": {
-    "mattermost_url": "http://mattermost.app"
+    "mattermost_url": "http://mattermost.mesh.diegonmarcos.com"
   },
   "runtime": {
     "init": true,

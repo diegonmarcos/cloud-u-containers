@@ -86,18 +86,18 @@ pub async fn path_checker() -> Vec<Check> {
         severity: if ok { Severity::Info } else { Severity::Critical },
     });
 
-    // Step 3: Caddy → Hickory DNS resolves http-to-smtp-proxy-api.app
+    // Step 3: Caddy → Hickory DNS resolves http-to-smtp-proxy-api.mesh.diegonmarcos.com
     let t = Instant::now();
-    let dns_ok = match resolver.lookup_ip("http-to-smtp-proxy-api.app.").await {
+    let dns_ok = match resolver.lookup_ip("http-to-smtp-proxy-api.mesh.diegonmarcos.com.").await {
         Ok(ips) => ips.iter().next().is_some(),
         Err(_) => false,
     };
     checks.push(Check {
-        name: "IN→3 Hickory DNS http-to-smtp-proxy-api.app".into(),
+        name: "IN→3 Hickory DNS http-to-smtp-proxy-api.mesh.diegonmarcos.com".into(),
         passed: dns_ok,
         details: if dns_ok { format!("→ {}", PROXY_WG_IP) } else { "NXDOMAIN".into() },
         duration_ms: t.elapsed().as_millis() as u64,
-        error: if dns_ok { None } else { Some("Hickory DNS not resolving http-to-smtp-proxy-api.app".into()) },
+        error: if dns_ok { None } else { Some("Hickory DNS not resolving http-to-smtp-proxy-api.mesh.diegonmarcos.com".into()) },
         severity: if dns_ok { Severity::Info } else { Severity::Critical },
     });
 
@@ -780,7 +780,7 @@ pub async fn network_checks(
         let t = Instant::now();
         let resolver = hickory_resolver();
         let (tls_ok, _) = openssl_connect("diegonmarcos.com", 443, None).await;
-        let dns_ip = dns_resolve(&resolver, "caddy.app").await;
+        let dns_ip = dns_resolve(&resolver, "caddy.mesh.diegonmarcos.com").await;
         let ok = tls_ok;
         let detail = if ok {
             format!(
@@ -800,14 +800,14 @@ pub async fn network_checks(
         }
     }));
 
-    // Hickory DNS resolve maddy.app — retry to survive single-shot flake
+    // Hickory DNS resolve maddy.mesh.diegonmarcos.com — retry to survive single-shot flake
     futs.push(Box::pin(async {
         let t = Instant::now();
         let resolver = hickory_resolver();
-        let ip = reports_common::checks::dns_resolve_retry(&resolver, "maddy.app", 3, 500).await;
+        let ip = reports_common::checks::dns_resolve_retry(&resolver, "maddy.mesh.diegonmarcos.com", 3, 500).await;
         let ok = ip.as_deref() == Some(MAIL_WG_IP);
         let detail = if ok {
-            format!("maddy.app -> {}", MAIL_WG_IP)
+            format!("maddy.mesh.diegonmarcos.com -> {}", MAIL_WG_IP)
         } else {
             format!(
                 "FAIL: {}",

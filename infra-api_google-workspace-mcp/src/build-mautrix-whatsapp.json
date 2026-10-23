@@ -32,7 +32,7 @@
     "image": "ghcr.io/diegonmarcos/matrix-mautrix-whatsapp-binaries:latest",
     "port": 29318,
     "port_env": null,
-    "dns": "matrix-mautrix-whatsapp.app",
+    "dns": "matrix-mautrix-whatsapp.mesh.diegonmarcos.com",
     "public": false,
     "healthcheck": null,
     "monitoring": null,

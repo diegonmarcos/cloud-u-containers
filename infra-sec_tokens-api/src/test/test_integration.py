@@ -15,7 +15,7 @@ import pytest
 HERE = os.path.dirname(__file__)
 KEY = base64.urlsafe_b64encode(b"i" * 32).decode()
 SECRET = "wire-secret"
-os.environ["TOKENS_VERIFY_URL"] = "http://tokens-api.app:4184/v1/verify"
+os.environ["TOKENS_VERIFY_URL"] = "http://tokens-api.mesh.diegonmarcos.com:4184/v1/verify"
 os.environ["TOKENS_VERIFY_SECRET"] = SECRET
 
 

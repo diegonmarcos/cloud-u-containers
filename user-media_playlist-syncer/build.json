@@ -1,7 +1,7 @@
 {
   "name": "playlist-syncer",
   "description": "Spotube — bidirectional Spotify <-> YouTube Music playlist sync (playlist.diegonmarcos.com). Self-hosted Soundiiz alternative.",
-  "dns": "playlist-syncer.app",
+  "dns": "playlist-syncer.mesh.diegonmarcos.com",
   "ports": {
     "app": 8090
   },
@@ -44,7 +44,7 @@
       "image": "ghcr.io/diegonmarcos/playlist-syncer-binaries:latest",
       "port": 8090,
       "port_env": "PORT",
-      "dns": "playlist-syncer.app",
+      "dns": "playlist-syncer.mesh.diegonmarcos.com",
       "public": true,
       "proxy": {
         "domain": "playlist.diegonmarcos.com",

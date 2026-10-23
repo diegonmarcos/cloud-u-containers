@@ -14,7 +14,7 @@
       "slug": "alerts-api",
       "dir": "bc-obs_alerts-api",
       "description": "Security Alert Aggregation API",
-      "mesh": "alerts-api.app",
+      "mesh": "alerts-api.mesh.diegonmarcos.com",
       "hosts": [],
       "signin": false,
       "bearer": true
@@ -23,7 +23,7 @@
       "slug": "jev-sidecar",
       "dir": "infra-ai_jev-sidecar",
       "description": "Jev decisions sidecar on oci-apps (#881) — `jev-gate serve`: POST /decide/<use> with {state, questions} on the WireGuard mesh for the sites that cannot carry a gate of their own (Dagu DAGs, journal-ntfy.sh, maddy post-hoc). One OPENROUTER_A",
-      "mesh": "jev-sidecar.app",
+      "mesh": "jev-sidecar.mesh.diegonmarcos.com",
       "hosts": [],
       "signin": false,
       "bearer": false
@@ -43,7 +43,7 @@
       "slug": "c3-infra-api",
       "dir": "infra-api_c3-infra-api",
       "description": "C3 REST API — Cloud Control Center Fastify API",
-      "mesh": "c3-infra-api.app",
+      "mesh": "c3-infra-api.mesh.diegonmarcos.com",
       "hosts": [],
       "signin": false,
       "bearer": true
@@ -52,7 +52,7 @@
       "slug": "c3-public-api",
       "dir": "infra-api_c3-public-api",
       "description": "C3 Public API — single public-edge listener on oci-analytics. Consolidates http-to-smtp-proxy-api (Bearer-gated /mail/*) and c3-analytics-api passthrough (public /analytics/*). Replaces split listeners across gcp-proxy + oci-analytics so gc",
-      "mesh": "c3-public-api.app",
+      "mesh": "c3-public-api.mesh.diegonmarcos.com",
       "hosts": [],
       "signin": false,
       "bearer": true
@@ -61,7 +61,7 @@
       "slug": "c3-services-api",
       "dir": "infra-api_c3-services-api",
       "description": "C3 Services REST API — service API gateway Fastify API",
-      "mesh": "c3-services-api.app",
+      "mesh": "c3-services-api.mesh.diegonmarcos.com",
       "hosts": [],
       "signin": false,
       "bearer": true
@@ -70,7 +70,7 @@
       "slug": "cloud-drive-mcp",
       "dir": "infra-api_cloud-drive-mcp",
       "description": "Drive MCP server — one facade over every storage unit: repos, files, photos, sync, scrapes, S3 and conversion",
-      "mesh": "drive-mcp.app",
+      "mesh": "drive-mcp.mesh.diegonmarcos.com",
       "hosts": [
         "mcp.diegonmarcos.com"
       ],
@@ -81,7 +81,7 @@
       "slug": "cloud-infra-mcp",
       "dir": "infra-api_cloud-infra-mcp",
       "description": "C3 MCP Server — Cloud Control Center MCP transport (stdio + HTTP)",
-      "mesh": "c3-infra-mcp.app",
+      "mesh": "c3-infra-mcp.mesh.diegonmarcos.com",
       "hosts": [],
       "signin": false,
       "bearer": true
@@ -90,7 +90,7 @@
       "slug": "cloud-mail-mcp",
       "dir": "infra-api_cloud-mail-mcp",
       "description": "Mail MCP server — IMAP/SMTP/Admin via Stalwart REST API",
-      "mesh": "mail-mcp.app",
+      "mesh": "mail-mcp.mesh.diegonmarcos.com",
       "hosts": [
         "mcp.diegonmarcos.com"
       ],
@@ -101,7 +101,7 @@
       "slug": "cloud-mattermost-mcp",
       "dir": "infra-api_cloud-mattermost-mcp",
       "description": "Mattermost MCP server — chat tools via HTTP transport",
-      "mesh": "mattermost-mcp.app",
+      "mesh": "mattermost-mcp.mesh.diegonmarcos.com",
       "hosts": [],
       "signin": false,
       "bearer": true
@@ -110,7 +110,7 @@
       "slug": "cloud-me-api",
       "dir": "infra-api_cloud-me-api",
       "description": "Cloud Me API: read-only, authenticated read path to the owner's private cloud-me-* repos. The service holds one READ-ONLY deploy key per repo server-side, keeps a shallow clone of each declared repo, and serves declared JSON datasets (and f",
-      "mesh": "cloud-me-api.app",
+      "mesh": "cloud-me-api.mesh.diegonmarcos.com",
       "hosts": [],
       "signin": false,
       "bearer": true
@@ -119,7 +119,7 @@
       "slug": "cloud-services-mcp",
       "dir": "infra-api_cloud-services-mcp",
       "description": "C3 Services MCP Server — service API gateway MCP transport (stdio + HTTP)",
-      "mesh": "c3-services-mcp.app",
+      "mesh": "c3-services-mcp.mesh.diegonmarcos.com",
       "hosts": [],
       "signin": false,
       "bearer": true
@@ -128,7 +128,7 @@
       "slug": "cloud-superapp-mcp",
       "dir": "infra-api_cloud-superapp-mcp",
       "description": "MCP + HTTP faces over the Android constellation's on-device debug API (libs:devtools AppDebugServer, behind the SuperApp mesh gateway), reached over ssh. lib-api/lib-mcp shared, one module per app under mcps-apps/, one server process.",
-      "mesh": "superapp-mcp.app",
+      "mesh": "superapp-mcp.mesh.diegonmarcos.com",
       "hosts": [
         "mcp.diegonmarcos.com"
       ],
@@ -139,7 +139,7 @@
       "slug": "cloud-vault-mcp",
       "dir": "infra-api_cloud-vault-mcp",
       "description": "MCP server — READ-ONLY personal data access (vault metadata, identity, comms, media, finance, health)",
-      "mesh": "vault-mcp.app",
+      "mesh": "vault-mcp.mesh.diegonmarcos.com",
       "hosts": [
         "mcp.diegonmarcos.com"
       ],
@@ -150,7 +150,7 @@
       "slug": "git-proxy-api",
       "dir": "infra-api_git-proxy-api",
       "description": "Git Proxy API — Authelia-fronted read path to GitHub so the phone holds NO GitHub credential (#647, route 3 of #646's fallback chain). The caller authenticates to US with the Authelia bearer it already has; this service holds the GitHub tok",
-      "mesh": "git-proxy-api.app",
+      "mesh": "git-proxy-api.mesh.diegonmarcos.com",
       "hosts": [],
       "signin": false,
       "bearer": true
@@ -159,7 +159,7 @@
       "slug": "google-personal-mcp",
       "dir": "infra-api_google-personal-mcp",
       "description": "Google Personal Account MCP server — Gmail (IMAP/SMTP via App Password) for personal Google accounts, multi-account",
-      "mesh": "g-personal-mcp.app",
+      "mesh": "g-personal-mcp.mesh.diegonmarcos.com",
       "hosts": [
         "mcp.diegonmarcos.com"
       ],
@@ -170,7 +170,7 @@
       "slug": "google-workspace-mcp",
       "dir": "infra-api_google-workspace-mcp",
       "description": "Google Workspace MCP server — Gmail, Calendar, Drive, Docs, Sheets via HTTP transport",
-      "mesh": "g-workspace-mcp.app",
+      "mesh": "g-workspace-mcp.mesh.diegonmarcos.com",
       "hosts": [
         "mcp.diegonmarcos.com"
       ],
@@ -181,7 +181,7 @@
       "slug": "http-to-smtp-proxy-api",
       "dir": "infra-api_tools-http-to-smtp-proxy-api",
       "description": "HTTP-to-SMTP bridge sidecar of Caddy on gcp-proxy. CF Worker POSTs JSON email payloads to this container (because GCP blocks outbound TCP/25); container speaks SMTP over WG to maddy:25 + stalwart:2025 on oci-mail. Public path: api.diegonmar",
-      "mesh": "http-to-smtp-proxy-api.app",
+      "mesh": "http-to-smtp-proxy-api.mesh.diegonmarcos.com",
       "hosts": [],
       "signin": false,
       "bearer": true
@@ -244,7 +244,7 @@
       "slug": "gitea",
       "dir": "infra-dat_gitea",
       "description": "Self-hosted Git service",
-      "mesh": "gitea.app",
+      "mesh": "gitea.mesh.diegonmarcos.com",
       "hosts": [
         "git.diegonmarcos.com"
       ],
@@ -264,7 +264,7 @@
       "slug": "redis",
       "dir": "infra-db_redis",
       "description": "In-memory data store",
-      "mesh": "redis.app",
+      "mesh": "redis.mesh.diegonmarcos.com",
       "hosts": [],
       "signin": false,
       "bearer": false
@@ -331,7 +331,7 @@
       "slug": "cloud-spec",
       "dir": "infra-obs_cloud-spec",
       "description": "Unified Cloud Documentation Portal",
-      "mesh": "c3-spec.app",
+      "mesh": "c3-spec.mesh.diegonmarcos.com",
       "hosts": [],
       "signin": false,
       "bearer": false
@@ -340,7 +340,7 @@
       "slug": "dagu",
       "dir": "infra-obs_dagu",
       "description": "Dagu - Lightweight DAG-based workflow scheduler",
-      "mesh": "dagu.app",
+      "mesh": "dagu.mesh.diegonmarcos.com",
       "hosts": [
         "workflows.diegonmarcos.com"
       ],
@@ -351,7 +351,7 @@
       "slug": "dbgate",
       "dir": "infra-obs_dbgate",
       "description": "DBGate - Universal database manager for all cloud databases",
-      "mesh": "dbgate.app",
+      "mesh": "dbgate.mesh.diegonmarcos.com",
       "hosts": [
         "db.diegonmarcos.com"
       ],
@@ -362,7 +362,7 @@
       "slug": "matomo",
       "dir": "infra-obs_matomo",
       "description": "Matomo hybrid analytics (oci-apps)",
-      "mesh": "matomo.app",
+      "mesh": "matomo.mesh.diegonmarcos.com",
       "hosts": [],
       "signin": false,
       "bearer": false
@@ -371,7 +371,7 @@
       "slug": "ntfy",
       "dir": "infra-obs_ntfy",
       "description": "Push notification server",
-      "mesh": "ntfy.app",
+      "mesh": "ntfy.mesh.diegonmarcos.com",
       "hosts": [
         "rss.diegonmarcos.com"
       ],
@@ -382,7 +382,7 @@
       "slug": "openobserve",
       "dir": "infra-obs_openobserve",
       "description": "OpenObserve - single-binary observability platform (logs + traces + metrics + RUM). Replaces LGTM stack.",
-      "mesh": "openobserve.app",
+      "mesh": "openobserve.mesh.diegonmarcos.com",
       "hosts": [],
       "signin": false,
       "bearer": false
@@ -400,7 +400,7 @@
       "slug": "umami",
       "dir": "infra-obs_umami",
       "description": "Umami Analytics - lightweight privacy-focused web analytics",
-      "mesh": "umami.app",
+      "mesh": "umami.mesh.diegonmarcos.com",
       "hosts": [],
       "signin": false,
       "bearer": false
@@ -427,7 +427,7 @@
       "slug": "auth-broker",
       "dir": "infra-sec_auth-broker",
       "description": "Identity broker for the multi-SSO sign-in: GitHub (device flow + web), Google (web code flow + PKCE) and Cloudflare One (Access JWT) and Email code (one-time code), owner only (#1066, #1083, #1118)",
-      "mesh": "auth-broker.app",
+      "mesh": "auth-broker.mesh.diegonmarcos.com",
       "hosts": [],
       "signin": false,
       "bearer": false
@@ -436,7 +436,7 @@
       "slug": "authelia",
       "dir": "infra-sec_authelia",
       "description": "SSO and 2FA authentication portal",
-      "mesh": "authelia.app",
+      "mesh": "authelia.mesh.diegonmarcos.com",
       "hosts": [
         "auth.diegonmarcos.com"
       ],
@@ -447,7 +447,7 @@
       "slug": "caddy",
       "dir": "infra-sec_caddy",
       "description": "Caddy reverse proxy + security dashboard (gcp-proxy, wg0 bind)",
-      "mesh": "caddy.app",
+      "mesh": "caddy.mesh.diegonmarcos.com",
       "hosts": [
         "proxy.diegonmarcos.com"
       ],
@@ -467,7 +467,7 @@
       "slug": "caddy-public",
       "dir": "infra-sec_caddy-public",
       "description": "Caddy public-edge L7 allowlist on oci-analytics. Terminates TLS on :8443, serves ONLY the declared-public allowlist (build-caddy-public.json: gh-pages, no-auth subdomains, well-known, explicit public_paths), and FORWARDS everything else to ",
-      "mesh": "caddy-public.app",
+      "mesh": "caddy-public.mesh.diegonmarcos.com",
       "hosts": [],
       "signin": false,
       "bearer": false
@@ -476,7 +476,7 @@
       "slug": "crowdsec",
       "dir": "infra-sec_crowdsec",
       "description": "CrowdSec behavioral IDS/IPS engine — DORMANT placeholder (Cloudflare-off fallback). Container runs but detects/remediates nothing: empty acquisition, online API (CAPI) disabled, no bouncers wired.",
-      "mesh": "crowdsec.app",
+      "mesh": "crowdsec.mesh.diegonmarcos.com",
       "hosts": [
         "crowdsec.diegonmarcos.com"
       ],
@@ -487,7 +487,7 @@
       "slug": "introspect-proxy",
       "dir": "infra-sec_introspect-proxy",
       "description": "OIDC token introspection sidecar for Caddy Bearer auth",
-      "mesh": "introspect-proxy.app",
+      "mesh": "introspect-proxy.mesh.diegonmarcos.com",
       "hosts": [],
       "signin": false,
       "bearer": false
@@ -496,7 +496,7 @@
       "slug": "mcp-oauth",
       "dir": "infra-sec_mcp-oauth",
       "description": "MCP OAuth 2.1 authorization server for mcp.diegonmarcos.com (option 31.1, WIP, NOT approved): RFC 8414/9728 discovery, RFC 7591 DCR, /authorize behind Authelia, PKCE S256 /token, opaque tokens introspected by introspect-proxy",
-      "mesh": "mcp-oauth.app",
+      "mesh": "mcp-oauth.mesh.diegonmarcos.com",
       "hosts": [],
       "signin": false,
       "bearer": false
@@ -505,7 +505,7 @@
       "slug": "tokens-api",
       "dir": "infra-sec_tokens-api",
       "description": "Fleet token engine: lists, generates, reveals and revokes every fleet bearer token (fleet ft_ tokens and adopted Authelia JWTs); introspect-proxy asks it before accepting a Bearer, so a revoked token stops working within 60 seconds. Public ",
-      "mesh": "tokens-api.app",
+      "mesh": "tokens-api.mesh.diegonmarcos.com",
       "hosts": [],
       "signin": false,
       "bearer": true
@@ -514,7 +514,7 @@
       "slug": "cloud-cgc-pub-mcp",
       "dir": "user-ai_cloud-cgc-pub-mcp",
       "description": "Cloud CGC Pub MCP — Code Graph Context: infra knowledge, specs, docs, semantic code search",
-      "mesh": "cloud-cgc-pub-mcp.app",
+      "mesh": "cloud-cgc-pub-mcp.mesh.diegonmarcos.com",
       "hosts": [],
       "signin": false,
       "bearer": true
@@ -532,7 +532,7 @@
       "slug": "hermes-agent",
       "dir": "user-ai_hermes-agent",
       "description": "Nous Research Hermes Agent (autonomous, persistent-memory AI agent) on oci-apps. Messaging gateway (Telegram live, Mattermost scaffolded) backed by claude-superset-api (subscription CLI, no metered key). WG-internal, never public.",
-      "mesh": "hermes-agent.app",
+      "mesh": "hermes-agent.mesh.diegonmarcos.com",
       "hosts": [],
       "signin": false,
       "bearer": false
@@ -559,7 +559,7 @@
       "slug": "my-ai-api",
       "dir": "user-ai_my-ai-api",
       "description": "my-ai API on oci-apps — one polyglot container: OpenAI /v1 + Ollama /api + Anthropic /v1/messages mimic backed by OpenRouter (no Claude subscription, no metered Anthropic key), with a vendored Headroom (Apache-2.0) compression hop and a sav",
-      "mesh": "my-ai-api.app",
+      "mesh": "my-ai-api.mesh.diegonmarcos.com",
       "hosts": [],
       "signin": false,
       "bearer": true
@@ -568,7 +568,7 @@
       "slug": "my-ai_claude-api",
       "dir": "user-ai_my-ai_claude-api",
       "description": "Claude superset API on oci-apps — one polyglot container: OpenAI /v1 + Ollama /api + Anthropic /v1/messages mimic backed by the subscription `claude` CLI (no metered key), with a vendored Headroom (Apache-2.0) compression hop and a savings ",
-      "mesh": "my-ai-claude-api.app",
+      "mesh": "my-ai-claude-api.mesh.diegonmarcos.com",
       "hosts": [],
       "signin": false,
       "bearer": true
@@ -577,7 +577,7 @@
       "slug": "openclaw",
       "dir": "user-ai_openclaw",
       "description": "OpenClaw (MIT, github.com/openclaw/openclaw) on oci-apps — the open-source personal agent gateway, as a fourth fleet agent next to hermes, goose and claude. Upstream's own image, unmodified. Its gateway listens on a local address only (host",
-      "mesh": "openclaw.app",
+      "mesh": "openclaw.mesh.diegonmarcos.com",
       "hosts": [],
       "signin": false,
       "bearer": false
@@ -586,7 +586,7 @@
       "slug": "session-memory",
       "dir": "user-ai_session-memory",
       "description": "Central SQLite store of all Claude Code session transcripts — push/list/fetch so a session started on one device can be resumed from any other. WG-only sidecar on oci-apps; Node 22 built-in node:sqlite (phone-portable, no native deps).",
-      "mesh": "session-memory.app",
+      "mesh": "session-memory.mesh.diegonmarcos.com",
       "hosts": [],
       "signin": false,
       "bearer": false
@@ -595,7 +595,7 @@
       "slug": "chat-mattermost",
       "dir": "user-comm_chat-mattermost",
       "description": "Mattermost team chat (TE 11.x ESR) with ntfy bridge and C3 command bot",
-      "mesh": "mattermost.app",
+      "mesh": "mattermost.mesh.diegonmarcos.com",
       "hosts": [
         "chat.diegonmarcos.com"
       ],
@@ -606,7 +606,7 @@
       "slug": "cloud-webmail",
       "dir": "user-comm_cloud-webmail",
       "description": "Cloud Webmail — Stalwart-native JMAP webmail with multi-account/multi-server (webmail.diegonmarcos.com); OUR build of bulwarkmail/webmail 1.9.2. Replaces SnappyMail.",
-      "mesh": "webmail.app",
+      "mesh": "webmail.mesh.diegonmarcos.com",
       "hosts": [
         "webmail.diegonmarcos.com"
       ],
@@ -617,7 +617,7 @@
       "slug": "mail-puller",
       "dir": "user-comm_mail-puller",
       "description": "Rust sidecar — IMAP-IDLE pulls from external providers (Gmail, Outlook/Live, …) and delivers into Maddy via SMTP submission (:465 implicit TLS; Maddy dual-writes to Stalwart). Declarative source list in src/sources.json; OAuth2 creds via so",
-      "mesh": "mail-puller.app",
+      "mesh": "mail-puller.mesh.diegonmarcos.com",
       "hosts": [
         "mail-puller.diegonmarcos.com"
       ],
@@ -628,7 +628,7 @@
       "slug": "matrix-continuwuity",
       "dir": "user-comm_matrix-continuwuity",
       "description": "Continuwuity Matrix homeserver (maintained conduwuit fork, Rust/RocksDB) — central hub for chat bridges. Federation enabled via .well-known delegation over :443.",
-      "mesh": "matrix-continuwuity.app",
+      "mesh": "matrix-continuwuity.mesh.diegonmarcos.com",
       "hosts": [
         "matrix.diegonmarcos.com"
       ],
@@ -639,7 +639,7 @@
       "slug": "matrix-element",
       "dir": "user-comm_matrix-element",
       "description": "Element Web — browser Matrix client for the Continuwuity homeserver. Served at messenger.diegonmarcos.com behind Authelia 2FA.",
-      "mesh": "matrix-element.app",
+      "mesh": "matrix-element.mesh.diegonmarcos.com",
       "hosts": [
         "messenger.diegonmarcos.com"
       ],
@@ -650,7 +650,7 @@
       "slug": "matrix-mautrix-whatsapp",
       "dir": "user-comm_matrix-mautrix-whatsapp",
       "description": "mautrix-whatsapp bridge (appservice) for the Continuwuity homeserver. WG-only, no public route. Links a WhatsApp account via QR into Matrix.",
-      "mesh": "matrix-mautrix-whatsapp.app",
+      "mesh": "matrix-mautrix-whatsapp.mesh.diegonmarcos.com",
       "hosts": [],
       "signin": false,
       "bearer": false
@@ -659,7 +659,7 @@
       "slug": "maddy",
       "dir": "user-comm_tools-maddy",
       "description": "Maddy Mail Server (mail.diegonmarcos.com)",
-      "mesh": "maddy.app",
+      "mesh": "maddy.mesh.diegonmarcos.com",
       "hosts": [
         "mail.diegonmarcos.com"
       ],
@@ -670,7 +670,7 @@
       "slug": "stalwart",
       "dir": "user-comm_tools-stalwart",
       "description": "Stalwart Mail Server — JMAP webmail backend (jmap.diegonmarcos.com)",
-      "mesh": "stalwart.app",
+      "mesh": "stalwart.mesh.diegonmarcos.com",
       "hosts": [
         "jmap.diegonmarcos.com"
       ],
@@ -681,7 +681,7 @@
       "slug": "scrappers-api",
       "dir": "user-data_scrappers-api",
       "description": "Unified scrapers API (Instagram / Pinterest / LinkedIn / generic crawl) — retires crawlee-cloud. Lean single-container FastAPI, on-demand, flat-JSON output.",
-      "mesh": "scrappers-api.app",
+      "mesh": "scrappers-api.mesh.diegonmarcos.com",
       "hosts": [],
       "signin": false,
       "bearer": true
@@ -690,7 +690,7 @@
       "slug": "fin-api",
       "dir": "user-fin_fin-api",
       "description": "Fincept Terminal backend (fin-api) — REST + WebSocket over DataHub, 35 data connectors, 7 analytics, 17 brokers, 6 investor personas, MCP tools",
-      "mesh": "fin-api.app",
+      "mesh": "fin-api.mesh.diegonmarcos.com",
       "hosts": [],
       "signin": false,
       "bearer": true
@@ -699,7 +699,7 @@
       "slug": "photoprism",
       "dir": "user-media_photoprism",
       "description": "PhotoPrism AI-powered photo management (oci-flex-1)",
-      "mesh": "photoprism.app",
+      "mesh": "photoprism.mesh.diegonmarcos.com",
       "hosts": [
         "photos.diegonmarcos.com"
       ],
@@ -710,7 +710,7 @@
       "slug": "playlist-syncer",
       "dir": "user-media_playlist-syncer",
       "description": "Spotube — bidirectional Spotify <-> YouTube Music playlist sync (playlist.diegonmarcos.com). Self-hosted Soundiiz alternative.",
-      "mesh": "playlist-syncer.app",
+      "mesh": "playlist-syncer.mesh.diegonmarcos.com",
       "hosts": [
         "playlist.diegonmarcos.com"
       ],
@@ -730,7 +730,7 @@
       "slug": "calendar-radicale",
       "dir": "user-prod_calendar-radicale",
       "description": "Radicale CalDAV server (calendars only) — cal.diegonmarcos.com",
-      "mesh": "calendar.app",
+      "mesh": "calendar.mesh.diegonmarcos.com",
       "hosts": [
         "cal.diegonmarcos.com"
       ],
@@ -741,7 +741,7 @@
       "slug": "cloud-notes-sync",
       "dir": "user-prod_cloud-notes-sync",
       "description": "Cloud Notes sync server: Yjs documents (Hocuspocus) and the HTTP delta API at notes-sync.diegonmarcos.com behind the edge gate (fleet Bearer or Authelia). Built by cloud-u-android ship-cloud-notes.yml (ghcr.io/diegonmarcos/cloud-notes-sync)",
-      "mesh": "cloud-notes-sync.app",
+      "mesh": "cloud-notes-sync.mesh.diegonmarcos.com",
       "hosts": [
         "notes-sync.diegonmarcos.com"
       ],
@@ -752,7 +752,7 @@
       "slug": "cloud-notes-web",
       "dir": "user-prod_cloud-notes-web",
       "description": "Cloud Notes web: the notes app (Miro + Notion + Obsidian) served as static files at notes.diegonmarcos.com behind the edge gate (Authelia 2FA or fleet Bearer). Built by cloud-u-android ship-cloud-notes.yml (ghcr.io/diegonmarcos/cloud-notes-",
-      "mesh": "cloud-notes-web.app",
+      "mesh": "cloud-notes-web.mesh.diegonmarcos.com",
       "hosts": [
         "notes.diegonmarcos.com"
       ],
@@ -763,7 +763,7 @@
       "slug": "code-server",
       "dir": "user-prod_code-server",
       "description": "VS Code IDE (ide.diegonmarcos.com)",
-      "mesh": "code-server.app",
+      "mesh": "code-server.mesh.diegonmarcos.com",
       "hosts": [
         "ide.diegonmarcos.com"
       ],
@@ -774,7 +774,7 @@
       "slug": "contacts-radicale",
       "dir": "user-prod_contacts-radicale",
       "description": "Radicale CardDAV server (contacts / address books) — contacts.diegonmarcos.com",
-      "mesh": "contacts.app",
+      "mesh": "contacts.mesh.diegonmarcos.com",
       "hosts": [
         "contacts.diegonmarcos.com"
       ],
@@ -785,7 +785,7 @@
       "slug": "etherpad",
       "dir": "user-prod_etherpad",
       "description": "Etherpad collaborative editor",
-      "mesh": "etherpad.app",
+      "mesh": "etherpad.mesh.diegonmarcos.com",
       "hosts": [],
       "signin": false,
       "bearer": false
@@ -794,7 +794,7 @@
       "slug": "filebrowser",
       "dir": "user-prod_filebrowser",
       "description": "FileBrowser web file manager (NEW - not deployed yet)",
-      "mesh": "filebrowser.app",
+      "mesh": "filebrowser.mesh.diegonmarcos.com",
       "hosts": [],
       "signin": false,
       "bearer": false
@@ -803,7 +803,7 @@
       "slug": "grist",
       "dir": "user-prod_grist",
       "description": "Grist spreadsheet/database (sheets.diegonmarcos.com)",
-      "mesh": "grist.app",
+      "mesh": "grist.mesh.diegonmarcos.com",
       "hosts": [
         "sheets.diegonmarcos.com"
       ],
@@ -814,7 +814,7 @@
       "slug": "hedgedoc",
       "dir": "user-prod_hedgedoc",
       "description": "Collaborative markdown editor",
-      "mesh": "hedgedoc.app",
+      "mesh": "hedgedoc.mesh.diegonmarcos.com",
       "hosts": [],
       "signin": false,
       "bearer": false
@@ -823,7 +823,7 @@
       "slug": "revealmd",
       "dir": "user-prod_revealmd",
       "description": "Reveal.js markdown presentations (not deployed)",
-      "mesh": "revealmd.app",
+      "mesh": "revealmd.mesh.diegonmarcos.com",
       "hosts": [],
       "signin": false,
       "bearer": false

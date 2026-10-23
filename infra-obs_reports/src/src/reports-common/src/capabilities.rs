@@ -82,7 +82,7 @@ impl RuntimeCapabilities {
         // cascade into false "DNS down" findings across the entire report.
         let hickory_up = if wg_up {
             let resolver = checks::hickory_resolver();
-            checks::dns_resolve(&resolver, "caddy.app").await.is_some()
+            checks::dns_resolve(&resolver, "caddy.mesh.diegonmarcos.com").await.is_some()
         } else {
             false
         };

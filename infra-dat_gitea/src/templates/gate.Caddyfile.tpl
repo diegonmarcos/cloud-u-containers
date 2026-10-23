@@ -9,7 +9,7 @@
 # the header — and X-Real-IP, which gitea prefers over X-Forwarded-For — only
 # survives from the measured edge address(es), for the vhost the edge
 # authenticates. The hub's .app catalog routes reach us from the same address
-# with Host gitea.app, so the Host half is not decoration.
+# with Host gitea.mesh.diegonmarcos.com, so the Host half is not decoration.
 :@PORT@ {
 	@not_edge {
 		not {

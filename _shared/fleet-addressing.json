@@ -1,5 +1,5 @@
 {
-  "_doc": "Fleet addressing (tickets #1100 and #1104; #1104 supersedes the public-host part of #1100). Private address {container}.app (mesh only, no auth). Public address: c3-pvt.diegonmarcos.com/{container} (cookie or bearer) and the c3-pub allowlist; no per-app public subdomain, no api.* or mcp.* host. Explicit unauthenticated hosts: unprotected_hosts. Guard: _shared/test-fleet-addressing.mjs. transitional lists known violations while the #1104 stages migrate them; an entry that stops violating must be removed, and every list must be empty when #1104 closes.",
+  "_doc": "Fleet addressing (tickets #1100 and #1104; #1104 supersedes the public-host part of #1100). Private address {container}.mesh.diegonmarcos.com (mesh only, no auth). Public address: c3-pvt.diegonmarcos.com/{container} (cookie or bearer) and the c3-pub allowlist; no per-app public subdomain, no api.* or mcp.* host. Explicit unauthenticated hosts: unprotected_hosts. Guard: _shared/test-fleet-addressing.mjs. transitional lists known violations while the #1104 stages migrate them; an entry that stops violating must be removed, and every list must be empty when #1104 closes.",
   "api_containers": [],
   "unprotected_hosts": {
     "diegonmarcos.com": "HTML only: apex landing page",
@@ -18,10 +18,9 @@
     "maps.diegonmarcos.com": "HTML only: GitHub Pages static site, public on github.io anyway"
   },
   "mesh": {
-    "_doc": "#1123: mesh names must live where no stranger can own them. Private namespace: <container>.mesh.diegonmarcos.com, served ONLY by fleet DNS (Hickory 10.0.0.1); the public zone carries no record under mesh. `.app` is a real public TLD (vaultwarden.app is someone else's live Vaultwarden) and is kept as an alias only until public_tld_alias_until (30 days from the stage (a) rollout), then test-fleet-addressing.mjs fails on every remaining .app name.",
+    "_doc": "#1123: mesh names must live where no stranger can own them. Private namespace: <container>.mesh.diegonmarcos.com, served ONLY by fleet DNS (Hickory 10.0.0.1); the public zone carries no record under mesh. `.app` is a real public TLD (vaultwarden.app is someone else's live Vaultwarden) and is NOT served at all: owner decision, no transition window, test-fleet-addressing.mjs fails on any .app mesh name.",
     "private_suffixes": [".mesh.diegonmarcos.com", ".home.arpa", ".internal", ".db", ".localhost", ".test", ".invalid"],
-    "public_tld_alias": ".app",
-    "public_tld_alias_until": "2026-11-22"
+    "public_tld_denied": [".app"]
   },
   "transitional": {
     "naming": [
@@ -100,12 +99,11 @@
       "scrappers-api",
       "session-memory",
       "tokens-api",
-      "umami",
-      "vaultwarden"
+      "umami"
     ]
   },
   "tiers": {
-    "_doc": "Routing tiers (ticket #1104). pub: Cloudflare proxied (orange), unauthenticated, explicit allowlist only. pvt: DNS-only (grey), path per container, Authelia session cookie (web) OR fleet bearer (API/MCP clients) through the shared edge_auth gate. mesh: {container}.app, WireGuard is the trust boundary. Guard: _shared/test-fleet-addressing.mjs reads infra-sec_caddy/dist/configs/Caddyfile.",
+    "_doc": "Routing tiers (ticket #1104). pub: Cloudflare proxied (orange), unauthenticated, explicit allowlist only. pvt: DNS-only (grey), path per container, Authelia session cookie (web) OR fleet bearer (API/MCP clients) through the shared edge_auth gate. mesh: {container}.mesh.diegonmarcos.com, WireGuard is the trust boundary. Guard: _shared/test-fleet-addressing.mjs reads infra-sec_caddy/dist/configs/Caddyfile.",
     "pub": {
       "host": "c3-pub.diegonmarcos.com",
       "cloudflare_proxied": true,
@@ -130,10 +128,10 @@
       "path_source": "route.container"
     },
     "mesh": {
-      "suffix": ".app",
+      "suffix": ".mesh.diegonmarcos.com",
       "auth": "none",
-      "canonical": "http://{container}.app:{port}",
-      "_doc": "Architect ruling (#1104): the canonical mesh address is http://{container}.app:{port}, served directly by the container on its VM's WireGuard address (plain HTTP inside WG, no hub hop, no auth). Hickory owns a direct row per container (infra-net_hickory-dns/build.json dns.records.app); the container binds its port on wg0 only. The hub https .app vhosts are legacy; nothing may depend on them. transitional.mesh_direct lists containers still without a direct row; it only shrinks."
+      "canonical": "http://{container}.mesh.diegonmarcos.com:{port}",
+      "_doc": "Architect ruling (#1104): the canonical mesh address is http://{container}.mesh.diegonmarcos.com:{port}, served directly by the container on its VM's WireGuard address (plain HTTP inside WG, no hub hop, no auth). Hickory owns a direct row per container (infra-net_hickory-dns/build.json dns.records.app); the container binds its port on wg0 only. The hub https .app vhosts are legacy; nothing may depend on them. transitional.mesh_direct lists containers still without a direct row; it only shrinks."
     },
     "public": {
       "html_hosts": [

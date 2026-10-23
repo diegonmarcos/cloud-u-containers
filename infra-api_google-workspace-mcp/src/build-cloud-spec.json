@@ -32,7 +32,7 @@
     "image": "busybox:latest",
     "port": 3080,
     "port_env": null,
-    "dns": "c3-spec.app",
+    "dns": "c3-spec.mesh.diegonmarcos.com",
     "public": true,
     "proxy": {
       "type": "path",

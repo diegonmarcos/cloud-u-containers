@@ -2,7 +2,7 @@
   "name": "git-proxy-api",
   "enabled": true,
   "description": "Git Proxy API — Authelia-fronted read path to GitHub so the phone holds NO GitHub credential (#647, route 3 of #646's fallback chain). The caller authenticates to US with the Authelia bearer it already has; this service holds the GitHub token server-side and streams the result back.",
-  "dns": "git-proxy-api.app",
+  "dns": "git-proxy-api.mesh.diegonmarcos.com",
   "ports": {
     "app": 8123
   },
@@ -60,7 +60,7 @@
       "image": "ghcr.io/diegonmarcos/git-proxy-api:latest",
       "port": 8123,
       "port_env": "PORT",
-      "dns": "git-proxy-api.app",
+      "dns": "git-proxy-api.mesh.diegonmarcos.com",
       "public": true,
       "proxy": {
         "auth": "two_factor",
@@ -146,7 +146,7 @@
         "method": "GET",
         "path": "/git/releases/:owner/:repo/:tag/assets/:name",
         "auth": "mesh",
-        "description": "#837 mesh mirror leg for fleet APKs. Streams the named asset of release :tag of a repo in runtime.feeds.repos (same allow-list as commits/runs; undeclared -> 403 repo_not_declared, nothing dialled) from GitHub with the server-side credential. Range: a single `bytes=a-b` request header is forwarded and answered 206 with Content-Range (416 when unsatisfiable); Content-Length/Accept-Ranges/ETag pass through; bytes are streamed, never staged. The ship engine's sidecars are ordinary assets and pass through by name (<asset>.sha256, <asset>.source). Errors {error,code}: 400 bad_repo/bad_tag/bad_asset/bad_range, 403 repo_not_declared, 404 not_found (no such release or asset), 502 upstream_error, 504 upstream_timeout. AUTH `mesh`: a DIRECT wg0 dial (source in runtime.mesh.cidrs, no X-Forwarded-*/Forwarded/Via header) needs no credential, because the Store's downloader has none and the bytes are the fleet's own release assets; a request relayed by the public edge is judged exactly like an `authelia` route, so off-mesh access is unchanged (edge forward_auth + in-service check). Client: cloud-u-android MeshMirrorSource, third ApkSource after release and ghcr, dialling http://git-proxy-api.app:8123/releases/..."
+        "description": "#837 mesh mirror leg for fleet APKs. Streams the named asset of release :tag of a repo in runtime.feeds.repos (same allow-list as commits/runs; undeclared -> 403 repo_not_declared, nothing dialled) from GitHub with the server-side credential. Range: a single `bytes=a-b` request header is forwarded and answered 206 with Content-Range (416 when unsatisfiable); Content-Length/Accept-Ranges/ETag pass through; bytes are streamed, never staged. The ship engine's sidecars are ordinary assets and pass through by name (<asset>.sha256, <asset>.source). Errors {error,code}: 400 bad_repo/bad_tag/bad_asset/bad_range, 403 repo_not_declared, 404 not_found (no such release or asset), 502 upstream_error, 504 upstream_timeout. AUTH `mesh`: a DIRECT wg0 dial (source in runtime.mesh.cidrs, no X-Forwarded-*/Forwarded/Via header) needs no credential, because the Store's downloader has none and the bytes are the fleet's own release assets; a request relayed by the public edge is judged exactly like an `authelia` route, so off-mesh access is unchanged (edge forward_auth + in-service check). Client: cloud-u-android MeshMirrorSource, third ApkSource after release and ghcr, dialling http://git-proxy-api.mesh.diegonmarcos.com:8123/releases/..."
       }
     ],
     "feeds": {

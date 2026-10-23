@@ -32,7 +32,7 @@
     "image": "redis:alpine",
     "port": 6379,
     "port_env": null,
-    "dns": "redis.app",
+    "dns": "redis.mesh.diegonmarcos.com",
     "public": false,
     "proxy": null,
     "healthcheck": "redis-cli ping",

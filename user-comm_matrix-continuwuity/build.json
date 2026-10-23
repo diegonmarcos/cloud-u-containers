@@ -1,7 +1,7 @@
 {
   "name": "matrix-continuwuity",
   "description": "Continuwuity Matrix homeserver (maintained conduwuit fork, Rust/RocksDB) — central hub for chat bridges. Federation enabled via .well-known delegation over :443.",
-  "dns": "matrix-continuwuity.app",
+  "dns": "matrix-continuwuity.mesh.diegonmarcos.com",
   "category": "app",
   "timezone": "Europe/Madrid",
   "build": {
@@ -55,7 +55,7 @@
       "image": "ghcr.io/diegonmarcos/matrix-continuwuity-binaries:latest",
       "port": 8008,
       "port_env": "CONTINUWUITY_PORT",
-      "dns": "matrix-continuwuity.app",
+      "dns": "matrix-continuwuity.mesh.diegonmarcos.com",
       "public": true,
       "proxy": {
         "domain": "matrix.diegonmarcos.com",

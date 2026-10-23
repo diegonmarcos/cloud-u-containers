@@ -1,7 +1,7 @@
 {
   "name": "hedgedoc",
   "description": "Collaborative markdown editor",
-  "dns": "hedgedoc.app",
+  "dns": "hedgedoc.mesh.diegonmarcos.com",
   "ports": {
     "app": 3018,
     "db": 5439
@@ -36,7 +36,7 @@
       "image": "quay.io/hedgedoc/hedgedoc:latest",
       "port": 3018,
       "port_env": "CMD_PORT",
-      "dns": "hedgedoc.app",
+      "dns": "hedgedoc.mesh.diegonmarcos.com",
       "public": true,
       "proxy": {
         "type": "path",
@@ -66,7 +66,7 @@
       "image": "postgres:16-alpine",
       "port": 5439,
       "port_env": "PGPORT",
-      "dns": "hedgedoc-db.app",
+      "dns": "hedgedoc-db.mesh.diegonmarcos.com",
       "public": false,
       "proxy": null,
       "healthcheck": "cmd",

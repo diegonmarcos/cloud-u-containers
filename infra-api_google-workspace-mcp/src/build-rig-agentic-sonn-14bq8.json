@@ -1669,8 +1669,8 @@
   "rig": {
     "ollama_service": "ollama",
     "ollama_model": "MFDoom/deepseek-r1-tool-calling:14b-qwen-distill-q8_0",
-    "c3_api_url": "http://c3-api.app",
-    "c3_mcp_url": "http://c3-mcp.app",
+    "c3_api_url": "http://c3-api.mesh.diegonmarcos.com",
+    "c3_mcp_url": "http://c3-mcp.mesh.diegonmarcos.com",
     "mattermost_service": "chat-mattermost",
     "mm_bot_mention": "@ollama-14bq8-ai",
     "guardrail_max_turns": 20,

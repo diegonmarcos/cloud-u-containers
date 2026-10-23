@@ -208,7 +208,7 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
           const bj = JSON.parse(readFileSync(bjPath, "utf-8"));
           // Register dns field as zone name (source of truth for Hickory DNS)
           if (bj.dns) {
-            const dnsName = bj.dns.replace(/\.app$/, "");
+            const dnsName = bj.dns.replace(/\.mesh\.diegonmarcos\.com$/, "");
             if (dnsName && dnsName !== svcName) {
               services[dnsName] = { ip, desc };
             }
@@ -219,7 +219,7 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
             if (l4.upstream) upstreams.push(l4.upstream);
           }
           for (const u of upstreams) {
-            const m = u.match(/^(?:https?:\/\/)?([a-z0-9-]+)\.app/);
+            const m = u.match(/^(?:https?:\/\/)?([a-z0-9-]+)\.mesh\.diegonmarcos\.com/);
             if (m && m[1]) services[m[1]] = { ip, desc };
           }
         } catch { /* skip */ }
@@ -295,7 +295,7 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
       // Normalize new build.json schema (proxy.primary) → old flat proxy format
       let proxy = s.proxy;
       if (proxy?.primary && !proxy.upstream) {
-        const dns = bj?.dns ?? `${svcName}.app`;
+        const dns = bj?.dns ?? `${svcName}.mesh.diegonmarcos.com`;
         const port = bj?.ports?.app;
         const p = proxy.primary;
         proxy = {

@@ -46,7 +46,7 @@
       }
     ],
     "port_env": null,
-    "dns": "caddy-public.app",
+    "dns": "caddy-public.mesh.diegonmarcos.com",
     "public": true,
     "proxy": {
       "type": "special",

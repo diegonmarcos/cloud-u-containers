@@ -1,7 +1,7 @@
 {
   "name": "etherpad",
   "description": "Etherpad collaborative editor",
-  "dns": "etherpad.app",
+  "dns": "etherpad.mesh.diegonmarcos.com",
   "ports": {
     "app": 3012,
     "db": 5436
@@ -36,7 +36,7 @@
       "image": "etherpad/etherpad:latest",
       "port": 3012,
       "port_env": "PORT",
-      "dns": "etherpad.app",
+      "dns": "etherpad.mesh.diegonmarcos.com",
       "public": true,
       "proxy": {
         "type": "path",
@@ -72,7 +72,7 @@
       "image": "postgres:16-alpine",
       "port": 5436,
       "port_env": "PGPORT",
-      "dns": "etherpad-db.app",
+      "dns": "etherpad-db.mesh.diegonmarcos.com",
       "public": false,
       "proxy": null,
       "healthcheck": "cmd",

@@ -2,7 +2,7 @@
   "name": "mcp-oauth",
   "description": "MCP OAuth 2.1 authorization server for mcp.diegonmarcos.com (option 31.1, WIP, NOT approved): RFC 8414/9728 discovery, RFC 7591 DCR, /authorize behind Authelia, PKCE S256 /token, opaque tokens introspected by introspect-proxy",
   "_status": "WIP on branch wip/mcp-oauth. Owner has not chosen option 31.1. Do not merge to main: a push to main dispatches cloud-infra Ship for every touched service.",
-  "dns": "mcp-oauth.app",
+  "dns": "mcp-oauth.mesh.diegonmarcos.com",
   "ports": {
     "app": 4183
   },
@@ -38,7 +38,7 @@
       "image": "ghcr.io/diegonmarcos/mcp-oauth:latest",
       "port": 4183,
       "port_env": null,
-      "dns": "mcp-oauth.app",
+      "dns": "mcp-oauth.mesh.diegonmarcos.com",
       "public": false,
       "proxy": null,
       "healthcheck": "/health",

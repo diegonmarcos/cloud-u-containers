@@ -32,7 +32,7 @@
     "image": "ghcr.io/diegonmarcos/c3-analytics-api:latest",
     "port": 8085,
     "port_env": "PORT",
-    "dns": "c3-analytics-api.app",
+    "dns": "c3-analytics-api.mesh.diegonmarcos.com",
     "public": true,
     "proxy": {
       "type": "path",

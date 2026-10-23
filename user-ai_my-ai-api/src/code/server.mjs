@@ -40,7 +40,7 @@ const UP_CHAT  = process.env.UPSTREAM_CHAT_PATH || "/chat/completions";
 const UP_MODELS= process.env.UPSTREAM_MODELS_PATH || "/models";
 const UP_KEY   = process.env.OPENROUTER_API_KEY || process.env.UPSTREAM_API_KEY || "";
 const UP_PASSTHROUGH_AUTH = (process.env.UPSTREAM_PASSTHROUGH_AUTH ?? "0") === "1";
-const UP_REFERER = process.env.UPSTREAM_HTTP_REFERER || "https://my-ai-api.app";
+const UP_REFERER = process.env.UPSTREAM_HTTP_REFERER || "https://my-ai-api.mesh.diegonmarcos.com";
 const UP_TITLE   = process.env.UPSTREAM_HTTP_TITLE   || "my-ai-api";
 if (!UP_KEY) console.error("[my-ai-api] WARNING: OPENROUTER_API_KEY unset — chat requests will 502 until the secret is wired (src/secrets.yaml)");
 

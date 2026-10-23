@@ -74,7 +74,7 @@
         "desc": "IMAP plain — dual-bind wg0+wg-public"
       }
     ],
-    "dns": "maddy.app",
+    "dns": "maddy.mesh.diegonmarcos.com",
     "public": false,
     "proxy": null,
     "healthcheck": null,
