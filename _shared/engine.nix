@@ -701,7 +701,7 @@ pkgs.runCommand "${buildJson.name}-dist-v2" {
         # nativeBuild.prune: paths (relative to code/<arch>/) that must not ship in the image
         # build context, e.g. vendored upstream tests/benches/fixtures. Default empty = no-op.
         "rm -rf $out/code/${arch}/${rel}"
-      ) (nativeBuild.prune or [])}
+      ) (if nativeBuild != null then (nativeBuild.prune or []) else [])}
     '' else ''
       mkdir -p $out/code/${arch}
       touch $out/code/${arch}/.skip
