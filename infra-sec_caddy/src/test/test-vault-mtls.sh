@@ -12,7 +12,7 @@
 #   f) valid cert from a source that is neither mesh nor allow-listed (the "blocked country" stand-in;
 #      this Caddy has no country gate, the only source gate is @not_wg) -> 200, i.e. the cert wins
 #   g) WebSocket upgrade (/notifications/hub) with a cert -> 101 through the proxy
-# plus guards: the mesh-only alias vhost carries no client_auth, and no CA PRIVATE key is in the repo.
+# plus guards: one vault URL only (no vault.mesh vhost), and no CA PRIVATE key is in the repo.
 # "Mesh" is simulated as source 127.0.0.1, "off-mesh" as source 127.0.0.2 (the rendered CIDR list is substituted).
 # The CA used here is generated in a temp dir; it is NOT the fleet CA.
 set -u
@@ -37,9 +37,7 @@ else
   # Until the fleet CA cert is committed (vault-mtls-issue workflow) the route stays strictly mesh-only.
   echo "SKIP: vault vhost has no client_auth yet (src/inputs/vault-client-ca.pem absent), mesh-only"; exit 0
 fi
-MESH="$(site vault.mesh.diegonmarcos.com)"
-if [ -n "$MESH" ] && ! echo "$MESH" | grep -q client_auth && echo "$MESH" | grep -q "error @not_wg"; then ok "vault.mesh vhost is mesh-only, no client_auth"
-else bad "vault.mesh vhost is mesh-only, no client_auth"; fi
+if site vault.mesh.diegonmarcos.com | grep -q .; then bad "no vault.mesh vhost (owner: ONE vault URL)"; else ok "no vault.mesh vhost (one URL: vault.diegonmarcos.com)"; fi
 if grep -q "vaultwarden\.app" "$CADDYFILE"; then bad "no vaultwarden.app mapping left in Caddyfile"; else ok "no vaultwarden.app mapping left in Caddyfile"; fi
 if grep -rIl -- "-----BEGIN [A-Z ]*PRIVATE KEY-----" "$ROOT" 2>/dev/null | grep -v "/test/" | grep -q .; then bad "no private key block in this tree"; else ok "no private key block in this tree"; fi
 

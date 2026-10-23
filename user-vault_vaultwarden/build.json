@@ -26,8 +26,7 @@
       "domain": "vault.diegonmarcos.com",
       "auth": "none",
       "wg_only": true,
-      "client_cert": true,
-      "mesh_alias": "vault.mesh.diegonmarcos.com"
+      "client_cert": true
     }
   },
   "health": {
