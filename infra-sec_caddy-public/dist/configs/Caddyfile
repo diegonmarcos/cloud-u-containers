@@ -78,7 +78,7 @@ route @m_smtps_diegonmarcos_com {
     upstream 10.0.0.3:2465
   }
 }
-          @public tls sni diegonmarcos.com www.diegonmarcos.com linktree.diegonmarcos.com nexus.diegonmarcos.com suite.diegonmarcos.com maps.diegonmarcos.com vpn.diegonmarcos.com matrix.diegonmarcos.com mcp.diegonmarcos.com auth.diegonmarcos.com account.diegonmarcos.com c3-pvt.diegonmarcos.com
+          @public tls sni diegonmarcos.com www.diegonmarcos.com linktree.diegonmarcos.com nexus.diegonmarcos.com suite.diegonmarcos.com maps.diegonmarcos.com vpn.diegonmarcos.com matrix.diegonmarcos.com mcp.diegonmarcos.com auth.diegonmarcos.com account.diegonmarcos.com sso.diegonmarcos.com c3-pvt.diegonmarcos.com
           route @public {
             proxy {
               proxy_protocol v2
@@ -87,7 +87,7 @@ route @m_smtps_diegonmarcos_com {
           }
           @rest not {
             tls {
-              sni imap.diegonmarcos.com smtps.diegonmarcos.com diegonmarcos.com www.diegonmarcos.com linktree.diegonmarcos.com nexus.diegonmarcos.com suite.diegonmarcos.com maps.diegonmarcos.com vpn.diegonmarcos.com matrix.diegonmarcos.com mcp.diegonmarcos.com auth.diegonmarcos.com account.diegonmarcos.com c3-pvt.diegonmarcos.com
+              sni imap.diegonmarcos.com smtps.diegonmarcos.com diegonmarcos.com www.diegonmarcos.com linktree.diegonmarcos.com nexus.diegonmarcos.com suite.diegonmarcos.com maps.diegonmarcos.com vpn.diegonmarcos.com matrix.diegonmarcos.com mcp.diegonmarcos.com auth.diegonmarcos.com account.diegonmarcos.com sso.diegonmarcos.com c3-pvt.diegonmarcos.com
             }
           }
           route @rest {
@@ -1317,7 +1317,7 @@ handle {
   # ════════════════════════════════════════════════════════════
 
 # oidc-public: wg_only:false — whole IdP host open (owner decision 2026-10-15)
-auth.diegonmarcos.com, account.diegonmarcos.com {
+auth.diegonmarcos.com, account.diegonmarcos.com, sso.diegonmarcos.com {
 import security
   import geo_fence
 
