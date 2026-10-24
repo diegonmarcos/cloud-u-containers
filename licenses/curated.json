@@ -236,6 +236,10 @@
    "licence": "Apache-2.0",
    "note": "Build-staged copy of user-ai_my-ai-api/src/code/vendor/headroom (upstream module headroom-my-ai-api); same licence, LICENSE + NOTICE retained."
   },
+  "user-ai_my-ai_claude-api/dist/code/arm64/claude-config/ponytail": {
+   "licence": "MIT",
+   "note": "Build-staged copy of user-ai_my-ai_claude-api/src/code/claude-config/ponytail (upstream github.com/DietrichGebert/ponytail, MIT, Copyright (c) 2026 DietrichGebert); same licence, LICENSE retained."
+  },
   "user-ai_my-ai_claude-api": {
    "licence": "LicenseRef-NoLicenseGranted"
   },
