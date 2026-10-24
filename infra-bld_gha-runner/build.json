@@ -22,6 +22,10 @@
       {
         "repo_url": "https://github.com/diegonmarcos/cloud-me-data-pvt",
         "runner_name": "oci-apps-arm64-data"
+      },
+      {
+        "repo_url": "https://github.com/diegonmarcos/cloud-me_cgc",
+        "runner_name": "oci-apps-arm64-cgc"
       }
     ],
     "_secret_comment": "secrets.yaml must contain ACCESS_TOKEN (GitHub classic PAT, repo scope) — used only for runner registration/deregistration. Each job token is auto-issued by GitHub."
