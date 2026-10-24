@@ -1276,7 +1276,7 @@ error @not_wg "Forbidden" 403
   }
 
   # SSO and 2FA authentication portal
-  auth.diegonmarcos.com, account.diegonmarcos.com {
+  auth.diegonmarcos.com, account.diegonmarcos.com, sso.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
