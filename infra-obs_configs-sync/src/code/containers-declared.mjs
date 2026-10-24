@@ -32,6 +32,23 @@ export function entriesOf({ dir, b }) {
   return out.map((e) => ({ ...e, dir, b }));
 }
 
+// Public address of a container: proxy.domain (or parent_domain) plus base_path, from the container's own proxy block or
+// the service's primary one. "" = not published. auth is the declared string; auth_type is the C3 tier derived from it.
+function publicOf(c, b) {
+  const p = c.proxy || (b.proxy && (b.proxy.primary || b.proxy)) || null;
+  if (!p || typeof p !== "object") return { url: "", auth: "" };
+  const host = p.domain || p.parent_domain || "";
+  if (!host) return { url: "", auth: String(p.auth || "") };
+  return { url: host + (p.base_path || ""), auth: String(p.auth || "") };
+}
+function authTier(url, auth) {
+  if (!url) return "mesh";
+  const a = auth.toLowerCase();
+  if (a === "two_factor") return "woauth";
+  if (a === "bearer") return "bearer";
+  return "open";
+}
+
 export function derive(root) {
   const vocab = JSON.parse(fs.readFileSync(path.join(root, "_shared", "containers-taxonomy.json"), "utf8"));
   const items = loadServices(root).flatMap(entriesOf).map((e) => ({
@@ -46,6 +63,7 @@ export function derive(root) {
     protocol: e.c.protocol || "",
     db_engine: e.c.db_engine || "",
     legacy_category: e.b.category || "",
+    ...(() => { const p = publicOf(e.c, e.b); return { public_url: p.url, auth: p.auth, auth_type: authTier(p.url, p.auth) }; })(),
   }));
   const containers = items.filter((i) => i.kind === "container");
   const artifacts = items.filter((i) => i.kind === "artifact");
