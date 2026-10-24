@@ -1,5 +1,6 @@
 {
   "name": "languagetool",
+  "taxonomy": {"group": "Cloud Apps", "category": "Tools Primary"},
   "description": "LanguageTool grammar/spell-check HTTP API — rules-only, no n-grams, WG-only sidecar on oci-apps",
   "category": "tools",
   "domain": "languagetool.diegonmarcos.com",

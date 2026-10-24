@@ -1,5 +1,6 @@
 {
   "name": "calendar-radicale",
+  "taxonomy": {"group": "Cloud Apps", "category": "Data Apps"},
   "description": "Radicale CalDAV server (calendars only) — cal.diegonmarcos.com",
   "dns": "calendar.mesh.diegonmarcos.com",
   "dns_aliases": ["calendar-radicale.mesh.diegonmarcos.com"],

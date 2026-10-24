@@ -1,5 +1,6 @@
 {
   "name": "backup-borg",
+  "taxonomy": {"group": "Infra Apps", "category": "Ops-Backup"},
   "enabled": false,
   "description": "Media Backups SSH Server (Borg deduplication)",
   "category": "data",

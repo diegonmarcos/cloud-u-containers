@@ -1,5 +1,6 @@
 {
   "name": "cloud-superapp-mcp",
+  "taxonomy": {"group": "Infra Apps", "category": "Ops-API-MCP"},
   "description": "MCP + HTTP faces over the Android constellation's on-device debug API (libs:devtools AppDebugServer, behind the SuperApp mesh gateway), reached over ssh. lib-api/lib-mcp shared, one module per app under mcps-apps/, one server process.",
   "dns": "superapp-mcp.mesh.diegonmarcos.com",
   "dns_aliases": ["cloud-superapp-mcp.mesh.diegonmarcos.com"],

@@ -1,5 +1,6 @@
 {
   "name": "filebrowser",
+  "taxonomy": {"group": "Cloud Apps", "category": "Data Apps"},
   "description": "FileBrowser web file manager (NEW - not deployed yet)",
   "dns": "filebrowser.mesh.diegonmarcos.com",
   "ports": {

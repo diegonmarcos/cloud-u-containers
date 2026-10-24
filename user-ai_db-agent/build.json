@@ -1,5 +1,6 @@
 {
   "name": "db-agent",
+  "taxonomy": {"group": "Cloud Apps", "category": "AGI"},
   "description": "Central DB Backup Agent (deployed on all VMs)",
   "category": "data",
   "multi_vm": true,

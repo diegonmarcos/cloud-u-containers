@@ -1,5 +1,6 @@
 {
   "name": "cloud-webmail",
+  "taxonomy": {"group": "Cloud Apps", "category": "Inboxes"},
   "description": "Cloud Webmail — Stalwart-native JMAP webmail with multi-account/multi-server (webmail.diegonmarcos.com); OUR build of bulwarkmail/webmail 1.9.2. Replaces SnappyMail.",
   "dns": "webmail.mesh.diegonmarcos.com",
   "dns_aliases": ["cloud-webmail.mesh.diegonmarcos.com"],

@@ -1,5 +1,6 @@
 {
   "name": "etherpad",
+  "taxonomy": {"group": "Cloud Apps", "category": "Data Apps"},
   "description": "Etherpad collaborative editor",
   "dns": "etherpad.mesh.diegonmarcos.com",
   "ports": {
@@ -69,6 +70,7 @@
     },
     "db": {
       "container_name": "etherpad_postgres",
+      "taxonomy": {"group": "Infra Apps", "category": "Ops-dBs-cloud"},
       "image": "postgres:16-alpine",
       "port": 5436,
       "port_env": "PGPORT",

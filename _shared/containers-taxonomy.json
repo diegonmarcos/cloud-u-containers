@@ -1,0 +1,13 @@
+{
+  "_doc": "Vocabulary and ORDER of the C3 Containers page. Each build.json declares taxonomy {group, category} per service (or per container); the configs-sync engine renders containers-declared.json in exactly this order. Cloud Apps categories are the tile groups of cloud-superapp's Cloud list. Declare here first, then in build.json.",
+  "schema": "containers-taxonomy/v1",
+  "groups": [
+    { "id": "infra", "label": "Infra Apps", "categories": [
+      "Net-Routing & Security", "Net-Mesh", "Dev-Gits", "Dev-Builders", "Ops-Infra", "Ops-API-MCP",
+      "Ops-Observability", "Ops-Backup", "Ops-dBs-infra", "Ops-dBs-cloud", "Ops-dBs-projects" ] },
+    { "id": "cloud", "label": "Cloud Apps", "categories": [
+      "Inboxes", "Tools Primary", "Data Apps", "Me", "AGI", "Projects W", "Configs" ] },
+    { "id": "project", "label": "Project Apps", "categories": [
+      "Productivity", "Finance", "Data", "Web" ] }
+  ]
+}

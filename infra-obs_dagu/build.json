@@ -1,5 +1,6 @@
 {
   "name": "dagu",
+  "taxonomy": {"group": "Infra Apps", "category": "Ops-Observability"},
   "description": "Dagu - Lightweight DAG-based workflow scheduler",
   "dns": "dagu.mesh.diegonmarcos.com",
   "ports": {

@@ -1,5 +1,6 @@
 {
   "name": "cloud-mattermost-mcp",
+  "taxonomy": {"group": "Infra Apps", "category": "Ops-API-MCP"},
   "description": "Mattermost MCP server — chat tools via HTTP transport",
   "dns": "mattermost-mcp.mesh.diegonmarcos.com",
   "dns_aliases": ["cloud-mattermost-mcp.mesh.diegonmarcos.com"],

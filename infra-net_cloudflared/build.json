@@ -1,5 +1,6 @@
 {
   "name": "cloudflared",
+  "taxonomy": {"group": "Infra Apps", "category": "Net-Routing & Security"},
   "description": "Cloudflare Tunnel connector (remotely-managed tunnel 'fleet-edge') — the network half of the Cloudflare One (Zero Trust) edge. Outbound-only: no inbound port is opened anywhere. Hostnames, Access apps and ingress rules are declared in cloud-infra c_vps/ba-clo_cloudflare (terraform.json .zero_trust + zero-trust.tf); this container only carries the connector. Origins are reached over the WireGuard mesh (10.0.0.0/24), so one tunnel can front any VM. Design: cloud-infra a0_docs/eng-specs/cloudflare-zero-trust.md. Caddy + Authelia on gcp-proxy stay the fallback path and do not depend on this.",
   "category": "infra-net",
   "subcategory": "net",

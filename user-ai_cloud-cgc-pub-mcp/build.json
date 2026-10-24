@@ -1,5 +1,6 @@
 {
   "name": "cloud-cgc-pub-mcp",
+  "taxonomy": {"group": "Infra Apps", "category": "Ops-API-MCP"},
   "description": "Cloud CGC Pub MCP — Code Graph Context: infra knowledge, specs, docs, semantic code search",
   "dns": "cloud-cgc-pub-mcp.mesh.diegonmarcos.com",
   "ports": {

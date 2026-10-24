@@ -1,5 +1,6 @@
 {
   "name": "session-memory",
+  "taxonomy": {"group": "Cloud Apps", "category": "AGI"},
   "description": "Central SQLite store of all Claude Code session transcripts — push/list/fetch so a session started on one device can be resumed from any other. WG-only sidecar on oci-apps; Node 22 built-in node:sqlite (phone-portable, no native deps).",
   "dns": "session-memory.mesh.diegonmarcos.com",
   "ports": {

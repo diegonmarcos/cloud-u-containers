@@ -1,5 +1,6 @@
 {
   "name": "gcloud",
+  "taxonomy": {"group": "Infra Apps", "category": "Ops-Infra"},
   "description": "Google Cloud SDK and tools (local CLI only)",
   "category": "cloud",
   "deploy": {

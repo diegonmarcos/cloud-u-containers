@@ -1,5 +1,6 @@
 {
   "name": "wireguard-public",
+  "taxonomy": {"group": "Infra Apps", "category": "Net-Mesh"},
   "description": "Owner of the wg-public mesh topology + client list. Data-only entry (enabled=false → no container/compose). Replaces the previous wireguard_public block that lived in config.json (root global), so adding/rotating/sharing a wg-public client is a one-file edit here instead of touching the global config.",
   "category": "net",
   "subcategory": "network",

@@ -1,5 +1,6 @@
 {
   "name": "stalwart",
+  "taxonomy": {"group": "Cloud Apps", "category": "Inboxes"},
   "description": "Stalwart Mail Server — JMAP webmail backend (jmap.diegonmarcos.com)",
   "dns": "stalwart.mesh.diegonmarcos.com",
   "category": "app",

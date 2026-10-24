@@ -1,5 +1,6 @@
 {
   "name": "hermes-agent",
+  "taxonomy": {"group": "Cloud Apps", "category": "AGI"},
   "description": "Nous Research Hermes Agent (autonomous, persistent-memory AI agent) on oci-apps. Messaging gateway (Telegram live, Mattermost scaffolded) backed by claude-superset-api (subscription CLI, no metered key). WG-internal, never public.",
   "dns": "hermes-agent.mesh.diegonmarcos.com",
   "ports": {

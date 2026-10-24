@@ -1,5 +1,6 @@
 {
   "name": "playlist-syncer",
+  "taxonomy": {"group": "Cloud Apps", "category": "Data Apps"},
   "description": "Spotube — bidirectional Spotify <-> YouTube Music playlist sync (playlist.diegonmarcos.com). Self-hosted Soundiiz alternative.",
   "dns": "playlist-syncer.mesh.diegonmarcos.com",
   "ports": {

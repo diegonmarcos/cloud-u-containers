@@ -1,5 +1,6 @@
 {
   "name": "send",
+  "taxonomy": {"group": "Project Apps", "category": "Productivity"},
   "description": "Send — self-hosted end-to-end encrypted ephemeral file sharing (timvisee/send, Firefox Send fork). Files encrypted client-side; server sees only ciphertext. Links self-destruct after configured downloads or time.",
   "category": "app",
   "deploy": {
@@ -60,6 +61,7 @@
     },
     "redis": {
       "container_name": "send_redis",
+      "taxonomy": {"group": "Infra Apps", "category": "Ops-dBs-projects"},
       "image": "redis:7-alpine",
       "port": null,
       "port_env": null,

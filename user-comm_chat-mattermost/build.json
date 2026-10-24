@@ -1,5 +1,6 @@
 {
   "name": "chat-mattermost",
+  "taxonomy": {"group": "Cloud Apps", "category": "Inboxes"},
   "description": "Mattermost team chat (TE 11.x ESR) with ntfy bridge and C3 command bot",
   "port": 8065,
   "dns": "mattermost.mesh.diegonmarcos.com",
@@ -92,6 +93,7 @@
     },
     "db": {
       "container_name": "mattermost-postgres",
+      "taxonomy": {"group": "Infra Apps", "category": "Ops-dBs-cloud"},
       "image": "postgres:16-alpine",
       "port": 5435,
       "port_env": "PGPORT",

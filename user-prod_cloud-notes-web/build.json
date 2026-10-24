@@ -1,5 +1,6 @@
 {
   "name": "cloud-notes-web",
+  "taxonomy": {"group": "Cloud Apps", "category": "Data Apps"},
   "description": "Cloud Notes web: the notes app (Miro + Notion + Obsidian) served as static files at notes.diegonmarcos.com behind the edge gate (Authelia 2FA or fleet Bearer). Built by cloud-u-android ship-cloud-notes.yml (ghcr.io/diegonmarcos/cloud-notes-web).",
   "dns": "cloud-notes-web.mesh.diegonmarcos.com",
   "category": "app",

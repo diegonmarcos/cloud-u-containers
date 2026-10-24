@@ -1,5 +1,6 @@
 {
   "name": "gha-runner",
+  "taxonomy": {"group": "Infra Apps", "category": "Dev-Builders"},
   "description": "GitHub Actions self-hosted runner on oci-apps — ARM64, no 6h timeout cap",
   "category": "tools",
   "deploy": {

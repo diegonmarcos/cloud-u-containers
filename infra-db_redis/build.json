@@ -1,5 +1,6 @@
 {
   "name": "redis",
+  "taxonomy": {"group": "Infra Apps", "category": "Ops-dBs-infra"},
   "description": "In-memory data store",
   "dns": "redis.mesh.diegonmarcos.com",
   "ports": {

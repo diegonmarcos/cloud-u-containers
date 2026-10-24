@@ -1,5 +1,6 @@
 {
   "name": "matrix-mautrix-whatsapp",
+  "taxonomy": {"group": "Cloud Apps", "category": "Inboxes"},
   "description": "mautrix-whatsapp bridge (appservice) for the Continuwuity homeserver. WG-only, no public route. Links a WhatsApp account via QR into Matrix.",
   "dns": "matrix-mautrix-whatsapp.mesh.diegonmarcos.com",
   "category": "app",

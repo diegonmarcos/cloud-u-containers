@@ -1,5 +1,6 @@
 {
   "name": "dbgate",
+  "taxonomy": {"group": "Infra Apps", "category": "Ops-Observability"},
   "description": "DBGate - Universal database manager for all cloud databases",
   "dns": "dbgate.mesh.diegonmarcos.com",
   "ports": {

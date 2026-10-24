@@ -1,5 +1,6 @@
 {
   "name": "matrix-continuwuity",
+  "taxonomy": {"group": "Cloud Apps", "category": "Inboxes"},
   "description": "Continuwuity Matrix homeserver (maintained conduwuit fork, Rust/RocksDB) — central hub for chat bridges. Federation enabled via .well-known delegation over :443.",
   "dns": "matrix-continuwuity.mesh.diegonmarcos.com",
   "category": "app",

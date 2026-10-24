@@ -1,5 +1,6 @@
 {
   "name": "contacts-radicale",
+  "taxonomy": {"group": "Cloud Apps", "category": "Data Apps"},
   "description": "Radicale CardDAV server (contacts / address books) — contacts.diegonmarcos.com",
   "dns": "contacts.mesh.diegonmarcos.com",
   "dns_aliases": ["contacts-radicale.mesh.diegonmarcos.com"],

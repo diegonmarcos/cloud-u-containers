@@ -1,5 +1,6 @@
 {
   "name": "backup-bup",
+  "taxonomy": {"group": "Infra Apps", "category": "Ops-Backup"},
   "enabled": false,
   "description": "Database Backups SSH Server (bup)",
   "category": "data",

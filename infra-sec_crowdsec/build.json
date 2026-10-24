@@ -1,5 +1,6 @@
 {
   "name": "crowdsec",
+  "taxonomy": {"group": "Infra Apps", "category": "Net-Routing & Security"},
   "description": "CrowdSec behavioral IDS/IPS engine — DORMANT placeholder (Cloudflare-off fallback). Container runs but detects/remediates nothing: empty acquisition, online API (CAPI) disabled, no bouncers wired.",
   "dns": "crowdsec.mesh.diegonmarcos.com",
   "ports": {

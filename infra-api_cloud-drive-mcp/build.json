@@ -1,5 +1,6 @@
 {
   "name": "cloud-drive-mcp",
+  "taxonomy": {"group": "Infra Apps", "category": "Ops-API-MCP"},
   "description": "Drive MCP server — one facade over every storage unit: repos, files, photos, sync, scrapes, S3 and conversion",
   "dns": "drive-mcp.mesh.diegonmarcos.com",
   "dns_aliases": ["cloud-drive-mcp.mesh.diegonmarcos.com"],

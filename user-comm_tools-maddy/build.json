@@ -1,5 +1,6 @@
 {
   "name": "maddy",
+  "taxonomy": {"group": "Cloud Apps", "category": "Inboxes"},
   "description": "Maddy Mail Server (mail.diegonmarcos.com)",
   "dns": "maddy.mesh.diegonmarcos.com",
   "category": "app",

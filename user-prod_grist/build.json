@@ -1,5 +1,6 @@
 {
   "name": "grist",
+  "taxonomy": {"group": "Cloud Apps", "category": "Data Apps"},
   "description": "Grist spreadsheet/database (sheets.diegonmarcos.com)",
   "dns": "grist.mesh.diegonmarcos.com",
   "ports": {

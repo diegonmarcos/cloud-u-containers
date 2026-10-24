@@ -1,5 +1,6 @@
 {
   "name": "cloud-services-mcp",
+  "taxonomy": {"group": "Infra Apps", "category": "Ops-API-MCP"},
   "description": "C3 Services MCP Server — service API gateway MCP transport (stdio + HTTP)",
   "dns": "c3-services-mcp.mesh.diegonmarcos.com",
   "dns_aliases": ["cloud-services-mcp.mesh.diegonmarcos.com"],

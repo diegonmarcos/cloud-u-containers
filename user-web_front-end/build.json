@@ -1,5 +1,6 @@
 {
   "name": "front-end",
+  "taxonomy": {"group": "Project Apps", "category": "Web"},
   "description": "Front-end project — GitHub Pages route declarations (apex + subdomains). Data-only service: no flake, no deploy. Owns the declarative source for every public host that reverse-proxies to diegonmarcos.github.io, replacing the previous hack of co-locating these inside bb-sec_caddy/build.json.",
   "category": "app",
   "proxy": {

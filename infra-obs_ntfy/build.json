@@ -1,5 +1,6 @@
 {
   "name": "ntfy",
+  "taxonomy": {"group": "Infra Apps", "category": "Ops-Observability"},
   "description": "Push notification server",
   "dns": "ntfy.mesh.diegonmarcos.com",
   "category": "tools",

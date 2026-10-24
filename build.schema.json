@@ -16,6 +16,13 @@
       "type": "string",
       "description": "Human-readable description of the service"
     },
+    "taxonomy": {
+      "type": "object",
+      "description": "Where this service (or one container, when set inside containers.<role>) sits on the C3 Containers page. Consumed through the configs-sync engine's containers-declared.json. A container is in exactly ONE group and category; order and vocabulary live in _shared/containers-taxonomy.json.",
+      "required": ["group", "category"],
+      "additionalProperties": false,
+      "properties": { "group": { "type": "string" }, "category": { "type": "string" } }
+    },
     "category": {
       "type": "string",
       "description": "Service category matching the directory prefix",
@@ -577,6 +584,7 @@
         "required": ["container_name", "image"],
         "properties": {
           "container_name": { "type": "string" },
+          "taxonomy": { "$ref": "#/properties/taxonomy" },
           "image": { "type": "string" },
           "port": { "type": ["integer", "null"], "minimum": 1, "maximum": 65535 },
           "port_env": { "type": ["string", "null"] },

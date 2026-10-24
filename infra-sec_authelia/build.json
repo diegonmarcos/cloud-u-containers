@@ -1,5 +1,6 @@
 {
   "name": "authelia",
+  "taxonomy": {"group": "Infra Apps", "category": "Net-Routing & Security"},
   "description": "SSO and 2FA authentication portal",
   "dns": "authelia.mesh.diegonmarcos.com",
   "ports": {
@@ -93,6 +94,7 @@
     },
     "redis": {
       "container_name": "authelia-redis",
+      "taxonomy": {"group": "Infra Apps", "category": "Ops-dBs-infra"},
       "image": "redis:7-bookworm",
       "port": 6380,
       "port_env": null,
@@ -110,6 +112,7 @@
     },
     "postlite": {
       "container_name": "postlite-authelia",
+      "taxonomy": {"group": "Infra Apps", "category": "Ops-dBs-infra"},
       "image": "ghcr.io/diegonmarcos/postlite:latest",
       "port": null,
       "port_env": null,

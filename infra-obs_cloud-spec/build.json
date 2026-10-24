@@ -1,5 +1,6 @@
 {
   "name": "cloud-spec",
+  "taxonomy": {"group": "Infra Apps", "category": "Ops-Observability"},
   "description": "Unified Cloud Documentation Portal",
   "dns": "c3-spec.mesh.diegonmarcos.com",
   "dns_aliases": ["cloud-spec.mesh.diegonmarcos.com"],

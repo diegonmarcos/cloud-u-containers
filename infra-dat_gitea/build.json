@@ -1,5 +1,6 @@
 {
   "name": "gitea",
+  "taxonomy": {"group": "Infra Apps", "category": "Dev-Gits"},
   "description": "Self-hosted Git service",
   "dns": "gitea.mesh.diegonmarcos.com",
   "ports": {

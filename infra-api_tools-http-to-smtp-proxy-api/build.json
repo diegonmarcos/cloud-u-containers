@@ -1,5 +1,6 @@
 {
   "name": "http-to-smtp-proxy-api",
+  "taxonomy": {"group": "Infra Apps", "category": "Ops-API-MCP"},
   "enabled": false,
   "_decommissioned": "2026-05-21",
   "_decommission_reason": "Replaced by bc-obs_c3-public-api/mail/http-to-smtp on oci-analytics. CF Worker repointed in commit 47d19acd (cloudflare-worker/src/wrangler.toml: HTTP_TO_SMTP_PROXY_API_URL → https://api.diegonmarcos.com/c3-public-api/mail/http-to-smtp). End-to-end Gmail-Send-As → CF MX → Worker → c3-public-api round trip verified 2026-05-21 (msg_id <CAKkpMnkF8N_B8Q1ghdc5cRGO1+xwqHpaLUe63-wxvYV+pT29=g@mail.gmail.com>, smtp.delivered to Maddy:25). Container on gcp-proxy remains running until next vm-pilot reconciliation drops it from build-vm-gcp-proxy.json — Caddy route + monitoring stop immediately when this enabled=false propagates through gen-configs.",

@@ -1,5 +1,6 @@
 {
   "name": "kg-store-pub",
+  "taxonomy": {"group": "Cloud Apps", "category": "AGI"},
   "enabled": true,
   "description": "SurrealDB Hybrid Knowledge Graph - Infrastructure topology + vector search",
   "category": "data",

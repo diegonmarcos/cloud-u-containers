@@ -1,5 +1,6 @@
 {
   "name": "scrappers-api",
+  "taxonomy": {"group": "Project Apps", "category": "Data"},
   "description": "Unified scrapers API (Instagram / Pinterest / LinkedIn / generic crawl) — retires crawlee-cloud. Lean single-container FastAPI, on-demand, flat-JSON output.",
   "deploy": {
     "host": "oci-apps",

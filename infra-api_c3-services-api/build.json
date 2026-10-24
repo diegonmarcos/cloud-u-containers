@@ -1,5 +1,6 @@
 {
   "name": "c3-services-api",
+  "taxonomy": {"group": "Infra Apps", "category": "Ops-API-MCP"},
   "enabled": true,
   "build": {
     "include_cloud_data": "true",

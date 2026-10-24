@@ -1,5 +1,6 @@
 {
   "name": "hedgedoc",
+  "taxonomy": {"group": "Cloud Apps", "category": "Data Apps"},
   "description": "Collaborative markdown editor",
   "dns": "hedgedoc.mesh.diegonmarcos.com",
   "ports": {
@@ -63,6 +64,7 @@
     },
     "db": {
       "container_name": "hedgedoc_postgres",
+      "taxonomy": {"group": "Infra Apps", "category": "Ops-dBs-cloud"},
       "image": "postgres:16-alpine",
       "port": 5439,
       "port_env": "PGPORT",

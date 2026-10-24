@@ -1,5 +1,6 @@
 {
   "name": "cloudflare-worker",
+  "taxonomy": {"group": "Infra Apps", "category": "Ops-Infra"},
   "description": "Cloudflare Email Worker — inbound mail forwarder. Parallel legs (Promise.allSettled): Google Workspace (Gmail API) and Maddy (via c3-public-api http-to-smtp; Maddy's durable stalwart_queue feeds Stalwart). Accept if either lands, reject only if both fail; each leg has its own retries and lost-leg log. live.com disaster backup when mail health is unhealthy.",
   "category": "cloud",
   "build": {

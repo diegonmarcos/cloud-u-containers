@@ -1,5 +1,6 @@
 {
   "name": "revealmd",
+  "taxonomy": {"group": "Project Apps", "category": "Productivity"},
   "enabled": false,
   "description": "Reveal.js markdown presentations (not deployed)",
   "dns": "revealmd.mesh.diegonmarcos.com",

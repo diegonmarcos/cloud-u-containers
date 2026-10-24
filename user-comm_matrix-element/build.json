@@ -1,5 +1,6 @@
 {
   "name": "matrix-element",
+  "taxonomy": {"group": "Cloud Apps", "category": "Inboxes"},
   "description": "Element Web — browser Matrix client for the Continuwuity homeserver. Served at messenger.diegonmarcos.com behind Authelia 2FA.",
   "dns": "matrix-element.mesh.diegonmarcos.com",
   "category": "app",

@@ -1,5 +1,6 @@
 {
   "name": "c3-infra-api",
+  "taxonomy": {"group": "Infra Apps", "category": "Ops-API-MCP"},
   "description": "C3 REST API — Cloud Control Center Fastify API",
   "dns": "c3-infra-api.mesh.diegonmarcos.com",
   "ports": {

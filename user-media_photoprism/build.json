@@ -1,5 +1,6 @@
 {
   "name": "photoprism",
+  "taxonomy": {"group": "Cloud Apps", "category": "Data Apps"},
   "description": "PhotoPrism AI-powered photo management (oci-flex-1)",
   "dns": "photoprism.mesh.diegonmarcos.com",
   "ports": {
@@ -87,6 +88,7 @@
     },
     "db": {
       "container_name": "photoprism_mariadb",
+      "taxonomy": {"group": "Infra Apps", "category": "Ops-dBs-cloud"},
       "image": "mariadb:11",
       "port": null,
       "port_env": null,

@@ -1,5 +1,6 @@
 {
   "name": "cloud-builder-x",
+  "taxonomy": {"group": "Infra Apps", "category": "Dev-Builders"},
   "description": "CI/CD builder images — deployed to oci-apps, source in unix repo",
   "on_demand": true,
   "deploy": {

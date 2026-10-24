@@ -1,5 +1,6 @@
 {
   "name": "umami",
+  "taxonomy": {"group": "Infra Apps", "category": "Ops-Observability"},
   "description": "Umami Analytics - lightweight privacy-focused web analytics",
   "dns": "umami.mesh.diegonmarcos.com",
   "category": "tools",
@@ -107,6 +108,7 @@
     },
     "db": {
       "container_name": "umami-db",
+      "taxonomy": {"group": "Infra Apps", "category": "Ops-dBs-infra"},
       "image": "postgres:16-alpine",
       "port": 5442,
       "port_env": "PGPORT",

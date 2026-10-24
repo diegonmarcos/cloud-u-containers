@@ -1,5 +1,6 @@
 {
   "name": "cloud-infra-mcp",
+  "taxonomy": {"group": "Infra Apps", "category": "Ops-API-MCP"},
   "description": "C3 MCP Server \u2014 Cloud Control Center MCP transport (stdio + HTTP)",
   "dns": "c3-infra-mcp.mesh.diegonmarcos.com",
   "dns_aliases": ["cloud-infra-mcp.mesh.diegonmarcos.com"],

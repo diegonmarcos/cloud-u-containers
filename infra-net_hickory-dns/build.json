@@ -1,5 +1,6 @@
 {
   "name": "hickory-dns",
+  "taxonomy": {"group": "Infra Apps", "category": "Net-Mesh"},
   "description": "Internal DNS server for WireGuard mesh (per-service mesh zone)",
   "dns": {
     "zones": [

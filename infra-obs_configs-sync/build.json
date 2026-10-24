@@ -1,0 +1,46 @@
+{
+  "name": "configs-sync",
+  "taxonomy": {"group": "Infra Apps", "category": "Ops-Observability"},
+  "description": "configs-sync engine (#1148): the fleet's configs pipeline as its own container. On a schedule it checks out cloud-u-containers (the declared inputs) and cloud-t-infra (the derive code, 1_cloud-configs), regenerates the consolidated JSON, the per-app build-*.json and the C3 containers-declared.json, runs the containers guard, and commits the result to the public data repo cloud_db_infra-ops-obsv_configs-sync. c3-infra-api and cloud-infra-mcp serve those files from the data repo. CANONICAL: the derivation of containers-declared.json lives HERE (src/code/containers-declared.mjs); the consolidated and per-app derivation stays in cloud-t-infra 1_cloud-configs, which this engine runs. cloud-t-infra keeps generating into its own dist/ as a thin wrapper until this engine is live.",
+  "category": "obs",
+  "timezone": "Europe/Berlin",
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/configs-sync"
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "configs-sync",
+    "dockerfile": "Dockerfile",
+    "arch": "arm64",
+    "native_build": {
+      "type": "image-wrapper",
+      "cmd": "apk add --no-cache bash git jq curl tzdata nodejs npm && npm install -g tsx yaml ajv ajv-formats nunjucks && chmod +x /app/entrypoint.sh",
+      "entrypoint": "/app/entrypoint.sh",
+      "base_image": "alpine:3.19",
+      "app_dir": "code",
+      "user": "root"
+    }
+  },
+  "containers": {
+    "app": {
+      "container_name": "configs-sync",
+      "public": false,
+      "env_file": true,
+      "read_only": false,
+      "protocol": "none"
+    }
+  },
+  "resources": {
+    "mem_reservation": "128m"
+  },
+  "build": {
+    "headers_enforced": true
+  },
+  "tests": {
+    "containers-guard": {
+      "cmd": "bash test/test-containers-guard.sh",
+      "cwd": "src"
+    }
+  }
+}

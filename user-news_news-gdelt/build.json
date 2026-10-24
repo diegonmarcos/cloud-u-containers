@@ -1,5 +1,6 @@
 {
   "name": "news-gdelt",
+  "taxonomy": {"group": "Cloud Apps", "category": "Inboxes"},
   "description": "GDELT News Aggregator — Fastify API with SQLite cache",
   "deploy": {
     "host": "oci-apps",

@@ -1,5 +1,6 @@
 {
   "name": "fin-api",
+  "taxonomy": {"group": "Project Apps", "category": "Finance"},
   "description": "Fincept Terminal backend (fin-api) — REST + WebSocket over DataHub, 35 data connectors, 7 analytics, 17 brokers, 6 investor personas, MCP tools",
   "dns": "fin-api.mesh.diegonmarcos.com",
   "ports": {

@@ -1,5 +1,6 @@
 {
   "name": "cloud-mail-mcp",
+  "taxonomy": {"group": "Infra Apps", "category": "Ops-API-MCP"},
   "description": "Mail MCP server — IMAP/SMTP/Admin via Stalwart REST API",
   "dns": "mail-mcp.mesh.diegonmarcos.com",
   "dns_aliases": ["cloud-mail-mcp.mesh.diegonmarcos.com"],

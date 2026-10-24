@@ -1,5 +1,6 @@
 {
   "name": "openobserve",
+  "taxonomy": {"group": "Infra Apps", "category": "Ops-Observability"},
   "description": "OpenObserve - single-binary observability platform (logs + traces + metrics + RUM). Replaces LGTM stack.",
   "dns": "openobserve.mesh.diegonmarcos.com",
   "ports": {

@@ -1,5 +1,6 @@
 {
   "name": "google-personal-mcp",
+  "taxonomy": {"group": "Infra Apps", "category": "Ops-API-MCP"},
   "description": "Google Personal Account MCP server — Gmail (IMAP/SMTP via App Password) for personal Google accounts, multi-account",
   "dns": "g-personal-mcp.mesh.diegonmarcos.com",
   "dns_aliases": ["google-personal-mcp.mesh.diegonmarcos.com"],

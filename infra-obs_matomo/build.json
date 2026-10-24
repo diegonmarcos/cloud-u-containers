@@ -1,5 +1,6 @@
 {
   "name": "matomo",
+  "taxonomy": {"group": "Infra Apps", "category": "Ops-Observability"},
   "description": "Matomo hybrid analytics (oci-apps)",
   "dns": "matomo.mesh.diegonmarcos.com",
   "category": "tools",

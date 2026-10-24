@@ -1,5 +1,6 @@
 {
   "name": "code-server",
+  "taxonomy": {"group": "Cloud Apps", "category": "AGI"},
   "description": "VS Code IDE (ide.diegonmarcos.com)",
   "dns": "code-server.mesh.diegonmarcos.com",
   "ports": {

@@ -1,5 +1,6 @@
 {
   "name": "alerts-api",
+  "taxonomy": {"group": "Infra Apps", "category": "Ops-Observability"},
   "description": "Security Alert Aggregation API",
   "port": 5050,
   "dns": "alerts-api.mesh.diegonmarcos.com",

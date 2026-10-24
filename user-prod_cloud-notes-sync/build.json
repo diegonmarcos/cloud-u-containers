@@ -1,5 +1,6 @@
 {
   "name": "cloud-notes-sync",
+  "taxonomy": {"group": "Cloud Apps", "category": "Data Apps"},
   "description": "Cloud Notes sync server: Yjs documents (Hocuspocus) and the HTTP delta API at notes-sync.diegonmarcos.com behind the edge gate (fleet Bearer or Authelia). Built by cloud-u-android ship-cloud-notes.yml (ghcr.io/diegonmarcos/cloud-notes-sync).",
   "dns": "cloud-notes-sync.mesh.diegonmarcos.com",
   "category": "app",

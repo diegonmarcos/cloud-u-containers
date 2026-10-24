@@ -1,5 +1,6 @@
 {
   "name": "wireguard-mesh",
+  "taxonomy": {"group": "Infra Apps", "category": "Net-Mesh"},
   "description": "Read-only data-driven control panel for the WireGuard mesh + wstunnel TCP/443 fallback. Mimics Headscale's UI shape but holds zero state and exposes zero mutations — pure observability over the existing declarative VPN data (cloud-data-topology.json + bb-net_vpn/build.json + terraform.json). Snapshot is frozen at deploy time; the page hydrates from PORTAL_DATA, no runtime fetch.",
   "category": "tools",
   "subcategory": "net",

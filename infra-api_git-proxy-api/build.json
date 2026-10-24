@@ -1,5 +1,6 @@
 {
   "name": "git-proxy-api",
+  "taxonomy": {"group": "Infra Apps", "category": "Dev-Gits"},
   "enabled": true,
   "description": "Git Proxy API — Authelia-fronted read path to GitHub so the phone holds NO GitHub credential (#647, route 3 of #646's fallback chain). The caller authenticates to US with the Authelia bearer it already has; this service holds the GitHub token server-side and streams the result back.",
   "dns": "git-proxy-api.mesh.diegonmarcos.com",

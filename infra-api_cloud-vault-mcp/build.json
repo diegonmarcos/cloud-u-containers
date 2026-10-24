@@ -1,5 +1,6 @@
 {
   "name": "cloud-vault-mcp",
+  "taxonomy": {"group": "Infra Apps", "category": "Ops-API-MCP"},
   "description": "MCP server — READ-ONLY personal data access (vault metadata, identity, comms, media, finance, health)",
   "dns": "vault-mcp.mesh.diegonmarcos.com",
   "dns_aliases": ["cloud-vault-mcp.mesh.diegonmarcos.com"],

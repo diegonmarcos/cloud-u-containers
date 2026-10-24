@@ -1,5 +1,6 @@
 {
   "name": "caddy-l4-image",
+  "taxonomy": {"group": "Infra Apps", "category": "Net-Routing & Security"},
   "description": "Custom Caddy with L4 TCP proxy, ratelimit, Cloudflare DNS plugins",
   "category": "sec",
   "upstream_image": "caddy:2",

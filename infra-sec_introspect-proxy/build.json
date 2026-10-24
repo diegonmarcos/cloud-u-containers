@@ -1,5 +1,6 @@
 {
   "name": "introspect-proxy",
+  "taxonomy": {"group": "Infra Apps", "category": "Net-Routing & Security"},
   "description": "OIDC token introspection sidecar for Caddy Bearer auth",
   "dns": "introspect-proxy.mesh.diegonmarcos.com",
   "ports": {
