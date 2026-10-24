@@ -144,7 +144,8 @@
         "primary_host": "auth.diegonmarcos.com",
         "hosts": [
           "auth.diegonmarcos.com",
-          "account.diegonmarcos.com"
+          "account.diegonmarcos.com",
+          "sso.diegonmarcos.com"
         ],
         "cookie_name": "_diego_sso",
         "authelia_cookie": "authelia_session",

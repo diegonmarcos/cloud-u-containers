@@ -83,7 +83,7 @@ for k in ("hub", "edge"):
     t = on.replace(CF_NOT, "").replace(GATE_NOT, "")
     t = re.sub(r"\n*# Order of the chain:.*?forward_auth @ea_cfaccess [^\n]* \{\n.*?\n\}", "", t, flags=re.S)
     t = re.sub(r"\n@ea_broker \{.*?\n\}\n# Broker session[^\n]*\nforward_auth @ea_broker [^\n]* \{\n.*?\n\}", "", t, flags=re.S)
-    t = t.replace("auth.diegonmarcos.com, account.diegonmarcos.com {", "auth.diegonmarcos.com {")
+    t = t.replace("auth.diegonmarcos.com, account.diegonmarcos.com, sso.diegonmarcos.com {", "auth.diegonmarcos.com {")
     if k == "hub":
         assert "account.diegonmarcos.com" not in t.replace("# multi-SSO", "") or True
         i = t.index("# multi-SSO chooser"); g = t.index("handle /oauth2/github/* {", i)
@@ -96,11 +96,11 @@ for k in ("hub", "edge"):
     else:
         assert "tls_server_name {host}" in t and "header_up Host {host}" in t
         t = t.replace("tls_server_name {host}", "tls_server_name auth.diegonmarcos.com").replace("header_up Host {host}", "header_up Host auth.diegonmarcos.com")
-        t = t.replace(" auth.diegonmarcos.com account.diegonmarcos.com", " auth.diegonmarcos.com")
+        t = t.replace(" auth.diegonmarcos.com account.diegonmarcos.com sso.diegonmarcos.com", " auth.diegonmarcos.com")
     if t != off:
         print("".join(list(difflib.unified_diff(off.splitlines(1), t.splitlines(1)))[:40]))
         sys.exit(f"{k}: ON render minus the multi-SSO additions differs from OFF")
-    assert "account.diegonmarcos.com" in on
+    assert "account.diegonmarcos.com" in on and "sso.diegonmarcos.com" in on
     print(f"ok: {k}: ON adds only the broker branch, the extra host and the sign-in routes")
 PY
 PASS=$((PASS+2))
@@ -232,7 +232,7 @@ for bad in ("email_domains", "email-domain", "insecure_oidc_allow_unverified_ema
 for p in ab["providers"]:
     assert p["provider"] in ("google", "github", "cloudflare", "email")
 cfp = [p for p in ab["providers"] if p["id"] == "cloudflare"][0]
-assert cfp["flow"] == "access" and cfp["login_url"].startswith("https://auth-cf.diegonmarcos.com/oauth2/cloudflare/") and set(cfp["hosts"]) <= {"auth.diegonmarcos.com", "account.diegonmarcos.com"}, "Cloudflare One sign-in: login_url on the Access-protected host, hosts only the chooser hosts"
+assert cfp["flow"] == "access" and cfp["login_url"].startswith("https://auth-cf.diegonmarcos.com/oauth2/cloudflare/") and set(cfp["hosts"]) <= {"auth.diegonmarcos.com", "account.diegonmarcos.com", "sso.diegonmarcos.com"}, "Cloudflare One sign-in: login_url on the Access-protected host, hosts only the chooser hosts"
 assert "client_id" not in cfp and "secret_prefix" not in cfp, "Cloudflare One sign-in holds no client credential"
 cf = ab.get("cloudflare_access", {})
 if cf.get("enabled"):
