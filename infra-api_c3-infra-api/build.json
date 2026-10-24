@@ -67,6 +67,10 @@
     "configs-sync": {
       "cmd": "node test-configs-sync.ts",
       "cwd": "src"
+    },
+    "ai-usage": {
+      "cmd": "node test-ai-usage.ts",
+      "cwd": "src"
     }
   },
   "monitoring": {
