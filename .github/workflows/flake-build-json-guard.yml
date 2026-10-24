@@ -1,0 +1,26 @@
+name: flake-build-json-guard
+# Every `readFile ./build-*.json` in a service flake must exist in its src/.
+# link-builds (cloud-t-infra 1_cloud-configs) does not commit into this repo,
+# so a new service needs its symlink committed here; Ship detect fails on it.
+on:
+  push:
+    paths: ['*/src/flake.nix', '*/src/build-*.json']
+  pull_request:
+    paths: ['*/src/flake.nix', '*/src/build-*.json']
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: flake build-*.json refs exist in src/
+        run: |
+          fail=0
+          for f in */src/flake.nix; do
+            d=$(dirname "$f")
+            for ref in $(grep -oE 'readFile \./build-[A-Za-z0-9_.-]+\.json' "$f" | sed 's|readFile \./||' | sort -u); do
+              if [ ! -e "$d/$ref" ] && [ ! -L "$d/$ref" ]; then
+                echo "::error::$f reads $ref which is absent from $d/ (commit the symlink to ../../../1_cloud-configs/dist/$ref)"; fail=1
+              fi
+            done
+          done
+          exit $fail
