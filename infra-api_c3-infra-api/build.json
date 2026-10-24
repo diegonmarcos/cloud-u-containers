@@ -63,6 +63,10 @@
     "app-logs": {
       "cmd": "node test-app-logs.ts",
       "cwd": "src"
+    },
+    "configs-sync": {
+      "cmd": "node test-configs-sync.ts",
+      "cwd": "src"
     }
   },
   "monitoring": {

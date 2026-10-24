@@ -20,6 +20,7 @@ import { registerAlertsRoutes } from "./routes/alerts.js";
 import { registerEventsRoutes } from "./routes/events.js";
 import { registerReportsRoutes } from "./routes/reports.js";
 import { registerWorkflowsRoutes } from "./routes/workflows.js";
+import { registerConfigsSyncRoutes } from "./routes/configsSync.js";
 import { startPoller } from "../shared/libs/poller.js";
 
 export async function buildApp() {
@@ -79,6 +80,7 @@ export async function buildApp() {
   await app.register(registerEventsRoutes);
   await app.register(registerReportsRoutes);
   await app.register(registerWorkflowsRoutes);
+  await app.register(registerConfigsSyncRoutes);
 
   // Background poller tick (metrics sampler + alert evaluator + SSE health
   // broadcast all hook onto this single tick — see shared/libs/poller.ts).

@@ -1066,12 +1066,12 @@ export function registerMetaDevops(server: McpServer): void {
 export function registerMetaObs(server: McpServer): void {
   server.tool(
     "infra.obs",
-    "Observability / debug: per-app crash/log events (debug.app_logs: kind apk|containers, name, event_kind, since, limit, file), docker logs, VPS CLI proxies (gcloud/oci/gh/wrangler/hcloud/cloudflare/ghcr), container profiles, VM diagnostics, test suites, status/report, DB queries.",
+    "Observability / debug: configs-sync data repo files (debug.configs_sync: file, default containers-declared.json), per-app crash/log events (debug.app_logs: kind apk|containers, name, event_kind, since, limit, file), docker logs, VPS CLI proxies (gcloud/oci/gh/wrangler/hcloud/cloudflare/ghcr), container profiles, VM diagnostics, test suites, status/report, DB queries.",
     {
       method: z.enum([
         "db.alert_state","db.alert_update","db.prune",
         "debug.db_audit","debug.db_deploy","debug.db_health_history","debug.db_uptime",
-        "debug.app_logs","debug.docker_logs","debug.docker_logs_multi","debug.docker_logs_search",
+        "debug.app_logs","debug.configs_sync","debug.docker_logs","debug.docker_logs_multi","debug.docker_logs_search",
         "debug.profile_container","debug.profile_service","debug.profile_vm",
         "debug.report","debug.test",
         "debug.vm_disk","debug.vm_journal","debug.vm_network","debug.vm_status","debug.vm_top",
@@ -1093,6 +1093,15 @@ export function registerMetaObs(server: McpServer): void {
             else { if (p.event_kind) q.set("kind", String(p.event_kind)); if (p.since) q.set("since", String(p.since)); if (p.limit) q.set("limit", String(Math.floor(p.limit))); }
             const base = process.env.C3_INFRA_API_URL ?? "http://c3-infra-api.mesh.diegonmarcos.com:8081";
             const resp = await fetch(`${base}/${kind}/${p.name}/logs${q.size ? `?${q}` : ""}`, { signal: AbortSignal.timeout(15_000) });
+            const body = await resp.text();
+            return resp.ok ? text(body) : errText(`Error: HTTP ${resp.status} ${body.slice(0, 300)}`);
+          }
+          // ── configs-sync data repo (cloud_db_infra-ops-obsv_configs-sync): the engine's published JSONs ──
+          case "debug.configs_sync": {
+            const file = typeof p.file === "string" ? p.file : "containers-declared.json";
+            if (!/^(build\/)?[A-Za-z0-9_][A-Za-z0-9_.-]{0,120}\.json$/.test(file) || file.includes("..")) return errText("Error: file must be a published *.json name (e.g. containers-declared.json, _cloud-data-consolidated.json, build/build-<app>.json)");
+            const raw = process.env.CONFIGS_SYNC_RAW ?? "https://raw.githubusercontent.com/diegonmarcos/cloud_db_infra-ops-obsv_configs-sync/main/";
+            const resp = await fetch(raw + file, { signal: AbortSignal.timeout(20_000) });
             const body = await resp.text();
             return resp.ok ? text(body) : errText(`Error: HTTP ${resp.status} ${body.slice(0, 300)}`);
           }

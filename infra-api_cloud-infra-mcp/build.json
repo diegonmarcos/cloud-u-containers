@@ -113,6 +113,10 @@
     ]
   },
   "tests": {
+    "configs-sync": {
+      "cmd": "node --experimental-strip-types test-configs-sync.mjs",
+      "cwd": "src/code"
+    },
     "vm-files-policy": {
       "cmd": "node --experimental-strip-types test-vm-files-policy.mjs",
       "cwd": "src/code"
