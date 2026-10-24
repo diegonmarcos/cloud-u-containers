@@ -1,7 +1,7 @@
 {
   "_generated_from": "cloud-u-containers */build.json + _shared/public-route-allowlist.json (gen-c3-datasets.mjs); no secrets by construction",
   "dataset": "c3-observability",
-  "count": 9,
+  "count": 10,
   "services": [
     {
       "service": "bc-obs_alerts-api",
@@ -45,6 +45,24 @@
           "wg_only": true
         }
       ],
+      "exposure": "wg-only (mesh)"
+    },
+    {
+      "service": "infra-obs_configs-sync",
+      "name": "configs-sync",
+      "description": "configs-sync engine (#1148): the fleet's configs pipeline as its own container. On a schedule it checks out cloud-u-containers (the declared inputs) and cloud-t-infra (the derive code, 1_cloud-configs), regenerates the consolidated JSON, the per-app build-*.json and the C3 containers-declared.json, runs the containers guard, and commits the result to the public data repo cloud_db_infra-ops-obsv_configs-sync. c3-infra-api and cloud-infra-mcp serve those files from the data repo. CANONICAL: the derivation of containers-declared.json lives HERE (src/code/containers-declared.mjs); the consolidated and per-app derivation stays in cloud-t-infra 1_cloud-configs, which this engine runs. cloud-t-infra keeps generating into its own dist/ as a thin wrapper until this engine is live.",
+      "category": "obs",
+      "enabled": true,
+      "host": "oci-apps",
+      "containers": [
+        {
+          "key": "app",
+          "container_name": "configs-sync",
+          "protocol": "none",
+          "mesh_route": false
+        }
+      ],
+      "routes": [],
       "exposure": "wg-only (mesh)"
     },
     {
