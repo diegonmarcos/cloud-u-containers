@@ -190,6 +190,7 @@
   "infra-ops_disk-janitor": {
    "licence": "LicenseRef-NoLicenseGranted"
   },
+  "infra-obs_configs-sync": { "licence": "LicenseRef-NoLicenseGranted" },
   "infra-sec_mcp-oauth": { "licence": "LicenseRef-NoLicenseGranted" },
   "infra-sec_tokens-api": { "licence": "LicenseRef-NoLicenseGranted" },
   "infra-sec_authelia": {
