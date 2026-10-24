@@ -337,6 +337,15 @@
       "bearer": false
     },
     {
+      "slug": "configs-sync",
+      "dir": "infra-obs_configs-sync",
+      "description": "configs-sync engine (#1148): the fleet's configs pipeline as its own container. On a schedule it checks out cloud-u-containers (the declared inputs) and cloud-t-infra (the derive code, 1_cloud-configs), regenerates the consolidated JSON, th",
+      "mesh": null,
+      "hosts": [],
+      "signin": false,
+      "bearer": false
+    },
+    {
       "slug": "dagu",
       "dir": "infra-obs_dagu",
       "description": "Dagu - Lightweight DAG-based workflow scheduler",
