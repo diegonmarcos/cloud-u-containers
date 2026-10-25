@@ -24,5 +24,7 @@ cloud.stalwart  IN AAAA  fd0c:1d00::3
 cloud.git-proxy-api  IN A  10.0.0.4
 c3-infra-api  IN A  10.0.0.6
 cloud.c3-infra-api  IN A  10.0.0.6
+embeddings-api  IN A  10.0.0.6
+my-ai-api  IN A  10.0.0.6
 *    IN A    10.0.0.1
 *    IN AAAA fd0c:1d00::1
