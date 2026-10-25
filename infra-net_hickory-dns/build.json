@@ -80,6 +80,11 @@
           "name": "embeddings-api",
           "type": "A",
           "value": "10.0.0.6"
+        },
+        {
+          "name": "my-ai-api",
+          "type": "A",
+          "value": "10.0.0.6"
         }
       ],
       "diegonmarcos.com": [
