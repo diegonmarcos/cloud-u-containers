@@ -275,7 +275,6 @@ echo "-- Enforcing mirror_policy.exclude --"
 remove_excluded cloud-vault
 remove_excluded cloud-me_vault
 # Step 4: Ensure each mirror repo exists
-converge_mirror My-ai-memory https://github.com/diegonmarcos/My-ai-memory.git true
 converge_mirror cloud https://github.com/diegonmarcos/cloud.git false
 converge_mirror cloud-data-lfs https://github.com/diegonmarcos/cloud-data-lfs.git true
 converge_mirror cloud-me https://github.com/diegonmarcos/cloud-me.git true
@@ -299,6 +298,8 @@ converge_mirror diegonmarcos.github.io https://github.com/diegonmarcos/diegonmar
 converge_mirror front https://github.com/diegonmarcos/front.git false
 converge_mirror front-assets-cdn https://github.com/diegonmarcos/front-assets-cdn.git false
 converge_mirror front-galaxy-gaia https://github.com/diegonmarcos/front-galaxy-gaia.git true
+converge_mirror front-linktree https://github.com/diegonmarcos/front-linktree.git false
+converge_mirror front-projects https://github.com/diegonmarcos/front-projects.git false
 converge_mirror front-unity https://github.com/diegonmarcos/front-unity.git true
 converge_mirror git-repos-master https://github.com/diegonmarcos/git-repos-master.git false
 converge_mirror lecole-42 https://github.com/diegonmarcos/lecole-42.git true
@@ -312,6 +313,8 @@ converge_mirror lecole-42_ml-Agentic https://github.com/diegonmarcos/lecole-42_m
 converge_mirror lecole-42_ml-DataScience https://github.com/diegonmarcos/lecole-42_ml-DataScience.git false
 converge_mirror lecole-42_ml-MachineLearning https://github.com/diegonmarcos/lecole-42_ml-MachineLearning.git false
 converge_mirror lecole-42_ops-Mylibs https://github.com/diegonmarcos/lecole-42_ops-Mylibs.git false
+converge_mirror z-archived_My-ai-memory https://github.com/diegonmarcos/z-archived_My-ai-memory.git true
+converge_mirror z-archived_c3-infra-plugin https://github.com/diegonmarcos/z-archived_c3-infra-plugin.git true
 converge_mirror z-archived_front-data https://github.com/diegonmarcos/z-archived_front-data.git false
 
 # ── Verdict ───────────────────────────────────────────────────────────
