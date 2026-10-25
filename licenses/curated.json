@@ -99,6 +99,9 @@
   "infra-api_cloud-me-api": {
    "licence": "LicenseRef-NoLicenseGranted"
   },
+  "infra-ai_embeddings-api": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
   "infra-api_git-proxy-api": {
    "licence": "LicenseRef-NoLicenseGranted"
   },

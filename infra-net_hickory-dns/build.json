@@ -75,6 +75,11 @@
           "name": "cloud.c3-infra-api",
           "type": "A",
           "value": "10.0.0.6"
+        },
+        {
+          "name": "embeddings-api",
+          "type": "A",
+          "value": "10.0.0.6"
         }
       ],
       "diegonmarcos.com": [

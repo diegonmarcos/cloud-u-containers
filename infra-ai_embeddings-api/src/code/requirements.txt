@@ -1,0 +1,6 @@
+infinity-emb[server,torch]==0.0.78
+sentence-transformers==3.4.1
+transformers==4.49.0
+torch==2.5.1
+sentencepiece==0.2.0
+pypdf==5.1.0

@@ -20,6 +20,15 @@
       "bearer": true
     },
     {
+      "slug": "embeddings-api",
+      "dir": "infra-ai_embeddings-api",
+      "description": "Fleet embeddings + rerank + PDF text server, CPU, mesh-only on oci-apps. OpenAI-compatible POST /embeddings (BAAI/bge-m3) and POST /rerank (BAAI/bge-reranker-v2-m3) served by Infinity, plus POST /pdf (raw application/pdf body to plain text,",
+      "mesh": "embeddings-api.mesh.diegonmarcos.com",
+      "hosts": [],
+      "signin": false,
+      "bearer": true
+    },
+    {
       "slug": "jev-sidecar",
       "dir": "infra-ai_jev-sidecar",
       "description": "Jev decisions sidecar on oci-apps (#881) — `jev-gate serve`: POST /decide/<use> with {state, questions} on the WireGuard mesh for the sites that cannot carry a gate of their own (Dagu DAGs, journal-ntfy.sh, maddy post-hoc). One OPENROUTER_A",
