@@ -16,6 +16,10 @@
     "host": "oci-apps",
     "remote_path": "/opt/containers/embeddings-api"
   },
+  "agent": {
+    "_comment": "Explicit opt-OUT, required by 9_others/test/test_agent_git_tree_declared.sh in cloud-infra. embeddings-api is a stateless model server (embeddings, rerank, pdf-to-text over HTTP); it never reads or commits a repository, so the shared tree would widen its blast radius for nothing.",
+    "git_tree": false
+  },
   "runtime": {
     "wg_bind": "10.0.0.6",
     "_doc": "The container (host network) listens on 7997 on oci-apps' WireGuard address only (never 0.0.0.0): the mesh direct-dial rule (#1104), Hickory row embeddings-api -> 10.0.0.6 in infra-net_hickory-dns/build.json."
