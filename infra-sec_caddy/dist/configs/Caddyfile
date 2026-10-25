@@ -194,6 +194,7 @@
         cloud.dagu.mesh.diegonmarcos.com dagu/
         cloud.dbgate.mesh.diegonmarcos.com dbgate/
         cloud.drive-mcp.mesh.diegonmarcos.com cloud-drive-mcp/
+        cloud.embeddings-api.mesh.diegonmarcos.com embeddings-api/
         cloud.etherpad.mesh.diegonmarcos.com etherpad/
         cloud.filebrowser.mesh.diegonmarcos.com filebrowser/
         cloud.fin-api.mesh.diegonmarcos.com fin-api/
@@ -243,6 +244,7 @@
         db.diegonmarcos.com dbgate/
         dbgate.mesh.diegonmarcos.com dbgate/
         drive-mcp.mesh.diegonmarcos.com cloud-drive-mcp/
+        embeddings-api.mesh.diegonmarcos.com embeddings-api/
         etherpad.mesh.diegonmarcos.com etherpad/
         filebrowser.mesh.diegonmarcos.com filebrowser/
         fin-api.mesh.diegonmarcos.com fin-api/
