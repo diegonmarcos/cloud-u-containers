@@ -1,7 +1,9 @@
 # compose.nix — embeddings-api: Infinity (embeddings + rerank) plus /pdf, one container.
 #   - Own code (Type A), packaged by the ship engine (native_build.type=image-wrapper).
-#   - Published on oci-apps' WireGuard address only (mesh direct-dial rule, #1104): the phone and the
-#     other VMs dial http://embeddings-api.mesh.diegonmarcos.com:7997, never a public address.
+#   - Host network, bound to oci-apps' WireGuard address only (mesh direct-dial rule, #1104): the phone and the
+#     other VMs dial http://embeddings-api.mesh.diegonmarcos.com:7997, never a public address. Host network is also
+#     what gives the container outbound DNS and internet (the weights come from Hugging Face): on this VM a bridge
+#     network cannot reach the fleet resolver or the internet (first deploy, 2026-10-25, name resolution failed).
 #   - CPU torch; models are downloaded on first start into a named volume and kept across redeploys.
 #   - restart unless-stopped so a host reboot brings it back; the memory cap keeps a model spike off
 #     the neighbours (about 5 GB resident for both models).
@@ -20,6 +22,8 @@ in
       image          = binariesImage;
       container_name = app.container_name;
       restart        = "unless-stopped";
+      network_mode   = "host";
+      command        = [ "uvicorn" "main:app" "--host" bind "--port" port ];
       env_file       = [];
       environment = {
         EMBED_MODEL  = m.embed;
@@ -30,15 +34,16 @@ in
         HF_HUB_DISABLE_TELEMETRY       = "1";
         OMP_NUM_THREADS                = "4";
       };
-      ports   = [ "${bind}:${port}:${port}" ];
       volumes = app.volumes;
+      # /health is the gate's liveness (the process listens at once; the models load behind it), so the ship's
+      # health wait goes green in seconds; /ready is 200 only once both models are loaded.
       healthcheck = {
-        test = [ "CMD" "python3" "-c" "import urllib.request; urllib.request.urlopen('http://127.0.0.1:${port}/health', timeout=8)" ];
-        interval     = "30s";
-        timeout      = "10s";
-        retries      = 5;
-        # First start downloads about 4.6 GB of weights before the server listens.
-        start_period = "900s";
+        test = [ "CMD" "python3" "-c" "import urllib.request; urllib.request.urlopen('http://${bind}:${port}/health', timeout=4)" ];
+        interval     = "10s";
+        timeout      = "5s";
+        # Loading the weights holds the event loop for tens of seconds; 20 misses = 200 s before "unhealthy".
+        retries      = 20;
+        start_period = "60s";
       };
       deploy.resources =
            (if buildJson.resources ? mem_limit       then { limits       = { memory = buildJson.resources.mem_limit; };       } else {})

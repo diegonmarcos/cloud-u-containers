@@ -18,13 +18,13 @@
   },
   "runtime": {
     "wg_bind": "10.0.0.6",
-    "_doc": "The container publishes 7997 on oci-apps' WireGuard address only (never 0.0.0.0): the mesh direct-dial rule (#1104), Hickory row embeddings-api -> 10.0.0.6 in infra-net_hickory-dns/build.json."
+    "_doc": "The container (host network) listens on 7997 on oci-apps' WireGuard address only (never 0.0.0.0): the mesh direct-dial rule (#1104), Hickory row embeddings-api -> 10.0.0.6 in infra-net_hickory-dns/build.json."
   },
   "models": {
     "embed": "BAAI/bge-m3",
     "rerank": "BAAI/bge-reranker-v2-m3",
     "batch_size": 8,
-    "_doc": "Downloaded from Hugging Face on first start into the embeddings_api_hf volume (about 4.6 GB for both, fp32 on CPU; resident about 5 GB, hence mem_limit 6G). /health answers only once both are loaded, so the first deploy waits for the download."
+    "_doc": "Downloaded from Hugging Face on first start into the embeddings_api_hf volume (about 4.6 GB for both, fp32 on CPU; resident about 5 GB, hence mem_limit 6G). gate.py answers /health at once (liveness) and /ready only once both are loaded; until then every other path is 503."
   },
   "health": {
     "path": "/health"
@@ -43,7 +43,7 @@
     "native_build": {
       "type": "image-wrapper",
       "cmd": "pip install --no-cache-dir -r requirements.txt",
-      "entrypoint": "uvicorn main:app --host 0.0.0.0 --port 7997",
+      "entrypoint": "uvicorn main:app --host 127.0.0.1 --port 7997",
       "base_image": "python:3.11-slim",
       "app_dir": "code",
       "user": "root"
@@ -75,7 +75,7 @@
   },
   "tests": {
     "unit": {
-      "cmd": "python3 -m pip install -q pypdf==5.1.0 && python3 -B -m unittest discover -s test",
+      "cmd": "python3 -m pip install -q pypdf==5.1.0 fastapi==0.115.6 && python3 -B -m unittest discover -s test",
       "cwd": "src/code"
     }
   },
