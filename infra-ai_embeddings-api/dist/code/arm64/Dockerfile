@@ -9,6 +9,6 @@
 # Type A — own code, arch=arm64
 FROM python:3.11-slim
 
-COPY uvicorn main:app --host 0.0.0.0 --port 7997 /usr/local/bin/uvicorn main:app --host 0.0.0.0 --port 7997
+COPY uvicorn main:app --host 127.0.0.1 --port 7997 /usr/local/bin/uvicorn main:app --host 127.0.0.1 --port 7997
 LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-t-infra"
-CMD ["uvicorn main:app --host 0.0.0.0 --port 7997"]
+CMD ["uvicorn main:app --host 127.0.0.1 --port 7997"]
