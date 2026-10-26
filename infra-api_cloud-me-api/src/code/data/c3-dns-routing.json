@@ -721,6 +721,10 @@
       "dns": "drive-mcp.mesh.diegonmarcos.com"
     },
     {
+      "service": "infra-ai_embeddings-api",
+      "dns": "embeddings-api.mesh.diegonmarcos.com"
+    },
+    {
       "service": "user-prod_etherpad",
       "dns": "etherpad.mesh.diegonmarcos.com"
     },
