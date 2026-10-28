@@ -451,3 +451,143 @@ identity_providers:
               - https://*.diegonmarcos.com/
               - https://diegonmarcos.com/
 
+          - client_id: gitea
+            client_secret: '{{ secret "/run/secrets/AUTHELIA_OIDC_CLIENT_GITEA_SECRET" }}'
+            consent_mode: implicit
+            client_name: Gitea
+            public: false
+            authorization_policy: two_factor
+            redirect_uris:
+              - https://git.diegonmarcos.com/user/oauth2/authelia/callback
+            grant_types:
+              - authorization_code
+            response_types:
+              - code
+            scopes:
+              - openid
+              - profile
+              - email
+              - groups
+            userinfo_signed_response_alg: none
+            token_endpoint_auth_method: client_secret_basic
+
+          - client_id: hedgedoc
+            client_secret: '{{ secret "/run/secrets/AUTHELIA_OIDC_CLIENT_HEDGEDOC_SECRET" }}'
+            consent_mode: implicit
+            client_name: HedgeDoc
+            public: false
+            authorization_policy: two_factor
+            redirect_uris:
+              - https://app.diegonmarcos.com/hedgedoc/auth/oauth2/callback
+            grant_types:
+              - authorization_code
+            response_types:
+              - code
+            scopes:
+              - openid
+              - profile
+              - email
+              - groups
+            userinfo_signed_response_alg: none
+            token_endpoint_auth_method: client_secret_basic
+
+          - client_id: grist
+            client_secret: '{{ secret "/run/secrets/AUTHELIA_OIDC_CLIENT_GRIST_SECRET" }}'
+            consent_mode: implicit
+            client_name: Grist
+            public: false
+            authorization_policy: two_factor
+            redirect_uris:
+              - https://sheets.diegonmarcos.com/oauth2/callback
+            grant_types:
+              - authorization_code
+            response_types:
+              - code
+            scopes:
+              - openid
+              - profile
+              - email
+              - groups
+            userinfo_signed_response_alg: none
+            token_endpoint_auth_method: client_secret_basic
+
+          - client_id: photoprism
+            client_secret: '{{ secret "/run/secrets/AUTHELIA_OIDC_CLIENT_PHOTOPRISM_SECRET" }}'
+            consent_mode: implicit
+            client_name: PhotoPrism
+            public: false
+            authorization_policy: two_factor
+            redirect_uris:
+              - https://photos.diegonmarcos.com/api/v1/oidc/redirect
+            grant_types:
+              - authorization_code
+            response_types:
+              - code
+            scopes:
+              - openid
+              - profile
+              - email
+              - groups
+            userinfo_signed_response_alg: none
+            token_endpoint_auth_method: client_secret_basic
+
+          - client_id: dagu-ui
+            client_secret: '{{ secret "/run/secrets/AUTHELIA_OIDC_CLIENT_DAGU_UI_SECRET" }}'
+            consent_mode: implicit
+            client_name: Dagu Web UI
+            public: false
+            authorization_policy: two_factor
+            redirect_uris:
+              - https://workflows.diegonmarcos.com/oidc-callback
+            grant_types:
+              - authorization_code
+            response_types:
+              - code
+            scopes:
+              - openid
+              - profile
+              - email
+              - groups
+            userinfo_signed_response_alg: none
+            token_endpoint_auth_method: client_secret_basic
+
+          - client_id: dbgate
+            client_secret: '{{ secret "/run/secrets/AUTHELIA_OIDC_CLIENT_DBGATE_SECRET" }}'
+            consent_mode: implicit
+            client_name: DbGate
+            public: false
+            authorization_policy: two_factor
+            redirect_uris:
+              - https://db.diegonmarcos.com/
+            grant_types:
+              - authorization_code
+            response_types:
+              - code
+            scopes:
+              - openid
+              - profile
+              - email
+              - groups
+            userinfo_signed_response_alg: none
+            token_endpoint_auth_method: client_secret_post
+
+          - client_id: etherpad
+            client_secret: '{{ secret "/run/secrets/AUTHELIA_OIDC_CLIENT_ETHERPAD_SECRET" }}'
+            consent_mode: implicit
+            client_name: Etherpad
+            public: false
+            authorization_policy: two_factor
+            redirect_uris:
+              - https://app.diegonmarcos.com/etherpad/ep_openid_connect/callback
+            grant_types:
+              - authorization_code
+            response_types:
+              - code
+            scopes:
+              - openid
+              - profile
+              - email
+              - groups
+            userinfo_signed_response_alg: none
+            token_endpoint_auth_method: client_secret_basic
+
