@@ -26,6 +26,8 @@ in
         GRIST_OIDC_IDP_CLIENT_ID     = "\${GRIST_OIDC_CLIENT_SECRET:+grist}";
         GRIST_OIDC_IDP_CLIENT_SECRET = "\${GRIST_OIDC_CLIENT_SECRET:-}";
         GRIST_OIDC_IDP_SCOPES        = "openid profile email";
+        # Authelia publishes no end_session_endpoint; without this grist exits 1 at start.
+        GRIST_OIDC_IDP_SKIP_END_SESSION_ENDPOINT = "true";
         # docs.getgrist.com/install/oidc: SP host is the Grist base URL; callback is <host>/oauth2/callback.
         GRIST_OIDC_SP_HOST           = "https://${buildJson.domain}";
       };
