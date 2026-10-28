@@ -276,12 +276,13 @@ remove_excluded cloud-vault
 remove_excluded cloud-me_vault
 # Step 4: Ensure each mirror repo exists
 converge_mirror cloud https://github.com/diegonmarcos/cloud.git false
-converge_mirror cloud-data-lfs https://github.com/diegonmarcos/cloud-data-lfs.git true
 converge_mirror cloud-me https://github.com/diegonmarcos/cloud-me.git true
 converge_mirror cloud-me-containers https://github.com/diegonmarcos/cloud-me-containers.git true
 converge_mirror cloud-me-data-pvt https://github.com/diegonmarcos/cloud-me-data-pvt.git true
 converge_mirror cloud-me-my-ai https://github.com/diegonmarcos/cloud-me-my-ai.git true
 converge_mirror cloud-me-notes https://github.com/diegonmarcos/cloud-me-notes.git true
+converge_mirror cloud-me-others https://github.com/diegonmarcos/cloud-me-others.git false
+converge_mirror cloud-me-profiles https://github.com/diegonmarcos/cloud-me-profiles.git false
 converge_mirror cloud-me_cgc https://github.com/diegonmarcos/cloud-me_cgc.git true
 converge_mirror cloud-me_configs https://github.com/diegonmarcos/cloud-me_configs.git true
 converge_mirror cloud-me_data-private https://github.com/diegonmarcos/cloud-me_data-private.git true
@@ -293,29 +294,32 @@ converge_mirror cloud-u-containers_cgc https://github.com/diegonmarcos/cloud-u-c
 converge_mirror cloud-u-desktop https://github.com/diegonmarcos/cloud-u-desktop.git false
 converge_mirror cloud-u-linux https://github.com/diegonmarcos/cloud-u-linux.git false
 converge_mirror cloud-webapps https://github.com/diegonmarcos/cloud-webapps.git false
-converge_mirror diegonmarcos https://github.com/diegonmarcos/diegonmarcos.git false
-converge_mirror diegonmarcos.github.io https://github.com/diegonmarcos/diegonmarcos.github.io.git false
-converge_mirror front https://github.com/diegonmarcos/front.git false
-converge_mirror front-assets-cdn https://github.com/diegonmarcos/front-assets-cdn.git false
-converge_mirror front-galaxy-gaia https://github.com/diegonmarcos/front-galaxy-gaia.git true
-converge_mirror front-linktree https://github.com/diegonmarcos/front-linktree.git false
-converge_mirror front-projects https://github.com/diegonmarcos/front-projects.git false
-converge_mirror front-unity https://github.com/diegonmarcos/front-unity.git true
+converge_mirror cloud-webapps-2 https://github.com/diegonmarcos/cloud-webapps-2.git false
+converge_mirror cloud_db_LFS https://github.com/diegonmarcos/cloud_db_LFS.git true
+converge_mirror cloud_db_assets-cdn https://github.com/diegonmarcos/cloud_db_assets-cdn.git false
+converge_mirror cloud_db_infra-ops-obsv_configs-sync https://github.com/diegonmarcos/cloud_db_infra-ops-obsv_configs-sync.git false
 converge_mirror git-repos-master https://github.com/diegonmarcos/git-repos-master.git false
-converge_mirror lecole-42 https://github.com/diegonmarcos/lecole-42.git true
-converge_mirror lecole-42-projects https://github.com/diegonmarcos/lecole-42-projects.git true
-converge_mirror lecole-42_back-Algo https://github.com/diegonmarcos/lecole-42_back-Algo.git false
-converge_mirror lecole-42_back-Graphic https://github.com/diegonmarcos/lecole-42_back-Graphic.git false
-converge_mirror lecole-42_back-System https://github.com/diegonmarcos/lecole-42_back-System.git false
-converge_mirror lecole-42_cyber-Cyberwarfare https://github.com/diegonmarcos/lecole-42_cyber-Cyberwarfare.git false
-converge_mirror lecole-42_dev https://github.com/diegonmarcos/lecole-42_dev.git true
-converge_mirror lecole-42_ml-Agentic https://github.com/diegonmarcos/lecole-42_ml-Agentic.git false
-converge_mirror lecole-42_ml-DataScience https://github.com/diegonmarcos/lecole-42_ml-DataScience.git false
-converge_mirror lecole-42_ml-MachineLearning https://github.com/diegonmarcos/lecole-42_ml-MachineLearning.git false
-converge_mirror lecole-42_ops-Mylibs https://github.com/diegonmarcos/lecole-42_ops-Mylibs.git false
 converge_mirror z-archived_My-ai-memory https://github.com/diegonmarcos/z-archived_My-ai-memory.git true
 converge_mirror z-archived_c3-infra-plugin https://github.com/diegonmarcos/z-archived_c3-infra-plugin.git true
-converge_mirror z-archived_front-data https://github.com/diegonmarcos/z-archived_front-data.git false
+
+# ── SSO (#1147): converge the Authelia OIDC login source ─────────────
+# Gated on GITEA_OIDC_CLIENT_SECRET (delivered from the sso-oidc-issue bundle in the
+# private data repo). Unset => nothing runs and local + reverse-proxy login are unchanged.
+# The secret travels by `docker exec -e` and is expanded inside the container: it is never on
+# this host's curl/docker argv and never echoed. Failure is a WARN, not a failed ship: gitea
+# login via the gate keeps working without the source.
+if [ -n "${GITEA_OIDC_CLIENT_SECRET:-}" ]; then
+  echo "-- Converging gitea OIDC login source (authelia) --"
+  _sso_args='--name authelia --provider openidConnect --key gitea --secret "$GITEA_OIDC_CLIENT_SECRET" --auto-discover-url https://sso.diegonmarcos.com/.well-known/openid-configuration --scopes "openid profile email groups"'
+  if docker exec -u git "$CONTAINER" gitea admin auth list 2>/dev/null | grep -qw authelia; then
+    _sso_id="$(docker exec -u git "$CONTAINER" gitea admin auth list 2>/dev/null | awk '$2 == "authelia" {print $1}' | head -1)"
+    docker exec -u git -e GITEA_OIDC_CLIENT_SECRET "$CONTAINER" sh -c "gitea admin auth update-oauth --id $_sso_id $_sso_args" >/dev/null 2>&1 \
+      && echo "[init-mirrors] sso: authelia source updated" || echo "[init-mirrors] WARN: sso source update failed" >&2
+  else
+    docker exec -u git -e GITEA_OIDC_CLIENT_SECRET "$CONTAINER" sh -c "gitea admin auth add-oauth $_sso_args" >/dev/null 2>&1 \
+      && echo "[init-mirrors] sso: authelia source added" || echo "[init-mirrors] WARN: sso source add failed" >&2
+  fi
+fi
 
 # ── Verdict ───────────────────────────────────────────────────────────
 # One machine-readable line, then the exit code.
