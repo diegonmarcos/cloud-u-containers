@@ -128,7 +128,7 @@ export const buildClaudeArgv = ({ baseArgs, session, cwd }) => {
 // that owns the task store. So the address is derived at request time — among
 // the sessions whose transcript lives under the declared project cwd, the one
 // holding the most task files. Same fullest-store heuristic the backlog display
-// uses (canonicalSessionDir in cloud-me-my-ai/1.1.Product-Backlog), and
+// uses (canonicalSessionDir in cloud-me-pvt-my-ai/1.1.Product-Backlog), and
 // it self-corrects when the orchestrator session rotates instead of going stale.
 
 // Claude slugs a cwd into its transcript directory name by replacing every
