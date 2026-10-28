@@ -57,7 +57,7 @@ export function getRepoRoot(): string {
  * Resolve a cloud-data / build / consolidated file. Priority:
  *   1. /app/<filename>                             — bundled in-image (build pipeline copies dist/* into the image)
  *   2. <repoRoot>/1_cicd/dist/<filename>        — dev: cloud repo dist/
- *   3. <repoRoot>/cloud-data/<filename>            — legacy c3_git_repos clone
+ *   3. <repoRoot>/cloud-me-pvt-data/<filename>, then <repoRoot>/cloud-data/<filename> (pre-rename name) — legacy c3_git_repos clone
  *   4. <repoRoot>/<filename>                       — legacy cloud repo root
  *
  * 2026-04-27: replaces the previous `getRepoRoot() + "cloud-data" + filename`
@@ -69,7 +69,8 @@ export function getCloudDataPath(filename: string): string {
   const candidates = [
     `/app/${filename}`,
     repoRoot ? join(repoRoot, "1_cloud-configs", "dist", filename) : "",
-    repoRoot ? join(repoRoot, "cloud-data", filename) : "",
+    repoRoot ? join(repoRoot, "cloud-me-pvt-data", filename) : "",
+    repoRoot ? join(repoRoot, "cloud-data", filename) : "", // pre-rename checkout name
     repoRoot ? join(repoRoot, filename) : "",
   ].filter(Boolean) as string[];
   for (const p of candidates) {
