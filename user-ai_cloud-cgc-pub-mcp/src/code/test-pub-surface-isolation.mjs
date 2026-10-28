@@ -33,7 +33,7 @@ const CODE = dirname(fileURLToPath(import.meta.url));
 const SVC = join(CODE, "..", "..");
 const BJ = JSON.parse(readFileSync(join(SVC, "build.json"), "utf8"));
 const OCT = BJ.runtime.octocode;
-const PRIVATE = [...new Set([...OCT.private_repos, ...Object.keys(OCT.sync_exclude ?? {}), "cloud-data", "cloud-me-pvt-my-ai", "cloud-vault"])];
+const PRIVATE = [...new Set([...OCT.private_repos, ...Object.keys(OCT.sync_exclude ?? {}), "cloud-data", "cloud-me-pvt-data", "cloud-me-pvt-my-ai", "cloud-vault"])];
 const PUBLIC = OCT.index_repos.filter((r) => !PRIVATE.includes(r));
 
 let pass = 0, fail = 0;
@@ -43,7 +43,7 @@ const check = (n, c, d = "") => c
 const mentionsPrivate = (s) => PRIVATE.some((p) => new RegExp(`(^|[^a-z0-9-])${p.replace(/-/g, "[-_]")}($|[^a-z0-9-])`, "i").test(s));
 
 check("P0 build.json declares the private repos (cloud-data, cloud-me-pvt-my-ai)",
-  OCT.private_repos.includes("cloud-data") && OCT.private_repos.includes("cloud-me-pvt-my-ai"),
+  OCT.private_repos.includes("cloud-me-pvt-data") && OCT.private_repos.includes("cloud-me-pvt-my-ai"),
   JSON.stringify(OCT.private_repos));
 check("P1 exactly the 6 public repos remain", JSON.stringify([...PUBLIC].sort()) ===
   JSON.stringify(["cloud-infra", "cloud-infra-desktop", "cloud-u-android", "cloud-u-containers", "front-data", "front-diegonmarcos"]),
@@ -95,9 +95,9 @@ for (const env of [{}, { CGC_SURFACE: "" }, { CGC_SURFACE: "pub" }, { CGC_SURFAC
   for (const p of PUBLIC) check(`B3 ${label} allows ${p}`, surface.isRepoAllowed(p, env) === true);
   check(`B4 ${label} refuses an undeclared repo`, surface.isRepoAllowed("some-other-repo", env) === false);
 }
-check("B5 pvt surface allows private repos", surface.isRepoAllowed("cloud-data", { CGC_SURFACE: "pvt" }) === true);
+check("B5 pvt surface allows private repos", surface.isRepoAllowed("cloud-me-pvt-data", { CGC_SURFACE: "pvt" }) === true);
 check("B6 hard floor holds even with an empty env deny list",
-  surface.HARD_DENY.includes("cloud-data") && surface.HARD_DENY.includes("cloud-me-pvt-my-ai") && surface.HARD_DENY.includes("cloud-vault"));
+  surface.HARD_DENY.includes("cloud-me-pvt-data") && surface.HARD_DENY.includes("cloud-data") && surface.HARD_DENY.includes("cloud-me-pvt-my-ai") && surface.HARD_DENY.includes("cloud-vault"));
 
 // ── C/D. the real tools, over a scratch GIT_ROOT that DOES hold private repos ──
 const root = mkdtempSync(join(tmpdir(), "cgc-pub-iso-"));
@@ -108,7 +108,7 @@ try {
     writeFileSync(join(root, r, "README.md"), `readme ${r} needle-${r}\n`);
   }
   // A public repo with a symlink that points INTO a private checkout.
-  symlinkSync(join(root, "cloud-data"), join(root, "front-diegonmarcos", "escape"));
+  symlinkSync(join(root, "cloud-me-pvt-data"), join(root, "front-diegonmarcos", "escape"));
   process.env.GIT_ROOT = root;
   process.env.CONFIG_PATH = join(root, "config.json");
   process.env.REPO_SYNC = "off";

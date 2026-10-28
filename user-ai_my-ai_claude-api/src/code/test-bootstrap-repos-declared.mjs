@@ -102,7 +102,7 @@ check("R2 the old name is no longer declared as its own repo", !names.has("ffron
 // Including the three that were only ever cloned by hand. Dropping one here
 // would delete it from the tree on the next volume recreate, silently.
 for (const r of ["cloud-infra", "cloud-u-containers", "cloud-u-android", "cloud-u-linux",
-                 "cloud-data", "cloud-me-pvt-my-ai", "cloud-me-pvt-vault"]) {
+                 "cloud-me-pvt-data", "cloud-me-pvt-my-ai", "cloud-me-pvt-vault"]) {
   check(`C:${r} is declared`, names.has(r), `runtime.repos has no "${r}"`);
 }
 // The vault repo was renamed diegonmarcos/cloud-vault -> cloud-me-pvt-vault (#592),

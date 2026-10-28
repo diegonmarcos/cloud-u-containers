@@ -89,7 +89,8 @@
         "repo": "cloud-u-linux"
       },
       {
-        "repo": "cloud-data"
+        "repo": "cloud-me-pvt-data",
+        "renamed_from": ["cloud-data"]
       },
       {
         "repo": "cloud-me-pvt-my-ai",
