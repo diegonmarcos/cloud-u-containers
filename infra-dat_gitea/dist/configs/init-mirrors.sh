@@ -293,8 +293,8 @@ converge_mirror cloud-u-containers https://github.com/diegonmarcos/cloud-u-conta
 converge_mirror cloud-u-containers_cgc https://github.com/diegonmarcos/cloud-u-containers_cgc.git false
 converge_mirror cloud-u-desktop https://github.com/diegonmarcos/cloud-u-desktop.git false
 converge_mirror cloud-u-linux https://github.com/diegonmarcos/cloud-u-linux.git false
-converge_mirror cloud-webapps https://github.com/diegonmarcos/cloud-webapps.git false
-converge_mirror cloud-webapps-2 https://github.com/diegonmarcos/cloud-webapps-2.git false
+converge_mirror cloud-h-webapps https://github.com/diegonmarcos/cloud-h-webapps.git false
+converge_mirror cloud-h-webapps-2 https://github.com/diegonmarcos/cloud-h-webapps-2.git false
 converge_mirror cloud_db_LFS https://github.com/diegonmarcos/cloud_db_LFS.git true
 converge_mirror cloud_db_assets-cdn https://github.com/diegonmarcos/cloud_db_assets-cdn.git false
 converge_mirror cloud_db_infra-ops-obsv_configs-sync https://github.com/diegonmarcos/cloud_db_infra-ops-obsv_configs-sync.git false
