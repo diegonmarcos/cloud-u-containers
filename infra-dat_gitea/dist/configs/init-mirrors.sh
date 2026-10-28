@@ -278,9 +278,9 @@ remove_excluded cloud-me-pvt-vault
 # Step 4: Ensure each mirror repo exists
 converge_mirror _git-repos-master https://github.com/diegonmarcos/_git-repos-master.git false
 converge_mirror cloud https://github.com/diegonmarcos/cloud.git false
-converge_mirror cloud-a-docs https://github.com/diegonmarcos/cloud-a-docs.git true
-converge_mirror cloud-h-webapps https://github.com/diegonmarcos/cloud-h-webapps.git false
-converge_mirror cloud-h-webapps-2 https://github.com/diegonmarcos/cloud-h-webapps-2.git false
+converge_mirror cloud-a-docs https://github.com/diegonmarcos/cloudy-a-docs.git true
+converge_mirror cloud-h-webapps https://github.com/diegonmarcos/cloudy-h-webapps.git false
+converge_mirror cloud-h-webapps-2 https://github.com/diegonmarcos/cloudy-h-webapps-2.git false
 converge_mirror cloud-me-pub https://github.com/diegonmarcos/cloud-me-pub.git false
 converge_mirror cloud-me-pub-profiles https://github.com/diegonmarcos/cloud-me-pub-profiles.git false
 converge_mirror cloud-me-pub-profiles-_lnktree https://github.com/diegonmarcos/cloud-me-pub-profiles-_lnktree.git false
@@ -296,15 +296,15 @@ converge_mirror cloud-me-pvt-containers https://github.com/diegonmarcos/cloud-me
 converge_mirror cloud-me-pvt-data https://github.com/diegonmarcos/cloud-me-pvt-data.git true
 converge_mirror cloud-me-pvt-my-ai https://github.com/diegonmarcos/cloud-me-pvt-my-ai.git true
 converge_mirror cloud-me-pvt-notes https://github.com/diegonmarcos/cloud-me-pvt-notes.git true
-converge_mirror cloud-t-infra https://github.com/diegonmarcos/cloud-t-infra.git false
-converge_mirror cloud-u-android https://github.com/diegonmarcos/cloud-u-android.git false
-converge_mirror cloud-u-containers https://github.com/diegonmarcos/cloud-u-containers.git false
-converge_mirror cloud-u-containers_cgc https://github.com/diegonmarcos/cloud-u-containers_cgc.git false
-converge_mirror cloud-u-desktop https://github.com/diegonmarcos/cloud-u-desktop.git false
-converge_mirror cloud-u-linux https://github.com/diegonmarcos/cloud-u-linux.git false
-converge_mirror cloud_db_LFS https://github.com/diegonmarcos/cloud_db_LFS.git true
-converge_mirror cloud_db_assets-cdn https://github.com/diegonmarcos/cloud_db_assets-cdn.git false
-converge_mirror cloud_db_infra-ops-obsv_configs-sync https://github.com/diegonmarcos/cloud_db_infra-ops-obsv_configs-sync.git false
+converge_mirror cloud-t-infra https://github.com/diegonmarcos/cloudy-t-infra.git false
+converge_mirror cloud-u-android https://github.com/diegonmarcos/cloudy-u-android.git false
+converge_mirror cloud-u-containers https://github.com/diegonmarcos/cloudy-u-containers.git false
+converge_mirror cloud-u-containers_cgc https://github.com/diegonmarcos/cloudy-u-containers_cgc.git false
+converge_mirror cloud-u-desktop https://github.com/diegonmarcos/cloudy-u-desktop.git false
+converge_mirror cloud-u-linux https://github.com/diegonmarcos/cloudy-u-linux.git false
+converge_mirror cloud_db_LFS https://github.com/diegonmarcos/cloudy_db_LFS.git true
+converge_mirror cloud_db_assets-cdn https://github.com/diegonmarcos/cloudy_db_assets-cdn.git false
+converge_mirror cloud_db_infra-ops-obsv_configs-sync https://github.com/diegonmarcos/cloudy_db_infra-ops-obsv_configs-sync.git false
 converge_mirror z-archived_My-ai-memory https://github.com/diegonmarcos/z-archived_My-ai-memory.git true
 converge_mirror z-archived_c3-infra-plugin https://github.com/diegonmarcos/z-archived_c3-infra-plugin.git true
 converge_mirror z-archived_cloud-me-pub-data https://github.com/diegonmarcos/z-archived_cloud-me-pub-data.git false

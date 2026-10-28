@@ -10,5 +10,5 @@
 FROM python:3.11-slim
 
 COPY gunicorn --bind 127.0.0.1:4182 --workers 1 --threads 4 --timeout 120 main:app /usr/local/bin/gunicorn --bind 127.0.0.1:4182 --workers 1 --threads 4 --timeout 120 main:app
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-t-infra"
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloudy-t-infra"
 CMD ["gunicorn --bind 127.0.0.1:4182 --workers 1 --threads 4 --timeout 120 main:app"]

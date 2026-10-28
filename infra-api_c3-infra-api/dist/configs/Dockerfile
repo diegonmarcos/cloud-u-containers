@@ -9,5 +9,5 @@
 # configs image — FROM scratch
 FROM scratch
 COPY . /configs
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-t-infra"
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloudy-t-infra"
 LABEL cloud.diegonmarcos.image-type="configs"

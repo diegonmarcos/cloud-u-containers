@@ -10,5 +10,5 @@
 FROM python:3.11-slim
 
 COPY python3 main.py /usr/local/bin/python3 main.py
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-t-infra"
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloudy-t-infra"
 CMD ["python3 main.py"]

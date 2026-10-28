@@ -11,7 +11,7 @@ W="$(mktemp -d)"; trap 'rm -rf "$W"' EXIT
 if [ -n "${WAF_GEO_FILE:-}" ]; then cp "$WAF_GEO_FILE" "$W/waf.json"
 else
   [ -n "${GH_TOKEN:-}" ] || { echo "FAIL: GH_TOKEN (cloud-infra read) or WAF_GEO_FILE is required"; exit 1; }
-  gh api -H "Accept: application/vnd.github.raw" repos/diegonmarcos/cloud-t-infra/contents/c_vps/ba-clo_cloudflare/src/geo-allowed.json >"$W/waf.json"
+  gh api -H "Accept: application/vnd.github.raw" repos/diegonmarcos/cloudy-t-infra/contents/c_vps/ba-clo_cloudflare/src/geo-allowed.json >"$W/waf.json"
 fi
 set_of() { jq -r '.allowed_countries[]' "$1" | sort -u; }
 set_of "$SRC" >"$W/want"; set_of "$W/waf.json" >"$W/got"

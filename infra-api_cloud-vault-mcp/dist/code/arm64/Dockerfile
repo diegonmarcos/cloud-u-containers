@@ -10,5 +10,5 @@
 FROM node:22-slim
 
 COPY cli.mjs index.ts --http /usr/local/bin/cli.mjs index.ts --http
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-t-infra"
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloudy-t-infra"
 CMD ["cli.mjs index.ts --http"]

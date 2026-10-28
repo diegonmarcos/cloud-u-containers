@@ -18,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
-        with: { repository: diegonmarcos/cloud-t-infra, path: _ci, sparse-checkout: '1_cloud-configs/dist' }
+        with: { repository: diegonmarcos/cloudy-t-infra, path: _ci, sparse-checkout: '1_cloud-configs/dist' }
       - uses: cachix/install-nix-action@v27
       - uses: actions/setup-go@v5
         with: { go-version: '1.23' }

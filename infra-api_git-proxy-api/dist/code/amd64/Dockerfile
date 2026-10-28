@@ -10,5 +10,5 @@
 FROM node:22-bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
 COPY node index.mjs /usr/local/bin/node index.mjs
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-t-infra"
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloudy-t-infra"
 CMD ["node index.mjs"]

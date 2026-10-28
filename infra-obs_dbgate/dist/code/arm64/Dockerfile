@@ -8,7 +8,7 @@
 # ╚══════════════════════════════════════════════════════════════════╝
 # Type B — wrap upstream, arch=arm64
 FROM dbgate/dbgate:latest
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-t-infra"
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloudy-t-infra"
 LABEL cloud.diegonmarcos.from-image="dbgate/dbgate:latest"
 
 RUN apt-get update && apt-get install -y --no-install-recommends wget && rm -rf /var/lib/apt/lists/*

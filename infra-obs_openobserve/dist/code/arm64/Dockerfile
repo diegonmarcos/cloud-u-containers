@@ -8,7 +8,7 @@
 # ╚══════════════════════════════════════════════════════════════════╝
 # Type B — wrap upstream, arch=arm64
 FROM public.ecr.aws/zinclabs/openobserve:v0.14.7
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-t-infra"
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloudy-t-infra"
 LABEL cloud.diegonmarcos.from-image="public.ecr.aws/zinclabs/openobserve:v0.14.7"
 
 

@@ -8,7 +8,7 @@
 # ╚══════════════════════════════════════════════════════════════════╝
 # Type B — wrap upstream, arch=amd64
 FROM ghcr.io/openclaw/openclaw:2026.9.9
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-t-infra"
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloudy-t-infra"
 LABEL cloud.diegonmarcos.from-image="ghcr.io/openclaw/openclaw:2026.9.9"
 
 

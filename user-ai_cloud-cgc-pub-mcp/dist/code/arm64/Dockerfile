@@ -10,5 +10,5 @@
 FROM ubuntu:24.04
 RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates python3 python3-pip git && rm -rf /var/lib/apt/lists/*
 COPY npx tsx index.ts /usr/local/bin/npx tsx index.ts
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-t-infra"
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloudy-t-infra"
 CMD ["npx tsx index.ts"]

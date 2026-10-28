@@ -8,7 +8,7 @@
 # ╚══════════════════════════════════════════════════════════════════╝
 # Type B — wrap upstream, arch=amd64
 FROM klutchell/unbound:latest
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-t-infra"
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloudy-t-infra"
 LABEL cloud.diegonmarcos.from-image="klutchell/unbound:latest"
 
 

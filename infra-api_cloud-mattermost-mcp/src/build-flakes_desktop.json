@@ -2124,7 +2124,7 @@
         "runner_workdir": "/tmp/runner/work",
         "registrations": [
           {
-            "repo_url": "https://github.com/diegonmarcos/cloud-t-infra",
+            "repo_url": "https://github.com/diegonmarcos/cloudy-t-infra",
             "runner_name": "oci-apps-arm64"
           },
           {
@@ -2410,16 +2410,16 @@
         "mirror_interval": "1h",
         "mirrors": {
           "cloud": {
-            "upstream": "https://github.com/diegonmarcos/cloud-t-infra.git"
+            "upstream": "https://github.com/diegonmarcos/cloudy-t-infra.git"
           },
           "diegonmarcos.github.io": {
             "upstream": "https://github.com/diegonmarcos/diegonmarcos.github.io.git"
           },
           "cloud-u-android": {
-            "upstream": "https://github.com/diegonmarcos/cloud-u-android.git"
+            "upstream": "https://github.com/diegonmarcos/cloudy-u-android.git"
           },
           "cloud-master": {
-            "upstream": "https://github.com/diegonmarcos/cloud-t-infra.git"
+            "upstream": "https://github.com/diegonmarcos/cloudy-t-infra.git"
           },
           "front-galaxy-gaia": {
             "upstream": "https://github.com/diegonmarcos/front-galaxy-gaia.git",

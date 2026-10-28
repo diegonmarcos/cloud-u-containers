@@ -1,7 +1,7 @@
 // infra_plugin core: GitHub contents API access to cloud-u-linux, confined to one directory.
 // cloud-u-linux is PUBLIC: nothing written here may be secret or mesh-internal.
 // Pure (fetch injected), no subprocesses, fetched content is data only: never executed.
-export const REPO = "diegonmarcos/cloud-u-linux";
+export const REPO = "diegonmarcos/cloudy-u-linux";
 export const PREFIX = "da_my-ai/data/claude/";
 export const MAX_WRITE_BYTES = 64 * 1024;
 export const MAX_READ_BYTES = 64 * 1024;

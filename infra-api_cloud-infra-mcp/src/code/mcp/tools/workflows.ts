@@ -27,7 +27,7 @@ function resolveGhRepo(): string {
     // enumeration silently returned the wrong repo instead of erroring.
     return `${config.owner?.github ?? "diegonmarcos"}/cloud-infra`;
   } catch {}
-  return "diegonmarcos/cloud-t-infra";
+  return "diegonmarcos/cloudy-t-infra";
 }
 const GH_REPO = resolveGhRepo();
 
@@ -584,7 +584,7 @@ export function registerWorkflowTools(server: McpServer): void {
     {
       workflow: z.string().optional().describe("Workflow ID (250165604), file name (ship-terraform.yml) or name ('Ship → terraform', partial match, arrow/dash variants tolerated), or 'all'. Omit to list available."),
       inputs: z.record(z.string()).optional().describe("workflow_dispatch inputs, e.g. {\"build_fork\":\"true\"}. Booleans must be the strings 'true'/'false'. Use devops.workflows.gha_definition to see which inputs a workflow declares. Ignored when workflow is 'all'."),
-      repo: z.string().optional().describe("owner/repo to dispatch in (default: the cloud-infra repo). Works for any repo, e.g. diegonmarcos/cloud-u-linux."),
+      repo: z.string().optional().describe("owner/repo to dispatch in (default: the cloud-infra repo). Works for any repo, e.g. diegonmarcos/cloudy-u-linux."),
       ref: z.string().optional().describe("Git ref to run on (default: main)"),
     },
     ({ workflow, inputs, repo, ref }) => safeRun(async () => {

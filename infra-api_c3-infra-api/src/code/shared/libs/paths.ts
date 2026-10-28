@@ -242,7 +242,7 @@ export const REPOS: Record<string, string> = {
 // only one of them has now gone stale twice.
 //
 // cloud-infra/0_git/src/gitmodules (2026-09-06) declares both: the tree "was
-// split out to diegonmarcos/cloud-u-containers on 2026-08-27 ... checked out
+// split out to diegonmarcos/cloudy-u-containers on 2026-08-27 ... checked out
 // by CI at the path `a_solutions` with actions/checkout ... and cloned
 // standalone into ~/git/cloud-u-containers for local work".
 //
@@ -367,5 +367,5 @@ export function syncRepos(force = false): void {
 /** Git remote URLs for auto-cloning in server mode */
 const REPO_URLS: Record<string, string> = {
   "cloud-data": CLOUD_DATA_REPO,
-  "cloud-infra": "git@github.com:diegonmarcos/cloud-t-infra.git", // 2026-08-21: key was "cloud" (pre-rename)
+  "cloud-infra": "git@github.com:diegonmarcos/cloudy-t-infra.git", // 2026-08-21: key was "cloud" (pre-rename)
 };

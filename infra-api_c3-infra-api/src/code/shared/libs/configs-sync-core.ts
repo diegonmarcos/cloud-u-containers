@@ -2,7 +2,7 @@
 // c3-infra-api route and tested without a server. The data repo is public; only an allowlisted
 // file name (a flat *.json or build/build-*.json) is ever fetched.
 export const DATA_REPO_RAW =
-  process.env.CONFIGS_SYNC_RAW ?? "https://raw.githubusercontent.com/diegonmarcos/cloud_db_infra-ops-obsv_configs-sync/main/";
+  process.env.CONFIGS_SYNC_RAW ?? "https://raw.githubusercontent.com/diegonmarcos/cloudy_db_infra-ops-obsv_configs-sync/main/";
 export const TTL_MS = 60_000;
 
 const NAME_RE = /^(build\/)?[A-Za-z0-9_][A-Za-z0-9_.-]{0,120}\.json$/;

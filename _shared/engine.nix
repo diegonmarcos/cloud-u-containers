@@ -574,7 +574,7 @@ let
           ${lib.optionalString (nativeBuild.apt or "" != "")
             "RUN apt-get update && apt-get install -y --no-install-recommends ${nativeBuild.apt} && rm -rf /var/lib/apt/lists/*"}
           COPY ${baseNameOf nativeBuild.binary} /usr/local/bin/${baseNameOf nativeBuild.binary}
-          LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-t-infra"
+          LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloudy-t-infra"
           CMD ["${baseNameOf nativeBuild.binary}"]
         ''
     else
@@ -610,7 +610,7 @@ let
       pkgs.writeText "Dockerfile" ''
         ${mkBanner "#"}# Type B — wrap upstream, arch=${arch}
         FROM ${upstream}
-        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-t-infra"
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloudy-t-infra"
         LABEL cloud.diegonmarcos.from-image="${upstream}"
         ${lib.optionalString (apkList != "")
           "RUN apk add --no-cache ${apkList}"}
@@ -626,7 +626,7 @@ let
     ${mkBanner "#"}# configs image — FROM scratch
     FROM scratch
     COPY . /configs
-    LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-t-infra"
+    LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloudy-t-infra"
     LABEL cloud.diegonmarcos.image-type="configs"
   '';
 

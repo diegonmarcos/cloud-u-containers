@@ -14,9 +14,9 @@ in
       environment = {
         TZ            = buildJson.timezone;
         SCHEDULE_MIN  = "\${SCHEDULE_MIN:-15}";
-        DATA_REPO     = "\${DATA_REPO:-diegonmarcos/cloud_db_infra-ops-obsv_configs-sync}";
-        CONTAINERS_REPO = "\${CONTAINERS_REPO:-diegonmarcos/cloud-u-containers}";
-        INFRA_REPO    = "\${INFRA_REPO:-diegonmarcos/cloud-t-infra}";
+        DATA_REPO     = "\${DATA_REPO:-diegonmarcos/cloudy_db_infra-ops-obsv_configs-sync}";
+        CONTAINERS_REPO = "\${CONTAINERS_REPO:-diegonmarcos/cloudy-u-containers}";
+        INFRA_REPO    = "\${INFRA_REPO:-diegonmarcos/cloudy-t-infra}";
         MODE          = "\${MODE:-full}";
       };
       env_file = [ ".env" ];

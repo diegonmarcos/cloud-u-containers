@@ -44,7 +44,7 @@ Added:
 
 Users interacting with webmail.diegonmarcos.com get a visible link (login
 footer and Settings → About) to the corresponding source: this directory in
-`github.com/diegonmarcos/cloud-u-containers`
+`github.com/diegonmarcos/cloudy-u-containers`
 (`user-comm_cloud-webmail/src/code/arm64/webapp`), set by `ARG SOURCE_URL` in
 `src/code/arm64/Dockerfile`. Keep that URL pointing at the repo path (and,
 when bumped, a commit) that matches what is deployed.

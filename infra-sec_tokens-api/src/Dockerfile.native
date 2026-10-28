@@ -9,5 +9,5 @@ RUN mkdir -p /data && chown appuser /data
 USER appuser
 ENV HOME=/home/appuser
 
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud-u-containers"
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloudy-u-containers"
 CMD ["gunicorn","--bind","127.0.0.1:4184","--workers","1","--threads","4","--timeout","30","main:app"]

@@ -57,7 +57,7 @@
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-INFRA_REPO="${INFRA_REPO:-diegonmarcos/cloud-t-infra}"
+INFRA_REPO="${INFRA_REPO:-diegonmarcos/cloudy-t-infra}"
 DIST_PATH="1_cloud-configs/dist"
 
 FAIL=0

@@ -8,7 +8,7 @@ const P = PREFIX;
 let calls = [];
 const mk = (routes = {}) => async (url, init = {}) => {
   calls.push({ url, method: init.method, body: init.body });
-  const key = `${init.method} ${url.split("?")[0].replace("https://api.github.com/repos/diegonmarcos/cloud-u-linux/", "")}`;
+  const key = `${init.method} ${url.split("?")[0].replace("https://api.github.com/repos/diegonmarcos/cloudy-u-linux/", "")}`;
   const r = routes[key];
   if (!r) return { ok: false, status: 404, json: async () => ({ message: "Not Found" }) };
   return { ok: true, status: 200, json: async () => r };
@@ -46,7 +46,7 @@ const path = `${P}a.json`;
 const f = mk({
   [`GET ${"contents/" + path}`]: { type: "file", sha: "abc" },
   [`PUT ${"contents/" + path}`]: { commit: { sha: "c0ffee" }, content: { sha: "def" } },
-  "GET actions/runs": { workflow_runs: [{ html_url: "https://github.com/diegonmarcos/cloud-u-linux/actions/runs/9" }] },
+  "GET actions/runs": { workflow_runs: [{ html_url: "https://github.com/diegonmarcos/cloudy-u-linux/actions/runs/9" }] },
 });
 const res = await pluginWrite(f, { path, content: "{}", sha: "abc", message: "m" }, "t");
 assert.equal(res.commit, "c0ffee");

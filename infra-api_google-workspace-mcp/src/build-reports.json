@@ -3044,7 +3044,7 @@
     "github": {
       "enabled": true,
       "repos": [
-        "diegonmarcos/cloud-t-infra",
+        "diegonmarcos/cloudy-t-infra",
         "diegonmarcos/cloud-data",
         "diegonmarcos/cloud-infra-desktop",
         "diegonmarcos/front",

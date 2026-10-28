@@ -7,7 +7,7 @@ let n = 0;
 const t = (name, fn) => { fn(); n++; console.log(`ok - ${name}`); };
 
 t("repo", () => {
-  assert.ok(validRepo("diegonmarcos/cloud-u-containers"));
+  assert.ok(validRepo("diegonmarcos/cloudy-u-containers"));
   for (const r of ["x", "a/b/c", "a/..", "-a b/c", "a/b;rm", ""]) assert.equal(validRepo(r), false, r);
 });
 t("ids", () => {

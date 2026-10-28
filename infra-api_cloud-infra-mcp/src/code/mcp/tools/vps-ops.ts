@@ -62,12 +62,12 @@ const PRESETS: Record<string, Record<string, string[]>> = {
   },
   gh: {
     "repos": ["repo", "list", "diegonmarcos", "--json", "name,visibility,updatedAt", "--jq", '.[] | "\\(.name) (\\(.visibility)) \\(.updatedAt[:10])"'],
-    "issues": ["issue", "list", "--repo", "diegonmarcos/cloud-t-infra", "--state", "open", "--json", "number,title,updatedAt"],
-    "prs": ["pr", "list", "--repo", "diegonmarcos/cloud-t-infra", "--state", "open", "--json", "number,title,headRefName"],
-    "runs": ["run", "list", "--repo", "diegonmarcos/cloud-t-infra", "--limit", "10", "--json", "name,status,conclusion,updatedAt"],
-    "workflows": ["workflow", "list", "--repo", "diegonmarcos/cloud-t-infra", "--json", "name,id,state"],
-    "releases": ["release", "list", "--repo", "diegonmarcos/cloud-t-infra", "--limit", "5"],
-    "secrets": ["secret", "list", "--repo", "diegonmarcos/cloud-t-infra"],
+    "issues": ["issue", "list", "--repo", "diegonmarcos/cloudy-t-infra", "--state", "open", "--json", "number,title,updatedAt"],
+    "prs": ["pr", "list", "--repo", "diegonmarcos/cloudy-t-infra", "--state", "open", "--json", "number,title,headRefName"],
+    "runs": ["run", "list", "--repo", "diegonmarcos/cloudy-t-infra", "--limit", "10", "--json", "name,status,conclusion,updatedAt"],
+    "workflows": ["workflow", "list", "--repo", "diegonmarcos/cloudy-t-infra", "--json", "name,id,state"],
+    "releases": ["release", "list", "--repo", "diegonmarcos/cloudy-t-infra", "--limit", "5"],
+    "secrets": ["secret", "list", "--repo", "diegonmarcos/cloudy-t-infra"],
     "auth": ["auth", "status"],
   },
   wrangler: {

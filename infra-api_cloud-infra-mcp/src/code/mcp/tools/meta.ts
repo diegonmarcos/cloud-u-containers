@@ -160,7 +160,7 @@ function resolveGhRepo(): string {
     // resolves to a stale repo, so gh queries silently hit the wrong one.
     return `${(config as any).owner?.github ?? "diegonmarcos"}/cloud-infra`;
   } catch {}
-  return "diegonmarcos/cloud-t-infra";
+  return "diegonmarcos/cloudy-t-infra";
 }
 const GH_REPO = resolveGhRepo();
 
@@ -299,12 +299,12 @@ const PRESETS: Record<string, Record<string, string[]>> = {
   },
   gh: {
     "repos": ["repo","list","diegonmarcos","--json","name,visibility,updatedAt","--jq",'.[] | "\\(.name) (\\(.visibility)) \\(.updatedAt[:10])"'],
-    "issues": ["issue","list","--repo","diegonmarcos/cloud-t-infra","--state","open","--json","number,title,updatedAt"],
-    "prs": ["pr","list","--repo","diegonmarcos/cloud-t-infra","--state","open","--json","number,title,headRefName"],
-    "runs": ["run","list","--repo","diegonmarcos/cloud-t-infra","--limit","10","--json","name,status,conclusion,updatedAt"],
-    "workflows": ["workflow","list","--repo","diegonmarcos/cloud-t-infra","--json","name,id,state"],
-    "releases": ["release","list","--repo","diegonmarcos/cloud-t-infra","--limit","5"],
-    "secrets": ["secret","list","--repo","diegonmarcos/cloud-t-infra"],
+    "issues": ["issue","list","--repo","diegonmarcos/cloudy-t-infra","--state","open","--json","number,title,updatedAt"],
+    "prs": ["pr","list","--repo","diegonmarcos/cloudy-t-infra","--state","open","--json","number,title,headRefName"],
+    "runs": ["run","list","--repo","diegonmarcos/cloudy-t-infra","--limit","10","--json","name,status,conclusion,updatedAt"],
+    "workflows": ["workflow","list","--repo","diegonmarcos/cloudy-t-infra","--json","name,id,state"],
+    "releases": ["release","list","--repo","diegonmarcos/cloudy-t-infra","--limit","5"],
+    "secrets": ["secret","list","--repo","diegonmarcos/cloudy-t-infra"],
     "auth": ["auth","status"],
   },
   wrangler: {
@@ -1100,7 +1100,7 @@ export function registerMetaObs(server: McpServer): void {
           case "debug.configs_sync": {
             const file = typeof p.file === "string" ? p.file : "containers-declared.json";
             if (!/^(build\/)?[A-Za-z0-9_][A-Za-z0-9_.-]{0,120}\.json$/.test(file) || file.includes("..")) return errText("Error: file must be a published *.json name (e.g. containers-declared.json, _cloud-data-consolidated.json, build/build-<app>.json)");
-            const raw = process.env.CONFIGS_SYNC_RAW ?? "https://raw.githubusercontent.com/diegonmarcos/cloud_db_infra-ops-obsv_configs-sync/main/";
+            const raw = process.env.CONFIGS_SYNC_RAW ?? "https://raw.githubusercontent.com/diegonmarcos/cloudy_db_infra-ops-obsv_configs-sync/main/";
             const resp = await fetch(raw + file, { signal: AbortSignal.timeout(20_000) });
             const body = await resp.text();
             return resp.ok ? text(body) : errText(`Error: HTTP ${resp.status} ${body.slice(0, 300)}`);

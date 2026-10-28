@@ -155,11 +155,11 @@
       "cache_ttl_s": 120,
       "max_per_page": 50,
       "repos": [
-        "diegonmarcos/cloud-t-infra",
+        "diegonmarcos/cloudy-t-infra",
         "diegonmarcos/cloud-infra-desktop",
-        "diegonmarcos/cloud-u-android",
-        "diegonmarcos/cloud-u-containers",
-        "diegonmarcos/cloud-u-linux",
+        "diegonmarcos/cloudy-u-android",
+        "diegonmarcos/cloudy-u-containers",
+        "diegonmarcos/cloudy-u-linux",
         "diegonmarcos/diegonmarcos.github.io",
         "diegonmarcos/front-assets-cdn",
         "diegonmarcos/front-data"

@@ -14,9 +14,9 @@ on:
         description: "Service directory name (e.g. infra-api_cloud-infra-mcp)"
         required: true
       repo:
-        description: "Repository holding the service (this workflow lives in cloud-u-containers)"
+        description: "Repository holding the service (this workflow lives in cloudy-u-containers)"
         required: false
-        default: "cloud-u-containers"
+        default: "cloudy-u-containers"
 
 permissions:
   contents: write
@@ -39,10 +39,10 @@ jobs:
         run: |
           set -eu
           printf '%s' "$SERVICE" | grep -Eq '^[a-z0-9][a-z0-9_-]{1,80}$' || { echo "::error::service must match ^[a-z0-9][a-z0-9_-]{1,80}\$"; exit 1; }
-          [ "$TARGET_REPO" = "cloud-u-containers" ] || { echo "::error::repo must be cloud-u-containers (this workflow's own repository)"; exit 1; }
+          [ "$TARGET_REPO" = "cloudy-u-containers" ] || { echo "::error::repo must be cloudy-u-containers (this workflow's own repository)"; exit 1; }
       - uses: actions/checkout@v4
         with:
-          repository: diegonmarcos/cloud-t-infra
+          repository: diegonmarcos/cloudy-t-infra
           path: infra
           sparse-checkout: |
             1_cicd

@@ -13,11 +13,11 @@
     "runner_workdir": "/tmp/runner/work",
     "registrations": [
       {
-        "repo_url": "https://github.com/diegonmarcos/cloud-t-infra",
+        "repo_url": "https://github.com/diegonmarcos/cloudy-t-infra",
         "runner_name": "oci-apps-arm64"
       },
       {
-        "repo_url": "https://github.com/diegonmarcos/cloud-u-desktop",
+        "repo_url": "https://github.com/diegonmarcos/cloudy-u-desktop",
         "runner_name": "oci-apps-arm64-unix"
       },
       {

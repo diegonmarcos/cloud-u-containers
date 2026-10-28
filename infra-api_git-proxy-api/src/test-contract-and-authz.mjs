@@ -256,7 +256,7 @@ function testContract() {
   const wrongMethod = match(table, 'POST', '/repos');
   ok(wrongMethod && wrongMethod.route === null && wrongMethod.allowed.includes('GET'),
     'a known path with the wrong method reports 405, not 404 and not 200');
-  const params = match(table, 'GET', '/repos/diegonmarcos/cloud-t-infra/tarball');
+  const params = match(table, 'GET', '/repos/diegonmarcos/cloudy-t-infra/tarball');
   eq(params.params, { owner: 'diegonmarcos', repo: 'cloud-t-infra' }, 'path params are extracted');
   ok(toRegex('/repos/:o/:r/tarball').source.includes('([^/]+)'), 'toRegex builds a capturing group per param');
 
@@ -412,7 +412,7 @@ async function testLive() {
   const upstream = createServer((req, res) => {
     const bare = req.url.split('?')[0];
     upstreamHits[bare] = (upstreamHits[bare] || 0) + 1;
-    if (bare === '/repos/diegonmarcos/cloud-t-infra/commits') {
+    if (bare === '/repos/diegonmarcos/cloudy-t-infra/commits') {
       res.writeHead(200, { 'content-type': 'application/json' });
       return res.end(JSON.stringify(Array.from({ length: 7 }, (_, i) => ({
         sha: `sha${i}`, html_url: `https://github.com/c/${i}`,
@@ -420,7 +420,7 @@ async function testLive() {
         smuggled: FAKE_TOKEN,
       }))));
     }
-    if (bare === '/repos/diegonmarcos/cloud-t-infra/actions/runs') {
+    if (bare === '/repos/diegonmarcos/cloudy-t-infra/actions/runs') {
       // Slow on purpose, so concurrent callers genuinely overlap the miss.
       return setTimeout(() => {
         res.writeHead(200, { 'content-type': 'application/json' });
@@ -432,7 +432,7 @@ async function testLive() {
       }, 150);
     }
     // #837 release metadata + asset redirect to a CDN on ANOTHER origin.
-    if (bare === '/repos/diegonmarcos/cloud-u-android/releases/tags/latest') {
+    if (bare === '/repos/diegonmarcos/cloudy-u-android/releases/tags/latest') {
       res.writeHead(200, { 'content-type': 'application/json' });
       return res.end(JSON.stringify({ tag_name: 'latest', assets: [
         { id: 11, name: 'App.apk', size: ASSET.length },
@@ -448,8 +448,8 @@ async function testLive() {
       res.writeHead(302, { location: `${cdnBase}/blob/${am[1]}` });
       return res.end();
     }
-    if (bare === '/repos/diegonmarcos/cloud-u-android/releases/tags/nope') { res.writeHead(404); return res.end('{}'); }
-    if (bare === '/repos/diegonmarcos/cloud-u-linux/commits') {
+    if (bare === '/repos/diegonmarcos/cloudy-u-android/releases/tags/nope') { res.writeHead(404); return res.end('{}'); }
+    if (bare === '/repos/diegonmarcos/cloudy-u-linux/commits') {
       // Upstream fails and quotes our credential back — must not be cached, must not leak.
       res.writeHead(500, { 'content-type': 'text/plain' });
       return res.end(`upstream exploded with ${req.headers.authorization}`);
@@ -461,7 +461,7 @@ async function testLive() {
       if (c === 'authelia_session=guest') { res.writeHead(200, { 'remote-user': 'guest@example.invalid' }); return res.end(); }
       res.writeHead(401); return res.end('Unauthorized');
     }
-    if (bare.startsWith('/diegonmarcos/cloud-t-infra.git/')) {
+    if (bare.startsWith('/diegonmarcos/cloudy-t-infra.git/')) {
       gitHits.push({ path: req.url, method: req.method, authz: req.headers.authorization || '', cookie: req.headers.cookie || '' });
       if (bare.endsWith('/info/refs')) {
         res.writeHead(200, { 'content-type': 'application/x-git-upload-pack-advertisement' });
@@ -484,7 +484,7 @@ async function testLive() {
     if (req.url.startsWith('/user/repos')) {
       res.writeHead(200, { 'content-type': 'application/json' });
       return res.end(JSON.stringify([{
-        full_name: 'diegonmarcos/cloud-t-infra', owner: { login: 'diegonmarcos' },
+        full_name: 'diegonmarcos/cloudy-t-infra', owner: { login: 'diegonmarcos' },
         name: 'cloud-t-infra', private: true, default_branch: 'main',
         updated_at: '2026-09-29T00:00:00Z', size: 42,
         // A hostile upstream field: if anything passed the body through instead
@@ -595,9 +595,9 @@ async function testLive() {
     ['tampered payload, original signature', tampered, 401, 'invalid_token'],
     ['missing scope', noScope, 403, 'insufficient_scope'],
   ]) {
-    for (const path of ['/repos', '/endpoints', '/repos/diegonmarcos/cloud-t-infra/tarball',
-      '/clone/diegonmarcos/cloud-t-infra/info/refs?service=git-upload-pack',
-      '/repos/diegonmarcos/cloud-t-infra/commits', '/repos/diegonmarcos/cloud-t-infra/runs']) {
+    for (const path of ['/repos', '/endpoints', '/repos/diegonmarcos/cloudy-t-infra/tarball',
+      '/clone/diegonmarcos/cloudy-t-infra/info/refs?service=git-upload-pack',
+      '/repos/diegonmarcos/cloudy-t-infra/commits', '/repos/diegonmarcos/cloudy-t-infra/runs']) {
       const r = await req(path, tok);
       ok(r.status === wantStatus && r.json?.code === wantCode,
         `${path} with ${label} -> ${wantStatus} ${wantCode}`, `got ${r.status} ${r.text.slice(0, 120)}`);
@@ -626,12 +626,12 @@ async function testLive() {
     'an unknown upstream field is dropped, not passed through');
 
   // The hard leak case: upstream fails quoting our Authorization header.
-  const tar = await req('/repos/diegonmarcos/cloud-t-infra/tarball?ref=main', good);
+  const tar = await req('/repos/diegonmarcos/cloudy-t-infra/tarball?ref=main', good);
   ok(tar.status === 502 && tar.json?.code === 'upstream_error',
     'an upstream failure is a 502 with a JSON code, not a 200', `got ${tar.status}`);
 
   // Traversal and validation on the live wire.
-  const badRef = await req('/repos/diegonmarcos/cloud-t-infra/tarball?ref=..%2F..%2Fetc', good);
+  const badRef = await req('/repos/diegonmarcos/cloudy-t-infra/tarball?ref=..%2F..%2Fetc', good);
   ok(badRef.status === 400 && badRef.json?.code === 'bad_ref', 'a traversal ref is a 400',
     `got ${badRef.status} ${badRef.text.slice(0, 120)}`);
   for (const [label, path] of [
@@ -650,24 +650,24 @@ async function testLive() {
   }
 
   // ── Feeds (commits / runs) ──
-  const refusedUpstream = upstreamHits['/repos/diegonmarcos/cloud-t-infra/commits'] || 0;
+  const refusedUpstream = upstreamHits['/repos/diegonmarcos/cloudy-t-infra/commits'] || 0;
   eq(refusedUpstream, 0, 'the refused (unauthenticated) feed requests dialled GitHub ZERO times');
 
-  const c1 = await req('/repos/diegonmarcos/cloud-t-infra/commits?per_page=2', good);
+  const c1 = await req('/repos/diegonmarcos/cloudy-t-infra/commits?per_page=2', good);
   ok(c1.status === 200 && c1.json?.commits?.length === 2 && c1.json.commits[0].sha === 'sha0',
     'GET commits returns the projected list, sliced to per_page', `got ${c1.status} ${c1.text.slice(0, 200)}`);
   ok(c1.json?.commits && !('smuggled' in c1.json.commits[0]), 'an unknown upstream commit field is dropped');
   ok(typeof c1.json?.cached_at === 'string', 'the response says when it was fetched (cached_at)');
   const c2 = await req('/repos/DiegoNMarcos/Cloud-T-Infra/commits?per_page=50', good);
   ok(c2.status === 200 && c2.json?.commits?.length === 7, 'per_page above max still returns what upstream had');
-  eq(upstreamHits['/repos/diegonmarcos/cloud-t-infra/commits'], 1,
+  eq(upstreamHits['/repos/diegonmarcos/cloudy-t-infra/commits'], 1,
     'a second request (different case, different per_page) is served from CACHE — one upstream call');
 
-  const runs = await Promise.all(Array.from({ length: 5 }, () => req('/repos/diegonmarcos/cloud-t-infra/runs', good)));
+  const runs = await Promise.all(Array.from({ length: 5 }, () => req('/repos/diegonmarcos/cloudy-t-infra/runs', good)));
   ok(runs.every((r) => r.status === 200 && r.json?.runs?.[0]?.conclusion === 'success'),
     'GET runs returns the projected run with its conclusion', `got ${runs[0].status} ${runs[0].text.slice(0, 200)}`);
   ok(!('smuggled' in (runs[0].json?.runs?.[0] || {})), 'an unknown upstream run field is dropped');
-  eq(upstreamHits['/repos/diegonmarcos/cloud-t-infra/actions/runs'], 1,
+  eq(upstreamHits['/repos/diegonmarcos/cloudy-t-infra/actions/runs'], 1,
     'five CONCURRENT misses share ONE upstream call');
 
   const undeclared = await req('/repos/torvalds/linux/commits', good);
@@ -677,11 +677,11 @@ async function testLive() {
   const badFeed = await req('/repos/-x/cloud-infra/runs', good);
   ok(badFeed.status === 400 && badFeed.json?.code === 'bad_repo', 'a malformed owner on a feed is 400 bad_repo');
 
-  const f1 = await req('/repos/diegonmarcos/cloud-u-linux/commits', good);
+  const f1 = await req('/repos/diegonmarcos/cloudy-u-linux/commits', good);
   ok(f1.status === 502 && f1.json?.code === 'upstream_error',
     'an upstream feed failure is a 502 upstream_error — never a 200 with an empty list', `got ${f1.status} ${f1.text.slice(0, 120)}`);
-  await req('/repos/diegonmarcos/cloud-u-linux/commits', good);
-  eq(upstreamHits['/repos/diegonmarcos/cloud-u-linux/commits'], 2, 'a FAILED upstream answer is not cached — the next call retries');
+  await req('/repos/diegonmarcos/cloudy-u-linux/commits', good);
+  eq(upstreamHits['/repos/diegonmarcos/cloudy-u-linux/commits'], 2, 'a FAILED upstream answer is not cached — the next call retries');
   const nf = await req('/repos/diegonmarcos/front-data/runs', good);
   ok(nf.status === 404 && nf.json?.code === 'not_found', 'an upstream 404 on a declared repo is forwarded as 404 not_found',
     `got ${nf.status} ${nf.text.slice(0, 120)}`);
@@ -710,7 +710,7 @@ async function testLive() {
 
   // ── Clone over smart HTTP: the token goes to GitHub and nowhere else ──
   const before = gitHits.length;
-  const adv = await reqH('/clone/diegonmarcos/cloud-t-infra.git/info/refs?service=git-upload-pack',
+  const adv = await reqH('/clone/diegonmarcos/cloudy-t-infra.git/info/refs?service=git-upload-pack',
     { authorization: `Bearer ${good}`, 'git-protocol': 'version=2' });
   ok(adv.status === 200 && adv.text === GIT_ADVERT && adv.ctype === 'application/x-git-upload-pack-advertisement',
     'info/refs streams GitHub\'s advertisement through byte-exact', `got ${adv.status} ${adv.ctype} ${adv.text.slice(0, 80)}`);
@@ -718,31 +718,31 @@ async function testLive() {
   ok(hitA?.authz === `Basic ${Buffer.from(`x-access-token:${FAKE_TOKEN}`).toString('base64')}`,
     'GitHub received the server credential as Basic', `got ${hitA?.authz}`);
   ok(hitA && !hitA.authz.includes(good) && hitA.cookie === '', "GitHub never saw the caller's fleet bearer or cookie");
-  const advS = await reqH('/clone/diegonmarcos/cloud-t-infra/info/refs?service=git-upload-pack', { cookie: 'authelia_session=owner' });
+  const advS = await reqH('/clone/diegonmarcos/cloudy-t-infra/info/refs?service=git-upload-pack', { cookie: 'authelia_session=owner' });
   ok(advS.status === 200 && advS.text === GIT_ADVERT, 'the phone\'s session can clone too (no .git suffix works)', `got ${advS.status}`);
   ok(gitHits.at(-1)?.cookie === '', 'and its cookie did not travel to GitHub');
-  const pack = await reqH('/clone/diegonmarcos/cloud-t-infra/git-upload-pack',
+  const pack = await reqH('/clone/diegonmarcos/cloudy-t-infra/git-upload-pack',
     { authorization: `Bearer ${good}`, 'content-type': 'application/x-git-upload-pack-request' },
     { method: 'POST', body: '0032want deadbeef\n00000009done\n' });
   ok(pack.status === 200 && pack.text === 'PACK-for:0032want deadbeef\n00000009done\n'
     && gitBodies.at(-1) === '0032want deadbeef\n00000009done\n',
     'git-upload-pack streams the negotiation up and the pack down', `got ${pack.status} ${pack.text.slice(0, 80)}`);
   const hitsBeforePush = gitHits.length;
-  const push = await reqH('/clone/diegonmarcos/cloud-t-infra/info/refs?service=git-receive-pack', { authorization: `Bearer ${good}` });
+  const push = await reqH('/clone/diegonmarcos/cloudy-t-infra/info/refs?service=git-receive-pack', { authorization: `Bearer ${good}` });
   ok(push.status === 403 && push.json?.code === 'service_not_allowed', 'service=git-receive-pack is 403 — nothing can push',
     `got ${push.status} ${push.text.slice(0, 120)}`);
-  const pushPost = await reqH('/clone/diegonmarcos/cloud-t-infra/git-receive-pack', { authorization: `Bearer ${good}` }, { method: 'POST', body: 'x' });
+  const pushPost = await reqH('/clone/diegonmarcos/cloudy-t-infra/git-receive-pack', { authorization: `Bearer ${good}` }, { method: 'POST', body: 'x' });
   ok(pushPost.status === 404 && pushPost.json?.code === 'no_such_route', 'POST git-receive-pack has no route (404)', `got ${pushPost.status}`);
   eq(gitHits.length, hitsBeforePush, 'and GitHub was never dialled for a push');
   const nf2 = await reqH('/clone/diegonmarcos/no-such-repo/info/refs?service=git-upload-pack', { authorization: `Bearer ${good}` });
   ok(nf2.status === 404 && nf2.json?.code === 'not_found', 'an unknown repo clones to 404 not_found', `got ${nf2.status}`);
   const badClone = await reqH('/clone/-x/cloud-infra/info/refs?service=git-upload-pack', { authorization: `Bearer ${good}` });
   ok(badClone.status === 400 && badClone.json?.code === 'bad_repo', 'a malformed owner on the clone route is 400 bad_repo');
-  const anonClone = await reqH('/clone/diegonmarcos/cloud-t-infra/info/refs?service=git-upload-pack', {});
+  const anonClone = await reqH('/clone/diegonmarcos/cloudy-t-infra/info/refs?service=git-upload-pack', {});
   ok(anonClone.status === 401, 'an anonymous clone is refused 401', `got ${anonClone.status}`);
 
   // ── #837 release assets ──
-  const REL = '/releases/diegonmarcos/cloud-u-android/latest/assets';
+  const REL = '/releases/diegonmarcos/cloudy-u-android/latest/assets';
   async function bin(path, headers = {}, b = base) {
     const r = await fetch(`${b}${path}`, { headers });
     const buf = Buffer.from(await r.arrayBuffer());
@@ -807,7 +807,7 @@ async function testLive() {
     ok(noAsset.status === 404 && noAsset.json?.code === 'not_found', 'an asset not on the release is 404 not_found');
     const gone = await bin(`${REL}/Gone.apk`, {}, mbase);
     ok(gone.status === 404 && gone.json?.code === 'not_found', 'an asset GitHub 404s is forwarded as 404 not_found');
-    const noRel = await bin('/releases/diegonmarcos/cloud-u-android/nope/assets/App.apk', {}, mbase);
+    const noRel = await bin('/releases/diegonmarcos/cloudy-u-android/nope/assets/App.apk', {}, mbase);
     ok(noRel.status === 404 && noRel.json?.code === 'not_found', 'an unknown release tag is 404 not_found');
     const badName = await bin(`${REL}/..%2Fsecrets`, {}, mbase);
     ok(badName.status === 400 && badName.json?.code === 'bad_asset', 'a traversal asset name is 400 bad_asset');
@@ -825,7 +825,7 @@ async function testLive() {
 
   // Wrong method on a real path must be 405 — not 404, and above all not 200.
   for (const [method, path] of [['POST', '/repos'], ['DELETE', '/endpoints'], ['PUT', '/health'],
-    ['POST', '/repos/diegonmarcos/cloud-t-infra/runs']]) {
+    ['POST', '/repos/diegonmarcos/cloudy-t-infra/runs']]) {
     const r = await fetch(`${base}${path}`, { method, headers: { authorization: `Bearer ${good}` } });
     const text = await r.text();
     seen.push({ path: `${method} ${path}`, status: r.status, text });
