@@ -48,7 +48,7 @@ check("P0 build.json declares the private repos (cloud-data, cloud-me-pvt-my-ai)
 // 2026-10-28: the public set follows the renames and adds the public members with code
 // (cloud-u-*, cloud-h-*, cloud-me-pub-*, Projects-*, CG-*). Exact, so any drift is RED.
 check("P1 exactly the 19 public repos remain", JSON.stringify([...PUBLIC].sort()) ===
-  JSON.stringify(["CG-circus", "CG-galaxy", "Projects-endeavours", "Projects-labtools", "_git-repos-master", "cloud-h-webapps", "cloud-h-webapps-2", "cloud-me-pub-profiles-_lnktree", "cloud-me-pub-profiles-leaf.y", "cloud-me-pub-profiles-nexus.z", "cloud-me-pub-profiles-prf-prs", "cloud-me-pub-profiles-stark.x", "cloud-me-pub-shared", "cloud-t-infra", "cloud-u-android", "cloud-u-containers", "cloud-u-containers_cgc", "cloud-u-desktop", "cloud-u-linux"]),
+  JSON.stringify(["CG-circus", "CG-galaxy", "Projects-endeavours", "Projects-labtools", "_git-repos-master", "cloud-me-pub-profiles-_lnktree", "cloud-me-pub-profiles-leaf.y", "cloud-me-pub-profiles-nexus.z", "cloud-me-pub-profiles-prf-prs", "cloud-me-pub-profiles-stark.x", "cloud-me-pub-shared", "cloudy-h-webapps", "cloudy-h-webapps-2", "cloudy-t-infra", "cloudy-u-android", "cloudy-u-containers", "cloudy-u-containers_cgc", "cloudy-u-desktop", "cloudy-u-linux"]),
   PUBLIC.join(","));
 
 // ── A. compose.nix, evaluated ───────────────────────────────────────────────
@@ -110,7 +110,7 @@ try {
     writeFileSync(join(root, r, "README.md"), `readme ${r} needle-${r}\n`);
   }
   // A public repo with a symlink that points INTO a private checkout.
-  symlinkSync(join(root, "cloud-me-pvt-data"), join(root, "cloud-u-desktop", "escape"));
+  symlinkSync(join(root, "cloud-me-pvt-data"), join(root, "cloudy-u-desktop", "escape"));
   process.env.GIT_ROOT = root;
   process.env.CONFIG_PATH = join(root, "config.json");
   process.env.REPO_SYNC = "off";
@@ -182,7 +182,7 @@ try {
   // Traversal from a public repo into a private sibling.
   for (const path of ["../cloud-data/secrets/CANARY.txt", "../cloud-data", "escape/secrets/CANARY.txt", "escape"]) {
     const m = path.endsWith("CANARY.txt") ? "read_file" : "list_directory";
-    const r = await inv({ method: m, repo: "cloud-u-desktop", path });
+    const r = await inv({ method: m, repo: "cloudy-u-desktop", path });
     check(`C4 ${m} repo=front path=${path} cannot reach a private checkout`,
       r?.isError === true && !text(r).includes("canary-") && !text(r).includes("CANARY"), text(r).slice(0, 200));
   }

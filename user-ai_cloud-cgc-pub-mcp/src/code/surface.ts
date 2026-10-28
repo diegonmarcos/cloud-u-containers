@@ -44,6 +44,9 @@ export const HARD_DENY: readonly string[] = [
   "cloud", "cloud___", "cloud-me-pub", "cloud-me-pub___", "cloud-me-pub-profiles", "cloud-me-pub-profiles___",
   "cloud-me-profiles", "cloud-me-others", "Projects", "Projects___", "front", "CG", "CG___", "Fin-CM", "Fin-CM___",
   "DeepSc", "DeepSc___", "DuckPeng", "DuckPeng___",
+  "cloudy_db_LFS", "cloudy-a-docs", "cloud-a-docs", "cloud-___", "cloudy-___",
+  // public repos renamed cloud-* -> cloudy-* (stale /repos dirs under the old names)
+  "cloud-u-android", "cloud-u-containers", "cloud-u-containers_cgc", "cloud-u-desktop", "cloud-u-linux", "cloud-t-infra", "cloud-h-webapps", "cloud-h-webapps-2", "cloud_db_assets-cdn", "cloud_db_infra-ops-obsv_configs-sync",
 ];
 
 export type Surface = "pub" | "pvt";
