@@ -71,6 +71,21 @@ let
     PORT        = toString buildJson.ports.app;
     TZ          = buildJson.timezone;
     CONNECTIONS = connectionsStr;
+    # SSO (#1147): dbgate's community OAuth 2.0 provider (packages/api/src/auth/authProvider.js, verified
+    # 2026-10-28). It is plain OAuth2 code flow, not OIDC discovery: endpoints are explicit, the token
+    # request uses client_secret_post, the redirect URI is the site root (location.origin + pathname),
+    # and the login name is read from the id_token (the access token is opaque). Inert while
+    # DBGATE_OIDC_CLIENT_SECRET is unset: AUTH_PROVIDER interpolates to empty and dbgate keeps its
+    # current behaviour behind the edge gate.
+    AUTH_PROVIDER       = "\${DBGATE_OIDC_CLIENT_SECRET:+oauth}";
+    OAUTH_AUTH          = "https://sso.diegonmarcos.com/api/oidc/authorization";
+    OAUTH_TOKEN         = "https://sso.diegonmarcos.com/api/oidc/token";
+    OAUTH_CLIENT_ID     = "\${DBGATE_OIDC_CLIENT_SECRET:+dbgate}";
+    OAUTH_CLIENT_SECRET = "\${DBGATE_OIDC_CLIENT_SECRET:-}";
+    OAUTH_SCOPE         = "openid%20profile%20email";
+    OAUTH_LOGIN_FIELD   = "email";
+    OAUTH_ALLOWED_LOGINS = "me@diegonmarcos.com";
+    PERMISSIONS         = "\${DBGATE_OIDC_CLIENT_SECRET:+*}";
   };
 
 in

@@ -19,7 +19,7 @@
       default = engine {
         inherit pkgs buildJson container;
         srcDir      = ./.;
-        templates   = [];
+        templates   = [ { name = "fb-proxy-auth.sh"; vars = {}; } ];
         composeSpec = import ./compose.nix { inherit buildJson container; };
         title       = "Filebrowser - Web file manager";
       };

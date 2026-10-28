@@ -104,6 +104,12 @@
   "build": {
     "headers_enforced": true
   },
+  "tests": {
+    "sso-entrypoint": {
+      "cmd": "bash test-sso-entrypoint.sh",
+      "cwd": "src"
+    }
+  },
   "api": {
     "type": "custom-rest",
     "base_path": "/api/1",

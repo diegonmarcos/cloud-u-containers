@@ -19,7 +19,7 @@ exp = {
  "grist": "https://sheets.@BASE_DOMAIN@/oauth2/callback",
  "photoprism": "https://photos.@BASE_DOMAIN@/api/v1/oidc/redirect",
  "dagu-ui": "https://workflows.@BASE_DOMAIN@/oidc-callback",
- "dbgate": "https://db.@BASE_DOMAIN@/auth/oidc/callback",
+ "dbgate": "https://db.@BASE_DOMAIN@/",
  "etherpad": "https://app.@BASE_DOMAIN@/etherpad/ep_openid_connect/callback",
 }
 cs = json.load(open(sys.argv[1]))["clients"]
@@ -52,6 +52,16 @@ chk user-prod_hedgedoc HEDGEDOC_OIDC_CLIENT_SECRET
 chk user-prod_grist GRIST_OIDC_CLIENT_SECRET
 chk user-media_photoprism PHOTOPRISM_OIDC_CLIENT_SECRET
 chk infra-obs_dagu DAGU_OIDC_CLIENT_SECRET
+chk infra-obs_dbgate DBGATE_OIDC_CLIENT_SECRET
+chk user-prod_etherpad ETHERPAD_OIDC_CLIENT_SECRET
+# dagu has no "oidc" auth mode (OIDC lives under builtin); the default must stay none
+grep -q 'DAGU_AUTH_MODE=\\${DAGU_AUTH_MODE:-none}' "$SVC/infra-obs_dagu/src/compose.nix" && ! grep -q 'DAGU_AUTH_MODE=oidc' "$SVC/infra-obs_dagu/src/compose.nix" \
+  && ok "dagu auth mode defaults to none, never the non-existent oidc mode" || bad "dagu auth mode wiring"
+# dbgate's OAuth provider posts the secret in the body: the Authelia client must use client_secret_post
+python3 -c "
+import json,sys
+c={x['client_id']:x for x in json.load(open('$CL'))['clients']}
+sys.exit(0 if c['dbgate']['token_endpoint_auth_method']=='client_secret_post' else 1)" && ok "dbgate client uses client_secret_post" || bad "dbgate client auth method"
 grep -q 'GITEA_OIDC_CLIENT_SECRET:-' "$SVC/infra-dat_gitea/src/templates/init-mirrors.sh.tpl" \
   && ok "gitea source converge is gated on GITEA_OIDC_CLIENT_SECRET" || bad "gitea sso block not gated"
 # 4. identity rows

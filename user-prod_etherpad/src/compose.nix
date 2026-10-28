@@ -31,6 +31,7 @@ in
         TITLE             = "Etherpad";
         DEFAULT_PAD_TEXT  = "Welcome to Etherpad!";
         ADMIN_PASSWORD    = "\${ETHERPAD_ADMIN_PASSWORD:-changeme}";
+        ETHERPAD_OIDC_CLIENT_SECRET = "\${ETHERPAD_OIDC_CLIENT_SECRET:-}";
         DB_TYPE           = "postgres";
         DB_HOST           = "localhost";
         DB_PORT           = dbPort;
@@ -41,7 +42,9 @@ in
         LOGLEVEL          = "INFO";
         PORT              = appPort;
       };
-      volumes = [ "etherpad_data:/opt/etherpad-lite/var" ];
+      # SSO (#1147): wrapper around the upstream CMD; inert while ETHERPAD_OIDC_CLIENT_SECRET is unset.
+      command = [ "sh" "/sso-entrypoint.sh" ];
+      volumes = [ "etherpad_data:/opt/etherpad-lite/var" "./configs/sso-entrypoint.sh:/sso-entrypoint.sh:ro" ];
       healthcheck = {
         # The etherpad image ships node (NODE_VERSION) but NOT curl/wget — a
         # curl healthcheck dies "curl: not found" and the container is forever

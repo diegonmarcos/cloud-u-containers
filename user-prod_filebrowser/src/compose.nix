@@ -17,10 +17,14 @@ in
         "${svc.filebrowser.ip}:${toString buildJson.ports.app}:8080"
       ];
       dns = [ svc.filebrowser.ip ];
+      # SSO (#1147): converge auth.method from FB_PROXY_AUTH (unset = untouched), then hand over to the
+      # image's own /init.sh. See templates/fb-proxy-auth.sh.tpl.
+      entrypoint = [ "tini" "--" "sh" "/fb-proxy-auth.sh" ];
       volumes = [
         "filebrowser_data:/srv"
         "filebrowser_db:/database"
         "filebrowser_config:/config"
+        "./configs/fb-proxy-auth.sh:/fb-proxy-auth.sh:ro"
       ];
       environment = {
         PUID        = "1000";
@@ -31,6 +35,7 @@ in
         FB_NOAUTH   = "false";
         FB_LOG      = "stdout";
         FB_PORT     = "8080";
+        FB_PROXY_AUTH = "\${FILEBROWSER_PROXY_AUTH:-}";
       };
       healthcheck = {
         test     = [ "CMD" "wget" "-q" "--spider" "http://localhost:8080/health" ];

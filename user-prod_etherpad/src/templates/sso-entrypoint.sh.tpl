@@ -1,0 +1,35 @@
+#!/bin/sh
+# Etherpad SSO entrypoint (#1147). Replaces the image CMD only to add Authelia OIDC login, and is
+# INERT unless ETHERPAD_OIDC_CLIENT_SECRET is set: with it unset this is exactly the upstream CMD
+# (sh -c "cd src && exec node --require tsx/cjs node/server.ts"), so nothing changes before the
+# sso-oidc-issue bundle is delivered. The secret is never written to disk: the settings block holds the
+# literal ${ETHERPAD_OIDC_CLIENT_SECRET}, which Etherpad itself expands from the environment.
+# Upstream facts (verified 2026-10-28): settings.json.docker expands "${VAR:default}" in values
+# (requireAuthentication = ${REQUIRE_AUTHENTICATION:false}); ep_openid_connect reads an
+# "ep_openid_connect" settings block {issuer, client_id, client_secret, base_url} and needs
+# requireAuthentication=true; its callback is <base_url>/ep_openid_connect/callback.
+set -eu
+cd "${EP_DIR:-/opt/etherpad-lite}"
+if [ -n "${ETHERPAD_OIDC_CLIENT_SECRET:-}" ]; then
+  echo "[etherpad-sso] enabling ep_openid_connect"
+  if pnpm run plugins i ep_openid_connect > "${TMPDIR:-/tmp}"/ep-plugin-install.log 2>&1; then
+    if ! grep -q '"ep_openid_connect"' settings.json; then
+      cat > "${TMPDIR:-/tmp}"/ep-oidc-block.json <<'BLOCK'
+  "ep_openid_connect": {
+    "issuer": "https://sso.diegonmarcos.com",
+    "client_id": "etherpad",
+    "client_secret": "${ETHERPAD_OIDC_CLIENT_SECRET}",
+    "base_url": "https://app.diegonmarcos.com/etherpad"
+  },
+BLOCK
+      # insert right after the opening brace of settings.json (the first line that is a lone "{")
+      awk -v blk="${TMPDIR:-/tmp}"/ep-oidc-block.json 'done == 0 && /^\{[ \t]*$/ { print; while ((getline l < blk) > 0) print l; done = 1; next } { print }' settings.json > "${TMPDIR:-/tmp}"/ep-settings.new
+      cat "${TMPDIR:-/tmp}"/ep-settings.new > settings.json
+    fi
+    export REQUIRE_AUTHENTICATION=true
+  else
+    echo "[etherpad-sso] WARN: plugin install failed, starting without SSO (see "${TMPDIR:-/tmp}"/ep-plugin-install.log)" >&2
+  fi
+fi
+cd src
+exec node --require tsx/cjs node/server.ts

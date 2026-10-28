@@ -26,6 +26,8 @@ in
         GRIST_OIDC_IDP_CLIENT_ID     = "\${GRIST_OIDC_CLIENT_SECRET:+grist}";
         GRIST_OIDC_IDP_CLIENT_SECRET = "\${GRIST_OIDC_CLIENT_SECRET:-}";
         GRIST_OIDC_IDP_SCOPES        = "openid profile email";
+        # docs.getgrist.com/install/oidc: SP host is the Grist base URL; callback is <host>/oauth2/callback.
+        GRIST_OIDC_SP_HOST           = "https://${buildJson.domain}";
       };
       ports = [
         # Tier-3 wg-only bind: data-driven IP from container.services.<self>.ip

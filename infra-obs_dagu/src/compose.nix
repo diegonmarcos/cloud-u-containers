@@ -24,14 +24,19 @@ in
         "DAGU_HOST=${svc.dagu.ip}"
         "DAGU_DAGS_DIR=/var/lib/dagu/dags"
         "DAGU_BASE_CONFIG=/var/lib/dagu/base.yaml"
-        # SSO (#1147): "none" until the sso-oidc-issue bundle delivers DAGU_AUTH_MODE=oidc
-        # together with DAGU_OIDC_CLIENT_SECRET. The edge gate (2FA) stays in front either way.
+        # SSO (#1147): dagu has no "oidc" auth mode; OIDC is part of mode "builtin" (docs.dagu.sh,
+        # server-admin/authentication/oidc). Mode stays "none" until the sso-oidc-issue bundle delivers
+        # DAGU_AUTH_MODE=builtin together with DAGU_OIDC_CLIENT_SECRET and the break-glass admin
+        # (DAGU_AUTH_BUILTIN_INITIAL_ADMIN_USERNAME / _PASSWORD). The edge gate (2FA) stays in front.
         "DAGU_AUTH_MODE=\${DAGU_AUTH_MODE:-none}"
         "DAGU_AUTH_OIDC_ISSUER=https://sso.diegonmarcos.com"
         "DAGU_AUTH_OIDC_CLIENT_ID=dagu-ui"
         "DAGU_AUTH_OIDC_CLIENT_SECRET=\${DAGU_OIDC_CLIENT_SECRET:-}"
         "DAGU_AUTH_OIDC_CLIENT_URL=https://workflows.diegonmarcos.com"
         "DAGU_AUTH_OIDC_SCOPES=openid,profile,email"
+        "DAGU_AUTH_OIDC_WHITELIST=me@diegonmarcos.com"
+        "DAGU_AUTH_OIDC_AUTO_SIGNUP=true"
+        "DAGU_AUTH_OIDC_DEFAULT_ROLE=admin"
         "DAGU_TZ=Europe/Berlin"
         "DAGU_NAVBAR_COLOR=#1a1a2e"
         "DAGU_NAVBAR_TITLE=C3 Workflows"

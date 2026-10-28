@@ -276,7 +276,7 @@ echo "-- Enforcing mirror_policy.exclude --"
 # login via the gate keeps working without the source.
 if [ -n "${GITEA_OIDC_CLIENT_SECRET:-}" ]; then
   echo "-- Converging gitea OIDC login source (authelia) --"
-  _sso_args='--name authelia --provider openidConnect --key gitea --secret "$GITEA_OIDC_CLIENT_SECRET" --auto-discover-url https://sso.diegonmarcos.com/.well-known/openid-configuration --scopes "openid profile email groups"'
+  _sso_args='--name authelia --provider openidConnect --key gitea --secret "$GITEA_OIDC_CLIENT_SECRET" --auto-discover-url https://sso.diegonmarcos.com/.well-known/openid-configuration --scopes openid --scopes profile --scopes email --scopes groups'
   if docker exec -u git "$CONTAINER" gitea admin auth list 2>/dev/null | grep -qw authelia; then
     _sso_id="$(docker exec -u git "$CONTAINER" gitea admin auth list 2>/dev/null | awk '$2 == "authelia" {print $1}' | head -1)"
     docker exec -u git -e GITEA_OIDC_CLIENT_SECRET "$CONTAINER" sh -c "gitea admin auth update-oauth --id $_sso_id $_sso_args" >/dev/null 2>&1 \

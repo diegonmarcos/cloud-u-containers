@@ -22,7 +22,7 @@
       default = engine {
         inherit pkgs buildJson container;
         srcDir = ./.;
-        templates = [];
+        templates = [ { name = "sso-entrypoint.sh"; vars = {}; } ];
         composeSpec = import ./compose.nix {
           inherit buildJson container containerDb;
         };
