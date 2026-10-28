@@ -97,6 +97,6 @@ jobs:
           i=0
           until git push origin HEAD:main; do
             i=$((i+1)); [ "$i" -lt 4 ] || { echo "::error::push failed after retries"; exit 1; }
-            git pull -q --rebase origin main
+            git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" pull -q --rebase origin main
           done
           echo "pushed $(git rev-parse --short HEAD)"
