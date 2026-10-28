@@ -23,7 +23,13 @@
       "type": "path",
       "parent_domain": "app.diegonmarcos.com",
       "base_path": "/filebrowser",
-      "auth": "two_factor"
+      "auth": "two_factor",
+      "identity": {
+        "header": "X-Forwarded-User",
+        "bearer": {"claude-admin": "diego"},
+        "session": {"me@diegonmarcos.com": "diego"},
+        "_doc": "Header auth (#1147): the hub caddy strips any inbound header of this name before forward_auth, sets it only from these tables (Authelia username in Remote-User, or fleet client_id in X-Auth-User), and answers 403 for a validated identity with no row. Mechanism in infra-sec_caddy/src/identity.nix."
+      }
     }
   },
   "health": {

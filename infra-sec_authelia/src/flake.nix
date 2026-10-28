@@ -9,7 +9,7 @@
     # ── Data sources (declarative JSON) ────────────────────────────
     buildJson   = builtins.fromJSON (builtins.readFile ../build.json);
     container   = builtins.fromJSON (builtins.readFile ./build-authelia.json);
-    oidcClients = (builtins.fromJSON (builtins.readFile ./oidc-clients.json)).clients;
+    oidcClients = builtins.filter (c: (c.enabled or true)) (builtins.fromJSON (builtins.readFile ./oidc-clients.json)).clients;
 
     engine = import ../../_shared/engine.nix;
     lib    = nixpkgs.lib;

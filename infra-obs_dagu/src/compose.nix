@@ -24,7 +24,14 @@ in
         "DAGU_HOST=${svc.dagu.ip}"
         "DAGU_DAGS_DIR=/var/lib/dagu/dags"
         "DAGU_BASE_CONFIG=/var/lib/dagu/base.yaml"
-        "DAGU_AUTH_MODE=none"
+        # SSO (#1147): "none" until the sso-oidc-issue bundle delivers DAGU_AUTH_MODE=oidc
+        # together with DAGU_OIDC_CLIENT_SECRET. The edge gate (2FA) stays in front either way.
+        "DAGU_AUTH_MODE=\${DAGU_AUTH_MODE:-none}"
+        "DAGU_AUTH_OIDC_ISSUER=https://sso.diegonmarcos.com"
+        "DAGU_AUTH_OIDC_CLIENT_ID=dagu-ui"
+        "DAGU_AUTH_OIDC_CLIENT_SECRET=\${DAGU_OIDC_CLIENT_SECRET:-}"
+        "DAGU_AUTH_OIDC_CLIENT_URL=https://workflows.diegonmarcos.com"
+        "DAGU_AUTH_OIDC_SCOPES=openid,profile,email"
         "DAGU_TZ=Europe/Berlin"
         "DAGU_NAVBAR_COLOR=#1a1a2e"
         "DAGU_NAVBAR_TITLE=C3 Workflows"

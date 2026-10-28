@@ -20,6 +20,12 @@ in
         APP_HOME_URL         = "https://${buildJson.domain}";
         GRIST_SANDBOX_FLAVOR = "unsandboxed";
         GRIST_LOG_LEVEL      = "info";
+        # SSO (#1147): Authelia OIDC. Inert while GRIST_OIDC_CLIENT_SECRET is unset (the
+        # issuer and client id interpolate to empty, grist keeps its own login).
+        GRIST_OIDC_IDP_ISSUER        = "\${GRIST_OIDC_CLIENT_SECRET:+https://sso.diegonmarcos.com}";
+        GRIST_OIDC_IDP_CLIENT_ID     = "\${GRIST_OIDC_CLIENT_SECRET:+grist}";
+        GRIST_OIDC_IDP_CLIENT_SECRET = "\${GRIST_OIDC_CLIENT_SECRET:-}";
+        GRIST_OIDC_IDP_SCOPES        = "openid profile email";
       };
       ports = [
         # Tier-3 wg-only bind: data-driven IP from container.services.<self>.ip

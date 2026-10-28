@@ -164,6 +164,15 @@ in
         PHOTOPRISM_ADMIN_USER           = "admin";
         PHOTOPRISM_ADMIN_PASSWORD       = "\${PHOTOPRISM_ADMIN_PASSWORD:-changeme}";
         PHOTOPRISM_AUTH_MODE            = "password";
+        # SSO (#1147): Authelia OIDC. Inert while PHOTOPRISM_OIDC_CLIENT_SECRET is unset;
+        # accounts are never auto-created (REGISTER false), the admin links by e-mail.
+        PHOTOPRISM_OIDC_URI             = "\${PHOTOPRISM_OIDC_CLIENT_SECRET:+https://sso.diegonmarcos.com}";
+        PHOTOPRISM_OIDC_CLIENT          = "\${PHOTOPRISM_OIDC_CLIENT_SECRET:+photoprism}";
+        PHOTOPRISM_OIDC_SECRET          = "\${PHOTOPRISM_OIDC_CLIENT_SECRET:-}";
+        PHOTOPRISM_OIDC_PROVIDER        = "Authelia";
+        PHOTOPRISM_OIDC_SCOPES          = "openid email profile";
+        PHOTOPRISM_OIDC_REGISTER        = "false";
+        PHOTOPRISM_OIDC_USERNAME        = "preferred_username";
         PHOTOPRISM_SITE_URL             = "https://${buildJson.domain}/";
         PHOTOPRISM_ORIGINALS_LIMIT      = "5000";
         PHOTOPRISM_HTTP_COMPRESSION     = "gzip";

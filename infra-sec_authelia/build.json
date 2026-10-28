@@ -138,6 +138,12 @@
     "dockerfile": "Dockerfile",
     "arch": "amd64"
   },
+  "tests": {
+    "sso-oidc": {
+      "cmd": "bash test/test-sso-oidc.sh",
+      "cwd": "src"
+    }
+  },
   "timezone": "Europe/Madrid",
   "api": {
     "type": "custom-rest",

@@ -268,6 +268,25 @@ echo "-- Enforcing mirror_policy.exclude --"
 # Step 4: Ensure each mirror repo exists
 @MIRROR_BLOCK@
 
+# ── SSO (#1147): converge the Authelia OIDC login source ─────────────
+# Gated on GITEA_OIDC_CLIENT_SECRET (delivered from the sso-oidc-issue bundle in the
+# private data repo). Unset => nothing runs and local + reverse-proxy login are unchanged.
+# The secret travels by `docker exec -e` and is expanded inside the container: it is never on
+# this host's curl/docker argv and never echoed. Failure is a WARN, not a failed ship: gitea
+# login via the gate keeps working without the source.
+if [ -n "${GITEA_OIDC_CLIENT_SECRET:-}" ]; then
+  echo "-- Converging gitea OIDC login source (authelia) --"
+  _sso_args='--name authelia --provider openidConnect --key gitea --secret "$GITEA_OIDC_CLIENT_SECRET" --auto-discover-url https://sso.diegonmarcos.com/.well-known/openid-configuration --scopes "openid profile email groups"'
+  if docker exec -u git "$CONTAINER" gitea admin auth list 2>/dev/null | grep -qw authelia; then
+    _sso_id="$(docker exec -u git "$CONTAINER" gitea admin auth list 2>/dev/null | awk '$2 == "authelia" {print $1}' | head -1)"
+    docker exec -u git -e GITEA_OIDC_CLIENT_SECRET "$CONTAINER" sh -c "gitea admin auth update-oauth --id $_sso_id $_sso_args" >/dev/null 2>&1 \
+      && echo "[init-mirrors] sso: authelia source updated" || echo "[init-mirrors] WARN: sso source update failed" >&2
+  else
+    docker exec -u git -e GITEA_OIDC_CLIENT_SECRET "$CONTAINER" sh -c "gitea admin auth add-oauth $_sso_args" >/dev/null 2>&1 \
+      && echo "[init-mirrors] sso: authelia source added" || echo "[init-mirrors] WARN: sso source add failed" >&2
+  fi
+fi
+
 # ── Verdict ───────────────────────────────────────────────────────────
 # One machine-readable line, then the exit code.
 #

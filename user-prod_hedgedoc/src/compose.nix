@@ -20,6 +20,7 @@ let
   dbName = containerDb.container.db_name;
   dbPort = toString buildJson.ports.db;
   appPort = toString buildJson.ports.app;
+  ssoIssuer = "https://sso.diegonmarcos.com";
 in
 {
   services = {
@@ -54,6 +55,19 @@ in
         CMD_SESSION_SECRET        = "\${CMD_SESSION_SECRET:-hedgedoc-secret-change-me}";
         CMD_TRUST_PROXY           = "true";
         CMD_LOGLEVEL              = "info";
+        # SSO (#1147): Authelia OIDC via hedgedoc's generic OAuth2 login. Inert until
+        # HEDGEDOC_OIDC_CLIENT_SECRET is delivered (sso-oidc-issue bundle): client id and the
+        # whole login button are empty while it is unset, so current login is unchanged.
+        CMD_OAUTH2_PROVIDERNAME          = "Authelia";
+        CMD_OAUTH2_CLIENT_ID             = "\${HEDGEDOC_OIDC_CLIENT_SECRET:+hedgedoc}";
+        CMD_OAUTH2_CLIENT_SECRET         = "\${HEDGEDOC_OIDC_CLIENT_SECRET:-}";
+        CMD_OAUTH2_AUTHORIZATION_URL     = "${ssoIssuer}/api/oidc/authorization";
+        CMD_OAUTH2_TOKEN_URL             = "${ssoIssuer}/api/oidc/token";
+        CMD_OAUTH2_USER_PROFILE_URL      = "${ssoIssuer}/api/oidc/userinfo";
+        CMD_OAUTH2_SCOPE                 = "openid email profile";
+        CMD_OAUTH2_USER_PROFILE_USERNAME_ATTR     = "preferred_username";
+        CMD_OAUTH2_USER_PROFILE_DISPLAY_NAME_ATTR = "name";
+        CMD_OAUTH2_USER_PROFILE_EMAIL_ATTR        = "email";
       };
       depends_on.postgres = { condition = "service_healthy"; };
     };
