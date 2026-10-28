@@ -139,7 +139,7 @@ fi
 
 api() { curl -sf -H "Authorization: token $TOKEN" -H "Content-Type: application/json" "$@"; }
 
-EXCLUDE_NAMES="cloud-vault cloud-me_vault"
+EXCLUDE_NAMES="cloud-vault cloud-me_vault cloud-me-pvt-vault"
 is_excluded() { case " $EXCLUDE_NAMES " in *" $1 "*) return 0 ;; esac; return 1; }
 
 # remove_excluded <name> — mirror_policy.exclude, enforced by DELETION.
@@ -274,22 +274,28 @@ fi
 echo "-- Enforcing mirror_policy.exclude --"
 remove_excluded cloud-vault
 remove_excluded cloud-me_vault
+remove_excluded cloud-me-pvt-vault
 # Step 4: Ensure each mirror repo exists
 converge_mirror _git-repos-master https://github.com/diegonmarcos/_git-repos-master.git false
 converge_mirror cloud https://github.com/diegonmarcos/cloud.git false
+converge_mirror cloud-a-docs https://github.com/diegonmarcos/cloud-a-docs.git true
 converge_mirror cloud-h-webapps https://github.com/diegonmarcos/cloud-h-webapps.git false
 converge_mirror cloud-h-webapps-2 https://github.com/diegonmarcos/cloud-h-webapps-2.git false
-converge_mirror cloud-me https://github.com/diegonmarcos/cloud-me.git true
-converge_mirror cloud-me-containers https://github.com/diegonmarcos/cloud-me-containers.git true
-converge_mirror cloud-me-data-pvt https://github.com/diegonmarcos/cloud-me-data-pvt.git true
-converge_mirror cloud-me-my-ai https://github.com/diegonmarcos/cloud-me-my-ai.git true
-converge_mirror cloud-me-notes https://github.com/diegonmarcos/cloud-me-notes.git true
-converge_mirror cloud-me-others https://github.com/diegonmarcos/cloud-me-others.git false
-converge_mirror cloud-me-profiles https://github.com/diegonmarcos/cloud-me-profiles.git false
-converge_mirror cloud-me_cgc https://github.com/diegonmarcos/cloud-me_cgc.git true
-converge_mirror cloud-me_configs https://github.com/diegonmarcos/cloud-me_configs.git true
-converge_mirror cloud-me_data-private https://github.com/diegonmarcos/cloud-me_data-private.git true
-converge_mirror cloud-me_data-pub https://github.com/diegonmarcos/cloud-me_data-pub.git false
+converge_mirror cloud-me-pub https://github.com/diegonmarcos/cloud-me-pub.git false
+converge_mirror cloud-me-pub-profiles https://github.com/diegonmarcos/cloud-me-pub-profiles.git false
+converge_mirror cloud-me-pub-profiles-_lnktree https://github.com/diegonmarcos/cloud-me-pub-profiles-_lnktree.git false
+converge_mirror cloud-me-pub-profiles-leaf.y https://github.com/diegonmarcos/cloud-me-pub-profiles-leaf.y.git false
+converge_mirror cloud-me-pub-profiles-nexus.z https://github.com/diegonmarcos/cloud-me-pub-profiles-nexus.z.git false
+converge_mirror cloud-me-pub-profiles-prf-prs https://github.com/diegonmarcos/cloud-me-pub-profiles-prf-prs.git false
+converge_mirror cloud-me-pub-profiles-stark.x https://github.com/diegonmarcos/cloud-me-pub-profiles-stark.x.git false
+converge_mirror cloud-me-pub-shared https://github.com/diegonmarcos/cloud-me-pub-shared.git false
+converge_mirror cloud-me-pvt https://github.com/diegonmarcos/cloud-me-pvt.git true
+converge_mirror cloud-me-pvt-cgc https://github.com/diegonmarcos/cloud-me-pvt-cgc.git true
+converge_mirror cloud-me-pvt-configs https://github.com/diegonmarcos/cloud-me-pvt-configs.git true
+converge_mirror cloud-me-pvt-containers https://github.com/diegonmarcos/cloud-me-pvt-containers.git true
+converge_mirror cloud-me-pvt-data https://github.com/diegonmarcos/cloud-me-pvt-data.git true
+converge_mirror cloud-me-pvt-my-ai https://github.com/diegonmarcos/cloud-me-pvt-my-ai.git true
+converge_mirror cloud-me-pvt-notes https://github.com/diegonmarcos/cloud-me-pvt-notes.git true
 converge_mirror cloud-t-infra https://github.com/diegonmarcos/cloud-t-infra.git false
 converge_mirror cloud-u-android https://github.com/diegonmarcos/cloud-u-android.git false
 converge_mirror cloud-u-containers https://github.com/diegonmarcos/cloud-u-containers.git false
@@ -301,6 +307,8 @@ converge_mirror cloud_db_assets-cdn https://github.com/diegonmarcos/cloud_db_ass
 converge_mirror cloud_db_infra-ops-obsv_configs-sync https://github.com/diegonmarcos/cloud_db_infra-ops-obsv_configs-sync.git false
 converge_mirror z-archived_My-ai-memory https://github.com/diegonmarcos/z-archived_My-ai-memory.git true
 converge_mirror z-archived_c3-infra-plugin https://github.com/diegonmarcos/z-archived_c3-infra-plugin.git true
+converge_mirror z-archived_cloud-me-pub-data https://github.com/diegonmarcos/z-archived_cloud-me-pub-data.git false
+converge_mirror z-archived_cloud-me-pvt-data-private https://github.com/diegonmarcos/z-archived_cloud-me-pvt-data-private.git true
 
 # ── SSO (#1147): converge the Authelia OIDC login source ─────────────
 # Gated on GITEA_OIDC_CLIENT_SECRET (delivered from the sso-oidc-issue bundle in the
