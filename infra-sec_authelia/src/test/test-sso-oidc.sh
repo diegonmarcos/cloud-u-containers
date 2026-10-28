@@ -5,7 +5,7 @@
 #     unique secret_var, no inline secret, and are disabled-or-enabled explicitly.
 #  2. The flake renders only clients that are not disabled (so a missing secret file cannot stop Authelia).
 #  3. Every service compose gates its OIDC env on <SVC>_OIDC_CLIENT_SECRET (inert when unset).
-#  4. Header-auth services declare proxy.primary.identity (mapped rows only, no default/regex rows).
+#  4. Header-auth: filebrowser (the only consumer) declares proxy.primary.identity with mapped rows only; services that do not read the header declare none.
 #  5. No client_secret literal / password hash / private key in the Authelia sources.
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"; SVC="$(cd "$HERE/../../.." && pwd)"
@@ -65,7 +65,7 @@ sys.exit(0 if c['dbgate']['token_endpoint_auth_method']=='client_secret_post' el
 grep -q 'GITEA_OIDC_CLIENT_SECRET:-' "$SVC/infra-dat_gitea/src/templates/init-mirrors.sh.tpl" \
   && ok "gitea source converge is gated on GITEA_OIDC_CLIENT_SECRET" || bad "gitea sso block not gated"
 # 4. identity rows
-for s in user-prod_filebrowser user-prod_calendar-radicale user-prod_contacts-radicale user-prod_cloud-notes-web user-media_playlist-syncer; do
+for s in user-prod_filebrowser; do
   python3 - "$SVC/$s/build.json" "$s" <<'PY' || FAIL=1
 import json, sys
 d = json.load(open(sys.argv[1])); i = d["proxy"]["primary"].get("identity"); n = sys.argv[2]
@@ -78,6 +78,16 @@ for k, v in rows.items():
     if k == "default" or k.startswith("~") or v in ("", "-"): f("row %r -> %r maps an unmapped identity" % (k, v))
 print("ok   %s header auth via %s" % (n, i["header"]))
 PY
+done
+# Services whose app does NOT consume the header must not declare identity: the edge answers 403 to every
+# validated identity without a row, so an unused identity block only locks out bearer clients. notes-web has no
+# login (static, the gate is the auth), radicale stays on Stalwart IMAP auth, playlist-syncer (Spotube) has no
+# header support. Add the block back in the same commit that makes the app read the header.
+for s in user-prod_calendar-radicale user-prod_contacts-radicale user-prod_cloud-notes-web user-media_playlist-syncer; do
+  python3 -c "
+import json,sys
+d=json.load(open('$SVC/$s/build.json'))
+sys.exit(1 if 'identity' in d['proxy']['primary'] else 0)" && ok "$s declares no unused identity (app does not read the header)" || bad "$s declares identity but its app does not read the header"
 done
 # 5. no secret material
 bad_hits="$(grep -rEn '(client_secret: *.?\$pbkdf2|\$pbkdf2-sha512|BEGIN (RSA |EC )?PRIVATE KEY)' "$SVC/infra-sec_authelia/src" --include=*.json --include=*.nix --include=*.sh --include=*.tpl 2>/dev/null | grep -v 'src/test/test-sso-oidc.sh' || true)"

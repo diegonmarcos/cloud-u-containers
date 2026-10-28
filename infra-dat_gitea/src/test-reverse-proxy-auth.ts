@@ -164,8 +164,16 @@ try {
   // caddy_config.edge_auth); the renderer refuses to render without it, so the
   // fixture takes it from there instead of keeping a second copy that rots.
   fixture.edge_auth = JSON.parse(readFileSync(join(caddySrc, "../build.json"), "utf8")).caddy_config.edge_auth;
+  // The renderer fails closed when the fleet-addressing c3-pub sinks name a c3-pvt container that has no
+  // route (caddyfile.nix mkPubSink). The fixture used to hold only the gitea route, so adding a sink in
+  // fleet-addressing.json (9ddf950, c3-public-api) made every render here throw. Declare a stub route for
+  // each sink container, read from the same file the renderer reads, instead of keeping a second list.
+  const sinkContainers = new Set<string>(Object.values(
+    JSON.parse(readFileSync(join(here, "../../_shared/fleet-addressing.json"), "utf8")).tiers?.pub?.sinks ?? {})
+    .filter((x: any) => x && typeof x === "object" && x.container).map((x: any) => x.container));
   fixture.routes = [{ domain, upstream: `127.0.0.1:${port(upstream)}`,
-    strip_authorization: build.proxy.primary.strip_authorization, identity }];
+    strip_authorization: build.proxy.primary.strip_authorization, identity },
+    ...[...sinkContainers].map((container, i) => ({ domain: `sink${i}.example.invalid`, container, upstream: "127.0.0.1:9" }))];
   const fixtureFile = join(work, "routes.json");
   writeFileSync(fixtureFile, JSON.stringify(fixture));
   const hub = nixEval(`import ${caddySrc}/caddyfile.nix { lib = ${libExpr}; caddyRoutes = builtins.fromJSON (builtins.readFile ${fixtureFile}); }`);
