@@ -28,7 +28,7 @@ import { isRepoDenied } from "../../surface.js";
 //      build, so the graph is live WITHOUT depending on the octocode repos volume.
 //   3. repo layout fallback ($GIT_ROOT/cloud-t-infra/{1_cicd/dist, …/kg-graph/src}).
 const GIT_ROOT = process.env.GIT_ROOT ?? `${process.env.HOME ?? "/home/diego"}/git`;
-const CLOUD = join(GIT_ROOT, "cloud-infra");
+const CLOUD = join(GIT_ROOT, "cloud-t-infra");
 const BUNDLED = join(import.meta.dirname!, "..", "..", "graphs");
 const useBundle = (): string | null => {
   if (process.env.CODEGRAPH_GRAPHS_DIR && existsSync(process.env.CODEGRAPH_GRAPHS_DIR)) return process.env.CODEGRAPH_GRAPHS_DIR;

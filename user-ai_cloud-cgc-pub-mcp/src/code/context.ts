@@ -105,7 +105,7 @@ export function buildContextSummary(size: "compact" | "full"): string {
     // cloud-infra checkout under $GIT_ROOT. Previously anchored on the config
     // module's repo-root helper (/data), an empty deploy bind in the image
     // (Ticket #402).
-    const readme = readFileSafe(join(getRepoDir("cloud-infra"), "README.md"));
+    const readme = readFileSafe(join(getRepoDir("cloud-t-infra"), "README.md"));
     if (readme) parts.push(`## README\n\n${readme}`);
 
     // Add deps summary

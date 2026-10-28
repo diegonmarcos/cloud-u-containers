@@ -45,8 +45,8 @@ const mentionsPrivate = (s) => PRIVATE.some((p) => new RegExp(`(^|[^a-z0-9-])${p
 check("P0 build.json declares the private repos (cloud-data, cloud-me-pvt-my-ai)",
   OCT.private_repos.includes("cloud-me-pvt-data") && OCT.private_repos.includes("cloud-me-pvt-my-ai"),
   JSON.stringify(OCT.private_repos));
-check("P1 exactly the 6 public repos remain", JSON.stringify([...PUBLIC].sort()) ===
-  JSON.stringify(["cloud-infra", "cloud-infra-desktop", "cloud-u-android", "cloud-u-containers", "front-data", "front-diegonmarcos"]),
+check("P1 exactly the 4 public repos remain", JSON.stringify([...PUBLIC].sort()) ===
+  JSON.stringify(["cloud-t-infra", "cloud-u-android", "cloud-u-containers", "cloud-u-desktop"]),
   PUBLIC.join(","));
 
 // ── A. compose.nix, evaluated ───────────────────────────────────────────────
@@ -108,7 +108,7 @@ try {
     writeFileSync(join(root, r, "README.md"), `readme ${r} needle-${r}\n`);
   }
   // A public repo with a symlink that points INTO a private checkout.
-  symlinkSync(join(root, "cloud-me-pvt-data"), join(root, "front-diegonmarcos", "escape"));
+  symlinkSync(join(root, "cloud-me-pvt-data"), join(root, "cloud-u-desktop", "escape"));
   process.env.GIT_ROOT = root;
   process.env.CONFIG_PATH = join(root, "config.json");
   process.env.REPO_SYNC = "off";
@@ -180,7 +180,7 @@ try {
   // Traversal from a public repo into a private sibling.
   for (const path of ["../cloud-data/secrets/CANARY.txt", "../cloud-data", "escape/secrets/CANARY.txt", "escape"]) {
     const m = path.endsWith("CANARY.txt") ? "read_file" : "list_directory";
-    const r = await inv({ method: m, repo: "front-diegonmarcos", path });
+    const r = await inv({ method: m, repo: "cloud-u-desktop", path });
     check(`C4 ${m} repo=front path=${path} cannot reach a private checkout`,
       r?.isError === true && !text(r).includes("canary-") && !text(r).includes("CANARY"), text(r).slice(0, 200));
   }

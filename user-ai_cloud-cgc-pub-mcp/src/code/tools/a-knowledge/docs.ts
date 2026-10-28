@@ -61,7 +61,7 @@ export function registerDocsTools(server: McpServer) {
           // The cloud (infrastructure) repo README. Previously anchored on the config
           // module's repo-root helper (/data), which carries no repository in the
           // image. Resolve the cloud-infra checkout under $GIT_ROOT (Ticket #402).
-          const readmePath = join(getRepoDir("cloud-infra"), "README.md");
+          const readmePath = join(getRepoDir("cloud-t-infra"), "README.md");
           if (!existsSync(readmePath)) {
             return { content: [{ type: "text" as const, text: "README.md not found" }], isError: true };
           }
