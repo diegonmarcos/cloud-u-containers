@@ -45,8 +45,10 @@ const mentionsPrivate = (s) => PRIVATE.some((p) => new RegExp(`(^|[^a-z0-9-])${p
 check("P0 build.json declares the private repos (cloud-data, cloud-me-pvt-my-ai)",
   OCT.private_repos.includes("cloud-me-pvt-data") && OCT.private_repos.includes("cloud-me-pvt-my-ai"),
   JSON.stringify(OCT.private_repos));
-check("P1 exactly the 4 public repos remain", JSON.stringify([...PUBLIC].sort()) ===
-  JSON.stringify(["cloud-t-infra", "cloud-u-android", "cloud-u-containers", "cloud-u-desktop"]),
+// 2026-10-28: the public set follows the renames and adds the public members with code
+// (cloud-u-*, cloud-h-*, cloud-me-pub-*, Projects-*, CG-*). Exact, so any drift is RED.
+check("P1 exactly the 19 public repos remain", JSON.stringify([...PUBLIC].sort()) ===
+  JSON.stringify(["CG-circus", "CG-galaxy", "Projects-endeavours", "Projects-labtools", "_git-repos-master", "cloud-h-webapps", "cloud-h-webapps-2", "cloud-me-pub-profiles-_lnktree", "cloud-me-pub-profiles-leaf.y", "cloud-me-pub-profiles-nexus.z", "cloud-me-pub-profiles-prf-prs", "cloud-me-pub-profiles-stark.x", "cloud-me-pub-shared", "cloud-t-infra", "cloud-u-android", "cloud-u-containers", "cloud-u-containers_cgc", "cloud-u-desktop", "cloud-u-linux"]),
   PUBLIC.join(","));
 
 // ── A. compose.nix, evaluated ───────────────────────────────────────────────

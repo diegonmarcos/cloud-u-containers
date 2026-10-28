@@ -31,7 +31,20 @@ import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { join, resolve, sep } from "node:path";
 
 /** Names that are private no matter what any config file says. */
-export const HARD_DENY: readonly string[] = ["cloud-me-pvt-data", "cloud-data", "cloud-me-pvt-my-ai", "cloud-me-my-ai", "cloud-vault"];
+// Private repos at their current GitHub names, then every former name (2026-10-28 renames),
+// so a stale /repos/<old-name> dir left by an older sync can never be served publicly.
+// Former hub names (cloud, cloud___, CG___, ...) are denied too: hubs are not indexed.
+export const HARD_DENY: readonly string[] = [
+  "cloud-me-pvt-data", "cloud-me-pvt-my-ai", "cloud-me-pvt-vault", "cloud-me-pvt-configs",
+  "cloud-me-pvt-notes", "cloud-me-pvt-containers", "cloud-me-pvt-cgc", "cloud-me-pvt___", "cloud-me-pvt-___",
+  "cloud_db_LFS", "cloud-data-lfs",
+  "cloud-data", "cloud-me-data", "cloud-me_data", "cloud-data-my-ai-memory", "cloud-me-my-ai", "cloud-me_my-ai",
+  "cloud-vault", "cloud-me-vault", "cloud-me_vault", "cloud-me-configs", "cloud-me_configs", "cloud-me-notes",
+  "cloud-me-containers", "cloud-me-cgc", "cloud-me_cgc", "cloud-me-pvt", "cloud-me-pvt-legacy", "cloud-me",
+  "cloud", "cloud___", "cloud-me-pub", "cloud-me-pub___", "cloud-me-pub-profiles", "cloud-me-pub-profiles___",
+  "cloud-me-profiles", "cloud-me-others", "Projects", "Projects___", "front", "CG", "CG___", "Fin-CM", "Fin-CM___",
+  "DeepSc", "DeepSc___", "DuckPeng", "DuckPeng___",
+];
 
 export type Surface = "pub" | "pvt";
 
