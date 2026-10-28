@@ -275,7 +275,10 @@ echo "-- Enforcing mirror_policy.exclude --"
 remove_excluded cloud-vault
 remove_excluded cloud-me_vault
 # Step 4: Ensure each mirror repo exists
+converge_mirror _git-repos-master https://github.com/diegonmarcos/_git-repos-master.git false
 converge_mirror cloud https://github.com/diegonmarcos/cloud.git false
+converge_mirror cloud-h-webapps https://github.com/diegonmarcos/cloud-h-webapps.git false
+converge_mirror cloud-h-webapps-2 https://github.com/diegonmarcos/cloud-h-webapps-2.git false
 converge_mirror cloud-me https://github.com/diegonmarcos/cloud-me.git true
 converge_mirror cloud-me-containers https://github.com/diegonmarcos/cloud-me-containers.git true
 converge_mirror cloud-me-data-pvt https://github.com/diegonmarcos/cloud-me-data-pvt.git true
@@ -293,12 +296,9 @@ converge_mirror cloud-u-containers https://github.com/diegonmarcos/cloud-u-conta
 converge_mirror cloud-u-containers_cgc https://github.com/diegonmarcos/cloud-u-containers_cgc.git false
 converge_mirror cloud-u-desktop https://github.com/diegonmarcos/cloud-u-desktop.git false
 converge_mirror cloud-u-linux https://github.com/diegonmarcos/cloud-u-linux.git false
-converge_mirror cloud-h-webapps https://github.com/diegonmarcos/cloud-h-webapps.git false
-converge_mirror cloud-h-webapps-2 https://github.com/diegonmarcos/cloud-h-webapps-2.git false
 converge_mirror cloud_db_LFS https://github.com/diegonmarcos/cloud_db_LFS.git true
 converge_mirror cloud_db_assets-cdn https://github.com/diegonmarcos/cloud_db_assets-cdn.git false
 converge_mirror cloud_db_infra-ops-obsv_configs-sync https://github.com/diegonmarcos/cloud_db_infra-ops-obsv_configs-sync.git false
-converge_mirror git-repos-master https://github.com/diegonmarcos/git-repos-master.git false
 converge_mirror z-archived_My-ai-memory https://github.com/diegonmarcos/z-archived_My-ai-memory.git true
 converge_mirror z-archived_c3-infra-plugin https://github.com/diegonmarcos/z-archived_c3-infra-plugin.git true
 
@@ -310,7 +310,7 @@ converge_mirror z-archived_c3-infra-plugin https://github.com/diegonmarcos/z-arc
 # login via the gate keeps working without the source.
 if [ -n "${GITEA_OIDC_CLIENT_SECRET:-}" ]; then
   echo "-- Converging gitea OIDC login source (authelia) --"
-  _sso_args='--name authelia --provider openidConnect --key gitea --secret "$GITEA_OIDC_CLIENT_SECRET" --auto-discover-url https://sso.diegonmarcos.com/.well-known/openid-configuration --scopes "openid profile email groups"'
+  _sso_args='--name authelia --provider openidConnect --key gitea --secret "$GITEA_OIDC_CLIENT_SECRET" --auto-discover-url https://sso.diegonmarcos.com/.well-known/openid-configuration --scopes openid --scopes profile --scopes email --scopes groups'
   if docker exec -u git "$CONTAINER" gitea admin auth list 2>/dev/null | grep -qw authelia; then
     _sso_id="$(docker exec -u git "$CONTAINER" gitea admin auth list 2>/dev/null | awk '$2 == "authelia" {print $1}' | head -1)"
     docker exec -u git -e GITEA_OIDC_CLIENT_SECRET "$CONTAINER" sh -c "gitea admin auth update-oauth --id $_sso_id $_sso_args" >/dev/null 2>&1 \
