@@ -4,7 +4,7 @@
 // a private upstream, mirror_updated=0001-01-01) while every ship's post-hook
 // said `mirrors_exists=34 mirrors_degraded=0` and exited 0: an existing mirror
 // was never looked at again. And the vault, renamed on GitHub from cloud-vault
-// to cloud-me_vault, sat in the derived mirror set because the exclusion only
+// to cloud-me-pvt-vault, sat in the derived mirror set because the exclusion only
 // knew the old name — one token away from being copied into gitea.
 //
 // This renders templates/init-mirrors.sh.tpl exactly as _shared/engine.nix

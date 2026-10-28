@@ -119,9 +119,9 @@
       "sync_interval_s": 300,
       "git_timeout_ms": 60000,
       "list": [
-        { "name": "cloud-me-containers", "ssh": "git@github.com:diegonmarcos/cloud-me-containers.git", "branch": "main", "key_env": "CME_KEY_CONTAINERS_B64" },
-        { "name": "cloud-me_configs", "ssh": "git@github.com:diegonmarcos/cloud-me_configs.git", "branch": "main", "key_env": "CME_KEY_CONFIGS_B64" },
-        { "name": "cloud-me_cgc", "ssh": "git@github.com:diegonmarcos/cloud-me_cgc.git", "branch": "main", "key_env": "CME_KEY_CGC_B64" }
+        { "name": "cloud-me-containers", "ssh": "git@github.com:diegonmarcos/cloud-me-pvt-containers.git", "branch": "main", "key_env": "CME_KEY_CONTAINERS_B64" },
+        { "name": "cloud-me_configs", "ssh": "git@github.com:diegonmarcos/cloud-me-pvt-configs.git", "branch": "main", "key_env": "CME_KEY_CONFIGS_B64" },
+        { "name": "cloud-me_cgc", "ssh": "git@github.com:diegonmarcos/cloud-me-pvt-cgc.git", "branch": "main", "key_env": "CME_KEY_CGC_B64" }
       ],
       "known_hosts": "github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl"
     },

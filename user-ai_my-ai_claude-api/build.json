@@ -92,10 +92,11 @@
         "repo": "cloud-data"
       },
       {
-        "repo": "cloud-me-my-ai"
+        "repo": "cloud-me-pvt-my-ai",
+        "renamed_from": ["cloud-me-my-ai"]
       },
       {
-        "repo": "cloud-me_vault",
+        "repo": "cloud-me-pvt-vault",
         "dir": "cloud-vault"
       },
       {

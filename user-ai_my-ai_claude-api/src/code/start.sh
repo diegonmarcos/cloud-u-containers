@@ -120,7 +120,7 @@ fi
 #   cloud-infra must clone from GitHub regardless: its .gitmodules pins
 #   https://github.com/... URLs, so --recurse-submodules leaves the mesh anyway.
 #   Ten gitea mirrors are EMPTY (private repos, no GITHUB_MIRROR_TOKEN) —
-#   cloud-data, cloud-data-lfs, cloud-me-my-ai, cloud-notes, dev,
+#   cloud-data, cloud-data-lfs, cloud-me-pvt-my-ai, cloud-notes, dev,
 #   front-galaxy-gaia, front-unity, lecole42, cloud-mykonsole-dtk, cloud-vault.
 #   Those can ONLY come from GitHub.
 # #557: the repo list is DECLARED in build.json (runtime.repos) and arrives as

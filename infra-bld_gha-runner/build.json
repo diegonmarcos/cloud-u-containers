@@ -21,11 +21,11 @@
         "runner_name": "oci-apps-arm64-unix"
       },
       {
-        "repo_url": "https://github.com/diegonmarcos/cloud-me-data-pvt",
+        "repo_url": "https://github.com/diegonmarcos/cloud-me-pvt-data",
         "runner_name": "oci-apps-arm64-data"
       },
       {
-        "repo_url": "https://github.com/diegonmarcos/cloud-me_cgc",
+        "repo_url": "https://github.com/diegonmarcos/cloud-me-pvt-cgc",
         "runner_name": "oci-apps-arm64-cgc"
       }
     ],

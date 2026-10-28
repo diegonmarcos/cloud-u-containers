@@ -31,7 +31,7 @@ import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { join, resolve, sep } from "node:path";
 
 /** Names that are private no matter what any config file says. */
-export const HARD_DENY: readonly string[] = ["cloud-data", "cloud-me-my-ai", "cloud-vault"];
+export const HARD_DENY: readonly string[] = ["cloud-data", "cloud-me-pvt-my-ai", "cloud-me-my-ai", "cloud-vault"];
 
 export type Surface = "pub" | "pvt";
 

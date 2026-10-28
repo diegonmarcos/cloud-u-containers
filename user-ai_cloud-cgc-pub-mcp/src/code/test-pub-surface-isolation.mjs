@@ -2,7 +2,7 @@
 //
 // THE DEFECT (audit 2026-10-13). cloud-cgc-pub-mcp mounted the whole shared
 // octocode_repos volume at /repos, and that volume carries checkouts of the
-// PRIVATE repos (cloud-data, cloud-me-my-ai). The public endpoint's
+// PRIVATE repos (cloud-data, cloud-me-pvt-my-ai). The public endpoint's
 // knowledge.inventory list_directory repo=cloud-data listed the private tree,
 // secrets/ included, and every repo-scoped tool schema advertised the private
 // names in its enum. The bundled codegraph also served cloud-data's file and
@@ -33,7 +33,7 @@ const CODE = dirname(fileURLToPath(import.meta.url));
 const SVC = join(CODE, "..", "..");
 const BJ = JSON.parse(readFileSync(join(SVC, "build.json"), "utf8"));
 const OCT = BJ.runtime.octocode;
-const PRIVATE = [...new Set([...OCT.private_repos, ...Object.keys(OCT.sync_exclude ?? {}), "cloud-data", "cloud-me-my-ai", "cloud-vault"])];
+const PRIVATE = [...new Set([...OCT.private_repos, ...Object.keys(OCT.sync_exclude ?? {}), "cloud-data", "cloud-me-pvt-my-ai", "cloud-vault"])];
 const PUBLIC = OCT.index_repos.filter((r) => !PRIVATE.includes(r));
 
 let pass = 0, fail = 0;
@@ -42,8 +42,8 @@ const check = (n, c, d = "") => c
   : (fail++, console.error(`FAIL ${n}${d ? ` — ${d}` : ""}`));
 const mentionsPrivate = (s) => PRIVATE.some((p) => new RegExp(`(^|[^a-z0-9-])${p.replace(/-/g, "[-_]")}($|[^a-z0-9-])`, "i").test(s));
 
-check("P0 build.json declares the private repos (cloud-data, cloud-me-my-ai)",
-  OCT.private_repos.includes("cloud-data") && OCT.private_repos.includes("cloud-me-my-ai"),
+check("P0 build.json declares the private repos (cloud-data, cloud-me-pvt-my-ai)",
+  OCT.private_repos.includes("cloud-data") && OCT.private_repos.includes("cloud-me-pvt-my-ai"),
   JSON.stringify(OCT.private_repos));
 check("P1 exactly the 6 public repos remain", JSON.stringify([...PUBLIC].sort()) ===
   JSON.stringify(["cloud-infra", "cloud-infra-desktop", "cloud-u-android", "cloud-u-containers", "front-data", "front-diegonmarcos"]),
@@ -89,7 +89,7 @@ const surface = await import(pathToFileURL(join(CODE, "surface.ts")).href);
 for (const env of [{}, { CGC_SURFACE: "" }, { CGC_SURFACE: "pub" }, { CGC_SURFACE: "PVT " + "x" }, { CGC_SURFACE: "private" }]) {
   const label = JSON.stringify(env);
   check(`B1 surface ${label} resolves to pub`, surface.currentSurface(env) === "pub");
-  for (const p of [...PRIVATE, "cloud_data", "Cloud-Data", "cloud-me-my-ai"]) {
+  for (const p of [...PRIVATE, "cloud_data", "Cloud-Data", "cloud-me-pvt-my-ai"]) {
     check(`B2 ${label} refuses ${p}`, surface.isRepoAllowed(p, env) === false);
   }
   for (const p of PUBLIC) check(`B3 ${label} allows ${p}`, surface.isRepoAllowed(p, env) === true);
@@ -97,7 +97,7 @@ for (const env of [{}, { CGC_SURFACE: "" }, { CGC_SURFACE: "pub" }, { CGC_SURFAC
 }
 check("B5 pvt surface allows private repos", surface.isRepoAllowed("cloud-data", { CGC_SURFACE: "pvt" }) === true);
 check("B6 hard floor holds even with an empty env deny list",
-  surface.HARD_DENY.includes("cloud-data") && surface.HARD_DENY.includes("cloud-me-my-ai") && surface.HARD_DENY.includes("cloud-vault"));
+  surface.HARD_DENY.includes("cloud-data") && surface.HARD_DENY.includes("cloud-me-pvt-my-ai") && surface.HARD_DENY.includes("cloud-vault"));
 
 // ── C/D. the real tools, over a scratch GIT_ROOT that DOES hold private repos ──
 const root = mkdtempSync(join(tmpdir(), "cgc-pub-iso-"));
