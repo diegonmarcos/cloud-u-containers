@@ -6684,6 +6684,11 @@ reverse_proxy https://10.0.0.3:2443 {
         uri strip_prefix /analytics-api/umami
         reverse_proxy 10.0.0.6:3006
       }
+      handle /analytics-api/openobserve/* {
+        uri strip_prefix /analytics-api/openobserve
+        rewrite * /analytics/openobserve{uri}
+        reverse_proxy 10.0.0.4:8087
+      }
       handle {
         error "Not Found" 404
       }

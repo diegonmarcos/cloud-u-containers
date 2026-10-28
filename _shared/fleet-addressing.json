@@ -123,13 +123,21 @@
         "/.well-known/jmap",
         "/analytics-api/matomo/*",
         "/analytics-api/umami/script.js",
-        "/analytics-api/umami/api/send"
+        "/analytics-api/umami/api/send",
+        "/analytics-api/openobserve/*"
       ],
       "portals": {
         "/auth": "https://auth.diegonmarcos.com",
         "/account": "https://account.diegonmarcos.com"
       },
-      "_portals_doc": "The Authelia portal keeps its own host (cookie domain, OIDC issuer); /auth and /account on c3-pub redirect to it until the IdP can run under a sub-path."
+      "_portals_doc": "The Authelia portal keeps its own host (cookie domain, OIDC issuer); /auth and /account on c3-pub redirect to it until the IdP can run under a sub-path.",
+      "sinks": {
+        "_doc": "Write-only public sinks on c3-pub (#1100/#1104): path -> c3-pvt container plus the fixed prefix it is rewritten to. Used by the app log sink (was api.diegonmarcos.com/pub/analytics/openobserve).",
+        "/analytics-api/openobserve/*": {
+          "container": "c3-public-api",
+          "rewrite_prefix": "/analytics/openobserve"
+        }
+      }
     },
     "pvt": {
       "host": "c3-pvt.diegonmarcos.com",

@@ -1014,12 +1014,25 @@ ${lib.concatMapStringsSep "\n" mkWellKnownBlock jmap}
         uri strip_prefix /analytics-api/umami
         reverse_proxy ${an.umami_upstream}
       }
+${lib.concatStringsSep "\n" (lib.mapAttrsToList mkPubSink (lib.filterAttrs (n: _: !(lib.hasPrefix "_" n)) (fa.tiers.pub.sinks or {})))}
       handle {
         error "Not Found" 404
       }
       ${handleErrors}
     }
   '';
+
+  # c3-pub write-only sinks (fleet-addressing.json tiers.pub.sinks): a public path forwarded to one c3-pvt
+  # container under a fixed rewrite prefix, e.g. the app log sink to c3-public-api /analytics/openobserve.
+  mkPubSink = path: sink: let
+    route = lib.findFirst (r: r.container == sink.container) null c3PvtRoutes;
+    base = lib.removeSuffix "/*" path;
+  in if route == null then throw "tiers.pub.sinks ${path}: container ${sink.container} is not a c3-pvt route" else ''
+      handle ${path} {
+        uri strip_prefix ${base}
+        rewrite * ${sink.rewrite_prefix}{uri}
+        reverse_proxy ${route.upstream}
+      }'';
 
   # ── Special route generators ──
   mkMailBlock =
