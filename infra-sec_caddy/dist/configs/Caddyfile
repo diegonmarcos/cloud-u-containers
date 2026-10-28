@@ -1984,7 +1984,6 @@ reverse_proxy https://diegonmarcos.github.io {
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
-      request_header -X-Remote-User
 import edge_auth_offmesh /.well-known/acme-challenge/*
 
 @not_wg {
@@ -2012,14 +2011,8 @@ handle /api/auth/youtube/callback {
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      map {http.request.header.X-Auth-User} {identity_bearer_user} {
-        "claude-admin" "diego"
-      }
-      @identity_bearer_user_unmapped vars {identity_bearer_user} ""
-      respond @identity_bearer_user_unmapped "This fleet identity is not mapped to a user of this service" 403
       reverse_proxy 10.0.0.6:8090 {
         header_up X-Real-IP {http.request.remote.host}
-        header_up X-Remote-User {identity_bearer_user}
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
@@ -2057,14 +2050,8 @@ handle /api/auth/youtube/callback {
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      map {http.request.header.Remote-User} {identity_session_user} {
-        "me@diegonmarcos.com" "diego"
-      }
-      @identity_session_user_unmapped vars {identity_session_user} ""
-      respond @identity_session_user_unmapped "This fleet identity is not mapped to a user of this service" 403
       reverse_proxy 10.0.0.6:8090 {
         header_up X-Real-IP {http.request.remote.host}
-        header_up X-Remote-User {identity_session_user}
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
@@ -2102,7 +2089,6 @@ handle /api/auth/youtube/callback {
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
-      request_header -X-Remote-User
 
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
@@ -2122,14 +2108,8 @@ error @not_wg "Forbidden" 403
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      map {http.request.header.X-Auth-User} {identity_bearer_user} {
-        "claude-admin" "me@diegonmarcos.com"
-      }
-      @identity_bearer_user_unmapped vars {identity_bearer_user} ""
-      respond @identity_bearer_user_unmapped "This fleet identity is not mapped to a user of this service" 403
       reverse_proxy 10.0.0.6:5232 {
         header_up X-Real-IP {http.request.remote.host}
-        header_up X-Remote-User {identity_bearer_user}
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
@@ -2167,14 +2147,8 @@ error @not_wg "Forbidden" 403
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      map {http.request.header.Remote-User} {identity_session_user} {
-        "me@diegonmarcos.com" "me@diegonmarcos.com"
-      }
-      @identity_session_user_unmapped vars {identity_session_user} ""
-      respond @identity_session_user_unmapped "This fleet identity is not mapped to a user of this service" 403
       reverse_proxy 10.0.0.6:5232 {
         header_up X-Real-IP {http.request.remote.host}
-        header_up X-Remote-User {identity_session_user}
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
@@ -2309,7 +2283,6 @@ error @not_wg "Forbidden" 403
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
-      request_header -X-Remote-User
 
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
@@ -2329,14 +2302,8 @@ error @not_wg "Forbidden" 403
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      map {http.request.header.X-Auth-User} {identity_bearer_user} {
-        "claude-admin" "diego"
-      }
-      @identity_bearer_user_unmapped vars {identity_bearer_user} ""
-      respond @identity_bearer_user_unmapped "This fleet identity is not mapped to a user of this service" 403
       reverse_proxy 10.0.0.6:8097 {
         header_up X-Real-IP {http.request.remote.host}
-        header_up X-Remote-User {identity_bearer_user}
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
@@ -2374,14 +2341,8 @@ error @not_wg "Forbidden" 403
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      map {http.request.header.Remote-User} {identity_session_user} {
-        "me@diegonmarcos.com" "diego"
-      }
-      @identity_session_user_unmapped vars {identity_session_user} ""
-      respond @identity_session_user_unmapped "This fleet identity is not mapped to a user of this service" 403
       reverse_proxy 10.0.0.6:8097 {
         header_up X-Real-IP {http.request.remote.host}
-        header_up X-Remote-User {identity_session_user}
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
@@ -2516,7 +2477,6 @@ error @not_wg "Forbidden" 403
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
-      request_header -X-Remote-User
 
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
@@ -2536,14 +2496,8 @@ error @not_wg "Forbidden" 403
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      map {http.request.header.X-Auth-User} {identity_bearer_user} {
-        "claude-admin" "me@diegonmarcos.com"
-      }
-      @identity_bearer_user_unmapped vars {identity_bearer_user} ""
-      respond @identity_bearer_user_unmapped "This fleet identity is not mapped to a user of this service" 403
       reverse_proxy 10.0.0.6:5233 {
         header_up X-Real-IP {http.request.remote.host}
-        header_up X-Remote-User {identity_bearer_user}
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
@@ -2581,14 +2535,8 @@ error @not_wg "Forbidden" 403
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      map {http.request.header.Remote-User} {identity_session_user} {
-        "me@diegonmarcos.com" "me@diegonmarcos.com"
-      }
-      @identity_session_user_unmapped vars {identity_session_user} ""
-      respond @identity_session_user_unmapped "This fleet identity is not mapped to a user of this service" 403
       reverse_proxy 10.0.0.6:5233 {
         header_up X-Real-IP {http.request.remote.host}
-        header_up X-Remote-User {identity_session_user}
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
@@ -3631,39 +3579,66 @@ error @not_wg "Forbidden" 403
       import edge_errors
   }
 
-  # APK cloud-account: no web target, landing redirect
+  # APK cloud-account: web target wasm bundle cloud-account (Authelia-gated)
   cloud-account.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
-    import edge_auth /.well-known/acme-challenge/*
+import edge_auth /.well-known/acme-challenge/*
+
+
+
+
+
     handle {
-      redir https://diegonmarcos.github.io/c__Cloud/ 302
-    }
+  rewrite * /cloud-web/apps/cloud-account{uri}
+reverse_proxy https://diegonmarcos.github.io {
+    header_up Host diegonmarcos.github.io
+    header_up X-Real-IP {http.request.remote.host}
+  }
+}
       import edge_errors
   }
 
-  # APK cloud-browser: no web target, landing redirect
+  # APK cloud-browser: web target wasm bundle cloud-browser (Authelia-gated)
   cloud-browser.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
-    import edge_auth /.well-known/acme-challenge/*
+import edge_auth /.well-known/acme-challenge/*
+
+
+
+
+
     handle {
-      redir https://diegonmarcos.github.io/c__Cloud/ 302
-    }
+  rewrite * /cloud-web/apps/cloud-browser{uri}
+reverse_proxy https://diegonmarcos.github.io {
+    header_up Host diegonmarcos.github.io
+    header_up X-Real-IP {http.request.remote.host}
+  }
+}
       import edge_errors
   }
 
-  # APK cloud-c3: no web target, landing redirect
+  # APK cloud-c3: web target wasm bundle cloud-c3 (Authelia-gated)
   cloud-c3.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
-    import edge_auth /.well-known/acme-challenge/*
+import edge_auth /.well-known/acme-challenge/*
+
+
+
+
+
     handle {
-      redir https://diegonmarcos.github.io/c__Cloud/c_configs/cloud-c3/ 302
-    }
+  rewrite * /cloud-web/apps/cloud-c3{uri}
+reverse_proxy https://diegonmarcos.github.io {
+    header_up Host diegonmarcos.github.io
+    header_up X-Real-IP {http.request.remote.host}
+  }
+}
       import edge_errors
   }
 
@@ -3703,27 +3678,45 @@ import request_limits
       import edge_errors
   }
 
-  # APK cloud-calc: no web target, landing redirect
+  # APK cloud-calc: web target wasm bundle cloud-calc (Authelia-gated)
   cloud-calc.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
-    import edge_auth /.well-known/acme-challenge/*
+import edge_auth /.well-known/acme-challenge/*
+
+
+
+
+
     handle {
-      redir https://diegonmarcos.github.io/c__Cloud/ 302
-    }
+  rewrite * /cloud-web/apps/cloud-calc{uri}
+reverse_proxy https://diegonmarcos.github.io {
+    header_up Host diegonmarcos.github.io
+    header_up X-Real-IP {http.request.remote.host}
+  }
+}
       import edge_errors
   }
 
-  # APK cloud-camera: no web target, landing redirect
+  # APK cloud-camera: web target wasm bundle cloud-camera (Authelia-gated)
   cloud-camera.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
-    import edge_auth /.well-known/acme-challenge/*
+import edge_auth /.well-known/acme-challenge/*
+
+
+
+
+
     handle {
-      redir https://diegonmarcos.github.io/c__Cloud/ 302
-    }
+  rewrite * /cloud-web/apps/cloud-camera{uri}
+reverse_proxy https://diegonmarcos.github.io {
+    header_up Host diegonmarcos.github.io
+    header_up X-Real-IP {http.request.remote.host}
+  }
+}
       import edge_errors
   }
 
@@ -3821,15 +3814,24 @@ import edge_auth /.well-known/acme-challenge/*
       import edge_errors
   }
 
-  # APK cloud-code: no web target, landing redirect
+  # APK cloud-code: web target wasm bundle cloud-code (Authelia-gated)
   cloud-code.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
-    import edge_auth /.well-known/acme-challenge/*
+import edge_auth /.well-known/acme-challenge/*
+
+
+
+
+
     handle {
-      redir https://diegonmarcos.github.io/c__Cloud/ 302
-    }
+  rewrite * /cloud-web/apps/cloud-code{uri}
+reverse_proxy https://diegonmarcos.github.io {
+    header_up Host diegonmarcos.github.io
+    header_up X-Real-IP {http.request.remote.host}
+  }
+}
       import edge_errors
   }
 
@@ -3927,27 +3929,45 @@ import edge_auth /.well-known/acme-challenge/*
       import edge_errors
   }
 
-  # APK cloud-dialer: no web target, landing redirect
+  # APK cloud-dialer: web target wasm bundle cloud-dialer (Authelia-gated)
   cloud-dialer.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
-    import edge_auth /.well-known/acme-challenge/*
+import edge_auth /.well-known/acme-challenge/*
+
+
+
+
+
     handle {
-      redir https://diegonmarcos.github.io/c__Cloud/ 302
-    }
+  rewrite * /cloud-web/apps/cloud-dialer{uri}
+reverse_proxy https://diegonmarcos.github.io {
+    header_up Host diegonmarcos.github.io
+    header_up X-Real-IP {http.request.remote.host}
+  }
+}
       import edge_errors
   }
 
-  # APK cloud-drive: no web target, landing redirect
+  # APK cloud-drive: web target wasm bundle cloud-drive (Authelia-gated)
   cloud-drive.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
-    import edge_auth /.well-known/acme-challenge/*
+import edge_auth /.well-known/acme-challenge/*
+
+
+
+
+
     handle {
-      redir https://diegonmarcos.github.io/c__Cloud/ 302
-    }
+  rewrite * /cloud-web/apps/cloud-drive{uri}
+reverse_proxy https://diegonmarcos.github.io {
+    header_up Host diegonmarcos.github.io
+    header_up X-Real-IP {http.request.remote.host}
+  }
+}
       import edge_errors
   }
 
@@ -4245,15 +4265,24 @@ import edge_auth /.well-known/acme-challenge/*
       import edge_errors
   }
 
-  # APK cloud-me: no web target, landing redirect
+  # APK cloud-me: web target wasm bundle cloud-me (Authelia-gated)
   cloud-me.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
-    import edge_auth /.well-known/acme-challenge/*
+import edge_auth /.well-known/acme-challenge/*
+
+
+
+
+
     handle {
-      redir https://diegonmarcos.github.io/c__Cloud/ 302
-    }
+  rewrite * /cloud-web/apps/cloud-me{uri}
+reverse_proxy https://diegonmarcos.github.io {
+    header_up Host diegonmarcos.github.io
+    header_up X-Real-IP {http.request.remote.host}
+  }
+}
       import edge_errors
   }
 
@@ -4269,87 +4298,150 @@ import request_limits
       import edge_errors
   }
 
-  # APK cloud-myterminal: no web target, landing redirect
+  # APK cloud-myterminal: web target wasm bundle cloud-myterminal (Authelia-gated)
   cloud-myterminal.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
-    import edge_auth /.well-known/acme-challenge/*
+import edge_auth /.well-known/acme-challenge/*
+
+
+
+
+
     handle {
-      redir https://diegonmarcos.github.io/c__Cloud/c_agi/cloud-myterminal/ 302
-    }
+  rewrite * /cloud-web/apps/cloud-myterminal{uri}
+reverse_proxy https://diegonmarcos.github.io {
+    header_up Host diegonmarcos.github.io
+    header_up X-Real-IP {http.request.remote.host}
+  }
+}
       import edge_errors
   }
 
-  # APK cloud-nav: no web target, landing redirect
+  # APK cloud-nav: web target wasm bundle cloud-nav (Authelia-gated)
   cloud-nav.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
-    import edge_auth /.well-known/acme-challenge/*
+import edge_auth /.well-known/acme-challenge/*
+
+
+
+
+
     handle {
-      redir https://diegonmarcos.github.io/c__Cloud/ 302
-    }
+  rewrite * /cloud-web/apps/cloud-nav{uri}
+reverse_proxy https://diegonmarcos.github.io {
+    header_up Host diegonmarcos.github.io
+    header_up X-Real-IP {http.request.remote.host}
+  }
+}
       import edge_errors
   }
 
-  # APK cloud-news: no web target, landing redirect
+  # APK cloud-news: web target wasm bundle cloud-news (Authelia-gated)
   cloud-news.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
-    import edge_auth /.well-known/acme-challenge/*
+import edge_auth /.well-known/acme-challenge/*
+
+
+
+
+
     handle {
-      redir https://diegonmarcos.github.io/c__Cloud/ 302
-    }
+  rewrite * /cloud-web/apps/cloud-news{uri}
+reverse_proxy https://diegonmarcos.github.io {
+    header_up Host diegonmarcos.github.io
+    header_up X-Real-IP {http.request.remote.host}
+  }
+}
       import edge_errors
   }
 
-  # APK cloud-notes: no web target, landing redirect
+  # APK cloud-notes: web target wasm bundle cloud-notes (Authelia-gated)
   cloud-notes.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
-    import edge_auth /.well-known/acme-challenge/*
+import edge_auth /.well-known/acme-challenge/*
+
+
+
+
+
     handle {
-      redir https://diegonmarcos.github.io/c__Cloud/ 302
-    }
+  rewrite * /cloud-web/apps/cloud-notes{uri}
+reverse_proxy https://diegonmarcos.github.io {
+    header_up Host diegonmarcos.github.io
+    header_up X-Real-IP {http.request.remote.host}
+  }
+}
       import edge_errors
   }
 
-  # APK cloud-office: no web target, landing redirect
+  # APK cloud-office: web target wasm bundle cloud-office (Authelia-gated)
   cloud-office.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
-    import edge_auth /.well-known/acme-challenge/*
+import edge_auth /.well-known/acme-challenge/*
+
+
+
+
+
     handle {
-      redir https://diegonmarcos.github.io/c__Cloud/ 302
-    }
+  rewrite * /cloud-web/apps/cloud-office{uri}
+reverse_proxy https://diegonmarcos.github.io {
+    header_up Host diegonmarcos.github.io
+    header_up X-Real-IP {http.request.remote.host}
+  }
+}
       import edge_errors
   }
 
-  # APK cloud-search: no web target, landing redirect
+  # APK cloud-search: web target wasm bundle cloud-search (Authelia-gated)
   cloud-search.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
-    import edge_auth /.well-known/acme-challenge/*
+import edge_auth /.well-known/acme-challenge/*
+
+
+
+
+
     handle {
-      redir https://diegonmarcos.github.io/c__Cloud/ 302
-    }
+  rewrite * /cloud-web/apps/cloud-search{uri}
+reverse_proxy https://diegonmarcos.github.io {
+    header_up Host diegonmarcos.github.io
+    header_up X-Real-IP {http.request.remote.host}
+  }
+}
       import edge_errors
   }
 
-  # APK cloud-store: no web target, landing redirect
+  # APK cloud-store: web target wasm bundle cloud-store (Authelia-gated)
   cloud-store.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
-    import edge_auth /.well-known/acme-challenge/*
+import edge_auth /.well-known/acme-challenge/*
+
+
+
+
+
     handle {
-      redir https://diegonmarcos.github.io/c__Cloud/ 302
-    }
+  rewrite * /cloud-web/apps/cloud-store{uri}
+reverse_proxy https://diegonmarcos.github.io {
+    header_up Host diegonmarcos.github.io
+    header_up X-Real-IP {http.request.remote.host}
+  }
+}
       import edge_errors
   }
 
@@ -4483,51 +4575,87 @@ import request_limits
       import edge_errors
   }
 
-  # APK cloud-tools-small-llms: no web target, landing redirect
+  # APK cloud-tools-small-llms: web target wasm bundle cloud-tools-small-llms (Authelia-gated)
   cloud-tools-small-llms.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
-    import edge_auth /.well-known/acme-challenge/*
+import edge_auth /.well-known/acme-challenge/*
+
+
+
+
+
     handle {
-      redir https://diegonmarcos.github.io/c__Cloud/ 302
-    }
+  rewrite * /cloud-web/apps/cloud-tools-small-llms{uri}
+reverse_proxy https://diegonmarcos.github.io {
+    header_up Host diegonmarcos.github.io
+    header_up X-Real-IP {http.request.remote.host}
+  }
+}
       import edge_errors
   }
 
-  # APK cloud-vault: no web target, landing redirect
+  # APK cloud-vault: web target wasm bundle cloud-vault (Authelia-gated)
   cloud-vault.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
-    import edge_auth /.well-known/acme-challenge/*
+import edge_auth /.well-known/acme-challenge/*
+
+
+
+
+
     handle {
-      redir https://diegonmarcos.github.io/c__Cloud/ 302
-    }
+  rewrite * /cloud-web/apps/cloud-vault{uri}
+reverse_proxy https://diegonmarcos.github.io {
+    header_up Host diegonmarcos.github.io
+    header_up X-Real-IP {http.request.remote.host}
+  }
+}
       import edge_errors
   }
 
-  # APK cloud-wallet: no web target, landing redirect
+  # APK cloud-wallet: web target wasm bundle cloud-wallet (Authelia-gated)
   cloud-wallet.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
-    import edge_auth /.well-known/acme-challenge/*
+import edge_auth /.well-known/acme-challenge/*
+
+
+
+
+
     handle {
-      redir https://diegonmarcos.github.io/c__Cloud/ 302
-    }
+  rewrite * /cloud-web/apps/cloud-wallet{uri}
+reverse_proxy https://diegonmarcos.github.io {
+    header_up Host diegonmarcos.github.io
+    header_up X-Real-IP {http.request.remote.host}
+  }
+}
       import edge_errors
   }
 
-  # APK cloud-writer: no web target, landing redirect
+  # APK cloud-writer: web target wasm bundle cloud-writer (Authelia-gated)
   cloud-writer.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
-    import edge_auth /.well-known/acme-challenge/*
+import edge_auth /.well-known/acme-challenge/*
+
+
+
+
+
     handle {
-      redir https://diegonmarcos.github.io/c__Cloud/ 302
-    }
+  rewrite * /cloud-web/apps/cloud-writer{uri}
+reverse_proxy https://diegonmarcos.github.io {
+    header_up Host diegonmarcos.github.io
+    header_up X-Real-IP {http.request.remote.host}
+  }
+}
       import edge_errors
   }
 
