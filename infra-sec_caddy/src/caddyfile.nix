@@ -932,12 +932,13 @@ ${denyBlock}'';
     }
   '';
 
+  # Retired host: the redirect is NOT gated (an anonymous caller must reach it); the target
+  # path on c3-pvt carries the gate (cookie or bearer), so nothing is exposed.
   mkRedirectRoute = route: ''
     # ${route.comment or route.domain}
     ${route.domain} {
   ${publicBindLine}
   ${sec}
-      ${ea.gate route.domain}
       handle {
         redir ${route.target} 308
       }

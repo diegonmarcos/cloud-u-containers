@@ -144,7 +144,18 @@ const tierProblems = (text) => {
     if (h.startsWith("_")) continue;
     const blk = siteOf(text, h);
     if (!blk) out.push(`tiers: retired host ${h} has no redirect site`);
-    else if (!blk.includes(`redir ${to}{uri} 308`)) out.push(`tiers: retired host ${h} must redirect (308) to ${to}`);
+    else {
+      if (!blk.includes(`redir ${to}{uri} 308`)) out.push(`tiers: retired host ${h} must redirect (308) to ${to}`);
+      if (/^ *import edge_auth/m.test(blk)) out.push(`tiers: retired host ${h} imports the gate; an anonymous caller would be sent to sign-in instead of the redirect (the c3-pvt target carries the gate)`);
+    }
+  }
+  // Stage-3 old-host path redirects (api.* and mcp.* prefixes). They stay pending until every client is on c3-pvt
+  // (a cross-host redirect drops the Authorization header), but each pending target must already exist on c3-pvt.
+  const mounted = pvt ? new Set([...pvt.matchAll(/handle_path \/([a-z0-9_-]+)\/\*/g)].map((m) => m[1])) : new Set();
+  for (const [from, container] of Object.entries(T.path_redirects_pending ?? {})) {
+    if (from.startsWith("_")) continue;
+    if (!/^(api|mcp)\.diegonmarcos\.com\/[a-z0-9_-]+$/.test(from)) out.push(`tiers: pending redirect source ${from} must be api.* or mcp.* /<prefix>`);
+    if (!mounted.has(container)) out.push(`tiers: pending redirect ${from} targets ${container}, which is not mounted on ${T.pvt.host}`);
   }
   return out;
 };
@@ -159,11 +170,20 @@ if (cfg.tiers && existsSync(CF)) {
     "gate on pub": text.replace(`    ${pubHost} {`, `    ${pubHost} {\n      import edge_auth`),
     "wildcard proxies": text.replace(/(\n {2,4}\*\.diegonmarcos\.com \{\n)/, "$1      reverse_proxy 10.0.0.9:1\n"),
     "wildcard to elsewhere": text.replace(/redir https:\/\/diegonmarcos\.com\/ 302/, "redir https://evil.example/ 302"),
+    "gate on retired redirect": text.replace(/(\n {2}fin-api\.diegonmarcos\.com \{\n[^}]*?import security\nimport request_limits\n)/, "$1    import edge_auth /.well-known/acme-challenge/*\n"),
+    "pending redirect to unmounted container": text,
     "no gate on pvt": text.replace(new RegExp(`(${pvtHost.replace(/\./g, "\\.")} \\{[\\s\\S]*?)import edge_auth [^\\n]*\\n`), "$1"),
   };
-  for (const [name, t] of Object.entries(muts)) if (tierProblems(t).length === 0) probs.push(`tiers: mutation "${name}" was not caught; the guard is blind`);
+  const realPending = cfg.tiers.path_redirects_pending;
+  for (const [name, t] of Object.entries(muts)) {
+    if (name.startsWith("pending redirect")) cfg.tiers.path_redirects_pending = { ...(realPending ?? {}), "api.diegonmarcos.com/zz": "no-such-container" };
+    const caught = tierProblems(t).length > 0;
+    cfg.tiers.path_redirects_pending = realPending;
+    if (!caught) probs.push(`tiers: mutation "${name}" was not caught; the guard is blind`);
+  }
+  for (const [name, t] of []) if (tierProblems(t).length === 0) probs.push(`tiers: mutation "${name}" was not caught; the guard is blind`);
   for (const pr of probs) { fail++; console.error(`FAIL ${pr}`); }
-  console.log(`tiers: ${probs.length ? probs.length + " problem(s)" : "c3-pvt gated, c3-pub confined to its allowlist, 5 mutations caught"}`);
+  console.log(`tiers: ${probs.length ? probs.length + " problem(s)" : "c3-pvt gated, c3-pub confined to its allowlist, 7 mutations caught"}`);
 }
 
 // Mutation proof for the mesh_tld rule: it must reject what it claims to reject.
