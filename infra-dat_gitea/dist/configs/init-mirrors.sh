@@ -276,39 +276,45 @@ remove_excluded cloud-vault
 remove_excluded cloud-me_vault
 remove_excluded cloud-me-pvt-vault
 # Step 4: Ensure each mirror repo exists
+converge_mirror CG-circus https://github.com/diegonmarcos/CG-circus.git false
+converge_mirror CG-galaxy https://github.com/diegonmarcos/CG-galaxy.git false
+converge_mirror Projects-endeavours https://github.com/diegonmarcos/Projects-endeavours.git false
+converge_mirror Projects-labtools https://github.com/diegonmarcos/Projects-labtools.git false
 converge_mirror _git-repos-master https://github.com/diegonmarcos/_git-repos-master.git false
-converge_mirror cloud https://github.com/diegonmarcos/cloud.git false
-converge_mirror cloud-a-docs https://github.com/diegonmarcos/cloudy-a-docs.git true
-converge_mirror cloud-h-webapps https://github.com/diegonmarcos/cloudy-h-webapps.git false
-converge_mirror cloud-h-webapps-2 https://github.com/diegonmarcos/cloudy-h-webapps-2.git false
-converge_mirror cloud-me-pub https://github.com/diegonmarcos/cloud-me-pub.git false
-converge_mirror cloud-me-pub-profiles https://github.com/diegonmarcos/cloud-me-pub-profiles.git false
+converge_mirror cloud-me-___ https://github.com/diegonmarcos/cloud-me-___.git false
+converge_mirror cloud-me-pub-___ https://github.com/diegonmarcos/cloud-me-pub-___.git false
+converge_mirror cloud-me-pub-profiles-___ https://github.com/diegonmarcos/cloud-me-pub-profiles-___.git false
 converge_mirror cloud-me-pub-profiles-_lnktree https://github.com/diegonmarcos/cloud-me-pub-profiles-_lnktree.git false
 converge_mirror cloud-me-pub-profiles-leaf.y https://github.com/diegonmarcos/cloud-me-pub-profiles-leaf.y.git false
 converge_mirror cloud-me-pub-profiles-nexus.z https://github.com/diegonmarcos/cloud-me-pub-profiles-nexus.z.git false
 converge_mirror cloud-me-pub-profiles-prf-prs https://github.com/diegonmarcos/cloud-me-pub-profiles-prf-prs.git false
 converge_mirror cloud-me-pub-profiles-stark.x https://github.com/diegonmarcos/cloud-me-pub-profiles-stark.x.git false
 converge_mirror cloud-me-pub-shared https://github.com/diegonmarcos/cloud-me-pub-shared.git false
-converge_mirror cloud-me-pvt https://github.com/diegonmarcos/cloud-me-pvt.git true
+converge_mirror cloud-me-pvt-___ https://github.com/diegonmarcos/cloud-me-pvt-___.git true
 converge_mirror cloud-me-pvt-cgc https://github.com/diegonmarcos/cloud-me-pvt-cgc.git true
 converge_mirror cloud-me-pvt-configs https://github.com/diegonmarcos/cloud-me-pvt-configs.git true
 converge_mirror cloud-me-pvt-containers https://github.com/diegonmarcos/cloud-me-pvt-containers.git true
 converge_mirror cloud-me-pvt-data https://github.com/diegonmarcos/cloud-me-pvt-data.git true
 converge_mirror cloud-me-pvt-my-ai https://github.com/diegonmarcos/cloud-me-pvt-my-ai.git true
 converge_mirror cloud-me-pvt-notes https://github.com/diegonmarcos/cloud-me-pvt-notes.git true
-converge_mirror cloud-t-infra https://github.com/diegonmarcos/cloudy-t-infra.git false
-converge_mirror cloud-u-android https://github.com/diegonmarcos/cloudy-u-android.git false
-converge_mirror cloud-u-containers https://github.com/diegonmarcos/cloudy-u-containers.git false
-converge_mirror cloud-u-containers_cgc https://github.com/diegonmarcos/cloudy-u-containers_cgc.git false
-converge_mirror cloud-u-desktop https://github.com/diegonmarcos/cloudy-u-desktop.git false
-converge_mirror cloud-u-linux https://github.com/diegonmarcos/cloudy-u-linux.git false
-converge_mirror cloud_db_LFS https://github.com/diegonmarcos/cloudy_db_LFS.git true
-converge_mirror cloud_db_assets-cdn https://github.com/diegonmarcos/cloudy_db_assets-cdn.git false
-converge_mirror cloud_db_infra-ops-obsv_configs-sync https://github.com/diegonmarcos/cloudy_db_infra-ops-obsv_configs-sync.git false
+converge_mirror cloudy-___ https://github.com/diegonmarcos/cloudy-___.git false
+converge_mirror cloudy-a-docs https://github.com/diegonmarcos/cloudy-a-docs.git true
+converge_mirror cloudy-h-webapps https://github.com/diegonmarcos/cloudy-h-webapps.git false
+converge_mirror cloudy-h-webapps-2 https://github.com/diegonmarcos/cloudy-h-webapps-2.git false
+converge_mirror cloudy-t-infra https://github.com/diegonmarcos/cloudy-t-infra.git false
+converge_mirror cloudy-u-android https://github.com/diegonmarcos/cloudy-u-android.git false
+converge_mirror cloudy-u-containers https://github.com/diegonmarcos/cloudy-u-containers.git false
+converge_mirror cloudy-u-containers_cgc https://github.com/diegonmarcos/cloudy-u-containers_cgc.git false
+converge_mirror cloudy-u-desktop https://github.com/diegonmarcos/cloudy-u-desktop.git false
+converge_mirror cloudy-u-linux https://github.com/diegonmarcos/cloudy-u-linux.git false
+converge_mirror cloudy_db_LFS https://github.com/diegonmarcos/cloudy_db_LFS.git true
+converge_mirror cloudy_db_assets-cdn https://github.com/diegonmarcos/cloudy_db_assets-cdn.git false
+converge_mirror cloudy_db_infra-ops-obsv_configs-sync https://github.com/diegonmarcos/cloudy_db_infra-ops-obsv_configs-sync.git false
 converge_mirror z-archived_My-ai-memory https://github.com/diegonmarcos/z-archived_My-ai-memory.git true
 converge_mirror z-archived_c3-infra-plugin https://github.com/diegonmarcos/z-archived_c3-infra-plugin.git true
 converge_mirror z-archived_cloud-me-pub-data https://github.com/diegonmarcos/z-archived_cloud-me-pub-data.git false
 converge_mirror z-archived_cloud-me-pvt-data-private https://github.com/diegonmarcos/z-archived_cloud-me-pvt-data-private.git true
+converge_mirror z-archived_cloud-me-pvt-legacy https://github.com/diegonmarcos/z-archived_cloud-me-pvt-legacy.git true
 
 # ── SSO (#1147): converge the Authelia OIDC login source ─────────────
 # Gated on GITEA_OIDC_CLIENT_SECRET (delivered from the sso-oidc-issue bundle in the
