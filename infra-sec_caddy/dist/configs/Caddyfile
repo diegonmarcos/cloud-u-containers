@@ -1984,6 +1984,7 @@ reverse_proxy https://diegonmarcos.github.io {
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
+      request_header -X-Remote-User
 import edge_auth_offmesh /.well-known/acme-challenge/*
 
 @not_wg {
@@ -2011,8 +2012,14 @@ handle /api/auth/youtube/callback {
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
+      map {http.request.header.X-Auth-User} {identity_bearer_user} {
+        "claude-admin" "diego"
+      }
+      @identity_bearer_user_unmapped vars {identity_bearer_user} ""
+      respond @identity_bearer_user_unmapped "This fleet identity is not mapped to a user of this service" 403
       reverse_proxy 10.0.0.6:8090 {
         header_up X-Real-IP {http.request.remote.host}
+        header_up X-Remote-User {identity_bearer_user}
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
@@ -2050,8 +2057,14 @@ handle /api/auth/youtube/callback {
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
+      map {http.request.header.Remote-User} {identity_session_user} {
+        "me@diegonmarcos.com" "diego"
+      }
+      @identity_session_user_unmapped vars {identity_session_user} ""
+      respond @identity_session_user_unmapped "This fleet identity is not mapped to a user of this service" 403
       reverse_proxy 10.0.0.6:8090 {
         header_up X-Real-IP {http.request.remote.host}
+        header_up X-Remote-User {identity_session_user}
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
@@ -2089,6 +2102,7 @@ handle /api/auth/youtube/callback {
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
+      request_header -X-Remote-User
 
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
@@ -2108,8 +2122,14 @@ error @not_wg "Forbidden" 403
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
+      map {http.request.header.X-Auth-User} {identity_bearer_user} {
+        "claude-admin" "me@diegonmarcos.com"
+      }
+      @identity_bearer_user_unmapped vars {identity_bearer_user} ""
+      respond @identity_bearer_user_unmapped "This fleet identity is not mapped to a user of this service" 403
       reverse_proxy 10.0.0.6:5232 {
         header_up X-Real-IP {http.request.remote.host}
+        header_up X-Remote-User {identity_bearer_user}
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
@@ -2147,8 +2167,14 @@ error @not_wg "Forbidden" 403
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
+      map {http.request.header.Remote-User} {identity_session_user} {
+        "me@diegonmarcos.com" "me@diegonmarcos.com"
+      }
+      @identity_session_user_unmapped vars {identity_session_user} ""
+      respond @identity_session_user_unmapped "This fleet identity is not mapped to a user of this service" 403
       reverse_proxy 10.0.0.6:5232 {
         header_up X-Real-IP {http.request.remote.host}
+        header_up X-Remote-User {identity_session_user}
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
@@ -2283,6 +2309,7 @@ error @not_wg "Forbidden" 403
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
+      request_header -X-Remote-User
 
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
@@ -2302,8 +2329,14 @@ error @not_wg "Forbidden" 403
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
+      map {http.request.header.X-Auth-User} {identity_bearer_user} {
+        "claude-admin" "diego"
+      }
+      @identity_bearer_user_unmapped vars {identity_bearer_user} ""
+      respond @identity_bearer_user_unmapped "This fleet identity is not mapped to a user of this service" 403
       reverse_proxy 10.0.0.6:8097 {
         header_up X-Real-IP {http.request.remote.host}
+        header_up X-Remote-User {identity_bearer_user}
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
@@ -2341,8 +2374,14 @@ error @not_wg "Forbidden" 403
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
+      map {http.request.header.Remote-User} {identity_session_user} {
+        "me@diegonmarcos.com" "diego"
+      }
+      @identity_session_user_unmapped vars {identity_session_user} ""
+      respond @identity_session_user_unmapped "This fleet identity is not mapped to a user of this service" 403
       reverse_proxy 10.0.0.6:8097 {
         header_up X-Real-IP {http.request.remote.host}
+        header_up X-Remote-User {identity_session_user}
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
@@ -2477,6 +2516,7 @@ error @not_wg "Forbidden" 403
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
+      request_header -X-Remote-User
 
 
 @not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
@@ -2496,8 +2536,14 @@ error @not_wg "Forbidden" 403
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
+      map {http.request.header.X-Auth-User} {identity_bearer_user} {
+        "claude-admin" "me@diegonmarcos.com"
+      }
+      @identity_bearer_user_unmapped vars {identity_bearer_user} ""
+      respond @identity_bearer_user_unmapped "This fleet identity is not mapped to a user of this service" 403
       reverse_proxy 10.0.0.6:5233 {
         header_up X-Real-IP {http.request.remote.host}
+        header_up X-Remote-User {identity_bearer_user}
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
@@ -2535,8 +2581,14 @@ error @not_wg "Forbidden" 403
       header_up X-Forwarded-Uri {http.request.orig_uri}
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
+      map {http.request.header.Remote-User} {identity_session_user} {
+        "me@diegonmarcos.com" "me@diegonmarcos.com"
+      }
+      @identity_session_user_unmapped vars {identity_session_user} ""
+      respond @identity_session_user_unmapped "This fleet identity is not mapped to a user of this service" 403
       reverse_proxy 10.0.0.6:5233 {
         header_up X-Real-IP {http.request.remote.host}
+        header_up X-Remote-User {identity_session_user}
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
@@ -6684,11 +6736,11 @@ reverse_proxy https://10.0.0.3:2443 {
         uri strip_prefix /analytics-api/umami
         reverse_proxy 10.0.0.6:3006
       }
-      handle /analytics-api/openobserve/* {
-        uri strip_prefix /analytics-api/openobserve
-        rewrite * /analytics/openobserve{uri}
-        reverse_proxy 10.0.0.4:8087
-      }
+handle /analytics-api/openobserve/* {
+  uri strip_prefix /analytics-api/openobserve
+  rewrite * /analytics/openobserve{uri}
+  reverse_proxy 10.0.0.4:8087
+}
       handle {
         error "Not Found" 404
       }
