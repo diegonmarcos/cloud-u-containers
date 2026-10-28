@@ -415,6 +415,11 @@
     "url_scheme": {
       "_doc": "Fleet URL scheme (cloud-infra a0_docs/eng-specs/url-scheme.md). container_prefix: every container gets c3-{container}.diegonmarcos.com (wg_only, 403 off-mesh) and c3-{container}.mesh.diegonmarcos.com. APKs get cloud-{name}.diegonmarcos.com (public, never wg_only, Authelia, anonymous -> landing) and, when they declare a container web target, cloud-{name}.mesh.diegonmarcos.com. Both lists are GENERATED: manifests.apk is cloud-u-android's 2_configs/apk-manifest.json (relative to the cloud-infra root), manifests.mcp is cloud-u-containers' _shared/mcp-manifest.json (relative to a_solutions). Nothing here lists an APK, container or MCP by hand. groups documents the special address groups and is asserted by test-url-scheme.sh. extra_routes are additive vhosts: mails. serves the JMAP config URLs (well-known paths public, rest of the vhost mesh-only, like jmap.).",
       "container_prefix": "c3-",
+      "wasm_origin": {
+        "_doc": "#876 where the Kotlin/Wasm APK pages live: the cloud-web portal on GitHub Pages serves each bundle at <path_prefix>/<web.portal_slug>/ (the list is <path_prefix>/available.json). cloud-infra's apk-web-route.ts turns every web.kind wasm APK host into an Authelia-gated proxy to upstream with web.serve_path; the renderer rewrites to serve_path behind edge_auth. test/test-wasm-serve-path.sh asserts it.",
+        "upstream": "https://diegonmarcos.github.io",
+        "path_prefix": "/cloud-web/apps"
+      },
       "manifests": {
         "apk": "../cloud-u-android/2_configs/apk-manifest.json",
         "mcp": "_shared/mcp-manifest.json"
