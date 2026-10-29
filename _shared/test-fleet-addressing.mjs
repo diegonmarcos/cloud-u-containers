@@ -197,6 +197,26 @@ if (cfg.tiers && existsSync(CF)) {
   console.log(`tiers: ${probs.length ? probs.length + " problem(s)" : "c3-pvt gated, c3-pub confined to its allowlist, 7 mutations caught"}`);
 }
 
+// Edge -> hub TLS proxies must keep the client Host. Caddy >= 2.11 rewrites Host to the upstream
+// hostport for an https upstream; the hub is strict-SNI (mTLS vault vhost), so SNI=c3-pvt with
+// Host=10.1.0.2:443 is a 421 for every request (incl. bearer-authenticated MCP calls, 2026-10-29).
+const CFP = join(root, "infra-sec_caddy-public/dist/configs/Caddyfile");
+if (existsSync(CFP)) {
+  const hubProxyProblems = (t) => {
+    const out = [];
+    const re = /reverse_proxy https:\/\/10\.1\.0\.2:443 \{([\s\S]*?)\n\s*\}\n/g;
+    let m, n = 0;
+    while ((m = re.exec(t))) { n++; if (!/header_up Host \{host\}/.test(m[1])) out.push(`edge hub proxy #${n} lacks "header_up Host {host}" (hub answers 421)`); }
+    if (!n) out.push("no edge->hub https reverse_proxy found; the guard is blind");
+    return out;
+  };
+  const tcp = readFileSync(CFP, "utf8");
+  const probs = hubProxyProblems(tcp);
+  if (hubProxyProblems(tcp.replace(/\n\s*header_up Host \{host\}/g, "")).length === 0) probs.push('mutation "no Host pin" was not caught; the guard is blind');
+  for (const pr of probs) { fail++; console.error(`FAIL ${pr}`); }
+  console.log(`edge-hub-host: ${probs.length ? probs.length + " problem(s)" : "every edge->hub https proxy pins Host {host}"}`);
+}
+
 // Mutation proof for the mesh_tld rule: it must reject what it claims to reject.
 {
   const cases = [["c3-infra-api.mesh.diegonmarcos.com", false], ["svc.home.arpa", false], ["svc.app", true],

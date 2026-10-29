@@ -468,6 +468,11 @@ ${denyBlock}'';
     ${ea.gate e.host}
       reverse_proxy https://${privateUpstream} {
         flush_interval -1
+        # Caddy >= 2.11 rewrites Host to the upstream hostport (10.1.0.2:443) for an https
+        # upstream. The hub enforces strict SNI/Host matching (its mTLS vault vhost turns
+        # strict_sni_host on), so SNI=${e.host} + Host=10.1.0.2:443 is answered 421. Keep the
+        # client's Host, as the oidc-public handle already does.
+        header_up Host {host}
         ${xreal}
         transport http {
           tls_server_name ${e.host}
