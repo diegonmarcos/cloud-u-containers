@@ -146,7 +146,7 @@ const tierProblems = (text) => {
     if (!blk) out.push(`tiers: retired host ${h} has no redirect site`);
     else {
       if (!blk.includes(`redir ${to}{uri} 308`)) out.push(`tiers: retired host ${h} must redirect (308) to ${to}`);
-      if (/^ *import edge_auth/m.test(blk)) out.push(`tiers: retired host ${h} imports the gate; an anonymous caller would be sent to sign-in instead of the redirect (the c3-pvt target carries the gate)`);
+      if (!/^ *import edge_auth/m.test(blk)) out.push(`tiers: retired host ${h} must import the gate (owner ruling 2026-10-29, #1292): an anonymous caller is sent to sign-in; the 308 only runs for a session or fleet bearer`);
     }
   }
   // Stage-3 old-host path redirects (api.* and mcp.* prefixes). They stay pending until every client is on c3-pvt

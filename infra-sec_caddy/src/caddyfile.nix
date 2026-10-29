@@ -932,13 +932,17 @@ ${denyBlock}'';
     }
   '';
 
-  # Retired host: the redirect is NOT gated (an anonymous caller must reach it); the target
-  # path on c3-pvt carries the gate (cookie or bearer), so nothing is exposed.
+  # Redirect hosts (mail. -> webmail., fin-api. -> c3-pvt path) sit BEHIND the shared gate
+  # (owner ruling 2026-10-29, ticket #1292): a browser without a session is sent to sign-in
+  # (sso.), a fleet bearer is introspected, and only then does the 308 run. No machine
+  # endpoint lives on these two hosts (IMAP/SMTP are L4 on imap./smtps., JMAP discovery
+  # is on mails. and the apex well-known), so no exemption path is declared.
   mkRedirectRoute = route: ''
     # ${route.comment or route.domain}
     ${route.domain} {
   ${publicBindLine}
   ${sec}
+  ${ea.gate route.domain}
       handle {
         redir ${route.target} 308
       }
