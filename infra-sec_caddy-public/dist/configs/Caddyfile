@@ -1379,6 +1379,11 @@ import security
 import edge_auth /.well-known/acme-challenge/*
   reverse_proxy https://10.1.0.2:443 {
     flush_interval -1
+    # Caddy >= 2.11 rewrites Host to the upstream hostport (10.1.0.2:443) for an https
+    # upstream. The hub enforces strict SNI/Host matching (its mTLS vault vhost turns
+    # strict_sni_host on), so SNI=c3-pvt.diegonmarcos.com + Host=10.1.0.2:443 is answered 421. Keep the
+    # client's Host, as the oidc-public handle already does.
+    header_up Host {host}
     header_up X-Real-IP {http.request.remote.host}
     transport http {
       tls_server_name c3-pvt.diegonmarcos.com
