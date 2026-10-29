@@ -180,7 +180,8 @@ if (cfg.tiers && existsSync(CF)) {
     "gate on pub": text.replace(`    ${pubHost} {`, `    ${pubHost} {\n      import edge_auth`),
     "wildcard proxies": text.replace(/(\n {2,4}\*\.diegonmarcos\.com \{\n)/, "$1      reverse_proxy 10.0.0.9:1\n"),
     "wildcard to elsewhere": text.replace(/redir https:\/\/diegonmarcos\.com\/ 302/, "redir https://evil.example/ 302"),
-    "gate on retired redirect": text.replace(/(\n {2}fin-api\.diegonmarcos\.com \{\n[^}]*?import security\nimport request_limits\n)/, "$1    import edge_auth /.well-known/acme-challenge/*\n"),
+    "no gate on retired redirect": text.replace(/(\n {2}fin-api\.diegonmarcos\.com \{\n[^}]*?)import edge_auth [^\n]*\n/, "$1"),
+    "gate on mta-sts root": text.replace(/(\n {2}mta-sts\.diegonmarcos\.com \{\n[^}]*?import security\n)/, "$1    import edge_auth /.well-known/acme-challenge/* /.well-known/mta-sts.txt\n"),
     "pending redirect to unmounted container": text,
     "no gate on pvt": text.replace(new RegExp(`(${pvtHost.replace(/\./g, "\\.")} \\{[\\s\\S]*?)import edge_auth [^\\n]*\\n`), "$1"),
   };
