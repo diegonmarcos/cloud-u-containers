@@ -511,7 +511,8 @@ def code_graph_suite(mod, check):
     os.environ["JEV_TEST_CGC_TOKEN"] = tok
     reset(route("graphrag", 0.9))
     mcp_reset(text="for goose")
-    mod.goose_prompt_hook({"event": "UserPromptSubmit", "session_id": "g1", "message": "q goose file"}, cfg)
+    mod.goose_prompt_hook({"event": "UserPromptSubmit", "session_id": "g1", "message": "q goose file",
+                           "working_dir": REPO}, cfg)
     check(os.path.exists(moim) and "for goose" in open(moim).read(), "goose context lands in the tom file")
     reset(route("none", 0.99))
     mod.goose_prompt_hook({"event": "UserPromptSubmit", "session_id": "g1", "message": "thanks"}, cfg)

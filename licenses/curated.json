@@ -35,6 +35,10 @@
   ".github": {
    "licence": "LicenseRef-NoLicenseGranted"
   },
+  "0_hub": {
+   "licence": "LicenseRef-NoLicenseGranted",
+   "note": "Holds the cloudy-___ hub submodule (own repository, own code)."
+  },
   "_dispatch": {
    "licence": "LicenseRef-NoLicenseGranted"
   },
@@ -193,9 +197,15 @@
   "infra-ops_disk-janitor": {
    "licence": "LicenseRef-NoLicenseGranted"
   },
-  "infra-obs_configs-sync": { "licence": "LicenseRef-NoLicenseGranted" },
-  "infra-sec_mcp-oauth": { "licence": "LicenseRef-NoLicenseGranted" },
-  "infra-sec_tokens-api": { "licence": "LicenseRef-NoLicenseGranted" },
+  "infra-obs_configs-sync": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-sec_mcp-oauth": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
+  "infra-sec_tokens-api": {
+   "licence": "LicenseRef-NoLicenseGranted"
+  },
   "infra-sec_authelia": {
    "licence": "LicenseRef-NoLicenseGranted"
   },

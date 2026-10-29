@@ -257,7 +257,7 @@ function testContract() {
   ok(wrongMethod && wrongMethod.route === null && wrongMethod.allowed.includes('GET'),
     'a known path with the wrong method reports 405, not 404 and not 200');
   const params = match(table, 'GET', '/repos/diegonmarcos/cloudy-t-infra/tarball');
-  eq(params.params, { owner: 'diegonmarcos', repo: 'cloud-t-infra' }, 'path params are extracted');
+  eq(params.params, { owner: 'diegonmarcos', repo: 'cloudy-t-infra' }, 'path params are extracted');
   ok(toRegex('/repos/:o/:r/tarball').source.includes('([^/]+)'), 'toRegex builds a capturing group per param');
 
   console.log('\nC2. path/ref validation refuses traversal rather than dialling it');
@@ -275,9 +275,9 @@ function threw(fn) { try { fn(); return false; } catch { return true; } }
 function testFeedsUnit() {
   console.log('\nF. feeds: allow-list, per_page bounds, projection, contract validation');
   const list = RT.feeds.repos;
-  ok(repoDeclared(list, 'diegonmarcos', 'cloud-t-infra'), 'a declared repo is allowed');
-  ok(repoDeclared(list, 'DiegoNMarcos', 'Cloud-T-Infra'), 'the allow-list is case-insensitive, like GitHub');
-  ok(!repoDeclared(list, 'diegonmarcos', 'cloud-t-infra-x'), 'a repo that merely PREFIXES a declared one is refused');
+  ok(repoDeclared(list, 'diegonmarcos', 'cloudy-t-infra'), 'a declared repo is allowed');
+  ok(repoDeclared(list, 'DiegoNMarcos', 'Cloudy-T-Infra'), 'the allow-list is case-insensitive, like GitHub');
+  ok(!repoDeclared(list, 'diegonmarcos', 'cloudy-t-infra-x'), 'a repo that merely PREFIXES a declared one is refused');
   ok(!repoDeclared(list, 'torvalds', 'linux'), 'an undeclared repo is refused');
   ok(!repoDeclared(list, 'diegonmarcos', 'cloud-vault'), 'the private vault repo is not a feed');
 
@@ -441,7 +441,7 @@ async function testLive() {
         { id: 14, name: 'Gone.apk', size: 1 },
       ] }));
     }
-    const am = /^\/repos\/diegonmarcos\/cloud-u-android\/releases\/assets\/(\d+)$/.exec(bare);
+    const am = /^\/repos\/diegonmarcos\/cloudy-u-android\/releases\/assets\/(\d+)$/.exec(bare);
     if (am) {
       assetHits.push({ id: am[1], accept: req.headers.accept, range: req.headers.range || '' });
       if (am[1] === '14') { res.writeHead(404); return res.end('{}'); }
@@ -485,7 +485,7 @@ async function testLive() {
       res.writeHead(200, { 'content-type': 'application/json' });
       return res.end(JSON.stringify([{
         full_name: 'diegonmarcos/cloudy-t-infra', owner: { login: 'diegonmarcos' },
-        name: 'cloud-t-infra', private: true, default_branch: 'main',
+        name: 'cloudy-t-infra', private: true, default_branch: 'main',
         updated_at: '2026-09-29T00:00:00Z', size: 42,
         // A hostile upstream field: if anything passed the body through instead
         // of projecting it, this would surface in our response.
@@ -658,7 +658,7 @@ async function testLive() {
     'GET commits returns the projected list, sliced to per_page', `got ${c1.status} ${c1.text.slice(0, 200)}`);
   ok(c1.json?.commits && !('smuggled' in c1.json.commits[0]), 'an unknown upstream commit field is dropped');
   ok(typeof c1.json?.cached_at === 'string', 'the response says when it was fetched (cached_at)');
-  const c2 = await req('/repos/DiegoNMarcos/Cloud-T-Infra/commits?per_page=50', good);
+  const c2 = await req('/repos/DiegoNMarcos/Cloudy-T-Infra/commits?per_page=50', good);
   ok(c2.status === 200 && c2.json?.commits?.length === 7, 'per_page above max still returns what upstream had');
   eq(upstreamHits['/repos/diegonmarcos/cloudy-t-infra/commits'], 1,
     'a second request (different case, different per_page) is served from CACHE — one upstream call');
@@ -811,7 +811,7 @@ async function testLive() {
     ok(noRel.status === 404 && noRel.json?.code === 'not_found', 'an unknown release tag is 404 not_found');
     const badName = await bin(`${REL}/..%2Fsecrets`, {}, mbase);
     ok(badName.status === 400 && badName.json?.code === 'bad_asset', 'a traversal asset name is 400 bad_asset');
-    const badOwner = await bin('/releases/-x/cloud-u-android/latest/assets/App.apk', {}, mbase);
+    const badOwner = await bin('/releases/-x/cloudy-u-android/latest/assets/App.apk', {}, mbase);
     ok(badOwner.status === 400 && badOwner.json?.code === 'bad_repo', 'a malformed owner is 400 bad_repo');
     const otherMesh = await bin('/repos', {}, mbase);
     ok(otherMesh.status === 401, 'the mesh exemption is ONLY the asset route: /repos on the mesh still 401s');

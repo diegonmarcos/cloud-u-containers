@@ -18,7 +18,7 @@
    "CDLA-Permissive-2.0": 1
   },
   "dir": {
-   "LicenseRef-NoLicenseGranted": 100
+   "LicenseRef-NoLicenseGranted": 101
   },
   "docker": {
    "LicenseRef-NoLicenseGranted": 53,
@@ -65,7 +65,7 @@
    "Apache-2.0": 34,
    "MIT": 28,
    "BSD-3-Clause": 10,
-   "Apache-2.0 AND Apache-2.0 WITH LLVM-exception AND BSD-2-Clause AND BSD-3-Clause AND BSL-1.0 AND MIT": 1,
+   "Apache-2.0 AND Apache-2.0 WITH LLVM-exception AND BSD-2-Clause AND BSD-3-Clause AND BSL-1.0 AND ISC AND MIT AND Zlib": 1,
    "Apache-2.0 AND Python-2.0": 1,
    "Apache-2.0 OR BSD-3-Clause": 1,
    "BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0": 1,
@@ -1013,7 +1013,7 @@
    "version": "1",
    "scope": "shipped",
    "licence": "Apache-2.0",
-   "licence_source": "crates.io 1.6.3",
+   "licence_source": "crates.io 1.6.4",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)"
   },
   "cargo:aws-smithy-runtime-api": {
@@ -1025,7 +1025,7 @@
    "version": "1",
    "scope": "shipped",
    "licence": "Apache-2.0",
-   "licence_source": "crates.io 1.19.1",
+   "licence_source": "crates.io 1.19.2",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)"
   },
   "cargo:axum": {
@@ -1686,7 +1686,7 @@
    "version": "0.32",
    "scope": "shipped",
    "licence": "MIT",
-   "licence_source": "crates.io 0.41.0",
+   "licence_source": "crates.io 0.41.1",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)"
   },
   "cargo:russh": {
@@ -1697,7 +1697,7 @@
    "version": "0.46",
    "scope": "shipped",
    "licence": "Apache-2.0",
-   "licence_source": "crates.io 0.64.1",
+   "licence_source": "crates.io 0.65.0",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)"
   },
   "cargo:russh-keys": {
@@ -2169,6 +2169,15 @@
    ],
    "licence": "LicenseRef-NoLicenseGranted",
    "licence_source": "licenses/curated.json::directories"
+  },
+  "dir:0_hub": {
+   "kind": "dir",
+   "declared_in": [
+    "(tree)"
+   ],
+   "licence": "LicenseRef-NoLicenseGranted",
+   "licence_source": "licenses/curated.json::directories",
+   "note": "Holds the cloudy-___ hub submodule (own repository, own code)."
   },
   "dir:_dispatch": {
    "kind": "dir",
@@ -4137,6 +4146,7 @@
     "bc-obs_alerts-api/dist/Dockerfile",
     "bc-obs_alerts-api/src/Dockerfile",
     "infra-ai_embeddings-api/build.json",
+    "infra-ai_embeddings-api/dist/code/arm64/Dockerfile",
     "infra-ai_embeddings-api/src/build.json",
     "infra-ai_jev-sidecar/build.json",
     "infra-ai_jev-sidecar/dist/code/arm64/Dockerfile",
@@ -4534,7 +4544,7 @@
    "version": "^8.0.0",
    "scope": "shipped",
    "licence": "MIT",
-   "licence_source": "registry.npmjs.org latest (10.1.7)",
+   "licence_source": "registry.npmjs.org latest (10.1.8)",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)"
   },
   "npm:@fastify/swagger": {
@@ -4620,7 +4630,7 @@
    "version": "^3.13.24",
    "scope": "shipped",
    "licence": "MIT",
-   "licence_source": "registry.npmjs.org latest (3.14.22)",
+   "licence_source": "registry.npmjs.org latest (3.14.24)",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)",
    "within_upstream_module": "cloud-webmail"
   },
@@ -4668,7 +4678,7 @@
    "version": "^3.22.4",
    "scope": "shipped",
    "licence": "MIT",
-   "licence_source": "registry.npmjs.org latest (3.32.0)",
+   "licence_source": "registry.npmjs.org latest (3.32.1)",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)",
    "within_upstream_module": "cloud-webmail"
   },
@@ -4680,7 +4690,7 @@
    "version": "^3.22.4",
    "scope": "shipped",
    "licence": "MIT",
-   "licence_source": "registry.npmjs.org latest (3.32.0)",
+   "licence_source": "registry.npmjs.org latest (3.32.1)",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)",
    "within_upstream_module": "cloud-webmail"
   },
@@ -4692,7 +4702,7 @@
    "version": "^3.22.4",
    "scope": "shipped",
    "licence": "MIT",
-   "licence_source": "registry.npmjs.org latest (3.32.0)",
+   "licence_source": "registry.npmjs.org latest (3.32.1)",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)",
    "within_upstream_module": "cloud-webmail"
   },
@@ -4704,7 +4714,7 @@
    "version": "^3.22.4",
    "scope": "shipped",
    "licence": "MIT",
-   "licence_source": "registry.npmjs.org latest (3.32.0)",
+   "licence_source": "registry.npmjs.org latest (3.32.1)",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)",
    "within_upstream_module": "cloud-webmail"
   },
@@ -4716,7 +4726,7 @@
    "version": "^3.22.4",
    "scope": "shipped",
    "licence": "MIT",
-   "licence_source": "registry.npmjs.org latest (3.32.0)",
+   "licence_source": "registry.npmjs.org latest (3.32.1)",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)",
    "within_upstream_module": "cloud-webmail"
   },
@@ -4728,7 +4738,7 @@
    "version": "^3.22.4",
    "scope": "shipped",
    "licence": "MIT",
-   "licence_source": "registry.npmjs.org latest (3.32.0)",
+   "licence_source": "registry.npmjs.org latest (3.32.1)",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)",
    "within_upstream_module": "cloud-webmail"
   },
@@ -4740,7 +4750,7 @@
    "version": "^3.22.4",
    "scope": "shipped",
    "licence": "MIT",
-   "licence_source": "registry.npmjs.org latest (3.32.0)",
+   "licence_source": "registry.npmjs.org latest (3.32.1)",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)",
    "within_upstream_module": "cloud-webmail"
   },
@@ -4752,7 +4762,7 @@
    "version": "^3.22.4",
    "scope": "shipped",
    "licence": "MIT",
-   "licence_source": "registry.npmjs.org latest (3.32.0)",
+   "licence_source": "registry.npmjs.org latest (3.32.1)",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)",
    "within_upstream_module": "cloud-webmail"
   },
@@ -4764,7 +4774,7 @@
    "version": "^3.22.4",
    "scope": "shipped",
    "licence": "MIT",
-   "licence_source": "registry.npmjs.org latest (3.32.0)",
+   "licence_source": "registry.npmjs.org latest (3.32.1)",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)",
    "within_upstream_module": "cloud-webmail"
   },
@@ -4776,7 +4786,7 @@
    "version": "^3.22.4",
    "scope": "shipped",
    "licence": "MIT",
-   "licence_source": "registry.npmjs.org latest (3.32.0)",
+   "licence_source": "registry.npmjs.org latest (3.32.1)",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)",
    "within_upstream_module": "cloud-webmail"
   },
@@ -4788,7 +4798,7 @@
    "version": "^3.22.4",
    "scope": "shipped",
    "licence": "MIT",
-   "licence_source": "registry.npmjs.org latest (3.32.0)",
+   "licence_source": "registry.npmjs.org latest (3.32.1)",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)",
    "within_upstream_module": "cloud-webmail"
   },
@@ -4800,7 +4810,7 @@
    "version": "^3.22.4",
    "scope": "shipped",
    "licence": "MIT",
-   "licence_source": "registry.npmjs.org latest (3.32.0)",
+   "licence_source": "registry.npmjs.org latest (3.32.1)",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)",
    "within_upstream_module": "cloud-webmail"
   },
@@ -4812,7 +4822,7 @@
    "version": "^3.22.4",
    "scope": "shipped",
    "licence": "MIT",
-   "licence_source": "registry.npmjs.org latest (3.32.0)",
+   "licence_source": "registry.npmjs.org latest (3.32.1)",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)",
    "within_upstream_module": "cloud-webmail"
   },
@@ -4824,7 +4834,7 @@
    "version": "^3.22.4",
    "scope": "shipped",
    "licence": "MIT",
-   "licence_source": "registry.npmjs.org latest (3.32.0)",
+   "licence_source": "registry.npmjs.org latest (3.32.1)",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)",
    "within_upstream_module": "cloud-webmail"
   },
@@ -4875,7 +4885,7 @@
    "version": "^22.0.0",
    "scope": "dev",
    "licence": "MIT",
-   "licence_source": "registry.npmjs.org latest (26.6.5)",
+   "licence_source": "registry.npmjs.org latest (26.6.6)",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)"
   },
   "npm:@types/nodemailer": {
@@ -4947,7 +4957,7 @@
    "version": "^8.59.0",
    "scope": "dev",
    "licence": "MIT",
-   "licence_source": "registry.npmjs.org latest (8.72.0)",
+   "licence_source": "registry.npmjs.org latest (8.72.1)",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)",
    "within_upstream_module": "cloud-webmail"
   },
@@ -4959,7 +4969,7 @@
    "version": "^8.59.0",
    "scope": "dev",
    "licence": "MIT",
-   "licence_source": "registry.npmjs.org latest (8.72.0)",
+   "licence_source": "registry.npmjs.org latest (8.72.1)",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)",
    "within_upstream_module": "cloud-webmail"
   },
@@ -5233,7 +5243,7 @@
    "version": "^1.8.0",
    "scope": "shipped",
    "licence": "ISC",
-   "licence_source": "registry.npmjs.org latest (1.61.0)",
+   "licence_source": "registry.npmjs.org latest (1.64.0)",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)",
    "within_upstream_module": "cloud-webmail"
   },
@@ -5246,7 +5256,7 @@
    "version": "^3.7.0",
    "scope": "shipped",
    "licence": "MIT",
-   "licence_source": "registry.npmjs.org latest (3.12.4)",
+   "licence_source": "registry.npmjs.org latest (3.13.0)",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)"
   },
   "npm:next": {
@@ -5283,7 +5293,7 @@
    "version": "^6.9.16",
    "scope": "shipped",
    "licence": "MIT-0",
-   "licence_source": "registry.npmjs.org latest (10.2.1)",
+   "licence_source": "registry.npmjs.org latest (10.3.0)",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)"
   },
   "npm:nunjucks": {
@@ -5341,7 +5351,7 @@
    "version": "^3.4.0",
    "scope": "shipped",
    "licence": "BSD-3-Clause",
-   "licence_source": "registry.npmjs.org latest (4.0.0)",
+   "licence_source": "registry.npmjs.org latest (4.0.1)",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)",
    "within_upstream_module": "cloud-webmail"
   },
@@ -5414,7 +5424,7 @@
    "version": "^1.77.0",
    "scope": "dev",
    "licence": "MIT",
-   "licence_source": "registry.npmjs.org latest (1.106.1)",
+   "licence_source": "registry.npmjs.org latest (1.107.0)",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)"
   },
   "npm:sonner": {
@@ -5559,7 +5569,7 @@
    "version": "4.144.0",
    "scope": "shipped",
    "licence": "MIT OR Apache-2.0",
-   "licence_source": "registry.npmjs.org latest (4.152.0)",
+   "licence_source": "registry.npmjs.org latest (4.155.0)",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)"
   },
   "npm:yaml": {
@@ -5649,7 +5659,7 @@
    "version": "agno>=1.0.0",
    "scope": "shipped",
    "licence": "Apache-2.0",
-   "licence_source": "pypi.org 3.1.10 classifiers",
+   "licence_source": "pypi.org 3.1.11 classifiers",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)"
   },
   "pypi:anthropic": {
@@ -5673,7 +5683,7 @@
    "version": "any-llm-sdk>=1.0.0; python_version >= '3.11'",
    "scope": "shipped",
    "licence": "Apache-2.0",
-   "licence_source": "pypi.org 1.40.1 license",
+   "licence_source": "pypi.org 1.40.2 license",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)"
   },
   "pypi:ast-grep-cli": {
@@ -5697,7 +5707,7 @@
    "version": "boto3>=1.28.0",
    "scope": "shipped",
    "licence": "Apache-2.0",
-   "licence_source": "pypi.org 1.43.118 license",
+   "licence_source": "pypi.org 1.43.121 license",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)"
   },
   "pypi:click": {
@@ -5752,17 +5762,17 @@
   "pypi:fastapi": {
    "kind": "pypi",
    "declared_in": [
+    "infra-ai_embeddings-api/src/code/requirements.txt",
     "infra-api_google-workspace-mcp/src/code/pyproject.toml",
     "user-ai_my-ai-api/dist/code/arm64/vendor/headroom/pyproject.toml",
     "user-ai_my-ai-api/src/code/vendor/headroom/pyproject.toml",
     "user-data_scrappers-api/src/code/requirements.txt"
    ],
-   "version": "fastapi>=0.115.12",
+   "version": "fastapi==0.115.6",
    "scope": "shipped",
    "licence": "MIT",
    "licence_source": "pypi.org 0.162.0 license_expression",
-   "transitive": "not resolved (needs a package-manager resolution; see script docstring)",
-   "within_upstream_module": "google-workspace-mcp"
+   "transitive": "not resolved (needs a package-manager resolution; see script docstring)"
   },
   "pypi:fastembed": {
    "kind": "pypi",
@@ -5784,7 +5794,7 @@
    "version": "fastmcp>=3.1.1",
    "scope": "shipped",
    "licence": "Apache-2.0",
-   "licence_source": "pypi.org 4.1.3 license_expression",
+   "licence_source": "pypi.org 4.1.4 license_expression",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)",
    "within_upstream_module": "google-workspace-mcp"
   },
@@ -5938,7 +5948,7 @@
    "version": "instaloader==4.14.1",
    "scope": "shipped",
    "licence": "MIT",
-   "licence_source": "pypi.org 4.15.5 license",
+   "licence_source": "pypi.org 4.16 license",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)"
   },
   "pypi:jinja2": {
@@ -5962,7 +5972,7 @@
    "version": "langchain-core>=1.3.3,<4.0",
    "scope": "shipped",
    "licence": "MIT",
-   "licence_source": "pypi.org 1.7.0 license",
+   "licence_source": "pypi.org 1.7.1 license",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)"
   },
   "pypi:langchain-ollama": {
@@ -5986,7 +5996,7 @@
    "version": "langchain-openai>=1.1.14,<2.0",
    "scope": "shipped",
    "licence": "MIT",
-   "licence_source": "pypi.org 1.7.2 license",
+   "licence_source": "pypi.org 1.7.3 license",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)"
   },
   "pypi:litellm": {
@@ -5998,7 +6008,7 @@
    "version": "litellm>=1.86.2,<2.0; python_version < '3.14'",
    "scope": "shipped",
    "licence": "MIT",
-   "licence_source": "pypi.org 1.106.4 license_expression",
+   "licence_source": "pypi.org 1.106.6 license_expression",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)"
   },
   "pypi:lm-eval": {
@@ -6058,7 +6068,7 @@
    "version": "mypy>=1.0.0",
    "scope": "shipped",
    "licence": "MIT",
-   "licence_source": "pypi.org 2.4.0 license_expression",
+   "licence_source": "pypi.org 2.4.1 license_expression",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)"
   },
   "pypi:neo4j": {
@@ -6106,7 +6116,7 @@
    "version": "onnxruntime>=1.16.0",
    "scope": "shipped",
    "licence": "MIT",
-   "licence_source": "pypi.org 1.31.0 license",
+   "licence_source": "pypi.org 1.31.1 license",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)"
   },
   "pypi:openai": {
@@ -6118,7 +6128,7 @@
    "version": "openai>=2.14.0",
    "scope": "shipped",
    "licence": "Apache-2.0",
-   "licence_source": "pypi.org 3.37.0 license_expression",
+   "licence_source": "pypi.org 3.41.0 license_expression",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)"
   },
   "pypi:opentelemetry-api": {
@@ -6228,7 +6238,7 @@
    "version": "pypdf==5.1.0",
    "scope": "shipped",
    "licence": "BSD-3-Clause",
-   "licence_source": "pypi.org 6.21.2 license_expression",
+   "licence_source": "pypi.org 6.21.4 license_expression",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)"
   },
   "pypi:pytest": {
@@ -6241,7 +6251,7 @@
    "version": "pytest>=8.3.0",
    "scope": "shipped",
    "licence": "MIT",
-   "licence_source": "pypi.org 9.1.1 license_expression",
+   "licence_source": "pypi.org 9.2.0 license_expression",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)",
    "within_upstream_module": "google-workspace-mcp"
   },
@@ -6255,7 +6265,7 @@
    "version": "pytest-asyncio>=0.23.0",
    "scope": "shipped",
    "licence": "Apache-2.0",
-   "licence_source": "pypi.org 1.4.0 license_expression",
+   "licence_source": "pypi.org 1.4.1 license_expression",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)",
    "within_upstream_module": "google-workspace-mcp"
   },
@@ -6379,7 +6389,7 @@
    "version": "ruff>=0.12.4",
    "scope": "shipped",
    "licence": "MIT",
-   "licence_source": "pypi.org 0.17.2 license_expression",
+   "licence_source": "pypi.org 0.17.3 license_expression",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)",
    "within_upstream_module": "google-workspace-mcp"
   },
@@ -6502,8 +6512,8 @@
    ],
    "version": "torch==2.5.1",
    "scope": "shipped",
-   "licence": "Apache-2.0 AND Apache-2.0 WITH LLVM-exception AND BSD-2-Clause AND BSD-3-Clause AND BSL-1.0 AND MIT",
-   "licence_source": "pypi.org 2.14.1 license_expression",
+   "licence": "Apache-2.0 AND Apache-2.0 WITH LLVM-exception AND BSD-2-Clause AND BSD-3-Clause AND BSL-1.0 AND ISC AND MIT AND Zlib",
+   "licence_source": "pypi.org 2.15.0 license_expression",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)"
   },
   "pypi:trafilatura": {
@@ -6529,7 +6539,7 @@
    "version": "transformers==4.49.0",
    "scope": "shipped",
    "licence": "Apache-2.0",
-   "licence_source": "pypi.org 5.20.2 license",
+   "licence_source": "pypi.org 5.21.1 license",
    "transitive": "not resolved (needs a package-manager resolution; see script docstring)"
   },
   "pypi:tree-sitter-language-pack": {
