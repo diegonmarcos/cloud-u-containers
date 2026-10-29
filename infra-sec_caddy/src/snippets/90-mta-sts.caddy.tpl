@@ -16,6 +16,11 @@ mode: @MTA_MODE@
 max_age: @MTA_MAX_AGE@
 " 200
     }
+    # Whole host is public (owner decision 2026-10-29, #1292): a plain home answer at /.
+    handle / {
+      header Content-Type "text/plain"
+      respond "MTA-STS policy host for diegonmarcos.com (RFC 8461)." 200
+    }
     # Wrapped in handle: the global options carry `order respond before handle`, so a
     # bare site-level `respond 404` ran BEFORE the policy handle above and 404ed it.
     handle {

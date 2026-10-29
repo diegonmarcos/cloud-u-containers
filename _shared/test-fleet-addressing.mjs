@@ -131,6 +131,16 @@ const tierProblems = (text) => {
       if (!blk) { out.push(`tiers: public HTML host ${h} has no site`); continue; }
       if (/^ *import edge_auth/m.test(blk)) out.push(`tiers: public HTML host ${h} must not carry the gate`);
     }
+    // Owner decision 2026-10-29 (#1292): the WHOLE mta-sts host is public (root included, not just the policy path);
+    // mail. and fin-api. stay behind the gate.
+    if (!P.html_hosts.includes("mta-sts.diegonmarcos.com")) out.push("tiers: mta-sts.diegonmarcos.com must be a declared public host (whole host, root included)");
+    const mta = siteOf(text, "mta-sts.diegonmarcos.com");
+    if (mta && /^ *import edge_auth/m.test(mta)) out.push("tiers: mta-sts root must be public: the site carries the gate (root would 302 to auth)");
+    if (mta && !/handle \/ \{/.test(mta)) out.push("tiers: mta-sts root / has no handle (the home page must answer without auth)");
+    for (const g of ["mail.diegonmarcos.com", "fin-api.diegonmarcos.com"]) {
+      const gb = siteOf(text, g);
+      if (gb && !/^ *import edge_auth/m.test(gb)) out.push(`tiers: ${g} must stay behind the gate`);
+    }
     for (const k of Object.keys(cfg.unprotected_hosts)) if (k.includes("*")) out.push(`tiers: unprotected_hosts lists a wildcard (${k}); there is no public wildcard route`);
     for (const m of text.matchAll(/^ {2,4}(\*\.diegonmarcos\.com[^\n{]*) \{$/gm)) {
       const blk = siteOf(text, m[1]);

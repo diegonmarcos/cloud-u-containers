@@ -15,7 +15,8 @@
     "c3-pub.diegonmarcos.com": "API pub: Cloudflare-proxied explicit allowlist (tiers.pub.allowlist), everything else 404",
     "nexus.diegonmarcos.com": "HTML only: GitHub Pages static site, public on github.io anyway",
     "suite.diegonmarcos.com": "HTML only: GitHub Pages static site, public on github.io anyway",
-    "maps.diegonmarcos.com": "HTML only: GitHub Pages static site, public on github.io anyway"
+    "maps.diegonmarcos.com": "HTML only: GitHub Pages static site, public on github.io anyway",
+    "mta-sts.diegonmarcos.com": "HTML+policy: MTA-STS policy host (RFC 8461), fetched anonymously by sending MTAs; whole host public, owner decision 2026-10-29 (#1292)"
   },
   "mesh": {
     "_doc": "#1123: mesh names must live where no stranger can own them. Private namespace: <container>.mesh.diegonmarcos.com, served ONLY by fleet DNS (Hickory 10.0.0.1); the public zone carries no record under mesh. `.app` is a real public TLD (vaultwarden.app is someone else's live Vaultwarden) and is NOT served at all: owner decision, no transition window, test-fleet-addressing.mjs fails on any .app mesh name.",
@@ -157,7 +158,8 @@
         "linktree.diegonmarcos.com",
         "nexus.diegonmarcos.com",
         "suite.diegonmarcos.com",
-        "maps.diegonmarcos.com"
+        "maps.diegonmarcos.com",
+        "mta-sts.diegonmarcos.com"
       ],
       "wildcard_redirect_to": "https://diegonmarcos.com/",
       "_doc": "Owner ruling 2026-10-22: the apex, www and the GitHub Pages custom domains (linktree, nexus, suite, maps) are the ONLY unauthenticated public HTML hosts, each declared explicitly. There is no public wildcard route; the *.diegonmarcos.com catch-all site only redirects to the apex and reaches no upstream. The guard rejects any wildcard site that proxies, serves files or responds with content."
