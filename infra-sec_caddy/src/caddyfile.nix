@@ -1,5 +1,5 @@
 # ══════════════════════════════════════════════════════════════════
-# re-ship marker (#1104/#1102): earlier caddy deploys were stranded by a transient scp drop, then by stale committed dist (render mismatch); dist re-rendered
+# re-ship marker (#1104/#1102/#1292): earlier caddy deploys were stranded by a transient scp drop, then by stale committed dist (render mismatch); #1292 redirect-host gate shipped after the dist re-render
 # caddyfile.nix — pure-Nix Caddyfile generator (v2 engine)
 #
 # Reads build-caddy.json (data-driven from 1_cicd/dist/) and
