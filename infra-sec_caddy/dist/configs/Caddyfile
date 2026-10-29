@@ -17939,7 +17939,7 @@ error @not_mesh "Forbidden" 403
   mta-sts.diegonmarcos.com {
     bind 0.0.0.0 10.0.0.1
 import security
-    import edge_auth /.well-known/acme-challenge/* /.well-known/mta-sts.txt
+    
     tls {
       dns cloudflare {env.CF_API_TOKEN}
       resolvers 1.1.1.1 8.8.8.8
