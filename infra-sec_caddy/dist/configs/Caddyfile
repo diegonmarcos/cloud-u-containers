@@ -6557,6 +6557,7 @@ handle {
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
+import edge_auth /.well-known/acme-challenge/*
     handle {
       redir https://webmail.diegonmarcos.com{uri} 308
     }
@@ -6568,6 +6569,7 @@ import request_limits
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
+import edge_auth /.well-known/acme-challenge/*
     handle {
       redir https://c3-pvt.diegonmarcos.com/fin-api{uri} 308
     }
