@@ -5,6 +5,7 @@
   "label": "cloudy-u-containers",
   "code": "1.1.2.2",
   "kind": "repo",
+  "variant": "repo",
   "description": "Container service definitions for the cloud fleet (split from cloud-infra/a_solutions)",
   "visibility": "public",
   "url": "https://github.com/diegonmarcos/cloudy-u-containers",
