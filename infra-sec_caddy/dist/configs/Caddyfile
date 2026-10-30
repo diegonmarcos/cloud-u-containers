@@ -167,6 +167,7 @@
         caddy.mesh.diegonmarcos.com caddy/
         cal.diegonmarcos.com calendar-radicale/
         calendar.mesh.diegonmarcos.com calendar-radicale/
+        capital-stack-finterminal-api.mesh.diegonmarcos.com capital-stack-finterminal-api/
         chat.diegonmarcos.com chat-mattermost/
         cloud-cgc-pub-mcp.mesh.diegonmarcos.com cloud-cgc-pub-mcp/
         cloud-me-api.mesh.diegonmarcos.com cloud-me-api/
@@ -184,6 +185,7 @@
         cloud.caddy-public.mesh.diegonmarcos.com caddy-public/
         cloud.caddy.mesh.diegonmarcos.com caddy/
         cloud.calendar.mesh.diegonmarcos.com calendar-radicale/
+        cloud.capital-stack-finterminal-api.mesh.diegonmarcos.com capital-stack-finterminal-api/
         cloud.cloud-cgc-pub-mcp.mesh.diegonmarcos.com cloud-cgc-pub-mcp/
         cloud.cloud-me-api.mesh.diegonmarcos.com cloud-me-api/
         cloud.cloud-notes-sync.mesh.diegonmarcos.com cloud-notes-sync/
@@ -197,7 +199,6 @@
         cloud.embeddings-api.mesh.diegonmarcos.com embeddings-api/
         cloud.etherpad.mesh.diegonmarcos.com etherpad/
         cloud.filebrowser.mesh.diegonmarcos.com filebrowser/
-        cloud.capital-stack-finterminal-api.mesh.diegonmarcos.com capital-stack-finterminal-api/
         cloud.g-personal-mcp.mesh.diegonmarcos.com google-personal-mcp/
         cloud.g-workspace-mcp.mesh.diegonmarcos.com google-workspace-mcp/
         cloud.git-proxy-api.mesh.diegonmarcos.com git-proxy-api/
@@ -247,7 +248,6 @@
         embeddings-api.mesh.diegonmarcos.com embeddings-api/
         etherpad.mesh.diegonmarcos.com etherpad/
         filebrowser.mesh.diegonmarcos.com filebrowser/
-        capital-stack-finterminal-api.mesh.diegonmarcos.com capital-stack-finterminal-api/
         g-personal-mcp.mesh.diegonmarcos.com google-personal-mcp/
         g-workspace-mcp.mesh.diegonmarcos.com google-workspace-mcp/
         git-proxy-api.mesh.diegonmarcos.com git-proxy-api/
