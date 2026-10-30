@@ -1,0 +1,24 @@
+name: no-sops-in-public guard
+
+# #1064: the containers' sops-encrypted secrets live only in the private repo
+# cloud-me-pvt-vault. This fails the run when any sops-encrypted file is tracked
+# here again. The second step is the standing mutation proof: it plants sops
+# files in a throwaway repo and requires the guard to go red on each.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: No sops-encrypted file tracked in this public repo
+        run: bash _shared/test/no-sops-in-public.sh
+      - name: Mutation test (planted sops files must turn the guard red)
+        run: bash _shared/test/no-sops-in-public.test.sh
