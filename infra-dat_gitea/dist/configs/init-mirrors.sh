@@ -293,14 +293,13 @@ converge_mirror cloud-me-pub-shared https://github.com/diegonmarcos/cloud-me-pub
 converge_mirror cloud-me-pvt-___ https://github.com/diegonmarcos/cloud-me-pvt-___.git true
 converge_mirror cloud-me-pvt-cgc https://github.com/diegonmarcos/cloud-me-pvt-cgc.git true
 converge_mirror cloud-me-pvt-configs https://github.com/diegonmarcos/cloud-me-pvt-configs.git true
-converge_mirror cloud-me-pvt-containers https://github.com/diegonmarcos/cloud-me-pvt-containers.git true
 converge_mirror cloud-me-pvt-data https://github.com/diegonmarcos/cloud-me-pvt-data.git true
 converge_mirror cloud-me-pvt-my-ai https://github.com/diegonmarcos/cloud-me-pvt-my-ai.git true
 converge_mirror cloud-me-pvt-notes https://github.com/diegonmarcos/cloud-me-pvt-notes.git true
 converge_mirror cloudy-___ https://github.com/diegonmarcos/cloudy-___.git false
 converge_mirror cloudy-a-docs https://github.com/diegonmarcos/cloudy-a-docs.git true
-converge_mirror cloudy-h-webapps https://github.com/diegonmarcos/cloudy-h-webapps.git false
-converge_mirror cloudy-h-webapps-2 https://github.com/diegonmarcos/cloudy-h-webapps-2.git false
+converge_mirror cloudy-h-webapps-desk https://github.com/diegonmarcos/cloudy-h-webapps-desk.git false
+converge_mirror cloudy-h-webapps-mob https://github.com/diegonmarcos/cloudy-h-webapps-mob.git false
 converge_mirror cloudy-t-infra https://github.com/diegonmarcos/cloudy-t-infra.git false
 converge_mirror cloudy-u-android https://github.com/diegonmarcos/cloudy-u-android.git false
 converge_mirror cloudy-u-containers https://github.com/diegonmarcos/cloudy-u-containers.git false
@@ -313,6 +312,7 @@ converge_mirror cloudy_db_infra-ops-obsv_configs-sync https://github.com/diegonm
 converge_mirror z-archived_My-ai-memory https://github.com/diegonmarcos/z-archived_My-ai-memory.git true
 converge_mirror z-archived_c3-infra-plugin https://github.com/diegonmarcos/z-archived_c3-infra-plugin.git true
 converge_mirror z-archived_cloud-me-pub-data https://github.com/diegonmarcos/z-archived_cloud-me-pub-data.git false
+converge_mirror z-archived_cloud-me-pvt-containers https://github.com/diegonmarcos/z-archived_cloud-me-pvt-containers.git true
 converge_mirror z-archived_cloud-me-pvt-data-private https://github.com/diegonmarcos/z-archived_cloud-me-pvt-data-private.git true
 converge_mirror z-archived_cloud-me-pvt-legacy https://github.com/diegonmarcos/z-archived_cloud-me-pvt-legacy.git true
 
