@@ -523,13 +523,32 @@ ${denyBlock}'';
         }
       }'';
       handles = lib.concatMapStringsSep "\n" mkOidcHandle (oidcPub.paths or []);
+      # Multi-SSO (#1147): one handle PER host, each with a LITERAL Host and tls_server_name. The
+      # hub enforces strict SNI/Host matching (its mTLS vault vhost turns strict_sni_host on) and a
+      # reverse_proxy transport pools upstream connections per address, not per SNI. One handler with
+      # `tls_server_name {host}` therefore reused whichever TLS connection was opened first, and the
+      # hub answered 421 to every other alias (sso. 302, account./auth. 421). One handler per host =
+      # one transport and one connection pool per SNI. Same shape as the c3-pvt edge site (c29fbed0).
+      ssoHostHandle = h: ''
+      @sni_${builtins.replaceStrings [ "." "-" ] [ "_" "_" ] h} host ${h}
+      handle @sni_${builtins.replaceStrings [ "." "-" ] [ "_" "_" ] h} {
+        reverse_proxy ${oidcUpstream} {
+          header_up Host ${h}
+          ${xreal}
+          transport http {
+            tls
+            tls_server_name ${h}
+          }
+        }
+      }'';
+      ssoHostHandles = lib.concatMapStringsSep "\n" ssoHostHandle ([ oidcPub.domain ] ++ ea.multiSso.extraHosts);
     in if fullyOpen then ''
     # oidc-public: wg_only:false — whole IdP host open (owner decision 2026-10-15)
     ${siteName} {
     ${sec}
     ${geo oidcPub.domain}
     ${ea.gate oidcPub.domain}
-    ${mkOidcHandle ""}
+    ${if ssoSite then ssoHostHandles else mkOidcHandle ""}
       ${handleErrors}
     }'' else ''
     # oidc-public: machine endpoints only; portal stays mesh-only

@@ -94,12 +94,23 @@ for k in ("hub", "edge"):
         assert "10.0.0.6:4181" in t[g:c] and "10.0.0.6:4182" in t[c:e] and "10.0.0.6:4183" in t[e:j]
         t = t[:i] + t[j:]
     else:
-        assert "tls_server_name {host}" in t and "header_up Host {host}" in t
-        # Only the multi-SSO hub hop (Host and SNI both {host}) is undone. Other hub hops that keep the client
-        # Host on their own (c3-pvt, c29fbed0) are in the OFF render too and must stay as they are.
-        t, n_hop = re.subn(r"header_up Host \{host\}(?=\n    header_up X-Real-IP [^\n]*\n    transport http \{\n      tls\n      tls_server_name \{host\}\n)", "header_up Host auth.diegonmarcos.com", t)
-        assert n_hop == 1, f"{k}: expected exactly one multi-SSO hub hop, found {n_hop}"
-        t = t.replace("tls_server_name {host}", "tls_server_name auth.diegonmarcos.com")
+        # #1147: the multi-SSO hub hop is one reverse_proxy PER alias host with a LITERAL Host and tls_server_name. A single
+        # handler with `tls_server_name {host}` shares one upstream connection pool across SNIs and the hub (strict SNI/Host
+        # matching) answered 421 to every alias but the first one served. The placeholder must never come back there.
+        # Other hub hops that keep the client Host on their own (c3-pvt, c29fbed0) are in the OFF render too and stay as they are.
+        site = re.search(r"\nauth\.diegonmarcos\.com, account\.diegonmarcos\.com, sso\.diegonmarcos\.com \{\n.*?\n\}\n", on, flags=re.S)
+        assert site, f"{k}: multi-SSO edge site not found"
+        assert "tls_server_name {host}" not in site.group(0) and "header_up Host {host}" not in site.group(0), f"{k}: SNI/Host placeholder in the multi-SSO edge site (shared pool => hub 421)"
+        for h in ("auth", "account", "sso"):
+            fq = f"{h}.diegonmarcos.com"
+            blk = re.search(r"@sni_%s_diegonmarcos_com host %s\nhandle @sni_%s_diegonmarcos_com \{\n.*?\n\}\n" % (h, re.escape(fq), h), t, flags=re.S)
+            assert blk, f"{k}: no per-host handle for {fq}"
+            assert f"header_up Host {fq}\n" in blk.group(0) and f"tls_server_name {fq}\n" in blk.group(0), f"{k}: {fq} handle does not pin Host and SNI to itself"
+        # collapse the three per-host handles (exactly one multi-SSO hop) back into the single OFF handle; the rest must equal OFF
+        offh = re.search(r"handle  \{\n  reverse_proxy https://10\.1\.0\.2:443 \{.*?\n\}\n", off, flags=re.S)
+        assert offh, f"{k}: OFF handle not found"
+        t, n_hop = re.subn(r"(?:@sni_\w+ host [^\n]+\nhandle @sni_\w+ \{\n.*?\n\}\n){3}", lambda m: offh.group(0), t, count=1, flags=re.S)
+        assert n_hop == 1, f"{k}: expected exactly one multi-SSO hub hop (three per-host handles), found {n_hop}"
         t = t.replace(" auth.diegonmarcos.com account.diegonmarcos.com sso.diegonmarcos.com", " auth.diegonmarcos.com")
     if t != off:
         print("".join(list(difflib.unified_diff(off.splitlines(1), t.splitlines(1)))[:40]))

@@ -206,15 +206,26 @@ if (existsSync(CFP)) {
     const out = [];
     const re = /reverse_proxy https:\/\/10\.1\.0\.2:443 \{([\s\S]*?)\n\s*\}\n/g;
     let m, n = 0;
-    while ((m = re.exec(t))) { n++; if (!/header_up Host \{host\}/.test(m[1])) out.push(`edge hub proxy #${n} lacks "header_up Host {host}" (hub answers 421)`); }
+    while ((m = re.exec(t))) {
+      n++;
+      const hostPin = /header_up Host (\{host\}|[a-z0-9.-]+\.diegonmarcos\.com)\s*$/m.exec(m[1]);
+      const sni = /tls_server_name (\S+)/.exec(m[1]);
+      if (!hostPin) out.push(`edge hub proxy #${n} lacks a "header_up Host" pin (hub answers 421)`);
+      // #1147: a placeholder SNI shares ONE pooled upstream connection across hosts, so the hub (strict SNI/Host)
+      // answered 421 to every alias but the first one served. SNI must be a literal and equal the pinned Host.
+      if (sni && /\{/.test(sni[1])) out.push(`edge hub proxy #${n} uses a placeholder tls_server_name (${sni[1]}): shared connection pool, hub answers 421 to the other hosts (#1147)`);
+      if (hostPin && sni && !/\{/.test(hostPin[1]) && hostPin[1] !== sni[1]) out.push(`edge hub proxy #${n} pins Host ${hostPin[1]} but SNI ${sni[1]} (hub answers 421)`);
+    }
     if (!n) out.push("no edge->hub https reverse_proxy found; the guard is blind");
     return out;
   };
   const tcp = readFileSync(CFP, "utf8");
   const probs = hubProxyProblems(tcp);
-  if (hubProxyProblems(tcp.replace(/\n\s*header_up Host \{host\}/g, "")).length === 0) probs.push('mutation "no Host pin" was not caught; the guard is blind');
+  if (hubProxyProblems(tcp.replace(/\n\s*header_up Host [^\n]+/g, "")).length === 0) probs.push('mutation "no Host pin" was not caught; the guard is blind');
+  if (hubProxyProblems(tcp.replace(/tls_server_name auth\.diegonmarcos\.com/, "tls_server_name {host}")).length === 0) probs.push('mutation "placeholder SNI" was not caught; the guard is blind');
+  if (hubProxyProblems(tcp.replace(/tls_server_name sso\.diegonmarcos\.com/, "tls_server_name auth.diegonmarcos.com")).length === 0) probs.push('mutation "Host/SNI mismatch" was not caught; the guard is blind');
   for (const pr of probs) { fail++; console.error(`FAIL ${pr}`); }
-  console.log(`edge-hub-host: ${probs.length ? probs.length + " problem(s)" : "every edge->hub https proxy pins Host {host}"}`);
+  console.log(`edge-hub-host: ${probs.length ? probs.length + " problem(s)" : "every edge->hub https proxy pins Host and a literal matching SNI"}`);
 }
 
 // Mutation proof for the mesh_tld rule: it must reject what it claims to reject.
