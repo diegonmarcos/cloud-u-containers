@@ -74,13 +74,13 @@ in
       # Healthy ONLY when PING returns PONG — redis returns -LOADING (no PONG)
       # while replaying the AOF, so this gates authelia until the dataset is
       # fully loaded. grep -q PONG is required because redis-cli exits 0 even on
-      # a -LOADING error reply. start_period covers the AOF replay window.
+      # a -LOADING error reply. start_period must exceed the AOF replay window: replaying the incr AOF took 204s on gcp-proxy (2026-10-30 14:04), so the old 10s + 12x5s budget flagged it unhealthy mid-load and failed authelia's depends_on (Ship run 41063222260).
       healthcheck = {
         test = [ "CMD-SHELL" "redis-cli -p ${toString buildJson.ports.redis} -a \"$$AUTHELIA_REDIS_PASSWORD\" ping 2>/dev/null | grep -q PONG" ];
         interval = "5s";
         timeout = "3s";
         retries = 12;
-        start_period = "10s";
+        start_period = "300s";
       };
       deploy.resources = {
         limits       = { memory = "48M"; cpus = "1.0"; };
