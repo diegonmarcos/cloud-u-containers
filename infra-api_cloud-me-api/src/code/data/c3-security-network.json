@@ -496,11 +496,8 @@
       },
       {
         "host": "mta-sts.diegonmarcos.com",
-        "scope": "paths",
-        "paths": [
-          "/.well-known/mta-sts.txt"
-        ],
-        "reason": "Owner decision 22: MTA-STS policy (RFC 8461) is fetched anonymously by sending MTAs."
+        "scope": "host",
+        "reason": "Owner decision 2026-10-29 (#1292): the whole MTA-STS host is public, home page included. The policy (RFC 8461) is fetched anonymously by sending MTAs and the host carries nothing else: /.well-known/mta-sts.txt serves the policy, / a one-line public notice, any other path 404. Previously only the policy path was exempt (scope paths) so / answered 302 to auth."
       },
       {
         "host": "vpn.diegonmarcos.com",

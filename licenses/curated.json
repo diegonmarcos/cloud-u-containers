@@ -42,6 +42,10 @@
   "_dispatch": {
    "licence": "LicenseRef-NoLicenseGranted"
   },
+  "_dotfiles": {
+   "licence": "LicenseRef-NoLicenseGranted",
+   "note": "Generated dotfiles mirror (my-ai dotfiles engine from the cloudy-u-linux claude SoT); own code, no third-party content."
+  },
   "_shared": {
    "licence": "LicenseRef-NoLicenseGranted",
    "note": "Own code. This repository has no LICENSE file, so no licence is granted today; PROPOSED (owner decides, #815): PolyForm-Noncommercial-1.0.0, the licence cloud-infra already carries."
