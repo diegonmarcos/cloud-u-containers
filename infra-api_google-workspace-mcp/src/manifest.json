@@ -368,7 +368,7 @@
     "name": "build minio"
   },
   {
-    "file": "build-fin-api.json",
+    "file": "build-capital-stack-finterminal-api.json",
     "name": "build fin api"
   },
   {

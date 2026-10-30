@@ -297,8 +297,9 @@
   "user-fin_crawlee-cloud": {
    "licence": "LicenseRef-NoLicenseGranted"
   },
-  "user-fin_fin-api": {
-   "licence": "LicenseRef-NoLicenseGranted"
+  "user-fin_capital-stack-finterminal-api": {
+   "licence": "AGPL-3.0-or-later OR LicenseRef-Fincept-Commercial",
+   "note": "Rust port of FinceptTerminal (https://github.com/Fincept-Corporation/FinceptTerminal), vendored in src/code. Upstream is dual-licensed: AGPL-3.0 (personal use) OR the Fincept Commercial License (any business/internal/hosted use). LICENSE is upstream's text verbatim; NOTICE records the obligations (AGPL section 13 network source offer)."
   },
   "user-media_photoprism": {
    "licence": "LicenseRef-NoLicenseGranted"

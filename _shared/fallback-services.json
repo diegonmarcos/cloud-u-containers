@@ -705,10 +705,10 @@
       "bearer": true
     },
     {
-      "slug": "fin-api",
-      "dir": "user-fin_fin-api",
-      "description": "Fincept Terminal backend (fin-api) — REST + WebSocket over DataHub, 35 data connectors, 7 analytics, 17 brokers, 6 investor personas, MCP tools",
-      "mesh": "fin-api.mesh.diegonmarcos.com",
+      "slug": "capital-stack-finterminal-api",
+      "dir": "user-fin_capital-stack-finterminal-api",
+      "description": "Fincept Terminal backend (capital-stack-finterminal-api) — REST + WebSocket over DataHub, 35 data connectors, 7 analytics, 17 brokers, 6 investor personas, MCP tools",
+      "mesh": "capital-stack-finterminal-api.mesh.diegonmarcos.com",
       "hosts": [],
       "signin": false,
       "bearer": true

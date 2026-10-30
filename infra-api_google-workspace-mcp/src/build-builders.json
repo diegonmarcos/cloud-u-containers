@@ -302,8 +302,8 @@
         "vm": "oci-apps",
         "has_docker": true
       },
-      "fin-api": {
-        "dir": "user-fin_fin-api",
+      "capital-stack-finterminal-api": {
+        "dir": "user-fin_capital-stack-finterminal-api",
         "vm": "oci-apps",
         "has_docker": true
       },

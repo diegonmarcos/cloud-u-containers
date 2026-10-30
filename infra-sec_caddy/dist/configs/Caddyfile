@@ -197,7 +197,7 @@
         cloud.embeddings-api.mesh.diegonmarcos.com embeddings-api/
         cloud.etherpad.mesh.diegonmarcos.com etherpad/
         cloud.filebrowser.mesh.diegonmarcos.com filebrowser/
-        cloud.fin-api.mesh.diegonmarcos.com fin-api/
+        cloud.capital-stack-finterminal-api.mesh.diegonmarcos.com capital-stack-finterminal-api/
         cloud.g-personal-mcp.mesh.diegonmarcos.com google-personal-mcp/
         cloud.g-workspace-mcp.mesh.diegonmarcos.com google-workspace-mcp/
         cloud.git-proxy-api.mesh.diegonmarcos.com git-proxy-api/
@@ -247,7 +247,7 @@
         embeddings-api.mesh.diegonmarcos.com embeddings-api/
         etherpad.mesh.diegonmarcos.com etherpad/
         filebrowser.mesh.diegonmarcos.com filebrowser/
-        fin-api.mesh.diegonmarcos.com fin-api/
+        capital-stack-finterminal-api.mesh.diegonmarcos.com capital-stack-finterminal-api/
         g-personal-mcp.mesh.diegonmarcos.com google-personal-mcp/
         g-workspace-mcp.mesh.diegonmarcos.com google-workspace-mcp/
         git-proxy-api.mesh.diegonmarcos.com git-proxy-api/
@@ -3299,8 +3299,8 @@ error @not_wg "Forbidden" 403
       import edge_errors
   }
 
-  # c3 container fin-api (mesh-only; fin-api-http-8340.mesh.diegonmarcos.com)
-  c3-fin-api.diegonmarcos.com {
+  # c3 container capital-stack-finterminal-api (mesh-only; capital-stack-finterminal-api-http-8340.mesh.diegonmarcos.com)
+  c3-capital-stack-finterminal-api.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
@@ -5337,7 +5337,7 @@ handle_path /scrappers/* {
         }
 }
 
-handle_path /fin-api/* {
+handle_path /capital-stack-finterminal-api/* {
   @wg remote_ip 10.0.0.0/24 fd0c:1d00::/64
         handle @wg {
               @bearer header Authorization Bearer*
@@ -6564,14 +6564,14 @@ import edge_auth /.well-known/acme-challenge/*
       import edge_errors
   }
 
-  # fin-api own host retired (#1104): redirect to the c3-pvt path
+  # capital-stack-finterminal-api own host retired (#1104): redirect to the c3-pvt path
   fin-api.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
 import edge_auth /.well-known/acme-challenge/*
     handle {
-      redir https://c3-pvt.diegonmarcos.com/fin-api{uri} 308
+      redir https://c3-pvt.diegonmarcos.com/capital-stack-finterminal-api{uri} 308
     }
       import edge_errors
   }
@@ -6709,7 +6709,7 @@ import request_limits
           header_up X-Real-IP {http.request.remote.host}
         }
       }
-      handle_path /fin-api/* {
+      handle_path /capital-stack-finterminal-api/* {
         reverse_proxy 10.0.0.6:8340 {
           header_up X-Real-IP {http.request.remote.host}
         }
@@ -9473,7 +9473,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  fin-api.mesh.diegonmarcos.com {
+  capital-stack-finterminal-api.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -12279,7 +12279,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  cloud.fin-api.mesh.diegonmarcos.com {
+  cloud.capital-stack-finterminal-api.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -14534,7 +14534,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  c3-fin-api.mesh.diegonmarcos.com {
+  c3-capital-stack-finterminal-api.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
       issuer internal {
@@ -16995,7 +16995,7 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
-  fin-api-http-8340.mesh.diegonmarcos.com {
+  capital-stack-finterminal-api-http-8340.mesh.diegonmarcos.com {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1

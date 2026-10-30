@@ -1279,25 +1279,25 @@
         "auth": "two_factor"
       }
     },
-    "fin-api": {
+    "capital-stack-finterminal-api": {
       "ip": "10.0.0.6",
       "ports": {
         "app": 8340
       },
       "vm": "oci-apps",
       "healthcheck": "/health",
-      "domain": "api.diegonmarcos.com/fin-api",
-      "description": "Fincept Terminal backend (fin-api) — REST + WebSocket over DataHub, 35 data connectors, 7 analytics, 17 brokers, 6 investor personas, MCP tools",
+      "domain": "api.diegonmarcos.com/capital-stack-finterminal-api",
+      "description": "Fincept Terminal backend (capital-stack-finterminal-api) — REST + WebSocket over DataHub, 35 data connectors, 7 analytics, 17 brokers, 6 investor personas, MCP tools",
       "api": {
         "has_api": true,
         "has_web_ui": true,
-        "api_path": "/fin-api",
-        "api_url": "https://api.diegonmarcos.com/fin-api/fin-api",
+        "api_path": "/capital-stack-finterminal-api",
+        "api_url": "https://api.diegonmarcos.com/capital-stack-finterminal-api/capital-stack-finterminal-api",
         "healthcheck_paths": [
           "/health"
         ],
         "type": "custom-rest",
-        "base_path": "/fin-api",
+        "base_path": "/capital-stack-finterminal-api",
         "display_name": "Fincept Terminal (Rust)",
         "description": "Bloomberg-class financial intelligence platform with 35 data connectors, 7 analytics modules, 17 brokers, and 6 investor personas.",
         "auth": "bearer"

@@ -526,7 +526,7 @@ cloudy-u-containers/
 │       ├── code/
 │       ├── compose/
 │       └── configs/
-├── user-fin_fin-api/
+├── user-fin_capital-stack-finterminal-api/
 │   ├── dist/
 │   │   ├── code/
 │   │   ├── compose/

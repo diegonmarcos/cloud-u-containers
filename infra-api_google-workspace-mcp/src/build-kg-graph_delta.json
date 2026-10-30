@@ -1543,13 +1543,13 @@
       "id": "fin_api",
       "key": "service:fin_api",
       "properties": {
-        "name": "fin-api",
+        "name": "capital-stack-finterminal-api",
         "category": "fin",
-        "description": "Fincept Terminal backend (fin-api) — REST + WebSocket over DataHub, 35 data connectors, 7 analytics, 17 brokers, 6 investor personas, MCP tools",
-        "domain": "api.diegonmarcos.com/fin-api",
+        "description": "Fincept Terminal backend (capital-stack-finterminal-api) — REST + WebSocket over DataHub, 35 data connectors, 7 analytics, 17 brokers, 6 investor personas, MCP tools",
+        "domain": "api.diegonmarcos.com/capital-stack-finterminal-api",
         "port": 8340,
         "vm": "oci-apps",
-        "folder": "user-fin_fin-api"
+        "folder": "user-fin_capital-stack-finterminal-api"
       }
     },
     {
@@ -1557,8 +1557,8 @@
       "id": "fin_api",
       "key": "container:fin_api",
       "properties": {
-        "name": "fin-api",
-        "image": "ghcr.io/diegonmarcos/fin-api:latest",
+        "name": "capital-stack-finterminal-api",
+        "image": "ghcr.io/diegonmarcos/capital-stack-finterminal-api:latest",
         "role": "app",
         "port": 8340,
         "public": true
@@ -2285,7 +2285,7 @@
       "id": "api_diegonmarcos_com/fin_api",
       "key": "domain:api_diegonmarcos_com/fin_api",
       "properties": {
-        "fqdn": "api.diegonmarcos.com/fin-api"
+        "fqdn": "api.diegonmarcos.com/capital-stack-finterminal-api"
       }
     },
     {
@@ -2948,10 +2948,10 @@
       "id": "user_fin_fin_api",
       "key": "module:user_fin_fin_api",
       "properties": {
-        "name": "user-fin_fin-api",
+        "name": "user-fin_capital-stack-finterminal-api",
         "repo": "cloud",
         "category": "fin",
-        "service": "fin-api"
+        "service": "capital-stack-finterminal-api"
       }
     },
     {
@@ -4936,7 +4936,7 @@
       "to": "service:caddy",
       "key": "service:fin_api->proxied_by->service:caddy",
       "properties": {
-        "domain": "api.diegonmarcos.com/fin-api"
+        "domain": "api.diegonmarcos.com/capital-stack-finterminal-api"
       }
     },
     {

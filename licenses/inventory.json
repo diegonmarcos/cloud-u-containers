@@ -18,7 +18,8 @@
    "CDLA-Permissive-2.0": 1
   },
   "dir": {
-   "LicenseRef-NoLicenseGranted": 102
+   "LicenseRef-NoLicenseGranted": 101,
+   "AGPL-3.0-or-later OR LicenseRef-Fincept-Commercial": 1
   },
   "docker": {
    "LicenseRef-NoLicenseGranted": 53,
@@ -75,6 +76,7 @@
    "PSF-2.0": 1
   },
   "vendored": {
+   "AGPL-3.0-or-later OR LicenseRef-Fincept-Commercial": 1,
    "Apache-2.0": 1,
    "Apache-2.0 AND OFL-1.1": 1,
    "MIT": 1
@@ -269,8 +271,8 @@
     "user-comm_chat-mattermost/dist/code/arm64/Dockerfile",
     "user-comm_chat-mattermost/src/code/arm64/Dockerfile",
     "user-comm_mail-puller/dist/code/amd64/Dockerfile",
-    "user-fin_fin-api/dist/code/arm64/Dockerfile",
-    "user-fin_fin-api/src/code/Dockerfile.native",
+    "user-fin_capital-stack-finterminal-api/dist/code/arm64/Dockerfile",
+    "user-fin_capital-stack-finterminal-api/src/code/Dockerfile.native",
     "user-news_news-gdelt/dist/code/arm64/Dockerfile",
     "user-news_news-gdelt/src/Dockerfile.native"
    ],
@@ -310,8 +312,8 @@
     "user-ai_my-ai_claude-api/src/code/Dockerfile",
     "user-comm_chat-mattermost/dist/code/arm64/Dockerfile",
     "user-comm_chat-mattermost/src/code/arm64/Dockerfile",
-    "user-fin_fin-api/dist/code/arm64/Dockerfile",
-    "user-fin_fin-api/src/code/Dockerfile.native",
+    "user-fin_capital-stack-finterminal-api/dist/code/arm64/Dockerfile",
+    "user-fin_capital-stack-finterminal-api/src/code/Dockerfile.native",
     "user-news_news-gdelt/dist/code/arm64/Dockerfile",
     "user-news_news-gdelt/src/Dockerfile.native",
     "user-news_news-gdelt/src/code/Dockerfile"
@@ -447,8 +449,8 @@
    "libssl3": [
     "user-ai_cloud-cgc-pub-mcp/src/code/Dockerfile",
     "user-comm_mail-puller/dist/code/amd64/Dockerfile",
-    "user-fin_fin-api/dist/code/arm64/Dockerfile",
-    "user-fin_fin-api/src/code/Dockerfile.native"
+    "user-fin_capital-stack-finterminal-api/dist/code/arm64/Dockerfile",
+    "user-fin_capital-stack-finterminal-api/src/code/Dockerfile.native"
    ],
    "lsof": [
     "user-ai_my-ai-api/dist/code/arm64/Dockerfile",
@@ -936,7 +938,7 @@
     "user-comm_mail-puller/src/crate/Cargo.toml",
     "user-comm_tools-maddy/src/crate/Cargo.toml",
     "user-comm_tools-stalwart/src/crate/Cargo.toml",
-    "user-fin_fin-api/src/code/Cargo.toml"
+    "user-fin_capital-stack-finterminal-api/src/code/Cargo.toml"
    ],
    "version": "1",
    "scope": "shipped",
@@ -947,7 +949,7 @@
   "cargo:argmin": {
    "kind": "cargo",
    "declared_in": [
-    "user-fin_fin-api/src/code/Cargo.toml"
+    "user-fin_capital-stack-finterminal-api/src/code/Cargo.toml"
    ],
    "version": "0.10",
    "scope": "shipped",
@@ -972,7 +974,7 @@
     "infra-obs_reports/src/src/cloud-health-full-daily/Cargo.toml",
     "user-ai_my-ai-api/dist/code/arm64/vendor/headroom/crates/headroom-proxy/Cargo.toml",
     "user-ai_my-ai-api/src/code/vendor/headroom/crates/headroom-proxy/Cargo.toml",
-    "user-fin_fin-api/src/code/Cargo.toml"
+    "user-fin_capital-stack-finterminal-api/src/code/Cargo.toml"
    ],
    "version": "0.1",
    "scope": "shipped",
@@ -1034,7 +1036,7 @@
     "infra-api_tools-http-to-smtp-proxy-api/src/code/Cargo.toml",
     "user-ai_my-ai-api/dist/code/arm64/vendor/headroom/Cargo.toml",
     "user-ai_my-ai-api/src/code/vendor/headroom/Cargo.toml",
-    "user-fin_fin-api/src/code/Cargo.toml"
+    "user-fin_capital-stack-finterminal-api/src/code/Cargo.toml"
    ],
    "version": "0.8",
    "scope": "shipped",
@@ -1112,7 +1114,7 @@
     "infra-obs_reports/src/src/cloud-url-health-report/Cargo.toml",
     "infra-obs_reports/src/src/reports-common/Cargo.toml",
     "user-comm_tools-stalwart/src/crate/Cargo.toml",
-    "user-fin_fin-api/src/code/Cargo.toml"
+    "user-fin_capital-stack-finterminal-api/src/code/Cargo.toml"
    ],
    "version": "0.4",
    "scope": "shipped",
@@ -1149,7 +1151,7 @@
    "declared_in": [
     "user-ai_my-ai-api/dist/code/arm64/vendor/headroom/crates/headroom-core/Cargo.toml",
     "user-ai_my-ai-api/src/code/vendor/headroom/crates/headroom-core/Cargo.toml",
-    "user-fin_fin-api/src/code/Cargo.toml"
+    "user-fin_capital-stack-finterminal-api/src/code/Cargo.toml"
    ],
    "version": "0.5",
    "scope": "dev",
@@ -1160,7 +1162,7 @@
   "cargo:csv": {
    "kind": "cargo",
    "declared_in": [
-    "user-fin_fin-api/src/code/Cargo.toml"
+    "user-fin_capital-stack-finterminal-api/src/code/Cargo.toml"
    ],
    "version": "1.3",
    "scope": "shipped",
@@ -1173,7 +1175,7 @@
    "declared_in": [
     "user-ai_my-ai-api/dist/code/arm64/vendor/headroom/crates/headroom-core/Cargo.toml",
     "user-ai_my-ai-api/src/code/vendor/headroom/crates/headroom-core/Cargo.toml",
-    "user-fin_fin-api/src/code/Cargo.toml"
+    "user-fin_capital-stack-finterminal-api/src/code/Cargo.toml"
    ],
    "version": "6",
    "scope": "shipped",
@@ -1195,7 +1197,7 @@
   "cargo:eframe": {
    "kind": "cargo",
    "declared_in": [
-    "user-fin_fin-api/src/code/Cargo.toml"
+    "user-fin_capital-stack-finterminal-api/src/code/Cargo.toml"
    ],
    "version": "0.30",
    "scope": "shipped",
@@ -1206,7 +1208,7 @@
   "cargo:egui": {
    "kind": "cargo",
    "declared_in": [
-    "user-fin_fin-api/src/code/Cargo.toml"
+    "user-fin_capital-stack-finterminal-api/src/code/Cargo.toml"
    ],
    "version": "0.30",
    "scope": "shipped",
@@ -1217,7 +1219,7 @@
   "cargo:egui_dock": {
    "kind": "cargo",
    "declared_in": [
-    "user-fin_fin-api/src/code/Cargo.toml"
+    "user-fin_capital-stack-finterminal-api/src/code/Cargo.toml"
    ],
    "version": "0.15",
    "scope": "shipped",
@@ -1228,7 +1230,7 @@
   "cargo:egui_extras": {
    "kind": "cargo",
    "declared_in": [
-    "user-fin_fin-api/src/code/Cargo.toml"
+    "user-fin_capital-stack-finterminal-api/src/code/Cargo.toml"
    ],
    "version": "0.30",
    "scope": "shipped",
@@ -1239,7 +1241,7 @@
   "cargo:egui_plot": {
    "kind": "cargo",
    "declared_in": [
-    "user-fin_fin-api/src/code/Cargo.toml"
+    "user-fin_capital-stack-finterminal-api/src/code/Cargo.toml"
    ],
    "version": "0.30",
    "scope": "shipped",
@@ -1295,7 +1297,7 @@
     "user-ai_my-ai-api/dist/code/arm64/vendor/headroom/crates/headroom-proxy/Cargo.toml",
     "user-ai_my-ai-api/src/code/vendor/headroom/crates/headroom-proxy/Cargo.toml",
     "user-comm_mail-puller/src/crate/Cargo.toml",
-    "user-fin_fin-api/src/code/Cargo.toml"
+    "user-fin_capital-stack-finterminal-api/src/code/Cargo.toml"
    ],
    "version": "0.3",
    "scope": "shipped",
@@ -1330,7 +1332,7 @@
   "cargo:governor": {
    "kind": "cargo",
    "declared_in": [
-    "user-fin_fin-api/src/code/Cargo.toml"
+    "user-fin_capital-stack-finterminal-api/src/code/Cargo.toml"
    ],
    "version": "0.8",
    "scope": "shipped",
@@ -1437,7 +1439,7 @@
   "cargo:insta": {
    "kind": "cargo",
    "declared_in": [
-    "user-fin_fin-api/src/code/Cargo.toml"
+    "user-fin_capital-stack-finterminal-api/src/code/Cargo.toml"
    ],
    "version": "1",
    "scope": "shipped",
@@ -1511,7 +1513,7 @@
   "cargo:nalgebra": {
    "kind": "cargo",
    "declared_in": [
-    "user-fin_fin-api/src/code/Cargo.toml"
+    "user-fin_capital-stack-finterminal-api/src/code/Cargo.toml"
    ],
    "version": "0.33",
    "scope": "shipped",
@@ -1522,7 +1524,7 @@
   "cargo:ndarray": {
    "kind": "cargo",
    "declared_in": [
-    "user-fin_fin-api/src/code/Cargo.toml"
+    "user-fin_capital-stack-finterminal-api/src/code/Cargo.toml"
    ],
    "version": "0.16",
    "scope": "shipped",
@@ -1533,7 +1535,7 @@
   "cargo:once_cell": {
    "kind": "cargo",
    "declared_in": [
-    "user-fin_fin-api/src/code/Cargo.toml"
+    "user-fin_capital-stack-finterminal-api/src/code/Cargo.toml"
    ],
    "version": "1",
    "scope": "shipped",
@@ -1544,7 +1546,7 @@
   "cargo:parking_lot": {
    "kind": "cargo",
    "declared_in": [
-    "user-fin_fin-api/src/code/Cargo.toml"
+    "user-fin_capital-stack-finterminal-api/src/code/Cargo.toml"
    ],
    "version": "0.12",
    "scope": "shipped",
@@ -1567,7 +1569,7 @@
   "cargo:polars": {
    "kind": "cargo",
    "declared_in": [
-    "user-fin_fin-api/src/code/Cargo.toml"
+    "user-fin_capital-stack-finterminal-api/src/code/Cargo.toml"
    ],
    "version": "0.46",
    "scope": "shipped",
@@ -1666,7 +1668,7 @@
     "user-ai_my-ai-api/src/code/vendor/headroom/crates/headroom-proxy/Cargo.toml",
     "user-comm_mail-puller/src/crate/Cargo.toml",
     "user-comm_tools-stalwart/src/crate/Cargo.toml",
-    "user-fin_fin-api/src/code/Cargo.toml"
+    "user-fin_capital-stack-finterminal-api/src/code/Cargo.toml"
    ],
    "version": "0.12",
    "scope": "shipped",
@@ -1681,7 +1683,7 @@
     "user-ai_my-ai-api/src/code/vendor/headroom/crates/headroom-core/Cargo.toml",
     "user-comm_mail-puller/src/crate/Cargo.toml",
     "user-comm_tools-maddy/src/crate/Cargo.toml",
-    "user-fin_fin-api/src/code/Cargo.toml"
+    "user-fin_capital-stack-finterminal-api/src/code/Cargo.toml"
    ],
    "version": "0.32",
    "scope": "shipped",
@@ -1762,7 +1764,7 @@
     "user-comm_mail-puller/src/crate/Cargo.toml",
     "user-comm_tools-maddy/src/crate/Cargo.toml",
     "user-comm_tools-stalwart/src/crate/Cargo.toml",
-    "user-fin_fin-api/src/code/Cargo.toml"
+    "user-fin_capital-stack-finterminal-api/src/code/Cargo.toml"
    ],
    "version": "1",
    "scope": "shipped",
@@ -1785,7 +1787,7 @@
     "user-comm_mail-puller/src/crate/Cargo.toml",
     "user-comm_tools-maddy/src/crate/Cargo.toml",
     "user-comm_tools-stalwart/src/crate/Cargo.toml",
-    "user-fin_fin-api/src/code/Cargo.toml"
+    "user-fin_capital-stack-finterminal-api/src/code/Cargo.toml"
    ],
    "version": "1",
    "scope": "shipped",
@@ -1822,7 +1824,7 @@
   "cargo:sqlx": {
    "kind": "cargo",
    "declared_in": [
-    "user-fin_fin-api/src/code/Cargo.toml"
+    "user-fin_capital-stack-finterminal-api/src/code/Cargo.toml"
    ],
    "version": "0.8",
    "scope": "shipped",
@@ -1833,7 +1835,7 @@
   "cargo:statrs": {
    "kind": "cargo",
    "declared_in": [
-    "user-fin_fin-api/src/code/Cargo.toml"
+    "user-fin_capital-stack-finterminal-api/src/code/Cargo.toml"
    ],
    "version": "0.18",
    "scope": "shipped",
@@ -1871,7 +1873,7 @@
     "user-ai_my-ai-api/dist/code/arm64/vendor/headroom/Cargo.toml",
     "user-ai_my-ai-api/src/code/vendor/headroom/Cargo.toml",
     "user-comm_mail-puller/src/crate/Cargo.toml",
-    "user-fin_fin-api/src/code/Cargo.toml"
+    "user-fin_capital-stack-finterminal-api/src/code/Cargo.toml"
    ],
    "version": "1",
    "scope": "shipped",
@@ -1894,7 +1896,7 @@
   "cargo:time": {
    "kind": "cargo",
    "declared_in": [
-    "user-fin_fin-api/src/code/Cargo.toml"
+    "user-fin_capital-stack-finterminal-api/src/code/Cargo.toml"
    ],
    "version": "0.3",
    "scope": "shipped",
@@ -1927,7 +1929,7 @@
     "user-ai_my-ai-api/dist/code/arm64/vendor/headroom/Cargo.toml",
     "user-ai_my-ai-api/src/code/vendor/headroom/Cargo.toml",
     "user-comm_mail-puller/src/crate/Cargo.toml",
-    "user-fin_fin-api/src/code/Cargo.toml"
+    "user-fin_capital-stack-finterminal-api/src/code/Cargo.toml"
    ],
    "version": "1",
    "scope": "shipped",
@@ -1965,7 +1967,7 @@
    "declared_in": [
     "user-ai_my-ai-api/dist/code/arm64/vendor/headroom/crates/headroom-proxy/Cargo.toml",
     "user-ai_my-ai-api/src/code/vendor/headroom/crates/headroom-proxy/Cargo.toml",
-    "user-fin_fin-api/src/code/Cargo.toml"
+    "user-fin_capital-stack-finterminal-api/src/code/Cargo.toml"
    ],
    "version": "0.24",
    "scope": "shipped",
@@ -1991,7 +1993,7 @@
    "declared_in": [
     "user-ai_my-ai-api/dist/code/arm64/vendor/headroom/crates/headroom-core/Cargo.toml",
     "user-ai_my-ai-api/src/code/vendor/headroom/crates/headroom-core/Cargo.toml",
-    "user-fin_fin-api/src/code/Cargo.toml"
+    "user-fin_capital-stack-finterminal-api/src/code/Cargo.toml"
    ],
    "version": "0.8",
    "scope": "shipped",
@@ -2004,7 +2006,7 @@
    "declared_in": [
     "user-ai_my-ai-api/dist/code/arm64/vendor/headroom/Cargo.toml",
     "user-ai_my-ai-api/src/code/vendor/headroom/Cargo.toml",
-    "user-fin_fin-api/src/code/Cargo.toml"
+    "user-fin_capital-stack-finterminal-api/src/code/Cargo.toml"
    ],
    "version": "0.5",
    "scope": "shipped",
@@ -2017,7 +2019,7 @@
    "declared_in": [
     "user-ai_my-ai-api/dist/code/arm64/vendor/headroom/crates/headroom-proxy/Cargo.toml",
     "user-ai_my-ai-api/src/code/vendor/headroom/crates/headroom-proxy/Cargo.toml",
-    "user-fin_fin-api/src/code/Cargo.toml"
+    "user-fin_capital-stack-finterminal-api/src/code/Cargo.toml"
    ],
    "version": "0.6",
    "scope": "shipped",
@@ -2034,7 +2036,7 @@
     "user-comm_mail-puller/src/crate/Cargo.toml",
     "user-comm_tools-maddy/src/crate/Cargo.toml",
     "user-comm_tools-stalwart/src/crate/Cargo.toml",
-    "user-fin_fin-api/src/code/Cargo.toml"
+    "user-fin_capital-stack-finterminal-api/src/code/Cargo.toml"
    ],
    "version": "0.1",
    "scope": "shipped",
@@ -2051,7 +2053,7 @@
     "user-comm_mail-puller/src/crate/Cargo.toml",
     "user-comm_tools-maddy/src/crate/Cargo.toml",
     "user-comm_tools-stalwart/src/crate/Cargo.toml",
-    "user-fin_fin-api/src/code/Cargo.toml"
+    "user-fin_capital-stack-finterminal-api/src/code/Cargo.toml"
    ],
    "version": "0.3",
    "scope": "shipped",
@@ -2090,7 +2092,7 @@
    "declared_in": [
     "user-ai_my-ai-api/dist/code/arm64/vendor/headroom/crates/headroom-proxy/Cargo.toml",
     "user-ai_my-ai-api/src/code/vendor/headroom/crates/headroom-proxy/Cargo.toml",
-    "user-fin_fin-api/src/code/Cargo.toml"
+    "user-fin_capital-stack-finterminal-api/src/code/Cargo.toml"
    ],
    "version": "2",
    "scope": "shipped",
@@ -2138,7 +2140,7 @@
    "declared_in": [
     "user-ai_my-ai-api/dist/code/arm64/vendor/headroom/crates/headroom-proxy/Cargo.toml",
     "user-ai_my-ai-api/src/code/vendor/headroom/crates/headroom-proxy/Cargo.toml",
-    "user-fin_fin-api/src/code/Cargo.toml"
+    "user-fin_capital-stack-finterminal-api/src/code/Cargo.toml"
    ],
    "version": "0.6",
    "scope": "dev",
@@ -2830,13 +2832,14 @@
    "licence": "LicenseRef-NoLicenseGranted",
    "licence_source": "licenses/curated.json::directories"
   },
-  "dir:user-fin_fin-api": {
+  "dir:user-fin_capital-stack-finterminal-api": {
    "kind": "dir",
    "declared_in": [
     "(tree)"
    ],
-   "licence": "LicenseRef-NoLicenseGranted",
-   "licence_source": "licenses/curated.json::directories"
+   "licence": "AGPL-3.0-or-later OR LicenseRef-Fincept-Commercial",
+   "licence_source": "licenses/curated.json::directories",
+   "note": "Rust port of FinceptTerminal (https://github.com/Fincept-Corporation/FinceptTerminal), vendored in src/code. Upstream is dual-licensed: AGPL-3.0 (personal use) OR the Fincept Commercial License (any business/internal/hosted use). LICENSE is upstream's text verbatim; NOTICE records the obligations (AGPL section 13 network source offer)."
   },
   "dir:user-media_photoprism": {
    "kind": "dir",
@@ -3120,10 +3123,10 @@
     "user-comm_mail-puller/src/build.json",
     "user-comm_tools-stalwart/build.json",
     "user-comm_tools-stalwart/src/build.json",
-    "user-fin_fin-api/build.json",
-    "user-fin_fin-api/dist/code/arm64/Dockerfile",
-    "user-fin_fin-api/src/build.json",
-    "user-fin_fin-api/src/code/Dockerfile.native"
+    "user-fin_capital-stack-finterminal-api/build.json",
+    "user-fin_capital-stack-finterminal-api/dist/code/arm64/Dockerfile",
+    "user-fin_capital-stack-finterminal-api/src/build.json",
+    "user-fin_capital-stack-finterminal-api/src/code/Dockerfile.native"
    ],
    "version": "debian:bookworm-slim",
    "scope": "base",
@@ -3563,13 +3566,13 @@
    "licence_source": "licenses/curated.json::docker_licences[ghcr.io/diegonmarcos/]",
    "note": "Image built by this fleet. The licence is that of the packaging (own code); the software inside keeps its upstream licence - see the same service's upstream image / vendored-source entries."
   },
-  "docker:ghcr.io/diegonmarcos/fin-api": {
+  "docker:ghcr.io/diegonmarcos/capital-stack-finterminal-api": {
    "kind": "docker",
    "declared_in": [
-    "user-fin_fin-api/build.json",
-    "user-fin_fin-api/src/build.json"
+    "user-fin_capital-stack-finterminal-api/build.json",
+    "user-fin_capital-stack-finterminal-api/src/build.json"
    ],
-   "version": "ghcr.io/diegonmarcos/fin-api:latest",
+   "version": "ghcr.io/diegonmarcos/capital-stack-finterminal-api:latest",
    "scope": "runtime",
    "licence": "LicenseRef-NoLicenseGranted",
    "licence_source": "licenses/curated.json::docker_licences[ghcr.io/diegonmarcos/]",
@@ -4260,9 +4263,9 @@
     "user-comm_tools-maddy/src/build.json",
     "user-comm_tools-stalwart/build.json",
     "user-comm_tools-stalwart/src/build.json",
-    "user-fin_fin-api/build.json",
-    "user-fin_fin-api/src/build.json",
-    "user-fin_fin-api/src/code/Dockerfile.native"
+    "user-fin_capital-stack-finterminal-api/build.json",
+    "user-fin_capital-stack-finterminal-api/src/build.json",
+    "user-fin_capital-stack-finterminal-api/src/code/Dockerfile.native"
    ],
    "version": "rust:1.86-slim-bookworm",
    "scope": "base",
@@ -4438,7 +4441,7 @@
     "user-comm_tools-maddy/src/flake.nix",
     "user-comm_tools-stalwart/src/flake.nix",
     "user-data_scrappers-api/src/flake.nix",
-    "user-fin_fin-api/src/flake.nix",
+    "user-fin_capital-stack-finterminal-api/src/flake.nix",
     "user-media_photoprism/src/flake.nix",
     "user-news_news-gdelt/src/flake.nix",
     "user-prod_calendar-radicale/src/flake.nix",
@@ -6664,6 +6667,16 @@
    "licence": "MIT",
    "licence_source": "licenses/curated.json::directories",
    "note": "Build-staged copy of user-ai_my-ai_claude-api/src/code/claude-config/ponytail (upstream github.com/DietrichGebert/ponytail, MIT, Copyright (c) 2026 DietrichGebert); same licence, LICENSE retained."
+  },
+  "vendored:user-fin_capital-stack-finterminal-api": {
+   "kind": "vendored",
+   "declared_in": [
+    "user-fin_capital-stack-finterminal-api/LICENSE",
+    "user-fin_capital-stack-finterminal-api/NOTICE"
+   ],
+   "licence": "AGPL-3.0-or-later OR LicenseRef-Fincept-Commercial",
+   "licence_source": "licenses/curated.json::directories",
+   "note": "Rust port of FinceptTerminal (https://github.com/Fincept-Corporation/FinceptTerminal), vendored in src/code. Upstream is dual-licensed: AGPL-3.0 (personal use) OR the Fincept Commercial License (any business/internal/hosted use). LICENSE is upstream's text verbatim; NOTICE records the obligations (AGPL section 13 network source offer)."
   }
  }
 }

@@ -932,7 +932,7 @@ ${denyBlock}'';
     }
   '';
 
-  # Redirect hosts (mail. -> webmail., fin-api. -> c3-pvt path) sit BEHIND the shared gate
+  # Redirect hosts (mail. -> webmail., capital-stack-finterminal-api. -> c3-pvt path) sit BEHIND the shared gate
   # (owner ruling 2026-10-29, ticket #1292): a browser without a session is sent to sign-in
   # (sso.), a fleet bearer is introspected, and only then does the 308 run. No machine
   # endpoint lives on these two hosts (IMAP/SMTP are L4 on imap./smtps., JMAP discovery

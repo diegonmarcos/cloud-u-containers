@@ -1,0 +1,22 @@
+NOTICE - Capital-Stack-FinTerminal API (FinceptTerminal Rust port)
+
+This service is a pure Rust port of FinceptTerminal:
+
+  Upstream project : FinceptTerminal (Fincept Corporation)
+  Upstream source  : https://github.com/Fincept-Corporation/FinceptTerminal
+  Upstream licence : DUAL - AGPL-3.0 (personal use, study, research, open-source contribution)
+                     OR the Fincept Commercial License (required for any business or internal
+                     company use, SaaS and hosted use); see the LICENSE file, copied verbatim
+  This port        : AGPL-3.0-or-later, matching upstream (src/code/README.md)
+
+The code under src/code/ is derived from the upstream project and is licensed
+under the AGPL; the complete text is in the LICENSE file of this directory.
+Section 13 of the AGPL applies: users who interact with this service over a
+network are entitled to its corresponding source, which is this directory in the
+public repository diegonmarcos/cloudy-u-containers.
+
+No Commercial License is held for this deployment. Whoever operates it must be
+using it under the AGPL option (personal use) or obtain the Fincept Commercial
+License (docs/COMMERCIAL_LICENSE.md upstream).
+The rest of this directory (build.json, nix and compose declarations) is the
+owner's configuration around that code.

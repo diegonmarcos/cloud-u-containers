@@ -489,7 +489,7 @@
         "matrix-element",
         "matrix-mautrix-whatsapp",
         "scrappers-api",
-        "fin-api",
+        "capital-stack-finterminal-api",
         "photoprism",
         "playlist-syncer",
         "news-gdelt",
@@ -6820,29 +6820,29 @@
         "auth": "two_factor"
       }
     },
-    "fin-api": {
+    "capital-stack-finterminal-api": {
       "category": "fin",
       "vm": "oci-A1-f_0",
-      "folder": "user-fin_fin-api",
-      "description": "Fincept Terminal backend (fin-api) — REST + WebSocket over DataHub, 35 data connectors, 7 analytics, 17 brokers, 6 investor personas, MCP tools",
+      "folder": "user-fin_capital-stack-finterminal-api",
+      "description": "Fincept Terminal backend (capital-stack-finterminal-api) — REST + WebSocket over DataHub, 35 data connectors, 7 analytics, 17 brokers, 6 investor personas, MCP tools",
       "enabled": true,
-      "domain": "api.diegonmarcos.com/fin-api",
-      "flake": "user-fin_fin-api",
+      "domain": "api.diegonmarcos.com/capital-stack-finterminal-api",
+      "flake": "user-fin_capital-stack-finterminal-api",
       "port": 8340,
-      "dns": "fin-api.mesh.diegonmarcos.com",
+      "dns": "capital-stack-finterminal-api.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:8340",
       "containers": {
         "app": {
-          "container_name": "fin-api",
-          "image": "ghcr.io/diegonmarcos/fin-api:latest",
+          "container_name": "capital-stack-finterminal-api",
+          "image": "ghcr.io/diegonmarcos/capital-stack-finterminal-api:latest",
           "port": 8340,
           "port_env": "FIN_API_PORT",
-          "dns": "fin-api.mesh.diegonmarcos.com",
+          "dns": "capital-stack-finterminal-api.mesh.diegonmarcos.com",
           "public": true,
           "proxy": {
             "type": "path",
             "parent_domain": "api.diegonmarcos.com",
-            "base_path": "/fin-api",
+            "base_path": "/capital-stack-finterminal-api",
             "auth": "two_factor"
           },
           "healthcheck": "/health",
@@ -6865,13 +6865,13 @@
         }
       },
       "container_names": [
-        "fin-api"
+        "capital-stack-finterminal-api"
       ],
       "all_ports": [
         "8340"
       ],
       "all_dns": [
-        "fin-api.mesh.diegonmarcos.com"
+        "capital-stack-finterminal-api.mesh.diegonmarcos.com"
       ],
       "compose": {
         "containers": [],
@@ -6882,7 +6882,7 @@
         "primary": {
           "type": "path",
           "parent_domain": "api.diegonmarcos.com",
-          "base_path": "/fin-api",
+          "base_path": "/capital-stack-finterminal-api",
           "auth": "two_factor",
           "paths": {
             "/health": {
@@ -6895,7 +6895,7 @@
         "app": 8340
       },
       "health": {
-        "path": "/fin-api/health"
+        "path": "/capital-stack-finterminal-api/health"
       },
       "monitoring": {
         "tls_check": true,
@@ -6908,13 +6908,13 @@
       "api": {
         "has_api": true,
         "has_web_ui": true,
-        "api_path": "/fin-api",
-        "api_url": "https://api.diegonmarcos.com/fin-api/fin-api",
+        "api_path": "/capital-stack-finterminal-api",
+        "api_url": "https://api.diegonmarcos.com/capital-stack-finterminal-api/capital-stack-finterminal-api",
         "healthcheck_paths": [
           "/health"
         ],
         "type": "custom-rest",
-        "base_path": "/fin-api",
+        "base_path": "/capital-stack-finterminal-api",
         "display_name": "Fincept Terminal (Rust)",
         "description": "Bloomberg-class financial intelligence platform with 35 data connectors, 7 analytics modules, 17 brokers, and 6 investor personas.",
         "auth": "bearer"

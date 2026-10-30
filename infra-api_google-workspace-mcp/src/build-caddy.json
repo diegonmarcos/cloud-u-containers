@@ -398,10 +398,10 @@
           "comment": "Unified scrapers API (Instagram / Pinterest / LinkedIn / generic crawl) — retires crawlee-cloud. Lean single-container FastAPI, on-demand, flat-JSON output."
         },
         {
-          "base_path": "/fin-api",
+          "base_path": "/capital-stack-finterminal-api",
           "upstream": "10.0.0.6:8340",
           "wg_only": true,
-          "comment": "Fincept Terminal backend (fin-api) — REST + WebSocket over DataHub, 35 data connectors, 7 analytics, 17 brokers, 6 investor personas, MCP tools"
+          "comment": "Fincept Terminal backend (capital-stack-finterminal-api) — REST + WebSocket over DataHub, 35 data connectors, 7 analytics, 17 brokers, 6 investor personas, MCP tools"
         }
       ],
       "comment": "API hub -- path-based routing to backend APIs",
@@ -721,7 +721,7 @@
       "upstream": "10.0.0.6:3020"
     },
     {
-      "service": "fin-api.mesh.diegonmarcos.com",
+      "service": "capital-stack-finterminal-api.mesh.diegonmarcos.com",
       "upstream": "10.0.0.6:8340"
     },
     {
@@ -1511,19 +1511,19 @@
     },
     {
       "kind": "redirect",
-      "service": "fin-api.mesh.diegonmarcos.com",
-      "redirect_to": "https://fin-api-http-8340.mesh.diegonmarcos.com",
-      "container": "fin-api",
+      "service": "capital-stack-finterminal-api.mesh.diegonmarcos.com",
+      "redirect_to": "https://capital-stack-finterminal-api-http-8340.mesh.diegonmarcos.com",
+      "container": "capital-stack-finterminal-api",
       "container_key": "app",
-      "svc": "fin-api",
+      "svc": "capital-stack-finterminal-api",
       "vm": "oci-A1-f_0"
     },
     {
       "kind": "canonical",
-      "service": "fin-api-http-8340.mesh.diegonmarcos.com",
-      "container": "fin-api",
+      "service": "capital-stack-finterminal-api-http-8340.mesh.diegonmarcos.com",
+      "container": "capital-stack-finterminal-api",
       "container_key": "app",
-      "svc": "fin-api",
+      "svc": "capital-stack-finterminal-api",
       "vm": "oci-A1-f_0",
       "port": 8340,
       "protocol": "http",
@@ -2050,13 +2050,13 @@
     },
     {
       "host": "api.diegonmarcos.com",
-      "path": "/fin-api",
+      "path": "/capital-stack-finterminal-api",
       "upstream": "10.0.0.6:8340",
       "kind": "reverse_proxy",
       "tls": "public",
       "zone": "com",
       "service": null,
-      "notes": "Fincept Terminal backend (fin-api) — REST + WebSocket over DataHub, 35 data connectors, 7 analytics, 17 brokers, 6 investor personas, MCP tools"
+      "notes": "Fincept Terminal backend (capital-stack-finterminal-api) — REST + WebSocket over DataHub, 35 data connectors, 7 analytics, 17 brokers, 6 investor personas, MCP tools"
     }
   ],
   "public_C_app_paths": [
@@ -2725,7 +2725,7 @@
       "notes": null
     },
     {
-      "host": "fin-api.mesh.diegonmarcos.com",
+      "host": "capital-stack-finterminal-api.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:8340",
       "kind": "reverse_proxy",
@@ -3207,13 +3207,13 @@
       "notes": null
     },
     {
-      "host": "fin-api-http-8340.mesh.diegonmarcos.com",
+      "host": "capital-stack-finterminal-api-http-8340.mesh.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:8340",
       "kind": "reverse_proxy",
       "tls": "on_demand",
       "zone": "com",
-      "service": "fin-api",
+      "service": "capital-stack-finterminal-api",
       "notes": null
     },
     {

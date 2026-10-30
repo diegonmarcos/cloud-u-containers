@@ -208,12 +208,12 @@
       "wg_only": true
     },
     {
-      "service": "user-fin_fin-api",
-      "mesh_name": "fin-api.mesh.diegonmarcos.com",
+      "service": "user-fin_capital-stack-finterminal-api",
+      "mesh_name": "capital-stack-finterminal-api.mesh.diegonmarcos.com",
       "block": "primary",
       "host": "api.diegonmarcos.com",
       "type": "path",
-      "base_path": "/fin-api",
+      "base_path": "/capital-stack-finterminal-api",
       "auth": "two_factor",
       "wg_only": true
     },
@@ -733,8 +733,8 @@
       "dns": "filebrowser.mesh.diegonmarcos.com"
     },
     {
-      "service": "user-fin_fin-api",
-      "dns": "fin-api.mesh.diegonmarcos.com"
+      "service": "user-fin_capital-stack-finterminal-api",
+      "dns": "capital-stack-finterminal-api.mesh.diegonmarcos.com"
     },
     {
       "service": "infra-api_google-personal-mcp",

@@ -61,7 +61,7 @@
       "git-proxy-api",
       "http-to-smtp-proxy-api",
       "scrappers-api",
-      "fin-api"
+      "capital-stack-finterminal-api"
     ],
     "protected": [
       "cloud-cgc-pub-mcp"
@@ -86,7 +86,7 @@
       "dbgate",
       "etherpad",
       "filebrowser",
-      "fin-api",
+      "capital-stack-finterminal-api",
       "gitea",
       "grist",
       "hedgedoc",
@@ -165,7 +165,7 @@
       "_doc": "Owner ruling 2026-10-22: the apex, www and the GitHub Pages custom domains (linktree, nexus, suite, maps) are the ONLY unauthenticated public HTML hosts, each declared explicitly. There is no public wildcard route; the *.diegonmarcos.com catch-all site only redirects to the apex and reaches no upstream. The guard rejects any wildcard site that proxies, serves files or responds with content."
     },
     "redirects": {
-      "fin-api.diegonmarcos.com": "https://c3-pvt.diegonmarcos.com/fin-api",
+      "fin-api.diegonmarcos.com": "https://c3-pvt.diegonmarcos.com/capital-stack-finterminal-api",
       "_doc": "Retired own hosts: each answers a 308 to its c3-pvt path (method and body preserved). Added per stage; the guard checks the rendered Caddyfile."
     },
     "path_redirects_pending": {
@@ -175,7 +175,7 @@
       "api.diegonmarcos.com/pub": "c3-public-api",
       "api.diegonmarcos.com/git": "git-proxy-api",
       "api.diegonmarcos.com/scrappers": "scrappers-api",
-      "api.diegonmarcos.com/fin-api": "fin-api",
+      "api.diegonmarcos.com/capital-stack-finterminal-api": "capital-stack-finterminal-api",
       "mcp.diegonmarcos.com/cloud-drive-mcp": "cloud-drive-mcp",
       "mcp.diegonmarcos.com/c3-infra-mcp": "cloud-infra-mcp",
       "mcp.diegonmarcos.com/mail-mcp": "cloud-mail-mcp",

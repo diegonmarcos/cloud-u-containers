@@ -300,11 +300,11 @@
       "has_docker_build": true
     },
     {
-      "name": "fin-api",
-      "dir": "user-fin_fin-api",
-      "compose_path": "/opt/containers/fin-api",
+      "name": "capital-stack-finterminal-api",
+      "dir": "user-fin_capital-stack-finterminal-api",
+      "compose_path": "/opt/containers/capital-stack-finterminal-api",
       "images": [
-        "ghcr.io/diegonmarcos/fin-api:latest"
+        "ghcr.io/diegonmarcos/capital-stack-finterminal-api:latest"
       ],
       "has_docker_build": true
     },

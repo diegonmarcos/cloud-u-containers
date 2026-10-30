@@ -132,7 +132,7 @@ const tierProblems = (text) => {
       if (/^ *import edge_auth/m.test(blk)) out.push(`tiers: public HTML host ${h} must not carry the gate`);
     }
     // Owner decision 2026-10-29 (#1292): the WHOLE mta-sts host is public (root included, not just the policy path);
-    // mail. and fin-api. stay behind the gate.
+    // mail. and capital-stack-finterminal-api. stay behind the gate.
     if (!P.html_hosts.includes("mta-sts.diegonmarcos.com")) out.push("tiers: mta-sts.diegonmarcos.com must be a declared public host (whole host, root included)");
     const mta = siteOf(text, "mta-sts.diegonmarcos.com");
     if (mta && /^ *import edge_auth/m.test(mta)) out.push("tiers: mta-sts root must be public: the site carries the gate (root would 302 to auth)");

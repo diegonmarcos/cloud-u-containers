@@ -905,22 +905,22 @@
       }
     },
     {
-      "service": "user-fin_fin-api",
-      "name": "fin-api",
-      "description": "Fincept Terminal backend (fin-api) — REST + WebSocket over DataHub, 35 data connectors, 7 analytics, 17 brokers, 6 investor personas, MCP tools",
+      "service": "user-fin_capital-stack-finterminal-api",
+      "name": "capital-stack-finterminal-api",
+      "description": "Fincept Terminal backend (capital-stack-finterminal-api) — REST + WebSocket over DataHub, 35 data connectors, 7 analytics, 17 brokers, 6 investor personas, MCP tools",
       "category": "fin",
       "enabled": true,
       "host": "oci-apps",
-      "dns": "fin-api.mesh.diegonmarcos.com",
-      "domain": "api.diegonmarcos.com/fin-api",
+      "dns": "capital-stack-finterminal-api.mesh.diegonmarcos.com",
+      "domain": "api.diegonmarcos.com/capital-stack-finterminal-api",
       "ports": {
         "app": 8340
       },
       "containers": [
         {
           "key": "app",
-          "container_name": "fin-api",
-          "dns": "fin-api.mesh.diegonmarcos.com",
+          "container_name": "capital-stack-finterminal-api",
+          "dns": "capital-stack-finterminal-api.mesh.diegonmarcos.com",
           "port": 8340,
           "protocol": "http",
           "mesh_route": true
@@ -931,13 +931,13 @@
           "block": "primary",
           "host": "api.diegonmarcos.com",
           "type": "path",
-          "base_path": "/fin-api",
+          "base_path": "/capital-stack-finterminal-api",
           "auth": "two_factor",
           "wg_only": true
         }
       ],
       "exposure": "wg-only (mesh)",
-      "health": "/fin-api/health",
+      "health": "/capital-stack-finterminal-api/health",
       "monitoring": {
         "tls_check": true,
         "dns_check": true,
@@ -945,7 +945,7 @@
       },
       "api": {
         "type": "custom-rest",
-        "base_path": "/fin-api",
+        "base_path": "/capital-stack-finterminal-api",
         "display_name": "Fincept Terminal (Rust)",
         "auth": "bearer"
       }
