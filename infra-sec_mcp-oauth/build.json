@@ -9,9 +9,10 @@
   },
   "bind_host": "10.0.0.1",
   "category": "sec",
+  "_ship_skip": "parked (#1252): deploy.host local keeps Ship from building/deploying this service (same marker as infra-cloud_gcloud and infra-bld_cloud-builder-x; build-gha.json then omits it). Restore host gcp-proxy and remote_path /opt/containers/mcp-oauth together with provisioning dist/.secrets (INTROSPECT_SECRET, FORM_SECRET) on gcp-proxy.",
   "deploy": {
-    "host": "gcp-proxy",
-    "remote_path": "/opt/containers/mcp-oauth",
+    "host": "local",
+    "remote_path": "",
     "compose_flags": "--build"
   },
   "compose": {
