@@ -379,6 +379,21 @@
       "scopes": ["openid", "profile", "email", "groups"],
       "userinfo_signed_response_alg": "none",
       "token_endpoint_auth_method": "client_secret_basic"
+    },
+    {
+      "client_id": "cloudflare-access",
+      "secret_var": "AUTHELIA_OIDC_CLIENT_CLOUDFLARE_ACCESS_SECRET",
+      "client_name": "Cloudflare One (Access login via Authelia)",
+      "enabled": false,
+      "consent_mode": "implicit",
+      "public": false,
+      "authorization_policy": "two_factor",
+      "redirect_uris": ["https://diegonmarcos.cloudflareaccess.com/cdn-cgi/access/callback"],
+      "grant_types": ["authorization_code"],
+      "response_types": ["code"],
+      "scopes": ["openid", "profile", "email", "groups"],
+      "userinfo_signed_response_alg": "none",
+      "token_endpoint_auth_method": "client_secret_post"
     }
   ]
 }

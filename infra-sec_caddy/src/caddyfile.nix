@@ -1028,14 +1028,22 @@ ${lib.concatStringsSep "\n" (lib.mapAttrsToList mkPubSink (lib.filterAttrs (n: _
 
   # c3-pub write-only sinks (fleet-addressing.json tiers.pub.sinks): a public path forwarded to one c3-pvt
   # container under a fixed rewrite prefix, e.g. the app log sink to c3-public-api /analytics/openobserve.
+  # The matcher takes BOTH the bare path and the subtree: the app clients post to the bare URL
+  # (https://c3-pub.../analytics-api/openobserve) and `handle <path>/*` alone left that 404 (#1104).
   mkPubSink = path: sink: let
     route = lib.findFirst (r: r.container == sink.container) null c3PvtRoutes;
     base = lib.removeSuffix "/*" path;
   in if route == null then throw "tiers.pub.sinks ${path}: container ${sink.container} is not a c3-pvt route" else ''
-      handle ${path} {
-        uri strip_prefix ${base}
-        rewrite * ${sink.rewrite_prefix}{uri}
-        reverse_proxy ${route.upstream}
+      @pubsink_${lib.replaceStrings [ "/" "-" "." "*" ] [ "_" "_" "_" "" ] base} path ${base} ${path}
+      handle @pubsink_${lib.replaceStrings [ "/" "-" "." "*" ] [ "_" "_" "_" "" ] base} {
+        # route {}: keeps the written order. Caddy's directive order runs `rewrite` BEFORE `uri`, so
+        # without it {uri} was still the unstripped path and c3-public-api got
+        # /analytics/openobserve/analytics-api/openobserve/... (404, #1104).
+        route {
+          uri strip_prefix ${base}
+          rewrite * ${sink.rewrite_prefix}{uri}
+          reverse_proxy ${route.upstream}
+        }
       }'';
 
   # ── Special route generators ──

@@ -6866,10 +6866,16 @@ reverse_proxy https://10.0.0.3:2443 {
         uri strip_prefix /analytics-api/umami
         reverse_proxy 10.0.0.6:3006
       }
-handle /analytics-api/openobserve/* {
-  uri strip_prefix /analytics-api/openobserve
-  rewrite * /analytics/openobserve{uri}
-  reverse_proxy 10.0.0.4:8087
+@pubsink__analytics_api_openobserve path /analytics-api/openobserve /analytics-api/openobserve/*
+handle @pubsink__analytics_api_openobserve {
+  # route {}: keeps the written order. Caddy's directive order runs `rewrite` BEFORE `uri`, so
+  # without it {uri} was still the unstripped path and c3-public-api got
+  # /analytics/openobserve/analytics-api/openobserve/... (404, #1104).
+  route {
+    uri strip_prefix /analytics-api/openobserve
+    rewrite * /analytics/openobserve{uri}
+    reverse_proxy 10.0.0.4:8087
+  }
 }
       handle {
         error "Not Found" 404

@@ -21,6 +21,7 @@ exp = {
  "dagu-ui": "https://workflows.@BASE_DOMAIN@/oidc-callback",
  "dbgate": "https://db.@BASE_DOMAIN@/",
  "etherpad": "https://app.@BASE_DOMAIN@/etherpad/ep_openid_connect/callback",
+ "cloudflare-access": "https://diegonmarcos.cloudflareaccess.com/cdn-cgi/access/callback",  # #994: Authelia as IdP for Cloudflare One, disabled until the owner step
 }
 cs = json.load(open(sys.argv[1]))["clients"]
 ids = [c["client_id"] for c in cs]; vars_ = [c["secret_var"] for c in cs]

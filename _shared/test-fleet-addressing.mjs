@@ -118,7 +118,16 @@ const tierProblems = (text) => {
     if (/^ *import edge_auth/m.test(pub)) out.push(`tiers: ${T.pub.host} is an allowlist site and must not import a gate`);
     const seen = [...pub.matchAll(/^ *handle (\/[^\s]*) \{/gm)].map((m) => m[1]);
     for (const m of pub.matchAll(/^ *@\w+ path ([^\n]+)/gm)) seen.push(...m[1].trim().split(/\s+/));
-    for (const q of seen) if (!pathAllowed(q, T.pub.allowlist)) out.push(`tiers: ${T.pub.host} serves ${q}, which is not on tiers.pub.allowlist`);
+    // Declared write-only sinks (tiers.pub.sinks): the bare path is served too, because the app clients post to
+    // the bare URL (c3-pub/analytics-api/openobserve) and `handle <path>/*` alone answered 404 there (#1104).
+    const sinkPaths = Object.keys(T.pub.sinks ?? {}).filter((k) => !k.startsWith("_"));
+    const sinkBare = sinkPaths.filter((k) => k.endsWith("/*")).map((k) => k.slice(0, -2));
+    for (const q of seen) if (!pathAllowed(q, T.pub.allowlist) && !sinkBare.includes(q)) out.push(`tiers: ${T.pub.host} serves ${q}, which is not on tiers.pub.allowlist`);
+    for (const sp of sinkPaths) {
+      const have = (x) => seen.includes(x);
+      if (!have(sp)) out.push(`tiers: ${T.pub.host} does not serve the declared sink subtree ${sp}`);
+      if (sp.endsWith("/*") && !have(sp.slice(0, -2))) out.push(`tiers: ${T.pub.host} does not serve the bare sink path ${sp.slice(0, -2)} (clients post to the bare URL; it would 404)`);
+    }
     if (/^ *handle_path /m.test(pub)) out.push(`tiers: ${T.pub.host} must not mount container paths`);
     if (!/^ *handle \{\n\s*error "Not Found" 404/m.test(pub)) out.push(`tiers: ${T.pub.host} must end in a 404 default`);
   }
@@ -183,6 +192,7 @@ if (cfg.tiers && existsSync(CF)) {
     "no gate on retired redirect": text.replace(/(\n {2}fin-api\.diegonmarcos\.com \{\n[^}]*?)import edge_auth [^\n]*\n/, "$1"),
     "gate on mta-sts root": text.replace(/(\n {2}mta-sts\.diegonmarcos\.com \{\n[^}]*?import security\n)/, "$1    import edge_auth /.well-known/acme-challenge/* /.well-known/mta-sts.txt\n"),
     "pending redirect to unmounted container": text,
+    "sink without bare path": text.replace(/(@pubsink_\w+ path )(\/[^\s]+) (\/[^\s]+\/\*)/, "$1$3"),
     "no gate on pvt": text.replace(new RegExp(`(${pvtHost.replace(/\./g, "\\.")} \\{[\\s\\S]*?)import edge_auth [^\\n]*\\n`), "$1"),
   };
   const realPending = cfg.tiers.path_redirects_pending;
@@ -194,7 +204,7 @@ if (cfg.tiers && existsSync(CF)) {
   }
   for (const [name, t] of []) if (tierProblems(t).length === 0) probs.push(`tiers: mutation "${name}" was not caught; the guard is blind`);
   for (const pr of probs) { fail++; console.error(`FAIL ${pr}`); }
-  console.log(`tiers: ${probs.length ? probs.length + " problem(s)" : "c3-pvt gated, c3-pub confined to its allowlist, 7 mutations caught"}`);
+  console.log(`tiers: ${probs.length ? probs.length + " problem(s)" : "c3-pvt gated, c3-pub confined to its allowlist, 8 mutations caught"}`);
 }
 
 // Edge -> hub TLS proxies must keep the client Host. Caddy >= 2.11 rewrites Host to the upstream
