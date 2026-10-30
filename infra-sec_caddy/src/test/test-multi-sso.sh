@@ -95,7 +95,11 @@ for k in ("hub", "edge"):
         t = t[:i] + t[j:]
     else:
         assert "tls_server_name {host}" in t and "header_up Host {host}" in t
-        t = t.replace("tls_server_name {host}", "tls_server_name auth.diegonmarcos.com").replace("header_up Host {host}", "header_up Host auth.diegonmarcos.com")
+        # Only the multi-SSO hub hop (Host and SNI both {host}) is undone. Other hub hops that keep the client
+        # Host on their own (c3-pvt, c29fbed0) are in the OFF render too and must stay as they are.
+        t, n_hop = re.subn(r"header_up Host \{host\}(?=\n    header_up X-Real-IP [^\n]*\n    transport http \{\n      tls\n      tls_server_name \{host\}\n)", "header_up Host auth.diegonmarcos.com", t)
+        assert n_hop == 1, f"{k}: expected exactly one multi-SSO hub hop, found {n_hop}"
+        t = t.replace("tls_server_name {host}", "tls_server_name auth.diegonmarcos.com")
         t = t.replace(" auth.diegonmarcos.com account.diegonmarcos.com sso.diegonmarcos.com", " auth.diegonmarcos.com")
     if t != off:
         print("".join(list(difflib.unified_diff(off.splitlines(1), t.splitlines(1)))[:40]))
