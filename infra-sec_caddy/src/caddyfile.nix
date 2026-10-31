@@ -1036,19 +1036,10 @@ ${lib.concatStringsSep "\n" (lib.mapAttrsToList mkPubSink (lib.filterAttrs (n: _
   in if route == null then throw "tiers.pub.sinks ${path}: container ${sink.container} is not a c3-pvt route" else ''
       @pubsink_${lib.replaceStrings [ "/" "-" "." "*" ] [ "_" "_" "_" "" ] base} path ${base} ${path}
       handle @pubsink_${lib.replaceStrings [ "/" "-" "." "*" ] [ "_" "_" "_" "" ] base} {
-        # route {}: keeps the written order. Caddy's directive order runs `rewrite` BEFORE `uri`, so
-        # without it {uri} was still the unstripped path and c3-public-api got
-        # /analytics/openobserve/analytics-api/openobserve/... (404, #1104).
-        # The bare path strips to an empty path that Caddy normalises to "/", which made the upstream see
-        # <prefix>/ (its prefix proxy answers 404 there; only the exact <prefix> ingests). Map "/" to the exact prefix.
-        route {
-          uri strip_prefix ${base}
-          @pubsink_root${lib.replaceStrings [ "/" "-" "." "*" ] [ "_" "_" "_" "" ] base} path /
-          rewrite @pubsink_root${lib.replaceStrings [ "/" "-" "." "*" ] [ "_" "_" "_" "" ] base} ${sink.rewrite_prefix}
-          @pubsink_sub${lib.replaceStrings [ "/" "-" "." "*" ] [ "_" "_" "_" "" ] base} not path /
-          rewrite @pubsink_sub${lib.replaceStrings [ "/" "-" "." "*" ] [ "_" "_" "_" "" ] base} ${sink.rewrite_prefix}{uri}
-          reverse_proxy ${route.upstream}
-        }
+        # One path substitution serves the bare path and the subtree: <base> -> <rewrite_prefix>. strip_prefix + rewrite
+        # (#1104) turned the bare path into "/" and the upstream (exact prefix proxy) answered 404 on the trailing slash.
+        uri path_regexp ^${base} ${sink.rewrite_prefix}
+        reverse_proxy ${route.upstream}
       }'';
 
   # ── Special route generators ──
