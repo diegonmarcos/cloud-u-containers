@@ -147,7 +147,7 @@
     },
     "openobserve": {
       "service": "openobserve",
-      "rewrite_path": "/api/default/default/_json",
+      "rewrite_path": "/openobserve/api/default/default/_json",
       "description": "OpenObserve _json bulk ingest",
       "methods": [
         "POST"
