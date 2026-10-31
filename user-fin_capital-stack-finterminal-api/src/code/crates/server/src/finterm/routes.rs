@@ -128,7 +128,19 @@ async fn curves(State(s): State<AppState>, Path(id): Path<String>) -> Response {
     }
     let years = s.finterm.serving(&path).find_map(|j| j.opts.get("years").cloned()).unwrap_or(Value::Null);
     let mut pts: Vec<&Pt> = got.points.iter().filter(|p| years.get(&p.key).is_some() || years.is_null()).collect();
-    pts.dedup_by(|a, b| a.key == b.key);
+    // two month jobs both contribute a last day: keep, per tenor, the newest observation (first-seen order)
+    let mut newest: Vec<&Pt> = Vec::new();
+    for p in pts {
+        match newest.iter_mut().find(|q| q.key == p.key) {
+            Some(q) => {
+                if p.date > q.date {
+                    *q = p;
+                }
+            }
+            None => newest.push(p),
+        }
+    }
+    let pts = newest;
     let asof = pts.iter().map(|p| p.date.clone()).max().unwrap_or_default();
     let points: Vec<Value> = pts.iter().map(|p| json!({ "key": p.key, "label": p.key, "tenor_years": years.get(&p.key).and_then(Value::as_f64).unwrap_or(p.x), "value": p.value })).collect();
     let prev: Vec<Value> = pts.iter().filter_map(|p| p.prev.map(|v| json!({ "label": p.key, "value": v }))).collect();
