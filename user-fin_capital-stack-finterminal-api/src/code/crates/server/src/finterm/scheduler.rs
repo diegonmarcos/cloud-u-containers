@@ -62,6 +62,13 @@ pub async fn run_and_publish(state: &AppState, job: &Job, db: Option<&sqlx::Sqli
                 entry.last_error = None;
                 Some(json!({ "got": got, "fetched_at": at, "job": job.id, "source": job.source, "attribution": job.attribution }))
             }
+            Ok(_) if job.source == "forexfactory" => {
+                // the next-week file is not published yet: an empty week is a legitimate answer, not a failure
+                entry.status = "ok".into();
+                entry.last_ok = Some(at.clone());
+                entry.last_error = None;
+                None
+            }
             Ok(_) => {
                 entry.status = "empty".into();
                 entry.last_error = Some(format!("{at}: the answer parsed to nothing"));
@@ -124,8 +131,19 @@ async fn body(f: &Finterm, job: &Job, day: chrono::NaiveDate, item: &str) -> any
     if !url.starts_with("https://") {
         anyhow::bail!("refusing a non-https source address");
     }
-    let req = f.client.get(&url).header("Accept", "application/json, application/xml, text/plain, */*");
-    let resp = req.send().await?;
+    // a transient transport failure is retried with a backoff before the run is recorded as failed
+    let mut attempt = 0;
+    let resp = loop {
+        match f.client.get(&url).header("Accept", "application/json, application/xml, text/plain, */*").send().await {
+            Ok(r) => break r,
+            Err(e) if attempt < 2 => {
+                tracing::debug!(error = %e, attempt, "finterm: fetch retry");
+                tokio::time::sleep(Duration::from_secs(2 + 3 * attempt)).await;
+                attempt += 1;
+            }
+            Err(e) => return Err(e.into()),
+        }
+    };
     let status = resp.status();
     if status.as_u16() == 404 && job.source == "forexfactory" {
         // The next-week file is published late in the week; before that the source answers 404, which is "nothing yet", not a failure.

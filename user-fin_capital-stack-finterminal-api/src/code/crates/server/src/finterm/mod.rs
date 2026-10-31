@@ -86,7 +86,7 @@ impl Finterm {
             env!("CARGO_PKG_VERSION"),
             std::env::var("FINTERM_CONTACT").unwrap_or_else(|_| "(+https://github.com/diegonmarcos)".into())
         );
-        let client = reqwest::Client::builder().user_agent(ua).timeout(std::time::Duration::from_secs(20)).build()?;
+        let client = reqwest::Client::builder().user_agent(ua).http1_only().timeout(std::time::Duration::from_secs(45)).build()?;
         Ok(Self {
             declaration_sha: doc.get("declaration_sha").and_then(Value::as_str).unwrap_or_default().to_string(),
             v1: doc.get("v1").and_then(Value::as_str).unwrap_or("/v1").to_string(),

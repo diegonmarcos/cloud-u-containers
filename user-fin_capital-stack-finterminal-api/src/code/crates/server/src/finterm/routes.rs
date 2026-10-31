@@ -139,10 +139,14 @@ async fn curves(State(s): State<AppState>, Path(id): Path<String>) -> Response {
 async fn quotes(State(s): State<AppState>, Query(q): Q) -> Response {
     let (got, at, stale, src) = gather(&s, "/v1/quotes").await;
     let want = list(&q, "symbols");
-    let quotes: Vec<Value> = want
-        .iter()
-        .filter_map(|sym| got.points.iter().find(|p| norm(&p.key) == norm(sym)).map(|p| json!({ "symbol": sym, "name": sym, "price": p.value, "prev_close": p.prev, "ts": p.date })))
-        .collect();
+    // no `symbols`: every quote the warm list holds
+    let quotes: Vec<Value> = if want.is_empty() {
+        got.points.iter().map(|p| json!({ "symbol": p.key, "name": p.key, "price": p.value, "prev_close": p.prev, "ts": p.date })).collect()
+    } else {
+        want.iter()
+            .filter_map(|sym| got.points.iter().find(|p| norm(&p.key) == norm(sym)).map(|p| json!({ "symbol": sym, "name": sym, "price": p.value, "prev_close": p.prev, "ts": p.date })))
+            .collect()
+    };
     if quotes.is_empty() {
         return none("these symbols");
     }
