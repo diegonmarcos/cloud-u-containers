@@ -6868,19 +6868,10 @@ reverse_proxy https://10.0.0.3:2443 {
       }
 @pubsink__analytics_api_openobserve path /analytics-api/openobserve /analytics-api/openobserve/*
 handle @pubsink__analytics_api_openobserve {
-  # route {}: keeps the written order. Caddy's directive order runs `rewrite` BEFORE `uri`, so
-  # without it {uri} was still the unstripped path and c3-public-api got
-  # /analytics/openobserve/analytics-api/openobserve/... (404, #1104).
-  # The bare path strips to an empty path that Caddy normalises to "/", which made the upstream see
-  # <prefix>/ (its prefix proxy answers 404 there; only the exact <prefix> ingests). Map "/" to the exact prefix.
-  route {
-    uri strip_prefix /analytics-api/openobserve
-    @pubsink_root_analytics_api_openobserve path /
-    rewrite @pubsink_root_analytics_api_openobserve /analytics/openobserve
-    @pubsink_sub_analytics_api_openobserve not path /
-    rewrite @pubsink_sub_analytics_api_openobserve /analytics/openobserve{uri}
-    reverse_proxy 10.0.0.4:8087
-  }
+  # One path substitution serves the bare path and the subtree: <base> -> <rewrite_prefix>. strip_prefix + rewrite
+  # (#1104) turned the bare path into "/" and the upstream (exact prefix proxy) answered 404 on the trailing slash.
+  uri path_regexp ^/analytics-api/openobserve /analytics/openobserve
+  reverse_proxy 10.0.0.4:8087
 }
       handle {
         error "Not Found" 404
