@@ -6607,6 +6607,11 @@ import request_limits
           header_up X-Real-IP {http.request.remote.host}
         }
       }
+      handle_path /capital-stack-finterminal-api/* {
+        reverse_proxy 10.0.0.6:8340 {
+          header_up X-Real-IP {http.request.remote.host}
+        }
+      }
       handle_path /cloud-cgc-pub-mcp/* {
         reverse_proxy 10.0.0.6:3105 {
           header_up X-Real-IP {http.request.remote.host}
@@ -6706,11 +6711,6 @@ import request_limits
       }
       handle_path /filebrowser_app/* {
         reverse_proxy 10.0.0.6:3015 {
-          header_up X-Real-IP {http.request.remote.host}
-        }
-      }
-      handle_path /capital-stack-finterminal-api/* {
-        reverse_proxy 10.0.0.6:8340 {
           header_up X-Real-IP {http.request.remote.host}
         }
       }
