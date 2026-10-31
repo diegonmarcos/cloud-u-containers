@@ -714,6 +714,15 @@
       "bearer": true
     },
     {
+      "slug": "capital-stack-finterminal-web",
+      "dir": "user-fin_capital-stack-finterminal-web",
+      "description": "Capital-Stack-FinTerminal web (#1351, design 3.5): the FinTerm pages of the SvelteKit webapps site served as static files behind the shared c3-pvt gate (Authelia 2FA session or fleet bearer) at c3-pvt.diegonmarcos.com/capital-stack-fintermi",
+      "mesh": "capital-stack-finterminal-web.mesh.diegonmarcos.com",
+      "hosts": [],
+      "signin": false,
+      "bearer": false
+    },
+    {
       "slug": "photoprism",
       "dir": "user-media_photoprism",
       "description": "PhotoPrism AI-powered photo management (oci-flex-1)",

@@ -90,6 +90,11 @@
           "name": "cloud-cgc-pvt-mcp",
           "type": "A",
           "value": "10.0.0.6"
+        },
+        {
+          "name": "capital-stack-finterminal-web",
+          "type": "A",
+          "value": "10.0.0.6"
         }
       ],
       "diegonmarcos.com": [

@@ -1,0 +1,70 @@
+{
+  "name": "capital-stack-finterminal-web",
+  "taxonomy": {
+    "group": "Project Apps",
+    "category": "Finance"
+  },
+  "description": "Capital-Stack-FinTerminal web (#1351, design 3.5): the FinTerm pages of the SvelteKit webapps site served as static files behind the shared c3-pvt gate (Authelia 2FA session or fleet bearer) at c3-pvt.diegonmarcos.com/capital-stack-finterminal-web/. Same origin as c3-pvt.diegonmarcos.com/capital-stack-finterminal-api, so the page reads the /v1 API with the gate's session: no CORS, no token in the page. Built by cloudy-h-webapps-mob (ghcr.io/diegonmarcos/capital-stack-finterminal-web). LOCAL, not for deploy until the owner approves.",
+  "dns": "capital-stack-finterminal-web.mesh.diegonmarcos.com",
+  "category": "fin",
+  "timezone": "Europe/Madrid",
+  "domain": null,
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/capital-stack-finterminal-web",
+    "compose_flags": "--no-build --pull always --force-recreate",
+    "_host_doc": "oci-apps, beside capital-stack-finterminal-api: reached at capital-stack-finterminal-web.mesh.diegonmarcos.com over wg0, and publicly only at c3-pvt.diegonmarcos.com/capital-stack-finterminal-web behind the shared gate (#1104). No per-app public host."
+  },
+  "health": {
+    "path": "/healthz"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
+  },
+  "ports": {
+    "app": 8341
+  },
+  "containers": {
+    "app": {
+      "container_name": "capital-stack-finterminal-web",
+      "image": "ghcr.io/diegonmarcos/capital-stack-finterminal-web-binaries:latest",
+      "port": 8341,
+      "port_env": null,
+      "dns": "capital-stack-finterminal-web.mesh.diegonmarcos.com",
+      "public": true,
+      "healthcheck": "/healthz",
+      "monitoring": {
+        "tls_check": true,
+        "dns_check": true,
+        "endpoint_check": true
+      },
+      "volumes": [],
+      "env_file": false,
+      "depends_on": [],
+      "resources": null,
+      "read_only": true,
+      "protocol": "http"
+    }
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "capital-stack-finterminal-web-binaries",
+    "dockerfile": "Dockerfile",
+    "arch": "arm64"
+  },
+  "upstream_image": "ghcr.io/diegonmarcos/capital-stack-finterminal-web:latest",
+  "resources": {
+    "mem_reservation": "16M",
+    "mem_limit": "64M"
+  },
+  "api": {
+    "type": "no-api"
+  },
+  "finterm": {
+    "_doc": "The page base path is the c3-pvt route of this container (/capital-stack-finterminal-web); the API it reads same-origin is the c3-pvt route of the api container.",
+    "base_path": "/capital-stack-finterminal-web",
+    "api_container": "capital-stack-finterminal-api"
+  }
+}
