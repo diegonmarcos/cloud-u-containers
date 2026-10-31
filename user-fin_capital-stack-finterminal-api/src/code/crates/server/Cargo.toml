@@ -9,7 +9,7 @@ description = "capital-stack-finterminal-api — HTTP + WebSocket server shell a
 [lib]
 
 [[bin]]
-name = "capital-stack-finterminal-api"
+name = "fin-api"
 path = "src/main.rs"
 
 [dependencies]
