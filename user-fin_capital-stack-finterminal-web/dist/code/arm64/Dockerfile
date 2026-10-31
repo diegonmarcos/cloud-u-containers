@@ -7,9 +7,10 @@
 # ║ Rebuild: a_solutions/user-fin_capital-stack-finterminal-web/build.sh ship
 # ╚══════════════════════════════════════════════════════════════════╝
 # Type B — wrap upstream, arch=arm64
-FROM ghcr.io/diegonmarcos/capital-stack-finterminal-web:latest
+FROM nginx:1.27-alpine
 LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloudy-t-infra"
-LABEL cloud.diegonmarcos.from-image="ghcr.io/diegonmarcos/capital-stack-finterminal-web:latest"
+LABEL cloud.diegonmarcos.from-image="nginx:1.27-alpine"
 
 
-
+RUN printf 'ok\n' > /usr/share/nginx/html/healthz
+RUN printf '<!doctype html><title>Capital-Stack-FinTerminal</title><h1>Capital-Stack-FinTerminal</h1><p>Gated FinTerm web. Data: /capital-stack-finterminal-api/v1/</p>\n' > /usr/share/nginx/html/index.html
