@@ -48,40 +48,43 @@ pub async fn run_and_publish(state: &AppState, job: &Job, db: Option<&sqlx::Sqli
     let started = chrono::Utc::now();
     let result = run(&state.finterm, job).await;
     let at = started.format("%Y-%m-%dT%H:%M:%SZ").to_string();
-    let mut st = state.finterm.status.lock().expect("status lock");
-    let entry = st.entry(job.id.clone()).or_default();
-    entry.id = job.id.clone();
-    entry.source = job.source.clone();
-    entry.runs += 1;
-    match result {
-        Ok(got) if !got.is_empty() => {
-            let payload = json!({ "got": got, "fetched_at": at, "job": job.id, "source": job.source, "attribution": job.attribution });
-            entry.status = "ok".into();
-            entry.last_ok = Some(at);
-            entry.last_error = None;
-            drop(st);
-            state.hub.publish(&Finterm::topic(&job.id), value(payload.clone()));
-            if let Some(pool) = db {
-                let _ = sqlx::query("INSERT INTO cache (key, value, category, expires_at, created_at) VALUES (?1, ?2, 'finterm', NULL, ?3) ON CONFLICT(key) DO UPDATE SET value = excluded.value, created_at = excluded.created_at")
-                    .bind(Finterm::topic(&job.id))
-                    .bind(payload.to_string().into_bytes())
-                    .bind(started.timestamp())
-                    .execute(pool)
-                    .await;
+    // the status guard is a std Mutex: it must be released before any await (the spawned future has to be Send)
+    let payload = {
+        let mut st = state.finterm.status.lock().expect("status lock");
+        let entry = st.entry(job.id.clone()).or_default();
+        entry.id = job.id.clone();
+        entry.source = job.source.clone();
+        entry.runs += 1;
+        match result {
+            Ok(got) if !got.is_empty() => {
+                entry.status = "ok".into();
+                entry.last_ok = Some(at.clone());
+                entry.last_error = None;
+                Some(json!({ "got": got, "fetched_at": at, "job": job.id, "source": job.source, "attribution": job.attribution }))
             }
-            true
+            Ok(_) => {
+                entry.status = "empty".into();
+                entry.last_error = Some(format!("{at}: the answer parsed to nothing"));
+                None
+            }
+            Err(e) => {
+                entry.status = if entry.last_ok.is_some() { "stale".into() } else { "error".into() };
+                entry.last_error = Some(format!("{at}: {e}"));
+                None
+            }
         }
-        Ok(_) => {
-            entry.status = "empty".into();
-            entry.last_error = Some(format!("{at}: the answer parsed to nothing"));
-            false
-        }
-        Err(e) => {
-            entry.status = if entry.last_ok.is_some() { "stale".into() } else { "error".into() };
-            entry.last_error = Some(format!("{at}: {e}"));
-            false
-        }
+    };
+    let Some(payload) = payload else { return false };
+    state.hub.publish(&Finterm::topic(&job.id), value(payload.clone()));
+    if let Some(pool) = db {
+        let _ = sqlx::query("INSERT INTO cache (key, value, category, expires_at, created_at) VALUES (?1, ?2, 'finterm', NULL, ?3) ON CONFLICT(key) DO UPDATE SET value = excluded.value, created_at = excluded.created_at")
+            .bind(Finterm::topic(&job.id))
+            .bind(payload.to_string().into_bytes())
+            .bind(started.timestamp())
+            .execute(pool)
+            .await;
     }
+    true
 }
 
 /// Fetch one job: one request, or one per item (`items`, or the next `each_days` dates), spaced by `per_min`.
