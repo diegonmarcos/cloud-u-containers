@@ -7,10 +7,11 @@
 pub mod normalise;
 pub mod routes;
 pub mod scheduler;
+pub mod store;
 
 use serde_json::Value;
 use std::collections::HashMap;
-use std::sync::Mutex;
+use std::sync::{Mutex, OnceLock};
 
 /// The generated job list, embedded at build time.
 pub const FETCHERS_JSON: &str = include_str!("../../../../fetchers.json");
@@ -61,6 +62,10 @@ pub struct Finterm {
     pub declared: Value,
     pub status: Mutex<HashMap<String, JobStatus>>,
     pub client: reqwest::Client,
+    /// The market store's declaration (fetchers.json `declared["universe.json"]`, from the app's data/universe.json).
+    pub universe: Value,
+    /// The market store (FINTERM_DB), set once by `store::start`; unset when the server runs without a database.
+    pub store: OnceLock<sqlx::SqlitePool>,
 }
 
 impl Finterm {
@@ -91,9 +96,11 @@ impl Finterm {
             declaration_sha: doc.get("declaration_sha").and_then(Value::as_str).unwrap_or_default().to_string(),
             v1: doc.get("v1").and_then(Value::as_str).unwrap_or("/v1").to_string(),
             jobs,
+            universe: doc.get("declared").and_then(|d| d.get("universe.json")).cloned().unwrap_or(Value::Null),
             declared: doc.get("declared").cloned().unwrap_or(Value::Null),
             status: Mutex::new(status),
             client,
+            store: OnceLock::new(),
         })
     }
 
@@ -187,6 +194,8 @@ mod tests {
         assert!(f.jobs.iter().all(|j| j.ttl_s >= 60));
         assert!(f.serving("/v1/calendar/economic").any(|j| j.connector == "ff_calendar"));
         assert!(f.declared.get("central-banks.json").is_some());
+        assert!(f.universe["history"]["symbols"].as_array().map_or(0, Vec::len) >= 60, "the universe declares the EOD symbols");
+        assert!(f.serving("/v1/calendar/earnings").all(|j| j.source != "nasdaq_calendar"), "no Nasdaq job");
     }
 
     #[test]

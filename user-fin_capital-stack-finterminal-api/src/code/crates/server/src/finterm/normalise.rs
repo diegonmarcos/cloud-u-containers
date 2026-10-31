@@ -8,7 +8,7 @@ use serde_json::Value;
 
 /// The connectors this module implements (the generator emits no job for any other; mod.rs refuses one).
 pub const CONNECTORS: &[&str] = &[
-    "ff_calendar", "declared_events", "cboe_quotes", "nasdaq_earnings", "nyfed_rates", "treasury_xml", "frankfurter_rates",
+    "ff_calendar", "declared_events", "cboe_quotes", "nyfed_rates", "treasury_xml", "frankfurter_rates",
     "coinbase_exchange", "polymarket_events", "bls_series", "sec_submissions", "sec_concept",
 ];
 
@@ -75,7 +75,6 @@ pub fn parse(connector: &str, body: &str, opts: &Value, each: &str, paths: &Valu
         "ff_calendar" => ff(&json()),
         "declared_events" => declared(&json()),
         "cboe_quotes" => cboe(&json(), each, opts.get("last").and_then(Value::as_u64).unwrap_or(252) as usize),
-        "nasdaq_earnings" => nasdaq(&json(), each),
         "nyfed_rates" => nyfed(&json()),
         "treasury_xml" => treasury(body),
         "frankfurter_rates" => frankfurter(&json()),
@@ -192,33 +191,6 @@ pub fn cboe(v: &Value, each: &str, last: usize) -> Got {
         },
         _ => Got::default(),
     }
-}
-
-/// Nasdaq earnings by day: importance by market cap (>= 100 bn: 3, >= 10 bn: 2, else 1).
-pub fn nasdaq(v: &Value, day: &str) -> Got {
-    let rows = v.get("data").and_then(|d| d.get("rows")).map(arr).unwrap_or(&[]);
-    let events = rows
-        .iter()
-        .map(|r| {
-            let cap: f64 = s(r, "marketCap").chars().filter(char::is_ascii_digit).collect::<String>().parse().unwrap_or(0.0);
-            let time = match s(r, "time").as_str() {
-                "time-pre-market" => " (before open)",
-                "time-after-hours" => " (after close)",
-                _ => "",
-            };
-            Ev {
-                ts: day.to_string(),
-                country: "US".into(),
-                title: format!("{} {}{}", s(r, "symbol"), s(r, "name"), time),
-                importance: if cap >= 1e11 { 3 } else if cap >= 1e10 { 2 } else { 1 },
-                consensus: s(r, "epsForecast"),
-                actual: String::new(),
-                previous: s(r, "lastYearEPS"),
-                kind: "earnings".into(),
-            }
-        })
-        .collect();
-    Got { events, ..Default::default() }
 }
 
 /// NY Fed rates/all/latest: one point per rate; SOFRAI gives the 30/90/180-day averages and the index.
@@ -506,16 +478,6 @@ mod tests {
         let h = parse("cboe_quotes", r#"{"data":[{"date":"2026-10-29","open":"1","high":"3","low":"0.5","close":"2"},{"date":"2026-10-28","close":"1.5"},{"date":"2026-10-30","open":"2","high":"4","low":"2","close":"3"}]}"#, &json!({"last":2}), "", &json!({})).bars;
         assert_eq!(h.iter().map(|b| b.t.as_str()).collect::<Vec<_>>(), vec!["2026-10-29", "2026-10-30"]);
         assert_eq!(h[0].h, 3.0);
-    }
-
-    #[test]
-    fn nasdaq_ranks_by_market_cap() {
-        let body = r#"{"data":{"rows":[{"symbol":"AAPL","name":"Apple Inc.","time":"time-after-hours","epsForecast":"$1.75","lastYearEPS":"$1.64","marketCap":"$3,900,000,000,000"},
-            {"symbol":"XYZ","name":"Small","time":"time-pre-market","marketCap":"$12,000,000,000"},{"symbol":"T","name":"Tiny","marketCap":"N/A"}]}}"#;
-        let e = parse("nasdaq_earnings", body, &json!({}), "2026-10-30", &json!({})).events;
-        assert_eq!(e.iter().map(|x| x.importance).collect::<Vec<_>>(), vec![3, 2, 1]);
-        assert_eq!(e[0].title, "AAPL Apple Inc. (after close)");
-        assert_eq!((e[0].ts.as_str(), e[0].consensus.as_str(), e[0].previous.as_str(), e[0].kind.as_str()), ("2026-10-30", "$1.75", "$1.64", "earnings"));
     }
 
     #[test]

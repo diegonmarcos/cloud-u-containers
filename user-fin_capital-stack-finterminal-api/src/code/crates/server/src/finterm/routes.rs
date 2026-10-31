@@ -30,6 +30,7 @@ pub fn router() -> Router<AppState> {
         .route("/v1/calendar/central-banks", get(central_banks))
         .route("/v1/fundamentals/{symbol}", get(fundamentals))
         .route("/v1/admin/refresh/{job}", post(admin_refresh))
+        .merge(super::store::router())
 }
 
 /// The jobs serving `path`, run once now when none of them has an answer yet.
@@ -121,6 +122,10 @@ async fn series(State(s): State<AppState>, Query(q): Q) -> Response {
 
 /// `/v1/curves/{id}`: `{asof, points:[{key, label, tenor_years, value}], prev:[{label, value}]}` (tenor from the declared years).
 async fn curves(State(s): State<AppState>, Path(id): Path<String>) -> Response {
+    // a country (or `matrix`) is served from the yield store; a declared curve id (ust_par, ecb_aaa) from its jobs
+    if let Some(r) = super::store::curves(&s, &id).await {
+        return r;
+    }
     let path = format!("/v1/curves/{id}");
     let (got, at, stale, src) = gather(&s, &path).await;
     if got.points.is_empty() {
@@ -166,7 +171,11 @@ async fn quotes(State(s): State<AppState>, Query(q): Q) -> Response {
 }
 
 /// `/v1/quotes/{symbol}/history`: the daily bars of the job whose declared path names the symbol.
-async fn history(State(s): State<AppState>, Path(symbol): Path<String>) -> Response {
+async fn history(State(s): State<AppState>, Path(symbol): Path<String>, Query(q): Q) -> Response {
+    // a universe symbol is served from the EOD store (SQLite, years of daily closes); any other from its declared job
+    if let Some(r) = super::store::history(&s, &symbol, &q).await {
+        return r;
+    }
     let path = "/v1/quotes/{symbol}/history";
     let want = norm(&symbol);
     let jobs: Vec<Job> = s.finterm.serving(path).filter(|j| norm(&j.path.replace(['/', '.'], " ")).split(' ').any(|w| w == want) || j.path.to_ascii_uppercase().contains(&want)).cloned().collect();
@@ -237,14 +246,9 @@ async fn economic(State(s): State<AppState>, Query(q): Q) -> Response {
     answer(json!({ "events": window(got.events, &q, 10) }), ttl_of(&s, "/v1/calendar/economic"), at, stale, &src)
 }
 
+/// `/v1/calendar/earnings`: SEC EDGAR (store.rs): reported 8-K Item 2.02 filings and estimated next dates, as events + items.
 async fn earnings(State(s): State<AppState>, Query(q): Q) -> Response {
-    let (got, at, stale, src) = gather(&s, "/v1/calendar/earnings").await;
-    if got.events.is_empty() {
-        return none("the earnings calendar");
-    }
-    let symbols: Vec<String> = list(&q, "symbols").into_iter().map(|x| x.to_ascii_uppercase()).collect();
-    let events: Vec<Ev> = window(got.events, &q, 7).into_iter().filter(|e| symbols.is_empty() || symbols.iter().any(|x| e.title.split(' ').next() == Some(x.as_str()))).collect();
-    answer(json!({ "events": events }), ttl_of(&s, "/v1/calendar/earnings"), at, stale, &src)
+    super::store::earnings(&s, &q).await
 }
 
 /// Decisions (the declared calendar) and the market-implied odds (Polymarket) as `{events, implied:[{label, prob, ends}]}`.

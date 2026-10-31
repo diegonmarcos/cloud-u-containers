@@ -20,6 +20,8 @@ pub async fn start(state: AppState) {
                     tracing::warn!(error = %e, "finterm: cache table unavailable");
                 }
                 restore(&state, &pool).await;
+                // the market store (EOD history, yield matrix, GDP, FX, SEC earnings) shares the file
+                super::store::start(state.clone(), pool.clone()).await;
                 Some(pool)
             }
             Err(e) => {
