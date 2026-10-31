@@ -1,0 +1,64 @@
+name: finterminal guard
+
+# Capital-Stack-FinTerminal container (#1351, design 3.3 / 3.5 / 3.6):
+#  declarations : fetchers.json == a fresh render of the FinTerm app's declarations (cloudy-u-android main), the generator's own rules
+#                 with a planted mutation each, and capital-stack-finterminal-web stays behind the c3-pvt gate (mutations each).
+#  rust         : the server crate's unit + integration tests (finterm normalise / urls / window, /v1/catalog).
+#  mutants      : (manual) cargo-mutants over finterm/normalise.rs; every mutant must be caught.
+on:
+  push:
+    branches: [main]
+    paths: ['user-fin_capital-stack-finterminal-api/**', 'user-fin_capital-stack-finterminal-web/**', '_shared/fleet-addressing.json', '.github/workflows/finterminal-guard.yml']
+  pull_request:
+    paths: ['user-fin_capital-stack-finterminal-api/**', 'user-fin_capital-stack-finterminal-web/**']
+  schedule:
+    - cron: '17 4 * * *'   # the declarations live in cloudy-u-android: a change there fails here within a day
+  repository_dispatch:
+    types: [finterm-declarations-updated]
+  workflow_dispatch:
+    inputs:
+      mutants:
+        description: 'run cargo-mutants over finterm/normalise.rs'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  declarations:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: fetchers.json is current (generated from cloudy-u-android main)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node user-fin_capital-stack-finterminal-api/src/fetchers/gen-fetchers.mjs --check
+      - name: generator rules F1-F4, each proven red by a planted mutation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node user-fin_capital-stack-finterminal-api/src/fetchers/test-gen-fetchers.mjs
+      - name: the web container stays behind the c3-pvt gate (G1-G4, mutations)
+        run: node user-fin_capital-stack-finterminal-web/test/test-web-gate.mjs
+
+  rust:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: user-fin_capital-stack-finterminal-api/src/code
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: user-fin_capital-stack-finterminal-api/src/code
+      - name: server crate tests (lib + http_smoke)
+        run: cargo test -p capital-stack-finterminal-api --lib --test http_smoke
+      - name: cargo-mutants over finterm/normalise.rs (every mutant caught)
+        if: github.event_name == 'workflow_dispatch' && inputs.mutants
+        run: |
+          cargo install cargo-mutants --locked
+          cargo mutants -p capital-stack-finterminal-api --file crates/server/src/finterm/normalise.rs --test-tool cargo -- --lib

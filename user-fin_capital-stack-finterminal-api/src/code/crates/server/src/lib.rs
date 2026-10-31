@@ -10,9 +10,12 @@
 //!   GET  /api/v1/topics/:topic/peek       — current cached value
 //!   GET  /api/v1/mcp/tools                — default MCP tool registry
 //!   GET  /api/v1/ws                       — WebSocket: subscribe + push
+//!   GET  /v1/...                          — FinTerm normalised API (#1351): catalog, series, curves, quotes,
+//!                                           fx, calendars, fundamentals (see finterm/routes.rs)
 //!
 //! Auth/TLS is the deployment's job (Caddy + Authelia in front).
 
+pub mod finterm;
 pub mod routes;
 pub mod state;
 pub mod ws;
@@ -33,6 +36,7 @@ pub fn build_router(state: AppState) -> Router {
         .merge(routes::topics::router())
         .merge(routes::mcp::router())
         .merge(ws::router())
+        .merge(finterm::routes::router())
         .layer(TraceLayer::new_for_http())
         .layer(CorsLayer::permissive())
         .with_state(state)

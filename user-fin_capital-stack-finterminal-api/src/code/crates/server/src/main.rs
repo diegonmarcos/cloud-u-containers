@@ -12,6 +12,8 @@ async fn main() -> anyhow::Result<()> {
         .init();
 
     let state = AppState::try_new()?;
+    // FinTerm (#1351): restore the last-good answers (FINTERM_DB, when set), then run every declared fetch job on its schedule
+    fin_api::finterm::scheduler::start(state.clone()).await;
     let app = build_router(state);
 
     let port: u16 = std::env::var("FIN_API_PORT")

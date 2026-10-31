@@ -6,7 +6,11 @@ rust-version.workspace = true
 license.workspace = true
 description = "fin-api — HTTP + WebSocket server shell around DataHub, connectors, personas, brokers. Dockerised for deployment to a VM; consumed by fincept-client."
 
+# The library keeps the crate name the binary, the tests and fincept-client import (fin_api), and the binary keeps
+# the name build.json docker.native_build builds and dist/code/arm64/Dockerfile copies (fin-api): the container rename
+# changed the package name only.
 [lib]
+name = "fin_api"
 
 [[bin]]
 name = "fin-api"
@@ -28,6 +32,11 @@ tracing-subscriber = { workspace = true }
 thiserror = { workspace = true }
 futures = { workspace = true }
 anyhow = { workspace = true }
+# FinTerm /v1 (#1351): the fetch jobs (reqwest), timestamps (chrono), the last-good cache (SQLite through fincept-storage)
+reqwest = { workspace = true }
+chrono = { workspace = true }
+sqlx = { workspace = true }
+fincept-storage = { path = "../storage" }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["test-util", "macros", "rt-multi-thread"] }

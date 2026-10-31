@@ -157,3 +157,23 @@ async fn unknown_persona_returns_404() {
         .unwrap();
     assert_eq!(resp.status().as_u16(), 404);
 }
+
+// #1351 FinTerm /v1: the catalog reports the generated declaration and every job, before any fetch ran.
+#[tokio::test]
+async fn finterm_catalog_lists_the_declared_jobs() {
+    let (base, _h) = spawn_server().await;
+    let v: serde_json::Value = reqwest::get(format!("{base}/v1/catalog")).await.unwrap().json().await.unwrap();
+    assert_eq!(v["declaration_sha"].as_str().unwrap().len(), 64);
+    let jobs = v["jobs"].as_array().unwrap();
+    assert!(!jobs.is_empty());
+    assert!(jobs.iter().all(|j| j["status"] == "pending"));
+    assert!(jobs.iter().any(|j| j["serves"].as_array().unwrap().iter().any(|s| s == "/v1/calendar/economic")));
+}
+
+// The admin refresh is mesh only: a request that came through the edge (X-Forwarded-For) is refused.
+#[tokio::test]
+async fn finterm_admin_refresh_refuses_the_edge() {
+    let (base, _h) = spawn_server().await;
+    let r = reqwest::Client::new().post(format!("{base}/v1/admin/refresh/nope")).header("x-forwarded-for", "1.2.3.4").send().await.unwrap();
+    assert_eq!(r.status().as_u16(), 403);
+}
