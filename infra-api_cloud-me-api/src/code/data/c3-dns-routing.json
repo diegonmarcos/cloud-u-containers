@@ -681,6 +681,10 @@
       "dns": "calendar.mesh.diegonmarcos.com"
     },
     {
+      "service": "user-fin_capital-stack-finterminal-api",
+      "dns": "capital-stack-finterminal-api.mesh.diegonmarcos.com"
+    },
+    {
       "service": "user-ai_cloud-cgc-pub-mcp",
       "dns": "cloud-cgc-pub-mcp.mesh.diegonmarcos.com"
     },
@@ -731,10 +735,6 @@
     {
       "service": "user-prod_filebrowser",
       "dns": "filebrowser.mesh.diegonmarcos.com"
-    },
-    {
-      "service": "user-fin_capital-stack-finterminal-api",
-      "dns": "capital-stack-finterminal-api.mesh.diegonmarcos.com"
     },
     {
       "service": "infra-api_google-personal-mcp",
