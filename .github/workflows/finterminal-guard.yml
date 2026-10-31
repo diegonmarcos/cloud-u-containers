@@ -56,9 +56,9 @@ jobs:
         with:
           workspaces: user-fin_capital-stack-finterminal-api/src/code
       - name: server crate tests (lib + http_smoke)
-        run: cargo test -p capital-stack-finterminal-api --lib --test http_smoke
+        run: cargo test -p fin-api --lib --test http_smoke
       - name: cargo-mutants over finterm/normalise.rs (every mutant caught)
         if: github.event_name == 'workflow_dispatch' && inputs.mutants
         run: |
           cargo install cargo-mutants --locked
-          cargo mutants -p capital-stack-finterminal-api --file crates/server/src/finterm/normalise.rs --test-tool cargo -- --lib
+          cargo mutants -p fin-api --file crates/server/src/finterm/normalise.rs --test-tool cargo -- --lib
