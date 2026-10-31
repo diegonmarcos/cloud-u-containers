@@ -1039,9 +1039,14 @@ ${lib.concatStringsSep "\n" (lib.mapAttrsToList mkPubSink (lib.filterAttrs (n: _
         # route {}: keeps the written order. Caddy's directive order runs `rewrite` BEFORE `uri`, so
         # without it {uri} was still the unstripped path and c3-public-api got
         # /analytics/openobserve/analytics-api/openobserve/... (404, #1104).
+        # The bare path strips to an empty path that Caddy normalises to "/", which made the upstream see
+        # <prefix>/ (its prefix proxy answers 404 there; only the exact <prefix> ingests). Map "/" to the exact prefix.
         route {
           uri strip_prefix ${base}
-          rewrite * ${sink.rewrite_prefix}{uri}
+          @pubsink_root${lib.replaceStrings [ "/" "-" "." "*" ] [ "_" "_" "_" "" ] base} path /
+          rewrite @pubsink_root${lib.replaceStrings [ "/" "-" "." "*" ] [ "_" "_" "_" "" ] base} ${sink.rewrite_prefix}
+          @pubsink_sub${lib.replaceStrings [ "/" "-" "." "*" ] [ "_" "_" "_" "" ] base} not path /
+          rewrite @pubsink_sub${lib.replaceStrings [ "/" "-" "." "*" ] [ "_" "_" "_" "" ] base} ${sink.rewrite_prefix}{uri}
           reverse_proxy ${route.upstream}
         }
       }'';
