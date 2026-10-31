@@ -26,7 +26,7 @@ async fn main() -> anyhow::Result<()> {
         .and_then(|s| IpAddr::from_str(s.trim()).ok())
         .unwrap_or_else(|| IpAddr::from([127, 0, 0, 1]));
     let addr: SocketAddr = SocketAddr::new(host, port);
-    tracing::info!(%addr, "capital-stack-finterminal-api listening");
+    tracing::info!(%addr, "fin-api listening");
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
     axum::serve(listener, app).await?;

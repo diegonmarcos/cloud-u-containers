@@ -1,10 +1,10 @@
 [package]
-name = "capital-stack-finterminal-api"
+name = "fin-api"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
-description = "capital-stack-finterminal-api — HTTP + WebSocket server shell around DataHub, connectors, personas, brokers. Dockerised for deployment to a VM; consumed by fincept-client."
+description = "fin-api — HTTP + WebSocket server shell around DataHub, connectors, personas, brokers. Dockerised for deployment to a VM; consumed by fincept-client."
 
 [lib]
 

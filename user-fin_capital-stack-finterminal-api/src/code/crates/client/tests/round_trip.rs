@@ -1,4 +1,4 @@
-//! Full round-trip: fincept-client → capital-stack-finterminal-api over loopback.
+//! Full round-trip: fincept-client → fin-api over loopback.
 //! Nothing mocked — this locks the REST contract between the two crates.
 
 use fincept_client::{Client, StockMetrics};
