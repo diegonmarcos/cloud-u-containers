@@ -168,6 +168,7 @@
         cal.diegonmarcos.com calendar-radicale/
         calendar.mesh.diegonmarcos.com calendar-radicale/
         capital-stack-finterminal-api.mesh.diegonmarcos.com capital-stack-finterminal-api/
+        capital-stack-finterminal-web.mesh.diegonmarcos.com capital-stack-finterminal-web/
         chat.diegonmarcos.com chat-mattermost/
         cloud-cgc-pub-mcp.mesh.diegonmarcos.com cloud-cgc-pub-mcp/
         cloud-me-api.mesh.diegonmarcos.com cloud-me-api/
@@ -186,6 +187,7 @@
         cloud.caddy.mesh.diegonmarcos.com caddy/
         cloud.calendar.mesh.diegonmarcos.com calendar-radicale/
         cloud.capital-stack-finterminal-api.mesh.diegonmarcos.com capital-stack-finterminal-api/
+        cloud.capital-stack-finterminal-web.mesh.diegonmarcos.com capital-stack-finterminal-web/
         cloud.cloud-cgc-pub-mcp.mesh.diegonmarcos.com cloud-cgc-pub-mcp/
         cloud.cloud-me-api.mesh.diegonmarcos.com cloud-me-api/
         cloud.cloud-notes-sync.mesh.diegonmarcos.com cloud-notes-sync/
@@ -3313,6 +3315,26 @@ error @not_wg "Forbidden" 403
 
     handle {
   reverse_proxy 10.0.0.6:8340 {
+    header_up X-Real-IP {http.request.remote.host}
+  }
+}
+      import edge_errors
+  }
+
+  # c3 container capital-stack-finterminal-web (mesh-only; capital-stack-finterminal-web-http-8341.mesh.diegonmarcos.com)
+  c3-capital-stack-finterminal-web.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
+import security
+import request_limits
+
+
+@not_wg not remote_ip 10.0.0.0/24 fd0c:1d00::/64
+error @not_wg "Forbidden" 403
+
+
+
+    handle {
+  reverse_proxy 10.0.0.6:8341 {
     header_up X-Real-IP {http.request.remote.host}
   }
 }
@@ -6612,6 +6634,11 @@ import request_limits
           header_up X-Real-IP {http.request.remote.host}
         }
       }
+      handle_path /capital-stack-finterminal-web/* {
+        reverse_proxy 10.0.0.6:8341 {
+          header_up X-Real-IP {http.request.remote.host}
+        }
+      }
       handle_path /cloud-cgc-pub-mcp/* {
         reverse_proxy 10.0.0.6:3105 {
           header_up X-Real-IP {http.request.remote.host}
@@ -9524,6 +9551,55 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
+  capital-stack-finterminal-web.mesh.diegonmarcos.com {
+    # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
+    # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
+    # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
+    # forward target 127.0.0.1:8443 never reached — the whole .app/.db zone
+    # was unreachable. Removing the bind entirely (first attempt, 6e3b65364)
+    # was ALSO insufficient: Caddy's Caddyfile adapter groups servers by the
+    # LITERAL listen string, and "no bind" (implicit ":8443") produced a
+    # THIRD, still-different server (srv2) from the public routes' explicit
+    # "0.0.0.0:8443" — even though both cover the same sockets. Only an
+    # byte-identical bind directive guarantees one merged server. 2026-07-09.
+  bind 0.0.0.0 10.0.0.1
+@not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+error @not_mesh "Forbidden" 403
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    reverse_proxy 10.0.0.6:8341 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.mesh.diegonmarcos.com 14821b -> 0b, snappymail.mesh.diegonmarcos.com 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+    }
+  import edge_errors
+  }
+
   photoprism.mesh.diegonmarcos.com {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
@@ -12322,6 +12398,47 @@ error @not_mesh "Forbidden" 403
   import edge_errors
   }
 
+  cloud.capital-stack-finterminal-web.mesh.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    error @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:8341 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.mesh.diegonmarcos.com 14821b -> 0b, snappymail.mesh.diegonmarcos.com 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  import edge_errors
+  }
+
   cloud.photoprism.mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
     tls {
@@ -14547,6 +14664,47 @@ error @not_mesh "Forbidden" 403
     error @not_mesh "Forbidden" 403
     handle {
       reverse_proxy 10.0.0.6:8340 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.mesh.diegonmarcos.com 14821b -> 0b, snappymail.mesh.diegonmarcos.com 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+      }
+    }
+  import edge_errors
+  }
+
+  c3-capital-stack-finterminal-web.mesh.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
+    @not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+    error @not_mesh "Forbidden" 403
+    handle {
+      reverse_proxy 10.0.0.6:8341 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
@@ -17010,6 +17168,48 @@ error @not_mesh "Forbidden" 403
       }
     }
     reverse_proxy 10.0.0.6:8340 {
+        # Empty-body guard: an upstream that answers 200 with Content-Length 0
+        # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
+        # handle_errors renders the diagnostic page instead of a silent blank.
+        # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.mesh.diegonmarcos.com 14821b -> 0b, snappymail.mesh.diegonmarcos.com 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
+        @empty_ok {
+          status 200
+          header Content-Length 0
+        }
+        handle_response @empty_ok {
+          @get method GET
+          error @get 502
+        }
+        handle_response {
+          copy_response
+        }
+    }
+  import edge_errors
+  }
+
+  capital-stack-finterminal-web-http-8341.mesh.diegonmarcos.com {
+    # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
+    # 2026-07-09.
+  bind 0.0.0.0 10.0.0.1
+@not_mesh not remote_ip 10.0.0.0/24 fd0c:1d00::/64 172.16.0.0/12 127.0.0.0/8 ::1/128
+error @not_mesh "Forbidden" 403
+    tls {
+      on_demand
+      issuer internal {
+        ca mesh
+      }
+    }
+    reverse_proxy 10.0.0.6:8341 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.

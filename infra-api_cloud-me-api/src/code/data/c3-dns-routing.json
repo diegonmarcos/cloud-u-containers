@@ -685,6 +685,10 @@
       "dns": "capital-stack-finterminal-api.mesh.diegonmarcos.com"
     },
     {
+      "service": "user-fin_capital-stack-finterminal-web",
+      "dns": "capital-stack-finterminal-web.mesh.diegonmarcos.com"
+    },
+    {
       "service": "user-ai_cloud-cgc-pub-mcp",
       "dns": "cloud-cgc-pub-mcp.mesh.diegonmarcos.com"
     },

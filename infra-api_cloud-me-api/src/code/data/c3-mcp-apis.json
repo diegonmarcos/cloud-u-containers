@@ -1,7 +1,7 @@
 {
   "_generated_from": "cloud-u-containers */build.json + _shared/public-route-allowlist.json (gen-c3-datasets.mjs); no secrets by construction",
   "dataset": "c3-mcp-apis",
-  "count": 20,
+  "count": 21,
   "services": [
     {
       "service": "infra-api_c3-infra-api",
@@ -948,6 +948,40 @@
         "base_path": "/capital-stack-finterminal-api",
         "display_name": "Fincept Terminal (Rust)",
         "auth": "bearer"
+      }
+    },
+    {
+      "service": "user-fin_capital-stack-finterminal-web",
+      "name": "capital-stack-finterminal-web",
+      "description": "Capital-Stack-FinTerminal web (#1351, design 3.5): the FinTerm pages of the SvelteKit webapps site served as static files behind the shared c3-pvt gate (Authelia 2FA session or fleet bearer) at c3-pvt.diegonmarcos.com/capital-stack-finterminal-web/. Same origin as c3-pvt.diegonmarcos.com/capital-stack-finterminal-api, so the page reads the /v1 API with the gate's session: no CORS, no token in the page. Built by cloudy-h-webapps-mob (ghcr.io/diegonmarcos/capital-stack-finterminal-web). LOCAL, not for deploy until the owner approves.",
+      "category": "fin",
+      "enabled": true,
+      "host": "oci-apps",
+      "dns": "capital-stack-finterminal-web.mesh.diegonmarcos.com",
+      "domain": null,
+      "ports": {
+        "app": 8341
+      },
+      "containers": [
+        {
+          "key": "app",
+          "container_name": "capital-stack-finterminal-web",
+          "dns": "capital-stack-finterminal-web.mesh.diegonmarcos.com",
+          "port": 8341,
+          "protocol": "http",
+          "mesh_route": true
+        }
+      ],
+      "routes": [],
+      "exposure": "wg-only (mesh)",
+      "health": "/healthz",
+      "monitoring": {
+        "tls_check": true,
+        "dns_check": true,
+        "endpoint_check": true
+      },
+      "api": {
+        "type": "no-api"
       }
     }
   ]
