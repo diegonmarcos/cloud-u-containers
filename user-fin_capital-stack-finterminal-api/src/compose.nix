@@ -24,11 +24,17 @@ in
         RUST_LOG = "info,tower_http=info";
         # SEC EDGAR rejects a User-Agent without a contact address (403); the public contact of the fleet owner.
         FINTERM_CONTACT = "(me@diegonmarcos.com)";
+        # The normalised answers are kept in this SQLite file (cache table) and restored on start.
+        FINTERM_DB = "/data/finterm.db";
       };
+      volumes = [ "finterm_data:/data" ];
       deploy.resources = {
         limits       = { memory = "512M"; cpus = "1.0"; };
         reservations = { memory = "128M"; };
       };
     };
+  };
+  volumes = {
+    finterm_data = { name = "finterm_data"; };
   };
 }

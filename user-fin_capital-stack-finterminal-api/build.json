@@ -58,7 +58,9 @@
       "monitoring": {
         "tls_check": true
       },
-      "volumes": [],
+      "volumes": [
+        "finterm_data:/data"
+      ],
       "env_file": false,
       "resources": {
         "reservations": {
