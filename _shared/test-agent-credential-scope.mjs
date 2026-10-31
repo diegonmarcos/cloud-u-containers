@@ -56,6 +56,12 @@ const holders = readdirSync(ROOT).filter((d) => {
   const f = join(ROOT, d, "src", "secrets.yaml");
   return existsSync(f) && new RegExp(`^${VAR}:`, "m").test(readFileSync(f, "utf8"));
 }).sort();
+if (holders.length === 0 && !readdirSync(ROOT).some((d) => existsSync(join(ROOT, d, "src", "secrets.yaml")))) {
+  // #1064: the sops files live only in the private vault and are overlaid at ship time; the cloudy-t-infra lint-agent-credential
+  // job (vault overlay) runs this holder derivation. A public checkout has no secrets.yaml at all, so there is nothing to derive.
+  console.log("SKIP A-E: no src/secrets.yaml in this public checkout (#1064; checked in cloudy-t-infra lint-agent-credential with the vault overlay)");
+  process.exit(0);
+}
 check(`A1 at least one container's sops declares ${VAR} (else the key name drifted)`,
   holders.length >= 1, `holders: ${holders.join(",")}`);
 

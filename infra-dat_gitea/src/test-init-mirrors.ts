@@ -192,9 +192,11 @@ const TOKEN = { GITHUB_MIRROR_TOKEN: "stub-github-token" };
 }
 // G6
 {
-  const sec = readFileSync(join(here, "secrets.yaml"), "utf8");
-  t("G6 secrets.yaml declares GITHUB_MIRROR_TOKEN (sops)",
-    /^GITHUB_MIRROR_TOKEN: ENC\[AES256_GCM,/m.test(sec));
+  // #1064: the sops file lives only in the private vault (overlaid at ship time); a public checkout has none, so this check passes there
+  const secPath = join(here, "secrets.yaml");
+  const sec = existsSync(secPath) ? readFileSync(secPath, "utf8") : null;
+  t("G6 secrets.yaml declares GITHUB_MIRROR_TOKEN (sops), when the vault overlay is present",
+    sec === null || /^GITHUB_MIRROR_TOKEN: ENC\[AES256_GCM,/m.test(sec));
 }
 // G7
 {
