@@ -127,7 +127,7 @@ async fn curves(State(s): State<AppState>, Path(id): Path<String>) -> Response {
         return none(&path);
     }
     let years = s.finterm.serving(&path).find_map(|j| j.opts.get("years").cloned()).unwrap_or(Value::Null);
-    let mut pts: Vec<&Pt> = got.points.iter().filter(|p| years.get(&p.key).is_some() || years.is_null()).collect();
+    let pts: Vec<&Pt> = got.points.iter().filter(|p| years.get(&p.key).is_some() || years.is_null()).collect();
     // two month jobs both contribute a last day: keep, per tenor, the newest observation (first-seen order)
     let mut newest: Vec<&Pt> = Vec::new();
     for p in pts {
