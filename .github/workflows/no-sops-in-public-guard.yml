@@ -22,3 +22,5 @@ jobs:
         run: bash _shared/test/no-sops-in-public.sh
       - name: Mutation test (planted sops files must turn the guard red)
         run: bash _shared/test/no-sops-in-public.test.sh
+      - name: Mutation test (render-dist must refuse a render that strips secret mounts)
+        run: bash _shared/test/render-dist-secret-mounts-guard.test.sh

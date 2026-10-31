@@ -84,6 +84,12 @@ jobs:
           if [ -n "$stray" ]; then echo "::error::the render changed paths outside $SERVICE/dist/, refusing to commit:"; printf '%s\n' "$stray"; exit 1; fi
           printf '%s\n' "$changed" | head -40
           echo "dirty=true" >> "$GITHUB_OUTPUT"
+      - name: Refuse a render that strips secret mounts (public checkout has no sops files)
+        if: steps.diff.outputs.dirty == 'true'
+        working-directory: infra/a_solutions
+        run: |
+          bash _shared/test/render-dist-secret-mounts-guard.test.sh
+          bash _shared/test/render-dist-secret-mounts-guard.sh . "$SERVICE"
       - name: Commit, leak-scan the diff, push
         if: steps.diff.outputs.dirty == 'true'
         working-directory: infra/a_solutions
