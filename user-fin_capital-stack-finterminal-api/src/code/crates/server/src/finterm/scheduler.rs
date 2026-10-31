@@ -124,8 +124,13 @@ async fn body(f: &Finterm, job: &Job, day: chrono::NaiveDate, item: &str) -> any
     if !url.starts_with("https://") {
         anyhow::bail!("refusing a non-https source address");
     }
-    let resp = f.client.get(&url).header("Accept", "application/json, application/xml, text/plain, */*").send().await?;
+    let req = f.client.get(&url).header("Accept", "application/json, application/xml, text/plain, */*");
+    let resp = req.send().await?;
     let status = resp.status();
+    if status.as_u16() == 404 && job.source == "forexfactory" {
+        // The next-week file is published late in the week; before that the source answers 404, which is "nothing yet", not a failure.
+        return Ok("[]".to_string());
+    }
     if !status.is_success() {
         anyhow::bail!("{} answered {}", job.source, status.as_u16());
     }

@@ -22,6 +22,8 @@ in
         FIN_API_PORT = toString app.port;
         FIN_API_HOST = vmIp;
         RUST_LOG = "info,tower_http=info";
+        # SEC EDGAR rejects a User-Agent without a contact address (403); the public contact of the fleet owner.
+        FINTERM_CONTACT = "(me@diegonmarcos.com)";
       };
       deploy.resources = {
         limits       = { memory = "512M"; cpus = "1.0"; };
