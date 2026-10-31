@@ -4029,7 +4029,10 @@
    "declared_in": [
     "infra-net_wireguard-mesh/dist/code/arm64/Dockerfile",
     "infra-net_wireguard-mesh/src/code/Dockerfile",
-    "infra-obs_matomo/src/analytics-app/docker-compose.yml"
+    "infra-obs_matomo/src/analytics-app/docker-compose.yml",
+    "user-fin_capital-stack-finterminal-web/build.json",
+    "user-fin_capital-stack-finterminal-web/dist/code/arm64/Dockerfile",
+    "user-fin_capital-stack-finterminal-web/src/build.json"
    ],
    "version": "nginx:1.27-alpine",
    "scope": "base",

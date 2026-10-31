@@ -52,9 +52,13 @@
     "registry": "ghcr.io/diegonmarcos",
     "image": "capital-stack-finterminal-web-binaries",
     "dockerfile": "Dockerfile",
-    "arch": "arm64"
+    "arch": "arm64",
+    "runtime_extra_run": [
+      "printf 'ok\\n' > /usr/share/nginx/html/healthz",
+      "printf '<!doctype html><title>Capital-Stack-FinTerminal</title><h1>Capital-Stack-FinTerminal</h1><p>Gated FinTerm web. Data: /capital-stack-finterminal-api/v1/</p>\\n' > /usr/share/nginx/html/index.html"
+    ]
   },
-  "upstream_image": "ghcr.io/diegonmarcos/capital-stack-finterminal-web:latest",
+  "upstream_image": "nginx:1.27-alpine",
   "resources": {
     "mem_reservation": "16M",
     "mem_limit": "64M"
