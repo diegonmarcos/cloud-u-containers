@@ -186,7 +186,7 @@ pub fn cboe(v: &Value, each: &str, last: usize) -> Got {
             Some(p) => {
                 let key = if each.is_empty() { s(d, "symbol") } else { each.to_string() };
                 let date: String = s(d, "last_trade_time").chars().take(16).collect::<String>().replace('T', " ");
-                Got { points: vec![Pt { label: key.clone(), key, x: 0.0, value: p, prev: num(d, "prev_day_close"), date }], ..Default::default() }
+                Got { points: vec![Pt { label: key.clone(), key, x: 0.0, value: p, prev: num(d, "price_change").map(|c| p - c).or_else(|| num(d, "prev_day_close")), date }], ..Default::default() }
             }
             None => Got::default(),
         },
@@ -500,6 +500,9 @@ mod tests {
     fn cboe_quote_and_history() {
         let q = parse("cboe_quotes", r#"{"data":{"symbol":"^SPX","current_price":7580.07,"prev_day_close":7720.39,"last_trade_time":"2026-10-30T16:14:58"}}"#, &json!({}), "_SPX", &json!({})).points;
         assert_eq!(q, vec![Pt { key: "_SPX".into(), label: "_SPX".into(), x: 0.0, value: 7580.07, prev: Some(7720.39), date: "2026-10-30 16:14".into() }]);
+        // After the US close Cboe resets prev_day_close to the current price; prev must come from price_change instead.
+        let d = parse("cboe_quotes", r#"{"data":{"symbol":"^DJX","current_price":475.12,"price_change":-3.41,"prev_day_close":475.12,"last_trade_time":"2026-10-30T16:14:58"}}"#, &json!({}), "_DJX", &json!({})).points;
+        assert!((d[0].prev.unwrap() - 478.53).abs() < 1e-9, "prev = price - price_change, not the reset prev_day_close");
         let h = parse("cboe_quotes", r#"{"data":[{"date":"2026-10-29","open":"1","high":"3","low":"0.5","close":"2"},{"date":"2026-10-28","close":"1.5"},{"date":"2026-10-30","open":"2","high":"4","low":"2","close":"3"}]}"#, &json!({"last":2}), "", &json!({})).bars;
         assert_eq!(h.iter().map(|b| b.t.as_str()).collect::<Vec<_>>(), vec!["2026-10-29", "2026-10-30"]);
         assert_eq!(h[0].h, 3.0);
